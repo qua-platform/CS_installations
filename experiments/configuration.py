@@ -63,7 +63,7 @@ minus_pi_half_len_NV = pi_len_NV
 initialization_len = 3_000 * u.ns
 mw_switch_len = 40 * u.ns
 meas_len = 500 * u.ns
-long_meas_len = 5_000 * u.ns
+long_meas_len = 1 * u.us
 
 # delays
 detection_delay = 24 * u.ns
@@ -79,7 +79,7 @@ long_const_weight = 0.1 # should be about const_weight * meas_len / long_meas_le
 signal_threshold = 0
 
 # relaxation time from the metastable state to the ground state after during initialization
-relaxation_time = 300 * u.ns
+relaxation_time = 1000 * u.ns
 wait_between_runs = 5 * relaxation_time
 wait_for_initialization = 5 * relaxation_time
 

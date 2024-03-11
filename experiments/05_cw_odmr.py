@@ -137,7 +137,6 @@ else:
             save_dir=save_dir,
             script_path=__file__,
         )
-        # Suppose we want to save I, Q, iterations. 
         np.savez(
             file=dir_data / "data.npz",
             f_vec=f_vec,

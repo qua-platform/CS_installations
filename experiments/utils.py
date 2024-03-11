@@ -88,8 +88,7 @@ def save_files_and_get_dir_data(
                 save_dir=save_dir,
                 script_path=__file__,
             )
-            # Suppose we want to save I, Q, iterations. 
-            np.savez(
+                np.savez(
                 file=dir_data / "data.npz",
                 I=I,
                 Q=Q,

@@ -24,14 +24,10 @@ from configuration import *
 ###################
 
 # Duration of a single chunk. Needed because the OPX cannot measure for more than ~1ms
-single_integration_time_ns = int(100 * u.us)  # 500us
+single_integration_time_ns = int(1 * u.us)  # 5us
 single_integration_time_cycles = single_integration_time_ns // 4
-# Number of chunks to get the total measurement time
-n_avg = 10
 
 with program() as counter:
-    n = declare(int)  # number of iterations
-    R = declare(fixed) # PD reading
     I_st = declare_stream(adc_trace=True)  # stream for PD reading 
 
     # Infinite loop to allow the user to work on the experimental set-up while looking at the counts
@@ -41,10 +37,10 @@ with program() as counter:
         # ... while measuring the events from the PD
         # measure("readout", "PD", None, integration.full("const", I, "out1"))
         measure("long_readout", "PD", I_st)
-        wait(relaxation_time)
+        wait(wait_between_runs * u.ns, "PD")
 
     with stream_processing():
-        I_st.input1().average().save("I")
+        I_st.input1().save("I")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -71,18 +67,14 @@ else:
     I_handle = res_handles.get("I")
     I_handle.wait_for_values(1)
 
-    times = []
-    Is = []
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while res_handles.is_processing():
         I = I_handle.fetch_all()
-        Is.append(u.demod2volts(I["value"]))
-        times.append(I["timestamp"] / u.s)
         plt.cla()
-        plt.plot(times, Is)
-        plt.xlabel("iterations")
+        plt.plot(I)
+        plt.xlabel("time [ns]")
         plt.ylabel("PD Voltage [V]")
         plt.title("PD Reading")
         plt.pause(0.1)
@@ -97,7 +89,6 @@ else:
         np.savez(
             file=dir_data / "data.npz",
             I=I,
-            times=times,
         )
         # If a matplotlib figure object is available.
         fig.savefig(dir_data / "data_live.png")

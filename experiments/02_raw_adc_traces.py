@@ -1,3 +1,4 @@
+# %%
 """
         RAW ADC TRACES
 The goal of this script is to measure the raw ADC traces without demodulation or integration.
@@ -28,13 +29,14 @@ n_avg = 1_000
 with program() as adc_trace:
     n = declare(int)  # QUA variable for the averaging loop
     adc_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace
+
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         # Drive the AOM to play the readout laser pulse
         play("laser_ON", "AOM")
         # Record the raw ADC traces in the stream called "adc_st"
         measure("long_readout", "PD", adc_st)
         # Waits for the
-        wait(1000, "PD")
+        wait(wait_between_runs * u.ns, "PD")
 
     with stream_processing():
         # Will save average:
@@ -83,3 +85,5 @@ else:
     plt.tight_layout()
 
     print(f"\nInput1 mean: {np.mean(adc1)} V")
+
+# %%
