@@ -58,7 +58,9 @@ with program() as charge_stability_prog:
     j = declare(int)  # QUA integer used as an index to loop over the voltage points
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
     I = declare(fixed)
+    I_st = declare_stream()
     Q = declare(fixed)
+    Q_st = declare_stream()
 
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("QDS", I, Q)

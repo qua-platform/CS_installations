@@ -65,6 +65,8 @@ with program() as PSB_search_prog:
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
     I = declare(fixed)
     Q = declare(fixed)
+    I_st = declare_stream()
+    Q_st = declare_stream()
     dc_signal = declare(fixed)
     x = declare(fixed)
     y = declare(fixed)

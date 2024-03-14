@@ -1,29 +1,6 @@
 # %%
 """
-        Pauli Spin Blockade search
-The goal of the script is to find the PSB region according to the protocol described in xxx.
-To do so, we fix the position in the charge stability diagram with the DC sources,
-for example, it can be the charge transition region between (2,0) and (1,1). Then, we pulse
-the fast AC lines with analog outputs from the OPX. The fast pulse navigates the following
-regions: create a dephase/mixed state of S-T, then move along the detuning axis to cross
-the (2,0) and (1,1) boundary, perform measurement along the detuning axis.
-
-Depending on the cut-off frequency of the bias-tee, it may be necessary to adjust the barycenter (voltage offset) of each
-fast pulse so that the fast line of the bias-tees sees zero voltage in average. Otherwise, the high-pass filtering effect
-of the bias-tee will distort accumulates charge over time and thus distortin the charge map. A function has been written for this.
-
-In the current implementation, the OPX is also measuring (either with DC current sensing or RF-reflectometry) during the
-readout window (last segment of the triangle).
-The goal is to save_all data points and plot histogram of data.
-
-Prerequisites:
-    - Readout calibration (resonance frequency for RF reflectometry and sensor operating point for DC current sensing).
-    - Setting the parameters of the external DC source using its driver.
-    - Connect the two plunger gates (DC line of the bias-tee) to the external dc source.
-    - Connect the OPX to the fast line of the plunger gates for playing the triangle pulse sequence.
-
-Before proceeding to the next node:
-    - Identify the PSB region and update the config.
+        SNR optimization
 """
 
 from qm.qua import *
@@ -38,9 +15,39 @@ import matplotlib.pyplot as plt
 from qualang_tools.loops.loops import from_array
 from qm import generate_qua_script
 
+####################
+# Helper functions #
+####################
+def update_readout_length(new_readout_length):
+
+    config["pulses"]["lock_in_readout_pulse"]["length"] = new_readout_length
+    config["integration_weights"]["cosine_weights"] = {
+        "cosine": [(1.0, new_readout_length)],
+        "sine": [(0.0, new_readout_length)],
+    }
+    config["integration_weights"]["sine_weights"] = {
+        "cosine": [(0.0, new_readout_length)],
+        "sine": [(1.0, new_readout_length)],
+    }
+    config["integration_weights"]["minus_sine_weights"] = {
+        "cosine": [(0.0, new_readout_length)],
+        "sine": [(-1.0, new_readout_length)],
+    }
+
 ###################
 # The QUA program #
 ###################
+
+readout_len = 5 * u.us  # Readout pulse duration
+update_readout_length(readout_len)
+# Set the accumulated demod parameters
+division_length = 250  # Size of each demodulation slice in clock cycles
+number_of_divisions = int((readout_len) / (4 * division_length))
+print("Integration weights chunk-size length in clock cycles:", division_length)
+print("The readout has been sliced in the following number of divisions", number_of_divisions)
+
+# Time axis for the plots at the end
+x_plot = np.arange(division_length * 4, readout_len + 1, division_length * 4)
 
 p5_voltages = np.arange(-0.1, 0.1, 0.01)
 p6_voltages = np.arange(-0.1, 0.1, 0.01)
@@ -58,17 +65,24 @@ seq.add_points("dephasing", level_dephasing, duration_dephasing)
 seq.add_points("readout", level_readout, duration_readout)
 
 n_shots = 100
+amps = np.arange(0, 1, 0.1)
 
-with program() as PSB_search_prog:
+with program() as snr_opt:
     n = declare(int)  # QUA integer used as an index for the averaging loop
     counter = declare(int)  # QUA integer used as an index for the Coulomb pulse
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
-    I = declare(fixed)
-    Q = declare(fixed)
+
+    I = declare(fixed, size=number_of_divisions)
+    Q = declare(fixed, size=number_of_divisions)
+    I_st = declare_stream()
+    Q_st = declare_stream()
+
     dc_signal = declare(fixed)
     x = declare(fixed)
     y = declare(fixed)
     dur_len = declare(int, value=1000)
+    ind = declare(int)
+    a = declare(fixed)
 
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("QDS", I, Q)
@@ -77,17 +91,28 @@ with program() as PSB_search_prog:
 
         save(n, n_st)
 
-        with for_each_((x, y), (p5_voltages.tolist(), p6_voltages.tolist())):
-        # with for_(*from_array(p5_, detune_voltages)):
+        with for_(*from_array(a, amps)):
 
             # Play fast pulse
             seq.add_step(voltage_point_name="dephasing")
-            seq.add_step(duration=1000, level=[x,y])  # duration in nanoseconds
+            seq.add_step(voltage_point_name="readout")  # duration in nanoseconds
             seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
             # Measure the dot right after the qubit manipulation
             wait((duration_dephasing) * u.ns, "QDS")
-            I, Q, I_st, Q_st = lock_in_macro(I=I, Q=Q)
+
+            measure(
+                "readout"*amp(a),
+                "QDS",
+                None,
+                demod.accumulated("cos", I, division_length, "out2"),
+                demod.accumulated("sin", Q, division_length, "out2"),
+            )
+
+            # Save the QUA vectors to their corresponding streams
+            with for_(ind, 0, ind < number_of_divisions, ind + 1):
+                save(I[ind], I_st)
+                save(Q[ind], Q_st)
 
             # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
             # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
@@ -102,12 +127,12 @@ with program() as PSB_search_prog:
     # Stream processing section used to process the data before saving it
     with stream_processing():
         n_st.save("iteration")
-        I_st.buffer(buffer_len).save_all("I")
-        Q_st.buffer(buffer_len).save_all("Q")
+        I_st.buffer(number_of_divisions).buffer(len(amps)).save_all("Ig")
+        Q_st.buffer(number_of_divisions).buffer(len(amps)).save_all("Qg")
 
 from pprint import pprint
 
-pprint(generate_qua_script(PSB_search_prog))
+pprint(generate_qua_script(snr_opt))
 
 # %%
 #####################################
@@ -120,14 +145,14 @@ simulate = False
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, PSB_search_prog, simulation_config)
+    job = qmm.simulate(config, snr_opt, simulation_config)
     job.get_simulated_samples().con1.plot()
     plt.show(block=False)
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(PSB_search_prog)
+    job = qm.execute(snr_opt)
     # Get results from QUA program and initialize live plotting
     results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
     # Live plotting
@@ -142,4 +167,3 @@ else:
         phase = np.angle(S)  # Phase
         # Progress bar
         progress_counter(iteration, n_shots, start_time=results.start_time)
-        plt.hist2d(detuning_voltages, R)

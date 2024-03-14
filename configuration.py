@@ -18,7 +18,6 @@ qop_port = None  # Write the QOP port if version < QOP220
 # Path to save data
 octave_config = None
 
-
 #############################################
 #              OPX PARAMETERS               #
 #############################################
@@ -588,8 +587,8 @@ config = {
     },
     "integration_weights": {
         "constant_weights": {
-            "cosine": [(1, readout_len)],
-            "sine": [(0.0, readout_len)],
+            "cosine": [(1, lock_in_readout_length)],
+            "sine": [(0.0, lock_in_readout_length)],
         },
         "cosine_weights": {
             "cosine": [(1.0, lock_in_readout_length)],
