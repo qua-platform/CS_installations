@@ -21,9 +21,9 @@ from qualang_tools.plot import interrupt_on_close
 ##############################
 # Program-specific variables #
 ##############################
-wait_after_pulse = 1000  # waiting time (ns) before measuring after applying the pulses
+wait_after_pulse = 0  # waiting time (ns) before measuring after applying the pulses
 
-n_avg = 100  # Number of averaging loops
+n_avg = 2  # Number of averaging loops
 
 # Relevant elements
 measured_element = "QDS"
@@ -31,8 +31,8 @@ x_element = "P5_sticky"
 y_element = "P6_sticky"
 
 # 2D scan parameters
-x_amp = 0.1  # The scan is defined as +/- x_amp/2
-y_amp = 0.1  # The scan is defined as +/- y_amp/2
+x_amp = 0.1  # The scan is defined as +/- x_amp/2 - it is like percentage
+y_amp = 0.1  # The scan is defined as +/- y_amp/2 - it is like percentage
 resolution = 11  # Number of points along x and y, it must be odd to form a spiral
 x_axis = np.linspace(-x_amp / 2, x_amp / 2, resolution) * config["waveforms"]["P5_step_wf"].get("sample")
 y_axis = np.linspace(-y_amp / 2, y_amp / 2, resolution) * config["waveforms"]["P6_step_wf"].get("sample")
@@ -81,7 +81,7 @@ with program() as spiral_scan:
         with while_(completed_moves < resolution * (resolution - 1)):
             # for_ loop to move the required number of moves in the x direction
             with for_(i, 0, i < moves_per_edge, i + 1):
-                assign(x, x + movement_direction * x_step_size * 0.5)  # updating the x location
+                assign(x, x + movement_direction * x_step_size * config["waveforms"]["P5_step_wf"].get("sample"))  # updating the x location in Volts
                 save(x, x_st)
                 save(y, y_st)
                 # if the x coordinate should be 0, ramp to zero to remove fixed point arithmetic errors accumulating
@@ -101,7 +101,7 @@ with program() as spiral_scan:
 
             # for_ loop to move the required number of moves in the y direction
             with for_(j, 0, j < moves_per_edge, j + 1):
-                assign(y, y + movement_direction * y_step_size * 0.5)
+                assign(y, y + movement_direction * y_step_size * config["waveforms"]["P6_step_wf"].get("sample"))  # updating the y location in Volts
                 save(x, x_st)
                 save(y, y_st)
                 # if the y coordinate should be 0, ramp to zero to remove fixed point arithmetic errors accumulating
@@ -125,7 +125,7 @@ with program() as spiral_scan:
 
         # filling in the final x row, which was not covered by the previous for_ loop
         with for_(i, 0, i < moves_per_edge - 1, i + 1):
-            assign(x, x + movement_direction * x_step_size * 0.5)  # updating the x location
+            assign(x, x + movement_direction * x_step_size * config["waveforms"]["P5_step_wf"].get("sample"))  # updating the x location
             save(x, x_st)
             save(y, y_st)
             # if the x coordinate should be 0, ramp to zero to remove fixed point arithmetic errors accumulating
@@ -144,8 +144,8 @@ with program() as spiral_scan:
 
         # aligning and ramping to zero to return to initial state
         align(x_element, y_element, measured_element)
-        # ramp_to_zero(x_element, duration=ramp_to_zero_duration)
-        # ramp_to_zero(y_element, duration=ramp_to_zero_duration)
+        ramp_to_zero(x_element, duration=ramp_to_zero_duration)
+        ramp_to_zero(y_element, duration=ramp_to_zero_duration)
 
     with stream_processing():
         for stream_name, stream in zip(["I", "Q"], [I_st, Q_st]):

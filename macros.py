@@ -79,7 +79,7 @@ def get_filtered_voltage(
     print(f"Error: {np.mean(np.abs((y-y_filtered)/(max(y)-min(y))))*100:.2f} %")
     return y, y_filtered
 
-def round_to_fixed(x, number_of_bits=12):
+def round_to_fixed(x, number_of_bits=12):  # should it be 16 bits instead?
     """
     function which rounds 'x' to 'number_of_bits' of precision to help reduce the accumulation of fixed point arithmetic errors
     """

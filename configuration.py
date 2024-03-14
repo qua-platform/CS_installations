@@ -268,8 +268,8 @@ IV_scale_factor = 0.5e-9  # in A/V
 
 # Reflectometry
 qds_IF = 1 * u.MHz
-lock_in_readout_length = 10 * u.us
-lock_in_readout_amp = 100 * u.mV
+lock_in_readout_length = 1 * u.us
+lock_in_readout_amp = 0 * u.mV
 
 # Time of flight
 time_of_flight = 24
