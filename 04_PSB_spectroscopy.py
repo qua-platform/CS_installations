@@ -79,7 +79,6 @@ with program() as PSB_search_prog:
         save(n, n_st)
 
         with for_each_((x, y), (p5_voltages.tolist(), p6_voltages.tolist())):
-        # with for_(*from_array(p5_, detune_voltages)):
 
             # Play fast pulse
             seq.add_step(voltage_point_name="dephasing")
@@ -130,6 +129,7 @@ else:
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+
     while results.is_processing():
         # Fetch the data from the last OPX run corresponding to the current slow axis iteration
         I, Q, iteration = results.fetch_all()
@@ -139,4 +139,13 @@ else:
         phase = np.angle(S)  # Phase
         # Progress bar
         progress_counter(iteration, n_shots, start_time=results.start_time)
-        plt.hist2d(detuning_voltages, R)
+        R_flattened = R.flatten()
+        max_len = len(R)
+        detuning_voltages_expanded = np.repeat(buffer_len, max_len)
+        plt.clf()
+        plt.hist2d(detuning_voltages_expanded, R_flattened)
+        plt.colorbar()
+        plt.tight_layout()
+        plt.pause(0.1)
+
+    qm.close()
