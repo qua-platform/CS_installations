@@ -76,12 +76,12 @@ with program() as spiral_scan:
         save(x, x_st)
         save(y, y_st)
         # for the first pixel it is unnecessary to move before measuring
-        lock_in_macro(I=I, Q=Q)
+        lock_in_macro(I=I, Q=Q, I_st=I_st, Q_st=Q_st)
         
         with while_(completed_moves < resolution * (resolution - 1)):
             # for_ loop to move the required number of moves in the x direction
             with for_(i, 0, i < moves_per_edge, i + 1):
-                assign(x, x + movement_direction * x_step_size * config["waveforms"]["P5_step_wf"].get("sample"))  # updating the x location in Volts
+                assign(x, x + movement_direction * x_step_size)  # updating the x location in Volts
                 save(x, x_st)
                 save(y, y_st)
                 # if the x coordinate should be 0, ramp to zero to remove fixed point arithmetic errors accumulating
@@ -97,11 +97,11 @@ with program() as spiral_scan:
                 if wait_time >= 4:  # if logic to enable wait_time = 0 without error
                     wait(wait_time, measured_element)
 
-                lock_in_macro(I=I, Q=Q)
+                lock_in_macro(I=I, Q=Q, I_st=I_st, Q_st=Q_st)
 
             # for_ loop to move the required number of moves in the y direction
             with for_(j, 0, j < moves_per_edge, j + 1):
-                assign(y, y + movement_direction * y_step_size * config["waveforms"]["P6_step_wf"].get("sample"))  # updating the y location in Volts
+                assign(y, y + movement_direction * y_step_size)  # updating the y location in Volts
                 save(x, x_st)
                 save(y, y_st)
                 # if the y coordinate should be 0, ramp to zero to remove fixed point arithmetic errors accumulating
@@ -116,7 +116,7 @@ with program() as spiral_scan:
                 if wait_time >= 4:  # if logic to enable wait_time = 0 without error
                     wait(wait_time, measured_element)
 
-                lock_in_macro(I=I, Q=Q)
+                lock_in_macro(I=I, Q=Q, I_st=I_st, Q_st=Q_st)
 
             # updating the variables
             assign(completed_moves, completed_moves + 2 * moves_per_edge)  # * 2 because moves in both x and y
@@ -125,7 +125,7 @@ with program() as spiral_scan:
 
         # filling in the final x row, which was not covered by the previous for_ loop
         with for_(i, 0, i < moves_per_edge - 1, i + 1):
-            assign(x, x + movement_direction * x_step_size * config["waveforms"]["P5_step_wf"].get("sample"))  # updating the x location
+            assign(x, x + movement_direction * x_step_size)  # updating the x location
             save(x, x_st)
             save(y, y_st)
             # if the x coordinate should be 0, ramp to zero to remove fixed point arithmetic errors accumulating
@@ -140,7 +140,7 @@ with program() as spiral_scan:
             if wait_time >= 4:
                 wait(wait_time, measured_element)
 
-            # measure
+            lock_in_macro(I=I, Q=Q, I_st=I_st, Q_st=Q_st)
 
         # aligning and ramping to zero to return to initial state
         align(x_element, y_element, measured_element)

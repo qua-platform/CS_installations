@@ -63,6 +63,8 @@ with program() as charge_stability_prog:
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("QDS", I, Q)
 
+    align()
+
     with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
         save(n, n_st)
 

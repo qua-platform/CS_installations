@@ -70,7 +70,6 @@ with program() as PSB_search_prog:
     dc_signal = declare(fixed)
     x = declare(fixed)
     y = declare(fixed)
-    dur_len = declare(int, value=1000)
 
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("QDS", I, Q)
@@ -89,7 +88,7 @@ with program() as PSB_search_prog:
 
             # Measure the dot right after the qubit manipulation
             wait((duration_dephasing) * u.ns, "QDS")
-            lock_in_macro(I=I, Q=Q)
+            lock_in_macro(I=I, Q=Q, I_st=I_st, Q_st=Q_st)
 
             # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
             # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
@@ -106,10 +105,6 @@ with program() as PSB_search_prog:
         n_st.save("iteration")
         I_st.buffer(buffer_len).save_all("I")
         Q_st.buffer(buffer_len).save_all("Q")
-
-from pprint import pprint
-
-pprint(generate_qua_script(PSB_search_prog))
 
 # %%
 #####################################
