@@ -14,26 +14,28 @@ Prerequisites:
 Before proceeding to the next node:
     - Update the config with the optimal sensing point.
 """
+
 from qm.qua import *
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm import SimulationConfig
 from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool, wait_until_job_is_paused
+from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 import matplotlib.pyplot as plt
-from qdac2_driver import QDACII, load_voltage_list
 
 ###################
 # The QUA program #
 ###################
+
 n_avg = 100  # Number of averaging loops
-n_points = 101
-offsets = np.linspace(-0.2, 0.2, n_points)
+
+offsets_points = 100
+offsets = np.linspace(-0.2, 0.2, offsets_points)
 
 with program() as charge_sensor_sweep:
+
     n = declare(int)  # QUA integer used as an index for the averaging loop
     i = declare(int)  # QUA integer used as an index to loop over the voltage points
-    j = declare(int)  # QUA integer used as an index to loop over the voltage points
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
     I = declare(fixed)
     Q = declare(fixed)
@@ -44,20 +46,24 @@ with program() as charge_sensor_sweep:
 
         save(n, n_st)
 
-        with for_(i, 0, i < n_points + 1, i + 1):
+        with for_(i, 0, i < offsets_points, i + 1):
 
             play("trigger", "qdac_trigger1")
             # Wait for the voltages to settle (depends on the voltage source bandwidth)
-            wait(1 * u.ms)
+            wait(500 * u.us)
 
+            align('qdac_trigger1', 'QDS')
+
+            reset_phase('QDS')
             measure('readout', 'QDS', None, demod.full("cos", I, 'out2'), demod.full("sin", Q, 'out2'))
+
             save(I, I_st)
             save(Q, Q_st)
 
     with stream_processing():
         n_st.save("iteration")
-        I_st.buffer(n_points).average().save("I")
-        Q_st.buffer(n_points).average().save("Q")
+        I_st.buffer(offsets_points).average().save("I")
+        Q_st.buffer(offsets_points).average().save("Q")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -66,7 +72,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 
 ## QDAC2 section
 # Create the qdac instrument
-qdac = QDACII("Ethernet", IP_address="127.0.0.1", port=5025)  # Using Ethernet protocol
+qdac = QDACII("Ethernet", IP_address=qdac_ip, port=qdac_port)  # Using Ethernet protocol
 # qdac = QDACII("USB", USB_device=4)  # Using USB protocol
 # Set up the qdac and load the voltage list
 load_voltage_list(
@@ -98,33 +104,37 @@ else:
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(charge_sensor_sweep)
+
     # Live plotting
     fig = plt.figure()
-    interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+    interrupt_on_close(fig, job)  # Interrupts the job when closing the 
+    
     results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
 
     while results.is_processing():
+
         # Fetch the data from the last OPX run corresponding to the current slow axis iteration
         I, Q, iteration = results.fetch_all()
         # Convert results into Volts
         S = u.demod2volts(I + 1j * Q, lock_in_readout_length)
         R = np.abs(S)  # Amplitude
-        phase = np.angle(S)  # Phase
+        phase = np.unwrap(np.angle(S))  # Phase
 
         # Progress bar
-        progress_counter(iteration, n_points, start_time=results.get_start_time())
+        progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle("Charge sensor gate sweep")
         plt.subplot(211)
         plt.cla()
-        plt.plot(offsets[: iteration + 1], R)
+        plt.plot(offsets, R)
         plt.xlabel("Sensor gate voltage [V]")
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
         plt.subplot(212)
         plt.cla()
-        plt.plot(offsets[: iteration + 1], phase)
+        plt.plot(offsets, phase)
         plt.xlabel("Sensor gate voltage [V]")
         plt.ylabel("Phase [rad]")
         plt.tight_layout()
         plt.pause(0.1)
+
     qm.close()

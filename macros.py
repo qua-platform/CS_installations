@@ -33,6 +33,7 @@ def lock_in_macro(
         I_st = declare_stream()
     if Q_st is None:
         Q_st = declare_stream()
+    reset_phase(element)
     measure(operation, element, None, demod.full("cos", I, element_output), demod.full("sin", Q, element_output))
     save(I, I_st)
     save(Q, Q_st)

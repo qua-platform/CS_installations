@@ -2,6 +2,7 @@ import numpy as np
 from qualang_tools.units import unit
 from qm.qua._dsl import _Variable
 from qm.qua import declare, assign, play, fixed, Cast, amp, wait, ramp, ramp_to_zero
+from qdac2_driver import QDACII, load_voltage_list
 
 #######################
 # AUXILIARY FUNCTIONS #
@@ -14,6 +15,9 @@ u = unit(coerce_to_integer=True)
 qop_ip = "172.16.33.101"  # Write the QM router IP address
 cluster_name = "Cluster_83"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
+
+qdac_ip = "127.0.0.1"
+qdac_port = 5025
 
 # Path to save data
 octave_config = None
@@ -338,8 +342,7 @@ config = {
                 2: {},  # TTL for QDAC
             },
             "analog_inputs": {
-                1: {"offset": 0.0, "gain_db": 0},  # Lock-in channel
-                2: {"offset": 0.0, "gain_db": 0},  # 
+                2: {"offset": 0.0, "gain_db": 0},  # Lock-in channel
             },
         },
     },
