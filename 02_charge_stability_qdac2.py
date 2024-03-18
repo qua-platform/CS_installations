@@ -35,7 +35,6 @@ from configuration import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.addons.variables import assign_variables_to_element
-from qdac2_driver import QDACII, load_voltage_list
 import matplotlib.pyplot as plt
 from macros import lock_in_macro
 
@@ -43,9 +42,9 @@ from macros import lock_in_macro
 # The QUA program #
 ###################
 n_avg = 100  # Number of averages
+
 n_points_slow = 101  # Number of points for the slow axis
 n_points_fast = 100  # Number of points for the fast axis
-Coulomb_amp = 0.0  # amplitude of the Coulomb pulse
 
 # Voltages in Volt
 voltage_values_slow = np.linspace(-1.5, 1.5, n_points_slow)
@@ -53,7 +52,6 @@ voltage_values_fast = np.linspace(-1.5, 1.5, n_points_fast)
 
 with program() as charge_stability_prog:
     n = declare(int)  # QUA integer used as an index for the averaging loop
-    counter = declare(int)  # QUA integer used as an index for the Coulomb pulse
     i = declare(int)  # QUA integer used as an index to loop over the voltage points
     j = declare(int)  # QUA integer used as an index to loop over the voltage points
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
@@ -66,25 +64,26 @@ with program() as charge_stability_prog:
     assign_variables_to_element("QDS", I, Q)
 
     with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
+        save(n, n_st)
+
         with for_(i, 0, i < n_points_slow, i + 1):
             # Trigger the QDAC2 channel to output the next voltage level from the list
             play("trigger", "qdac_trigger2")
+            
             with for_(j, 0, j < n_points_fast, j + 1):
                 # Trigger the QDAC2 channel to output the next voltage level from the list
                 play("trigger", "qdac_trigger1")
                 # Wait for the voltages to settle (depends on the channel bandwidth)
-                wait(300 * u.us)
-                # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
-                # frequency and the integrated quadratures are stored in "I" and "Q"
-                I, Q, I_st, Q_st = lock_in_macro(I=I, Q=Q)
-        # Save the LO iteration to get the progress bar
-        save(n, n_st)
+                wait(500 * u.us)
+
+                align()
+
+                lock_in_macro(I=I, Q=Q, I_st=I_st, Q_st=Q_st)
 
     # Stream processing section used to process the data before saving it.
     with stream_processing():
         n_st.save("iteration")
         # Cast the data into a 2D matrix and performs a global averaging of the received 2D matrices together.
-        # RF reflectometry
         I_st.buffer(n_points_fast).buffer(n_points_slow).average().save("I")
         Q_st.buffer(n_points_fast).buffer(n_points_slow).average().save("Q")
 
@@ -96,7 +95,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 
 ## QDAC2 section
 # Create the qdac instrument
-qdac = QDACII("Ethernet", IP_address="127.0.0.1", port=5025)  # Using Ethernet protocol
+qdac = QDACII("Ethernet", IP_address=qdac_ip, port=qdac_port)  # Using Ethernet protocol
 # qdac = QDACII("USB", USB_device=4)  # Using USB protocol
 # Set up the qdac and load the voltage list
 load_voltage_list(
@@ -115,7 +114,7 @@ load_voltage_list(
     dwell=2e-6,
     slew_rate=2e7,
     trigger_port="ext2",
-    output_range="high",
+    output_range="low",
     output_filter="med",
     voltage_list=voltage_values_slow,
 )
@@ -141,13 +140,14 @@ else:
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+
     while results.is_processing():
         # Fetch the data from the last OPX run corresponding to the current slow axis iteration
         I, Q, iteration = results.fetch_all()
         # Convert results into Volts
         S = u.demod2volts(I + 1j * Q, lock_in_readout_length)
         R = np.abs(S)  # Amplitude
-        phase = np.angle(S)  # Phase
+        phase = np.unwrap(np.angle(S))  # Phase
         # Progress bar
         progress_counter(iteration, n_points_slow, start_time=results.start_time)
         # Plot data
@@ -165,3 +165,5 @@ else:
         plt.ylabel("Slow voltage axis [V]")
         plt.tight_layout()
         plt.pause(0.1)
+
+    qm.close()

@@ -37,8 +37,6 @@ def lock_in_macro(
     measure(operation, element, None, demod.full("cos", I, element_output), demod.full("sin", Q, element_output))
     save(I, I_st)
     save(Q, Q_st)
-    return I, Q, I_st, Q_st
-
 
 def DC_current_sensing_macro(
     operation: str = "readout", element: str = "TIA", element_output: str = "out2", dc_signal=None, dc_signal_st=None

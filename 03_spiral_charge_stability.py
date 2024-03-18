@@ -76,7 +76,7 @@ with program() as spiral_scan:
         save(x, x_st)
         save(y, y_st)
         # for the first pixel it is unnecessary to move before measuring
-        I, Q, I_st, Q_st = lock_in_macro(I=I, Q=Q)
+        lock_in_macro(I=I, Q=Q)
         
         with while_(completed_moves < resolution * (resolution - 1)):
             # for_ loop to move the required number of moves in the x direction
@@ -97,7 +97,7 @@ with program() as spiral_scan:
                 if wait_time >= 4:  # if logic to enable wait_time = 0 without error
                     wait(wait_time, measured_element)
 
-                I, Q, I_st, Q_st = lock_in_macro(I=I, Q=Q)
+                lock_in_macro(I=I, Q=Q)
 
             # for_ loop to move the required number of moves in the y direction
             with for_(j, 0, j < moves_per_edge, j + 1):
@@ -116,7 +116,7 @@ with program() as spiral_scan:
                 if wait_time >= 4:  # if logic to enable wait_time = 0 without error
                     wait(wait_time, measured_element)
 
-                I, Q, I_st, Q_st = lock_in_macro(I=I, Q=Q)
+                lock_in_macro(I=I, Q=Q)
 
             # updating the variables
             assign(completed_moves, completed_moves + 2 * moves_per_edge)  # * 2 because moves in both x and y

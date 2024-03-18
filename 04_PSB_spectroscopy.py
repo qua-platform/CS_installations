@@ -89,7 +89,7 @@ with program() as PSB_search_prog:
 
             # Measure the dot right after the qubit manipulation
             wait((duration_dephasing) * u.ns, "QDS")
-            I, Q, I_st, Q_st = lock_in_macro(I=I, Q=Q)
+            lock_in_macro(I=I, Q=Q)
 
             # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
             # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
