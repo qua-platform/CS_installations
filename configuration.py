@@ -1,8 +1,9 @@
 import numpy as np
 from qualang_tools.units import unit
-from qm.qua._dsl import _Variable
+from qm.qua._dsl import _Variable, _Expression
 from qm.qua import declare, assign, play, fixed, Cast, amp, wait, ramp, ramp_to_zero
 from qdac2_driver import QDACII, load_voltage_list
+from copy import deepcopy
 
 #######################
 # AUXILIARY FUNCTIONS #
@@ -85,7 +86,7 @@ class OPX_virtual_gate_sequence:
 
     @staticmethod
     def _check_duration(duration: int):
-        if duration is not None and not isinstance(duration, (_Variable)):
+        if duration is not None and not isinstance(duration, (_Variable, _Expression)):
             assert duration >= 4, "The duration must be a larger than 16 ns."
 
     def _update_averaged_power(self, level, duration, ramp_duration=None, current_level=None):
@@ -119,7 +120,7 @@ class OPX_virtual_gate_sequence:
 
     @staticmethod
     def is_QUA(var):
-        return isinstance(var, (_Variable))
+        return isinstance(var, (_Variable, _Expression))
 
     def add_step(
         self,
@@ -180,7 +181,7 @@ class OPX_virtual_gate_sequence:
                         play(operation * amp((voltage_level - self.current_level[i]) * 4), gate)
 
                 # Fixed amplitude but dynamic duration --> new operation and play(duration=..)
-                elif isinstance(_duration, (_Variable)):
+                elif isinstance(_duration, (_Variable, _Expression)):
                     operation = self._add_op_to_config(
                         gate,
                         voltage_point_name,
@@ -272,7 +273,7 @@ IV_scale_factor = 0.5e-9  # in A/V
 # Reflectometry
 qds_IF = 1 * u.MHz
 lock_in_readout_length = 1 * u.us
-lock_in_readout_amp = 0 * u.mV
+lock_in_readout_amp = 10 * u.mV
 
 # Time of flight
 time_of_flight = 24

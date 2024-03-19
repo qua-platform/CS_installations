@@ -30,27 +30,26 @@ from qm.qua import *
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm import SimulationConfig
 from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool, wait_until_job_is_paused
+from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.addons.variables import assign_variables_to_element
 from macros import lock_in_macro
 import matplotlib.pyplot as plt
-from qualang_tools.loops.loops import from_array
 from qm import generate_qua_script
 
 ###################
 # The QUA program #
 ###################
 
-p5_voltages = np.arange(-0.1, 0.1, 0.01)
-p6_voltages = np.arange(-0.1, 0.1, 0.01)
+p5_voltages = np.linspace(-0.1, 0.1, 20)
+p6_voltages = np.linspace(-0.15, 0.15, 20)
 
 detuning_voltages = p5_voltages + p6_voltages
 
 buffer_len = len(p5_voltages)
 
 # Points in the charge stability map [V1, V2]
-level_dephasing = [-0.2, -0.1]
+level_dephasing = [-0.07, 0.25]
 duration_dephasing = 2000  # nanoseconds
 
 seq = OPX_virtual_gate_sequence(config, ["P5_sticky", "P6_sticky"])
@@ -111,7 +110,7 @@ with program() as PSB_search_prog:
 #####################################
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -149,3 +148,4 @@ else:
         plt.pause(0.1)
 
     qm.close()
+# %%
