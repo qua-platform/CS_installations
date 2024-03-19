@@ -3,7 +3,6 @@ from qualang_tools.units import unit
 from qm.qua._dsl import _Variable, _Expression
 from qm.qua import declare, assign, play, fixed, Cast, amp, wait, ramp, ramp_to_zero
 from qdac2_driver import QDACII, load_voltage_list
-from copy import deepcopy
 
 #######################
 # AUXILIARY FUNCTIONS #

@@ -36,6 +36,7 @@ from qualang_tools.addons.variables import assign_variables_to_element
 from macros import lock_in_macro
 import matplotlib.pyplot as plt
 from qm import generate_qua_script
+import copy
 
 ###################
 # The QUA program #
@@ -52,7 +53,9 @@ buffer_len = len(p5_voltages)
 level_dephasing = [-0.07, 0.25]
 duration_dephasing = 2000  # nanoseconds
 
-seq = OPX_virtual_gate_sequence(config, ["P5_sticky", "P6_sticky"])
+local_config = copy.deepcopy(config)
+
+seq = OPX_virtual_gate_sequence(local_config, ["P5_sticky", "P6_sticky"])
 seq.add_points("dephasing", level_dephasing, duration_dephasing)
 seq.add_points("readout", level_readout, duration_readout)
 
@@ -115,12 +118,12 @@ simulate = True
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, PSB_search_prog, simulation_config)
+    job = qmm.simulate(local_config, PSB_search_prog, simulation_config)
     job.get_simulated_samples().con1.plot()
     plt.show(block=False)
 else:
     # Open the quantum machine
-    qm = qmm.open_qm(config)
+    qm = qmm.open_qm(local_config)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(PSB_search_prog)
     # Get results from QUA program and initialize live plotting
