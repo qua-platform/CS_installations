@@ -114,15 +114,17 @@ with program() as snr_opt:
                 save(I[ind], I_st)
                 save(Q[ind], Q_st)
 
-            # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
-            # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
-            # process them which can cause the OPX to crash.
-            wait(1_000 * u.ns)  # in ns
             # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
             align()
 
             ramp_to_zero("P5_sticky")
             ramp_to_zero("P6_sticky")
+
+            align()
+
+            # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
+            # per µs to the stream processing.
+            wait(1_000 * u.ns)  # in ns
 
     # Stream processing section used to process the data before saving it
     with stream_processing():
@@ -130,9 +132,6 @@ with program() as snr_opt:
         I_st.buffer(number_of_divisions).buffer(len(amps)).save_all("Ig")
         Q_st.buffer(number_of_divisions).buffer(len(amps)).save_all("Qg")
 
-from pprint import pprint
-
-pprint(generate_qua_script(snr_opt))
 
 # %%
 #####################################
