@@ -300,11 +300,14 @@ level_dephasing = [-0.2, -0.1]
 
 dephasing_ramp = 100
 readout_ramp = 100
+init_ramp = 100
 
 # Duration of each step in ns
 duration_readout = lock_in_readout_length
 duration_compensation_pulse = 5 * u.us
 duration_dephasing = 2000  # nanoseconds
+duration_init = 10_000
+duration_init_jumps = 16
 
 # Step parameters
 step_length = 16
