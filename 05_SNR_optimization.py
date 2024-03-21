@@ -139,5 +139,7 @@ else:
         progress_counter(iteration, n_shots, start_time=results.start_time)
         
 
-plt.pcolor(amps, range(number_of_divisions), snr_utils.snr_map_double_gaussian(R, shot_axis=0))
+snr_map = snr_utils.snr_map_crude(R, shot_axis=0)
+# snr_map = snr_utils.snr_map_double_gaussian(R, shot_axis=0)
+plt.pcolor(amps, range(number_of_divisions), snr_map)
 plt.show()
