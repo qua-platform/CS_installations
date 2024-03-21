@@ -137,3 +137,16 @@ else:
         progress_counter(iteration, n_shots, start_time=results.start_time)
         
 # %%
+
+ax = 0  # dimension of the shot axis
+threshold_guess = 0.
+mask = R < threshold_guess
+
+# Calculate means for left and right
+dist_S = R[mask]
+dist_T = R[~mask]
+
+# Calculate std directly
+std = (dist_T.mean(ax) - dist_S.mean(ax)) / (dist_S.std(ax) + dist_T.std(ax))
+plt.pcolor(amps, number_of_divisions)
+plt.show()
