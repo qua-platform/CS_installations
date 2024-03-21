@@ -6,8 +6,6 @@
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from qualang_tools.loops import from_array
-
 from configuration import *
 from qualang_tools.results import progress_counter, fetching_tool, wait_until_job_is_paused
 from qualang_tools.plot import interrupt_on_close
@@ -31,6 +29,9 @@ n_shots = 100
 p5_voltages = np.linspace(-0.1, 0.1, 20)
 p6_voltages = np.linspace(-0.15, 0.15, 20)
 
+buffer_len = len(p5_voltages)
+
+
 with program() as init_search_prog:
 
     n = declare(int)  # QUA integer used as an index for the averaging loop
@@ -53,64 +54,64 @@ with program() as init_search_prog:
 
         save(n, n_st)
 
-        with for_(*from_array(x, p5_voltages.tolist())):
-            with for_(*from_array(y, p6_voltages.tolist())):
-                # MEASURE DEPHASE
+        with for_each_((x, y), (p5_voltages.tolist(), p6_voltages.tolist())):
 
-                # Play fast pulse
-                seq.add_step(voltage_point_name="dephasing", ramp_duration=dephasing_ramp)
-                seq.add_step(voltage_point_name="readout", ramp_duration=readout_ramp)
-                seq.add_compensation_pulse(duration=duration_compensation_pulse)
+            # MEASURE DEPHASE
 
-                # Measure the dot right after the qubit manipulation
-                wait((duration_dephasing + dephasing_ramp + readout_ramp) * u.ns, "QDS")
-                lock_in_macro(I=Id, Q=Qd, I_st=Id_st, Q_st=Qd_st)
+            # Play fast pulse
+            seq.add_step(voltage_point_name="dephasing", ramp_duration=dephasing_ramp)
+            seq.add_step(voltage_point_name="readout", ramp_duration=readout_ramp)
+            seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
-                align()
+            # Measure the dot right after the qubit manipulation
+            wait((duration_dephasing + dephasing_ramp + readout_ramp) * u.ns, "QDS")
+            lock_in_macro(I=Id, Q=Qd, I_st=Id_st, Q_st=Qd_st)
 
-                # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
-                ramp_to_zero("P5_sticky")
-                ramp_to_zero("P6_sticky")
+            align()
 
-                align()
+            # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
+            ramp_to_zero("P5_sticky")
+            ramp_to_zero("P6_sticky")
 
-                # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
-                # per µs to the stream processing.
-                wait(1_000 * u.ns)  # in ns
+            align()
 
-                # MEASURE INITIALIZAION
+            # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
+            # per µs to the stream processing.
+            wait(1_000 * u.ns)  # in ns
 
-                seq.add_step(duration=duration_init, level=[x,y], ramp_duration=init_ramp)  # duration in nanoseconds
-                seq.add_step(voltage_point_name="just_outsidePSB_20", ramp_duration=init_ramp)
-                # seq.add_step(voltage_point_name="just_outsidePSB_11", ramp_duration=init_ramp)
-                # seq.add_step(voltage_point_name="quick_return_11", ramp_duration=init_ramp)
-                seq.add_step(voltage_point_name="readout", ramp_duration=readout_ramp)
-                seq.add_compensation_pulse(duration=duration_compensation_pulse)
+            # MEASURE INITIALIZAION
 
-                # Measure the dot right after the qubit manipulation
-                # wait((duration_init + duration_readout + readout_ramp + init_ramp*4 + duration_init_jumps*3) * u.ns, "QDS")
-                wait((duration_init + init_ramp + duration_init_jumps + init_ramp) * u.ns, "QDS")
-                lock_in_macro(I=Ii, Q=Qi, I_st=Ii_st, Q_st=Qi_st)
+            seq.add_step(duration=duration_init, level=[x,y], ramp_duration=init_ramp)  # duration in nanoseconds
+            seq.add_step(voltage_point_name="just_outsidePSB_20", ramp_duration=init_ramp)
+            # seq.add_step(voltage_point_name="just_outsidePSB_11", ramp_duration=init_ramp)
+            # seq.add_step(voltage_point_name="quick_return_11", ramp_duration=init_ramp)
+            seq.add_step(voltage_point_name="readout", ramp_duration=readout_ramp)
+            seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
-                align()
+            # Measure the dot right after the qubit manipulation
+            # wait((duration_init + duration_readout + readout_ramp + init_ramp*4 + duration_init_jumps*3) * u.ns, "QDS")
+            wait((duration_init + init_ramp + duration_init_jumps + init_ramp) * u.ns, "QDS")
+            lock_in_macro(I=Ii, Q=Qi, I_st=Ii_st, Q_st=Qi_st)
 
-                # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
-                ramp_to_zero("P5_sticky")
-                ramp_to_zero("P6_sticky")
+            align()
 
-                align()
+            # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
+            ramp_to_zero("P5_sticky")
+            ramp_to_zero("P6_sticky")
 
-                # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
-                # per µs to the stream processing.
-                wait(1_000 * u.ns)  # in ns
+            align()
+
+            # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
+            # per µs to the stream processing.
+            wait(1_000 * u.ns)  # in ns
 
     # Stream processing section used to process the data before saving it
     with stream_processing():
         n_st.save("iteration")
-        Id_st.buffer(len(p6_voltages)).buffer(len(p5_voltages)).average().save("Id")
-        Qd_st.buffer(len(p6_voltages)).buffer(len(p5_voltages)).average().save("Qd")
-        Ii_st.buffer(len(p6_voltages)).buffer(len(p5_voltages)).average().save("Ii")
-        Qi_st.buffer(len(p6_voltages)).buffer(len(p5_voltages)).average().save("Qi")
+        Id_st.buffer(buffer_len).save_all("Id")
+        Qd_st.buffer(buffer_len).save_all("Qd")
+        Ii_st.buffer(buffer_len).save_all("Ii")
+        Qi_st.buffer(buffer_len).save_all("Qi")
 
 print(generate_qua_script(init_search_prog))
 
@@ -140,11 +141,12 @@ else:
     while results.is_processing():
         # Fetch the data from the last OPX run corresponding to the current slow axis iteration
         Id, Qd, Ii, Qi, iteration = results.fetch_all()
+        length_to_use = np.minimum(len(Id), len(Qd), len(Ii), len(Qi))
         # Convert results into Volts
-        Sd = u.demod2volts(Id + 1j * Qd, lock_in_readout_length)
+        Sd = u.demod2volts(Id[:length_to_use] + 1j * Qd[:length_to_use], lock_in_readout_length)
         Rd = np.abs(Sd)  # Amplitude
         phase_d = np.angle(Sd)  # Phase
-        Si = u.demod2volts(Ii + 1j * Qi, lock_in_readout_length)
+        Si = u.demod2volts(Ii[:length_to_use] + 1j * Qi[:length_to_use], lock_in_readout_length)
         Ri = np.abs(Si)  # Amplitude
         phase_i = np.angle(Si)  # Phase
         # Progress bar
