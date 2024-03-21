@@ -6,6 +6,8 @@
 from qm.qua import *
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm import SimulationConfig
+
+import snr_utils
 from configuration import *
 from qualang_tools.results import progress_counter, fetching_tool, wait_until_job_is_paused
 from qualang_tools.plot import interrupt_on_close
@@ -136,17 +138,6 @@ else:
         # Progress bar
         progress_counter(iteration, n_shots, start_time=results.start_time)
         
-# %%
 
-ax = 0  # dimension of the shot axis
-threshold_guess = 0.
-mask = R < threshold_guess
-
-# Calculate means for left and right
-dist_S = R[mask]
-dist_T = R[~mask]
-
-# Calculate std directly
-std = (dist_T.mean(ax) - dist_S.mean(ax)) / (dist_S.std(ax) + dist_T.std(ax))
-plt.pcolor(amps, number_of_divisions)
+plt.pcolor(amps, range(number_of_divisions), snr_utils.snr_map_double_gaussian(R, shot_axis=0))
 plt.show()
