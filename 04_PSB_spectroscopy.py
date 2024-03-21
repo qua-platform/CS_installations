@@ -60,13 +60,11 @@ n_shots = 100
 
 with program() as PSB_search_prog:
     n = declare(int)  # QUA integer used as an index for the averaging loop
-    counter = declare(int)  # QUA integer used as an index for the Coulomb pulse
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
     I = declare(fixed)
     Q = declare(fixed)
     I_st = declare_stream()
     Q_st = declare_stream()
-    dc_signal = declare(fixed)
     x = declare(fixed)
     y = declare(fixed)
 
@@ -80,12 +78,12 @@ with program() as PSB_search_prog:
         with for_each_((x, y), (p5_voltages.tolist(), p6_voltages.tolist())):
 
             # Play fast pulse
-            seq.add_step(voltage_point_name="dephasing", ramp_duration=100)
-            seq.add_step(duration=1000, level=[x,y], ramp_duration=100)  # duration in nanoseconds
+            seq.add_step(voltage_point_name="dephasing", ramp_duration=dephasing_ramp)
+            seq.add_step(duration=lock_in_readout_length, level=[x,y], ramp_duration=readout_ramp)  # duration in nanoseconds
             seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
             # Measure the dot right after the qubit manipulation
-            wait((duration_dephasing + 100 + 100) * u.ns, "QDS")
+            wait((duration_dephasing + dephasing_ramp + readout_ramp) * u.ns, "QDS")
             lock_in_macro(I=I, Q=Q, I_st=I_st, Q_st=Q_st)
 
             align()
