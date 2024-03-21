@@ -14,25 +14,7 @@ from macros import lock_in_macro
 import matplotlib.pyplot as plt
 from qualang_tools.loops.loops import from_array
 from qm import generate_qua_script
-
-####################
-# Helper functions #
-####################
-def update_readout_length(new_readout_length):
-
-    config["pulses"]["lock_in_readout_pulse"]["length"] = new_readout_length
-    config["integration_weights"]["cosine_weights"] = {
-        "cosine": [(1.0, new_readout_length)],
-        "sine": [(0.0, new_readout_length)],
-    }
-    config["integration_weights"]["sine_weights"] = {
-        "cosine": [(0.0, new_readout_length)],
-        "sine": [(1.0, new_readout_length)],
-    }
-    config["integration_weights"]["minus_sine_weights"] = {
-        "cosine": [(0.0, new_readout_length)],
-        "sine": [(-1.0, new_readout_length)],
-    }
+import copy
 
 ###################
 # The QUA program #
@@ -48,13 +30,6 @@ print("The readout has been sliced in the following number of divisions", number
 
 # Time axis for the plots at the end
 x_plot = np.arange(division_length * 4, readout_len + 1, division_length * 4)
-
-p5_voltages = np.arange(-0.1, 0.1, 0.01)
-p6_voltages = np.arange(-0.1, 0.1, 0.01)
-
-detuning_voltages = p5_voltages + p6_voltages
-
-buffer_len = len(p5_voltages)
 
 # Points in the charge stability map [V1, V2]
 level_dephasing = [-0.2, -0.1]
@@ -129,8 +104,8 @@ with program() as snr_opt:
     # Stream processing section used to process the data before saving it
     with stream_processing():
         n_st.save("iteration")
-        I_st.buffer(number_of_divisions).buffer(len(amps)).save_all("Ig")
-        Q_st.buffer(number_of_divisions).buffer(len(amps)).save_all("Qg")
+        I_st.buffer(number_of_divisions).buffer(len(amps)).save_all("I")
+        Q_st.buffer(number_of_divisions).buffer(len(amps)).save_all("Q")
 
 
 # %%
@@ -160,8 +135,9 @@ else:
     while results.is_processing():
         # Fetch the data from the last OPX run corresponding to the current slow axis iteration
         I, Q, iteration = results.fetch_all()
+        length_to_use = np.minimum(len(I), len(Q))
         # Convert results into Volts
-        S = u.demod2volts(I + 1j * Q, lock_in_readout_length)
+        S = u.demod2volts(I[:, length_to_use] + 1j * Q[:, length_to_use], lock_in_readout_length)
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
         # Progress bar

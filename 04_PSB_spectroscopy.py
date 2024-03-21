@@ -45,8 +45,6 @@ import copy
 p5_voltages = np.linspace(-0.1, 0.1, 20)
 p6_voltages = np.linspace(-0.15, 0.15, 20)
 
-detuning_voltages = p5_voltages + p6_voltages
-
 buffer_len = len(p5_voltages)
 
 # Points in the charge stability map [V1, V2]
@@ -57,7 +55,6 @@ local_config = copy.deepcopy(config)
 
 seq = OPX_virtual_gate_sequence(local_config, ["P5_sticky", "P6_sticky"])
 seq.add_points("dephasing", level_dephasing, duration_dephasing)
-seq.add_points("readout", level_readout, duration_readout)
 
 n_shots = 100
 
@@ -83,12 +80,12 @@ with program() as PSB_search_prog:
         with for_each_((x, y), (p5_voltages.tolist(), p6_voltages.tolist())):
 
             # Play fast pulse
-            seq.add_step(voltage_point_name="dephasing")
-            seq.add_step(duration=1000, level=[x,y])  # duration in nanoseconds
+            seq.add_step(voltage_point_name="dephasing", ramp_duration=100)
+            seq.add_step(duration=1000, level=[x,y], ramp_duration=100)  # duration in nanoseconds
             seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
             # Measure the dot right after the qubit manipulation
-            wait((duration_dephasing) * u.ns, "QDS")
+            wait((duration_dephasing + 100 + 100) * u.ns, "QDS")
             lock_in_macro(I=I, Q=Q, I_st=I_st, Q_st=Q_st)
 
             align()
@@ -137,17 +134,17 @@ else:
     while results.is_processing():
         # Fetch the data from the last OPX run corresponding to the current slow axis iteration
         I, Q, iteration = results.fetch_all()
+        length_to_use = np.minimum(len(I), len(Q))
         # Convert results into Volts
-        S = u.demod2volts(I + 1j * Q, lock_in_readout_length)
+        S = u.demod2volts(I[:length_to_use] + 1j * Q[:length_to_use], lock_in_readout_length)
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
         # Progress bar
         progress_counter(iteration, n_shots, start_time=results.start_time)
         R_flattened = R.flatten()
-        max_len = len(R)
-        detuning_voltages_expanded = np.repeat(buffer_len, max_len)
+        voltages_expanded = np.tile(p5_voltages, length_to_use)
         plt.clf()
-        plt.hist2d(detuning_voltages_expanded, R_flattened)
+        plt.hist2d(voltages_expanded, R_flattened)
         plt.colorbar()
         plt.tight_layout()
         plt.pause(0.1)

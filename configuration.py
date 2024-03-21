@@ -4,6 +4,25 @@ from qm.qua._dsl import _Variable, _Expression
 from qm.qua import declare, assign, play, fixed, Cast, amp, wait, ramp, ramp_to_zero
 from qdac2_driver import QDACII, load_voltage_list
 
+####################
+# Helper functions #
+####################
+def update_readout_length(new_readout_length):
+
+    config["pulses"]["lock_in_readout_pulse"]["length"] = new_readout_length
+    config["integration_weights"]["cosine_weights"] = {
+        "cosine": [(1.0, new_readout_length)],
+        "sine": [(0.0, new_readout_length)],
+    }
+    config["integration_weights"]["sine_weights"] = {
+        "cosine": [(0.0, new_readout_length)],
+        "sine": [(1.0, new_readout_length)],
+    }
+    config["integration_weights"]["minus_sine_weights"] = {
+        "cosine": [(0.0, new_readout_length)],
+        "sine": [(-1.0, new_readout_length)],
+    }
+    
 #######################
 # AUXILIARY FUNCTIONS #
 #######################
@@ -264,12 +283,6 @@ class OPX_virtual_gate_sequence:
 ######################
 #       READOUT      #
 ######################
-# DC readout parameters
-readout_len = 1 * u.us
-readout_amp = 0.0
-IV_scale_factor = 0.5e-9  # in A/V
-
-# Reflectometry
 qds_IF = 1 * u.MHz
 lock_in_readout_length = 1 * u.us
 lock_in_readout_amp = 10 * u.mV
@@ -282,16 +295,11 @@ time_of_flight = 24
 ######################
 
 ## Section defining the points from the charge stability map - can be done in the config
-# Relevant points in the charge stability map as ["P1", "P2"] in V
-level_init = [0.1, -0.1]
-level_manip = [0.2, -0.2]
 level_readout = [0.12, -0.12]
 
 # Duration of each step in ns
-duration_init = 2500
-duration_manip = 1000
-duration_readout = readout_len + 100
-duration_compensation_pulse = 4 * u.us
+duration_readout = lock_in_readout_length
+duration_compensation_pulse = 5 * u.us
 
 # Step parameters
 step_length = 16
@@ -304,7 +312,7 @@ T6_step_amp = 0.25
 charge_sensor_amp = 0.25
 
 # Time to ramp down to zero for sticky elements in ns
-hold_offset_duration = 4
+ramp_down_duration = 4
 bias_tee_cut_off_frequency = 400 * u.Hz
 
 ######################
@@ -359,7 +367,7 @@ config = {
             "singleInput": {
                 "port": ("con1", 5),
             },
-            "sticky": {"analog": True, "duration": hold_offset_duration},
+            "sticky": {"analog": True, "duration": ramp_down_duration},
             "operations": {
                 "step": "P4_step_pulse",
             },
@@ -376,7 +384,7 @@ config = {
             "singleInput": {
                 "port": ("con1", 7),
             },
-            "sticky": {"analog": True, "duration": hold_offset_duration},
+            "sticky": {"analog": True, "duration": ramp_down_duration},
             "operations": {
                 "step": "P5_step_pulse",
             },
@@ -393,7 +401,7 @@ config = {
             "singleInput": {
                 "port": ("con1", 9),
             },
-            "sticky": {"analog": True, "duration": hold_offset_duration},
+            "sticky": {"analog": True, "duration": ramp_down_duration},
             "operations": {
                 "step": "P6_step_pulse",
             },
@@ -410,7 +418,7 @@ config = {
             "singleInput": {
                 "port": ("con1", 6),
             },
-            "sticky": {"analog": True, "duration": hold_offset_duration},
+            "sticky": {"analog": True, "duration": ramp_down_duration},
             "operations": {
                 "step": "X4_step_pulse",
             },
@@ -427,7 +435,7 @@ config = {
             "singleInput": {
                 "port": ("con1", 8),
             },
-            "sticky": {"analog": True, "duration": hold_offset_duration},
+            "sticky": {"analog": True, "duration": ramp_down_duration},
             "operations": {
                 "step": "X5_step_pulse",
             },
@@ -444,7 +452,7 @@ config = {
             "singleInput": {
                 "port": ("con1", 10),
             },
-            "sticky": {"analog": True, "duration": hold_offset_duration},
+            "sticky": {"analog": True, "duration": ramp_down_duration},
             "operations": {
                 "step": "T6_step_pulse",
             },
@@ -461,7 +469,7 @@ config = {
             "singleInput": {
                 "port": ("con1", 3),
             },
-            "sticky": {"analog": True, "duration": hold_offset_duration},
+            "sticky": {"analog": True, "duration": ramp_down_duration},
             "operations": {
                 "step": "bias_charge_pulse",
             },
@@ -581,7 +589,6 @@ config = {
         "X5_step_wf": {"type": "constant", "sample": X5_step_amp},
         "T6_step_wf": {"type": "constant", "sample": T6_step_amp},
         "charge_sensor_step_wf": {"type": "constant", "sample": charge_sensor_amp},
-        "readout_pulse_wf": {"type": "constant", "sample": readout_amp},
         "lock_in_wf": {"type": "constant", "sample": lock_in_readout_amp},
         "zero_wf": {"type": "constant", "sample": 0.0},
     },
