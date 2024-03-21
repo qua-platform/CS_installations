@@ -20,31 +20,28 @@ import copy
 # The QUA program #
 ###################
 
-readout_len = 5 * u.us  # Readout pulse duration
-update_readout_length(readout_len)
+lock_in_readout_length = 5 * u.us  # Readout pulse duration
+update_readout_length(lock_in_readout_length, config)
 # Set the accumulated demod parameters
 division_length = 250  # Size of each demodulation slice in clock cycles
-number_of_divisions = int((readout_len) / (4 * division_length))
+number_of_divisions = int((lock_in_readout_length) / (4 * division_length))
 print("Integration weights chunk-size length in clock cycles:", division_length)
 print("The readout has been sliced in the following number of divisions", number_of_divisions)
 
 # Time axis for the plots at the end
-x_plot = np.arange(division_length * 4, readout_len + 1, division_length * 4)
+x_plot = np.arange(division_length * 4, lock_in_readout_length + 1, division_length * 4)
 
-# Points in the charge stability map [V1, V2]
-level_dephasing = [-0.2, -0.1]
-duration_dephasing = 2000  # nanoseconds
+local_config = copy.deepcopy(config)
 
-seq = OPX_virtual_gate_sequence(config, ["P5_sticky", "P6_sticky"])
+seq = OPX_virtual_gate_sequence(local_config, ["P5_sticky", "P6_sticky"])
 seq.add_points("dephasing", level_dephasing, duration_dephasing)
-seq.add_points("readout", level_readout, duration_readout)
+seq.add_points("readout", level_readout, lock_in_readout_length)
 
 n_shots = 100
-amps = np.arange(0, 1, 0.1)
+amps = np.arange(0.5, 1.5, 0.3)
 
 with program() as snr_opt:
     n = declare(int)  # QUA integer used as an index for the averaging loop
-    counter = declare(int)  # QUA integer used as an index for the Coulomb pulse
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
 
     I = declare(fixed, size=number_of_divisions)
@@ -52,15 +49,11 @@ with program() as snr_opt:
     I_st = declare_stream()
     Q_st = declare_stream()
 
-    dc_signal = declare(fixed)
-    x = declare(fixed)
-    y = declare(fixed)
-    dur_len = declare(int, value=1000)
-    ind = declare(int)
     a = declare(fixed)
+    ind = declare(int)
 
     # Ensure that the result variables are assign to the pulse processor used for readout
-    assign_variables_to_element("QDS", I, Q)
+    assign_variables_to_element("QDS", I[0], Q[0])
 
     with for_(n, 0, n < n_shots, n + 1):
 
@@ -69,12 +62,12 @@ with program() as snr_opt:
         with for_(*from_array(a, amps)):
 
             # Play fast pulse
-            seq.add_step(voltage_point_name="dephasing")
-            seq.add_step(voltage_point_name="readout")  # duration in nanoseconds
+            seq.add_step(voltage_point_name="dephasing", ramp_duration=dephasing_ramp)
+            seq.add_step(voltage_point_name="readout", ramp_duration=readout_ramp)  # duration in nanoseconds
             seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
             # Measure the dot right after the qubit manipulation
-            wait((duration_dephasing) * u.ns, "QDS")
+            wait((duration_dephasing + dephasing_ramp + readout_ramp) * u.ns, "QDS")
 
             measure(
                 "readout"*amp(a),
@@ -114,17 +107,17 @@ with program() as snr_opt:
 #####################################
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, snr_opt, simulation_config)
+    job = qmm.simulate(local_config, snr_opt, simulation_config)
     job.get_simulated_samples().con1.plot()
     plt.show(block=False)
 else:
     # Open the quantum machine
-    qm = qmm.open_qm(config)
+    qm = qmm.open_qm(local_config)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(snr_opt)
     # Get results from QUA program and initialize live plotting
@@ -142,3 +135,5 @@ else:
         phase = np.angle(S)  # Phase
         # Progress bar
         progress_counter(iteration, n_shots, start_time=results.start_time)
+        
+# %%

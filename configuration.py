@@ -7,7 +7,7 @@ from qdac2_driver import QDACII, load_voltage_list
 ####################
 # Helper functions #
 ####################
-def update_readout_length(new_readout_length):
+def update_readout_length(new_readout_length, config):
 
     config["pulses"]["lock_in_readout_pulse"]["length"] = new_readout_length
     config["integration_weights"]["cosine_weights"] = {
@@ -296,10 +296,15 @@ time_of_flight = 24
 
 ## Section defining the points from the charge stability map - can be done in the config
 level_readout = [0.12, -0.12]
+level_dephasing = [-0.2, -0.1]
+
+dephasing_ramp = 100
+readout_ramp = 100
 
 # Duration of each step in ns
 duration_readout = lock_in_readout_length
 duration_compensation_pulse = 5 * u.us
+duration_dephasing = 2000  # nanoseconds
 
 # Step parameters
 step_length = 16
