@@ -185,38 +185,6 @@ if simulation is True:
     output_samples.con1.plot()
     plt.show()
 
-    # fetching the data
-    result_handles = job.result_handles
-    I_handle, Q_handle, x_handle, y_handle = (
-        result_handles.I,
-        result_handles.Q,
-        result_handles.x,
-        result_handles.y,
-    )
-    I, Q, x, y = (
-        I_handle.fetch_all(),
-        Q_handle.fetch_all(),
-        x_handle.fetch_all(),
-        y_handle.fetch_all(),
-    )
-
-    # reshaping the data into the correct order and shape
-    order = spiral_order(np.sqrt(I.size))
-    I = I[order]
-    Q = Q[order]
-
-    # quantifying the robustness of the method against the high-pass filtering effect of the bias-tee
-    def butter_highpass_filter(data, tau):
-        res = signal.butter(1, 1 / tau, btype="high", analog=False)
-        return signal.lfilter(res[0], res[1], data)
-
-    V = output_samples.con1.analog["1"]
-    V_filter = butter_highpass_filter(V, tau=2000000)
-    plt.figure()
-    plt.plot(V)
-    plt.plot(V_filter)
-    print(f"Averaged error per step: {np.average(np.abs(V-V_filter)[:130000])*1000:.2f} mV")
-
 else:
     # Open a quantum machine
     qm = qmm.open_qm(config)
@@ -237,6 +205,9 @@ else:
         order = spiral_order(np.sqrt(I.size))
         I = I[order]
         Q = Q[order]
+        S = u.demod2volts(I + 1j * Q, lock_in_readout_length)
+        R = np.abs(S)  # Amplitude
+        phase = np.unwrap(np.angle(S))  # Phase        
         # Plot results
         plt.cla()
         plt.pcolor(x_axis, y_axis, np.sqrt(I**2 + Q**2))

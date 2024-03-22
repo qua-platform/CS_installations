@@ -286,6 +286,7 @@ class OPX_virtual_gate_sequence:
 qds_IF = 1 * u.MHz
 lock_in_readout_length = 1 * u.us
 lock_in_readout_amp = 10 * u.mV
+rotation_angle = (0.0 / 180) * np.pi
 
 # Time of flight
 time_of_flight = 24
@@ -520,6 +521,20 @@ config = {
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
+        "QDS_twin": {
+            "singleInput": {
+                "port": ("con1", 2),
+            },
+            "intermediate_frequency": qds_IF,
+            "operations": {
+                "readout": "lock_in_readout_pulse",
+            },
+            "outputs": {
+                "out2": ("con1", 2),
+            },
+            "time_of_flight": time_of_flight,
+            "smearing": 0,
+        },
     },
     "pulses": {
         "P4_step_pulse": {
@@ -585,6 +600,8 @@ config = {
             "integration_weights": {
                 "cos": "cosine_weights",
                 "sin": "sine_weights",
+                "rotated_cos": "rotated_cosine_weights",
+                "rotated_sin": "rotated_sine_weights",
             },
             "digital_marker": "ON",
         },
@@ -615,6 +632,14 @@ config = {
         "sine_weights": {
             "cosine": [(0.0, lock_in_readout_length)],
             "sine": [(1.0, lock_in_readout_length)],
+        },
+        "rotated_cosine_weights": {
+            "cosine": [(np.cos(rotation_angle), lock_in_readout_length)],
+            "sine": [(np.sin(rotation_angle), lock_in_readout_length)],
+        },
+        "rotated_sine_weights": {
+            "cosine": [(-np.sin(rotation_angle), lock_in_readout_length)],
+            "sine": [(np.cos(rotation_angle), lock_in_readout_length)],
         },
     },
 }

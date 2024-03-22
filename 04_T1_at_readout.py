@@ -123,7 +123,7 @@ else:
         # Fetch the data from the last OPX run corresponding to the current slow axis iteration
         I, Q, I_shots, Q_shots, iteration = results.fetch_all()
         # Convert results into Volts
-        S = u.demod2volts(I + 1j * Q, lock_in_readout_length)
+        S = u.demod2volts(I + 1j * Q, division_length * 4)
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
         # Progress bar
@@ -134,7 +134,7 @@ else:
         plt.ylabel('Magnitude [V]')
 
     qm.close()
-    S_shots = u.demod2volts(I_shots + 1j * Q_shots, lock_in_readout_length)
+    S_shots = u.demod2volts(I_shots + 1j * Q_shots, division_length * 4)
     R_shots = np.abs(S_shots)  # Amplitude
     phase = np.angle(S_shots)  # Phase
     plt.figure()
