@@ -8,15 +8,17 @@ def snr_map_double_gaussian(map: np.ndarray, shot_axis: int):
     calculates the SNR of the array `map` by fitting a double-gaussian
     distribution to the histogram along the `shot_axis`.
     """
+    map = np.moveaxis(map, shot_axis, 0)
+
     singlet_mean, singlet_std, triplet_mean, triplet_std = guess_individual_means_stds(map, shot_axis)
 
     shape = [n for i, n in enumerate(map.shape) if i != shot_axis]
     fitted_snr = np.zeros(shape)
 
-    for i in range(map.shape[0]):
-        for j in range(map.shape[1]):
-            n_bins = int(np.sqrt(len(map[i,j])))
-            hist, bins = np.histogram(map[i,j], bins=n_bins)
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            n_bins = round(np.sqrt(map.shape[shot_axis]))
+            hist, bins = np.histogram(map[:,i,j], bins=n_bins)
             bins = np.mean(np.vstack([bins[:-1], bins[1:]]), axis=0)
 
             amp_guess = hist.max()
@@ -39,6 +41,7 @@ def snr_map_crude(map: np.ndarray, shot_axis: int):
     down the middle, approximating the mean/std of the individual gaussian peaks
     using the mean/std of the remaining, split distributions.
     """
+    map = np.moveaxis(map, shot_axis, 0)
     return snr(*guess_individual_means_stds(map, shot_axis))
 
 
@@ -50,13 +53,12 @@ def snr(singlet_mean: float, singlet_std: float, triplet_mean: float, triplet_st
     return (triplet_mean - singlet_mean) / (triplet_std + singlet_std)
 
 
-def split_singlet_triplet_distributions(map: np.ndarray):
+def split_singlet_triplet_distributions(map: np.ndarray, shot_axis: int):
     """
     Returns two distributions from an original array `map` by masking
     values lower/higher than the mean.
     """
-    # estimate the center of the double-gaussian
-    mask = map < map.mean()
+    mask = map < map.mean(axis=shot_axis)
 
     # crudely split the distributions by thresholding the combined distrubtion
     singlet_dist = map.copy()
@@ -74,7 +76,7 @@ def guess_individual_means_stds(map: np.ndarray, shot_axis: int) \
     splits `map` along it's mean value to approximate the singlet/triplet
     distributions, returning the mean/std maps of each.
     """
-    singlet_dist, triplet_dist = split_singlet_triplet_distributions(map)
+    singlet_dist, triplet_dist = split_singlet_triplet_distributions(map, shot_axis)
 
     # approximate intra distribution mean/std as mean/std of split distributions
     singlet_mean = np.nanmean(singlet_dist, axis=shot_axis)
