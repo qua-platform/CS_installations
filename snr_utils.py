@@ -3,35 +3,43 @@ from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 
 
+SHOT_AXIS = 0
+
 def snr_map_double_gaussian(map: np.ndarray, shot_axis: int):
     """
     calculates the SNR of the array `map` by fitting a double-gaussian
     distribution to the histogram along the `shot_axis`.
     """
-    map = np.moveaxis(map, shot_axis, 0)
+    map = np.moveaxis(map, shot_axis, SHOT_AXIS)
 
-    singlet_mean, singlet_std, triplet_mean, triplet_std = guess_individual_means_stds(map, shot_axis)
+    singlet_mean, singlet_std, triplet_mean, triplet_std = guess_individual_means_stds(map)
 
-    shape = [n for i, n in enumerate(map.shape) if i != shot_axis]
+    shape = [n for i, n in enumerate(map.shape) if i != SHOT_AXIS]
     fitted_snr = np.zeros(shape)
 
     for i in range(shape[0]):
         for j in range(shape[1]):
-            n_bins = round(np.sqrt(map.shape[shot_axis]))
+            n_bins = round(np.sqrt(map.shape[SHOT_AXIS]))
             hist, bins = np.histogram(map[:,i,j], bins=n_bins)
-            bins = np.mean(np.vstack([bins[:-1], bins[1:]]), axis=0)
+            bins = np.mean(np.vstack([bins[:-1], bins[1:]]), axis=SHOT_AXIS)
 
             amp_guess = hist.max()
 
             initial_guess = [amp_guess, singlet_mean[i,j], singlet_std[i,j],
                              amp_guess, triplet_mean[i,j], triplet_std[i,j]]
 
+            # plt.plot(bins, hist)
+            # plt.plot(bins, double_gaussian(bins, *initial_guess))
+
             try:
                 popt, pcov = curve_fit(double_gaussian, bins, hist, p0=initial_guess,maxfev=10_000)
                 (_, mean_s_fit, std_s_fit, _, mean_t_fit, std_t_fit) = popt
                 fitted_snr[i][j] = snr(mean_s_fit, std_s_fit, mean_t_fit, std_t_fit)
+                # plt.plot(bins, double_gaussian(bins, *popt))
             except:
                 fitted_snr[i][j] = np.nan
+
+            # plt.show()
 
     return fitted_snr
 
@@ -42,7 +50,7 @@ def snr_map_crude(map: np.ndarray, shot_axis: int):
     using the mean/std of the remaining, split distributions.
     """
     map = np.moveaxis(map, shot_axis, 0)
-    return snr(*guess_individual_means_stds(map, shot_axis))
+    return snr(*guess_individual_means_stds(map))
 
 
 def snr(singlet_mean: float, singlet_std: float, triplet_mean: float, triplet_std: float):
@@ -53,12 +61,12 @@ def snr(singlet_mean: float, singlet_std: float, triplet_mean: float, triplet_st
     return (triplet_mean - singlet_mean) / (triplet_std + singlet_std)
 
 
-def split_singlet_triplet_distributions(map: np.ndarray, shot_axis: int):
+def split_singlet_triplet_distributions(map: np.ndarray):
     """
     Returns two distributions from an original array `map` by masking
     values lower/higher than the mean.
     """
-    mask = map < map.mean(axis=shot_axis)
+    mask = map < map.mean(axis=SHOT_AXIS)
 
     # crudely split the distributions by thresholding the combined distrubtion
     singlet_dist = map.copy()
@@ -70,20 +78,20 @@ def split_singlet_triplet_distributions(map: np.ndarray, shot_axis: int):
     return singlet_dist, triplet_dist
 
 
-def guess_individual_means_stds(map: np.ndarray, shot_axis: int) \
+def guess_individual_means_stds(map: np.ndarray) \
         -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     splits `map` along it's mean value to approximate the singlet/triplet
     distributions, returning the mean/std maps of each.
     """
-    singlet_dist, triplet_dist = split_singlet_triplet_distributions(map, shot_axis)
+    singlet_dist, triplet_dist = split_singlet_triplet_distributions(map)
 
     # approximate intra distribution mean/std as mean/std of split distributions
-    singlet_mean = np.nanmean(singlet_dist, axis=shot_axis)
-    triplet_mean = np.nanmean(triplet_dist, axis=shot_axis)
+    singlet_mean = np.nanmean(singlet_dist, axis=SHOT_AXIS)
+    triplet_mean = np.nanmean(triplet_dist, axis=SHOT_AXIS)
 
-    singlet_std = np.nanstd(singlet_dist, axis=shot_axis)
-    triplet_std = np.nanstd(triplet_dist, axis=shot_axis)
+    singlet_std = np.nanstd(singlet_dist, axis=SHOT_AXIS)
+    triplet_std = np.nanstd(triplet_dist, axis=SHOT_AXIS)
 
     return singlet_mean, singlet_std, triplet_mean, triplet_std
 
