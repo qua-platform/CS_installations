@@ -78,8 +78,7 @@ def split_singlet_triplet_distributions(map: np.ndarray):
     return singlet_dist, triplet_dist
 
 
-def guess_individual_means_stds(map: np.ndarray) \
-        -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def guess_individual_means_stds(map: np.ndarray):
     """
     splits `map` along it's mean value to approximate the singlet/triplet
     distributions, returning the mean/std maps of each.
