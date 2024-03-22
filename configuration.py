@@ -520,6 +520,20 @@ config = {
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
+        "QDS_twin": {
+            "singleInput": {
+                "port": ("con1", 2),
+            },
+            "intermediate_frequency": qds_IF,
+            "operations": {
+                "readout": "lock_in_readout_pulse",
+            },
+            "outputs": {
+                "out2": ("con1", 2),
+            },
+            "time_of_flight": time_of_flight,
+            "smearing": 0,
+        },
     },
     "pulses": {
         "P4_step_pulse": {
