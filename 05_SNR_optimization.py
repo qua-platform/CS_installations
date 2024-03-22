@@ -23,7 +23,9 @@ import copy
 ###################
 
 lock_in_readout_length = 5 * u.us  # Readout pulse duration
-update_readout_length(lock_in_readout_length, config)
+local_config = copy.deepcopy(config)
+
+update_readout_length(lock_in_readout_length, local_config)
 # Set the accumulated demod parameters
 division_length = 250  # Size of each demodulation slice in clock cycles
 number_of_divisions = int((lock_in_readout_length) / (4 * division_length))
@@ -32,8 +34,6 @@ print("The readout has been sliced in the following number of divisions", number
 
 # Time axis for the plots at the end
 x_plot = np.arange(division_length * 4, lock_in_readout_length + 1, division_length * 4)
-
-local_config = copy.deepcopy(config)
 
 seq = OPX_virtual_gate_sequence(local_config, ["P5_sticky", "P6_sticky"])
 seq.add_points("dephasing", level_dephasing, duration_dephasing)
@@ -130,15 +130,19 @@ else:
     while results.is_processing():
         # Fetch the data from the last OPX run corresponding to the current slow axis iteration
         I, Q, iteration = results.fetch_all()
-        length_to_use = np.minimum(len(I), len(Q))
-        # Convert results into Volts
-        S = u.demod2volts(I[:, length_to_use] + 1j * Q[:, length_to_use], lock_in_readout_length)
-        R = np.abs(S)  # Amplitude
-        phase = np.angle(S)  # Phase
         # Progress bar
         progress_counter(iteration, n_shots, start_time=results.start_time)
-        
 
+    # Convert results into Volts
+    S = I + 1j*Q
+
+    # Re-scale segments by the corresponding accumulated length
+    for i in range(len(x_plot)):
+        S[:, :, i] = u.demod2volts(I[:, :, i] + 1j * Q[:, :, i], x_plot[i])
+
+    R = np.abs(S)  # Amplitude
+    phase = np.angle(S)  # Phase
+        
 snr_map = snr_utils.snr_map_crude(R, shot_axis=0)
 # snr_map = snr_utils.snr_map_double_gaussian(R, shot_axis=0)
 plt.pcolor(amps, range(number_of_divisions), snr_map)
