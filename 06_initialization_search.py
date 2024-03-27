@@ -22,9 +22,9 @@ local_config = copy.deepcopy(config)
 seq = OPX_virtual_gate_sequence(local_config, ["P5_sticky", "P6_sticky"])
 seq.add_points("dephasing", level_dephasing, duration_dephasing)
 seq.add_points("readout", level_readout, duration_readout)
-seq.add_points("just_outsidePSB_20", [0.1, 0.1], duration_init_jumps)
-# seq.add_points("just_outsidePSB_11", [0.1, 0.1], duration_init_jumps)
-# seq.add_points("quick_return_11", [0.1, 0.1], duration_init_jumps)
+seq.add_points("just_outsidePSB_20", [-0.001, 0.001], duration_init_jumps)
+seq.add_points("just_outsidePSB_11", [0.001, -0.001], duration_init_jumps)
+seq.add_points("quick_return_11", level_dephasing, duration_init_jumps)
 
 n_shots = 100
 
@@ -58,12 +58,16 @@ with program() as init_search_prog:
                 # MEASURE DEPHASE
 
                 # Play fast pulse
-                seq.add_step(voltage_point_name="dephasing", ramp_duration=dephasing_ramp)
+                seq.add_step(duration=duration_init, level=[x,y], ramp_duration=init_ramp)  # duration in nanoseconds
+                seq.add_step(voltage_point_name="just_outsidePSB_20", ramp_duration=init_ramp)
+                seq.add_step(voltage_point_name="just_outsidePSB_11", ramp_duration=init_ramp)
+                seq.add_step(voltage_point_name="dephasing", ramp_duration=init_ramp)
                 seq.add_step(voltage_point_name="readout", ramp_duration=readout_ramp)
                 seq.add_compensation_pulse(duration=duration_compensation_pulse)
+                seq.ramp_to_zero()
 
                 # Measure the dot right after the qubit manipulation
-                wait((duration_dephasing + dephasing_ramp + readout_ramp) * u.ns, "QDS")
+                wait((duration_init + duration_dephasing + readout_ramp + init_ramp*4 + duration_init_jumps*2) * u.ns, "QDS")
                 lock_in_macro(I=Id, Q=Qd, I_st=Id_st, Q_st=Qd_st)
 
                 align()
@@ -82,14 +86,13 @@ with program() as init_search_prog:
 
                 seq.add_step(duration=duration_init, level=[x,y], ramp_duration=init_ramp)  # duration in nanoseconds
                 seq.add_step(voltage_point_name="just_outsidePSB_20", ramp_duration=init_ramp)
-                # seq.add_step(voltage_point_name="just_outsidePSB_11", ramp_duration=init_ramp)
-                # seq.add_step(voltage_point_name="quick_return_11", ramp_duration=init_ramp)
+                seq.add_step(voltage_point_name="just_outsidePSB_11", ramp_duration=init_ramp)
+                seq.add_step(voltage_point_name="quick_return_11", ramp_duration=init_ramp)
                 seq.add_step(voltage_point_name="readout", ramp_duration=readout_ramp)
                 seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
                 # Measure the dot right after the qubit manipulation
-                # wait((duration_init + duration_readout + readout_ramp + init_ramp*4 + duration_init_jumps*3) * u.ns, "QDS")
-                wait((duration_init + init_ramp + duration_init_jumps + init_ramp) * u.ns, "QDS")
+                wait((duration_init + readout_ramp + init_ramp*4 + duration_init_jumps*3) * u.ns, "QDS")
                 lock_in_macro(I=Ii, Q=Qi, I_st=Ii_st, Q_st=Qi_st)
 
                 align()
@@ -112,17 +115,14 @@ with program() as init_search_prog:
         Ii_st.buffer(len(p6_voltages)).buffer(len(p5_voltages)).average().save("Ii")
         Qi_st.buffer(len(p6_voltages)).buffer(len(p5_voltages)).average().save("Qi")
 
-print(generate_qua_script(init_search_prog))
 
-# %%
-        
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=20_000)  # In clock cycles = 4ns
     job = qmm.simulate(local_config, init_search_prog, simulation_config)
     job.get_simulated_samples().con1.plot()
     plt.show(block=False)
@@ -156,3 +156,4 @@ else:
         plt.pause(0.1)
 
     qm.close()
+plt.show()
