@@ -17,7 +17,7 @@ from qualang_tools.addons.variables import assign_variables_to_element
 # The QUA program #
 ###################
 
-n_avg = 1_000_000  # The number of averages
+shots = 1_000_000  # The number of averages
 
 with program() as repeated_readout:
 
@@ -35,16 +35,16 @@ with program() as repeated_readout:
 
     align()
 
-    wait(29, 'QDS_twin')
+    wait((lock_in_readout_length + 16) * u.ns, 'QDS_twin')  # needed to delay second for_loop
 
-    with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
+    with for_(n, 0, n < shots, n + 1):  # QUA for_ loop for averaging
         measure('readout', 'QDS', None, demod.full("cos", I[0], 'out2'), demod.full("sin", Q[0], 'out2'))
         save(I[0], I_st[0])
         save(Q[0], Q_st[0])
         save(n, n_st)
         wait(lock_in_readout_length * u.ns, 'QDS')
 
-    with for_(n1, 0, n1 < n_avg, n1 + 1):  # QUA for_ loop for averaging
+    with for_(n1, 0, n1 < shots, n1 + 1):  # QUA for_ loop for averaging
         measure('readout', 'QDS_twin', None, demod.full("cos", I[1], 'out2'), demod.full("sin", Q[1], 'out2'))
         save(I[1], I_st[1])
         save(Q[1], Q_st[1])
@@ -54,14 +54,9 @@ with program() as repeated_readout:
     with stream_processing():
         n_st.save('iteration')
         for ind in range(2):
-            I_st[ind].buffer(n_avg).save(f"I_{ind}")
-            Q_st[ind].buffer(n_avg).save(f"Q_{ind}")
+            I_st[ind].buffer(shots).save(f"I_{ind}")
+            Q_st[ind].buffer(shots).save(f"Q_{ind}")
 
-if True:
-    from qm import generate_qua_script
-    from pprint import pprint
-
-    pprint(generate_qua_script(repeated_readout))
 
 # %%
 #####################################
@@ -86,7 +81,7 @@ else:
     qm = qmm.open_qm(config)
     print("Open QMs: ", qmm.list_open_quantum_machines())
 
-    if lock_in_readout_length >= 1_000:
+    if lock_in_readout_length >= 1_000 and shots <= 10_000_000:
 
         job = qm.execute(repeated_readout)
 
@@ -98,7 +93,7 @@ else:
 
             res = results.fetch_all()
 
-            progress_counter(res[0], n_avg, start_time=results.start_time)
+            progress_counter(res[0], shots, start_time=results.start_time)
 
         for ind in range(2):
             fetch_names.append(f"I_{ind}")
@@ -107,14 +102,14 @@ else:
         results = fetching_tool(job, fetch_names)
         res = results.fetch_all()
 
-        complete_I = np.empty((res[1].size + res[3].size), dtype=res[1])
-        complete_Q = np.empty((res[2].size + res[4].size), dtype=res[2])
+        complete_I = np.empty((res[1].size + res[3].size), dtype=res[1][0])
+        complete_Q = np.empty((res[2].size + res[4].size), dtype=res[2][0])
 
         complete_I[0::2] = res[1]
         complete_I[1::2] = res[3]
 
-        complete_Q[0::1] = res[2]
-        complete_Q[1::1] = res[4]
+        complete_Q[0::2] = res[2]
+        complete_Q[1::2] = res[4]
 
         complete_Z = complete_I + 1j*complete_Q
 
@@ -122,10 +117,18 @@ else:
         phase -= np.mean(phase)
         f, pxx = signal.welch(phase, nperseg=int(len(phase)/32), fs=1e9/lock_in_readout_length)
 
+        plt.plot(f, pxx)
+        plt.yscale('log')
+        plt.xscale('log')
+        plt.xlabel('Frequency [Hz]')
+        plt.ylabel('PSD [a.u.]')
+
     else:
-        print("Lock in readout length is less than 1 microsecond")
+        print("Lock in readout length is less than 1 microsecond or shots > 10 million")
 
     qm.close()
     print("Experiment QM is now closed")
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
 
+
+# %%
