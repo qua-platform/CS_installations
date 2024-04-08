@@ -28,8 +28,8 @@ def IQ_imbalance(g, phi):
 #############
 # VARIABLES #
 #############
-qop_ip = "127.0.0.1"  # Write the OPX IP address
-cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
+qop_ip = "172.16.33.101"  # Write the OPX IP address
+cluster_name = "Cluster_83"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 # Set octave_config to None if no octave are present
 octave_config = None
@@ -71,8 +71,8 @@ signal_threshold_1 = -2_000  # ADC untis, to convert to volts divide by 4096 (12
 signal_threshold_2 = -2_000  # ADC untis, to convert to volts divide by 4096 (12 bit ADC)
 
 # Delays
-detection_delay_1 = 80 * u.ns
-detection_delay_2 = 80 * u.ns
+detection_delay_1 = 36 * u.ns
+detection_delay_2 = 36 * u.ns
 laser_delay_1 = 0 * u.ns
 laser_delay_2 = 0 * u.ns
 mw_delay = 0 * u.ns
