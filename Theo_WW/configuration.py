@@ -33,7 +33,7 @@ save_dir = Path().absolute() / "QM" / "INSTALLATION" / "data"
 # the OPX admin panel if you QOP version is >= QOP220. Otherwise, it is 50 for Octave1, then 51, 52 and so on.
 octave_config = QmOctaveConfig()
 octave_config.set_calibration_db(os.getcwd())
-octave_config.add_device_info("octave1", qop_ip, 11050, ClockInfo(ClockType.Internal, ClockFrequency.MHZ_10))
+octave_config.add_device_info("octave1", qop_ip, 11050)
 
 #####################
 # OPX configuration #
@@ -50,30 +50,16 @@ resonator_LO = 4.8 * u.GHz
 resonator_IF = 60 * u.MHz
 
 readout_len = 5000
+long_readout_len = 1 * u.ms
 readout_amp = 0.2
 
 time_of_flight = 24
 depletion_time = 2 * u.us
 
-opt_weights = False
-if opt_weights:
-    from qualang_tools.config.integration_weights_tools import convert_integration_weights
-
-    weights = np.load("optimal_weights.npz")
-    opt_weights_real = convert_integration_weights(weights["weights_real"])
-    opt_weights_minus_imag = convert_integration_weights(weights["weights_minus_imag"])
-    opt_weights_imag = convert_integration_weights(weights["weights_imag"])
-    opt_weights_minus_real = convert_integration_weights(weights["weights_minus_real"])
-else:
-    opt_weights_real = [(1.0, readout_len)]
-    opt_weights_minus_imag = [(1.0, readout_len)]
-    opt_weights_imag = [(1.0, readout_len)]
-    opt_weights_minus_real = [(1.0, readout_len)]
-
 ##########################################
 #               Flux line                #
 ##########################################
-flux_IF = 100
+flux_IF = 10000
 
 max_frequency_point = 0.0
 flux_settle_time = 100 * u.ns
@@ -122,6 +108,7 @@ config = {
             "operations": {
                 "cw": "const_pulse",
                 "readout": "readout_pulse",
+                "long_readout": "long_readout_pulse",
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -202,9 +189,23 @@ config = {
                 "rotated_cos": "rotated_cosine_weights",
                 "rotated_sin": "rotated_sine_weights",
                 "rotated_minus_sin": "rotated_minus_sine_weights",
-                "opt_cos": "opt_cosine_weights",
-                "opt_sin": "opt_sine_weights",
-                "opt_minus_sin": "opt_minus_sine_weights",
+            },
+            "digital_marker": "ON",
+        },
+        "long_readout_pulse": {
+            "operation": "measurement",
+            "length": long_readout_len,
+            "waveforms": {
+                "I": "readout_wf",
+                "Q": "zero_wf",
+            },
+            "integration_weights": {
+                "cos": "cosine_weights",
+                "sin": "sine_weights",
+                "minus_sin": "minus_sine_weights",
+                "rotated_cos": "rotated_cosine_weights",
+                "rotated_sin": "rotated_sine_weights",
+                "rotated_minus_sin": "rotated_minus_sine_weights",
             },
             "digital_marker": "ON",
         },
@@ -230,18 +231,6 @@ config = {
         "minus_sine_weights": {
             "cosine": [(0.0, readout_len)],
             "sine": [(-1.0, readout_len)],
-        },
-        "opt_cosine_weights": {
-            "cosine": opt_weights_real,
-            "sine": opt_weights_minus_imag,
-        },
-        "opt_sine_weights": {
-            "cosine": opt_weights_imag,
-            "sine": opt_weights_real,
-        },
-        "opt_minus_sine_weights": {
-            "cosine": opt_weights_minus_imag,
-            "sine": opt_weights_minus_real,
         },
         "rotated_cosine_weights": {
             "cosine": [(np.cos(rotation_angle), readout_len)],
