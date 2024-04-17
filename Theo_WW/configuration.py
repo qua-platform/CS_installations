@@ -19,7 +19,7 @@ u = unit(coerce_to_integer=True)
 # Network parameters #
 ######################
 qop_ip = "172.16.33.101"  # Write the QM router IP address
-cluster_name = "Cluster_81"  # Write your cluster_name if version >= QOP220
+cluster_name = "Cluster_83"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 # Path to save data
@@ -59,7 +59,7 @@ depletion_time = 2 * u.us
 ##########################################
 #               Flux line                #
 ##########################################
-flux_IF = 10000
+flux_IF = 5
 
 max_frequency_point = 0.0
 flux_settle_time = 100 * u.ns
@@ -70,7 +70,7 @@ amplitude_fit, frequency_fit, phase_fit, offset_fit = [0, 0, 0, 0]
 
 # FLux pulse parameters
 const_flux_len = 200
-const_flux_amp = 0.45
+const_flux_amp = 0.25
 
 # IQ Plane Angle
 rotation_angle = (0 / 180) * np.pi
@@ -85,18 +85,18 @@ config = {
     "controllers": {
         "con1": {
             "analog_outputs": {
-                1: {"offset": 0.0},  # I resonator
-                2: {"offset": 0.0},  # Q resonator
-                3: {"offset": 0.0},  # I qubit
-                4: {"offset": 0.0},  # Q qubit
-                5: {"offset": max_frequency_point},  # flux line
+                1: {"offset": 0.0, "shareable":True},  # I resonator
+                2: {"offset": 0.0, "shareable":True},  # Q resonator
+                3: {"offset": 0.0, "shareable":True},  # I qubit
+                4: {"offset": 0.0, "shareable":True},  # Q qubit
+                5: {"offset": max_frequency_point, "shareable":True},  # flux line
             },
             "digital_outputs": {
-                1: {},
+                1: {"shareable":True},
             },
             "analog_inputs": {
-                1: {"offset": 0.0, "gain_db": 0},  # I from down-conversion
-                2: {"offset": 0.0, "gain_db": 0},  # Q from down-conversion
+                1: {"offset": 0.0, "gain_db": 0, "shareable":True},  # I from down-conversion
+                2: {"offset": 0.0, "gain_db": 0, "shareable":True},  # Q from down-conversion
             },
         },
     },
@@ -115,7 +115,7 @@ config = {
         },
         "flux_line": {
             "singleInput": {
-                "port": ("con1", 5),
+                "port": ("con1", 1),
             },
             "intermediate_frequency": flux_IF,
             "operations": {
@@ -124,7 +124,7 @@ config = {
         },
         "flux_line_sticky": {
             "singleInput": {
-                "port": ("con1", 5),
+                "port": ("con1", 1),
             },
             "intermediate_frequency": flux_IF,
             "sticky": {"analog": True, "duration": 20},
