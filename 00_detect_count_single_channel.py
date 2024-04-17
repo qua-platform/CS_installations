@@ -2,7 +2,7 @@
 This script is designed to demonstrate the capabilities of the OPX+ and OPD,
 bypassing the use of SPCMs for testing purposes.
 
-The program is designed probabilistically generate N counts from the digital
+The program is designed deterministically generate counts from the digital
 output of the OPX+ (mimicking the SPCM TTL signal), and detect them at the
 input of the OPD.
 """
