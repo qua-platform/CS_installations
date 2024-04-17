@@ -10,14 +10,64 @@ octave_config = None
 u = unit(coerce_to_integer=True)
 
 #############################################
-#        Time-tagging Parameters            #
+#        Config Generator Functions         #
 #############################################
+
 # Whether it is triggered when RISING (rising edge) or FALLING (falling edge)
 polarity = 'FALLING'
 # Minimal time between pulses to register a new one (should be between 4ns and 16ns)
 deadtime = 16
 # Time-tagging voltage threshold (in Volts)
 threshold = 0.5
+
+
+def configure_digital_input(channel_index: int):
+    """ This function configures a digital input (OPD) channel """
+    return {
+        channel_index: {
+            'polarity': polarity,
+            'deadtime': deadtime,
+            'threshold': threshold
+        }
+    }
+
+
+def configure_element(element_name: str, channel_index: int):
+    """ Configures elements for each SPCM branch. """
+    return {
+        element_name: {
+            # OPD channel input from the SPCM
+            'digitalOutputs': {
+                'out1': ('con1', channel_index)
+            },
+            # OPX digital output port to send a TTL signal (for testing purposes)
+            'digitalInputs': {
+                'output_switch': {
+                    'port': ('con1', channel_index),
+                    'delay': 100,
+                    'buffer': 1,
+                },
+            },
+            'operations': {
+                'read_count': 'read_count',  # operation to detect a count in the OPD input
+                'test_count': 'fake_count',  # operation to send a TTL signal from the OPX (for testing purposes)
+            },
+            # dummy OPX analog output (this doesn't get used)
+            'singleInput': {
+                'port': ('con1', 1),
+            },
+            # dummy OPX analog input (this doesn't get used)
+            "outputs": {
+                'port': ('con1', 1)
+            },
+            # dummy IF (this doesn't get used)
+            'intermediate_frequency': 0,
+            # dummy parameters (these don't get used)
+            "time_of_flight": 36,
+            "smearing": 0,
+        }
+    }
+
 
 #############################################
 #                  Config                   #
@@ -31,23 +81,23 @@ config = {
             },
             "digital_outputs": {
                 1: {},
-                # 2: {},
-                # 3: {},
-                # 4: {},
-                # 5: {},
-                # 6: {},
-                # 7: {},
-                # 8: {},
+                2: {},
+                3: {},
+                4: {},
+                5: {},
+                6: {},
+                7: {},
+                8: {},
             },
             'digital_inputs': {
-                1: {'polarity': polarity, 'deadtime': deadtime, "threshold": threshold},  # Alice,  Horizontal
-                # 2: {'polarity': polarity, 'deadtime': deadtime, "threshold": threshold},  # Alice,  Vertical
-                # 3: {'polarity': polarity, 'deadtime': deadtime, "threshold": threshold},  # Alice,  Diagonal
-                # 4: {'polarity': polarity, 'deadtime': deadtime, "threshold": threshold},  # Alice,  Anti-diagonal
-                # 5: {'polarity': polarity, 'deadtime': deadtime, "threshold": threshold},  # Bob,    Horizontal
-                # 6: {'polarity': polarity, 'deadtime': deadtime, "threshold": threshold},  # Bob,    Vertical
-                # 7: {'polarity': polarity, 'deadtime': deadtime, "threshold": threshold},  # Bob,    Diagonal
-                # 8: {'polarity': polarity, 'deadtime': deadtime, "threshold": threshold},  # Bob,    Anti-diagonal
+                **configure_digital_input(1),  # Alice,  Horizontal
+                **configure_digital_input(2),  # Alice,  Vertical
+                **configure_digital_input(3),  # Alice,  Diagonal
+                **configure_digital_input(4),  # Alice,  Anti-diagonal
+                **configure_digital_input(5),  # Bob,    Horizontal
+                **configure_digital_input(6),  # Bob,    Vertical
+                **configure_digital_input(7),  # Bob,    Diagonal
+                **configure_digital_input(8),  # Bob,    Anti-diagonal
             },
             "analog_inputs": {
                 1: {"offset": 0.0, "gain_db": 0},
@@ -55,57 +105,21 @@ config = {
         },
     },
     "elements": {
-        "alice_h": {
-            # dummy OPX analog output
-            'singleInput': {
-                'port': ('con1', 1),
-            },
-            # dummy OPX analog input (for TOF)
-            "outputs": {
-                'port': ('con1', 1)
-            },
-            'intermediate_frequency': 0,
-            # targeting OPD digital input
-            'digitalOutputs': { 'out1': ('con1', 1) },
-            # to read a count
-            'operations': {
-                'read_count': 'read_count',
-            },
-            "time_of_flight": 36,
-            "smearing": 0
-        },
-        # "alice_v": {'digitalOutputs': {'out1': ('con1', 2)}, },
-        # "alice_d": {'digitalOutputs': {'out1': ('con1', 3)}, },
-        # "alice_a": {'digitalOutputs': {'out1': ('con1', 4)}, },
-        # "bob_h": {'digitalOutputs': {'out1': ('con1', 5)}, },
-        # "bob_v": {'digitalOutputs': {'out1': ('con1', 6)}, },
-        # "bob_d": {'digitalOutputs': {'out1': ('con1', 7)}, },
-        # "bob_a": {'digitalOutputs': {'out1': ('con1', 8)}, },
-
-        # dummy elements for simulation purposes
-        "spcm_alice_h": {
-            'singleInput': {
-                'port': ('con1', 1),
-            },
-            # to send a fake count (rising-edge) from the OPX digital output
-            'digitalInputs': {
-                'output_switch': {
-                    'port': ('con1', 1),
-                    'delay': 100,
-                    'buffer': 1,
-                },
-            },
-            'operations': {
-                'fake_count': 'fake_count',  # to send a fake count
-            },
-        },
+        **configure_element("alice_h", 1),
+        **configure_element("alice_v", 2),
+        **configure_element("alice_d", 3),
+        **configure_element("alice_a", 4),
+        **configure_element("bob_h", 5),
+        **configure_element("bob_v", 6),
+        **configure_element("bob_d", 7),
+        **configure_element("bob_a", 8),
     },
     "pulses": {
         'fake_count': {
             'operation': 'control',
             'length': 200,  # ns
-            # these purposefully don't generate anything
             'waveforms': {
+                # these purposefully don't generate anything
                 'single': 'zero_wf',
             },
             'digital_marker': 'spcm_wf'
@@ -113,8 +127,8 @@ config = {
         'read_count': {
             'operation': 'measure',
             'length': 200,  # ns
-            # these purposefully don't generate anything
             'waveforms': {
+                # these purposefully don't generate anything
                 'single': 'zero_wf',
             },
             'digital_marker': 'spcm_wf'
