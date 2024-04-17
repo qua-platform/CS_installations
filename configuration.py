@@ -44,7 +44,7 @@ def configure_element(element_name: str, channel_index: int):
             'digitalInputs': {
                 'output_switch': {
                     'port': ('con1', channel_index),
-                    'delay': 100,
+                    'delay': 0,
                     'buffer': 1,
                 },
             },

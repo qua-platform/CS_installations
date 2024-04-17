@@ -1,16 +1,22 @@
 """
+This script is designed to demonstrate the capabilities of the OPX+ and OPD,
+bypassing the use of SPCMs for testing purposes.
+
+The program is designed probabilistically generate N counts from the digital
+output of the OPX+ (mimicking the SPCM TTL signal), and detect them at the
+input of the OPD.
 """
 
 from qm.qua import *
 from qm import QuantumMachinesManager
 from configuration import *
-import matplotlib.pyplot as plt
 
 
 ###################
 # The QUA program #
 ###################
 
+detection_window = 1_000  # ns
 with program() as raw_trace_prog:
     n = declare(int)
     counts_st = declare_stream()
@@ -18,10 +24,10 @@ with program() as raw_trace_prog:
     times = declare(int, size=10)
     counts = declare(int, value=0)
 
-    # wait(100 * u.ns, 'spcm_alice_h')
-    play('fake_count', 'spcm_alice_h')
+    wait(100 * u.ns, 'spcm_alice_h')
+    play('fake_count', 'alice_h')
 
-    measure('read_count', 'alice_h', None, counting.digital(counts, 1_000))
+    measure('read_count', 'alice_h', None, counting.digital(counts, detection_window))
 
     save(counts, counts_st)
 
