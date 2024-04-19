@@ -1,7 +1,7 @@
 from qualang_tools.units import unit
 
-qop_ip = "172.16.33.101"  # Write the QM router IP address
-cluster_name = "Cluster_83"  # Write your cluster_name if version >= QOP220
+qop_ip = "192.168.88.254"  # Write the QM router IP address
+cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 # Path to save data
@@ -14,7 +14,7 @@ u = unit(coerce_to_integer=True)
 #############################################
 
 # Whether it is triggered when RISING (rising edge) or FALLING (falling edge)
-polarity = 'FALLING'
+polarity = 'RISING'
 # Minimal time between pulses to register a new one (should be between 4ns and 16ns)
 deadtime = 16
 # Time-tagging voltage threshold (in Volts)
@@ -44,13 +44,13 @@ def configure_element(element_name: str, channel_index: int):
             'digitalInputs': {
                 'output_switch': {
                     'port': ('con1', channel_index),
-                    'delay': 0,
+                    'delay': 100,
                     'buffer': 1,
                 },
             },
             'operations': {
                 'read_count': 'read_count',  # operation to detect a count in the OPD input
-                'test_count': 'fake_count',  # operation to send a TTL signal from the OPX (for testing purposes)
+                'test_count': 'test_count',  # operation to send a TTL signal from the OPX (for testing purposes)
             },
             # dummy OPX analog output (this doesn't get used)
             'singleInput': {
@@ -115,7 +115,7 @@ config = {
         **configure_element("bob_a", 8),
     },
     "pulses": {
-        'fake_count': {
+        'test_count': {
             'operation': 'control',
             'length': 200,  # ns
             'waveforms': {
