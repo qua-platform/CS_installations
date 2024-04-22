@@ -7,7 +7,7 @@ All the macros below have been written and tested with the basic configuration. 
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 import matplotlib.pyplot as plt
-from configuration import u
+from configuration_with_octave import u
 from datetime import datetime
 import os
 import time

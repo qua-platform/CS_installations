@@ -47,13 +47,14 @@ with program() as cr_time_rabi_one_qst:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
     t = declare(int)
     c = declare(int)
+    s = declare(int)
     
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
         with for_(*from_array(t, t_vec)):
             with for_(c, 0, c < 3, c + 1):
-                for state in [0, 1]: # states
-                    if state == 1:
+                with for_(s, 0, s < 2, s + 1): # states
+                    with if_(s == 1):
                         play("x180", "q1_xy")
                         align()
                     #                           ____           ____ 
@@ -62,6 +63,7 @@ with program() as cr_time_rabi_one_qst:
                     #      CR(fT): ___|        |_____          _____| QST |________
                     #                                |________|            _____
                     # Readout(fR): _______________________________________|     |__
+                    reset_phase("cr_c1t2")
                     play("square_positive", "cr_c1t2", duration=t)
                     align()
                     play("x180", "q1_xy")
@@ -75,7 +77,7 @@ with program() as cr_time_rabi_one_qst:
                     align()
                     # Measure the state of the resonators
                     multiplexed_readout(I, I_st, Q, Q_st, resonators=resonators, weights="")
-                    # multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="roated_")
+                    # multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
                     # Wait for the qubit to decay to the ground state
                     wait(thermalization_time * u.ns)
     
@@ -102,7 +104,8 @@ if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, cr_time_rabi_one_qst, simulation_config)
-    job.get_simulated_samples().con1.plot()
+    job.get_simulated_samples().con1.plot(analog_ports=['1', '2', '3', '4', '5', '6'])
+    plt.show()
 
 else:
     # Open the quantum machine

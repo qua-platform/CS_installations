@@ -16,33 +16,48 @@ cluster_name = None  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 qop_ip = "172.16.33.101"
-cluster_name = "Cluster_83"
+cluster_name = "Cluster_81"
 qop_port = None  # Write the QOP port if version < QOP220
 
 
 ############################
 # Set octave configuration #
 ############################
-
 # The Octave port is 11xxx, where xxx are the last three digits of the Octave internal IP that can be accessed from
 # the OPX admin panel if you QOP version is >= QOP220. Otherwise, it is 50 for Octave1, then 51, 52 and so on.
-# However, when you are accessing to Octave internally, provide the Octave's IP and the port is 80.s
-octave_ip = "192.168.88.246"
-octave_port = 80  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
-con = "con1"
-octave = "octave1"
+octave_1 = OctaveUnit("octave1", qop_ip, port=11050, con="con1")
+# octave_2 = OctaveUnit("octave2", qop_ip, port=11051, con="con1")
+
+# If the control PC or local network is connected to the internal network of the QM router (port 2 onwards)
+# or directly to the Octave (without QM the router), use the local octave IP and port 80.
+# octave_ip = "192.168.88.X"
+# octave_1 = OctaveUnit("octave1", octave_ip, port=80, con="con1")
+
+# Add the octaves
+octaves = [octave_1]
+# Configure the Octaves
+octave_config = octave_declaration(octaves)
+
+# # The Octave port is 11xxx, where xxx are the last three digits of the Octave internal IP that can be accessed from
+# # the OPX admin panel if you QOP version is >= QOP220. Otherwise, it is 50 for Octave1, then 51, 52 and so on.
+# # However, when you are accessing to Octave internally, provide the Octave's IP and the port is 80.s
+# octave_ip = "192.168.88.246"
+# octave_port = 80  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
+# con = "con1"
+# octave = "octave1"
 # octave1 = OctaveUnit("octave1", octave_ip, port=octave_ip, con="con1")
-# Create the octave config object
-octave_config = QmOctaveConfig()
-# Specify where to store the outcome of the calibration (correction matrix, offsets...)
-octave_config.set_calibration_db(os.getcwd())
-# Add an Octave called 'octave1' with the specified IP and port
-octave_config.add_device_info(octave, octave_ip, octave_port)
+# # Create the octave config object
+# octave_config = QmOctaveConfig()
+# # Specify where to store the outcome of the calibration (correction matrix, offsets...)
+# octave_config.set_calibration_db(os.getcwd())
+# # Add an Octave called 'octave1' with the specified IP and port
+# octave_config.add_device_info(octave, octave_ip, octave_port)
 # # Add the octaves
 # octaves = [octave1]
 # # Configure the Octaves
 # octave_config = octave_declaration(octaves)
 
+# octave_config = None
 
 #############
 # Save Path #
@@ -51,6 +66,7 @@ octave_config.add_device_info(octave, octave_ip, octave_port)
 # Path to base directories for script and data
 base_dir = Path(__file__).resolve().parent
 save_dir = base_dir / "Data"
+save_dir.mkdir(parents=True, exist_ok=True)
 
 
 #########
@@ -481,7 +497,7 @@ config = {
         },
         "cr_c1t2_flat_top_pulse": {
             "operation": "control",
-            "length": flat_top_length,
+            "length": flat_top_len,
             "waveforms": {
                 "I": "cr_c1t2_flat_top_wf",
                 "Q": "zero_wf",
@@ -505,7 +521,7 @@ config = {
         },
         "cr_c2t1_flat_top_pulse": {
             "operation": "control",
-            "length": flat_top_length,
+            "length": flat_top_len,
             "waveforms": {
                 "I": "cr_c2t1_flat_top_wf",
                 "Q": "zero_wf",

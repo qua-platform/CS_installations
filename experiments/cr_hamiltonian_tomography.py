@@ -6,33 +6,48 @@ from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
 
 
-STATES = ["0", "1"]
-COMPONENTS = ["x", "y", "z"]
+CONTROL_STATES = ["0", "1"] # control state: 0 or 1
+TARGET_BASES = ["x", "y", "z"] # target basiss x, y, z
+PARAM_NAMES = ["delta", "omega_x", "omega_y"]
 PAULI_2Q = ["IX", "IY", "IZ", "ZX", "ZY", "ZZ"]
 
 
 @dataclass
 class PauliMeasurement:
+    """
+    A class keeps the measurement results of different quantum states and basiss
+    for cross resonance Hamiltonian tomography.
+
+    Attributes:
+        ts (np.ndarray): An array of time stamps at which measurements are taken. The time steps have to be equidistant.
+        data (Dict[str, Dict[str, np.ndarray]]): A nested dictionary where the first key represents the quantum
+            state of the control qubit, the second key represents the Pauli matrix basis (X, Y, Z) of the target qubit,
+            and the value is an array of measurement results corresponding to `ts`.
+
+    Raises:
+        ValueError: If any expected state or basis is missing in the provided data, or if any basis's
+            data is not a 1D numpy array, or if the length of any basis's data array does not match the length of `ts`.
+    """
     ts: np.ndarray
     data: Dict[str, Dict[str, np.ndarray]] = field(default_factory=dict)
 
     def __post_init__(self):
-        for state in STATES:
-            if state not in self.data:
-                raise ValueError(f"Missing data for state {state}.")
+        for st in CONTROL_STATES:
+            if st not in self.data:
+                raise ValueError(f"Missing data for state {st}.")
 
-            state_data = self.data[state]
-            for component in COMPONENTS:
-                if component not in state_data:
-                    raise ValueError(f"Missing data for component {component} in state {state}.")
+            st_data = self.data[st]
+            for bss in TARGET_BASES:
+                if bss not in st_data:
+                    raise ValueError(f"Missing data for basis {bss} in state {st}.")
 
-                value = state_data[component]
+                value = st_data[bss]
                 if not isinstance(value, np.ndarray) or value.ndim != 1:
-                    raise ValueError(f"Data for component {component} in state {state} must be a 1D numpy array.")
+                    raise ValueError(f"Data for basis {bss} in state {st} must be a 1D numpy array.")
 
                 if len(value) != len(self.ts):
                     raise ValueError(
-                        f"Data for component {component} in state {state} must have the same length as ts."
+                        f"Data for basis {bss} in state {st} must have the same length as ts."
                     )
 
 
@@ -132,7 +147,7 @@ class CRHamiltonianTomographyFunctions:
         }
         if noise > 0:
             np.random.seed(random_state)
-            for c in COMPONENTS:
+            for c in TARGET_BASES:
                 xyz[c] += np.random.normal(scale=noise, size=xyz[c].shape)
                 if clip:
                     xyz[c] = np.clip(xyz[c], -1.0, 1.0)
@@ -140,43 +155,44 @@ class CRHamiltonianTomographyFunctions:
         return xyz
 
 
-class CRHamiltonianTomography(CRHamiltonianTomographyFunctions):
+class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
     def __init__(self, ts, xyz):
         """
         CR Hamiltonian Tomography class.
 
         :param ts: durations of CR drive.
-        :param xyz: Dictionary containing measurement data for 'x', 'y', and 'z' components.
+        :param xyz: Dictionary containing measurement data for 'x', 'y', and 'z' basiss.
         """
         self.ts = ts
         self.pauli_meas = PauliMeasurement(ts=ts, data=xyz)
-        self.params_fitted = {s: [] for s in STATES}
+        self.params_fitted = {s: [] for s in CONTROL_STATES}
+        self.params_fitted_dict = {s: {nm: None for nm in PARAM_NAMES} for s in CONTROL_STATES}
         self.interaction_coeffs = {p: None for p in PAULI_2Q}
 
     def _bloch_vec_evolution(self, ts, d, mx, my):
         """
-        Calculate the expected evolution of the Bloch vector components over time.
+        Calculate the expected evolution of the Bloch vector basiss over time.
 
         :param ts: durations of CR drive.
         :param d, mx, my: Hamiltonian parameters.
-        :return: Array of expected 'x', 'y', and 'z' components concatenated.
+        :return: Array of expected 'x', 'y', and 'z' basiss concatenated.
         """
-        ts_len = len(ts) // len(COMPONENTS)
+        ts_len = len(ts) // len(TARGET_BASES)
         xyz = self.compute_XYZ(ts[:ts_len], *[d, mx, my])
-        return np.hstack([xyz[c] for c in COMPONENTS])
+        return np.hstack([xyz[c] for c in TARGET_BASES])
 
     def _fit_bloch_vec_evolution(self, xyz, p0):
         """
         Fit the model to the data using non-linear least squares.
 
-        :param xyz: Measured data for the Bloch vector components.
+        :param xyz: Measured data for the Bloch vector basiss.
         :param p0: Initial guess for the parameters.
         :return: Fitted parameters and the covariance of the parameters.
         """
         return curve_fit(
             f=self._bloch_vec_evolution,
-            xdata=np.tile(self.ts, len(COMPONENTS)),
-            ydata=np.hstack([xyz[c] for c in COMPONENTS]),
+            xdata=np.tile(self.ts, len(TARGET_BASES)),
+            ydata=np.hstack([xyz[c] for c in TARGET_BASES]),
             p0=p0,
             method="trf",
         )
@@ -206,10 +222,10 @@ class CRHamiltonianTomography(CRHamiltonianTomographyFunctions):
         """
         Choose initial parameter estimates for the fitting process based on frequency analysis.
 
-        :param xyz: Measured Bloch vector components.
+        :param xyz: Measured Bloch vector basiss.
         :return: Array of initial parameter guesses.
         """
-        freq_inits = [self._find_dominant_frequency(data=xyz[c]) for c in COMPONENTS]
+        freq_inits = [self._find_dominant_frequency(data=xyz[c]) for c in TARGET_BASES]
 
         # pick the initial omega as median of estimated omega from x, y, z
         freq_init = np.median(np.array(freq_inits))
@@ -218,9 +234,7 @@ class CRHamiltonianTomography(CRHamiltonianTomographyFunctions):
         # we pick the initial value for each parameter only from all positives
         theta, phi = 0.5 * np.pi * np.random.rand(2)
         return (
-            2
-            * np.pi
-            * freq_init
+            2 * np.pi * freq_init
             * np.array(
                 [
                     np.cos(theta),  # delta
@@ -240,7 +254,7 @@ class CRHamiltonianTomography(CRHamiltonianTomographyFunctions):
         :return: Self.
         """
         np.random.seed(random_state)
-        for st in STATES:
+        for st in CONTROL_STATES:
             if params_init is None:
                 p0 = self._pick_params_init(xyz=self.pauli_meas.data[st])
             else:
@@ -250,13 +264,15 @@ class CRHamiltonianTomography(CRHamiltonianTomographyFunctions):
                 xyz=self.pauli_meas.data[st],
                 p0=p0,
             )
+            # for clarity
+            self.params_fitted_dict[st] = {nm: p for nm, p in zip(PARAM_NAMES, self.params_fitted[st])}
 
         # compute interaction rates based on the fitted params
         self.compute_interaction_rates()
 
         # print the fitted parameters and interaction coefficents
         if do_print:
-            for st in STATES:
+            for st in CONTROL_STATES:
                 ps = self.params_fitted[st]
                 print(f"state = {st}: delta = {ps[0]:.3f}, omega_x = {ps[1]:.3f}, omega_y = {ps[2]:.3f}")
             for op in PAULI_2Q:
@@ -290,6 +306,40 @@ class CRHamiltonianTomography(CRHamiltonianTomographyFunctions):
             raise RuntimeError("some of the interaction coefficients have not been computed yet.")
         return self.interaction_coeffs
 
+    def plot_data(self, fig=None, axs=None, label="", show=False):
+        """
+        Plot the original measurement data along with the fitted data and interaction rates.
+
+        :return: The matplotlib figure object containing the plots.
+        """
+        if fig is None:
+            fig, axs = plt.subplots(4, 1, figsize=(10, 10), sharex=True, sharey=True)
+
+        # x, y, z
+        axs[0].set_title(label)
+        for ax, bss in zip(axs, TARGET_BASES):
+            ax.cla()
+            v0 = self.pauli_meas.data["0"][bss]
+            v1 = self.pauli_meas.data["1"][bss]
+            ax.scatter(self.ts, v0, s=20, color="b", label="ctrl in |0>")
+            ax.scatter(self.ts, v1, s=20, color="r", label="ctrl in |1>")
+            ax.set_ylabel(f"<{bss}(t)>", fontsize=16)
+   
+        # plot "R"
+        if len(axs) == 4:  
+            ax = axs[3]
+            ax.cla()
+            R = self.compute_R(self.pauli_meas.data["0"], self.pauli_meas.data["1"])
+            ax.plot(self.ts, R, "k")
+            ax.set_xlabel("time")
+            ax.set_ylabel("R", fontsize=16)
+        
+        if show:
+            plt.tight_layout()
+            plt.show()
+
+        return fig
+
     def plot_fit_result(self):
         """
         Plot the original measurement data along with the fitted data and interaction rates.
@@ -304,16 +354,16 @@ class CRHamiltonianTomography(CRHamiltonianTomographyFunctions):
         if any(value is None for value in self.interaction_coeffs.values()):
             raise RuntimeError("some of the interaction coefficients have not been computed yet.")
 
-        for ax, cmp in zip(axs, COMPONENTS):
-            v0 = self.pauli_meas.data["0"][cmp]
-            v1 = self.pauli_meas.data["1"][cmp]
-            if cmp == "x":
+        for ax, bss in zip(axs, TARGET_BASES):
+            v0 = self.pauli_meas.data["0"][bss]
+            v1 = self.pauli_meas.data["1"][bss]
+            if bss == "x":
                 eV0 = self._compute_X(self.ts, *self.params_fitted["0"])
                 eV1 = self._compute_X(self.ts, *self.params_fitted["1"])
-            elif cmp == "y":
+            elif bss == "y":
                 eV0 = self._compute_Y(self.ts, *self.params_fitted["0"])
                 eV1 = self._compute_Y(self.ts, *self.params_fitted["1"])
-            elif cmp == "z":
+            elif bss == "z":
                 eV0 = self._compute_Z(self.ts, *self.params_fitted["0"])
                 eV1 = self._compute_Z(self.ts, *self.params_fitted["1"])
 
@@ -321,12 +371,12 @@ class CRHamiltonianTomography(CRHamiltonianTomographyFunctions):
             ax.scatter(self.ts, v1, s=20, color="r", label="ctrl in |1>")
             ax.plot(self.ts, eV0, lw=4.0, color="b", alpha=0.5)
             ax.plot(self.ts, eV1, lw=4.0, color="r", alpha=0.5)
-            ax.set_ylabel(f"<{cmp}(t)>", fontsize=16)
+            ax.set_ylabel(f"<{bss}(t)>", fontsize=16)
 
-            if cmp == "x":
+            if bss == "x":
                 ax.set_title("Pauli Expectation Value", fontsize=16)
                 ax.legend(["0 meas", "1 meas", "0 fit", "1 fit"], fontsize=10)
-            elif cmp == "y":
+            elif bss == "y":
                 ax.set_title(
                     "IX = %.2f MHz, IY = %.2f MHz, IZ = %.2f MHz"
                     % (
@@ -336,7 +386,7 @@ class CRHamiltonianTomography(CRHamiltonianTomographyFunctions):
                     ),
                     fontsize=16,
                 )
-            elif cmp == "z":
+            elif bss == "z":
                 ax.set_title(
                     "ZX = %.2f MHz, ZY = %.2f MHz, ZZ = %.2f MHz"
                     % (
