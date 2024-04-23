@@ -15,10 +15,6 @@ qop_ip = "127.0.0.1"  # Write the QM router IP address
 cluster_name = None  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
-qop_ip = "172.16.33.101"
-cluster_name = "Cluster_81"
-qop_port = None  # Write the QOP port if version < QOP220
-
 
 ############################
 # Set octave configuration #
@@ -243,9 +239,9 @@ cr_c1t2_square_negative_len = cr_c1t2_square_positive_len
 cr_c2t1_square_positive_len = 100
 cr_c2t1_square_negative_len = cr_c2t1_square_positive_len
 # Pulse amplitudes
-cr_c1t2_square_positive_amp = 0.125
+cr_c1t2_square_positive_amp = 0.2
 cr_c1t2_square_negative_amp = (-1) * cr_c1t2_square_positive_amp
-cr_c2t1_square_positive_amp = 0.125
+cr_c2t1_square_positive_amp = 0.2
 cr_c2t1_square_negative_amp = (-1) * cr_c2t1_square_positive_amp
 # Pulse phase
 cr_c1t2_drive_phase = 0
@@ -259,9 +255,9 @@ cr_cancel_c1t2_square_negative_len = cr_cancel_c1t2_square_positive_len
 cr_cancel_c2t1_square_positive_len = cr_c2t1_square_positive_len
 cr_cancel_c2t1_square_negative_len = cr_cancel_c2t1_square_positive_len
 # Cancel pulse amplitudes
-cr_cancel_c1t2_square_positive_amp = 0.0625
+cr_cancel_c1t2_square_positive_amp = 0.05
 cr_cancel_c1t2_square_negative_amp = (-1) * cr_cancel_c1t2_square_positive_amp
-cr_cancel_c2t1_square_positive_amp = 0.0625
+cr_cancel_c2t1_square_positive_amp = 0.05
 cr_cancel_c2t1_square_negative_amp = (-1) * cr_cancel_c2t1_square_positive_amp
 # Cancel pulse phase
 cr_cancel_c1t2_drive_phase = 0
