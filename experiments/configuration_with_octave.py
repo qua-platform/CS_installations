@@ -236,41 +236,90 @@ ge_threshold_q2 = 0.0
 #############################################
 cr_IF_c1t2 = (qubit_IF_q2 + qubit_LO_q2) - (qubit_IF_q1 + qubit_LO_q1)
 cr_IF_c2t1 = (-1) * cr_IF_c1t2
-# Pulse durations
-c1t2_square_positive_len = 100
-c1t2_square_negative_len = c1t2_square_positive_len
-c2t1_square_positive_len = 100
-c2t1_square_negative_len = c2t1_square_positive_len
-# Pulse amplitudes
-c1t2_square_positive_amp = 0.1
-c1t2_square_negative_amp = (-1) * c1t2_square_positive_amp
-c2t1_square_positive_amp = 0.1
-c2t1_square_negative_amp = (-1) * c2t1_square_positive_amp
 
+# Pulse durations
+cr_c1t2_square_positive_len = 100
+cr_c1t2_square_negative_len = cr_c1t2_square_positive_len
+cr_c2t1_square_positive_len = 100
+cr_c2t1_square_negative_len = cr_c2t1_square_positive_len
+# Pulse amplitudes
+cr_c1t2_square_positive_amp = 0.125
+cr_c1t2_square_negative_amp = (-1) * cr_c1t2_square_positive_amp
+cr_c2t1_square_positive_amp = 0.125
+cr_c2t1_square_negative_amp = (-1) * cr_c2t1_square_positive_amp
+# Pulse phase
+cr_c1t2_drive_phase = 0
+cr_c1t2_cancel_phase = 0
+cr_c2t1_drive_phase = 0
+cr_c2t1_cancel_phase = 0
+
+# Cancel pulse durations
+cr_cancel_c1t2_square_positive_len = cr_c1t2_square_positive_len
+cr_cancel_c1t2_square_negative_len = cr_cancel_c1t2_square_positive_len
+cr_cancel_c2t1_square_positive_len = cr_c2t1_square_positive_len
+cr_cancel_c2t1_square_negative_len = cr_cancel_c2t1_square_positive_len
+# Cancel pulse amplitudes
+cr_cancel_c1t2_square_positive_amp = 0.0625
+cr_cancel_c1t2_square_negative_amp = (-1) * cr_cancel_c1t2_square_positive_amp
+cr_cancel_c2t1_square_positive_amp = 0.0625
+cr_cancel_c2t1_square_negative_amp = (-1) * cr_cancel_c2t1_square_positive_amp
+# Cancel pulse phase
+cr_cancel_c1t2_drive_phase = 0
+cr_cancel_c1t2_cancel_phase = 0
+cr_cancel_c2t1_drive_phase = 0
+cr_cancel_c2t1_cancel_phase = 0
 
 #############################################
 #         Flat-top generation               #
 #############################################
-# flattop wf generation
-rise_fall_len = 16
-assert rise_fall_len == int(rise_fall_len)
-flat_top_len = 200
-assert flat_top_len == int(flat_top_len)
-flat_top_amp = 0.1
-zero_pad = []
-if rise_fall_len < 16:
-    zero_pad = [0] * (16 - rise_fall_len)
-elif rise_fall_len % 4 != 0:
-    zero_pad = [0] * (4 - rise_fall_len % 4)
+# cr_c1t2
+def get_flattop_rise_fall_amp(rise_fall_len, flattop_len, flattop_amp):
+    # flattop wf generation
+    assert rise_fall_len == int(rise_fall_len)
+    assert flattop_len == int(flattop_len)
+    zero_pad = []
+    if rise_fall_len < 16:
+        zero_pad = [0] * (16 - rise_fall_len)
+    elif rise_fall_len % 4 != 0:
+        zero_pad = [0] * (4 - rise_fall_len % 4)
 
-# flat
-flat = np.array([flat_top_amp] * round(flat_top_len)).tolist()
-# rise
-rise_flattop = flattop_gaussian_waveform(flat_top_amp, flat_top_len, rise_fall_len, return_part="rise")
-rise = np.array(zero_pad + rise_flattop).tolist()
-# fall
-fall_flattop = flattop_gaussian_waveform(flat_top_amp, flat_top_len, rise_fall_len, return_part="fall")
-fall = np.array(fall_flattop + zero_pad).tolist()
+    # flat
+    flattop_amps = np.array([flattop_amp] * round(flattop_len))
+    # rise
+    rise_flattop = flattop_gaussian_waveform(flattop_amp, flattop_len, rise_fall_len, return_part="rise")
+    rise_flattop_amps = np.array(zero_pad + rise_flattop)
+    # fall
+    fall_flattop = flattop_gaussian_waveform(flattop_amp, flattop_len, rise_fall_len, return_part="fall")
+    fall_flattop_amps = np.array(fall_flattop + zero_pad)
+    return flattop_amps, rise_flattop_amps, fall_flattop_amps 
+
+# cr c1t2
+cr_c1t2_rise_fall_len = 16
+cr_c1t2_flattop_len = 200
+cr_c1t2_flattop_amp = 0.125
+cr_c1t2_flattop_amps, cr_c1t2_rise_flattop_amps, cr_c1t2_fall_flattop_amps \
+    = get_flattop_rise_fall_amp(cr_c1t2_rise_fall_len, cr_c1t2_flattop_len, cr_c1t2_flattop_amp)
+
+# cr c2t1
+cr_c2t1_rise_fall_len = 16
+cr_c2t1_flattop_len = 200
+cr_c2t1_flattop_amp = 0.125
+cr_c2t1_flattop_amps, cr_c2t1_rise_flattop_amps, cr_c2t1_fall_flattop_amps \
+    = get_flattop_rise_fall_amp(cr_c2t1_rise_fall_len, cr_c2t1_flattop_len, cr_c2t1_flattop_amp)
+
+# cr cancel c1t2
+cr_cancel_c1t2_rise_fall_len = cr_c1t2_rise_fall_len
+cr_cancel_c1t2_flattop_len = cr_c1t2_flattop_len
+cr_cancel_c1t2_flattop_amp = 0.0625
+cr_cancel_c1t2_flattop_amps, cr_cancel_c1t2_rise_flattop_amps, cr_cancel_c1t2_fall_flattop_amps \
+    = get_flattop_rise_fall_amp(cr_cancel_c1t2_rise_fall_len, cr_cancel_c1t2_flattop_len, cr_cancel_c1t2_flattop_amp)
+
+# cr cancel c2t1
+cr_cancel_c2t1_rise_fall_len = cr_c2t1_rise_fall_len
+cr_cancel_c2t1_flattop_len = cr_c2t1_flattop_len
+cr_cancel_c2t1_flattop_amp = 0.0625
+cr_cancel_c2t1_flattop_amps, cr_cancel_c2t1_rise_flattop_amps, cr_cancel_c2t1_fall_flattop_amps \
+    = get_flattop_rise_fall_amp(cr_cancel_c2t1_rise_fall_len, cr_cancel_c2t1_flattop_len, cr_cancel_c2t1_flattop_amp)
 
 
 #############################################
@@ -370,7 +419,7 @@ config = {
             "operations": {
                 "square_positive": "cr_c1t2_square_positive_pulse",
                 "square_negative": "cr_c1t2_square_negative_pulse",
-                "flat_top": "cr_c1t2_flat_top_pulse",
+                "flattop": "cr_c1t2_flattop_pulse",
             },
         },
         "cr_c1t2_twin": {
@@ -381,21 +430,39 @@ config = {
                 "gaussian_fall": "cr_c1t2_gaussian_fall_pulse",
             },
         },
-        "cr_c2t1": {
+        "cr_cancel_c1t2": {
             "RF_inputs": {"port": ("octave1", 3)},
             "intermediate_frequency": qubit_IF_q2,
             "operations": {
+                "square_positive": "cr_cancel_c1t2_square_positive_pulse",
+                "square_negative": "cr_cancel_c1t2_square_negative_pulse",
+                "flattop": "cr_cancel_c1t2_flattop_pulse",
+            },
+        },
+        "cr_c2t1": {
+            "RF_inputs": {"port": ("octave1", 3)},
+            "intermediate_frequency": qubit_IF_q1,
+            "operations": {
                 "square_positive": "cr_c2t1_square_positive_pulse",
                 "square_negative": "cr_c2t1_square_negative_pulse",
-                "flat_top": "cr_c2t1_flat_top_pulse",
+                "flattop": "cr_c2t1_flattop_pulse",
             },
         },
         "cr_c2t1_twin": {
             "RF_inputs": {"port": ("octave1", 3)},
-            "intermediate_frequency": qubit_IF_q2,
+            "intermediate_frequency": qubit_IF_q1,
             "operations": {
                 "gaussian_rise": "cr_c2t1_gaussian_rise_pulse",
                 "gaussian_fall": "cr_c2t1_gaussian_fall_pulse",
+            },
+        },
+        "cr_cancel_c2t1": {
+            "RF_inputs": {"port": ("octave1", 2)},
+            "intermediate_frequency": qubit_IF_q1,
+            "operations": {
+                "square_positive": "cr_cancel_c2t1_square_positive_pulse",
+                "square_negative": "cr_cancel_c2t1_square_negative_pulse",
+                "flattop": "cr_cancel_c2t1_flattop_pulse",
             },
         },
     },
@@ -449,81 +516,129 @@ config = {
         },
         "cr_c1t2_square_positive_pulse": {
             "operation": "control",
-            "length": c1t2_square_positive_len,
+            "length": cr_c1t2_square_positive_len,
             "waveforms": {
-                "I": "c1t2_square_positive_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "cr_c1t2_square_negative_pulse": {
-            "operation": "control",
-            "length": c1t2_square_positive_len,
-            "waveforms": {
-                "I": "c1t2_square_negative_wf",
+                "I": "cr_c1t2_square_positive_wf",
                 "Q": "zero_wf",
             },
         },
         "cr_c2t1_square_positive_pulse": {
             "operation": "control",
-            "length": c2t1_square_positive_len,
+            "length": cr_c2t1_square_positive_len,
             "waveforms": {
-                "I": "c2t1_square_positive_wf",
+                "I": "cr_c2t1_square_positive_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "cr_c1t2_square_negative_pulse": {
+            "operation": "control",
+            "length": cr_c1t2_square_negative_len,
+            "waveforms": {
+                "I": "cr_c1t2_square_negative_wf",
                 "Q": "zero_wf",
             },
         },
         "cr_c2t1_square_negative_pulse": {
             "operation": "control",
-            "length": c2t1_square_positive_len,
+            "length": cr_c2t1_square_negative_len,
             "waveforms": {
-                "I": "c2t1_square_negative_wf",
+                "I": "cr_c2t1_square_negative_wf",
                 "Q": "zero_wf",
             },
         },
         "cr_c1t2_gaussian_rise_pulse": {
             "operation": "control",
-            "length": rise_fall_len,
+            "length": cr_c1t2_rise_fall_len,
             "waveforms": {
                 "I": "cr_c1t2_gaussian_rise_wf",
                 "Q": "zero_wf",
             },
         },
-        "cr_c1t2_gaussian_fall_pulse": {
-            "operation": "control",
-            "length": rise_fall_len,
-            "waveforms": {
-                "I": "cr_c1t2_gaussian_fall_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "cr_c1t2_flat_top_pulse": {
-            "operation": "control",
-            "length": flat_top_len,
-            "waveforms": {
-                "I": "cr_c1t2_flat_top_wf",
-                "Q": "zero_wf",
-            },
-        },
         "cr_c2t1_gaussian_rise_pulse": {
             "operation": "control",
-            "length": rise_fall_len,
+            "length": cr_c2t1_rise_fall_len,
             "waveforms": {
                 "I": "cr_c2t1_gaussian_rise_wf",
                 "Q": "zero_wf",
             },
         },
+        "cr_c1t2_gaussian_fall_pulse": {
+            "operation": "control",
+            "length": cr_c1t2_rise_fall_len,
+            "waveforms": {
+                "I": "cr_c1t2_gaussian_fall_wf",
+                "Q": "zero_wf",
+            },
+        },
         "cr_c2t1_gaussian_fall_pulse": {
             "operation": "control",
-            "length": rise_fall_len,
+            "length": cr_c2t1_rise_fall_len,
             "waveforms": {
                 "I": "cr_c2t1_gaussian_fall_wf",
                 "Q": "zero_wf",
             },
         },
-        "cr_c2t1_flat_top_pulse": {
+        "cr_c1t2_flattop_pulse": {
             "operation": "control",
-            "length": flat_top_len,
+            "length": cr_c1t2_flattop_len,
             "waveforms": {
-                "I": "cr_c2t1_flat_top_wf",
+                "I": "cr_c1t2_flattop_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "cr_c2t1_flattop_pulse": {
+            "operation": "control",
+            "length": cr_c2t1_flattop_len,
+            "waveforms": {
+                "I": "cr_c2t1_flattop_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "cr_cancel_c1t2_square_positive_pulse": {
+            "operation": "control",
+            "length": cr_cancel_c1t2_square_positive_len,
+            "waveforms": {
+                "I": "cr_cancel_c1t2_square_positive_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "cr_cancel_c2t1_square_positive_pulse": {
+            "operation": "control",
+            "length": cr_cancel_c2t1_square_positive_len,
+            "waveforms": {
+                "I": "cr_cancel_c2t1_square_positive_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "cr_cancel_c1t2_square_negative_pulse": {
+            "operation": "control",
+            "length": cr_cancel_c1t2_square_negative_len,
+            "waveforms": {
+                "I": "cr_cancel_c1t2_square_negative_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "cr_cancel_c2t1_square_negative_pulse": {
+            "operation": "control",
+            "length": cr_cancel_c2t1_square_negative_len,
+            "waveforms": {
+                "I": "cr_cancel_c2t1_square_negative_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "cr_cancel_c1t2_flattop_pulse": {
+            "operation": "control",
+            "length": cr_cancel_c1t2_flattop_len,
+            "waveforms": {
+                "I": "cr_cancel_c1t2_flattop_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "cr_cancel_c2t1_flattop_pulse": {
+            "operation": "control",
+            "length": cr_cancel_c2t1_flattop_len,
+            "waveforms": {
+                "I": "cr_cancel_c2t1_flattop_wf",
                 "Q": "zero_wf",
             },
         },
@@ -661,16 +776,26 @@ config = {
     "waveforms": {
         "const_wf": {"type": "constant", "sample": const_amp},
         "saturation_wf": {"type": "constant", "sample": saturation_amp},
-        "c1t2_square_positive_wf": {"type": "constant", "sample": c1t2_square_positive_amp},
-        "c1t2_square_negative_wf": {"type": "constant", "sample": c1t2_square_negative_amp},
-        "c2t1_square_positive_wf": {"type": "constant", "sample": c2t1_square_positive_amp},
-        "c2t1_square_negative_wf": {"type": "constant", "sample": c2t1_square_negative_amp},
-        "cr_c1t2_gaussian_rise_wf": {"type": "arbitrary", "samples": rise},
-        "cr_c1t2_gaussian_fall_wf": {"type": "arbitrary", "samples": fall},
-        "cr_c1t2_flat_top_wf": {"type": "arbitrary", "samples": flat},
-        "cr_c2t1_gaussian_rise_wf": {"type": "arbitrary", "samples": rise},
-        "cr_c2t1_gaussian_fall_wf": {"type": "arbitrary", "samples": fall},
-        "cr_c2t1_flat_top_wf": {"type": "arbitrary", "samples": flat},
+        "cr_c1t2_square_positive_wf": {"type": "constant", "sample": cr_c1t2_square_positive_amp},
+        "cr_c2t1_square_positive_wf": {"type": "constant", "sample": cr_c2t1_square_positive_amp},
+        "cr_c1t2_square_negative_wf": {"type": "constant", "sample": cr_c1t2_square_negative_amp},
+        "cr_c2t1_square_negative_wf": {"type": "constant", "sample": cr_c2t1_square_negative_amp},
+        "cr_c1t2_flattop_wf": {"type": "constant", "sample": cr_c1t2_flattop_amp},
+        "cr_c2t1_flattop_wf": {"type": "constant", "sample": cr_c2t1_flattop_amp},
+        "cr_c1t2_gaussian_rise_wf": {"type": "arbitrary", "samples": cr_c1t2_rise_flattop_amps.tolist()},
+        "cr_c2t1_gaussian_rise_wf": {"type": "arbitrary", "samples": cr_c2t1_rise_flattop_amps.tolist()},
+        "cr_c1t2_gaussian_fall_wf": {"type": "arbitrary", "samples": cr_c1t2_fall_flattop_amps.tolist()},
+        "cr_c2t1_gaussian_fall_wf": {"type": "arbitrary", "samples": cr_c2t1_fall_flattop_amps.tolist()},
+        "cr_cancel_c1t2_square_positive_wf": {"type": "constant", "sample": cr_cancel_c1t2_square_positive_amp},
+        "cr_cancel_c2t1_square_positive_wf": {"type": "constant", "sample": cr_cancel_c2t1_square_positive_amp},
+        "cr_cancel_c1t2_square_negative_wf": {"type": "constant", "sample": cr_cancel_c1t2_square_negative_amp},
+        "cr_cancel_c2t1_square_negative_wf": {"type": "constant", "sample": cr_cancel_c2t1_square_negative_amp},
+        "cr_cancel_c1t2_flattop_wf": {"type": "constant", "sample": cr_cancel_c1t2_flattop_amp},
+        "cr_cancel_c2t1_flattop_wf": {"type": "constant", "sample": cr_cancel_c2t1_flattop_amp},
+        "cr_cancel_c1t2_gaussian_rise_wf": {"type": "arbitrary", "samples": cr_cancel_c1t2_rise_flattop_amps.tolist()},
+        "cr_cancel_c2t1_gaussian_rise_wf": {"type": "arbitrary", "samples": cr_cancel_c2t1_rise_flattop_amps.tolist()},
+        "cr_cancel_c1t2_gaussian_fall_wf": {"type": "arbitrary", "samples": cr_cancel_c1t2_fall_flattop_amps.tolist()},
+        "cr_cancel_c2t1_gaussian_fall_wf": {"type": "arbitrary", "samples": cr_cancel_c2t1_fall_flattop_amps.tolist()},
         "zero_wf": {"type": "constant", "sample": 0.0},
         "x90_I_wf_q1": {"type": "arbitrary", "samples": x90_I_wf_q1.tolist()},
         "x90_Q_wf_q1": {"type": "arbitrary", "samples": x90_Q_wf_q1.tolist()},

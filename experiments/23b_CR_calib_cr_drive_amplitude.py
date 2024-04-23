@@ -120,11 +120,14 @@ with program() as cr_calib:
             with for_(*from_array(t, t_vec)):
                 with for_(c, 0, c < len(TARGET_BASES), c + 1):
                     with for_(s, 0, s < len(CONTROL_STATES), s + 1):
+                        # Start from the same phase
+                        reset_phase("cr_c1t2")
+
+                        # Prepare control state in 1
                         with if_(s == 1):
                             play("x180", "q1_xy")
                             align()
 
-                        reset_phase("cr_c1t2")
                         if play_echo:
                             play("square_positive" * amp(a), "cr_c1t2", duration=t>>1) # main and echo should sum up to t
                             align()

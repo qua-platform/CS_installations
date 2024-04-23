@@ -76,8 +76,8 @@ nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
 thresholds = [ge_threshold_q1, ge_threshold_q2]
-t_vec = np.arange(8, 200, 4) # in clock cylcle = 4ns
-ph_vec = np.arange(0, 1, 0.05) # ratio relative to 2 * pi
+t_vec = np.array([8]) # np.arange(8, 200, 4) # in clock cylcle = 4ns
+ph_vec = np.arange(0, 1, 0.25) # ratio relative to 2 * pi
 n_avg = 100 # num of iterations
 
 assert len(qubit_suffixes) == nb_of_qubits
@@ -103,13 +103,15 @@ with program() as cr_calib:
             with for_(*from_array(t, t_vec)):
                 with for_(c, 0, c < len(TARGET_BASES), c + 1):
                     with for_(s, 0, s < len(CONTROL_STATES), s + 1):
+                        # Shift the phase of CR drive
+                        reset_phase("cr_c1t2")
+                        frame_rotation_2pi(ph, "cr_c1t2")
+
+                        # Prepare control state in 1
                         with if_(s == 1):
                             play("x180", "q1_xy")
                             align()
 
-                        # SHift the phase of CR drive
-                        reset_phase("cr_c1t2")
-                        frame_rotation_2pi(ph, "cr_c1t2")
                         if play_echo:
                             play("square_positive", "cr_c1t2", duration=t>>1) # main and echo should sum up to t
                             align()
@@ -121,6 +123,9 @@ with program() as cr_calib:
                         else:
                             play("square_positive", "cr_c1t2", duration=t)
 
+                        align()
+                        # target - QST
+                        one_qb_QST("q2_xy", pi_len, c)
                         align()
                         # Measure the state of the resonators
                         # Make sure you updated the ge_threshold and angle if you want to use state discrimination
@@ -158,7 +163,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
