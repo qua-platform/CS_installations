@@ -24,6 +24,8 @@ $$
 \end{align}
 $$
 
+and more
+
 $$
 \begin{align}
 a^\dagger_1 &= \frac{X - iY}{2} \otimes I \otimes I \otimes ... \otimes I \\
@@ -43,11 +45,23 @@ $$
 \end{align}
 $$
 
+and more
+
 $$
 \begin{align}
-&\langle \hat{X}(t) \rangle_n = \frac{1}{\Omega^2}\left(-\Delta \Omega_x + \Delta\Omega_x\cos(\Omega t) + \Omega \Omega_y \sin(\Omega t)\right) \\
-&\langle \hat{Y}(t) \rangle_n = \frac{1}{\Omega^2}\left(\Delta \Omega_y - \Delta\Omega_y\cos(\Omega t) - \Omega \Omega_x \sin(\Omega t)\right) \\
-&\langle \hat{Z}(t) \rangle_n = \frac{1}{\Omega^2}\left(\Delta^2 + \left(\Omega_x^2+\Omega_y^2\right)\cos(\Omega t) \right)
+i\langle\left[\hat{H},\hat{I}\hat{X} \right]\rangle_{\rm control} &= 2 \left(n a_{z} + b_{z}\right)\langle\hat{Y}\rangle - 2 \left(n a_{y} + b_{y}\right)\langle\hat{Z}\rangle \\
+i\langle\left[\hat{H}, \hat{I}\hat{Y}\right]\rangle_{\rm control} &= 2\left(n a_{x} + b_{x}\right) \langle\hat{Z}\rangle-2 \left(n a_{z} + b_{z}\right) \langle\hat{X}\rangle \\
+i\langle\left[\hat{H}, \hat{I}\hat{Z}\right]\rangle_{\rm control} &= 2 \left(n a_{y} + b_{y}\right) \langle\hat{X}\rangle - 2 \left(n a_{x} + b_{x}\right) \langle\hat{Y}\rangle
+\end{align}
+$$
+
+and more
+
+$$
+\begin{align}
+\langle \hat{X}(t) \rangle_n &= \frac{1}{\Omega^2}\left(-\Delta \Omega_x + \Delta\Omega_x\cos(\Omega t) + \Omega \Omega_y \sin(\Omega t)\right) \\
+\langle \hat{Y}(t) \rangle_n &= \frac{1}{\Omega^2}\left(\Delta \Omega_y - \Delta\Omega_y\cos(\Omega t) - \Omega \Omega_x \sin(\Omega t)\right) \\
+\langle \hat{Z}(t) \rangle_n &= \frac{1}{\Omega^2}\left(\Delta^2 + \left(\Omega_x^2+\Omega_y^2\right)\cos(\Omega t) \right)
 \end{align}
 $$
 

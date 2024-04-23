@@ -2,8 +2,8 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from hamiltonian_tomography import (
-    CRHamiltonianTomography,
+from cr_hamiltonian_tomography import (
+    CRHamiltonianTomographyAnalysis,
     CRHamiltonianTomographyFunctions,
 )
 
@@ -37,7 +37,7 @@ pms0 = crht_comp.compute_XYZ(ts, *coeffs_ground, noise=0.05)
 pms1 = crht_comp.compute_XYZ(ts, *coeffs_excited, noise=0.05)
 
 # set the data and perform the analysis for hamiltonian tomography
-crht = CRHamiltonianTomography(
+crht = CRHamiltonianTomographyAnalysis(
     ts=ts,
     xyz={
         "0": {
