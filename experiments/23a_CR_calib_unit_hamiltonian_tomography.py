@@ -82,6 +82,8 @@ with program() as cr_calib:
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
         with for_(*from_array(t, t_vec)):
+            # t/2 for main and echo
+            assign(t_half, t >> 1)
             for bss in TARGET_BASES:
                 for st in CONTROL_STATES:
                     # Align all elements (as no implicit align)
@@ -94,33 +96,18 @@ with program() as cr_calib:
                         play("x180", "q1_xy")
 
                     # Play CR + QST
-                    # play_echo == True
-                    #
-                    #                        ____      ____ 
-                    # Control(fC): _________| pi |____| pi |________________
-                    #                  ____                     
-                    #      CR(fT): ___| CR |_____      _____________________
-                    #                            |____|     _____
-                    #  Target(fT): ________________________| QST |__________
-                    #                                              ______
-                    # Readout(fR): _____________________ _________|  RR  |__
-                    #
-                    #
-                    # play_echo == False
-                    #
-                    # # Control(fC): _____________________________
-                    #                  ________                      
-                    #      CR(fT): ___|   CR   |________________
-                    #                           _____
-                    #  Target(fT): ____________| QST |__________          
-                    #                                  ______
-                    # Readout(fR): ___________________|  RR  |__
-                    #
                     # q1_xy=0, q2_xy=0, cr_c1t2=0, rr1=0, rr2=0
                     align()
                     if play_echo:
-                        # t/2 for main and echo
-                        assign(t_half, t >> 1)
+                        #                        ____      ____ 
+                        # Control(fC): _________| pi |____| pi |________________
+                        #                  ____                     
+                        #      CR(fT): ___| CR |_____      _____________________
+                        #                            |____|     _____
+                        #  Target(fT): ________________________| QST |__________
+                        #                                              ______
+                        # Readout(fR): _____________________ _________|  RR  |__
+                        #
                         # q1_xy=0, q2_xy=0, cr_c1t2=t/2, rr1=0, rr2=0
                         play("square_positive", "cr_c1t2", duration=t_half)
                         # q1_xy=t/2, q2_xy=0, cr_c1t2=t/2, rr1=0, rr2=0
@@ -138,6 +125,15 @@ with program() as cr_calib:
                         # q1_xy=t+p/2, q2_xy=t+p/2, cr_c1t2=t+p/4, rr1=t+p/2, rr2=t+p/2
                         wait(t + (pi_len >> 1), "q2_xy", "rr1", "rr2")
                     else:
+                        #
+                        # # Control(fC): _____________________________
+                        #                  ________                      
+                        #      CR(fT): ___|   CR   |________________
+                        #                           _____
+                        #  Target(fT): ____________| QST |__________          
+                        #                                  ______
+                        # Readout(fR): ___________________|  RR  |__
+                        #
                         # q1_xy=0, q2_xy=0, cr_c1t2=t, rr1=0, rr2=0 
                         play("square_positive", "cr_c1t2", duration=t)
                         # q1_xy=0, q2_xy=t, cr_c1t2=t, rr1=t, rr2=t

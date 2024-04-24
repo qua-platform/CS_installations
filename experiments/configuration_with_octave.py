@@ -15,6 +15,9 @@ qop_ip = "127.0.0.1"  # Write the QM router IP address
 cluster_name = None  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
+qop_ip = "172.16.33.101"
+cluster_name = "Cluster_81"
+qop_port = None  # Write the QOP port if version < QOP220
 
 ############################
 # Set octave configuration #

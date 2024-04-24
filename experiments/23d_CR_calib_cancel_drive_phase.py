@@ -1,22 +1,15 @@
 # %%
 """
-        echo-Cross-Resonance Time Rabi with single-qubit Quantum State Tomography
-    The sequence consists two consecutive pulse sequences with the qubit's thermal decay in between.
-In the first sequence, we set the control qubit in |g> and play a rectangular echo-cross-resonance pulse to
-the target qubit; the echo-cross-resonance pulse has a variable duration. In the second sequence, we initialize the control
-qubit in |e> and play the variable duration echo-cross-resonance pulse to the target qubit. At the end of both
-sequences we perform single-qubit Quantum State Tomography on the target qubit.
-
-To recreate the echo-cross-resonance pulse we play (CR--x180_c--CR)--x180_c if the control was initialized in |g>, or
-(CR--x180_c--CR) if the control was initialized in |e>. The second x180_c in the first sequence guarantees that the
-target qubit is at |g> in the limit of CR length -> zero.
+                                 CR_calib_cancel_drive_phase
+TBW
+                             
 
 Prerequisites:
-    - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
-    - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy, rabi_chevron, power_rabi and updated the config.
-    - (optional) Having calibrated the readout (readout_frequency, phase, duration_optimization IQ_blobs) for better SNR.
+    - 
+    -
+    -
 
-Reference: A. D. Corcoles et al., Phys. Rev. A 87, 030301 (2013)
+Reference: Sarah Sheldon, Easwar Magesan, Jerry M. Chow, and Jay M. Gambetta Phys. Rev. A 93, 060302(R) (2016)
 
 """
 from qm.QuantumMachinesManager import QuantumMachinesManager
@@ -94,6 +87,7 @@ with program() as cr_calib:
     state_st = [declare_stream() for _ in range(nb_of_qubits)]
     ph = declare(fixed)
     t = declare(int)
+    t_half = declare(int)
     c = declare(int)
     s = declare(int)
     
@@ -101,41 +95,87 @@ with program() as cr_calib:
         save(n, n_st)
         with for_(*from_array(ph, ph_vec)):
             with for_(*from_array(t, t_vec)):
-                with for_(c, 0, c < len(TARGET_BASES), c + 1):
-                    with for_(s, 0, s < len(CONTROL_STATES), s + 1):
+                # t/2 for main and echo
+                assign(t_half, t >> 1)
+                for bss in TARGET_BASES:
+                    for st in CONTROL_STATES:
+                        # Align all elements (as no implicit align)
+                        align()
                         # SHift the phase of CR drive and CR cancel pulse
                         reset_phase("cr_c1t2")
                         reset_phase("cr_cancel_c1t2")
                         frame_rotation_2pi(cr_c1t2_drive_phase, "cr_c1t2")
                         frame_rotation_2pi(ph, "cr_cancel_c1t2")
-
-                        # Prepare control state in 1
-                        with if_(s == 1):
+                
+                        # Prepare control state in 1  
+                        if st == "1":
                             play("x180", "q1_xy")
-                            align()
 
+                        # Play CR + QST
+                        # q1_xy=0, q2_xy=0, cr_c1t2=0, cr_cc_c1t2=0, rr1=0, rr2=0
+                        align()
                         if play_echo:
-                            play("square_positive", "cr_c1t2", duration=t>>1) # main and echo should sum up to t
-                            play("square_positive", "cr_cancel_c1t2", duration=t>>1) # main and echo should sum up to t
-                            align()
+                            #                        ____      ____ 
+                            # Control(fC): _________| pi |____| pi |_______________
+                            #                  ____                     
+                            #      CR(fT): ___| CR |_____      ____________________
+                            #                  ____      |____|     _____           
+                            #  Target(fT): ___| CR |_____      ____| QST |_________
+                            #                            |____|           ______
+                            # Readout(fR): ______________________________|  RR  |__
+                            #
+                            # q1_xy=0, q2_xy=0, cr_c1t2=t/2, cr_cc_c1t2=t/2, rr1=0, rr2=0
+                            play("square_positive", "cr_c1t2", duration=t_half)
+                            play("square_positive", "cr_cancel_c1t2", duration=t_half) # main and echo should sum up to t
+                            # q1_xy=t/2, q2_xy=0, cr_c1t2=t/2, cr_cc_c1t2=0, rr1=0, rr2=0
+                            wait(t_half, "q1_xy")
+                            # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t/2, cr_cc_c1t2=t/2, rr1=0, rr2=0
                             play("x180", "q1_xy")
-                            align()
-                            play("square_negative", "cr_c1t2", duration=t>>1) # main and echo should sum up to t
-                            play("square_negative", "cr_cancel_c1t2", duration=t>>1) # main and echo should sum up to t
-                            align()
+                            # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t/2+p/4, cr_cc_c1t2=t/2+p/4, rr1=0, rr2=0
+                            wait(pi_len >> 2, "cr_c1t2", "cr_cancel_c1t2")
+                            # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t+p/4, cr_cc_c1t2=t+p/4, rr1=0, rr2=0
+                            play("square_negative", "cr_c1t2", duration=t_half)
+                            play("square_negative", "cr_cancel_c1t2", duration=t_half) # main and echo should sum up to t
+                            # q1_xy=t+p/4, q2_xy=0, cr_c1t2=t+p/4, cr_cc_c1t2=t+p/4, rr1=0, rr2=0
+                            wait(t_half, "q1_xy")
+                            # q1_xy=t+p/2, q2_xy=0, cr_c1t2=t+p/4, cr_cc_c1t2=t+p/4, rr1=0, rr2=0
                             play("x180", "q1_xy")
+                            # q1_xy=t+p/2, q2_xy=t+p/2, cr_c1t2=t+p/4, cr_cc_c1t2=t+p/4, rr1=t+p/2, rr2=t+p/2
+                            wait(t + (pi_len >> 1), "q2_xy", "rr1", "rr2")
                         else:
+                            #
+                            # Control(fC): _____________________________
+                            #                  ________                      
+                            #      CR(fT): ___|   CR   |________________
+                            #                  ________ _____
+                            #  Target(fT): ___|   CR   | QST |__________          
+                            #                                 ______
+                            # Readout(fR): __________________|  RR  |__
+                            #
+                            # q1_xy=0, q2_xy=0, cr_c1t2=t, cr_cc_c1t2=t, rr1=0, rr2=0 
                             play("square_positive", "cr_c1t2", duration=t)
                             play("square_positive", "cr_cancel_c1t2", duration=t)
+                            # q1_xy=0, q2_xy=t, cr_c1t2=t, cr_cc_c1t2=t, rr1=t, rr2=t
+                            wait(t, "q2_xy", "rr1", "rr2")
+                        
+                        # if play_echo: q1_xy=t+3*p/4, q2_xy=t+p/2, cr_c1t2=t+p/4, cr_cc_c1t2=t+p/4, rr1=t+p/2, rr2=t+p/2
+                        # else: q1_xy=0, q2_xy=t+p/4, cr_c1t2=t, cr_cc_c1t2=t, rr1=t, rr2=t
+                        if bss == "x":
+                            play("-y90", "q2_xy")
+                        elif bss == "y":
+                            play("x90", "q2_xy")
+                        else:
+                            wait(pi_len >> 2, "q2_xy")
 
-                        align()
-                        # target - QST
-                        one_qb_QST("q2_xy", pi_len, c)
-                        align()
+                        # if play_echo: q1_xy=t+3*p/4, q2_xy=t+3*p/4, cr_c1t2=t+p/4, cr_cc_c1t2=t+p/4, rr1=t+3*p/4, rr2=t+3*p/4
+                        # else: q1_xy=0, q2_xy=t+p/4, cr_c1t2=t, cr_cc_c1t2=t, rr1=t, rr2=t+p/4
+                        wait(pi_len >> 2, "rr1", "rr2")
+
                         # Measure the state of the resonators
                         # Make sure you updated the ge_threshold and angle if you want to use state discrimination
                         multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
                         # multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="optimized_")
+
                         # Wait for the qubit to decay to the ground state
                         wait(100 * u.ns)
                         # wait(thermalization_time * u.ns)
