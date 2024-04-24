@@ -51,13 +51,13 @@ def plot_cr_duration_vs_phase(state_c, state_t, t_vec, ph_vec, axss):
     for i, (axs, bss) in enumerate(zip(axss, TARGET_BASES)):
         for j, (ax, dt, st) in enumerate(zip(axs, data, 2 * CONTROL_STATES)):
             ax.cla()
-            ax.pcolor(4 * t_vec, ph_vec, dt[:, :, i, j % 2])
+            ax.pcolor(4 * t_vec, ph_vec, dt[:, :, i, j % 2].T)
             if i == 0 and j < 2:
                 ax.set_title(f"Q_C w/ Q_C={st}")
             if i == 0 and j >= 2:
                 ax.set_title(f"Q_T w/ Q_C={st}")
             if j == 0:
-                ax.set_ylabel(f"<{bss}(t)>\nphase", fontsize=14)
+                ax.set_ylabel(f"<{bss}(t)>\nphase [2pi]", fontsize=14)
             if i == 2:
                 ax.set_xlabel(f"time [ns]", fontsize=14)
     plt.tight_layout()
@@ -69,8 +69,8 @@ nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
 thresholds = [ge_threshold_q1, ge_threshold_q2]
-t_vec = np.array([8]) # np.arange(8, 200, 4) # in clock cylcle = 4ns
-ph_vec = np.arange(0, 1, 0.5) # ratio relative to 2 * pi
+t_vec = np.arange(8, 200, 4) # in clock cylcle = 4ns
+ph_vec = np.arange(0, 1, 0.25) # ratio relative to 2 * pi
 n_avg = 10 # num of iterations
 
 assert len(qubit_suffixes) == nb_of_qubits
@@ -93,10 +93,10 @@ with program() as cr_calib:
     
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
-        with for_(*from_array(ph, ph_vec)):
-            with for_(*from_array(t, t_vec)):
-                # t/2 for main and echo
-                assign(t_half, t >> 1)
+        with for_(*from_array(t, t_vec)):
+            # t/2 for main and echo
+            assign(t_half, t >> 1)
+            with for_(*from_array(ph, ph_vec)):
                 for bss in [TARGET_BASES[0]]:
                     for st in [CONTROL_STATES[0]]:
                         # Align all elements (as no implicit align)
@@ -186,8 +186,8 @@ with program() as cr_calib:
                 .boolean_to_int()\
                 .buffer(len(CONTROL_STATES))\
                 .buffer(len(TARGET_BASES))\
-                .buffer(len(t_vec))\
                 .buffer(len(ph_vec))\
+                .buffer(len(t_vec))\
                 .average()\
                 .save(f"state_{qubit_suffixes[q]}")
 
@@ -202,7 +202,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -235,8 +235,8 @@ else:
     t_vec = data["t_vec"]
     state_c = data["state_c"] # len(t_vec) x 3 x 2
     state_t = data["state_t"] # len(t_vec) x 3 x 2
-    state_c = np.tile(state_c[None, ...], reps=[len(ph_vec), 1, 1, 1]) # len(ph_vec) x len(t_vec) x 3 x 2
-    state_t = np.tile(state_t[None, ...], reps=[len(ph_vec), 1, 1, 1]) # len(ph_vec) x len(t_vec) x 3 x 2
+    state_c = np.tile(state_c[:, None, ...], reps=[1, len(ph_vec), 1, 1]) # len(t_vec) x len(ph_vec) x 3 x 2
+    state_t = np.tile(state_t[:, None, ...], reps=[1, len(ph_vec), 1, 1]) # len(t_vec) x len(ph_vec) x 3 x 2
     
     # Perform CR Hamiltonian tomography
     SEED = 0
@@ -244,7 +244,7 @@ else:
     for ph in range(len(ph_vec)):
         crht = CRHamiltonianTomographyAnalysis(
             ts=4*t_vec,
-            xyz=arrange_data_for_crht(state_t[ph, ...]), # target data
+            xyz=arrange_data_for_crht(state_t[:, ph, ...]), # target data
         )
         crht.fit_params(random_state=SEED, do_print=False)
         coeffs.append(crht.interaction_coeffs)

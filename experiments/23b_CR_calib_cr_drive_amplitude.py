@@ -51,7 +51,7 @@ def plot_cr_duration_vs_amplitude(state_c, state_t, t_vec, a_vec, axss):
     for i, (axs, bss) in enumerate(zip(axss, TARGET_BASES)):
         for j, (ax, dt, st) in enumerate(zip(axs, data, 2 * CONTROL_STATES)):
             ax.cla()
-            ax.pcolor(4 * t_vec, a_vec, dt[:, :, i, j % 2])
+            ax.pcolor(4 * t_vec, a_vec, dt[:, :, i, j % 2].T)
             if i == 0 and j < 2:
                 ax.set_title(f"Q_C w/ Q_C={st}")
             if i == 0 and j >= 2:
@@ -93,10 +93,10 @@ with program() as cr_calib:
     
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
-        with for_(*from_array(a, a_vec)):
-            with for_(*from_array(t, t_vec)):
-                # t/2 for main and echo
-                assign(t_half, t >> 1)
+        with for_(*from_array(t, t_vec)):
+            # t/2 for main and echo
+            assign(t_half, t >> 1)
+            with for_(*from_array(a, a_vec)):
                 for bss in TARGET_BASES:
                     for st in CONTROL_STATES:
                         # Align all elements (as no implicit align)
@@ -184,8 +184,8 @@ with program() as cr_calib:
                 .boolean_to_int()\
                 .buffer(len(CONTROL_STATES))\
                 .buffer(len(TARGET_BASES))\
-                .buffer(len(t_vec))\
                 .buffer(len(a_vec))\
+                .buffer(len(t_vec))\
                 .average()\
                 .save(f"state_{qubit_suffixes[q]}")
 
@@ -200,7 +200,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -233,8 +233,8 @@ else:
     t_vec = data["t_vec"]
     state_c = data["state_c"] # len(t_vec) x 3 x 2
     state_t = data["state_t"] # len(t_vec) x 3 x 2
-    state_c = np.tile(state_c[None, ...], reps=[len(a_vec), 1, 1, 1]) # len(a_vec) x len(t_vec) x 3 x 2
-    state_t = np.tile(state_t[None, ...], reps=[len(a_vec), 1, 1, 1]) # len(a_vec) x len(t_vec) x 3 x 2
+    state_c = np.tile(state_c[:, None, ...], reps=[1, len(a_vec), 1, 1]) # len(a_vec) x len(t_vec) x 3 x 2
+    state_t = np.tile(state_t[:, None, ...], reps=[1, len(a_vec), 1, 1]) # len(a_vec) x len(t_vec) x 3 x 2
     
     # Perform CR Hamiltonian tomography
     SEED = 0
@@ -242,7 +242,7 @@ else:
     for a in range(len(a_vec)):
         crht = CRHamiltonianTomographyAnalysis(
             ts=4*t_vec, # 4: clock
-            xyz=arrange_data_for_crht(state_t[a, ...]), # target data
+            xyz=arrange_data_for_crht(state_t[:, a, ...]), # target data
         )
         crht.fit_params(random_state=SEED, do_print=False)
         coeffs.append(crht.interaction_coeffs)
