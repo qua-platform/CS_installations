@@ -215,12 +215,12 @@ else:
         # plotting data
         # control qubit
         fig = CRHamiltonianTomographyAnalysis(
-            ts=2*4*t_vec, # 2: echo, 4: clock
+            ts=4 * t_vec, # 2: echo, 4: clock
             xyz=arrange_data_for_crht(state_c),
         ).plot_data(fig, axss[:, 0], label="control")
         # target qubit
         fig = CRHamiltonianTomographyAnalysis(
-            ts=2*4*t_vec, # 2: echo, 4: clock
+            ts=4 * t_vec, # 2: echo, 4: clock
             xyz=arrange_data_for_crht(state_t),
         ).plot_data(fig, axss[:, 1], label="target")
         plt.tight_layout()
@@ -237,7 +237,7 @@ else:
     # cross resonance Hamiltonian tomography analysis
     SEED = 0
     crht = CRHamiltonianTomographyAnalysis(
-        ts=2*4*t_vec, # 2: echo, 4: clock
+        ts=4 * t_vec, # 2: echo, 4: clock
         xyz=arrange_data_for_crht(state_t), # target data
     )
     crht.fit_params(random_state=SEED)

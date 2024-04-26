@@ -248,7 +248,7 @@ else:
     coeffs = []
     for a in range(len(a_vec)):
         crht = CRHamiltonianTomographyAnalysis(
-            ts=4*t_vec, # 4: clock
+            ts=4 * t_vec, # 4: clock
             xyz=arrange_data_for_crht(state_t[:, a, ...]), # target data
         )
         crht.fit_params(random_state=SEED, do_print=False)

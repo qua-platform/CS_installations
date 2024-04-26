@@ -243,7 +243,7 @@ else:
     coeffs = []
     for ph in range(len(ph_vec)):
         crht = CRHamiltonianTomographyAnalysis(
-            ts=4*t_vec,
+            ts=4 * t_vec,
             xyz=arrange_data_for_crht(state_t[:, ph, ...]), # target data
         )
         crht.fit_params(random_state=SEED, do_print=False)
