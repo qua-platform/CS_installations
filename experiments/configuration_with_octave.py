@@ -251,9 +251,7 @@ cr_c2t1_square_positive_amp = 0.2
 cr_c2t1_square_negative_amp = (-1) * cr_c2t1_square_positive_amp
 # Pulse phase
 cr_c1t2_drive_phase = 0
-cr_c1t2_cancel_phase = 0
 cr_c2t1_drive_phase = 0
-cr_c2t1_cancel_phase = 0
 
 # Cancel pulse durations
 cr_cancel_c1t2_square_positive_len = cr_c1t2_square_positive_len
@@ -274,9 +272,7 @@ cr_cancel_c2t1_square_positive_amp = 0.05
 cr_cancel_c2t1_square_negative_amp = (-1) * cr_cancel_c2t1_square_positive_amp
 # Cancel pulse phase
 cr_cancel_c1t2_drive_phase = 0
-cr_cancel_c1t2_cancel_phase = 0
 cr_cancel_c2t1_drive_phase = 0
-cr_cancel_c2t1_cancel_phase = 0
 
 #############################################
 #         Flat-top generation               #

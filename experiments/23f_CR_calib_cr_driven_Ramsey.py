@@ -1,15 +1,25 @@
 # %%
 """
                                  CR_calib_cr_driven_Ramsey
-                             
+
+The CR_calib scripts are designed for calibrating cross-resonance (CR) gates involving a system
+with a control qubit and a target qubit. These scripts help estimate the parameters of a Hamiltonian,
+which is represented as:
+    H = I ⊗ (a_X X + a_Y Y + a_Z Z) + Z ⊗ (b_I I + b_X X + b_Y Y + b_Z Z)
+
+This script is to calibrate the AC Stark shift of the control qubit due to CR drive via driven Ramsey.
+The difference from the ordinary Ramsey is that we apply CR drive in between the pi pulses. 
+This is to induce the AC Stark shift on the control qubit, which has the same effect as detuning.
+In principle, this term should not require an extra case if you employ the echoed-CR.
 
 Prerequisites:
-    - 
-    -
-    -
+    - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
+    - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy, rabi_chevron, power_rabi and updated the config.
+    - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
 
 Next steps before going to the next node:
-    -
+    - Estimate the detuning (delta_f) and can apply a frame rotation on the control qubit to cancel the phase shift of
+      2 * pi * delta_f * cr_duration.
 
 Reference: Sarah Sheldon, Easwar Magesan, Jerry M. Chow, and Jay M. Gambetta Phys. Rev. A 93, 060302(R) (2016)
 """

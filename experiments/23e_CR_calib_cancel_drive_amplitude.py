@@ -1,18 +1,54 @@
 # %%
 """
                                  CR_calib_cancel_drive_amplitude
-                             
+
+The CR_calib scripts are designed for calibrating cross-resonance (CR) gates involving a system
+with a control qubit and a target qubit. These scripts help estimate the parameters of a Hamiltonian,
+which is represented as:
+    H = I ⊗ (a_X X + a_Y Y + a_Z Z) + Z ⊗ (b_I I + b_X X + b_Y Y + b_Z Z)
+
+For the calibration sequences, there are two options: with or without echoing the CR drive.
+(1) play_echo == True:
+                        #                        ____      ____ 
+                        # Control(fC): _________| pi |____| pi |________________
+                        #                  ____                     
+                        #      CR(fT): ___| CR |_____      _____________________
+                        #                            |____|     _____
+                        #  Target(fT): ________________________| QST |__________
+                        #                                              ______
+                        # Readout(fR): _____________________ _________|  RR  |__
+(2) play_echo == False:
+                        # # Control(fC): _____________________________
+                        #                  ________                      
+                        #      CR(fT): ___|   CR   |________________
+                        #                           _____
+                        #  Target(fT): ____________| QST |__________          
+                        #                                  ______
+                        # Readout(fR): ___________________|  RR  |__
+
+This script is to calibrate the phase of CR cancellation drive.
+CR cancellation pulse is applied to the target qubit at the target qubit frequency.
+Each sequence, which varies in the duration of the CR drive and the phase of CR cancel drive,
+ends with state tomography of the target state (across X, Y, and Z bases).
+This process is repeated with the control state in both |0> and |1> states.
+We fit the two sets of CR duration versus tomography data to a theoretical model,
+yielding two sets of three parameters: delta, omega_x, and omega_y.
+Using these parameters, we estimate the interaction coefficients of the Hamiltonian.
 
 Prerequisites:
-    - 
-    -
-    -
+    - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
+    - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy, rabi_chevron, power_rabi and updated the config.
+    - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
 
 Next steps before going to the next node:
-    -
+    - Find the amplitude where a_X (coeff of I_X) and a_Y (coeff of I_Y) is zero simultaneously.
+      If the two coeffs do not vanish simultaneously, the value of phi could be wrong.
+      Set cr_c1t2_drive_am in the configuration file.
+      Set cr_cancel_c1t2_square_positive_amp in the configuration file accordingly.
 
 Reference: Sarah Sheldon, Easwar Magesan, Jerry M. Chow, and Jay M. Gambetta Phys. Rev. A 93, 060302(R) (2016)
 """
+
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
 from qm import SimulationConfig
@@ -116,15 +152,6 @@ with program() as cr_calib:
                         # q1_xy=0, q2_xy=0, cr_c1t2=0, cr_cc_c1t2=0, rr1=0, rr2=0
                         align()
                         if play_echo:
-                            #                        ____      ____ 
-                            # Control(fC): _________| pi |____| pi |_______________
-                            #                  ____                     
-                            #      CR(fT): ___| CR |_____      ____________________
-                            #                  ____      |____|     _____           
-                            #  Target(fT): ___| CR |_____      ____| QST |_________
-                            #                            |____|           ______
-                            # Readout(fR): ______________________________|  RR  |__
-                            #
                             # q1_xy=0, q2_xy=0, cr_c1t2=t/2, cr_cc_c1t2=t/2, rr1=0, rr2=0
                             play("square_positive" * amp(a), "cr_c1t2", duration=t_half)
                             play("square_positive" * amp(a), "cr_cancel_c1t2", duration=t_half) # main and echo should sum up to t
@@ -144,15 +171,6 @@ with program() as cr_calib:
                             # q1_xy=t+p/2, q2_xy=t+p/2, cr_c1t2=t+p/4, cr_cc_c1t2=t+p/4, rr1=t+p/2, rr2=t+p/2
                             wait(t + (pi_len >> 1), "q2_xy", "rr1", "rr2")
                         else:
-                            #
-                            # Control(fC): _____________________________
-                            #                  ________                      
-                            #      CR(fT): ___|   CR   |________________
-                            #                  ________ _____
-                            #  Target(fT): ___|   CR   | QST |__________          
-                            #                                 ______
-                            # Readout(fR): __________________|  RR  |__
-                            #
                             # q1_xy=0, q2_xy=0, cr_c1t2=t, cr_cc_c1t2=t, rr1=0, rr2=0 
                             play("square_positive" * amp(a), "cr_c1t2", duration=t)
                             play("square_positive" * amp(a), "cr_cancel_c1t2", duration=t)
