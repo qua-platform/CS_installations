@@ -2,12 +2,14 @@
 # %%
 """
                                  CR_calib_unit_hamiltonian_tomography
-TBW
                              
 
 Prerequisites:
     - 
     -
+    -
+
+Next steps before going to the next node:
     -
 
 Reference: Sarah Sheldon, Easwar Magesan, Jerry M. Chow, and Jay M. Gambetta Phys. Rev. A 93, 060302(R) (2016)

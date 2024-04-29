@@ -1,7 +1,6 @@
 # %%
 """
                                  CR_calib_cancel_drive_phase
-TBW
                              
 
 Prerequisites:
@@ -9,8 +8,10 @@ Prerequisites:
     -
     -
 
-Reference: Sarah Sheldon, Easwar Magesan, Jerry M. Chow, and Jay M. Gambetta Phys. Rev. A 93, 060302(R) (2016)
+Next steps before going to the next node:
+    -
 
+Reference: Sarah Sheldon, Easwar Magesan, Jerry M. Chow, and Jay M. Gambetta Phys. Rev. A 93, 060302(R) (2016)
 """
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
