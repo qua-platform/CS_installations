@@ -1,6 +1,7 @@
+# %%
 import matplotlib.pyplot as plt
 from qm.qua import *
-from qm import QuantumMachinesManager
+from qm.QuantumMachinesManager import QuantumMachinesManager
 from macros import multiplexed_readout
 from qualang_tools.bakery.bakery import Baking
 from configuration_with_octave import *
@@ -27,57 +28,33 @@ def bake_phased_xz(baker: Baking, q, x, z, a):
     baker.play("x180", element, amp=x)
     baker.frame_rotation_2pi(-(a + z) / 2, element)
 
-
-# single qubit phase corrections in units of 2pi applied after the CZ gate
-qubit1_frame_update = 0.23  # example values, should be taken from QPU parameters
-qubit2_frame_update = 0.12  # example values, should be taken from QPU parameters
-
-
-# defines the CNOT gate that realizes the mapping |00> -> |00>, |01> -> |01>, |10> -> |10>, |11> -> -|11>
+# defines the CNOT gate that realizes the mapping |00> -> |00>, |01> -> |01>, |10> -> |11>, |11> -> |10>
 def bake_cnot(baker: Baking, q1, q2):
-    q1_xy_element = f"q{q1_idx_str}_xy"
-    q2_xy_element = f"q{q2_idx_str}_xy"
-    q1_z_element = f"q{q1_idx_str}_z"
-
-    baker.play("cz", q1_z_element)
-    baker.align()
-    baker.frame_rotation_2pi(qubit1_frame_update, q1_xy_element)
-    baker.frame_rotation_2pi(qubit2_frame_update, q2_xy_element)
-    baker.align()
-
+    # phase shift
     reset_phase("cr_c1t2")
     reset_phase("cr_cancel_c1t2")
-    frame_rotation_2pi(cr_c1t2_drive_phase, "cr_c1t2")
-    frame_rotation_2pi(cr_c1t2_cancel_phase, "cr_cancel_c1t2")
-    play("square_positive_half", "cr_c1t2")
-    play("square_positive_half", "cr_cancel_c1t2")
-    wait(cr_c1t2_square_positive_half_len >> 2, "q1_xy")
-    play("x180", "q1_xy")
-    wait(pi_len >> 2, "cr_c1t2", "cr_cancel_c1t2")
-    play("square_negative_half", "cr_c1t2")
-    play("square_negative_half", "cr_cancel_c1t2")
-    wait(cr_c1t2_square_positive_half_len >> 2, "q1_xy")
-    play("x180", "q1_xy")
+    baker.frame_rotation_2pi(cr_c1t2_drive_phase, "cr_c1t2")
+    baker.frame_rotation_2pi(cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
+    # play cr drive and cr cancel drive
+    baker.align("cr_c1t2", "cr_cancel_c1t2")
+    baker.play("square_positive_half", "cr_c1t2")
+    baker.play("square_positive_half", "cr_cancel_c1t2")
+    baker.align("cr_c1t2", "cr_cancel_c1t2", "q1_xy")
+    # play echoes for cr drive and cr cancel drive
+    baker.play("x180", "q1_xy")
+    baker.align("cr_c1t2", "cr_cancel_c1t2", "q1_xy")
+    baker.play("square_negative_half", "cr_c1t2")
+    baker.play("square_negative_half", "cr_cancel_c1t2")
+    baker.align("cr_c1t2", "cr_cancel_c1t2", "q1_xy")
+    baker.play("x180", "q1_xy")
     # single qubit gates
-    play("-z90", "q1_xy")
-    play("-x90", "q2_xy")
-
-
-# defines the CZ gate that realizes the mapping |00> -> |00>, |01> -> |01>, |10> -> |10>, |11> -> -|11>
-def bake_cz(baker: Baking, q1, q2):
-    q1_xy_element = f"q{q1_idx_str}_xy"
-    q2_xy_element = f"q{q2_idx_str}_xy"
-    q1_z_element = f"q{q1_idx_str}_z"
-
-    baker.play("cz", q1_z_element)
-    baker.align()
-    baker.frame_rotation_2pi(qubit1_frame_update, q1_xy_element)
-    baker.frame_rotation_2pi(qubit2_frame_update, q2_xy_element)
-    baker.align()
+    baker.align("q1_xy", "q2_xy")
+    baker.frame_rotation_2pi(-0.25, "q1_xy") # -z90
+    baker.play("-x90", "q2_xy")
 
 
 def prep():
-    wait(int(10 * qubit_T1))  # thermal preparation in clock cycles (time = 10 x T1 x 4ns)
+    wait(thermalization_time * u.ns)  # thermal preparation in clock cycles (time = 10 x T1 x 4ns)
     align()
 
 
@@ -112,7 +89,7 @@ rb = TwoQubitRb(
     verify_generation=False,
 )
 
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)  # initialize qmm
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config) # initialize qmm
 res = rb.run(qmm, circuit_depths=[1, 2, 3, 4, 5], num_circuits_per_depth=5, num_shots_per_circuit=100)
 # circuit_depths ~ how many consecutive Clifford gates within one executed circuit
 # (https://qiskit.org/documentation/apidoc/circuit.html)
@@ -131,3 +108,5 @@ rb.save_sequences_to_file("sequences.txt")  # saves the gates used in each rando
 # rb.print_sequences()
 # rb.print_command_mapping()
 # rb.verify_sequences() # simulates random sequences to ensure they recover to ground state. takes a while...
+
+# %%
