@@ -37,7 +37,6 @@ from macros import multiplexed_readout
 import warnings
 import matplotlib
 from qualang_tools.results.data_handler import DataHandler
-import os
 import time
 
 matplotlib.use("TKAgg")
