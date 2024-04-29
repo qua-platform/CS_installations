@@ -36,7 +36,7 @@ from qualang_tools.plot import interrupt_on_close
 from macros import multiplexed_readout
 import warnings
 import matplotlib
-from utils import make_and_get_dir_data, save_files
+from qualang_tools.results.data_handler import DataHandler
 import os
 import time
 
@@ -383,58 +383,55 @@ else:
     )
 
     # Plots
-    plt.figure()
+    fig_analysis = plt.figure()
     plt.errorbar(x, value_avg, yerr=error_avg, marker=".")
     plt.plot(x, power_law(x, *pars), linestyle="--", linewidth=2)
     plt.xlabel("Number of Clifford gates")
     plt.ylabel("Sequence Fidelity")
     plt.title(f"Single qubit interleaved RB {get_interleaved_gate(interleaved_gate_index)}")
 
-    # np.savez("rb_values", value)
-
     # save the numpy arrays
     if save_data:
         if state_discrimination:
-            filepath_script, dir_script, dir_data \
-                = get_dir_filepath_script_and_dir_data(filepath_script=__file__)
-            np.savez(
-                file=os.path.join(dir_data, "data.npz"),
-                state_avg=state_avg,
-                state=state,
-                value_avg=value_avg,
-                error_avg=error_avg,
-                x=x,
-                iteration=np.array([n]),  # convert int to np.array of int
-                elapsed_time=np.array([elapsed_time]),  # convert float to np.array of float
-            )
-            save_scripts(
-                dir_data=dir_data,
-                filepath_scripts=[
-                    filepath_script,
-                    os.path.join(dir_script, "configuration.py"),
-                ],
-            )
+            # Arrange data to save
+            data = {
+                "fig_live": fig,
+                "fig_analysis": fig_analysis,
+                "state_avg": state_avg,
+                "state": state,
+                "value_avg": value_avg,
+                "error_avg": error_avg,
+                "x": x,
+                "iteration": np.array([n]),  # convert int to np.array of int
+                "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
+            }
 
         else:
-            filepath_script, dir_script, dir_data \
-                = get_dir_filepath_script_and_dir_data(filepath_script=__file__)
-            np.savez(
-                file=os.path.join(dir_data, "data.npz"),
-                I=I,
-                Q=Q,
-                value_avg=value_avg,
-                error_avg=error_avg,
-                x=x,
-                iteration=np.array([iteration]),  # convert int to np.array of int
-                elapsed_time=np.array([elapsed_time]),  # convert float to np.array of float
-            )
-            save_scripts(
-                dir_data=dir_data,
-                filepath_scripts=[
-                    filepath_script,
-                    os.path.join(dir_script, "configuration.py"),
-                ],
-            )
+            # Arrange data to save
+            data = {
+                "fig_live": fig,
+                "fig_analysis": fig_analysis,
+                "I": I,
+                "Q": Q,
+                "value_avg": value_avg,
+                "error_avg": error_avg,
+                "x": x,
+                "iteration": np.array([n]),  # convert int to np.array of int
+                "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
+            }
+
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
 
     # Close the quantum machines at the end
     qm.close()

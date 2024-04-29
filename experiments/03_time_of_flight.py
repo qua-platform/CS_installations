@@ -24,8 +24,7 @@ from configuration_with_octave import *
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 import matplotlib
-import os
-from utils import make_and_get_dir_data, save_files
+from qualang_tools.results.data_handler import DataHandler
 
 
 matplotlib.use("TKAgg")
@@ -149,23 +148,31 @@ else:
     plt.xlabel("Frequency [Hz]")
     plt.ylabel("[a.u.]")
 
-    # save the numpy arrays and scripts
     if save_data:
-        dir_data = make_and_get_dir_data(basedir_data=basedir_data, filepath_script=__file__)
-        np.savez(
-            file=os.path.join(dir_data, "data.npz"),
-            adc1=adc1,
-            adc2=adc2,
-            adc1_single_run=adc1_single_run,
-            adc2_single_run=adc2_single_run,
-            iteration=np.array([n_avg]),  # convert int to np.array of int
-        )
-        save_files(
-            dir_data=dir_data,
-            basedir_proj=basedir_proj,
-            filepaths=[__file__],
-        )
+        # Arrange data to save
+        data = {
+            "fig_live": fig,
+            "adc1": adc1,
+            "adc2": adc2,
+            "adc1_single_run": adc1_single_run,
+            "adc2_single_run": adc2_single_run,
+            "iteration": np.array([n_avg]),  # convert int to np.array of int
+        }
 
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
+
+    # Close the quantum machines at the end
     qm.close()
 
 # %%

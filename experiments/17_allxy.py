@@ -28,6 +28,8 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import progress_counter
 import warnings
 import matplotlib
+import time
+
 
 matplotlib.use("TKAgg")
 warnings.filterwarnings("ignore")
@@ -153,6 +155,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 ###########################
 
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -172,12 +175,15 @@ else:
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
+        start_time = results.get_start_time()
         # Fetch results
         res = results.fetch_all()
         I = -np.array(res[1::2])
         Q = -np.array(res[2::2])
         n = res[0]
-        # Progress bar
+        # calculate the elapsed time
+        elapsed_time = time.time() - start_time
+       # Progress bar
         progress_counter(n, n_avg, start_time=results.start_time)
         # Plot results
         plt.suptitle(f"All XY for qubit {qb}")
@@ -197,6 +203,34 @@ else:
         plt.legend()
         plt.tight_layout()
         plt.pause(0.1)
+
+    # Close the quantum machines at the end
+    qm.close()
+
+    if save_data:
+        # Arrange data to save
+        data = {
+            "fig_live": fig,
+            "I1": I[0],
+            "I2": I[1],
+            "Q1": Q[0],
+            "Q2": Q[1],
+            "iteration": np.array([n]),  # convert int to np.array of int
+            "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
+        }
+
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
 
     # Close the quantum machines at the end
     qm.close()

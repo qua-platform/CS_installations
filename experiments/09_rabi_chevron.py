@@ -30,8 +30,7 @@ from qualang_tools.results import progress_counter
 from macros import qua_declaration, multiplexed_readout
 import warnings
 import matplotlib
-from utils import make_and_get_dir_data, save_files
-import os
+from qualang_tools.results.data_handler import DataHandler
 import time
 
 matplotlib.use("TKAgg")
@@ -42,9 +41,9 @@ warnings.filterwarnings("ignore")
 ###################
 n_avg = 1000  # The number of averages
 # Qubit detuning sweep with respect to qubit_IF
-dfs = np.arange(-14e6, +14e6, 0.2e6)
+f_vec = np.arange(-14e6, +14e6, 0.2e6)
 # Qubit pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-amps = np.arange(0.0, 1, 0.02)
+a_vec = np.arange(0.0, 1, 0.02)
 
 with program() as rabi_chevron:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
@@ -52,12 +51,12 @@ with program() as rabi_chevron:
     a = declare(fixed)  # QUA variable for the qubit pulse amplitude pre-factor
 
     with for_(n, 0, n < n_avg, n + 1):
-        with for_(*from_array(df, dfs)):
+        with for_(*from_array(df, f_vec)):
             # Update the frequency of the two qubit elements
             update_frequency("q1_xy", df + qubit_IF_q1)
             update_frequency("q2_xy", df + qubit_IF_q2)
 
-            with for_(*from_array(a, amps)):
+            with for_(*from_array(a, a_vec)):
                 # Play qubit pulses simultaneously
                 play("x180" * amp(a), "q1_xy")
                 play("x180" * amp(a), "q2_xy")
@@ -73,11 +72,11 @@ with program() as rabi_chevron:
     with stream_processing():
         n_st.save("n")
         # resonator 1
-        I_st[0].buffer(len(amps)).buffer(len(dfs)).average().save("I1")
-        Q_st[0].buffer(len(amps)).buffer(len(dfs)).average().save("Q1")
+        I_st[0].buffer(len(a_vec)).buffer(len(f_vec)).average().save("I1")
+        Q_st[0].buffer(len(a_vec)).buffer(len(f_vec)).average().save("Q1")
         # resonator 2
-        I_st[1].buffer(len(amps)).buffer(len(dfs)).average().save("I2")
-        Q_st[1].buffer(len(amps)).buffer(len(dfs)).average().save("Q2")
+        I_st[1].buffer(len(a_vec)).buffer(len(f_vec)).average().save("I2")
+        Q_st[1].buffer(len(a_vec)).buffer(len(f_vec)).average().save("Q2")
 
 
 #####################################
@@ -124,49 +123,55 @@ else:
         plt.suptitle("Rabi chevron")
         plt.subplot(221)
         plt.cla()
-        plt.pcolor(amps * pi_amp_q1, dfs, I1)
+        plt.pcolor(a_vec * pi_amp_q1, f_vec, I1)
         plt.xlabel("Qubit pulse amplitude [V]")
         plt.ylabel("Qubit 1 detuning [MHz]")
         plt.title(f"q1 (f_res: {(qubit_LO_q1 + qubit_IF_q1) / u.MHz} MHz)")
         plt.subplot(223)
         plt.cla()
-        plt.pcolor(amps * pi_amp_q1, dfs, Q1)
+        plt.pcolor(a_vec * pi_amp_q1, f_vec, Q1)
         plt.xlabel("Qubit pulse amplitude [V]")
         plt.ylabel("Qubit 1 detuning [MHz]")
         plt.subplot(222)
         plt.cla()
-        plt.pcolor(amps * pi_amp_q2, dfs, I2)
+        plt.pcolor(a_vec * pi_amp_q2, f_vec, I2)
         plt.title(f"q2 (f_res: {(qubit_LO_q2 + qubit_IF_q2) / u.MHz} MHz)")
         plt.xlabel("Qubit pulse amplitude [V]")
         plt.ylabel("Qubit 2 detuning [MHz]")
         plt.subplot(224)
         plt.cla()
-        plt.pcolor(amps * pi_amp_q2, dfs, Q2)
+        plt.pcolor(a_vec * pi_amp_q2, f_vec, Q2)
         plt.xlabel("Qubit pulse amplitude [V]")
         plt.ylabel("Qubit 2 detuning [MHz]")
         plt.tight_layout()
         plt.pause(0.1)
 
-    # save the numpy arrays
     if save_data:
-        dir_data = make_and_get_dir_data(basedir_data=basedir_data, filepath_script=__file__)
-        np.savez(
-            file=os.path.join(dir_data, "data.npz"),
-            I1=I1,
-            Q1=Q1,
-            I2=I2,
-            Q2=Q2,
-            dfs=dfs,
-            amps=amps,
-            pi_amps=np.array([pi_amp_q1, pi_amp_q2]),
-            iteration=np.array([n]),  # convert int to np.array of int
-            elapsed_time=np.array([elapsed_time]),  # convert float to np.array of float
-        )
-        save_files(
-            dir_data=dir_data,
-            basedir_proj=basedir_proj,
-            filepaths=[__file__],
-        )
+        # Arrange data to save
+        data = {
+            "fig_live": fig,
+            "f_vec": f_vec,
+            "a_vec": a_vec,
+            "I1": I1,
+            "I1": I1,
+            "Q1": Q1,
+            "Q2": Q2,
+            "iteration": np.array([n]),  # convert int to np.array of int
+            "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
+        }
+
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
 
     # Close the quantum machines at the end
     qm.close()

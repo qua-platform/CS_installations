@@ -27,8 +27,7 @@ from qualang_tools.results import progress_counter
 from macros import qua_declaration, multiplexed_readout
 import warnings
 import matplotlib
-from utils import make_and_get_dir_data, save_files
-import os
+from qualang_tools.results.data_handler import DataHandler
 import time
 
 matplotlib.use("TKAgg")
@@ -41,8 +40,8 @@ n_avg = 1000
 tau_min = 4  # in clock cycles
 tau_max = 10_000  # in clock cycles
 d_tau = 20  # in clock cycles
-t_delay = np.arange(tau_min, tau_max + 0.1, d_tau)  # Linear sweep
-t_delay = np.logspace(np.log10(tau_min), np.log10(tau_max), 29)  # Log sweep
+t_vec = np.arange(tau_min, tau_max + 0.1, d_tau)  # Linear sweep
+t_vec = np.logspace(np.log10(tau_min), np.log10(tau_max), 29)  # Log sweep
 
 
 # QUA program
@@ -51,7 +50,7 @@ with program() as T1:
     t = declare(int)  # QUA variable for the wait time
 
     with for_(n, 0, n < n_avg, n + 1):
-        with for_(*from_array(t, t_delay)):
+        with for_(*from_array(t, t_vec)):
             # qubit 1
             play("x180", "q1_xy")
             wait(t, "q1_xy")
@@ -71,11 +70,11 @@ with program() as T1:
     with stream_processing():
         n_st.save("n")
         # resonator 1
-        I_st[0].buffer(len(t_delay)).average().save("I1")
-        Q_st[0].buffer(len(t_delay)).average().save("Q1")
+        I_st[0].buffer(len(t_vec)).average().save("I1")
+        Q_st[0].buffer(len(t_vec)).average().save("Q1")
         # resonator
-        I_st[1].buffer(len(t_delay)).average().save("I2")
-        Q_st[1].buffer(len(t_delay)).average().save("Q2")
+        I_st[1].buffer(len(t_vec)).average().save("I2")
+        Q_st[1].buffer(len(t_vec)).average().save("Q2")
 
 
 #####################################
@@ -122,21 +121,21 @@ else:
         plt.suptitle("T1 measurement")
         plt.subplot(221)
         plt.cla()
-        plt.plot(4 * t_delay, I1)
+        plt.plot(4 * t_vec, I1)
         plt.ylabel("I quadrature [V]")
         plt.title("Qubit 1")
         plt.subplot(223)
         plt.cla()
-        plt.plot(4 * t_delay, Q1)
+        plt.plot(4 * t_vec, Q1)
         plt.ylabel("Q quadrature [V]")
         plt.xlabel("Wait time (ns)")
         plt.subplot(222)
         plt.cla()
-        plt.plot(4 * t_delay, I2)
+        plt.plot(4 * t_vec, I2)
         plt.title("Qubit 2")
         plt.subplot(224)
         plt.cla()
-        plt.plot(4 * t_delay, Q2)
+        plt.plot(4 * t_vec, Q2)
         plt.title("Q2")
         plt.xlabel("Wait time (ns)")
         plt.tight_layout()
@@ -149,10 +148,10 @@ else:
         from qualang_tools.plot.fitting import Fit
 
         fit = Fit()
-        plt.figure()
+        fig_analysis = plt.figure()
         plt.suptitle("T1 measurement")
         plt.subplot(121)
-        decay_fit = fit.T1(4 * t_delay, I1, plot=True)
+        decay_fit = fit.T1(4 * t_vec, I1, plot=True)
         qubit_T1 = np.round(np.abs(decay_fit["T1"][0]) / 4) * 4
         plt.xlabel("Delay [ns]")
         plt.ylabel("I quadrature [V]")
@@ -161,7 +160,7 @@ else:
         plt.title("Qubit 1")
 
         plt.subplot(122)
-        decay_fit = fit.T1(4 * t_delay, I2, plot=True)
+        decay_fit = fit.T1(4 * t_vec, I2, plot=True)
         qubit_T1 = np.round(np.abs(decay_fit["T1"][0]) / 4) * 4
         plt.xlabel("Delay [ns]")
         plt.ylabel("I quadrature [V]")
@@ -172,24 +171,34 @@ else:
     except (Exception,):
         pass
 
-    # save the numpy arrays
     if save_data:
-        dir_data = make_and_get_dir_data(basedir_data=basedir_data, filepath_script=__file__)
-        np.savez(
-            file=os.path.join(dir_data, "data.npz"),
-            I1=I1,
-            Q1=Q1,
-            I2=I2,
-            Q2=Q2,
-            t_delay=t_delay,
-            iteration=np.array([n]),  # convert int to np.array of int
-            elapsed_time=np.array([elapsed_time]),  # convert float to np.array of float
-        )
-        save_files(
-            dir_data=dir_data,
-            basedir_proj=basedir_proj,
-            filepaths=[__file__],
-        )
+        # Arrange data to save
+        data = {
+            "fig_live": fig,
+            "fig_analysis": fig_analysis,
+            "t_vec": t_vec,
+            "I1": I1,
+            "I1": I1,
+            "Q1": Q1,
+            "Q2": Q2,
+            "iteration": np.array([n]),  # convert int to np.array of int
+            "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
+        }
 
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
+
+    # Close the quantum machines at the end
+    qm.close()
 
 # %%

@@ -27,8 +27,7 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from scipy import signal
-from utils import make_and_get_dir_data, save_files
-import os
+from qualang_tools.results.data_handler import DataHandler
 import time
 import warnings
 import matplotlib
@@ -44,9 +43,9 @@ resonator = "rr1"  # The resonator element
 n_avg = 1000  # The number of averages
 # The frequency sweep parameters
 if resonator == "rr1":
-    frequencies = np.arange(47e6, 51e6, 0.1e6)
+    f_vec = np.arange(47e6, 51e6, 0.1e6)
 else:
-    frequencies = np.arange(-135e6, -128e6, 0.1e6)
+    f_vec = np.arange(-135e6, -128e6, 0.1e6)
 
 
 with program() as resonator_spec:
@@ -59,7 +58,7 @@ with program() as resonator_spec:
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
-        with for_(*from_array(f, frequencies)):  # QUA for_ loop for sweeping the frequency
+        with for_(*from_array(f, f_vec)):  # QUA for_ loop for sweeping the frequency
             # Update the frequency of the digital oscillator linked to the resonator element
             update_frequency(resonator, f)
             # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
@@ -80,8 +79,8 @@ with program() as resonator_spec:
 
     with stream_processing():
         # Cast the data into a 1D vector, average the 1D vectors together and store the results on the OPX processor
-        I_st.buffer(len(frequencies)).average().save("I")
-        Q_st.buffer(len(frequencies)).average().save("Q")
+        I_st.buffer(len(f_vec)).average().save("I")
+        Q_st.buffer(len(f_vec)).average().save("Q")
         n_st.save("iteration")
 
 #####################################
@@ -128,11 +127,11 @@ else:
         plt.suptitle(f"Resonator spectroscopy for {resonator} - LO = {resonator_LO / u.GHz} GHz")
         ax1 = plt.subplot(211)
         plt.cla()
-        plt.plot(frequencies / u.MHz, R, ".")
+        plt.plot(f_vec / u.MHz, R, ".")
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
         plt.subplot(212, sharex=ax1)
         plt.cla()
-        plt.plot(frequencies / u.MHz, signal.detrend(np.unwrap(phase)), ".")
+        plt.plot(f_vec / u.MHz, signal.detrend(np.unwrap(phase)), ".")
         plt.xlabel("Intermediate frequency [MHz]")
         plt.ylabel("Phase [rad]")
         plt.pause(0.1)
@@ -142,8 +141,8 @@ else:
         from qualang_tools.plot.fitting import Fit
 
         fit = Fit()
-        plt.figure()
-        res_spec_fit = fit.reflection_resonator_spectroscopy(frequencies / u.MHz, R, plot=True)
+        fig_analysis = plt.figure()
+        res_spec_fit = fit.reflection_resonator_spectroscopy(f_vec / u.MHz, R, plot=True)
         plt.title(f"Resonator spectroscopy for {resonator} - LO = {resonator_LO / u.GHz} GHz")
         plt.xlabel("Intermediate frequency [Hz]")
         plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
@@ -153,24 +152,31 @@ else:
     except (Exception,):
         pass
 
-    # save the numpy arrays
     if save_data:
-        dir_data = make_and_get_dir_data(basedir_data=basedir_data, filepath_script=__file__)
-        np.savez(
-            file=os.path.join(dir_data, "data.npz"),
-            I=I,
-            Q=Q,
-            S=S,
-            R=R,
-            frequencies=frequencies,
-            iteration=np.array([iteration]),  # convert int to np.array of int
-            elapsed_time=np.array([elapsed_time]),  # convert float to np.array of float
-        )
-        save_files(
-            dir_data=dir_data,
-            basedir_proj=basedir_proj,
-            filepaths=[__file__],
-        )
+        # Arrange data to save
+        data = {
+            "fig_live": fig,
+            "fig_analysis": fig_analysis,
+            "f_vec": f_vec,
+            "I": I,
+            "Q": Q,
+            "S": S,
+            "R": R,
+            "phase": phase,
+        }
+
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
 
     # Close the quantum machines at the end
     qm.close()

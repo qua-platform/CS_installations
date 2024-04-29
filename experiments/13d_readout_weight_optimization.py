@@ -34,8 +34,7 @@ from qm import SimulationConfig
 from qualang_tools.results import fetching_tool, progress_counter
 import warnings
 import matplotlib
-from utils import make_and_get_dir_data, save_files
-import os
+from qualang_tools.results.data_handler import DataHandler
 import time
 
 matplotlib.use("TKAgg")
@@ -88,6 +87,7 @@ def plot_three_complex_arrays(x, arr1, arr2, arr3):
     ax3.legend()
     plt.tight_layout()
     plt.show()
+    return fig
 
 
 ###################
@@ -216,8 +216,21 @@ else:
         elapsed_time = time.time() - start_time
 
     # Fetch and reshape the data
+    IIg = [[], []]
+    IIe = [[], []]
+    IQg = [[], []]
+    IQe = [[], []]
+    QIg = [[], []]
+    QIe = [[], []]
+    QQg = [[], []]
+    QQe = [[], []]
+    Ig = [[], []]
+    Ie = [[], []]
+    Qg = [[], []]
+    Qe = [[], []]
     ground_trace = [[], []]
     excited_trace = [[], []]
+    subtracted_trace = [[], []]
     norm_subtracted_trace = [[], []]
     weights_cos = [[], []]
     weights_sin = [[], []]
@@ -225,22 +238,22 @@ else:
     weights_minus_cos = [[]]
     res_handles = job.result_handles
     for i in range(2):
-        IIe, IIg = divide_array_in_half(res_handles.get(f"II_q{i}").fetch_all())
-        IQe, IQg = divide_array_in_half(res_handles.get(f"IQ_q{i}").fetch_all())
-        QIe, QIg = divide_array_in_half(res_handles.get(f"QI_q{i}").fetch_all())
-        QQe, QQg = divide_array_in_half(res_handles.get(f"QQ_q{i}").fetch_all())
+        IIe[i], IIg[i] = divide_array_in_half(res_handles.get(f"II_q{i}").fetch_all())
+        IQe[i], IQg[i] = divide_array_in_half(res_handles.get(f"IQ_q{i}").fetch_all())
+        QIe[i], QIg[i] = divide_array_in_half(res_handles.get(f"QI_q{i}").fetch_all())
+        QQe[i], QQg[i] = divide_array_in_half(res_handles.get(f"QQ_q{i}").fetch_all())
         # Sum the quadrature to fully demodulate the traces
-        Ie = IIe + IQe
-        Ig = IIg + IQg
-        Qe = QIe + QQe
-        Qg = QIg + QQg
+        Ie[i] = IIe[i] + IQe[i]
+        Ig[i] = IIg[i] + IQg[i]
+        Qe[i] = QIe[i] + QQe[i]
+        Qg[i] = QIg[i] + QQg[i]
         # Derive and normalize the ground and excited traces
-        ground_trace[i] = Ig + 1j * Qg
-        excited_trace[i] = Ie + 1j * Qe
-        subtracted_trace = excited_trace[i] - ground_trace[i]
-        norm_subtracted_trace[i] = normalize_complex_array(subtracted_trace)  # <- these are the optimal weights :)
+        ground_trace[i] = Ig[i] + 1j * Qg[i]
+        excited_trace[i] = Ie[i] + 1j * Qe[i]
+        subtracted_trace[i] = excited_trace[i] - ground_trace[i]
+        norm_subtracted_trace[i] = normalize_complex_array(subtracted_trace[i])  # <- these are the optimal weights :)
         # Plot the results
-        plot_three_complex_arrays(x_plot, ground_trace[i], excited_trace[i], norm_subtracted_trace[i])
+        fig = plot_three_complex_arrays(x_plot, ground_trace[i], excited_trace[i], norm_subtracted_trace[i])
         plt.suptitle(f"Integration weight optimization for qubit {i+1}")
         plt.tight_layout()
         # Reshape the optimal integration weights to match the configuration
@@ -256,33 +269,47 @@ else:
             weights_imag=weights_imag,
             weights_minus_real=weights_minus_real,
         )
-        save_files(
-            dir_data=dir_data,
-            basedir_proj=basedir_proj,
-            filepaths=[__file__],
-        )
 
-    # # save the numpy arrays
-    # if save_data:
-    #     dir_data = get_dir_data()
-    #     os.makedirs(dir_data, exist_ok=True)
-    #     np.savez(
-    #         file=os.path.join(dir_data, "data.npz"),
-    #         Ig=Ig_swap,
-    #         Qg=Qg_swap,
-    #         Ie=Ie_swap,
-    #         Qe=Qe_swap,
-    #         Ig_avg=Ig_avg,
-    #         Qg_avg=Qg_avg,
-    #         Ie_avg=Ie_avg,
-    #         Qe_avg=Qe_avg,
-    #         Ig_var=Ig_var,
-    #         Qg_var=Qg_var,
-    #         Ie_var=Ie_var,
-    #         Qe_var=Qe_var,
-    #         iteration=np.array([iteration]),  # convert int to np.array of int
-    #         elapsed_time=np.array([elapsed_time]),  # convert float to np.array of float
-    #     )
+    if save_data:
+        # Arrange data to save
+        data = {
+            "fig_live": fig,
+            "IIg": np.array(IIg),
+            "IIe": np.array(IIe),
+            "IQg": np.array(IQg),
+            "IQe": np.array(IQe),
+            "QIg": np.array(QIg),
+            "QIe": np.array(QIe),
+            "QQg": np.array(QQg),
+            "QQe": np.array(QQe),
+            "Ig": np.array(Ig),
+            "Ie": np.array(Ie),
+            "Qg": np.array(Qg),
+            "Qe": np.array(Qe),
+            "ground_trace": np.array(ground_trace),
+            "excited_trace": np.array(excited_trace),
+            "subtracted_trace": np.array(subtracted_trace),
+            "norm_subtracted_trace": np.array(norm_subtracted_trace),
+            "weights_cos": np.array(weights_cos),
+            "weights_sin": np.array(weights_sin),
+            "weights_minus_sin": np.array(weights_minus_sin),
+            "weights_minus_cos": np.array(weights_minus_cos),
+            "iteration": np.array([n]),  # convert int to np.array of int
+            "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
+        }
+
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
 
     # After obtaining the optimal weights, you need to load them to the 'integration_weights' dictionary in the config.
     # For this, you can just copy and paste the following lines into the "integration_weights" section:

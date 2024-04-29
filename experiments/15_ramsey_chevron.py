@@ -29,8 +29,7 @@ from qualang_tools.results import progress_counter
 from macros import qua_declaration, multiplexed_readout
 import warnings
 import matplotlib
-from utils import make_and_get_dir_data, save_files
-import os
+from qualang_tools.results.data_handler import DataHandler
 import time
 
 matplotlib.use("TKAgg")
@@ -41,8 +40,8 @@ warnings.filterwarnings("ignore")
 # The QUA program #
 ###################
 n_avg = 1000  # Number of averages
-dfs = np.arange(-10e6, 10e6, 0.1e6)  # Frequency detuning sweep in Hz
-t_delay = np.arange(4, 300, 4)  # Idle time sweep in clock cycles (Needs to be a list of integers)
+f_vec = np.arange(-10e6, 10e6, 0.1e6)  # Frequency detuning sweep in Hz
+t_vec = np.arange(4, 300, 4)  # Idle time sweep in clock cycles (Needs to be a list of integers)
 
 with program() as ramsey:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
@@ -50,12 +49,12 @@ with program() as ramsey:
     df = declare(int)  # QUA variable for the qubit frequency
 
     with for_(n, 0, n < n_avg, n + 1):
-        with for_(*from_array(df, dfs)):
+        with for_(*from_array(df, f_vec)):
             # Update the frequency of the two qubit elements
             update_frequency("q1_xy", df + qubit_IF_q1)
             update_frequency("q2_xy", df + qubit_IF_q2)
 
-            with for_(*from_array(t, t_delay)):
+            with for_(*from_array(t, t_vec)):
                 # qubit 1
                 play("x90", "q1_xy")
                 wait(t, "q1_xy")
@@ -78,11 +77,11 @@ with program() as ramsey:
     with stream_processing():
         n_st.save("n")
         # resonator 1
-        I_st[0].buffer(len(t_delay)).buffer(len(dfs)).average().save("I1")
-        Q_st[0].buffer(len(t_delay)).buffer(len(dfs)).average().save("Q1")
+        I_st[0].buffer(len(t_vec)).buffer(len(f_vec)).average().save("I1")
+        Q_st[0].buffer(len(t_vec)).buffer(len(f_vec)).average().save("Q1")
         # resonator 2
-        I_st[1].buffer(len(t_delay)).buffer(len(dfs)).average().save("I2")
-        Q_st[1].buffer(len(t_delay)).buffer(len(dfs)).average().save("Q2")
+        I_st[1].buffer(len(t_vec)).buffer(len(f_vec)).average().save("I2")
+        Q_st[1].buffer(len(t_vec)).buffer(len(f_vec)).average().save("Q2")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -127,46 +126,53 @@ else:
         plt.suptitle("Ramsey chevron")
         plt.subplot(221)
         plt.cla()
-        plt.pcolor(4 * t_delay, dfs / u.MHz, I1)
+        plt.pcolor(4 * t_vec, f_vec / u.MHz, I1)
         plt.title(f"qubit 1 I, fcent={(qubit_LO_q1 + qubit_IF_q1) / u.MHz} MHz")
         plt.ylabel("Frequency detuning [MHz]")
         plt.subplot(223)
         plt.cla()
-        plt.pcolor(4 * t_delay, dfs / u.MHz, Q1)
+        plt.pcolor(4 * t_vec, f_vec / u.MHz, Q1)
         plt.title("qubit 1 Q")
         plt.xlabel("Idle time [ns]")
         plt.ylabel("Frequency detuning [MHz]")
         plt.subplot(222)
         plt.cla()
-        plt.pcolor(4 * t_delay, dfs / u.MHz, I2)
+        plt.pcolor(4 * t_vec, f_vec / u.MHz, I2)
         plt.title(f"qubit 2 I, fcent={(qubit_LO_q2 + qubit_IF_q2) / u.MHz} MHz")
         plt.subplot(224)
         plt.cla()
-        plt.pcolor(4 * t_delay, dfs / u.MHz, Q2)
+        plt.pcolor(4 * t_vec, f_vec / u.MHz, Q2)
         plt.title("qubit 2 Q")
         plt.xlabel("Idle time [ns]")
         plt.tight_layout()
         plt.pause(0.1)
 
-    # save the numpy arrays
     if save_data:
-        dir_data = make_and_get_dir_data(basedir_data=basedir_data, filepath_script=__file__)
-        np.savez(
-            file=os.path.join(dir_data, "data.npz"),
-            I1=I1,
-            Q1=Q1,
-            I2=I2,
-            Q2=Q2,
-            t_delay=t_delay,
-            dfs=dfs,
-            iteration=np.array([n]),  # convert int to np.array of int
-            elapsed_time=np.array([elapsed_time]),  # convert float to np.array of float
-        )
-        save_files(
-            dir_data=dir_data,
-            basedir_proj=basedir_proj,
-            filepaths=[__file__],
-        )
+        # Arrange data to save
+        data = {
+            "fig_live": fig,
+            "fig_analysis": fig_analysis,
+            "t_vec": t_vec,
+            "I1": I1,
+            "I1": I1,
+            "Q1": Q1,
+            "Q2": Q2,
+            "iteration": np.array([n]),  # convert int to np.array of int
+            "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
+        }
+
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
 
     # Close the quantum machines at the end
     qm.close()

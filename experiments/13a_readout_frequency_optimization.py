@@ -28,8 +28,7 @@ from qualang_tools.results import fetching_tool, progress_counter
 from macros import multiplexed_readout, qua_declaration
 import warnings
 import matplotlib
-from utils import make_and_get_dir_data, save_files
-import os
+from qualang_tools.results.data_handler import DataHandler
 import time
 
 matplotlib.use("TKAgg")
@@ -40,7 +39,7 @@ warnings.filterwarnings("ignore")
 ###################
 n_avg = 4000
 # The frequency sweep around the resonators' frequency "resonator_IF_q"
-dfs = np.arange(-10e6, 10e6, 0.1e6)
+f_vec = np.arange(-10e6, 10e6, 0.1e6)
 
 with program() as ro_freq_opt:
     Ig, Ig_st, Qg, Qg_st, n, n_st = qua_declaration(nb_of_qubits=2)
@@ -48,7 +47,7 @@ with program() as ro_freq_opt:
     df = declare(int)  # QUA variable for the readout frequency
 
     with for_(n, 0, n < n_avg, n + 1):
-        with for_(*from_array(df, dfs)):
+        with for_(*from_array(df, f_vec)):
             # Update the frequency of the two resonator elements
             update_frequency("rr1", df + resonator_IF_q1)
             update_frequency("rr2", df + resonator_IF_q2)
@@ -73,31 +72,31 @@ with program() as ro_freq_opt:
         n_st.save("iteration")
         for i in range(2):
             # all shots
-            Ig_st[i].buffer(len(dfs)).buffer(n_avg).save(f"Ig{i}")
-            Qg_st[i].buffer(len(dfs)).buffer(n_avg).save(f"Qg{i}")
-            Ie_st[i].buffer(len(dfs)).buffer(n_avg).save(f"Ie{i}")
-            Qe_st[i].buffer(len(dfs)).buffer(n_avg).save(f"Qe{i}")
+            Ig_st[i].buffer(len(f_vec)).buffer(n_avg).save(f"Ig{i}")
+            Qg_st[i].buffer(len(f_vec)).buffer(n_avg).save(f"Qg{i}")
+            Ie_st[i].buffer(len(f_vec)).buffer(n_avg).save(f"Ie{i}")
+            Qe_st[i].buffer(len(f_vec)).buffer(n_avg).save(f"Qe{i}")
             # mean values
-            Ig_st[i].buffer(len(dfs)).average().save(f"Ig{i}_avg")
-            Qg_st[i].buffer(len(dfs)).average().save(f"Qg{i}_avg")
-            Ie_st[i].buffer(len(dfs)).average().save(f"Ie{i}_avg")
-            Qe_st[i].buffer(len(dfs)).average().save(f"Qe{i}_avg")
+            Ig_st[i].buffer(len(f_vec)).average().save(f"Ig{i}_avg")
+            Qg_st[i].buffer(len(f_vec)).average().save(f"Qg{i}_avg")
+            Ie_st[i].buffer(len(f_vec)).average().save(f"Ie{i}_avg")
+            Qe_st[i].buffer(len(f_vec)).average().save(f"Qe{i}_avg")
             # variances to get the SNR
             (
-                ((Ig_st[i].buffer(len(dfs)) * Ig_st[i].buffer(len(dfs))).average())
-                - (Ig_st[i].buffer(len(dfs)).average() * Ig_st[i].buffer(len(dfs)).average())
+                ((Ig_st[i].buffer(len(f_vec)) * Ig_st[i].buffer(len(f_vec))).average())
+                - (Ig_st[i].buffer(len(f_vec)).average() * Ig_st[i].buffer(len(f_vec)).average())
             ).save(f"Ig{i}_var")
             (
-                ((Qg_st[i].buffer(len(dfs)) * Qg_st[i].buffer(len(dfs))).average())
-                - (Qg_st[i].buffer(len(dfs)).average() * Qg_st[i].buffer(len(dfs)).average())
+                ((Qg_st[i].buffer(len(f_vec)) * Qg_st[i].buffer(len(f_vec))).average())
+                - (Qg_st[i].buffer(len(f_vec)).average() * Qg_st[i].buffer(len(f_vec)).average())
             ).save(f"Qg{i}_var")
             (
-                ((Ie_st[i].buffer(len(dfs)) * Ie_st[i].buffer(len(dfs))).average())
-                - (Ie_st[i].buffer(len(dfs)).average() * Ie_st[i].buffer(len(dfs)).average())
+                ((Ie_st[i].buffer(len(f_vec)) * Ie_st[i].buffer(len(f_vec))).average())
+                - (Ie_st[i].buffer(len(f_vec)).average() * Ie_st[i].buffer(len(f_vec)).average())
             ).save(f"Ie{i}_var")
             (
-                ((Qe_st[i].buffer(len(dfs)) * Qe_st[i].buffer(len(dfs))).average())
-                - (Qe_st[i].buffer(len(dfs)).average() * Qe_st[i].buffer(len(dfs)).average())
+                ((Qe_st[i].buffer(len(f_vec)) * Qe_st[i].buffer(len(f_vec))).average())
+                - (Qe_st[i].buffer(len(f_vec)).average() * Qe_st[i].buffer(len(f_vec)).average())
             ).save(f"Qe{i}_var")
 
 #####################################
@@ -180,20 +179,20 @@ else:
         plt.suptitle("Readout frequency optimization")
         plt.subplot(121)
         plt.cla()
-        plt.plot(dfs / u.MHz, SNR0, ".-")
+        plt.plot(f_vec / u.MHz, SNR0, ".-")
         plt.title(f"Qubit 1 around {resonator_IF_q1 / u.MHz} MHz")
         plt.xlabel("Readout frequency detuning [MHz]")
         plt.ylabel("SNR")
         plt.grid("on")
         plt.subplot(122)
         plt.cla()
-        plt.plot(dfs / u.MHz, SNR1, ".-")
+        plt.plot(f_vec / u.MHz, SNR1, ".-")
         plt.title(f"Qubit 2 around {resonator_IF_q2 / u.MHz} MHz")
         plt.xlabel("Readout frequency detuning [MHz]")
         plt.grid("on")
         plt.pause(0.1)
-        print(f"The optimal readout frequency is {dfs[np.argmax(SNR0)] + resonator_IF_q1} Hz (SNR={max(SNR0)})")
-        print(f"The optimal readout frequency is {dfs[np.argmax(SNR1)] + resonator_IF_q2} Hz (SNR={max(SNR1)})")
+        print(f"The optimal readout frequency is {f_vec[np.argmax(SNR0)] + resonator_IF_q1} Hz (SNR={max(SNR0)})")
+        print(f"The optimal readout frequency is {f_vec[np.argmax(SNR1)] + resonator_IF_q2} Hz (SNR={max(SNR1)})")
 
     results_end = fetching_tool(
         job,
@@ -264,43 +263,51 @@ else:
     Ie1_swap = Ie1.swapaxes(0, 1)
     Qe1_swap = Qe1.swapaxes(0, 1)
 
-    # save the numpy arrays
     if save_data:
-        dir_data = make_and_get_dir_data(basedir_data=basedir_data, filepath_script=__file__)
-        np.savez(
-            file=os.path.join(dir_data, "data.npz"),
-            Ig0_swap=Ig0_swap,
-            Qg0_swap=Qg0_swap,
-            Ie0_swap=Ie0_swap,
-            Qe0_swap=Qe0_swap,
-            Ig1_swap=Ig1_swap,
-            Qg1_swap=Qg1_swap,
-            Ie1_swap=Ie1_swap,
-            Qe1_swap=Qe1_swap,
-            Ig0_avg=Ig0_avg,
-            Qg0_avg=Qg0_avg,
-            Ie0_avg=Ie0_avg,
-            Qe0_avg=Qe0_avg,
-            Ig0_var=Ig0_var,
-            Qg0_var=Qg0_var,
-            Ie0_var=Ie0_var,
-            Qe0_var=Qe0_var,
-            Ig1_avg=Ig1_avg,
-            Qg1_avg=Qg1_avg,
-            Ie1_avg=Ie1_avg,
-            Qe1_avg=Qe1_avg,
-            Ig1_var=Ig1_var,
-            Qg1_var=Qg1_var,
-            Ie1_var=Ie1_var,
-            Qe1_var=Qe1_var,
-            iteration=np.array([iteration]),  # convert int to np.array of int
-            elapsed_time=np.array([elapsed_time]),  # convert float to np.array of float
-        )
-        save_files(
-            dir_data=dir_data,
-            basedir_proj=basedir_proj,
-            filepaths=[__file__],
-        )
+        # Arrange data to save
+        data = {
+            "fig_live": fig,
+            "f_vec": f_vec,
+            "Ig0_swap": Ig0_swap,
+            "Qg0_swap": Qg0_swap,
+            "Ie0_swap": Ie0_swap,
+            "Qe0_swap": Qe0_swap,
+            "Ig1_swap": Ig1_swap,
+            "Qg1_swap": Qg1_swap,
+            "Ie1_swap": Ie1_swap,
+            "Qe1_swap": Qe1_swap,
+            "Ig0_avg": Ig0_avg,
+            "Qg0_avg": Qg0_avg,
+            "Ie0_avg": Ie0_avg,
+            "Qe0_avg": Qe0_avg,
+            "Ig0_var": Ig0_var,
+            "Qg0_var": Qg0_var,
+            "Ie0_var": Ie0_var,
+            "Qe0_var": Qe0_var,
+            "Ig1_avg": Ig1_avg,
+            "Qg1_avg": Qg1_avg,
+            "Ie1_avg": Ie1_avg,
+            "Qe1_avg": Qe1_avg,
+            "Ig1_var": Ig1_var,
+            "Qg1_var": Qg1_var,
+            "Ie1_var": Ie1_var,
+            "Qe1_var": Qe1_var,
+            "iteration": np.array([n]),  # convert int to np.array of int
+            "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
+        }
+
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
 
     # Close the quantum machines at the end
     qm.close()

@@ -1,7 +1,7 @@
 # %%
 """
         RAMSEY WITH VIRTUAL Z ROTATIONS
-The program consists in playing a Ramsey sequence (x90 - idle_time - x90 - measurement) for different idle times.
+The program consists in playing a Ramsey sequence (x90 - t_vec- x90 - measurement) for different idle times.
 Instead of detuning the qubit gates, the frame of the second x90 pulse is rotated (de-phased) to mimic an accumulated
 phase acquired for a given detuning after the idle time.
 This method has the advantage of playing resonant gates.
@@ -31,8 +31,7 @@ from macros import qua_declaration, multiplexed_readout
 from qualang_tools.plot.fitting import Fit
 import warnings
 import matplotlib
-from utils import make_and_get_dir_data, save_files
-import os
+from qualang_tools.results.data_handler import DataHandler
 import time
 
 matplotlib.use("TKAgg")
@@ -43,7 +42,7 @@ warnings.filterwarnings("ignore")
 # The QUA program #
 ###################
 n_avg = 1000  # Number of averages
-idle_times = np.arange(4, 300, 1)  # Idle time sweep in clock cycles (Needs to be a list of integers)
+t_vec = np.arange(4, 300, 1)  # Idle time sweep in clock cycles (Needs to be a list of integers)
 detuning = 1e6  # "Virtual" detuning in Hz
 
 with program() as ramsey:
@@ -52,7 +51,7 @@ with program() as ramsey:
     phi = declare(fixed)  # Phase to apply the virtual Z-rotation
 
     with for_(n, 0, n < n_avg, n + 1):
-        with for_(*from_array(t, idle_times)):
+        with for_(*from_array(t, t_vec)):
             # Rotate the frame of the second x90 gate to implement a virtual Z-rotation
             # 4*tau because tau was in clock cycles and 1e-9 because tau is ns
             assign(phi, Cast.mul_fixed_by_int(detuning * 1e-9, 4 * t))
@@ -85,11 +84,11 @@ with program() as ramsey:
     with stream_processing():
         n_st.save("n")
         # resonator 1
-        I_st[0].buffer(len(idle_times)).average().save("I1")
-        Q_st[0].buffer(len(idle_times)).average().save("Q1")
+        I_st[0].buffer(len(t_vec)).average().save("I1")
+        Q_st[0].buffer(len(t_vec)).average().save("Q1")
         # resonator 2
-        I_st[1].buffer(len(idle_times)).average().save("I2")
-        Q_st[1].buffer(len(idle_times)).average().save("Q2")
+        I_st[1].buffer(len(t_vec)).average().save("I2")
+        Q_st[1].buffer(len(t_vec)).average().save("Q2")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -134,21 +133,21 @@ else:
         # Plot
         plt.subplot(221)
         plt.cla()
-        plt.plot(4 * idle_times, I1)
+        plt.plot(4 * t_vec, I1)
         plt.ylabel("I quadrature [V]")
         plt.title("Qubit 1")
         plt.subplot(223)
         plt.cla()
-        plt.plot(4 * idle_times, Q1)
+        plt.plot(4 * t_vec, Q1)
         plt.ylabel("Q quadrature [V]")
         plt.xlabel("Idle times [ns]")
         plt.subplot(222)
         plt.cla()
-        plt.plot(4 * idle_times, I2)
+        plt.plot(4 * t_vec, I2)
         plt.title("Qubit 2")
         plt.subplot(224)
         plt.cla()
-        plt.plot(4 * idle_times, Q2)
+        plt.plot(4 * t_vec, Q2)
         plt.title("Q2")
         plt.xlabel("Idle times [ns]")
         plt.tight_layout()
@@ -157,48 +156,63 @@ else:
     qm.close()
     try:
         fit = Fit()
-        plt.figure()
+        fig_analysis = plt.figure()
         plt.suptitle(f"Ramsey measurement with detuning={detuning} Hz")
         plt.subplot(221)
-        fit.ramsey(4 * idle_times, I1, plot=True)
+        fit.ramsey(4 * t_vec, I1, plot=True)
         plt.xlabel("Idle times [ns]")
         plt.ylabel("I quadrature [V]")
         plt.title("Qubit 1")
         plt.subplot(223)
-        fit.ramsey(4 * idle_times, Q1, plot=True)
+        fit.ramsey(4 * t_vec, Q1, plot=True)
         plt.xlabel("Idle times [ns]")
         plt.ylabel("I quadrature [V]")
         plt.title("Qubit 2")
         plt.subplot(222)
-        fit.ramsey(4 * idle_times, I2, plot=True)
+        fit.ramsey(4 * t_vec, I2, plot=True)
         plt.xlabel("Idle times [ns]")
         plt.ylabel("I quadrature [V]")
         plt.subplot(224)
-        fit.ramsey(4 * idle_times, Q2, plot=True)
+        fit.ramsey(4 * t_vec, Q2, plot=True)
         plt.xlabel("Idle times [ns]")
         plt.ylabel("I quadrature [V]")
         plt.tight_layout()
     except (Exception,):
         pass
 
-    # save the numpy arrays
     if save_data:
-        dir_data = make_and_get_dir_data(basedir_data=basedir_data, filepath_script=__file__)
-        np.savez(
-            file=os.path.join(dir_data, "data.npz"),
-            I1=I1,
-            Q1=Q1,
-            I2=I2,
-            Q2=Q2,
-            idle_times=idle_times,
-            iteration=np.array([n]),  # convert int to np.array of int
-            elapsed_time=np.array([elapsed_time]),  # convert float to np.array of float
-        )
-        save_files(
-            dir_data=dir_data,
-            basedir_proj=basedir_proj,
-            filepaths=[__file__],
-        )
+        # Arrange data to save
+        data = {
+            "fig_live": fig,
+            "fig_analysis": fig_analysis,
+            "t_vec": t_vec,
+            "I1": I1,
+            "I1": I1,
+            "Q1": Q1,
+            "Q2": Q2,
+            "detuning": np.array(detuning),
+            "iteration": np.array([n]),  # convert int to np.array of int
+            "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
+        }
+
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
+
+    # Close the quantum machines at the end
+    qm.close()
+
+# %%
+
 
 
 # %%

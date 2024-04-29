@@ -29,8 +29,7 @@ from qualang_tools.results import fetching_tool
 from qualang_tools.analysis import two_state_discriminator
 from macros import qua_declaration, multiplexed_readout
 import matplotlib
-from utils import make_and_get_dir_data, save_files
-import os
+from qualang_tools.results.data_handler import DataHandler
 import time
 
 matplotlib.use("TKAgg")
@@ -101,26 +100,34 @@ else:
     two_state_discriminator(I_g_q2, Q_g_q2, I_e_q2, Q_e_q2, True, True)
     plt.suptitle("qubit 2")
 
-    # save the numpy arrays
     if save_data:
-        dir_data = make_and_get_dir_data(basedir_data=basedir_data, filepath_script=__file__)
-        np.savez(
-            file=os.path.join(dir_data, "data.npz"),
-            I_g_q1=I_g_q1,
-            Q_g_q1=Q_g_q1,
-            I_e_q1=I_e_q1,
-            Q_e_q1=Q_e_q1,
-            I_g_q2=I_g_q2,
-            Q_g_q2=Q_g_q2,
-            I_e_q2=I_e_q2,
-            Q_e_q2=Q_e_q2,
-            iteration=np.array([n_runs]),  # convert int to np.array of int
-        )
-        save_files(
-            dir_data=dir_data,
-            basedir_proj=basedir_proj,
-            filepaths=[__file__],
-        )
+        # Arrange data to save
+        data = {
+            "fig_live": fig,
+            "I_g_q1":I_g_q1,
+            "Q_g_q1":Q_g_q1,
+            "I_e_q1":I_e_q1,
+            "Q_e_q1":Q_e_q1,
+            "I_g_q2":I_g_q2,
+            "Q_g_q2":Q_g_q2,
+            "I_e_q2":I_e_q2,
+            "Q_e_q2":Q_e_q2,
+            "iteration": np.array([n]),  # convert int to np.array of int
+            "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
+        }
+
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
 
     # Close the quantum machines at the end
     qm.close()

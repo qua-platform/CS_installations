@@ -3,7 +3,7 @@
         RESONATOR SPECTROSCOPY VERSUS READOUT AMPLITUDE
 This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to
 extract the 'I' and 'Q' quadratures.
-This is done across various readout intermediate frequencies and amplitudes.
+This is done across various readout intermediate frequencies and a_vec.
 Based on the results, one can determine if a qubit is coupled to the resonator by noting the resonator frequency
 splitting. This information can then be used to adjust the readout amplitude, choosing a readout amplitude value
 just before the observed frequency splitting.
@@ -32,8 +32,7 @@ from qualang_tools.loops import from_array
 from macros import qua_declaration
 import matplotlib.pyplot as plt
 from scipy import signal
-from utils import make_and_get_dir_data, save_files
-import os
+from qualang_tools.results.data_handler import DataHandler
 import time
 import warnings
 import matplotlib
@@ -49,12 +48,12 @@ n_avg = 1000  # The number of averages
 # The frequency sweep around the resonators' frequency "resonator_IF_q"
 span = 10 * u.MHz
 df = 100 * u.kHz
-dfs = np.arange(-span, +span + 0.1, df)
+f_vec = np.arange(-span, +span + 0.1, df)
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
 a_min = 0.001
 a_max = 1.99
 da = 0.01
-amplitudes = np.arange(a_min, a_max + da / 2, da)  # The amplitude vector +da/2 to add a_max to the scan
+a_vec = np.arange(a_min, a_max + da / 2, da)  # The amplitude vector +da/2 to add a_max to the scan
 
 with program() as multi_res_spec_vs_amp:
     # QUA macro to declare the measurement variables and their corresponding streams for a given number of resonators
@@ -63,12 +62,12 @@ with program() as multi_res_spec_vs_amp:
     a = declare(fixed)  # QUA variable for sweeping the readout amplitude pre-factor
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
-        with for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the frequency
+        with for_(*from_array(df, f_vec)):  # QUA for_ loop for sweeping the frequency
             # Update the frequency of the two resonator elements
             update_frequency("rr1", df + resonator_IF_q1)
             update_frequency("rr2", df + resonator_IF_q2)
 
-            with for_(*from_array(a, amplitudes)):  # QUA for_ loop for sweeping the readout amplitude
+            with for_(*from_array(a, a_vec)):  # QUA for_ loop for sweeping the readout amplitude
                 # resonator 1
                 wait(depletion_time * u.ns, "rr1")  # wait for the resonator to relax
                 measure(
@@ -104,11 +103,11 @@ with program() as multi_res_spec_vs_amp:
         # Cast the data into a 2D matrix, average the 2D matrices together and store the results on the OPX processor
         # Note that the buffering goes from the most inner loop (left) to the most outer one (right)
         # resonator 1
-        I_st[0].buffer(len(amplitudes)).buffer(len(dfs)).average().save("I1")
-        Q_st[0].buffer(len(amplitudes)).buffer(len(dfs)).average().save("Q1")
+        I_st[0].buffer(len(a_vec)).buffer(len(f_vec)).average().save("I1")
+        Q_st[0].buffer(len(a_vec)).buffer(len(f_vec)).average().save("Q1")
         # resonator 2
-        I_st[1].buffer(len(amplitudes)).buffer(len(dfs)).average().save("I2")
-        Q_st[1].buffer(len(amplitudes)).buffer(len(dfs)).average().save("Q2")
+        I_st[1].buffer(len(a_vec)).buffer(len(f_vec)).average().save("I2")
+        Q_st[1].buffer(len(a_vec)).buffer(len(f_vec)).average().save("Q2")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -164,52 +163,57 @@ else:
         plt.cla()
         plt.title(f"Resonator 1 - LO: {resonator_LO / u.GHz} GHz")
         plt.ylabel("Readout IF [MHz]")
-        plt.pcolor(amplitudes * readout_amp_q1, (dfs + resonator_IF_q1) / u.MHz, R1)
+        plt.pcolor(a_vec * readout_amp_q1, (f_vec + resonator_IF_q1) / u.MHz, R1)
         plt.axhline(resonator_IF_q1 / u.MHz, color="k")
         plt.subplot(222)
         plt.cla()
         plt.title(f"Resonator 2 - LO: {resonator_LO / u.GHz} GHz")
-        plt.pcolor(amplitudes * readout_amp_q2, (dfs + resonator_IF_q2) / u.MHz, R2)
+        plt.pcolor(a_vec * readout_amp_q2, (f_vec + resonator_IF_q2) / u.MHz, R2)
         plt.axhline(resonator_IF_q2 / u.MHz, color="k")
         plt.subplot(223)
         plt.cla()
         plt.xlabel("Readout amplitude [V]")
         plt.ylabel("Readout IF [MHz]")
-        plt.pcolor(amplitudes * readout_amp_q1, (dfs + resonator_IF_q1) / u.MHz, signal.detrend(np.unwrap(phase1)))
+        plt.pcolor(a_vec * readout_amp_q1, (f_vec + resonator_IF_q1) / u.MHz, signal.detrend(np.unwrap(phase1)))
         plt.axhline(resonator_IF_q1 / u.MHz, color="k")
         plt.subplot(224)
         plt.cla()
         plt.xlabel("Readout amplitude [V]")
-        plt.pcolor(amplitudes * readout_amp_q2, (dfs + resonator_IF_q2) / u.MHz, signal.detrend(np.unwrap(phase2)))
+        plt.pcolor(a_vec * readout_amp_q2, (f_vec + resonator_IF_q2) / u.MHz, signal.detrend(np.unwrap(phase2)))
         plt.axhline(resonator_IF_q2 / u.MHz, color="k")
         plt.tight_layout()
         plt.pause(0.1)
 
-    # save the numpy arrays
     if save_data:
-        dir_data = make_and_get_dir_data(basedir_data=basedir_data, filepath_script=__file__)
-        np.savez(
-            file=os.path.join(dir_data, "data.npz"),
-            I1=I1,
-            Q1=Q1,
-            I2=I2,
-            Q2=Q2,
-            S1=S1,
-            S2=S2,
-            R1=R1,
-            phase1=phase1,
-            R2=R2,
-            phase2=phase2,
-            dfs=dfs,
-            amplitudes=amplitudes,
-            iteration=np.array([n]),  # convert int to np.array of int
-            elapsed_time=np.array([elapsed_time]),  # convert float to np.array of float
-        )
-        save_files(
-            dir_data=dir_data,
-            basedir_proj=basedir_proj,
-            filepaths=[__file__],
-        )
+        # Arrange data to save
+        data = {
+            "fig_live": fig,
+            "f_vec": f_vec,
+            "a_vec": a_vec,
+            "I1": I1,
+            "I1": I1,
+            "Q1": Q1,
+            "Q2": Q2,
+            "S1": S1,
+            "S2": S2,
+            "R1": R1,
+            "R2": R2,
+            "phase1": phase1,
+            "phase2": phase2,
+        }
+
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
 
     # Close the quantum machines at the end
     qm.close()

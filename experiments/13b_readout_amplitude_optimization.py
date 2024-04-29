@@ -27,8 +27,7 @@ from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.analysis import two_state_discriminator
 from macros import multiplexed_readout, qua_declaration
 import matplotlib
-from utils import make_and_get_dir_data, save_files
-import os
+from qualang_tools.results.data_handler import DataHandler
 import time
 
 matplotlib.use("TKAgg")
@@ -42,7 +41,7 @@ n_runs = 10_000
 a_min = 0.9
 a_max = 1.1
 da = 0.01
-amplitudes = np.arange(a_min, a_max + da / 2, da)  # The amplitude vector +da/2 to add a_max to the scan
+a_vec = np.arange(a_min, a_max + da / 2, da)  # The amplitude vector +da/2 to add a_max to the scan
 
 
 with program() as ro_amp_opt:
@@ -52,7 +51,7 @@ with program() as ro_amp_opt:
     counter_st = declare_stream()  # Stream for the counter variable
     a = declare(fixed)  # QUA variable for the readout amplitude
 
-    with for_(*from_array(a, amplitudes)):
+    with for_(*from_array(a, a_vec)):
         # Save the counter to get the progress bar
         save(counter, counter_st)
         with for_(n, 0, n < n_runs, n + 1):
@@ -75,10 +74,10 @@ with program() as ro_amp_opt:
     with stream_processing():
         # Save all streamed points for plotting the IQ blobs
         for i in range(2):
-            I_g_st[i].buffer(n_runs).buffer(len(amplitudes)).save(f"I_g_q{i}")
-            Q_g_st[i].buffer(n_runs).buffer(len(amplitudes)).save(f"Q_g_q{i}")
-            I_e_st[i].buffer(n_runs).buffer(len(amplitudes)).save(f"I_e_q{i}")
-            Q_e_st[i].buffer(n_runs).buffer(len(amplitudes)).save(f"Q_e_q{i}")
+            I_g_st[i].buffer(n_runs).buffer(len(a_vec)).save(f"I_g_q{i}")
+            Q_g_st[i].buffer(n_runs).buffer(len(a_vec)).save(f"Q_g_q{i}")
+            I_e_st[i].buffer(n_runs).buffer(len(a_vec)).save(f"I_e_q{i}")
+            Q_e_st[i].buffer(n_runs).buffer(len(a_vec)).save(f"Q_e_q{i}")
         counter_st.save("iteration")
 
 #####################################
@@ -112,7 +111,7 @@ else:
         # Fetch results
         iteration = results.fetch_all()
         # Progress bar
-        progress_counter(iteration[0], len(amplitudes), start_time=results.get_start_time())
+        progress_counter(iteration[0], len(a_vec), start_time=results.get_start_time())
         # calculate the elapsed time
         elapsed_time = time.time() - start_time
 
@@ -121,7 +120,7 @@ else:
     I_g_q1, Q_g_q1, I_e_q1, Q_e_q1, I_g_q2, Q_g_q2, I_e_q2, Q_e_q2 = results.fetch_all()
     # Process the data
     fidelity_vec = [[], []]
-    for i in range(len(amplitudes)):
+    for i in range(len(a_vec)):
         _, _, fidelity_q1, _, _, _, _ = two_state_discriminator(
             I_g_q1[i], Q_g_q1[i], I_e_q1[i], Q_e_q1[i], b_print=False, b_plot=False
         )
@@ -135,39 +134,47 @@ else:
     plt.figure()
     plt.suptitle("Readout amplitude optimization")
     plt.subplot(121)
-    plt.plot(amplitudes * readout_amp_q1, fidelity_vec[0], ".-")
+    plt.plot(a_vec * readout_amp_q1, fidelity_vec[0], ".-")
     plt.title("Qubit 1")
     plt.xlabel("Readout amplitude [V]")
     plt.ylabel("Fidelity [%]")
     plt.subplot(122)
     plt.title("Qubit 2")
-    plt.plot(amplitudes * readout_amp_q2, fidelity_vec[1], ".-")
+    plt.plot(a_vec * readout_amp_q2, fidelity_vec[1], ".-")
     plt.xlabel("Readout amplitude [V]")
     plt.ylabel("Fidelity [%]")
     plt.tight_layout()
     plt.show()
 
-    # save the numpy arrays
     if save_data:
-        dir_data = make_and_get_dir_data(basedir_data=basedir_data, filepath_script=__file__)
-        np.savez(
-            file=os.path.join(dir_data, "data.npz"),
-            I_g_q1=I_g_q1,
-            Q_g_q1=Q_g_q1,
-            I_e_q1=I_e_q1,
-            Q_e_q1=Q_e_q1,
-            I_g_q2=I_g_q2,
-            Q_g_q2=Q_g_q2,
-            I_e_q2=I_e_q2,
-            Q_e_q2=Q_e_q2,
-            iteration=np.array([iteration]),  # convert int to np.array of int
-            elapsed_time=np.array([elapsed_time]),  # convert float to np.array of float
-        )
-        save_files(
-            dir_data=dir_data,
-            basedir_proj=basedir_proj,
-            filepaths=[__file__],
-        )
+        # Arrange data to save
+        data = {
+            "fig_live": fig,
+            "a_vec": a_vec,
+            "I_g_q1":I_g_q1,
+            "Q_g_q1":Q_g_q1,
+            "I_e_q1":I_e_q1,
+            "Q_e_q1":Q_e_q1,
+            "I_g_q2":I_g_q2,
+            "Q_g_q2":Q_g_q2,
+            "I_e_q2":I_e_q2,
+            "Q_e_q2":Q_e_q2,
+            "iteration": np.array([n]),  # convert int to np.array of int
+            "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
+        }
+
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
 
     # Close the quantum machines at the end
     qm.close()

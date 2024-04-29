@@ -31,8 +31,7 @@ from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.plot import interrupt_on_close
 import warnings
 import matplotlib
-from utils import make_and_get_dir_data, save_files
-import os
+from qualang_tools.results.data_handler import DataHandler
 import time
 
 matplotlib.use("TKAgg")
@@ -289,43 +288,49 @@ else:
     print(f"The optimal readout length for qubit 1 is {opt_readout_length_q1} ns (SNR={max(SNR_q1)})")
     print(f"The optimal readout length for qubit 2 is {opt_readout_length_q2} ns (SNR={max(SNR_q2)})")
 
-    # save the numpy arrays
     if save_data:
-        dir_data = make_and_get_dir_data(basedir_data=basedir_data, filepath_script=__file__)
-        np.savez(
-            file=os.path.join(dir_data, "data.npz"),
-            # Ig0_swap=Ig0_swap,
-            # Qg0_swap=Qg0_swap,
-            # Ie0_swap=Ie0_swap,
-            # Qe0_swap=Qe0_swap,
-            # Ig1_swap=Ig1_swap,
-            # Qg1_swapQg1__q1swap,
-            # Ie1_swap=Ie1_swap,
-            # Qe1_swap=Qe1_swap,
-            Ig_avg_q1=Ig_avg_q1,
-            Qg_avg_q1=Qg_avg_q1,
-            Ie_avg_q1=Ie_avg_q1,
-            Qe_avg_q1=Qe_avg_q1,
-            Ig_var_q1=Ig_var_q1,
-            Qg_var_q1=Qg_var_q1,
-            Ie_var_q1=Ie_var_q1,
-            Qe_var_q1=Qe_var_q1,
-            Ig_avg_q2=Ig_avg_q2,
-            Qg_avg_q2=Qg_avg_q2,
-            Ie_avg_q2=Ie_avg_q2,
-            Qe_avg_q2=Qe_avg_q2,
-            Ig_var_q2=Ig_var_q2,
-            Qg_var_q2=Qg_var_q2,
-            Ie_var_q2=Ie_var_q2,
-            Qe_var_q2=Qe_var_q2,
-            iteration=np.array([iteration]),  # convert int to np.array of int
-            elapsed_time=np.array([elapsed_time]),  # convert float to np.array of float
-        )
-        save_files(
-            dir_data=dir_data,
-            basedir_proj=basedir_proj,
-            filepaths=[__file__],
-        )
+        # Arrange data to save
+        data = {
+            "fig_live": fig,
+            "ground_trace_q1": ground_trace_q1,
+            "excited_trace_q1": excited_trace_q1,
+            "SNR_q1": SNR_q1,
+            "ground_trace_q2": ground_trace_q2,
+            "excited_trace_q2": excited_trace_q2,
+            "SNR_q2": SNR_q2,
+            "I_g_q1": Ig_avg_q1,
+            "Q_g_q1": Qg_avg_q1,
+            "I_e_q1": Ie_avg_q1,
+            "Q_e_q1": Qe_avg_q1,
+            "I_g_var_q1": Ig_var_q1,
+            "Q_g_var_q1": Qg_var_q1,
+            "I_e_var_q1": Ie_var_q1,
+            "Q_e_var_q1": Qe_var_q1,
+            "I_g_q2": Ig_avg_q2,
+            "Q_g_q2": Qg_avg_q2,
+            "I_e_q2": Ie_avg_q2,
+            "Q_e_q2": Qe_avg_q2,
+            "I_g_var_q2": Ig_var_q2,
+            "Q_g_var_q2": Qg_var_q2,
+            "I_e_var_q2": Ie_var_q2,
+            "Q_e_var_q2": Qe_var_q2,
+            "iteration": iteration,
+            "iteration": np.array([n]),  # convert int to np.array of int
+            "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
+        }
+
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
 
     # Close the quantum machines at the end
     qm.close()
