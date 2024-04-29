@@ -15,10 +15,6 @@ qop_ip = "127.0.0.1"  # Write the QM router IP address
 cluster_name = None  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
-qop_ip = "172.16.33.101"
-cluster_name = "Cluster_81"
-qop_port = None  # Write the QOP port if version < QOP220
-
 ############################
 # Set octave configuration #
 ############################
@@ -237,10 +233,17 @@ cr_IF_c1t2 = (qubit_IF_q2 + qubit_LO_q2) - (qubit_IF_q1 + qubit_LO_q1)
 cr_IF_c2t1 = (-1) * cr_IF_c1t2
 
 # Pulse durations
-cr_c1t2_square_positive_len = 100
+cr_c1t2_square_positive_len = 120
 cr_c1t2_square_negative_len = cr_c1t2_square_positive_len
-cr_c2t1_square_positive_len = 100
+cr_c2t1_square_positive_len = 120
 cr_c2t1_square_negative_len = cr_c2t1_square_positive_len
+# Pulse half durations
+cr_c1t2_square_positive_half_len = cr_c1t2_square_positive_len // 2  # for cr echo
+assert 2 * cr_c1t2_square_positive_half_len == cr_c1t2_square_positive_len
+cr_c1t2_square_negative_half_len = cr_c1t2_square_positive_half_len
+cr_c2t1_square_positive_half_len = cr_c2t1_square_positive_len // 2  # for cr echo
+assert 2 * cr_c2t1_square_positive_half_len == cr_c2t1_square_positive_len
+cr_c2t1_square_negative_half_len = cr_c2t1_square_positive_half_len
 # Pulse amplitudes
 cr_c1t2_square_positive_amp = 0.2
 cr_c1t2_square_negative_amp = (-1) * cr_c1t2_square_positive_amp
@@ -257,6 +260,13 @@ cr_cancel_c1t2_square_positive_len = cr_c1t2_square_positive_len
 cr_cancel_c1t2_square_negative_len = cr_cancel_c1t2_square_positive_len
 cr_cancel_c2t1_square_positive_len = cr_c2t1_square_positive_len
 cr_cancel_c2t1_square_negative_len = cr_cancel_c2t1_square_positive_len
+# Cancel pulse half durations
+cr_cancel_c1t2_square_positive_half_len = cr_c1t2_square_positive_len // 2
+assert 2 * cr_cancel_c1t2_square_positive_half_len == cr_c1t2_square_positive_len
+cr_cancel_c1t2_square_negative_half_len = cr_cancel_c1t2_square_positive_half_len
+cr_cancel_c2t1_square_positive_half_len = cr_c2t1_square_positive_len // 2
+assert 2 * cr_cancel_c2t1_square_positive_half_len == cr_c2t1_square_positive_len
+cr_cancel_c2t1_square_negative_half_len = cr_cancel_c2t1_square_positive_half_len
 # Cancel pulse amplitudes
 cr_cancel_c1t2_square_positive_amp = 0.05
 cr_cancel_c1t2_square_negative_amp = (-1) * cr_cancel_c1t2_square_positive_amp
@@ -418,6 +428,8 @@ config = {
             "operations": {
                 "square_positive": "cr_c1t2_square_positive_pulse",
                 "square_negative": "cr_c1t2_square_negative_pulse",
+                "square_positive_half": "cr_c1t2_square_positive_half_pulse",
+                "square_negative_half": "cr_c1t2_square_negative_half_pulse",
                 "flattop": "cr_c1t2_flattop_pulse",
             },
         },
@@ -435,6 +447,8 @@ config = {
             "operations": {
                 "square_positive": "cr_cancel_c1t2_square_positive_pulse",
                 "square_negative": "cr_cancel_c1t2_square_negative_pulse",
+                "square_positive_half": "cr_cancel_c1t2_square_positive_half_pulse",
+                "square_negative_half": "cr_cancel_c1t2_square_negative_half_pulse",
                 "flattop": "cr_cancel_c1t2_flattop_pulse",
             },
         },
@@ -537,9 +551,33 @@ config = {
                 "Q": "zero_wf",
             },
         },
-        "cr_c2t1_square_negative_pulse": {
+        "cr_c1t2_square_positive_half_pulse": {
             "operation": "control",
-            "length": cr_c2t1_square_negative_len,
+            "length": cr_c1t2_square_positive_half_len,
+            "waveforms": {
+                "I": "cr_c1t2_square_positive_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "cr_c2t1_square_positive_half_pulse": {
+            "operation": "control",
+            "length": cr_c2t1_square_positive_half_len,
+            "waveforms": {
+                "I": "cr_c2t1_square_positive_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "cr_c1t2_square_negative_half_pulse": {
+            "operation": "control",
+            "length": cr_c1t2_square_negative_half_len,
+            "waveforms": {
+                "I": "cr_c1t2_square_negative_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "cr_c2t1_square_negative_half_pulse": {
+            "operation": "control",
+            "length": cr_c2t1_square_negative_half_len,
             "waveforms": {
                 "I": "cr_c2t1_square_negative_wf",
                 "Q": "zero_wf",
@@ -620,6 +658,38 @@ config = {
         "cr_cancel_c2t1_square_negative_pulse": {
             "operation": "control",
             "length": cr_cancel_c2t1_square_negative_len,
+            "waveforms": {
+                "I": "cr_cancel_c2t1_square_negative_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "cr_cancel_c1t2_square_positive_half_pulse": {
+            "operation": "control",
+            "length": cr_cancel_c1t2_square_positive_half_len,
+            "waveforms": {
+                "I": "cr_cancel_c1t2_square_positive_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "cr_cancel_c2t1_square_positive_half_pulse": {
+            "operation": "control",
+            "length": cr_cancel_c2t1_square_positive_half_len,
+            "waveforms": {
+                "I": "cr_cancel_c2t1_square_positive_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "cr_cancel_c1t2_square_negative_half_pulse": {
+            "operation": "control",
+            "length": cr_cancel_c1t2_square_negative_half_len,
+            "waveforms": {
+                "I": "cr_cancel_c1t2_square_negative_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "cr_cancel_c2t1_square_negative_half_pulse": {
+            "operation": "control",
+            "length": cr_cancel_c2t1_square_negative_half_len,
             "waveforms": {
                 "I": "cr_cancel_c2t1_square_negative_wf",
                 "Q": "zero_wf",
