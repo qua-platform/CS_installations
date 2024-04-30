@@ -1,6 +1,6 @@
 import requests
 
-class HttpLocalOscillator():
+class MiniCircuitsSSG():
     def __init__(self, host: str, port: int):
         if host == "None":
             self.address = None
