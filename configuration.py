@@ -27,8 +27,8 @@ def IQ_imbalance(g, phi):
 ######################
 # Network parameters #
 ######################
-qop_ip = "127.0.0.1"  # Write the QM router IP address
-cluster_name = None  # Write your cluster_name if version >= QOP220
+qop_ip = "169.254.5.222"  # Write the QM router IP address
+cluster_name = "gegs"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 # Path to save data
