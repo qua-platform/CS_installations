@@ -18,19 +18,17 @@ Before proceeding to the next node:
 import qm.qua as qua
 import qm as qm_api
 import numpy as np
-from configuration import config, qop_ip, cluster_name, u, depletion_time, readout_len, resonator_LO
+from configuration import config, qop_ip, cluster_name, u, depletion_time, readout_len, resonator_LO, qubit_IF
 from qualang_tools.results import fetching_tool
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
 from qualang_tools.callable_from_qua import patch_qua_program_addons, callable_from_qua
-from hittite_driver import HittiteHMCT2220
+from minicircuit_ssg_driver import MiniCircuitsSGS
 import time
 
-hittite_module = HittiteHMCT2220(ip_address="169.254.5.246", port=50_000)
-
-hittite_module.connect()
+minisgs_module = MiniCircuitsSGS(host="", port=80)
 
 patch_qua_program_addons()
 
@@ -41,7 +39,7 @@ def set_lo_freq(element, frequency):
     # Here the LO frequency must be passed in kHz instead of Hz, 
     # because the QUA integer ranges in +/-2**31 ~ +/- 2.1e9
     print(f"setting the LO frequency of {element} to {frequency * 1e-6} GHz")
-    hittite_module.set_frequency(frequency * 1e3, unit="Hz")
+    minisgs_module.set_frequency(frequency * 1e3, unit="Hz")
     time.sleep(1)
 
 ###################
@@ -59,14 +57,14 @@ lo_max = 7.0 * u.GHz
 step_lo = f_max - f_min
 lo_values = np.arange(lo_min, lo_max, step_lo)
 
-wide_resonator_spectroscopy_data = {
+wide_qubit_spectroscopy_data = {
     "n_avg": n_avg,
     "frequencies": frequencies,
     "lo_values": lo_values,
     "config": config
 }
 
-with qua.program() as resonator_spec:
+with qua.program() as qubit_spec:
     n = qua.declare(int)  # QUA variable for the averaging loop
     f_lo = qua.declare(int)
     f_if = qua.declare(int)  # QUA variable for the readout frequency
@@ -77,12 +75,14 @@ with qua.program() as resonator_spec:
 
     with qua.for_(*from_array(f_lo, lo_values / 1e3)):
         
-        set_lo_freq("resonator", f_lo)
+        set_lo_freq("qubit", f_lo)
 
         with qua.for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
             with qua.for_(*from_array(f_if, frequencies)):  # QUA for_ loop for sweeping the frequency
                 # Update the frequency of the digital oscillator linked to the resonator element
-                qua.update_frequency("resonator", f_if)
+                qua.update_frequency("qubit", f_if)
+                qua.play("saturation", "qubit")
+                qua.align("qubit", "resonator")
                 # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
                 qua.measure(
                     "readout",
@@ -116,7 +116,7 @@ if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = qm_api.SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
-    job = qmm.simulate(config, resonator_spec, simulation_config)
+    job = qmm.simulate(config, qubit_spec, simulation_config)
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
 
@@ -124,7 +124,7 @@ else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(resonator_spec)
+    job = qm.execute(qubit_spec)
     # Get results from QUA program
     results = fetching_tool(job, data_list=["I", "Q"])
     I, Q, iteration = results.fetch_all()
@@ -141,14 +141,12 @@ else:
     plt.ylabel('Magnitude')
     plt.tight_layout()
 
-    wide_resonator_spectroscopy_data['I'] = I
-    wide_resonator_spectroscopy_data['Q'] = Q
-    wide_resonator_spectroscopy_data['R'] = R
-    wide_resonator_spectroscopy_data['phase'] = phase
+    wide_qubit_spectroscopy_data['I'] = I
+    wide_qubit_spectroscopy_data['Q'] = Q
+    wide_qubit_spectroscopy_data['R'] = R
+    wide_qubit_spectroscopy_data['phase'] = phase
 
-    data_handler.save_data(data=wide_resonator_spectroscopy_data, name="wide_resonator_spectroscopy")
-
-    hittite_module.disconnect()
+    data_handler.save_data(data=wide_qubit_spectroscopy_data, name="wide_qubit_spectroscopy")
     
     # Fit the results to extract the resonance frequency
     try:
@@ -156,7 +154,7 @@ else:
 
         fit = Fit()
         plt.figure()
-        res_spec_fit = fit.transmission_resonator_spectroscopy(frequencies / u.MHz, R, plot=True)
+        res_spec_fit = fit.transmission_qubit_spectroscopy(frequencies / u.MHz, R, plot=True)
         plt.title(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
         plt.xlabel("Intermediate frequency [MHz]")
         plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")

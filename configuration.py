@@ -55,8 +55,8 @@ thermalization_time = 5 * qubit_T1
 const_len = 100
 const_amp = 0.1
 # Saturation_pulse
-saturation_len = 10 * u.us
-saturation_amp = 0.1
+saturation_len = 20 * u.us
+saturation_amp = 0.45
 # Square pi pulse
 square_pi_len = 100
 square_pi_amp = 0.1
@@ -172,6 +172,11 @@ else:
 rotation_angle = (0.0 / 180) * np.pi
 ge_threshold = 0.0
 
+# PARAMP
+const_flux_len = 100
+const_flux_amp = 0.1
+paramp_offset = 0.0
+
 #############################################
 #                  Config                   #
 #############################################
@@ -184,6 +189,7 @@ config = {
                 2: {"offset": 0.0},  # Q qubit
                 3: {"offset": 0.0},  # I resonator
                 4: {"offset": 0.0},  # Q resonator
+                5: {"offset": paramp_offset},  # PARAMP
             },
             "digital_outputs": {},
             "analog_inputs": {
@@ -233,6 +239,14 @@ config = {
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
+        "flux_line": {
+            "singleInput": {
+                "port": ("con1", 5),
+            },
+            "operations": {
+                "const": "const_flux_pulse",
+            },
+        },
     },
     "pulses": {
         "const_pulse": {
@@ -241,6 +255,13 @@ config = {
             "waveforms": {
                 "I": "const_wf",
                 "Q": "zero_wf",
+            },
+        },
+        "const_flux_pulse": {
+            "operation": "control",
+            "length": const_flux_len,
+            "waveforms": {
+                "single": "const_flux_wf",
             },
         },
         "square_pi_pulse": {
@@ -336,6 +357,7 @@ config = {
     "waveforms": {
         "const_wf": {"type": "constant", "sample": const_amp},
         "saturation_drive_wf": {"type": "constant", "sample": saturation_amp},
+        "const_flux_wf": {"type": "constant", "sample": const_flux_amp},
         "square_pi_wf": {"type": "constant", "sample": square_pi_amp},
         "square_pi_half_wf": {"type": "constant", "sample": square_pi_amp / 2},
         "zero_wf": {"type": "constant", "sample": 0.0},

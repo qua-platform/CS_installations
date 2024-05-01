@@ -1,24 +1,33 @@
 """
-        RESONATOR SPECTROSCOPY
-This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to extract the
-'I' and 'Q' quadratures across varying readout intermediate frequencies.
-The data is then post-processed to determine the resonator resonance frequency.
-This frequency can be used to update the readout intermediate frequency in the configuration under "resonator_IF".
+        QUBIT SPECTROSCOPY
+This sequence involves sending a saturation pulse to the qubit, placing it in a mixed state,
+and then measuring the state of the resonator across various qubit drive intermediate dfs.
+In order to facilitate the qubit search, the qubit pulse duration and amplitude can be changed manually in the QUA
+program directly without having to modify the configuration.
+
+The data is post-processed to determine the qubit resonance frequency, which can then be used to adjust
+the qubit intermediate frequency in the configuration under "qubit_IF".
+
+Note that it can happen that the qubit is excited by the image sideband or LO leakage instead of the desired sideband.
+This is why calibrating the qubit mixer is highly recommended.
+
+This step can be repeated using the "x180" operation instead of "saturation" to adjust the pulse parameters (amplitude,
+duration, frequency) before performing the next calibration steps.
 
 Prerequisites:
-    - Ensure calibration of the time of flight, offsets, and gains (referenced as "time_of_flight").
-    - Calibrate the IQ mixer connected to the readout line (whether it's an external mixer or an Octave port).
-    - Define the readout pulse amplitude and duration in the configuration.
-    - Specify the expected resonator depletion time in the configuration.
+    - Identification of the resonator's resonance frequency when coupled to the qubit in question (referred to as "qubit_spectroscopy").
+    - Calibration of the IQ mixer connected to the qubit drive line (whether it's an external mixer or an Octave port).
+    - Configuration of the saturation pulse amplitude and duration to transition the qubit into a mixed state.
+    - Specification of the expected qubit T1 in the configuration.
 
 Before proceeding to the next node:
-    - Update the readout frequency, labeled as "resonator_IF", in the configuration.
+    - Update the qubit frequency, labeled as "qubit_IF", in the configuration.
 """
 
 import qm.qua as qua
 import qm as qm_api
 import numpy as np
-from configuration import config, qop_ip, cluster_name, u, depletion_time, readout_len, resonator_LO
+from configuration import config, qop_ip, cluster_name, u, depletion_time, readout_len, resonator_LO, qubit_IF
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -33,18 +42,17 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 n_avg = 1000  # The number of averages
 # The frequency sweep parameters
-f_min = 30 * u.MHz
-f_max = 70 * u.MHz
-df = 100 * u.kHz
-frequencies = np.arange(f_min, f_max + 0.1, df)  # The frequency vector (+ 0.1 to add f_max to frequencies)
+span = 30 * u.MHz
+step_span = 100 * u.kHz
+frequencies = np.arange(-span, +span, step_span) 
 
-resonator_spectroscopy_data = {
+qubit_spectroscopy_data = {
     "n_avg": n_avg,
     "frequencies": frequencies,
     "config": config
 }
 
-with qua.program() as resonator_spec:
+with qua.program() as qubit_spec:
     n = qua.declare(int)  # QUA variable for the averaging loop
     f = qua.declare(int)  # QUA variable for the readout frequency
     I = qua.declare(qua.fixed)  # QUA variable for the measured 'I' quadrature
@@ -58,7 +66,9 @@ with qua.program() as resonator_spec:
         qua.save(n, n_st)
         with qua.for_(*from_array(f, frequencies)):  # QUA for_ loop for sweeping the frequency
             # Update the frequency of the digital oscillator linked to the resonator element
-            qua.update_frequency("resonator", f)
+            qua.update_frequency("qubit", qubit_IF + f)
+            qua.play("saturation", "qubit")
+            qua.align("qubit", "resonator")
             # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
             qua.measure(
                 "readout",
@@ -68,7 +78,7 @@ with qua.program() as resonator_spec:
                 qua.dual_demod.full("minus_sin", "out1", "cos", "out2", Q),
             )
             # Wait for the resonator to deplete
-            qua.wait(depletion_time * u.ns, "resonator")
+            qua.wait(1_000 * u.ns, "resonator")
             # Save the 'I' & 'Q' quadratures to their respective streams
             qua.save(I, I_st)
             qua.save(Q, Q_st)
@@ -93,7 +103,7 @@ if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = qm_api.SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
-    job = qmm.simulate(config, resonator_spec, simulation_config)
+    job = qmm.simulate(config, qubit_spec, simulation_config)
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
 
@@ -101,7 +111,7 @@ else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(resonator_spec)
+    job = qm.execute(qubit_spec)
     # Get results from QUA program
     results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
     # Live plotting
@@ -130,23 +140,10 @@ else:
         plt.tight_layout()
         plt.pause(1)
 
-    resonator_spectroscopy_data['I'] = I
-    resonator_spectroscopy_data['Q'] = Q
-    resonator_spectroscopy_data['R'] = R
-    resonator_spectroscopy_data['phase'] = phase
+    qubit_spectroscopy_data['I'] = I
+    qubit_spectroscopy_data['Q'] = Q
+    qubit_spectroscopy_data['R'] = R
+    qubit_spectroscopy_data['phase'] = phase
 
-    data_handler.save_data(data=resonator_spectroscopy_data, name="resonator_spectroscopy")
+    data_handler.save_data(data=qubit_spectroscopy_data, name="qubit_spectroscopy")
     
-    # Fit the results to extract the resonance frequency
-    try:
-        from qualang_tools.plot.fitting import Fit
-
-        fit = Fit()
-        plt.figure()
-        res_spec_fit = fit.transmission_resonator_spectroscopy(frequencies / u.MHz, R, plot=True)
-        plt.title(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
-        plt.xlabel("Intermediate frequency [MHz]")
-        plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
-        print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit['f'][0]:.6f} MHz")
-    except (Exception,):
-        pass

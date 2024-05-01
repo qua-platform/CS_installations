@@ -143,8 +143,8 @@ else:
         plt.pcolor(amplitudes * readout_amp, dfs / u.MHz, signal.detrend(np.unwrap(phase)))
         plt.ylabel("Readout detuning [MHz]")
         plt.xlabel("Readout amplitude [V]")
-        plt.pause(1)
         plt.tight_layout()
+        plt.pause(1)
 
     resonator_spec_vs_amp_data['I'] = I
     resonator_spec_vs_amp_data['Q'] = Q
