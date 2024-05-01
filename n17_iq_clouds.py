@@ -23,6 +23,7 @@ import qm as qm_api
 from configuration import config, qop_ip, cluster_name, u, thermalization_time
 from qualang_tools.analysis.discriminator import two_state_discriminator
 from qualang_tools.results.data_handler import DataHandler
+from qualang_tools.results import progress_counter, fetching_tool
 
 data_handler = DataHandler(root_data_folder="./")
 
@@ -30,7 +31,7 @@ data_handler = DataHandler(root_data_folder="./")
 # The QUA program #
 ###################
 
-n_runs = 10000  # Number of runs
+n_runs = 10_000  # Number of runs
 
 iq_blobs_data = {
     "n_runs": n_runs,
@@ -39,6 +40,7 @@ iq_blobs_data = {
 
 with qua.program() as IQ_blobs:
     n = qua.declare(int)
+    n_st = qua.declare_stream()
     I_g = qua.declare(qua.fixed)
     Q_g = qua.declare(qua.fixed)
     I_g_st = qua.declare_stream()
@@ -49,13 +51,16 @@ with qua.program() as IQ_blobs:
     Q_e_st = qua.declare_stream()
 
     with qua.for_(n, 0, n < n_runs, n + 1):
+        qua.save(n, n_st)
         # Measure the state of the resonator
         qua.measure(
             "readout",
             "resonator",
             None,
-            qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I_g),
-            qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q_g),
+            # qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I_g),
+            # qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q_g),
+            qua.dual_demod.full("opt_cos", "out1", "opt_sin", "out2", I_g),
+            qua.dual_demod.full("opt_minus_sin", "out1", "opt_cos", "out2", Q_g),
         )
         # Wait for the qubit to decay to the ground state in the case of measurement induced transitions
         qua.wait(thermalization_time * u.ns, "resonator")
@@ -73,8 +78,10 @@ with qua.program() as IQ_blobs:
             "readout",
             "resonator",
             None,
-            qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I_e),
-            qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q_e),
+            # qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I_e),
+            # qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q_e),
+            qua.dual_demod.full("opt_cos", "out1", "opt_sin", "out2", I_e),
+            qua.dual_demod.full("opt_minus_sin", "out1", "opt_cos", "out2", Q_e),
         )
         # Wait for the qubit to decay to the ground state
         qua.wait(thermalization_time * u.ns, "resonator")
@@ -83,6 +90,7 @@ with qua.program() as IQ_blobs:
         qua.save(Q_e, Q_e_st)
 
     with qua.stream_processing():
+        n_st.save('iteration')
         # Save all streamed points for plotting the IQ blobs
         I_g_st.save_all("I_g")
         Q_g_st.save_all("Q_g")
@@ -110,6 +118,15 @@ else:
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(IQ_blobs)
+
+    results = fetching_tool(job, data_list=["iteration"], mode="live")
+
+    while results.is_processing():
+        # Fetch results
+        iteration = results.fetch_all()
+        # Progress bar
+        elapsed_time = progress_counter(iteration[0], n_runs, start_time=results.get_start_time())
+
     # Creates a result handle to fetch data from the OPX
     res_handles = job.result_handles
     # Waits (blocks the Python console) until all results have been acquired
@@ -127,5 +144,10 @@ else:
     iq_blobs_data['Qg'] = Qg
     iq_blobs_data['Ie'] = Ie
     iq_blobs_data['Qe'] = Qe
+    iq_blobs_data['elapsed_time'] = elapsed_time
 
     data_handler.save_data(data=iq_blobs_data, name="iq_blobs")
+
+    qm.close()
+
+# %%

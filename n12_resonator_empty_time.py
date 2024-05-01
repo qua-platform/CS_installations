@@ -1,3 +1,4 @@
+# %%
 """
         RESONATOR DEPLETION TIME
 This sequence is designed to measure the resonator depletion time.
@@ -32,10 +33,10 @@ data_handler = DataHandler(root_data_folder="./")
 # The QUA program #
 ###################
 
-n_avg = 1_000
-ramsey_idle_time = 1 * u.us
+n_avg = 20
+ramsey_idle_time = 0.2 * u.us
 # Time between populating the resonator and playing a Ramsey sequence in clock-cycles (4ns)
-taus = np.arange(4, 1000, 1)
+taus = np.arange(4, 5000, 4)
 
 res_depletion_time_data = {
     "n_avg": n_avg,
@@ -141,9 +142,9 @@ else:
         plt.tight_layout()
         plt.pause(1)
 
-    res_depletion_time['I'] = I
-    res_depletion_time['Q'] = Q
-    res_depletion_time['elapsed_time'] = elapsed_time
+    res_depletion_time_data['I'] = I
+    res_depletion_time_data['Q'] = Q
+    res_depletion_time_data['elapsed_time'] = elapsed_time
     data_handler.save_data(res_depletion_time_data, "res_depletion_time")
 
     # Fit the results to extract the resonator depletion time
@@ -160,3 +161,4 @@ else:
         plt.legend((f"depletion time = {depletion_time:.0f} ns",))
     except (Exception,):
         pass
+# %%

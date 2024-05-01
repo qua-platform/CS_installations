@@ -1,3 +1,4 @@
+# %%
 """
         ECHO MEASUREMENT
 The program consists in playing a Ramsey sequence with an echo pulse in the middle to compensate for dephasing and
@@ -29,7 +30,7 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 # The QUA program #
 ###################
-n_avg = 1e4
+n_avg = 20
 # Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
 tau_min = 4
 tau_max = 20_000 // 4
@@ -154,7 +155,7 @@ else:
     cpmg_data["I"] = I
     cpmg_data["Q"] = Q
     cpmg_data['elapsed_time'] = elapsed_time
-    data_handler.save(data=cpmg_data, name="cpmg")
+    data_handler.save_data(data=cpmg_data, name="cpmg")
     
     # Fit the results to extract the qubit coherence time T2
     try:
@@ -171,3 +172,4 @@ else:
         plt.title("Echo measurement")
     except (Exception,):
         pass
+# %%

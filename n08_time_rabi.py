@@ -31,10 +31,10 @@ data_handler = DataHandler(root_data_folder="./")
 # The QUA program #
 ###################
 
-n_avg = 100  # The number of averages
+n_avg = 50  # The number of averages
 # Pulse duration sweep (in clock cycles = 4ns) - must be larger than 4 clock cycles
-t_min = 40 // 4
-t_max = 1_000 // 4
+t_min = 400 // 4
+t_max = 3_000 // 4
 dt = 4 // 4
 durations = np.arange(t_min, t_max, dt)
 

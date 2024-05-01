@@ -1,3 +1,4 @@
+# %%
 """
         ECHO MEASUREMENT
 The program consists in playing a Ramsey sequence with an echo pulse in the middle to compensate for dephasing and
@@ -29,11 +30,11 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 # The QUA program #
 ###################
-n_avg = 1e4
+n_avg = 20
 # Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
 tau_min = 4
-tau_max = 20_000 // 4
-d_tau = 40 // 4
+tau_max = 400_000 // 4
+d_tau = 100 // 4
 taus = np.arange(tau_min, tau_max + 0.1, d_tau)  # Linear sweep
 # taus = np.logspace(np.log10(tau_min), np.log10(tau_max), 21)  # Log sweep
 
@@ -75,6 +76,8 @@ with qua.program() as echo:
                 None,
                 qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I),
                 qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q),
+                # qua.dual_demod.full("opt_cos", "out1", "opt_sin", "out2", I),
+                # qua.dual_demod.full("opt_minus_sin", "out1", "opt_cos", "out2", Q),
             )
             # Wait for the qubit to decay to the ground state
             qua.wait(thermalization_time * u.ns, "resonator")
@@ -147,7 +150,7 @@ else:
     echo_data["Q"] = Q
     echo_data['elapsed_time'] = elapsed_time
     
-    data_handler.save(data=echo_data, name="echo")
+    data_handler.save_data(data=echo_data, name="echo")
 
     # Fit the results to extract the qubit coherence time T2
     try:
@@ -164,3 +167,4 @@ else:
         plt.title("Echo measurement")
     except (Exception,):
         pass
+# %%

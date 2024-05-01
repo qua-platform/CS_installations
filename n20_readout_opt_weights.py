@@ -1,3 +1,4 @@
+# %%
 """
         READOUT OPTIMISATION: INTEGRATION WEIGHTS
 This sequence involves assessing the state of the resonator in two distinct scenarios: first, after thermalization
@@ -29,6 +30,9 @@ from configuration import config, qop_ip, cluster_name, u, thermalization_time, 
 from qualang_tools.results import progress_counter, fetching_tool
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+
+matplotlib.use('TkAgg')
 
 data_handler = DataHandler(root_data_folder="./")
 
@@ -99,13 +103,13 @@ def update_readout_length(new_readout_length, ringdown_length):
 ###################
 # The QUA program #
 ###################
-n_avg = 100  # number of averages
+n_avg = 1_000  # number of averages
 # Set maximum readout duration for this scan and update the configuration accordingly
-readout_len = 5 * u.us  # Readout pulse duration
-ringdown_len = 0 * u.us  # integration time after readout pulse to observe the ringdown of the resonator
+readout_len = 3 * u.us  # Readout pulse duration
+ringdown_len = 9 * u.us  # integration time after readout pulse to observe the ringdown of the resonator
 update_readout_length(readout_len, ringdown_len)
 # Set the sliced qua.qua.demod parameters
-division_length = 10  # Size of each qua.qua.demodulation slice in clock cycles
+division_length = 1  # Size of each qua.qua.demodulation slice in clock cycles
 number_of_divisions = int((readout_len + ringdown_len) / (4 * division_length))  # Number of slices
 print("Integration weights chunk-size length in clock cycles:", division_length)
 print("The readout has been sliced in the following number of divisions", number_of_divisions)
@@ -160,10 +164,10 @@ with qua.program() as opt_weights:
             "readout",
             "resonator",
             None,
-            qua.qua.demod.sliced("cos", II, division_length, "out1"),
-            qua.qua.demod.sliced("sin", IQ, division_length, "out2"),
-            qua.qua.demod.sliced("minus_sin", QI, division_length, "out1"),
-            qua.qua.demod.sliced("cos", QQ, division_length, "out2"),
+            qua.demod.sliced("cos", II, division_length, "out1"),
+            qua.demod.sliced("sin", IQ, division_length, "out2"),
+            qua.demod.sliced("minus_sin", QI, division_length, "out1"),
+            qua.demod.sliced("cos", QQ, division_length, "out2"),
         )
         qua.wait(thermalization_time * u.ns, "resonator")
         # qua.save the sliced data (time trace of the qua.qua.demodulated data with a resolution equals to the division length)
@@ -175,7 +179,7 @@ with qua.program() as opt_weights:
         qua.save(n, n_st)
 
     with qua.stream_processing():
-        n_st.qua.save("iteration")
+        n_st.save("iteration")
         II_st.buffer(2 * number_of_divisions).average().save("II")
         IQ_st.buffer(2 * number_of_divisions).average().save("IQ")
         QI_st.buffer(2 * number_of_divisions).average().save("QI")
@@ -234,7 +238,7 @@ else:
     weights_imag = list(norm_subtracted_trace.imag)
     weights_minus_real = list((-1) * norm_subtracted_trace.real)
     # qua.save the weights for later use in the config
-    np.qua.savez(
+    np.savez(
         "optimal_weights",
         weights_real=weights_real,
         weights_minus_imag=weights_minus_imag,
@@ -279,3 +283,4 @@ else:
     #     opt_weights_minus_imag = [(1.0, readout_len)]
     #     opt_weights_imag = [(1.0, readout_len)]
     #     opt_weights_minus_real = [(1.0, readout_len)]
+# %%

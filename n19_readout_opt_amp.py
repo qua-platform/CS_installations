@@ -1,3 +1,4 @@
+# %%
 """
         READOUT OPTIMISATION: AMPLITUDE
 The sequence consists in measuring the state of the resonator after thermalization (qubit in |g>) and after
@@ -33,8 +34,8 @@ data_handler = DataHandler(root_data_folder="./")
 n_runs = 1000
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
 a_min = 0.5
-a_max = 1.5
-da = 0.01
+a_max = 1.9
+da = 0.1
 amplitudes = np.arange(a_min, a_max + da / 2, da)  # The amplitude vector +da/2 to add a_max to the scan
 
 ro_opt_amp_data = {
@@ -154,7 +155,7 @@ else:
     ro_opt_amp_data['Q_e'] = Q_e
     ro_opt_amp_data["fidelity_vec"] = fidelity_vec
     ro_opt_amp_data["ground_fidelity_vec"] = ground_fidelity_vec
-    data_handler.save(ro_opt_amp_data, "ro_opt_amp_data")
+    data_handler.save_data(ro_opt_amp_data, "ro_opt_amp_data")
 
     # Plot the data
     plt.figure()
@@ -175,3 +176,4 @@ else:
     print(
         f"The optimal readout amplitude is {readout_amp * amplitudes[np.argmax(ground_fidelity_vec)] / u.mV:.3f} mV (Ground fidelity={max(ground_fidelity_vec):.1f}%)"
     )
+# %%

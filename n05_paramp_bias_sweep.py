@@ -1,3 +1,4 @@
+# %%
 """
         PARAMP BIAS SWEEP WITH OPX+ DAC output
 """
@@ -44,7 +45,7 @@ with qua.program() as paramp_dc_sweep:
         qua.save(n, n_st)
         with qua.for_(*from_array(dac_value, dc_values)):
 
-            qua.set_dc_offset("paramp", dac_value)
+            qua.set_dc_offset("paramp", "single", dac_value)
 
             qua.wait(1_000 * u.ns, "paramp")
 
@@ -64,7 +65,7 @@ with qua.program() as paramp_dc_sweep:
     with qua.stream_processing():
         I_st.buffer(len(dc_values)).average().save("I")
         Q_st.buffer(len(dc_values)).average().save("Q")
-        n_st.save("n")
+        n_st.save("iteration")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -124,3 +125,5 @@ else:
 
     data_handler.save_data(data=paramp_bias_sweep_data, name="paramp_bias_sweep")
 
+
+# %%

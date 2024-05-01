@@ -51,11 +51,11 @@ octave_config = None
 #                  Qubits                   #
 #############################################
 qubit_LO = 5.3 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
-qubit_IF = 183 * u.MHz
+qubit_IF = 183.8 * u.MHz
 mixer_qubit_g = 0.0
 mixer_qubit_phi = 0.0
 
-qubit_T1 = int(400 * u.us)
+qubit_T1 = int(300 * u.us)
 thermalization_time = 5 * qubit_T1
 
 # Continuous wave
@@ -72,9 +72,9 @@ drag_coef = 0
 anharmonicity = -200 * u.MHz
 AC_stark_detuning = 0 * u.MHz
 
-x180_len = 520
+x180_len = 400
 x180_sigma = x180_len / 5
-x180_amp = 0.2
+x180_amp = 0.28
 x180_wf, x180_der_wf = np.array(
     drag_gaussian_pulse_waveforms(x180_amp, x180_len, x180_sigma, drag_coef, anharmonicity, AC_stark_detuning)
 )
@@ -150,17 +150,17 @@ minus_y90_Q_wf = minus_y90_wf
 #                Resonators                 #
 #############################################
 resonator_LO = 7.150 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
-resonator_IF = 124.4 * u.MHz
+resonator_IF = 124.2 * u.MHz
 mixer_resonator_g = 0.0
 mixer_resonator_phi = 0.0
 
 readout_len = 3000
-readout_amp = 0.1
+readout_amp = 0.2
 
 time_of_flight = 24
 depletion_time = 10 * u.us
 
-opt_weights = False
+opt_weights = True
 if opt_weights:
     from qualang_tools.config.integration_weights_tools import convert_integration_weights
 
@@ -246,7 +246,7 @@ config = {
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
-        "flux_line": {
+        "paramp": {
             "singleInput": {
                 "port": ("con1", 5),
             },

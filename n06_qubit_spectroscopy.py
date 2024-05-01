@@ -43,7 +43,7 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 n_avg = 1000  # The number of averages
 # The frequency sweep parameters
-span = 5 * u.MHz
+span = 20 * u.MHz
 step_span = 100 * u.kHz
 frequencies = np.arange(-span, +span, step_span) 
 

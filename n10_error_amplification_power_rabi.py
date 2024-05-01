@@ -26,16 +26,19 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+
+matplotlib.use('TkAgg')
 
 data_handler = DataHandler(root_data_folder="./")
 
 ###################
 # The QUA program #
 ###################
-n_avg = 100  # The number of averages
+n_avg = 10  # The number of averages
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-a_min = 0.0
-a_max = 1.9
+a_min = 0.5
+a_max = 1.5
 n_a = 51
 amplitudes = np.linspace(a_min, a_max, n_a)
 # Number of applied Rabi pulses sweep
@@ -125,7 +128,8 @@ else:
         # Progress bar
         elapsed_time = progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
-        plt.suptitle("Power Rabi with error amplification")
+        # plt.suptitle(f"Power Rabi with error amplification, {elapsed_time:.3f} secs")
+        plt.suptitle(f"Power Rabi with error amplification")
         plt.subplot(221)
         plt.cla()
         plt.pcolor(amplitudes * x180_amp, nb_of_pulses, I)
@@ -140,10 +144,12 @@ else:
         plt.subplot(212)
         plt.cla()
         plt.plot(amplitudes * x180_amp, np.sum(I, axis=0))
+        plt.ylim(0, 0.008)
         plt.xlabel("Rabi pulse amplitude [V]")
         plt.ylabel("Sum along the # of Rabi pulses")
         plt.tight_layout()
         plt.pause(1)
+        
     print(f"Optimal x180_amp = {amplitudes[np.argmin(np.sum(I, axis=0))] * x180_amp:.4f} V")
 
     error_amplification_power_rabi_data["I"] = I

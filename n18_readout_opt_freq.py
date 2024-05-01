@@ -1,3 +1,4 @@
+# %%
 """
         READOUT OPTIMISATION: FREQUENCY
 This sequence involves measuring the state of the resonator in two scenarios: first, after thermalization
@@ -179,3 +180,4 @@ else:
     ro_opt_freq_data['Qe_var'] = Qe_var
 
     data_handler.save_data(data=ro_opt_freq_data, name="ro_opt_freq")
+# %%

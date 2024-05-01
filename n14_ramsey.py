@@ -1,3 +1,4 @@
+# %%
 """
         RAMSEY WITH VIRTUAL Z ROTATIONS
 The program consists in playing a Ramsey sequence (x90 - idle_time - x90 - measurement) for different idle times.
@@ -31,10 +32,10 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 # The QUA program #
 ###################
-n_avg = 1000
+n_avg = 20
 # Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
 tau_min = 4
-tau_max = 2000 // 4
+tau_max = 10_000 // 4
 d_tau = 40 // 4
 taus = np.arange(tau_min, tau_max + 0.1, d_tau)  # + 0.1 to add tau_max to taus
 # Detuning converted into virtual Z-rotations to observe Ramsey oscillation and get the qubit frequency
@@ -183,3 +184,5 @@ else:
         print(f"Detuning to add: {-qubit_detuning / u.kHz:.3f} kHz")
     except (Exception,):
         pass
+# %%
+  
