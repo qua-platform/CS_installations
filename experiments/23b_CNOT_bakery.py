@@ -74,7 +74,7 @@ with program() as cnot_calib:
                 # b.Play ZI(-pi/2) and IX(-pi/2)
                 b.align("q1_xy", "q2_xy")
                 b.reset_frame("q1_xy")
-                b.frame_rotation_2pi(0.25, "q1_xy")
+                b.frame_rotation_2pi(-0.25, "q1_xy")
                 b.play("-x90", "q2_xy")
 
                 # SHift the phase of CR drive and CR cancel pulse
