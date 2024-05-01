@@ -27,8 +27,15 @@ def IQ_imbalance(g, phi):
 ######################
 # Network parameters #
 ######################
-qop_ip = "169.254.5.222"  # Write the QM router IP address
+# qop_ip = "169.254.5.222"  # Write the QM router IP address
+qop_ip = "192.168.88.237"  # Write the QM router IP address
 cluster_name = "gegs"  # Write your cluster_name if version >= QOP220
+# mini_circuits_ip = ""
+mini_circuits_ip = "192.168.88.236"
+mini_circuits_port = 80
+# hittite_ip = "169.254.5.246"
+hittite_ip = "192.168.88.236"
+hittite_port = 50_000
 qop_port = None  # Write the QOP port if version < QOP220
 
 # Path to save data
@@ -43,8 +50,8 @@ octave_config = None
 #############################################
 #                  Qubits                   #
 #############################################
-qubit_LO = 7 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
-qubit_IF = 50 * u.MHz
+qubit_LO = 5.3 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
+qubit_IF = 183 * u.MHz
 mixer_qubit_g = 0.0
 mixer_qubit_phi = 0.0
 
@@ -56,7 +63,7 @@ const_len = 100
 const_amp = 0.1
 # Saturation_pulse
 saturation_len = 20 * u.us
-saturation_amp = 0.45
+saturation_amp = 0.045
 # Square pi pulse
 square_pi_len = 100
 square_pi_amp = 0.1
@@ -65,9 +72,9 @@ drag_coef = 0
 anharmonicity = -200 * u.MHz
 AC_stark_detuning = 0 * u.MHz
 
-x180_len = 40
+x180_len = 520
 x180_sigma = x180_len / 5
-x180_amp = 0.35
+x180_amp = 0.2
 x180_wf, x180_der_wf = np.array(
     drag_gaussian_pulse_waveforms(x180_amp, x180_len, x180_sigma, drag_coef, anharmonicity, AC_stark_detuning)
 )
@@ -142,13 +149,13 @@ minus_y90_Q_wf = minus_y90_wf
 #############################################
 #                Resonators                 #
 #############################################
-resonator_LO = 5.5 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
-resonator_IF = 60 * u.MHz
+resonator_LO = 7.150 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
+resonator_IF = 124.4 * u.MHz
 mixer_resonator_g = 0.0
 mixer_resonator_phi = 0.0
 
-readout_len = 5000
-readout_amp = 0.2
+readout_len = 3000
+readout_amp = 0.1
 
 time_of_flight = 24
 depletion_time = 10 * u.us
@@ -193,8 +200,8 @@ config = {
             },
             "digital_outputs": {},
             "analog_inputs": {
-                1: {"offset": 0.0, "gain_db": 0},  # I from down-conversion
-                2: {"offset": 0.0, "gain_db": 0},  # Q from down-conversion
+                1: {"offset": 0.070383, "gain_db": 20},  # I from down-conversion
+                2: {"offset": 0.065271, "gain_db": 20},  # Q from down-conversion
             },
         },
     },

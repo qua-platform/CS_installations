@@ -126,7 +126,7 @@ else:
         # Convert the results into Volts
         I, Q = u.demod2volts(I, readout_len), u.demod2volts(Q, readout_len)
         # Progress bar
-        progress_counter(iteration, n_avg, start_time=results.get_start_time())
+        elapsed_time = progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle("Resonator depletion time")
         plt.subplot(211)
@@ -141,6 +141,9 @@ else:
         plt.tight_layout()
         plt.pause(1)
 
+    res_depletion_time['I'] = I
+    res_depletion_time['Q'] = Q
+    res_depletion_time['elapsed_time'] = elapsed_time
     data_handler.save_data(res_depletion_time_data, "res_depletion_time")
 
     # Fit the results to extract the resonator depletion time

@@ -135,7 +135,7 @@ else:
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
         # Progress bar
-        progress_counter(iteration, n_avg, start_time=results.get_start_time())
+        elapsed_time = progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
         ax1 = plt.subplot(211)
@@ -156,6 +156,7 @@ else:
     qubit_resonator_2chi_data['Q'] = Q
     qubit_resonator_2chi_data['R'] = R
     qubit_resonator_2chi_data['phase'] = phase
+    qubit_resonator_2chi_data['elapsed_time'] = elapsed_time
 
     data_handler.save_data(data=qubit_resonator_2chi_data, name="qubit_resonator_2chi")
     

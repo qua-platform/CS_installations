@@ -135,7 +135,7 @@ else:
         # Convert the results into Volts
         I, Q = u.demod2volts(I, readout_len), u.demod2volts(Q, readout_len)
         # Progress bar
-        progress_counter(iteration, n_avg, start_time=results.get_start_time())
+        elapsed_time = progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle(f"Echo measurement")
         plt.subplot(211)
@@ -153,7 +153,7 @@ else:
     # Save the results
     cpmg_data["I"] = I
     cpmg_data["Q"] = Q
-
+    cpmg_data['elapsed_time'] = elapsed_time
     data_handler.save(data=cpmg_data, name="cpmg")
     
     # Fit the results to extract the qubit coherence time T2

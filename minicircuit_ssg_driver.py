@@ -1,3 +1,4 @@
+# %%
 import requests
 
 class MiniCircuitsSSG():
@@ -55,6 +56,7 @@ class MiniCircuitsSSG():
 
     # ________________Set Functions________________
 
+    # set is in Hz but return is in MHz
     def set_frequency(self, freq: float, units='HZ'):
         return self._send_set_request(f':FREQ:{freq}{units}')
 
@@ -88,3 +90,5 @@ class MiniCircuitsSSG():
             self.set_rf_state('ON')
             is_correct = 'ON' == self.get_rf_state()
         return is_correct
+
+# %%

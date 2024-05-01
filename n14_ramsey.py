@@ -138,7 +138,7 @@ else:
         # Convert the results into Volts
         I, Q = u.demod2volts(I, readout_len), u.demod2volts(Q, readout_len)
         # Progress bar
-        progress_counter(iteration, n_avg, start_time=results.get_start_time())
+        elapsed_time = progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle(f"Ramsey with frame rotation (detuning={detuning / u.MHz} MHz)")
         plt.subplot(311)
@@ -162,6 +162,7 @@ else:
     ramsey_data["I"] = I
     ramsey_data["Q"] = Q
     ramsey_data["state"] = state
+    ramsey_data['elapsed_time'] = elapsed_time
     data_handler.save_data(data=ramsey_data, name="ramsey")
 
     # Fit the results to extract the qubit frequency and T2*

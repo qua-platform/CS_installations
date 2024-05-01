@@ -1,3 +1,4 @@
+# %%
 """
         QUBIT SPECTROSCOPY
 This sequence involves sending a saturation pulse to the qubit, placing it in a mixed state,
@@ -27,7 +28,7 @@ Before proceeding to the next node:
 import qm.qua as qua
 import qm as qm_api
 import numpy as np
-from configuration import config, qop_ip, cluster_name, u, depletion_time, readout_len, resonator_LO, qubit_IF
+from configuration import config, qop_ip, cluster_name, u, depletion_time, readout_len, qubit_LO, qubit_IF
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -42,7 +43,7 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 n_avg = 1000  # The number of averages
 # The frequency sweep parameters
-span = 30 * u.MHz
+span = 5 * u.MHz
 step_span = 100 * u.kHz
 frequencies = np.arange(-span, +span, step_span) 
 
@@ -78,7 +79,7 @@ with qua.program() as qubit_spec:
                 qua.dual_demod.full("minus_sin", "out1", "cos", "out2", Q),
             )
             # Wait for the resonator to deplete
-            qua.wait(1_000 * u.ns, "resonator")
+            qua.wait(depletion_time * u.ns, "resonator")
             # Save the 'I' & 'Q' quadratures to their respective streams
             qua.save(I, I_st)
             qua.save(Q, Q_st)
@@ -125,9 +126,9 @@ else:
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
         # Progress bar
-        progress_counter(iteration, n_avg, start_time=results.get_start_time())
+        elapsed_time = progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
-        plt.suptitle(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
+        plt.suptitle(f"Qubit spectroscopy - LO = {qubit_LO / u.GHz} GHz")
         ax1 = plt.subplot(211)
         plt.cla()
         plt.plot(frequencies / u.MHz, R, ".")
@@ -144,6 +145,22 @@ else:
     qubit_spectroscopy_data['Q'] = Q
     qubit_spectroscopy_data['R'] = R
     qubit_spectroscopy_data['phase'] = phase
+    qubit_spectroscopy_data['elapsed_time'] = elapsed_time
 
     data_handler.save_data(data=qubit_spectroscopy_data, name="qubit_spectroscopy")
+
+    # Fit the results to extract the resonance frequency
+    try:
+        from qualang_tools.plot.fitting import Fit
+
+        fit = Fit()
+        plt.figure()
+        res_spec_fit = fit.reflection_resonator_spectroscopy(frequencies / u.MHz, R, plot=True)
+        plt.title(f"Resonator spectroscopy - LO = {qubit_LO / u.GHz} GHz")
+        plt.xlabel("Intermediate frequency [MHz]")
+        plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
+        print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit['f'][0]:.6f} MHz")
+    except (Exception,):
+        pass
     
+# %%

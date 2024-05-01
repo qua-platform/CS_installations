@@ -1,3 +1,4 @@
+# %%
 """
         TIME RABI
 The sequence consists in playing the qubit pulse (x180 or square_pi or else) and measuring the state of the resonator
@@ -32,8 +33,8 @@ data_handler = DataHandler(root_data_folder="./")
 
 n_avg = 100  # The number of averages
 # Pulse duration sweep (in clock cycles = 4ns) - must be larger than 4 clock cycles
-t_min = 16 // 4
-t_max = 2000 // 4
+t_min = 40 // 4
+t_max = 1_000 // 4
 dt = 4 // 4
 durations = np.arange(t_min, t_max, dt)
 
@@ -113,16 +114,16 @@ else:
         # Convert the results into Volts
         I, Q = u.demod2volts(I, readout_len), u.demod2volts(Q, readout_len)
         # Progress bar
-        progress_counter(iteration, n_avg, start_time=results.get_start_time())
+        elapsed_time = progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle("Time Rabi")
         plt.subplot(211)
         plt.cla()
-        plt.plot(4 * durations, I, ".")
+        plt.plot(4 * durations, I)
         plt.ylabel("I quadrature [V]")
         plt.subplot(212)
         plt.cla()
-        plt.plot(4 * durations, Q, ".")
+        plt.plot(4 * durations, Q)
         plt.xlabel("Rabi pulse duration [ns]")
         plt.ylabel("Q quadrature [V]")
         plt.tight_layout()
@@ -130,6 +131,7 @@ else:
 
     time_rabi_data["I"] = I
     time_rabi_data["Q"] = Q
+    time_rabi_data['elapsed_time'] = elapsed_time
 
     data_handler.save_data(time_rabi_data, "time_rabi")
     
@@ -146,3 +148,4 @@ else:
         print(f"Optimal x180_len = {round(1 / rabi_fit['f'][0] / 2 / 4) * 4} ns for {x180_amp:} V")
     except (Exception,):
         pass
+# %%

@@ -102,7 +102,7 @@ else:
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
         # Progress bar
-        progress_counter(iteration, n_avg, start_time=results.get_start_time())
+        elapsed_time = progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         ax1 = plt.subplot(211)
         plt.cla()
@@ -120,6 +120,7 @@ else:
     paramp_bias_sweep_data['Q'] = Q
     paramp_bias_sweep_data['R'] = R
     paramp_bias_sweep_data['phase'] = phase
+    paramp_bias_sweep_data['elapsed_time'] = elapsed_time
 
     data_handler.save_data(data=paramp_bias_sweep_data, name="paramp_bias_sweep")
 

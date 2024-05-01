@@ -1,3 +1,4 @@
+# %%
 """
         RESONATOR SPECTROSCOPY VERSUS READOUT AMPLITUDE
 This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to
@@ -35,15 +36,15 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 # The QUA program #
 ###################
-n_avg = 1000  # The number of averages
+n_avg = 100  # The number of averages
 # The frequency sweep around the resonator frequency "resonator_IF"
-span = 10 * u.MHz
-df = 100 * u.kHz
+span = 0.5 * u.MHz
+df = 10 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
 a_min = 0.001
-a_max = 1.99
-da = 0.01
+a_max = 1.00
+da = 0.005
 amplitudes = np.arange(a_min, a_max + da / 2, da)  # The amplitude vector +da/2 to add a_max to the scan
 
 resonator_spec_vs_amp_data = {
@@ -122,7 +123,7 @@ else:
         # Fetch results
         I, Q, iteration = results.fetch_all()
         # Progress bar
-        progress_counter(iteration, n_avg, start_time=results.get_start_time())
+        elapsed_time = progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Convert results into Volts and normalize
         S = u.demod2volts(I + 1j * Q, readout_len)
         R = np.abs(S)  # Amplitude
@@ -136,11 +137,16 @@ else:
         plt.cla()
         plt.title(r"$R=\sqrt{I^2 + Q^2}$ (normalized)")
         plt.pcolor(amplitudes * readout_amp, dfs / u.MHz, R)
+        plt.xscale('log')
+        plt.xlim(amplitudes[0] * readout_amp, amplitudes[-1] * readout_amp)
         plt.ylabel("Readout detuning [MHz]")
         plt.subplot(212)
         plt.cla()
         plt.title("Phase")
-        plt.pcolor(amplitudes * readout_amp, dfs / u.MHz, signal.detrend(np.unwrap(phase)))
+        # plt.pcolor(amplitudes * readout_amp, dfs / u.MHz, signal.detrend(np.unwrap(phase)))
+        plt.pcolor(amplitudes * readout_amp, dfs / u.MHz, phase)
+        plt.xscale('log')
+        plt.xlim(amplitudes[0] * readout_amp, amplitudes[-1] * readout_amp)
         plt.ylabel("Readout detuning [MHz]")
         plt.xlabel("Readout amplitude [V]")
         plt.tight_layout()
@@ -150,5 +156,8 @@ else:
     resonator_spec_vs_amp_data['Q'] = Q
     resonator_spec_vs_amp_data['R'] = R
     resonator_spec_vs_amp_data['phase'] = phase
+    resonator_spec_vs_amp_data['elapsed_time'] = elapsed_time
 
     data_handler.save_data(data=resonator_spec_vs_amp_data, name='resonator_spec_vs_amp')
+
+# %%

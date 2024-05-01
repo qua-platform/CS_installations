@@ -1,3 +1,4 @@
+# %%
 """
         POWER RABI WITH ERROR AMPLIFICATION
 This sequence involves repeatedly executing the qubit pulse (such as x180, square_pi, or similar) 'N' times and
@@ -33,8 +34,8 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 n_avg = 100  # The number of averages
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-a_min = 0.9
-a_max = 1.1
+a_min = 0.0
+a_max = 1.9
 n_a = 51
 amplitudes = np.linspace(a_min, a_max, n_a)
 # Number of applied Rabi pulses sweep
@@ -122,7 +123,7 @@ else:
         # Convert the results into Volts
         I, Q = u.demod2volts(I, readout_len), u.demod2volts(Q, readout_len)
         # Progress bar
-        progress_counter(iteration, n_avg, start_time=results.get_start_time())
+        elapsed_time = progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle("Power Rabi with error amplification")
         plt.subplot(221)
@@ -147,5 +148,7 @@ else:
 
     error_amplification_power_rabi_data["I"] = I
     error_amplification_power_rabi_data["Q"] = Q
+    error_amplification_power_rabi_data["elapsed_time"] = elapsed_time
 
     data_handler.save_data(data=error_amplification_power_rabi_data, name="error_amplification_power_rabi")
+# %%

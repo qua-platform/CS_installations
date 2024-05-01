@@ -1,3 +1,4 @@
+# %%
 """
         TIME OF FLIGHT
 This sequence involves sending a readout pulse and capturing the raw ADC traces.
@@ -143,3 +144,5 @@ else:
     print(f"DC offset to add to I in the config: {-adc1_mean:.6f} V")
     print(f"DC offset to add to Q in the config: {-adc2_mean:.6f} V")
     print(f"Time Of Flight to add in the config: {delay} ns")
+
+# %%

@@ -1,3 +1,4 @@
+# %%
 """
         RESONATOR SPECTROSCOPY
 This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to extract the
@@ -33,8 +34,8 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 n_avg = 1000  # The number of averages
 # The frequency sweep parameters
-f_min = 30 * u.MHz
-f_max = 70 * u.MHz
+f_min = 120 * u.MHz
+f_max = 130 * u.MHz
 df = 100 * u.kHz
 frequencies = np.arange(f_min, f_max + 0.1, df)  # The frequency vector (+ 0.1 to add f_max to frequencies)
 
@@ -115,7 +116,7 @@ else:
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
         # Progress bar
-        progress_counter(iteration, n_avg, start_time=results.get_start_time())
+        elapsed_time = progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
         ax1 = plt.subplot(211)
@@ -134,6 +135,7 @@ else:
     resonator_spectroscopy_data['Q'] = Q
     resonator_spectroscopy_data['R'] = R
     resonator_spectroscopy_data['phase'] = phase
+    resonator_spectroscopy_data['elapsed_time'] = elapsed_time
 
     data_handler.save_data(data=resonator_spectroscopy_data, name="resonator_spectroscopy")
     
@@ -150,3 +152,5 @@ else:
         print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit['f'][0]:.6f} MHz")
     except (Exception,):
         pass
+
+# %%

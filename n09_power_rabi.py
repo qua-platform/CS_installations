@@ -1,3 +1,4 @@
+# %%
 """
         POWER RABI
 The sequence consists in playing the qubit pulse (x180 or square_pi or else) and measuring the state of the resonator
@@ -113,7 +114,7 @@ else:
         # Convert the results into Volts
         I, Q = u.demod2volts(I, readout_len), u.demod2volts(Q, readout_len)
         # Progress bar
-        progress_counter(iteration, n_avg, start_time=results.get_start_time())
+        elapsed_time = progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle("Power Rabi")
         plt.subplot(211)
@@ -131,6 +132,8 @@ else:
     power_rabi_data["I"] = I
     power_rabi_data["Q"] = Q
     power_rabi_data["x180_amp"] = x180_amp
+    power_rabi_data["elapsed_time"] = elapsed_time
 
     # Save the data
     data_handler.save_data(power_rabi_data, "power_rabi")
+# %%
