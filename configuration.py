@@ -55,7 +55,7 @@ qubit_IF = 183 * u.MHz
 mixer_qubit_g = 0.0
 mixer_qubit_phi = 0.0
 
-qubit_T1 = int(10 * u.us)
+qubit_T1 = int(400 * u.us)
 thermalization_time = 5 * qubit_T1
 
 # Continuous wave
