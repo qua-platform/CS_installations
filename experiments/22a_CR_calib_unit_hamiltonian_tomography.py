@@ -116,16 +116,18 @@ with program() as cr_calib:
         with for_(*from_array(t, t_vec)):
             # t/2 for main and echo
             assign(t_half, t >> 1)
+            # to allow time to align
+            wait(400 * u.ns)
             for bss in TARGET_BASES:
                 for st in CONTROL_STATES:
                     # Align all elements (as no implicit align)
                     align()
-                    # Start from the same phase
-                    reset_phase("cr_c1t2")
 
                     # Prepare control state in 1  
                     if st == "1":
                         play("x180", "q1_xy")
+                    else:
+                        wait(pi_len >> 2, "q1_xy")
 
                     # Play CR + QST
                     # q1_xy=0, q2_xy=0, cr_c1t2=0, rr1=0, rr2=0
@@ -171,8 +173,8 @@ with program() as cr_calib:
                     multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
                     # multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="optimized_")
 
-                    wait(400 * u.ns)
-                    # wait(thermalization_time * u.ns)
+                    # Wait for the qubit to decay to the ground state
+                    wait(thermalization_time * u.ns)
                     # Make sure you updated the ge_threshold
                     for q in range(nb_of_qubits):
                         assign(state[q], I[q] > thresholds[q])
@@ -204,7 +206,7 @@ simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=2000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=5_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, cr_calib, simulation_config)
     job.get_simulated_samples().con1.plot(analog_ports=['1', '2', '3', '4', '5', '6'])
     plt.show()

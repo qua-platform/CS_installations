@@ -101,7 +101,7 @@ def plot_cr_duration_vs_amplitude(state_c, state_t, t_vec, a_vec, axss):
 
 
 # Parameters
-play_echo = False # True if play echo for CR drive
+play_echo = True # True if play echo for CR drive
 nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
@@ -132,21 +132,25 @@ with program() as cr_calib:
         save(n, n_st)
         with for_(*from_array(t, t_vec)):
             # t/2 for main and echo
+            assign(t_half, t >> 1)
             with for_(*from_array(a, a_vec)):
-                assign(t_half, t >> 1)
+                # to allow time to align
+                wait(400 * u.ns)
                 for bss in TARGET_BASES:
                     for st in CONTROL_STATES:
                         # Align all elements (as no implicit align)
                         align()
                         # SHift the phase of CR drive and CR cancel pulse
-                        reset_phase("cr_c1t2")
-                        reset_phase("cr_cancel_c1t2")
+                        reset_frame("cr_c1t2")
+                        reset_frame("cr_cancel_c1t2")
                         frame_rotation_2pi(cr_c1t2_drive_phase, "cr_c1t2")
-                        frame_rotation_2pi(cr_c1t2_cancel_phase, "cr_cancel_c1t2")
+                        frame_rotation_2pi(cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
                 
                         # Prepare control state in 1  
                         if st == "1":
                             play("x180", "q1_xy")
+                        else:
+                            wait(pi_len >> 2, "q1_xy")
 
                         # Play CR + QST
                         # q1_xy=0, q2_xy=0, cr_c1t2=0, cr_cc_c1t2=0, rr1=0, rr2=0
@@ -196,8 +200,7 @@ with program() as cr_calib:
                         # multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="optimized_")
 
                         # Wait for the qubit to decay to the ground state
-                        wait(100 * u.ns)
-                        # wait(thermalization_time * u.ns)
+                        wait(thermalization_time * u.ns)
                         # Make sure you updated the ge_threshold
                         for q in range(nb_of_qubits):
                             assign(state[q], I[q] > thresholds[q])
@@ -226,11 +229,11 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=3_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=2_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, cr_calib, simulation_config)
     job.get_simulated_samples().con1.plot(analog_ports=['1', '2', '3', '4', '5', '6'])
     plt.show()
