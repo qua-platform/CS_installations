@@ -132,7 +132,7 @@ with program() as cr_calib:
             # t/2 for main and echo
             assign(t_half, t >> 1)
             with for_(*from_array(ph, ph_vec)):
-                # to allow time to align
+                # to allow time to save the data
                 wait(400 * u.ns)
                 for bss in TARGET_BASES:
                     for st in CONTROL_STATES:

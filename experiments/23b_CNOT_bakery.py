@@ -56,12 +56,13 @@ with program() as cnot_calib:
     
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
+        # to allow time to save the data
+        wait(400 * u.ns)
         for st_c, st_t in state_ct_pairs:
-            
             with baking(config, padding_method="right") as b:
 
                 # Align all elements (as no implicit align)
-                b.align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2", "rr1", "rr2")
+                b.align()
 
                 # Prepare control state in 1
                 if st_c == "1":
@@ -96,10 +97,11 @@ with program() as cnot_calib:
                     b.play("square_negative_half", "cr_cancel_c1t2")
                     b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
                     b.play("x180", "q1_xy")
+                    b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2", "rr1", "rr2")
                 else:
                     b.play("square_positive", "cr_c1t2")
                     b.play("square_positive", "cr_cancel_c1t2")
-                b.align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2", "rr1", "rr2")
+                    b.align("cr_c1t2", "cr_cancel_c1t2", "rr1", "rr2")
             
             b.run()
             # Measure the state of the resonators
@@ -108,8 +110,7 @@ with program() as cnot_calib:
             # multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="optimized_")
 
             # Wait for the qubit to decay to the ground state
-            wait(200 * u.ns)
-            # wait(thermalization_time * u.ns)
+            wait(thermalization_time * u.ns)
             # Make sure you updated the ge_threshold
             for q in range(nb_of_qubits):
                 assign(state[q], I[q] > thresholds[q])
@@ -139,7 +140,7 @@ simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=2_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=4_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, cnot_calib, simulation_config)
     job.get_simulated_samples().con1.plot(analog_ports=['1', '2', '3', '4', '5', '6'])
     plt.show()

@@ -56,9 +56,11 @@ with program() as cnot_calib:
     
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
+        # to allow time to save the data
+        wait(400 * u.ns)
         for st_c, st_t in state_ct_pairs:
             # Align all elements (as no implicit align)
-            align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2", "rr1", "rr2")
+            align()
 
             # Prepare control state in 1
             if st_c == "1":
@@ -96,15 +98,14 @@ with program() as cnot_calib:
                 play("square_positive", "cr_c1t2")
                 play("square_positive", "cr_cancel_c1t2")
 
-            align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2", "rr1", "rr2")
+            align()
             # Measure the state of the resonators
             # Make sure you updated the ge_threshold and angle if you want to use state discrimination
             multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
             # multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="optimized_")
 
             # Wait for the qubit to decay to the ground state
-            wait(200 * u.ns)
-            # wait(thermalization_time * u.ns)
+            wait(thermalization_time * u.ns)
             # Make sure you updated the ge_threshold
             for q in range(nb_of_qubits):
                 assign(state[q], I[q] > thresholds[q])
@@ -130,11 +131,11 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=2_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=4_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, cnot_calib, simulation_config)
     job.get_simulated_samples().con1.plot(analog_ports=['1', '2', '3', '4', '5', '6'])
     plt.show()
