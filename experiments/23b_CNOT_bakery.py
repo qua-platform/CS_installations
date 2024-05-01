@@ -1,6 +1,6 @@
 # %%
 """
-                                 CNOT
+                                 CNOT_bakery
 
 Prerequisites:
     - 
@@ -18,9 +18,9 @@ from qm import SimulationConfig
 # from configuration import *
 from configuration_with_octave import *
 import matplotlib.pyplot as plt
-from qualang_tools.loops import from_array
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.plot import interrupt_on_close
+from qualang_tools.bakery import baking
 from macros import qua_declaration, multiplexed_readout, one_qb_QST, plot_1qb_tomography_results
 import warnings
 import matplotlib
@@ -57,46 +57,51 @@ with program() as cnot_calib:
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
         for st_c, st_t in state_ct_pairs:
-            # Align all elements (as no implicit align)
-            align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2", "rr1", "rr2")
+            
+            with baking(config, padding_method="right") as b:
 
-            # Prepare control state in 1
-            if st_c == "1":
-                play("x180", "q1_xy")
-            # Prepare target state in 1  
-            if st_t == "1":
-                play("x180", "q2_xy")
+                # Align all elements (as no implicit align)
+                b.align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2", "rr1", "rr2")
 
-            # Play ZI(-pi/2) and IX(-pi/2)
-            align("q1_xy", "q2_xy")
-            frame_rotation_2pi(0.25, "q1_xy")
-            play("-x90", "q2_xy")
+                # Prepare control state in 1
+                if st_c == "1":
+                    b.play("x180", "q1_xy")
+                # Prepare target state in 1  
+                if st_t == "1":
+                    b.play("x180", "q2_xy")
 
-            # SHift the phase of CR drive and CR cancel pulse
-            reset_frame("cr_c1t2")
-            reset_frame("cr_cancel_c1t2")
-            frame_rotation_2pi(cr_c1t2_drive_phase, "cr_c1t2")
-            frame_rotation_2pi(cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
+                # b.Play ZI(-pi/2) and IX(-pi/2)
+                b.align("q1_xy", "q2_xy")
+                b.reset_frame("q1_xy")
+                b.frame_rotation_2pi(0.25, "q1_xy")
+                b.play("-x90", "q2_xy")
 
-            # Play CR
-            align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2")
-            if play_echo:
-                # main
-                play("square_positive_half", "cr_c1t2")
-                play("square_positive_half", "cr_cancel_c1t2")
-                # echo
-                align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
-                play("x180", "q1_xy")
-                align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
-                play("square_negative_half", "cr_c1t2")
-                play("square_negative_half", "cr_cancel_c1t2")
-                align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
-                play("x180", "q1_xy")
-            else:
-                play("square_positive", "cr_c1t2")
-                play("square_positive", "cr_cancel_c1t2")
+                # SHift the phase of CR drive and CR cancel pulse
+                b.reset_frame("cr_c1t2")
+                b.reset_frame("cr_cancel_c1t2")
+                b.frame_rotation_2pi(cr_c1t2_drive_phase, "cr_c1t2")
+                b.frame_rotation_2pi(cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
 
-            align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2", "rr1", "rr2")
+                # b.Play CR
+                b.align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2")
+                if play_echo:
+                    # main
+                    b.play("square_positive_half", "cr_c1t2")
+                    b.play("square_positive_half", "cr_cancel_c1t2")
+                    # echo
+                    b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
+                    b.play("x180", "q1_xy")
+                    b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
+                    b.play("square_negative_half", "cr_c1t2")
+                    b.play("square_negative_half", "cr_cancel_c1t2")
+                    b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
+                    b.play("x180", "q1_xy")
+                else:
+                    b.play("square_positive", "cr_c1t2")
+                    b.play("square_positive", "cr_cancel_c1t2")
+                b.align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2", "rr1", "rr2")
+            
+            b.run()
             # Measure the state of the resonators
             # Make sure you updated the ge_threshold and angle if you want to use state discrimination
             multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
@@ -130,7 +135,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
