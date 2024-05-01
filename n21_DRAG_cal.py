@@ -52,17 +52,7 @@ assert drag_coef != 0, "The DRAG coefficient 'drag_coef' must be different from 
 drag_data = {
     "amps": amps,
     "iters": iters,
-    "n_avg": n_avg,
-    "a_min": a_min,
-    "a_max": a_max,
-    "da": da,
-    "iter_min": iter_min,
-    "iter_max": iter_max,
-    "d": d,
-    "ge_threshold": ge_threshold,
-    "thermalization_time": thermalization_time,
-    "drag_coef": drag_coef,
-    "readout_len": readout_len,
+    "n_avg": n_avg
 }
 
 with qua.program() as drag:
@@ -88,7 +78,14 @@ with qua.program() as drag:
                 # Align the two elements to measure after playing the qubit pulses.
                 qua.align("qubit", "resonator")
                 # Measure the resonator and extract the qubit state
-                state, I, Q = readout_macro(threshold=ge_threshold, state=state, I=I, Q=Q)
+                qua.measure(
+                    "readout",
+                    "resonator",
+                    None,
+                    qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I),
+                    qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q),
+                )
+                qua.assign(state, I > ge_threshold)
                 # Wait for the qubit to decay to the ground state
                 qua.wait(thermalization_time * u.ns, "resonator")
                 # Save the 'I' & 'Q' quadratures to their respective streams
