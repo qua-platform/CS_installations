@@ -145,14 +145,14 @@ else:
         # Progress bar
         elapsed_time = progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
-        plt.suptitle(f"CPMG measurement")
+        plt.suptitle(f"CPMG measurement N={n_pi} pulses")
         plt.subplot(211)
         plt.cla()
-        plt.plot(4 * (n_pi + 1) * taus, I)
+        plt.plot(4 * (2 * n_pi) * taus, I)
         plt.ylabel("I quadrature [V]")
         plt.subplot(212)
         plt.cla()
-        plt.plot(4 * (n_pi + 1) * taus, state)
+        plt.plot(4 * (2 * n_pi) * taus, state)
         plt.xlabel("Idle time [ns]")
         plt.ylabel("Q quadrature [V]")
         plt.tight_layout()
@@ -171,13 +171,13 @@ else:
 
         fit = Fit()
         plt.figure()
-        T2_fit = fit.T1(4 * (n_pi + 1) * taus, I, plot=True)
+        T2_fit = fit.T1(4 * (2 * n_pi) * taus, I, plot=True)
         qubit_T2 = np.abs(T2_fit["T1"][0])
         plt.xlabel("Delay [ns]")
         plt.ylabel("I quadrature [V]")
         print(f"Qubit coherence time T2 = {qubit_T2:.0f} ns")
         plt.legend((f"Coherence time T2 = {qubit_T2:.0f} ns",))
-        plt.title("Echo measurement")
+        plt.title(f"CPMG measurement N={n_pi} pulses")
     except (Exception,):
         pass
 # %%
