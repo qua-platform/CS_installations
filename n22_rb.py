@@ -1,14 +1,13 @@
-# %%
 """
         SINGLE QUBIT RANDOMIZED BENCHMARKING (for gates >= 40ns)
-The program consists in qua.playing random sequences of Clifford gates and measuring the state of the resonator afterwards.
-Each random sequence is derived on the FPGA for the maximum depth (specified as an input) and qua.played for each depth
+The program consists in playing random sequences of Clifford gates and measuring the state of the resonator afterwards.
+Each random sequence is derived on the FPGA for the maximum depth (specified as an input) and played for each depth
 asked by the user (the sequence is truncated to the desired depth). Each truncated sequence ends with the recovery gate,
 found at each step thanks to a preloaded lookup table (Cayley table), that will bring the qubit back to its ground state.
 
 If the readout has been calibrated and is good enough, then state discrimination can be applied to only return the state
 of the qubit. Otherwise, the 'I' and 'Q' quadratures are returned.
-Each sequence is qua.played n_avg times for averaging. A second averaging is performed by qua.playing different random sequences.
+Each sequence is played n_avg times for averaging. A second averaging is performed by playing different random sequences.
 
 The data is then post-processed to extract the single-qubit gate fidelity and error per gate
 .
@@ -19,10 +18,10 @@ Prerequisites:
     - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
 """
 
-import qm.qua as qua
-import qm as qm_api
-import numpy as np
-from configuration import config, qop_ip, cluster_name, u, thermalization_time, drag_coef, ge_threshold, x180_len
+from qm.qua import *
+from qm import QuantumMachinesManager
+from qm import SimulationConfig
+from configuration import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
@@ -36,13 +35,13 @@ import matplotlib.pyplot as plt
 ##############################
 
 num_of_sequences = 50  # Number of random sequences
-n_avg = 10  # Number of averaging loops for each random sequence
+n_avg = 20  # Number of averaging loops for each random sequence
 max_circuit_depth = 1000  # Maximum circuit depth
-delta_clifford = 40  #  qua.play each sequence with a depth step equals to 'delta_clifford - Must be > 1
+delta_clifford = 10  #  Play each sequence with a depth step equals to 'delta_clifford - Must be > 1
 assert (max_circuit_depth / delta_clifford).is_integer(), "max_circuit_depth / delta_clifford must be an integer."
 seed = 345324  # Pseudo-random number generator seed
 # Flag to enable state discrimination if the readout has been calibrated (rotated blobs and threshold)
-state_discrimination = True
+state_discrimination = False
 # List of recovery gates from the lookup table
 inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
 
@@ -55,197 +54,188 @@ def power_law(power, a, b, p):
 
 
 def generate_sequence():
-    cayley = qua.declare(int, value=c1_table.flatten().tolist())
-    inv_list = qua.declare(int, value=inv_gates)
-    current_state = qua.declare(int)
-    step = qua.declare(int)
-    sequence = qua.declare(int, size=max_circuit_depth + 1)
-    inv_gate = qua.declare(int, size=max_circuit_depth + 1)
-    i = qua.declare(int)
-    rand = qua.Random(seed=seed)
+    cayley = declare(int, value=c1_table.flatten().tolist())
+    inv_list = declare(int, value=inv_gates)
+    current_state = declare(int)
+    step = declare(int)
+    sequence = declare(int, size=max_circuit_depth + 1)
+    inv_gate = declare(int, size=max_circuit_depth + 1)
+    i = declare(int)
+    rand = Random(seed=seed)
 
-    qua.assign(current_state, 0)
-    with qua.for_(i, 0, i < max_circuit_depth, i + 1):
-        qua.assign(step, rand.rand_int(24))
-        qua.assign(current_state, cayley[current_state * 24 + step])
-        qua.assign(sequence[i], step)
-        qua.assign(inv_gate[i], inv_list[current_state])
+    assign(current_state, 0)
+    with for_(i, 0, i < max_circuit_depth, i + 1):
+        assign(step, rand.rand_int(24))
+        assign(current_state, cayley[current_state * 24 + step])
+        assign(sequence[i], step)
+        assign(inv_gate[i], inv_list[current_state])
 
     return sequence, inv_gate
 
 
 def play_sequence(sequence_list, depth):
-    i = qua.declare(int)
-    with qua.for_(i, 0, i <= depth, i + 1):
-        with qua.switch_(sequence_list[i], unsafe=True):
-            with qua.case_(0):
-                qua.wait(x180_len // 4, "qubit")
-            with qua.case_(1):
-                qua.play("x180", "qubit")
-            with qua.case_(2):
-                qua.play("y180", "qubit")
-            with qua.case_(3):
-                qua.play("y180", "qubit")
-                qua.play("x180", "qubit")
-            with qua.case_(4):
-                qua.play("x90", "qubit")
-                qua.play("y90", "qubit")
-            with qua.case_(5):
-                qua.play("x90", "qubit")
-                qua.play("-y90", "qubit")
-            with qua.case_(6):
-                qua.play("-x90", "qubit")
-                qua.play("y90", "qubit")
-            with qua.case_(7):
-                qua.play("-x90", "qubit")
-                qua.play("-y90", "qubit")
-            with qua.case_(8):
-                qua.play("y90", "qubit")
-                qua.play("x90", "qubit")
-            with qua.case_(9):
-                qua.play("y90", "qubit")
-                qua.play("-x90", "qubit")
-            with qua.case_(10):
-                qua.play("-y90", "qubit")
-                qua.play("x90", "qubit")
-            with qua.case_(11):
-                qua.play("-y90", "qubit")
-                qua.play("-x90", "qubit")
-            with qua.case_(12):
-                qua.play("x90", "qubit")
-            with qua.case_(13):
-                qua.play("-x90", "qubit")
-            with qua.case_(14):
-                qua.play("y90", "qubit")
-            with qua.case_(15):
-                qua.play("-y90", "qubit")
-            with qua.case_(16):
-                qua.play("-x90", "qubit")
-                qua.play("y90", "qubit")
-                qua.play("x90", "qubit")
-            with qua.case_(17):
-                qua.play("-x90", "qubit")
-                qua.play("-y90", "qubit")
-                qua.play("x90", "qubit")
-            with qua.case_(18):
-                qua.play("x180", "qubit")
-                qua.play("y90", "qubit")
-            with qua.case_(19):
-                qua.play("x180", "qubit")
-                qua.play("-y90", "qubit")
-            with qua.case_(20):
-                qua.play("y180", "qubit")
-                qua.play("x90", "qubit")
-            with qua.case_(21):
-                qua.play("y180", "qubit")
-                qua.play("-x90", "qubit")
-            with qua.case_(22):
-                qua.play("x90", "qubit")
-                qua.play("y90", "qubit")
-                qua.play("x90", "qubit")
-            with qua.case_(23):
-                qua.play("-x90", "qubit")
-                qua.play("y90", "qubit")
-                qua.play("-x90", "qubit")
+    i = declare(int)
+    with for_(i, 0, i <= depth, i + 1):
+        with switch_(sequence_list[i], unsafe=True):
+            with case_(0):
+                wait(x180_len // 4, "qubit")
+            with case_(1):
+                play("x180", "qubit")
+            with case_(2):
+                play("y180", "qubit")
+            with case_(3):
+                play("y180", "qubit")
+                play("x180", "qubit")
+            with case_(4):
+                play("x90", "qubit")
+                play("y90", "qubit")
+            with case_(5):
+                play("x90", "qubit")
+                play("-y90", "qubit")
+            with case_(6):
+                play("-x90", "qubit")
+                play("y90", "qubit")
+            with case_(7):
+                play("-x90", "qubit")
+                play("-y90", "qubit")
+            with case_(8):
+                play("y90", "qubit")
+                play("x90", "qubit")
+            with case_(9):
+                play("y90", "qubit")
+                play("-x90", "qubit")
+            with case_(10):
+                play("-y90", "qubit")
+                play("x90", "qubit")
+            with case_(11):
+                play("-y90", "qubit")
+                play("-x90", "qubit")
+            with case_(12):
+                play("x90", "qubit")
+            with case_(13):
+                play("-x90", "qubit")
+            with case_(14):
+                play("y90", "qubit")
+            with case_(15):
+                play("-y90", "qubit")
+            with case_(16):
+                play("-x90", "qubit")
+                play("y90", "qubit")
+                play("x90", "qubit")
+            with case_(17):
+                play("-x90", "qubit")
+                play("-y90", "qubit")
+                play("x90", "qubit")
+            with case_(18):
+                play("x180", "qubit")
+                play("y90", "qubit")
+            with case_(19):
+                play("x180", "qubit")
+                play("-y90", "qubit")
+            with case_(20):
+                play("y180", "qubit")
+                play("x90", "qubit")
+            with case_(21):
+                play("y180", "qubit")
+                play("-x90", "qubit")
+            with case_(22):
+                play("x90", "qubit")
+                play("y90", "qubit")
+                play("x90", "qubit")
+            with case_(23):
+                play("-x90", "qubit")
+                play("y90", "qubit")
+                play("-x90", "qubit")
 
 
 ###################
 # The QUA program #
 ###################
-with qua.program() as rb:
-    depth = qua.declare(int)  # QUA variable for the varying depth
-    depth_target = qua.declare(int)  # QUA variable for the current depth (changes in steps of delta_clifford)
+with program() as rb:
+    depth = declare(int)  # QUA variable for the varying depth
+    depth_target = declare(int)  # QUA variable for the current depth (changes in steps of delta_clifford)
     # QUA variable to store the last Clifford gate of the current sequence which is replaced by the recovery gate
-    saved_gate = qua.declare(int)
-    m = qua.declare(int)  # QUA variable for the loop over random sequences
-    n = qua.declare(int)  # QUA variable for the averaging loop
-    I = qua.declare(qua.fixed)  # QUA variable for the 'I' quadrature
-    Q = qua.declare(qua.fixed)  # QUA variable for the 'Q' quadrature
-    state = qua.declare(bool)  # QUA variable for state discrimination
+    saved_gate = declare(int)
+    m = declare(int)  # QUA variable for the loop over random sequences
+    n = declare(int)  # QUA variable for the averaging loop
+    I = declare(fixed)  # QUA variable for the 'I' quadrature
+    Q = declare(fixed)  # QUA variable for the 'Q' quadrature
+    state = declare(bool)  # QUA variable for state discrimination
     # The relevant streams
-    m_st = qua.declare_stream()
+    m_st = declare_stream()
     if state_discrimination:
-        state_st = qua.declare_stream()
+        state_st = declare_stream()
     else:
-        I_st = qua.declare_stream()
-        Q_st = qua.declare_stream()
+        I_st = declare_stream()
+        Q_st = declare_stream()
 
-    with qua.for_(m, 0, m < num_of_sequences, m + 1):  # QUA qua.for_ loop over the random sequences
+    with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
         sequence_list, inv_gate_list = generate_sequence()  # Generate the random sequence of length max_circuit_depth
 
-        qua.assign(depth_target, 0)  # Initialize the current depth to 0
-        with qua.for_(depth, 1, depth <= max_circuit_depth, depth + 1):  # Loop over the depths
+        assign(depth_target, 0)  # Initialize the current depth to 0
+        with for_(depth, 1, depth <= max_circuit_depth, depth + 1):  # Loop over the depths
             # Replacing the last gate in the sequence with the sequence's inverse gate
             # The original gate is saved in 'saved_gate' and is being restored at the end
-            qua.assign(saved_gate, sequence_list[depth])
-            qua.assign(sequence_list[depth], inv_gate_list[depth - 1])
-            # Only qua.played the depth corresponding to target_depth
-            with qua.if_((depth == 1) | (depth == depth_target)):
-                with qua.for_(n, 0, n < n_avg, n + 1):  # Averaging loop
+            assign(saved_gate, sequence_list[depth])
+            assign(sequence_list[depth], inv_gate_list[depth - 1])
+            # Only played the depth corresponding to target_depth
+            with if_((depth == 1) | (depth == depth_target)):
+                with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
                     # Can be replaced by active reset
-                    qua.wait(thermalization_time * u.ns, "resonator")
-                    # qua.align the two elements to qua.play the sequence after qubit initialization
-                    qua.align("resonator", "qubit")
-                    # The strict_timing ensures that the sequence will be qua.played without gaps
-                    with qua.strict_timing_():
-                        # qua.play the random sequence of desired depth
+                    wait(thermalization_time * u.ns, "resonator")
+                    # Align the two elements to play the sequence after qubit initialization
+                    align("resonator", "qubit")
+                    # The strict_timing ensures that the sequence will be played without gaps
+                    with strict_timing_():
+                        # Play the random sequence of desired depth
                         play_sequence(sequence_list, depth)
-                    # qua.align the two elements to measure after qua.playing the circuit.
-                    qua.align("qubit", "resonator")
+                    # Align the two elements to measure after playing the circuit.
+                    align("qubit", "resonator")
                     # Make sure you updated the ge_threshold and angle if you want to use state discrimination
-                    qua.measure(
-                        "readout",
-                        "resonator",
-                        None,
-                        # qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I_g),
-                        # qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q_g),
-                        qua.dual_demod.full("opt_cos", "out1", "opt_sin", "out2", I),
-                        qua.dual_demod.full("opt_minus_sin", "out1", "opt_cos", "out2", Q),
-                    )
+                    state, I, Q = readout_macro(threshold=ge_threshold, state=state, I=I, Q=Q)
                     # Save the results to their respective streams
                     if state_discrimination:
-                        qua.assign(state, I > ge_threshold)
-                        qua.save(state, state_st)
+                        save(state, state_st)
                     else:
-                        qua.save(I, I_st)
-                        qua.save(Q, Q_st)
+                        save(I, I_st)
+                        save(Q, Q_st)
                 # Go to the next depth
-                qua.assign(depth_target, depth_target + delta_clifford)
+                assign(depth_target, depth_target + delta_clifford)
             # Reset the last gate of the sequence back to the original Clifford gate
             # (that was replaced by the recovery gate at the beginning)
-            qua.assign(sequence_list[depth], saved_gate)
+            assign(sequence_list[depth], saved_gate)
         # Save the counter for the progress bar
-        qua.save(m, m_st)
+        save(m, m_st)
 
-    with qua.stream_processing():
+    with stream_processing():
         m_st.save("iteration")
         if state_discrimination:
             # saves a 2D array of depth and random pulse sequences in order to get error bars along the random sequences
-            state_st.boolean_to_int().buffer(n_avg).map(qua.FUNCTIONS.average()).buffer(
+            state_st.boolean_to_int().buffer(n_avg).map(FUNCTIONS.average()).buffer(
                 max_circuit_depth / delta_clifford + 1
             ).buffer(num_of_sequences).save("state")
             # returns a 1D array of averaged random pulse sequences vs depth of circuit for live plotting
-            state_st.boolean_to_int().buffer(n_avg).map(qua.FUNCTIONS.average()).buffer(
+            state_st.boolean_to_int().buffer(n_avg).map(FUNCTIONS.average()).buffer(
                 max_circuit_depth / delta_clifford + 1
             ).average().save("state_avg")
         else:
-            I_st.buffer(n_avg).map(qua.FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford + 1).buffer(
+            I_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford + 1).buffer(
                 num_of_sequences
             ).save("I")
-            Q_st.buffer(n_avg).map(qua.FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford + 1).buffer(
+            Q_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford + 1).buffer(
                 num_of_sequences
             ).save("Q")
-            I_st.buffer(n_avg).map(qua.FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford + 1).average().save(
+            I_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford + 1).average().save(
                 "I_avg"
             )
-            Q_st.buffer(n_avg).map(qua.FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford + 1).average().save(
+            Q_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford + 1).average().save(
                 "Q_avg"
             )
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = qm_api.QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 ###########################
 # Run or Simulate Program #
@@ -254,7 +244,7 @@ simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = qm_api.SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, rb, simulation_config)
     job.get_simulated_samples().con1.plot()
 
@@ -346,4 +336,3 @@ else:
     plt.title("Single qubit RB")
 
     # np.savez("rb_values", value)
-# %%
