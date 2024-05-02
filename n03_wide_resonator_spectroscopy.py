@@ -18,7 +18,7 @@ Before proceeding to the next node:
 import qm.qua as qua
 import qm as qm_api
 import numpy as np
-from configuration import config, qop_ip, cluster_name, u, depletion_time, readout_len, resonator_LO
+from configuration import config, qop_ip, cluster_name, u, depletion_time, readout_len, resonator_LO, hittite_ip, hittite_port
 from qualang_tools.results import fetching_tool
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
@@ -28,7 +28,7 @@ from qualang_tools.callable_from_qua import patch_qua_program_addons, callable_f
 from hittite_driver import HittiteHMCT2220
 import time
 
-hittite_module = HittiteHMCT2220(ip_address="169.254.5.246", port=50_000)
+hittite_module = HittiteHMCT2220(ip_address=hittite_ip, port=hittite_port)
 
 hittite_module.connect()
 
