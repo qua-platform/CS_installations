@@ -19,7 +19,7 @@ Before proceeding to the next node:
 import qm.qua as qua
 import qm as qm_api
 import numpy as np
-from configuration import config, qop_ip, cluster_name, u, depletion_time, readout_len, resonator_LO, mini_circuits_ip
+from configuration import config, qop_ip, cluster_name, u, depletion_time, readout_len, resonator_LO, mini_circuits_ip, qubit_LO
 from qualang_tools.results import fetching_tool
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
@@ -147,6 +147,8 @@ else:
     wide_qubit_spectroscopy_data['phase'] = phase
 
     data_handler.save_data(data=wide_qubit_spectroscopy_data, name="wide_qubit_spectroscopy")
+
+    minisgs_module.set_frequency(qubit_LO)
     
     # Fit the results to extract the resonance frequency
     try:

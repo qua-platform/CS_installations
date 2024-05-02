@@ -1,3 +1,4 @@
+# %%
 """
         WIDE RESONATOR SPECTROSCOPY
 This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to extract the
@@ -148,6 +149,7 @@ else:
 
     data_handler.save_data(data=wide_resonator_spectroscopy_data, name="wide_resonator_spectroscopy")
 
+    hittite_module.set_frequency(resonator_LO, unit="Hz")
     hittite_module.disconnect()
     
     # Fit the results to extract the resonance frequency
