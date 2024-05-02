@@ -128,7 +128,7 @@ else:
     job = qm.execute(resonator_spec)
     # Get results from QUA program
     results = fetching_tool(job, data_list=["I", "Q"])
-    I, Q, iteration = results.fetch_all()
+    I, Q = results.fetch_all()
     # Convert results into Volts
     S = u.demod2volts(I + 1j * Q, readout_len)
     R = np.abs(S)  # Amplitude
