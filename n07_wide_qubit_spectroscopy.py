@@ -1,3 +1,4 @@
+# %%
 """
         WIDE RESONATOR SPECTROSCOPY
 This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to extract the
@@ -18,17 +19,16 @@ Before proceeding to the next node:
 import qm.qua as qua
 import qm as qm_api
 import numpy as np
-from configuration import config, qop_ip, cluster_name, u, depletion_time, readout_len, resonator_LO, qubit_IF
+from configuration import config, qop_ip, cluster_name, u, depletion_time, readout_len, resonator_LO, mini_circuits_ip
 from qualang_tools.results import fetching_tool
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
-from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
 from qualang_tools.callable_from_qua import patch_qua_program_addons, callable_from_qua
-from minicircuit_ssg_driver import MiniCircuitsSGS
+from minicircuit_ssg_driver import MiniCircuitsSSG
 import time
 
-minisgs_module = MiniCircuitsSGS(host="", port=80)
+minisgs_module = MiniCircuitsSSG(host=mini_circuits_ip, port=80)
 
 patch_qua_program_addons()
 
@@ -39,20 +39,20 @@ def set_lo_freq(element, frequency):
     # Here the LO frequency must be passed in kHz instead of Hz, 
     # because the QUA integer ranges in +/-2**31 ~ +/- 2.1e9
     print(f"setting the LO frequency of {element} to {frequency * 1e-6} GHz")
-    minisgs_module.set_frequency(frequency * 1e3, unit="Hz")
+    minisgs_module.set_frequency(frequency * 1e3)
     time.sleep(1)
 
 ###################
 # The QUA program #
 ###################
-n_avg = 1000  # The number of averages
+n_avg = 20  # The number of averages
 # The frequency sweep parameters
-f_min = 30 * u.MHz
-f_max = 70 * u.MHz
+f_min = 10 * u.MHz
+f_max = 300 * u.MHz
 df = 100 * u.kHz
 frequencies = np.arange(f_min, f_max + 0.1, df)  # The frequency vector (+ 0.1 to add f_max to frequencies)
 
-lo_min = 3.5 * u.GHz
+lo_min = 3.0 * u.GHz
 lo_max = 7.0 * u.GHz
 step_lo = f_max - f_min
 lo_values = np.arange(lo_min, lo_max, step_lo)
@@ -127,7 +127,7 @@ else:
     job = qm.execute(qubit_spec)
     # Get results from QUA program
     results = fetching_tool(job, data_list=["I", "Q"])
-    I, Q, iteration = results.fetch_all()
+    I, Q = results.fetch_all()
     # Convert results into Volts
     S = u.demod2volts(I + 1j * Q, readout_len)
     R = np.abs(S)  # Amplitude
@@ -154,7 +154,7 @@ else:
 
         fit = Fit()
         plt.figure()
-        res_spec_fit = fit.transmission_qubit_spectroscopy(frequencies / u.MHz, R, plot=True)
+        res_spec_fit = fit.reflection_qubit_spectroscopy(frequencies / u.MHz, R, plot=True)
         plt.title(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
         plt.xlabel("Intermediate frequency [MHz]")
         plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
@@ -162,3 +162,5 @@ else:
 
     except (Exception,):
         pass
+
+# %%
