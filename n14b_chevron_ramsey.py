@@ -15,15 +15,17 @@ Next steps before going to the next node:
     - Update the qubit frequency (qubit_IF) in the configuration.
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
+import qm.qua as qua
+import qm as qm_api
+import numpy as np
+from configuration import config, qop_ip, cluster_name, u, thermalization_time, readout_len, qubit_IF
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
+from qualang_tools.results.data_handler import DataHandler
 
+data_handler = DataHandler(root_data_folder="./")
 
 ###################
 # The QUA program #
@@ -42,47 +44,54 @@ taus = np.arange(0, tau_max, d_tau)
 if len(np.where((taus > 0) & (taus < 4))[0]) > 0:
     raise Exception("Delay must be either 0 or an integer larger than 4.")
 
-with program() as ramsey_freq_duration:
-    n = declare(int)  # QUA variable for the averaging loop
-    df = declare(int)  # QUA variable for the qubit detuning
-    delay = declare(int)  # QUA variable for the idle time
-    I = declare(fixed)  # QUA variable for the measured 'I' quadrature
-    Q = declare(fixed)  # QUA variable for the measured 'Q' quadrature
-    I_st = declare_stream()  # Stream for the 'I' quadrature
-    Q_st = declare_stream()  # Stream for the 'Q' quadrature
-    n_st = declare_stream()  # Stream for the averaging iteration 'n'
+chevron_ramsey_data = {
+    "n_avg": n_avg,
+    "dfs": dfs,
+    "taus": taus,
+    "config": config
+}
 
-    with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
-        with for_(*from_array(delay, taus)):  # QUA for_ loop for sweeping the idle time
-            with for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the qubit frequency
+with qua.program() as ramsey_freq_duration:
+    n = qua.declare(int)  # QUA variable for the averaging loop
+    df = qua.declare(int)  # QUA variable for the qubit detuning
+    delay = qua.declare(int)  # QUA variable for the idle time
+    I = qua.declare(qua.fixed)  # QUA variable for the measured 'I' quadrature
+    Q = qua.declare(qua.fixed)  # QUA variable for the measured 'Q' quadrature
+    I_st = qua.declare_stream()  # Stream for the 'I' quadrature
+    Q_st = qua.declare_stream()  # Stream for the 'Q' quadrature
+    n_st = qua.declare_stream()  # Stream for the averaging iteration 'n'
+
+    with qua.for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
+        with qua.for_(*from_array(delay, taus)):  # QUA for_ loop for sweeping the idle time
+            with qua.for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the qubit frequency
                 # Update the frequency of the digital oscillator linked to the qubit element
-                update_frequency("qubit", df + qubit_IF)
+                qua.update_frequency("qubit", df + qubit_IF)
                 # Adjust the idle time
-                with if_(delay >= 4):
-                    play("x90", "qubit")
-                    wait(delay, "qubit")
-                    play("x90", "qubit")
-                with else_():
-                    play("x90", "qubit")
-                    play("x90", "qubit")
-                align("qubit", "resonator")
+                with qua.if_(delay >= 4):
+                    qua.play("x90", "qubit")
+                    qua.wait(delay, "qubit")
+                    qua.play("x90", "qubit")
+                with qua.else_():
+                    qua.play("x90", "qubit")
+                    qua.play("x90", "qubit")
+                qua.align("qubit", "resonator")
                 # Measure the state of the resonator.
-                measure(
+                qua.measure(
                     "readout",
                     "resonator",
                     None,
-                    dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I),
-                    dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q),
+                    qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I),
+                    qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q),
                 )
                 # Wait for the qubit to decay to the ground state
-                wait(thermalization_time * u.ns, "resonator")
+                qua.wait(thermalization_time * u.ns, "resonator")
                 # Save the 'I' & 'Q' quadratures to their respective streams
-                save(I, I_st)
-                save(Q, Q_st)
+                qua.save(I, I_st)
+                qua.save(Q, Q_st)
         # Save the averaging iteration to get the progress bar
-        save(n, n_st)
+        qua.save(n, n_st)
 
-    with stream_processing():
+    with qua.stream_processing():
         # Cast the data into a 2D matrix, average the 2D matrices together and store the results on the OPX processor
         I_st.buffer(len(dfs)).buffer(len(taus)).average().save("I")
         Q_st.buffer(len(dfs)).buffer(len(taus)).average().save("Q")
@@ -92,7 +101,7 @@ with program() as ramsey_freq_duration:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = qm_api.QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
 ###########################
 # Run or Simulate Program #
@@ -101,7 +110,7 @@ simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    simulation_config = qm_api.SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, ramsey_freq_duration, simulation_config)
     job.get_simulated_samples().con1.plot()
 else:
@@ -136,5 +145,11 @@ else:
         plt.xlabel("Qubit detuning [MHz]")
         plt.ylabel("Idle time [ns]")
         plt.tight_layout()
-        plt.pause(0.01)
+        plt.pause(1)
+
+    # Save the results
+    chevron_ramsey_data["I"] = I
+    chevron_ramsey_data["Q"] = Q
+    data_handler.save_data(data=chevron_ramsey_data, name="chevron_ramsey")
+    
 # %%
