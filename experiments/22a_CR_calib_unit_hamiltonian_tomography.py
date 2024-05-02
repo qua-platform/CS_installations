@@ -8,24 +8,15 @@ with a control qubit and a target qubit. These scripts help estimate the paramet
 which is represented as:
         H = I ⊗ (a_X X + a_Y Y + a_Z Z) + Z ⊗ (b_I I + b_X X + b_Y Y + b_Z Z)
 
-For the calibration sequences, there are two options: with or without echoing the CR drive.
-(1) play_echo == True:
-                        #                        ____      ____ 
-                        # Control(fC): _________| pi |____| pi |________________
-                        #                  ____                     
-                        #      CR(fT): ___| CR |_____      _____________________
-                        #                            |____|     _____
-                        #  Target(fT): ________________________| QST |__________
-                        #                                              ______
-                        # Readout(fR): _____________________ _________|  RR  |__
-(2) play_echo == False:
-                        # # Control(fC): _____________________________
-                        #                  ________                      
-                        #      CR(fT): ___|   CR   |________________
-                        #                           _____
-                        #  Target(fT): ____________| QST |__________          
-                        #                                  ______
-                        # Readout(fR): ___________________|  RR  |__
+For the calibration sequences, we employ echoed CR drive.
+                                   ____      ____ 
+            Control(fC): _________| pi |____| pi |________________
+                             ____                     
+                 CR(fT): ___| CR |_____      _____________________
+                                       |____|     _____
+             Target(fT): ________________________| QST |__________
+                                                         ______
+            Readout(fR): _____________________ _________|  RR  |__
 
 Each sequence, which varies in the duration of the CR drive, ends with state tomography of the target state
 (across X, Y, and Z bases). This process is repeated with the control state in both |0> and |1> states.
@@ -86,7 +77,6 @@ def arrange_data_for_crht(state_data):
 ############
 # Parameters
 ############
-play_echo = True # True if play echo for CR drive
 nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
@@ -97,9 +87,8 @@ n_avg = 100 # num of iterations
 assert len(qubit_suffixes) == nb_of_qubits
 assert len(resonators) == nb_of_qubits
 assert len(thresholds) == nb_of_qubits
-assert (play_echo and np.all(t_vec % 2 == 0) and (t_vec.min() >= 8)) \
-    or (not play_echo and (np.min(t_vec) >= 4)), \
-    "t_vec should only have even numbers if play echoes"
+assert np.all(t_vec % 2 == 0) and (t_vec.min() >= 8), "t_vec should only have even numbers if play echoes"
+
 
 
 with program() as cr_calib:
@@ -132,31 +121,24 @@ with program() as cr_calib:
                     # Play CR + QST
                     # q1_xy=0, q2_xy=0, cr_c1t2=0, rr1=0, rr2=0
                     align()
-                    if play_echo:
-                        # q1_xy=0, q2_xy=0, cr_c1t2=t/2, rr1=0, rr2=0
-                        play("square_positive", "cr_c1t2", duration=t_half)
-                        # q1_xy=t/2, q2_xy=0, cr_c1t2=t/2, rr1=0, rr2=0
-                        wait(t_half, "q1_xy")
-                        # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t/2, rr1=0, rr2=0
-                        play("x180", "q1_xy")
-                        # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t/2+p/4, rr1=0, rr2=0
-                        wait(pi_len >> 2, "cr_c1t2")
-                        # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t+p/4, rr1=0, rr2=0
-                        play("square_negative", "cr_c1t2", duration=t_half)
-                        # q1_xy=t+p/4, q2_xy=0, cr_c1t2=t+p/4, rr1=0, rr2=0
-                        wait(t_half, "q1_xy")
-                        # q1_xy=t+p/2, q2_xy=0, cr_c1t2=t+p/4, rr1=0, rr2=0
-                        play("x180", "q1_xy")
-                        # q1_xy=t+p/2, q2_xy=t+p/2, cr_c1t2=t+p/4, rr1=t+p/2, rr2=t+p/2
-                        wait(t + (pi_len >> 1), "q2_xy", "rr1", "rr2")
-                    else:
-                        # q1_xy=0, q2_xy=0, cr_c1t2=t, rr1=0, rr2=0 
-                        play("square_positive", "cr_c1t2", duration=t)
-                        # q1_xy=0, q2_xy=t, cr_c1t2=t, rr1=t, rr2=t
-                        wait(t, "q2_xy", "rr1", "rr2")
+                    # q1_xy=0, q2_xy=0, cr_c1t2=t/2, rr1=0, rr2=0
+                    play("square_positive", "cr_c1t2", duration=t_half)
+                    # q1_xy=t/2, q2_xy=0, cr_c1t2=t/2, rr1=0, rr2=0
+                    wait(t_half, "q1_xy")
+                    # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t/2, rr1=0, rr2=0
+                    play("x180", "q1_xy")
+                    # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t/2+p/4, rr1=0, rr2=0
+                    wait(pi_len >> 2, "cr_c1t2")
+                    # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t+p/4, rr1=0, rr2=0
+                    play("square_negative", "cr_c1t2", duration=t_half)
+                    # q1_xy=t+p/4, q2_xy=0, cr_c1t2=t+p/4, rr1=0, rr2=0
+                    wait(t_half, "q1_xy")
+                    # q1_xy=t+p/2, q2_xy=0, cr_c1t2=t+p/4, rr1=0, rr2=0
+                    play("x180", "q1_xy")
+                    # q1_xy=t+p/2, q2_xy=t+p/2, cr_c1t2=t+p/4, rr1=t+p/2, rr2=t+p/2
+                    wait(t + (pi_len >> 1), "q2_xy", "rr1", "rr2")
                     
-                    # if play_echo: q1_xy=t+3*p/4, q2_xy=t+p/2, cr_c1t2=t+p/4, rr1=t+p/2, rr2=t+p/2
-                    # else: q1_xy=0, q2_xy=t+p/4, cr_c1t2=t, rr1=t, rr2=t
+                    # q1_xy=t+3*p/4, q2_xy=t+p/2, cr_c1t2=t+p/4, rr1=t+p/2, rr2=t+p/2
                     if bss == "x":
                         play("-y90", "q2_xy")
                     elif bss == "y":
@@ -164,8 +146,7 @@ with program() as cr_calib:
                     else:
                         wait(pi_len >> 2, "q2_xy")
 
-                    # if play_echo: q1_xy=t+3*p/4, q2_xy=t+3*p/4, cr_c1t2=t+p/4, rr1=t+3*p/4, rr2=t+3*p/4
-                    # else: q1_xy=0, q2_xy=t+p/4, cr_c1t2=t, rr1=t+p/4, rr2=t+p/4
+                    # q1_xy=t+3*p/4, q2_xy=t+3*p/4, cr_c1t2=t+p/4, rr1=t+3*p/4, rr2=t+3*p/4
                     wait(pi_len >> 2, "rr1", "rr2")
 
                     # Measure the state of the resonators
