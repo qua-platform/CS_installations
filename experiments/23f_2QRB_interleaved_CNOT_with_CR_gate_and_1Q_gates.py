@@ -15,7 +15,6 @@ from two_qubit_rb import TwoQubitRb
 q1_idx_str = "1"
 q2_idx_str = "2"
 
-
 # single qubit generic gate constructor Z^{z}Z^{a}X^{x}Z^{-a}
 # that can reach any point on the Bloch sphere (starting from arbitrary points)
 def bake_phased_xz(baker: Baking, q, x, z, a):
@@ -27,33 +26,37 @@ def bake_phased_xz(baker: Baking, q, x, z, a):
     baker.frame_rotation_2pi(a / 2, element)
     baker.play("x180", element, amp=x)
     baker.frame_rotation_2pi(-(a + z) / 2, element)
+    
+    if q == 2:
+        # keep track the frame for cr and cr_cancel
+        baker.frame_rotation_2pi(-z / 2, "cr_c1t2")
+        baker.frame_rotation_2pi(-z / 2, "cr_cancel_c1t2")
 
 
 # defines the CNOT gate that realizes the mapping |00> -> |00>, |01> -> |01>, |10> -> |11>, |11> -> |10>
 def bake_cnot(baker: Baking, q1, q2):
-    # single qubit gates
-    baker.reset_frame("q1_xy")
-    baker.align("q1_xy", "q2_xy")
+    # Play single qubit gates
     baker.frame_rotation_2pi(+0.25, "q1_xy") # +0.25 for Z(-pi/2) # -z90
     baker.play("-x90", "q2_xy")
-    # phase shift
-    baker.align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2")
-    baker.reset_frame("cr_c1t2")
-    baker.reset_frame("cr_cancel_c1t2")
+    # Shift frames to the calibrated phases
     baker.frame_rotation_2pi(cr_c1t2_drive_phase, "cr_c1t2")
     baker.frame_rotation_2pi(cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
-    # play cr drive and cr cancel drive
+    # Play cr drive and cr cancel drive
+    baker.align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2")
     baker.align("cr_c1t2", "cr_cancel_c1t2")
     baker.play("square_positive_half", "cr_c1t2")
     baker.play("square_positive_half", "cr_cancel_c1t2")
-    baker.align("cr_c1t2", "cr_cancel_c1t2", "q1_xy")
-    # play echoes for cr drive and cr cancel drive
+    # Play echoes for cr drive and cr cancel drive
+    baker.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
     baker.play("x180", "q1_xy")
     baker.align("cr_c1t2", "cr_cancel_c1t2", "q1_xy")
     baker.play("square_negative_half", "cr_c1t2")
     baker.play("square_negative_half", "cr_cancel_c1t2")
     baker.align("cr_c1t2", "cr_cancel_c1t2", "q1_xy")
     baker.play("x180", "q1_xy")
+    # Shift back the phase of cr and cr cancel pulse so they won't be accumulated
+    baker.frame_rotation_2pi(-cr_c1t2_drive_phase, "cr_c1t2")
+    baker.frame_rotation_2pi(-cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
 
 
 def prep():
