@@ -50,8 +50,8 @@ octave_config = None
 #############################################
 #                  Qubits                   #
 #############################################
-qubit_LO = 5.3 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
-qubit_IF = 183.8 * u.MHz
+qubit_LO = 5.667 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
+qubit_IF = -183.2 * u.MHz
 mixer_qubit_g = 0.0
 mixer_qubit_phi = 0.0
 
@@ -74,7 +74,7 @@ AC_stark_detuning = 0 * u.MHz
 
 x180_len = 400
 x180_sigma = x180_len / 5
-x180_amp = 0.28
+x180_amp = 0.2903
 x180_wf, x180_der_wf = np.array(
     drag_gaussian_pulse_waveforms(x180_amp, x180_len, x180_sigma, drag_coef, anharmonicity, AC_stark_detuning)
 )
@@ -150,12 +150,12 @@ minus_y90_Q_wf = minus_y90_wf
 #                Resonators                 #
 #############################################
 resonator_LO = 7.150 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
-resonator_IF = 124.2 * u.MHz
+resonator_IF = 124.5 * u.MHz
 mixer_resonator_g = 0.0
 mixer_resonator_phi = 0.0
 
 readout_len = 3000
-readout_amp = 0.2
+readout_amp = 0.1
 
 time_of_flight = 24
 depletion_time = 10 * u.us
@@ -177,12 +177,12 @@ else:
 
 # IQ Plane
 rotation_angle = (0.0 / 180) * np.pi
-ge_threshold = 0.0
+ge_threshold = -4.465e-04
 
 # PARAMP
 const_flux_len = 100
 const_flux_amp = 0.1
-paramp_offset = 0.0
+paramp_offset = 0.167
 
 #############################################
 #                  Config                   #
@@ -192,10 +192,10 @@ config = {
     "controllers": {
         "con1": {
             "analog_outputs": {
-                1: {"offset": 0.0},  # I qubit
-                2: {"offset": 0.0},  # Q qubit
-                3: {"offset": 0.0},  # I resonator
-                4: {"offset": 0.0},  # Q resonator
+                1: {"offset": -0.027981},  # I qubit
+                2: {"offset": 0.011083},  # Q qubit
+                3: {"offset": -0.028276},  # I resonator
+                4: {"offset": -0.001304},  # Q resonator
                 5: {"offset": paramp_offset},  # PARAMP
             },
             "digital_outputs": {},
@@ -428,14 +428,16 @@ config = {
             {
                 "intermediate_frequency": qubit_IF,
                 "lo_frequency": qubit_LO,
-                "correction": IQ_imbalance(mixer_qubit_g, mixer_qubit_phi),
+                # "correction": IQ_imbalance(mixer_qubit_g, mixer_qubit_phi),
+                "correction": [-0.978281, -0.104052, -0.107507, -1.010766],
             }
         ],
         "mixer_resonator": [
             {
                 "intermediate_frequency": resonator_IF,
                 "lo_frequency": resonator_LO,
-                "correction": IQ_imbalance(mixer_resonator_g, mixer_resonator_phi),
+                # "correction": IQ_imbalance(mixer_resonator_g, mixer_resonator_phi),
+                "correction": [1.100294, 0.139896, 0.113717, 0.89439],
             }
         ],
     },

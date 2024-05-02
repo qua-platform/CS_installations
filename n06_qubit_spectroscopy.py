@@ -41,7 +41,7 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 # The QUA program #
 ###################
-n_avg = 1000  # The number of averages
+n_avg = 100  # The number of averages
 # The frequency sweep parameters
 span = 20 * u.MHz
 step_span = 100 * u.kHz
@@ -131,11 +131,11 @@ else:
         plt.suptitle(f"Qubit spectroscopy - LO = {qubit_LO / u.GHz} GHz")
         ax1 = plt.subplot(211)
         plt.cla()
-        plt.plot(frequencies / u.MHz, R, ".")
+        plt.plot((qubit_IF + frequencies )/ u.MHz, R, ".")
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
         plt.subplot(212, sharex=ax1)
         plt.cla()
-        plt.plot(frequencies / u.MHz, signal.detrend(np.unwrap(phase)), ".")
+        plt.plot((qubit_IF + frequencies) / u.MHz, signal.detrend(np.unwrap(phase)), ".")
         plt.xlabel("Intermediate frequency [MHz]")
         plt.ylabel("Phase [rad]")
         plt.tight_layout()
@@ -155,7 +155,7 @@ else:
 
         fit = Fit()
         plt.figure()
-        res_spec_fit = fit.reflection_resonator_spectroscopy(frequencies / u.MHz, R, plot=True)
+        res_spec_fit = fit.reflection_resonator_spectroscopy((qubit_IF + frequencies) / u.MHz, R, plot=True)
         plt.title(f"Resonator spectroscopy - LO = {qubit_LO / u.GHz} GHz")
         plt.xlabel("Intermediate frequency [MHz]")
         plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")

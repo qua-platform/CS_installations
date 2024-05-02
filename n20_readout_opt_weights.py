@@ -30,9 +30,6 @@ from configuration import config, qop_ip, cluster_name, u, thermalization_time, 
 from qualang_tools.results import progress_counter, fetching_tool
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
-import matplotlib
-
-matplotlib.use('TkAgg')
 
 data_handler = DataHandler(root_data_folder="./")
 
@@ -103,7 +100,7 @@ def update_readout_length(new_readout_length, ringdown_length):
 ###################
 # The QUA program #
 ###################
-n_avg = 1_000  # number of averages
+n_avg = 2_000  # number of averages
 # Set maximum readout duration for this scan and update the configuration accordingly
 readout_len = 3 * u.us  # Readout pulse duration
 ringdown_len = 9 * u.us  # integration time after readout pulse to observe the ringdown of the resonator

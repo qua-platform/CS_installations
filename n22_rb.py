@@ -1,3 +1,4 @@
+# %%
 """
         SINGLE QUBIT RANDOMIZED BENCHMARKING (for gates >= 40ns)
 The program consists in qua.playing random sequences of Clifford gates and measuring the state of the resonator afterwards.
@@ -35,9 +36,9 @@ import matplotlib.pyplot as plt
 ##############################
 
 num_of_sequences = 50  # Number of random sequences
-n_avg = 20  # Number of averaging loops for each random sequence
+n_avg = 10  # Number of averaging loops for each random sequence
 max_circuit_depth = 1000  # Maximum circuit depth
-delta_clifford = 10  #  qua.play each sequence with a depth step equals to 'delta_clifford - Must be > 1
+delta_clifford = 40  #  qua.play each sequence with a depth step equals to 'delta_clifford - Must be > 1
 assert (max_circuit_depth / delta_clifford).is_integer(), "max_circuit_depth / delta_clifford must be an integer."
 seed = 345324  # Pseudo-random number generator seed
 # Flag to enable state discrimination if the readout has been calibrated (rotated blobs and threshold)
@@ -63,12 +64,12 @@ def generate_sequence():
     i = qua.declare(int)
     rand = qua.Random(seed=seed)
 
-    qua.assign()(current_state, 0)
+    qua.assign(current_state, 0)
     with qua.for_(i, 0, i < max_circuit_depth, i + 1):
-        qua.assign()(step, rand.rand_int(24))
-        qua.assign()(current_state, cayley[current_state * 24 + step])
-        qua.assign()(sequence[i], step)
-        qua.assign()(inv_gate[i], inv_list[current_state])
+        qua.assign(step, rand.rand_int(24))
+        qua.assign(current_state, cayley[current_state * 24 + step])
+        qua.assign(sequence[i], step)
+        qua.assign(inv_gate[i], inv_list[current_state])
 
     return sequence, inv_gate
 
@@ -172,12 +173,12 @@ with qua.program() as rb:
     with qua.for_(m, 0, m < num_of_sequences, m + 1):  # QUA qua.for_ loop over the random sequences
         sequence_list, inv_gate_list = generate_sequence()  # Generate the random sequence of length max_circuit_depth
 
-        qua.assign()(depth_target, 0)  # Initialize the current depth to 0
+        qua.assign(depth_target, 0)  # Initialize the current depth to 0
         with qua.for_(depth, 1, depth <= max_circuit_depth, depth + 1):  # Loop over the depths
             # Replacing the last gate in the sequence with the sequence's inverse gate
             # The original gate is saved in 'saved_gate' and is being restored at the end
-            qua.assign()(saved_gate, sequence_list[depth])
-            qua.assign()(sequence_list[depth], inv_gate_list[depth - 1])
+            qua.assign(saved_gate, sequence_list[depth])
+            qua.assign(sequence_list[depth], inv_gate_list[depth - 1])
             # Only qua.played the depth corresponding to target_depth
             with qua.if_((depth == 1) | (depth == depth_target)):
                 with qua.for_(n, 0, n < n_avg, n + 1):  # Averaging loop
@@ -203,15 +204,16 @@ with qua.program() as rb:
                     )
                     # Save the results to their respective streams
                     if state_discrimination:
+                        qua.assign(state, I > ge_threshold)
                         qua.save(state, state_st)
                     else:
                         qua.save(I, I_st)
                         qua.save(Q, Q_st)
                 # Go to the next depth
-                qua.assign()(depth_target, depth_target + delta_clifford)
+                qua.assign(depth_target, depth_target + delta_clifford)
             # Reset the last gate of the sequence back to the original Clifford gate
             # (that was replaced by the recovery gate at the beginning)
-            qua.assign()(sequence_list[depth], saved_gate)
+            qua.assign(sequence_list[depth], saved_gate)
         # Save the counter for the progress bar
         qua.save(m, m_st)
 
@@ -344,3 +346,4 @@ else:
     plt.title("Single qubit RB")
 
     # np.savez("rb_values", value)
+# %%

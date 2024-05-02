@@ -32,14 +32,14 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 # The QUA program #
 ###################
-n_avg = 20
+n_avg = 100
 # Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
 tau_min = 4
-tau_max = 10_000 // 4
+tau_max = 50_000 // 4
 d_tau = 40 // 4
 taus = np.arange(tau_min, tau_max + 0.1, d_tau)  # + 0.1 to add tau_max to taus
 # Detuning converted into virtual Z-rotations to observe Ramsey oscillation and get the qubit frequency
-detuning = 1 * u.MHz  # in Hz
+detuning = 1.5 * u.MHz  # in Hz
 delta_phase = 4e-09 * detuning * d_tau # 4*tau because tau was in clock cycles and 1e-9 because tau is ns
 phase_init = 4e-09 * detuning * tau_min
 
@@ -68,6 +68,20 @@ with qua.program() as ramsey:
         qua.assign(phase, phase_init)
         with qua.for_(*from_array(tau, taus)):
 
+            # reset
+            # qua.measure(
+            #     "readout",
+            #     "resonator",
+            #     None,
+            #     # qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I),
+            #     # qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q),
+            #     qua.dual_demod.full("opt_cos", "out1", "opt_sin", "out2", I),
+            #     qua.dual_demod.full("opt_minus_sin", "out1", "opt_cos", "out2", Q),
+            # )
+            # qua.play('x180', 'qubit', condition=I>ge_threshold)
+
+            # qua.align()
+
             # 1st x90 gate
             qua.play("x90", "qubit")
             # Wait a varying idle time
@@ -84,8 +98,10 @@ with qua.program() as ramsey:
                 "readout",
                 "resonator",
                 None,
-                qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I),
-                qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q),
+                # qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I),
+                # qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q),
+                qua.dual_demod.full("opt_cos", "out1", "opt_sin", "out2", I),
+                qua.dual_demod.full("opt_minus_sin", "out1", "opt_cos", "out2", Q),
             )
             # Wait for the qubit to decay to the ground state
             qua.wait(thermalization_time * u.ns, "resonator")
@@ -144,15 +160,15 @@ else:
         plt.suptitle(f"Ramsey with frame rotation (detuning={detuning / u.MHz} MHz)")
         plt.subplot(311)
         plt.cla()
-        plt.plot(4 * taus, I, ".")
+        plt.plot(4 * taus, I)
         plt.ylabel("I quadrature [V]")
         plt.subplot(312)
         plt.cla()
-        plt.plot(4 * taus, Q, ".")
+        plt.plot(4 * taus, Q)
         plt.ylabel("Q quadrature [V]")
         plt.subplot(313)
         plt.cla()
-        plt.plot(4 * taus, state, ".")
+        plt.plot(4 * taus, state)
         plt.ylim((0, 1))
         plt.xlabel("Idle time [ns]")
         plt.ylabel("State")
@@ -172,7 +188,7 @@ else:
 
         fit = Fit()
         plt.figure()
-        ramsey_fit = fit.ramsey(4 * taus, I, plot=True)
+        ramsey_fit = fit.ramsey(4 * taus, -2*state + 1, plot=True)
         qubit_T2 = np.abs(ramsey_fit["T2"][0])
         qubit_detuning = ramsey_fit["f"][0] * u.GHz - detuning
         plt.xlabel("Idle time [ns]")

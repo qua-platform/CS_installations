@@ -31,10 +31,10 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 # The QUA program #
 ###################
-n_avg = 100  # The number of averages
+n_avg = 1000  # The number of averages
 # The frequency sweep parameters
-span = 10 * u.MHz
-df = 200 * u.kHz
+span = 3 * u.MHz
+df = 100 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)
 
 ro_opt_freq_data = {

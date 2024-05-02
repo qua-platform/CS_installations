@@ -33,12 +33,12 @@ data_handler = DataHandler(root_data_folder="./")
 n_avg = 20
 # Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
 tau_min = 4
-tau_max = 20_000 // 4
-d_tau = 40 // 4
+tau_max = 60_000 // 4
+d_tau = 100 // 4
 taus = np.arange(tau_min, tau_max + 0.1, d_tau)  # Linear sweep
 # taus = np.logspace(np.log10(tau_min), np.log10(tau_max), 21)  # Log sweep
 
-n_pi = 1  # Number of pi pulses in the sequence
+n_pi = 6  # Number of pi pulses in the sequence
 
 cpmg_data = {
     "n_avg": n_avg,
@@ -56,6 +56,8 @@ with qua.program() as echo:
     Q_st = qua.declare_stream()
     tau = qua.declare(int)
     m = qua.declare(int)
+    state = qua.declare(bool)
+    state_st = qua.declare_stream()
 
     with qua.for_(n, 0, n < n_avg, n + 1):
         # Save the averaging iteration to get the progress bar
@@ -82,12 +84,16 @@ with qua.program() as echo:
                 "readout",
                 "resonator",
                 None,
-                qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I),
-                qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q),
+                # qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I),
+                # qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q),
+                qua.dual_demod.full("opt_cos", "out1", "opt_sin", "out2", I),
+                qua.dual_demod.full("opt_minus_sin", "out1", "opt_cos", "out2", Q),
             )
+            qua.assign(state, I > ge_threshold)
             # Wait for the qubit to decay to the ground state
             qua.wait(thermalization_time * u.ns, "resonator")
             # Save the 'I' & 'Q' quadratures to their respective streams
+            qua.save(state, state_st)
             qua.save(I, I_st)
             qua.save(Q, Q_st)
 
@@ -102,6 +108,7 @@ with qua.program() as echo:
         else:
             I_st.buffer(len(taus)).average().save("I")
             Q_st.buffer(len(taus)).average().save("Q")
+            state_st.boolean_to_int().buffer(len(taus)).average().save("state")
         n_st.save("iteration")
 
 ######################################
@@ -126,26 +133,26 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(echo)
     # Get results from QUA program
-    results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
+    results = fetching_tool(job, data_list=["I", "Q", "state", "iteration"], mode="live")
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch results
-        I, Q, iteration = results.fetch_all()
+        I, Q, state, iteration = results.fetch_all()
         # Convert the results into Volts
         I, Q = u.demod2volts(I, readout_len), u.demod2volts(Q, readout_len)
         # Progress bar
         elapsed_time = progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
-        plt.suptitle(f"Echo measurement")
+        plt.suptitle(f"CPMG measurement")
         plt.subplot(211)
         plt.cla()
-        plt.plot(4 * (n_pi + 1) * taus, I, ".")
+        plt.plot(4 * (n_pi + 1) * taus, I)
         plt.ylabel("I quadrature [V]")
         plt.subplot(212)
         plt.cla()
-        plt.plot(4 * (n_pi + 1) * taus, Q, ".")
+        plt.plot(4 * (n_pi + 1) * taus, state)
         plt.xlabel("Idle time [ns]")
         plt.ylabel("Q quadrature [V]")
         plt.tight_layout()
@@ -154,6 +161,7 @@ else:
     # Save the results
     cpmg_data["I"] = I
     cpmg_data["Q"] = Q
+    cpmg_data["state"] = state
     cpmg_data['elapsed_time'] = elapsed_time
     data_handler.save_data(data=cpmg_data, name="cpmg")
     
@@ -163,7 +171,7 @@ else:
 
         fit = Fit()
         plt.figure()
-        T2_fit = fit.T1(8 * taus, I, plot=True)
+        T2_fit = fit.T1(4 * (n_pi + 1) * taus, I, plot=True)
         qubit_T2 = np.abs(T2_fit["T1"][0])
         plt.xlabel("Delay [ns]")
         plt.ylabel("I quadrature [V]")

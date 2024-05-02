@@ -35,7 +35,7 @@ n_runs = 1000
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
 a_min = 0.5
 a_max = 1.9
-da = 0.1
+da = 0.2
 amplitudes = np.arange(a_min, a_max + da / 2, da)  # The amplitude vector +da/2 to add a_max to the scan
 
 ro_opt_amp_data = {

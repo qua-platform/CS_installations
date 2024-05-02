@@ -22,9 +22,6 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array, get_equivalent_log_array
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
-import matplotlib
-
-matplotlib.use('TkAgg')
 
 data_handler = DataHandler(root_data_folder="./")
 
@@ -34,8 +31,8 @@ data_handler = DataHandler(root_data_folder="./")
 n_avg = 100
 # The wait time sweep (in clock cycles = 4ns) - must be larger than 4 clock cycles
 tau_min = 16 // 4
-tau_max = 1_000_000 // 4
-d_tau = 5_000 // 4
+tau_max = 2_000_000 // 4
+d_tau = 10_000 // 4
 taus = np.arange(tau_min, tau_max + 0.1, d_tau)  # Linear sweep
 # taus = np.logspace(np.log10(tau_min), np.log10(tau_max), 29)  # Log sweep
 
@@ -71,6 +68,8 @@ with qua.program() as T1:
                 None,
                 qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I),
                 qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q),
+                # qua.dual_demod.full("opt_cos", "out1", "opt_sin", "out2", I),
+                # qua.dual_demod.full("opt_minus_sin", "out1", "opt_cos", "out2", Q),
             )
             # Wait for the qubit to decay to the ground state
             qua.wait(thermalization_time * u.ns, "resonator")
@@ -146,7 +145,7 @@ else:
 
         fit = Fit()
         plt.figure()
-        decay_fit = fit.T1(4 * taus, Q, plot=True)
+        decay_fit = fit.T1(4 * taus, I, plot=True)
         qubit_T1 = np.round(np.abs(decay_fit["T1"][0]) / 4) * 4
         plt.xlabel("Delay [ns]")
         plt.ylabel("I quadrature [V]")

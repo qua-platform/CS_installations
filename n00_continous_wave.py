@@ -14,7 +14,7 @@ from configuration import config, qop_ip, cluster_name
 with qua.program() as continuous_wave:
 
     with qua.infinite_loop_():
-        qua.play('cw', 'resonator')
+        qua.play('cw', 'qubit')
 
 
 #####################################

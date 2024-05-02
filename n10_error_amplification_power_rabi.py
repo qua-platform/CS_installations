@@ -26,9 +26,6 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
-import matplotlib
-
-matplotlib.use('TkAgg')
 
 data_handler = DataHandler(root_data_folder="./")
 
@@ -79,8 +76,10 @@ with qua.program() as power_rabi_err:
                     "readout",
                     "resonator",
                     None,
-                    qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I),
-                    qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q),
+                    # qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I),
+                    # qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q),
+                    qua.dual_demod.full("opt_cos", "out1", "opt_sin", "out2", I),
+                    qua.dual_demod.full("opt_minus_sin", "out1", "opt_cos", "out2", Q),
                 )
                 # Wait for the qubit to decay to the ground state
                 qua.wait(thermalization_time * u.ns, "resonator")
