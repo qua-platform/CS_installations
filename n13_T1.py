@@ -28,7 +28,7 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 # The QUA program #
 ###################
-n_avg = 100
+n_avg = 1000
 # The wait time sweep (in clock cycles = 4ns) - must be larger than 4 clock cycles
 tau_min = 16 // 4
 tau_max = 2_000_000 // 4
@@ -127,11 +127,11 @@ else:
         plt.suptitle("T1 measurement")
         plt.subplot(211)
         plt.cla()
-        plt.plot(4 * taus, I, ".")
+        plt.plot(4 * taus, I)
         plt.ylabel("I quadrature [V]")
         plt.subplot(212)
         plt.cla()
-        plt.plot(4 * taus, Q, ".")
+        plt.plot(4 * taus, Q)
         plt.xlabel("Qubit decay time [ns]")
         plt.ylabel("Q quadrature [V]")
         plt.tight_layout()

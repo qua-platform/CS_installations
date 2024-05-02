@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 n_avg = 10  # Number of averaging loops
 
 # Frequency sweep in Hz
-freq_span = 3 * u.MHz
+freq_span = 6 * u.MHz
 df = 100 * u.kHz
 dfs = np.arange(-freq_span, freq_span, df)
 

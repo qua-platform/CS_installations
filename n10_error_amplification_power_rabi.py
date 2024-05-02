@@ -32,11 +32,11 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 # The QUA program #
 ###################
-n_avg = 10  # The number of averages
+n_avg = 200  # The number of averages
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-a_min = 0.5
-a_max = 1.5
-n_a = 51
+a_min = 0.1
+a_max = 1.0
+n_a = 31
 amplitudes = np.linspace(a_min, a_max, n_a)
 # Number of applied Rabi pulses sweep
 max_nb_of_pulses = 80  # Maximum number of qubit pulses
@@ -143,7 +143,7 @@ else:
         plt.subplot(212)
         plt.cla()
         plt.plot(amplitudes * x180_amp, np.sum(I, axis=0))
-        plt.ylim(0, 0.008)
+        # plt.ylim(0, 0.008)
         plt.xlabel("Rabi pulse amplitude [V]")
         plt.ylabel("Sum along the # of Rabi pulses")
         plt.tight_layout()

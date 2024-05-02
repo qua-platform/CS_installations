@@ -31,7 +31,7 @@ data_handler = DataHandler(root_data_folder="./")
 # The QUA program #
 ###################
 
-n_avg = 100  # The number of averages
+n_avg = 1000  # The number of averages
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
 a_min = 0
 a_max = 1.0
@@ -119,11 +119,11 @@ else:
         plt.suptitle("Power Rabi")
         plt.subplot(211)
         plt.cla()
-        plt.plot(amplitudes * x180_amp, I, ".")
+        plt.plot(amplitudes * x180_amp, I)
         plt.ylabel("I quadrature [V]")
         plt.subplot(212)
         plt.cla()
-        plt.plot(amplitudes * x180_amp, Q, ".")
+        plt.plot(amplitudes * x180_amp, Q)
         plt.xlabel("Rabi pulse amplitude [V]")
         plt.ylabel("Q quadrature [V]")
         plt.pause(1)

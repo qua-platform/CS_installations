@@ -33,7 +33,7 @@ data_handler = DataHandler(root_data_folder="./")
 n_avg = 20
 # Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
 tau_min = 4
-tau_max = 60_000 // 4
+tau_max = 120_000 // 4
 d_tau = 100 // 4
 taus = np.arange(tau_min, tau_max + 0.1, d_tau)  # Linear sweep
 # taus = np.logspace(np.log10(tau_min), np.log10(tau_max), 21)  # Log sweep

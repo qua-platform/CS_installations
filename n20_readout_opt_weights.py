@@ -102,8 +102,8 @@ def update_readout_length(new_readout_length, ringdown_length):
 ###################
 n_avg = 2_000  # number of averages
 # Set maximum readout duration for this scan and update the configuration accordingly
-readout_len = 3 * u.us  # Readout pulse duration
-ringdown_len = 9 * u.us  # integration time after readout pulse to observe the ringdown of the resonator
+readout_len = 20 * u.us  # Readout pulse duration
+ringdown_len = 0 * u.us  # integration time after readout pulse to observe the ringdown of the resonator
 update_readout_length(readout_len, ringdown_len)
 # Set the sliced qua.qua.demod parameters
 division_length = 1  # Size of each qua.qua.demodulation slice in clock cycles

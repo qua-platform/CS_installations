@@ -20,7 +20,7 @@ Next steps before going to the next node:
 
 import qm.qua as qua
 import qm as qm_api
-from configuration import config, qop_ip, cluster_name, u, thermalization_time
+from configuration import config, qop_ip, cluster_name, u, thermalization_time, ge_threshold
 from qualang_tools.analysis.discriminator import two_state_discriminator
 from qualang_tools.results.data_handler import DataHandler
 from qualang_tools.results import progress_counter, fetching_tool
@@ -69,6 +69,7 @@ with qua.program() as IQ_blobs:
         qua.save(Q_g, Q_g_st)
 
         qua.align()  # global align
+
         # Play the x180 gate to put the qubit in the excited state
         qua.play("x180", "qubit")
         # Align the two elements to measure after playing the qubit pulse.

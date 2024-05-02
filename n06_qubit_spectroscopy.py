@@ -41,9 +41,9 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 # The QUA program #
 ###################
-n_avg = 100  # The number of averages
+n_avg = 10000  # The number of averages
 # The frequency sweep parameters
-span = 20 * u.MHz
+span = 15 * u.MHz
 step_span = 100 * u.kHz
 frequencies = np.arange(-span, +span, step_span) 
 
@@ -131,11 +131,11 @@ else:
         plt.suptitle(f"Qubit spectroscopy - LO = {qubit_LO / u.GHz} GHz")
         ax1 = plt.subplot(211)
         plt.cla()
-        plt.plot((qubit_IF + frequencies )/ u.MHz, R, ".")
+        plt.plot((qubit_IF + frequencies )/ u.MHz, R)
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
         plt.subplot(212, sharex=ax1)
         plt.cla()
-        plt.plot((qubit_IF + frequencies) / u.MHz, signal.detrend(np.unwrap(phase)), ".")
+        plt.plot((qubit_IF + frequencies) / u.MHz, signal.detrend(np.unwrap(phase)))
         plt.xlabel("Intermediate frequency [MHz]")
         plt.ylabel("Phase [rad]")
         plt.tight_layout()

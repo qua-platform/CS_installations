@@ -1,3 +1,4 @@
+# %%
 """
         RESONATOR SPECTROSCOPY
 This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to extract the
@@ -33,9 +34,9 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 n_avg = 1000  # The number of averages
 # The frequency sweep parameters
-f_min = 30 * u.MHz
-f_max = 70 * u.MHz
-df = 100 * u.kHz
+f_min = 99.2 * u.MHz
+f_max = 99.6 * u.MHz
+df = 1 * u.kHz
 frequencies = np.arange(f_min, f_max + 0.1, df)  # The frequency vector (+ 0.1 to add f_max to frequencies)
 
 qubit_resonator_2chi_data = {
@@ -95,8 +96,8 @@ with qua.program() as qubit_resonator_2chi:
 
     with qua.stream_processing():
         # Cast the data into a 1D vector, average the 1D vectors together and store the results on the OPX processor
-        I_st.bufer(2).buffer(len(frequencies)).average().save("I")
-        Q_st.bufer(2).buffer(len(frequencies)).average().save("Q")
+        I_st.buffer(2).buffer(len(frequencies)).average().save("I")
+        Q_st.buffer(2).buffer(len(frequencies)).average().save("Q")
         n_st.save("iteration")
 
 #####################################
@@ -187,3 +188,5 @@ else:
         print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit['f'][0]:.6f} MHz")
     except (Exception,):
         pass
+
+# %%

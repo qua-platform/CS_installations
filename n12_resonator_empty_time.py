@@ -36,7 +36,7 @@ data_handler = DataHandler(root_data_folder="./")
 n_avg = 20
 ramsey_idle_time = 0.2 * u.us
 # Time between populating the resonator and playing a Ramsey sequence in clock-cycles (4ns)
-taus = np.arange(4, 5000, 4)
+taus = np.arange(4, 10000, 4)
 
 res_depletion_time_data = {
     "n_avg": n_avg,

@@ -21,9 +21,9 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 n_avg = 1000  # The number of averages
 # The frequency sweep parameters
-dc_min = 0.0 # volt
-dc_max = 0.3 # volt
-step_dc = 0.001 # volt
+dc_min = 0.14 # volt
+dc_max = 0.160 # volt
+step_dc = 0.0001 # volt
 dc_values = np.arange(dc_min, dc_max, step_dc)  # The frequency vector (+ 0.1 to add f_max to frequencies)
 
 paramp_bias_sweep_data = {
@@ -107,8 +107,8 @@ else:
         # Plot results
         ax1 = plt.subplot(211)
         plt.cla()
-        plt.plot(dc_values, R, ".")
-        plt.axvline(x=0.167)
+        plt.plot(dc_values, R)
+        plt.axvline(x=0.1525)
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
         plt.subplot(212, sharex=ax1)
         plt.cla()

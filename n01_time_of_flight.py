@@ -28,7 +28,7 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 # The QUA program #
 ###################
-n_avg = 100  # Number of averaging loops
+n_avg = 1000  # Number of averaging loops
 
 time_of_flight_data = {
     "n_avg": n_avg,

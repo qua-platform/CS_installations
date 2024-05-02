@@ -35,11 +35,11 @@ data_handler = DataHandler(root_data_folder="./")
 n_avg = 100
 # Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
 tau_min = 4
-tau_max = 50_000 // 4
+tau_max = 250_000 // 4
 d_tau = 40 // 4
 taus = np.arange(tau_min, tau_max + 0.1, d_tau)  # + 0.1 to add tau_max to taus
 # Detuning converted into virtual Z-rotations to observe Ramsey oscillation and get the qubit frequency
-detuning = 1.5 * u.MHz  # in Hz
+detuning = 0.2 * u.MHz  # in Hz
 delta_phase = 4e-09 * detuning * d_tau # 4*tau because tau was in clock cycles and 1e-9 because tau is ns
 phase_init = 4e-09 * detuning * tau_min
 
@@ -67,20 +67,6 @@ with qua.program() as ramsey:
         qua.save(n, n_st)
         qua.assign(phase, phase_init)
         with qua.for_(*from_array(tau, taus)):
-
-            # reset
-            # qua.measure(
-            #     "readout",
-            #     "resonator",
-            #     None,
-            #     # qua.dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I),
-            #     # qua.dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q),
-            #     qua.dual_demod.full("opt_cos", "out1", "opt_sin", "out2", I),
-            #     qua.dual_demod.full("opt_minus_sin", "out1", "opt_cos", "out2", Q),
-            # )
-            # qua.play('x180', 'qubit', condition=I>ge_threshold)
-
-            # qua.align()
 
             # 1st x90 gate
             qua.play("x90", "qubit")

@@ -38,7 +38,7 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 n_avg = 100  # The number of averages
 # The frequency sweep around the resonator frequency "resonator_IF"
-span = 0.5 * u.MHz
+span = 1.0 * u.MHz
 df = 10 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)

@@ -34,9 +34,9 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 n_avg = 1000  # The number of averages
 # The frequency sweep parameters
-f_min = 120 * u.MHz
-f_max = 130 * u.MHz
-df = 100 * u.kHz
+f_min = 97 * u.MHz
+f_max = 102 * u.MHz
+df = 10 * u.kHz
 frequencies = np.arange(f_min, f_max + 0.1, df)  # The frequency vector (+ 0.1 to add f_max to frequencies)
 
 resonator_spectroscopy_data = {

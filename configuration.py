@@ -50,12 +50,12 @@ octave_config = None
 #############################################
 #                  Qubits                   #
 #############################################
-qubit_LO = 5.667 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
-qubit_IF = -183.2 * u.MHz
+qubit_LO = 4.62 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
+qubit_IF = (-99.8 + 2.5 )* u.MHz
 mixer_qubit_g = 0.0
 mixer_qubit_phi = 0.0
 
-qubit_T1 = int(300 * u.us)
+qubit_T1 = int(500 * u.us)
 thermalization_time = 5 * qubit_T1
 
 # Continuous wave
@@ -72,9 +72,9 @@ drag_coef = 0
 anharmonicity = -200 * u.MHz
 AC_stark_detuning = 0 * u.MHz
 
-x180_len = 400
+x180_len = 180
 x180_sigma = x180_len / 5
-x180_amp = 0.2903
+x180_amp = 0.4
 x180_wf, x180_der_wf = np.array(
     drag_gaussian_pulse_waveforms(x180_amp, x180_len, x180_sigma, drag_coef, anharmonicity, AC_stark_detuning)
 )
@@ -149,16 +149,16 @@ minus_y90_Q_wf = minus_y90_wf
 #############################################
 #                Resonators                 #
 #############################################
-resonator_LO = 7.150 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
-resonator_IF = 124.5 * u.MHz
+resonator_LO = 5.992 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
+resonator_IF = 99.4 * u.MHz
 mixer_resonator_g = 0.0
 mixer_resonator_phi = 0.0
 
-readout_len = 3000
-readout_amp = 0.1
+readout_len = 15_000
+readout_amp = 0.03
 
 time_of_flight = 24
-depletion_time = 10 * u.us
+depletion_time = 20 * u.us
 
 opt_weights = True
 if opt_weights:
@@ -177,12 +177,12 @@ else:
 
 # IQ Plane
 rotation_angle = (0.0 / 180) * np.pi
-ge_threshold = -4.465e-04
+ge_threshold = -7.9e-04
 
 # PARAMP
 const_flux_len = 100
 const_flux_amp = 0.1
-paramp_offset = 0.167
+paramp_offset = 0.1525
 
 #############################################
 #                  Config                   #
@@ -200,8 +200,8 @@ config = {
             },
             "digital_outputs": {},
             "analog_inputs": {
-                1: {"offset": 0.070383, "gain_db": 20},  # I from down-conversion
-                2: {"offset": 0.065271, "gain_db": 20},  # Q from down-conversion
+                1: {"offset": 0.070335, "gain_db": 20},  # I from down-conversion
+                2: {"offset": 0.065178, "gain_db": 20},  # Q from down-conversion
             },
         },
     },
