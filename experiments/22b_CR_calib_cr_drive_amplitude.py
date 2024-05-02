@@ -167,7 +167,6 @@ with program() as cr_calib:
                         # Measure the state of the resonators
                         # Make sure you updated the ge_threshold and angle if you want to use state discrimination
                         multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
-                        # multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="optimized_")
 
                         # Wait for the qubit to decay to the ground state
                         wait(thermalization_time * u.ns)

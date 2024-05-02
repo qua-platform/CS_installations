@@ -7,14 +7,15 @@ with a control qubit and a target qubit. These scripts help estimate the paramet
 which is represented as:
     H = I ⊗ (a_X X + a_Y Y + a_Z Z) + Z ⊗ (b_I I + b_X X + b_Y Y + b_Z Z)
 
-For the calibration sequences, we employ echoed CR drive.                                   ____      ____ 
+For the calibration sequences, we employ echoed CR drive.
+                                   ____      ____ 
             Control(fC): _________| pi |____| pi |________________
                              ____                     
                  CR(fT): ___| CR |_____      _____________________
-                                       |_EC_|     _____
+                                       |____|     _____
              Target(fT): ________________________| QST |__________
                                                          ______
-            Readout(fR): _______________________________|  RR  |__
+            Readout(fR): _____________________ _________|  RR  |__
 
 This script is to calibrate the phase of CR cancellation drive.
 CR cancellation pulse is applied to the target qubit at the target qubit frequency.
@@ -175,7 +176,6 @@ with program() as cr_calib:
                         # Measure the state of the resonators
                         # Make sure you updated the ge_threshold and angle if you want to use state discrimination
                         multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
-                        # multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="optimized_")
 
                         # Wait for the qubit to decay to the ground state
                         wait(thermalization_time * u.ns)

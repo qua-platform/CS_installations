@@ -20,6 +20,7 @@ from configuration_with_octave import *
 import matplotlib.pyplot as plt
 from qualang_tools.loops import from_array
 from qualang_tools.results import fetching_tool, progress_counter
+from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.plot import interrupt_on_close
 from macros import qua_declaration, multiplexed_readout, one_qb_QST, plot_1qb_tomography_results
 import warnings
@@ -52,59 +53,63 @@ with program() as cnot_calib:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
     state = [declare(bool) for _ in range(nb_of_qubits)]
     state_st = [declare_stream() for _ in range(nb_of_qubits)]
+    st_c = declare(int)
+    st_t = declare(int)
+    assign_variables_to_element(f"q1_xy", st_c)
+    assign_variables_to_element(f"q2_xy", st_t)
     
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
         # to allow time to save the data
         wait(400 * u.ns)
-        for st_c, st_t in state_ct_pairs:
-            # Align all elements (as no implicit align)
-            align()
+        with for_(st_c, 0, st_c < 2, st_c + 1):
+            with for_(st_t, 0, st_t < 2, st_t + 1):\
+                # Prepare control state in 1
+                with if_(st_c == 1):
+                    play("x180", "q1_xy")
+                # Prepare target state in 1 
+                with if_(st_t == 1):
+                    play("x180", "q2_xy")
 
-            # Prepare control state in 1
-            if st_c == "1":
+                # Play ZI(-pi/2) and IX(-pi/2)
+                align("q1_xy", "q2_xy")
+                frame_rotation_2pi(+0.25, "q1_xy") # +0.25 for Z(-pi/2)
+                play("-x90", "q2_xy")
+
+                # Shift frames to the calibrated phases
+                frame_rotation_2pi(cr_c1t2_drive_phase, "cr_c1t2")
+                frame_rotation_2pi(cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
+
+                # Play CR
+                align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2")
+                # main
+                play("square_positive_half", "cr_c1t2")
+                play("square_positive_half", "cr_cancel_c1t2")
+                # echo
+                align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
                 play("x180", "q1_xy")
-            # Prepare target state in 1  
-            if st_t == "1":
-                play("x180", "q2_xy")
+                align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
+                play("square_negative_half", "cr_c1t2")
+                play("square_negative_half", "cr_cancel_c1t2")
+                align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
+                play("x180", "q1_xy")
 
-            # Play ZI(-pi/2) and IX(-pi/2)
-            align("q1_xy", "q2_xy")
-            frame_rotation_2pi(+0.25, "q1_xy") # +0.25 for Z(-pi/2)
-            play("-x90", "q2_xy")
+                align("q1_xy", "rr1", "rr2")
+                # Measure the state of the resonators
+                # Make sure you updated the ge_threshold and angle if you want to use state discrimination
+                multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
 
-            # SHift the phase of CR drive and CR cancel pulse
-            reset_frame("cr_c1t2")
-            reset_frame("cr_cancel_c1t2")
-            frame_rotation_2pi(cr_c1t2_drive_phase, "cr_c1t2")
-            frame_rotation_2pi(cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
+                # Shift back the phase of cr and cr cancel pulse so they won't be accumulated
+                align("rr1", "rr2", "cr_c1t2", "cr_cancel_c1t2")
+                frame_rotation_2pi(-cr_c1t2_drive_phase, "cr_c1t2")
+                frame_rotation_2pi(-cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
 
-            # Play CR
-            align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2")
-            # main
-            play("square_positive_half", "cr_c1t2")
-            play("square_positive_half", "cr_cancel_c1t2")
-            # echo
-            align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
-            play("x180", "q1_xy")
-            align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
-            play("square_negative_half", "cr_c1t2")
-            play("square_negative_half", "cr_cancel_c1t2")
-            align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
-            play("x180", "q1_xy")
-
-            align()
-            # Measure the state of the resonators
-            # Make sure you updated the ge_threshold and angle if you want to use state discrimination
-            multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
-            # multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="optimized_")
-
-            # Wait for the qubit to decay to the ground state
-            wait(thermalization_time * u.ns)
-            # Make sure you updated the ge_threshold
-            for q in range(nb_of_qubits):
-                assign(state[q], I[q] > thresholds[q])
-                save(state[q], state_st[q])
+                # Wait for the qubit to decay to the ground state
+                wait(thermalization_time * u.ns)
+                # Make sure you updated the ge_threshold
+                for q in range(nb_of_qubits):
+                    assign(state[q], I[q] > thresholds[q])
+                    save(state[q], state_st[q])
 
     with stream_processing():
         n_st.save("n")
