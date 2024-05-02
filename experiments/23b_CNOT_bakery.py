@@ -35,8 +35,48 @@ warnings.filterwarnings("ignore")
 # The QUA program #
 ###################
 
+# baking
+
+def bake_cross_resonance(st_c, st_t):
+    with baking(config, padding_method="right") as b:
+        # Prepare control state in 1
+        if st_c == "1":
+            b.play("x180", "q1_xy")
+        # Prepare target state in 1  
+        if st_t == "1":
+            b.play("x180", "q2_xy")
+
+        # b.Play ZI(-pi/2) and IX(-pi/2)
+        b.align("q1_xy", "q2_xy")
+        b.reset_frame("q1_xy")
+        b.frame_rotation_2pi(+0.25, "q1_xy") # +0.25 for Z(-pi/2)
+        b.play("-x90", "q2_xy")
+
+        # SHift the phase of CR drive and CR cancel pulse
+        b.reset_frame("cr_c1t2")
+        b.reset_frame("cr_cancel_c1t2")
+        b.frame_rotation_2pi(cr_c1t2_drive_phase, "cr_c1t2")
+        b.frame_rotation_2pi(cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
+
+        # b.Play CR
+        b.align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2")
+        # main
+        b.play("square_positive_half", "cr_c1t2")
+        b.play("square_positive_half", "cr_cancel_c1t2")
+        # echo
+        b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
+        b.play("x180", "q1_xy")
+        b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
+        b.play("square_negative_half", "cr_c1t2")
+        b.play("square_negative_half", "cr_cancel_c1t2")
+        b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
+        b.play("x180", "q1_xy")
+        b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2", "rr1", "rr2")
+
+    return b
+
+
 # Parameters
-play_echo = True # True if play echo for CR drive
 nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
@@ -48,6 +88,8 @@ assert len(qubit_suffixes) == nb_of_qubits
 assert len(resonators) == nb_of_qubits
 assert len(thresholds) == nb_of_qubits
 
+# back cr for combinations of state_c and state_t
+baked_cr = {(st_c, st_t): bake_cross_resonance(st_c, st_t) for st_c, st_t in state_ct_pairs}
 
 with program() as cnot_calib:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
@@ -59,51 +101,12 @@ with program() as cnot_calib:
         # to allow time to save the data
         wait(400 * u.ns)
         for st_c, st_t in state_ct_pairs:
-            with baking(config, padding_method="right") as b:
-
-                # Align all elements (as no implicit align)
-                b.align()
-
-                # Prepare control state in 1
-                if st_c == "1":
-                    b.play("x180", "q1_xy")
-                # Prepare target state in 1  
-                if st_t == "1":
-                    b.play("x180", "q2_xy")
-
-                # b.Play ZI(-pi/2) and IX(-pi/2)
-                b.align("q1_xy", "q2_xy")
-                b.reset_frame("q1_xy")
-                b.frame_rotation_2pi(-0.25, "q1_xy")
-                b.play("-x90", "q2_xy")
-
-                # SHift the phase of CR drive and CR cancel pulse
-                b.reset_frame("cr_c1t2")
-                b.reset_frame("cr_cancel_c1t2")
-                b.frame_rotation_2pi(cr_c1t2_drive_phase, "cr_c1t2")
-                b.frame_rotation_2pi(cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
-
-                # b.Play CR
-                b.align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2")
-                if play_echo:
-                    # main
-                    b.play("square_positive_half", "cr_c1t2")
-                    b.play("square_positive_half", "cr_cancel_c1t2")
-                    # echo
-                    b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
-                    b.play("x180", "q1_xy")
-                    b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
-                    b.play("square_negative_half", "cr_c1t2")
-                    b.play("square_negative_half", "cr_cancel_c1t2")
-                    b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
-                    b.play("x180", "q1_xy")
-                    b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2", "rr1", "rr2")
-                else:
-                    b.play("square_positive", "cr_c1t2")
-                    b.play("square_positive", "cr_cancel_c1t2")
-                    b.align("cr_c1t2", "cr_cancel_c1t2", "rr1", "rr2")
+            # Align all elements (as no implicit align)
+            align()
             
-            b.run()
+            # Play baked CR
+            baked_cr[(st_c, st_t)].run()
+            
             # Measure the state of the resonators
             # Make sure you updated the ge_threshold and angle if you want to use state discrimination
             multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")

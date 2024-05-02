@@ -27,15 +27,13 @@ def bake_phased_xz(baker: Baking, q, x, z, a):
     baker.frame_rotation_2pi(a / 2, element)
     baker.play("x180", element, amp=x)
     baker.frame_rotation_2pi(-(a + z) / 2, element)
-    
-    if q == 2:
-        # to keep track the frame for control qubit
-        baker.frame_rotation_2pi(-z / 2, f"q{q1_idx_str}_xy")
 
 
 # defines the CNOT gate that realizes the mapping |00> -> |00>, |01> -> |01>, |10> -> |11>, |11> -> |10>
 def bake_cnot(baker: Baking, q1, q2):
     # single qubit gates
+    baker.reset_frame("q1_xy")
+    baker.align("q1_xy", "q2_xy")
     baker.frame_rotation_2pi(+0.25, "q1_xy") # +0.25 for Z(-pi/2) # -z90
     baker.play("-x90", "q2_xy")
     # phase shift

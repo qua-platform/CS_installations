@@ -36,7 +36,6 @@ warnings.filterwarnings("ignore")
 ###################
 
 # Parameters
-play_echo = True # True if play echo for CR drive
 nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
@@ -71,7 +70,7 @@ with program() as cnot_calib:
 
             # Play ZI(-pi/2) and IX(-pi/2)
             align("q1_xy", "q2_xy")
-            frame_rotation_2pi(-0.25, "q1_xy")
+            frame_rotation_2pi(+0.25, "q1_xy") # +0.25 for Z(-pi/2)
             play("-x90", "q2_xy")
 
             # SHift the phase of CR drive and CR cancel pulse
@@ -82,21 +81,17 @@ with program() as cnot_calib:
 
             # Play CR
             align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2")
-            if play_echo:
-                # main
-                play("square_positive_half", "cr_c1t2")
-                play("square_positive_half", "cr_cancel_c1t2")
-                # echo
-                align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
-                play("x180", "q1_xy")
-                align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
-                play("square_negative_half", "cr_c1t2")
-                play("square_negative_half", "cr_cancel_c1t2")
-                align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
-                play("x180", "q1_xy")
-            else:
-                play("square_positive", "cr_c1t2")
-                play("square_positive", "cr_cancel_c1t2")
+            # main
+            play("square_positive_half", "cr_c1t2")
+            play("square_positive_half", "cr_cancel_c1t2")
+            # echo
+            align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
+            play("x180", "q1_xy")
+            align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
+            play("square_negative_half", "cr_c1t2")
+            play("square_negative_half", "cr_cancel_c1t2")
+            align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
+            play("x180", "q1_xy")
 
             align()
             # Measure the state of the resonators
