@@ -36,7 +36,7 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 # The QUA program #
 ###################
-n_avg = 100  # The number of averages
+n_avg = 20  # The number of averages
 # The frequency sweep around the resonator frequency "resonator_IF"
 span = 1.0 * u.MHz
 df = 10 * u.kHz

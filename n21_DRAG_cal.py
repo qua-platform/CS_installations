@@ -1,3 +1,4 @@
+# %%
 """
         DRAG PULSE CALIBRATION (GOOGLE METHOD)
 The sequence consists in applying an increasing number of x180 and -x180 pulses successively while varying the DRAG
@@ -169,3 +170,4 @@ else:
 
     # Save the data
     data_handler.save_data(data=drag_data, name="drag")
+# %%

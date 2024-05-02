@@ -62,19 +62,19 @@ thermalization_time = 5 * qubit_T1
 const_len = 100
 const_amp = 0.1
 # Saturation_pulse
-saturation_len = 20 * u.us
+saturation_len = 100 * u.us
 saturation_amp = 0.045
 # Square pi pulse
 square_pi_len = 100
 square_pi_amp = 0.1
 # Drag pulses
-drag_coef = 0
+drag_coef = 1
 anharmonicity = -200 * u.MHz
 AC_stark_detuning = 0 * u.MHz
 
-x180_len = 180
+x180_len = 260
 x180_sigma = x180_len / 5
-x180_amp = 0.4
+x180_amp = 0.3064
 x180_wf, x180_der_wf = np.array(
     drag_gaussian_pulse_waveforms(x180_amp, x180_len, x180_sigma, drag_coef, anharmonicity, AC_stark_detuning)
 )
@@ -177,7 +177,7 @@ else:
 
 # IQ Plane
 rotation_angle = (0.0 / 180) * np.pi
-ge_threshold = -7.9e-04
+ge_threshold = -1.2e-03
 
 # PARAMP
 const_flux_len = 100
@@ -192,10 +192,10 @@ config = {
     "controllers": {
         "con1": {
             "analog_outputs": {
-                1: {"offset": -0.027981},  # I qubit
-                2: {"offset": 0.011083},  # Q qubit
-                3: {"offset": -0.028276},  # I resonator
-                4: {"offset": -0.001304},  # Q resonator
+                1: {"offset": -0.028212},  # I qubit
+                2: {"offset": -0.002312},  # Q qubit
+                3: {"offset": -0.0235},  # I resonator
+                4: {"offset": 0.006956},  # Q resonator
                 5: {"offset": paramp_offset},  # PARAMP
             },
             "digital_outputs": {},
@@ -429,7 +429,7 @@ config = {
                 "intermediate_frequency": qubit_IF,
                 "lo_frequency": qubit_LO,
                 # "correction": IQ_imbalance(mixer_qubit_g, mixer_qubit_phi),
-                "correction": [-0.978281, -0.104052, -0.107507, -1.010766],
+                "correction": [-0.98705, -0.060012, -0.06137, -1.009389],
             }
         ],
         "mixer_resonator": [
@@ -437,7 +437,7 @@ config = {
                 "intermediate_frequency": resonator_IF,
                 "lo_frequency": resonator_LO,
                 # "correction": IQ_imbalance(mixer_resonator_g, mixer_resonator_phi),
-                "correction": [1.100294, 0.139896, 0.113717, 0.89439],
+                "correction": [0.98125, 0.000414, 0.00043, 1.019108],
             }
         ],
     },

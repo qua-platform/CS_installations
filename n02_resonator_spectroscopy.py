@@ -32,7 +32,7 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 # The QUA program #
 ###################
-n_avg = 1000  # The number of averages
+n_avg = 100  # The number of averages
 # The frequency sweep parameters
 f_min = 97 * u.MHz
 f_max = 102 * u.MHz

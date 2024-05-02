@@ -1,3 +1,4 @@
+# %%
 """
         SINGLE QUBIT RANDOMIZED BENCHMARKING (for gates >= 40ns)
 The program consists in playing random sequences of Clifford gates and measuring the state of the resonator afterwards.
@@ -41,7 +42,7 @@ delta_clifford = 10  #  Play each sequence with a depth step equals to 'delta_cl
 assert (max_circuit_depth / delta_clifford).is_integer(), "max_circuit_depth / delta_clifford must be an integer."
 seed = 345324  # Pseudo-random number generator seed
 # Flag to enable state discrimination if the readout has been calibrated (rotated blobs and threshold)
-state_discrimination = False
+state_discrimination = True
 # List of recovery gates from the lookup table
 inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
 
@@ -336,3 +337,4 @@ else:
     plt.title("Single qubit RB")
 
     # np.savez("rb_values", value)
+# %%

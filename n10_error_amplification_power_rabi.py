@@ -32,11 +32,11 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 # The QUA program #
 ###################
-n_avg = 200  # The number of averages
+n_avg = 20  # The number of averages
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-a_min = 0.1
-a_max = 1.0
-n_a = 31
+a_min = 0.5
+a_max = 1.3
+n_a = 51
 amplitudes = np.linspace(a_min, a_max, n_a)
 # Number of applied Rabi pulses sweep
 max_nb_of_pulses = 80  # Maximum number of qubit pulses
@@ -67,7 +67,8 @@ with qua.program() as power_rabi_err:
             with qua.for_(*from_array(a, amplitudes)):  # QUA for_ loop for sweeping the pulse amplitude
                 # Loop for error amplification (perform many qubit pulses with varying amplitudes)
                 with qua.for_(n2, 0, n2 < n_rabi, n2 + 1):
-                    qua.play("x180" * qua.amp(a), "qubit")
+                    qua.play("y90" * qua.amp(a), "qubit")
+                    qua.play("y90" * qua.amp(a), "qubit")
                 # Align the two elements to measure after playing the qubit pulses.
                 qua.align("qubit", "resonator")
                 # Measure the state of the resonator

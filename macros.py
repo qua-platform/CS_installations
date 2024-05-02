@@ -126,8 +126,8 @@ def readout_macro(threshold=None, state=None, I=None, Q=None):
         "readout",
         "resonator",
         None,
-        dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I),
-        dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q),
+        dual_demod.full("opt_cos", "out1", "opt_sin", "out2", I),
+        dual_demod.full("opt_minus_sin", "out1", "opt_cos", "out2", Q),
     )
     if threshold is not None:
         assign(state, I > threshold)
