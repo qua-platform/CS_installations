@@ -32,7 +32,7 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 # The QUA program #
 ###################
-n_avg = 100
+n_avg = 10
 # Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
 tau_min = 4
 tau_max = 250_000 // 4
@@ -174,7 +174,8 @@ else:
 
         fit = Fit()
         plt.figure()
-        ramsey_fit = fit.ramsey(4 * taus, -2*state + 1, plot=True)
+        # ramsey_fit = fit.ramsey(4 * taus, -2*state + 1, plot=True)
+        ramsey_fit = fit.ramsey(4 * taus, I, plot=True)
         qubit_T2 = np.abs(ramsey_fit["T2"][0])
         qubit_detuning = ramsey_fit["f"][0] * u.GHz - detuning
         plt.xlabel("Idle time [ns]")

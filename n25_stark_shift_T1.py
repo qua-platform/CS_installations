@@ -16,7 +16,7 @@ Next steps before going to the next node:
 import qm.qua as qua
 import qm as qm_api
 import numpy as np
-from configuration import config, qop_ip, cluster_name, u, thermalization_time, readout_len, hittite_ip, hittite_port
+from configuration import config, qop_ip, cluster_name, u, thermalization_time, readout_len, hittite_ip, hittite_port, ge_threshold
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array, get_equivalent_log_array
@@ -71,18 +71,17 @@ with qua.program() as ac_stark_shift:
     t = qua.declare(int)  # QUA variable for the wait time
     I = qua.declare(qua.fixed)  # QUA variable for the measured 'I' quadrature
     Q = qua.declare(qua.fixed)  # QUA variable for the measured 'Q' quadrature
+    state = qua.declare(bool)
+    state_st = qua.declare_stream()
     lo_power = qua.declare(qua.fixed)  # QUA variable for the measured 'Q' quadrature
     I_st = qua.declare_stream()  # Stream for the 'I' quadrature
     Q_st = qua.declare_stream()  # Stream for the 'Q' quadrature
-    n_st = qua.declare_stream()  # Stream for the averaging iteration 'n'
 
     with qua.for_(*from_array(lo_power, lo_values / 10)):
         
         set_lo_power("resonator", lo_power)
 
         with qua.for_(n, 0, n < n_avg, n + 1):
-            # Save the averaging iteration to get the progress bar
-            qua.save(n, n_st)
             with qua.for_(*from_array(t, taus)):
                 # Play the x180 gate to put the qubit in the excited state
                 qua.play("x180", "qubit")
@@ -100,11 +99,13 @@ with qua.program() as ac_stark_shift:
                     # qua.dual_demod.full("opt_cos", "out1", "opt_sin", "out2", I),
                     # qua.dual_demod.full("opt_minus_sin", "out1", "opt_cos", "out2", Q),
                 )
+                qua.assign(state, I > ge_threshold)
                 # Wait for the qubit to decay to the ground state
                 qua.wait(thermalization_time * u.ns, "resonator")
                 # Save the 'I_e' & 'Q_e' quadratures to their respective streams
                 qua.save(I, I_st)
                 qua.save(Q, Q_st)
+                qua.save(state, state_st)
 
     with qua.stream_processing():
         # Cast the data into a 1D vector, average the 1D vectors together and store the results on the OPX processor
@@ -112,12 +113,13 @@ with qua.program() as ac_stark_shift:
         # get_equivalent_log_array() is used to get the exact values used in the QUA program.
         if np.isclose(np.std(taus[1:] / taus[:-1]), 0, atol=1e-3):
             taus = get_equivalent_log_array(taus)
-            I_st.buffer(len(taus)).average().save("I")
-            Q_st.buffer(len(taus)).average().save("Q")
+            I_st.buffer(len(taus)).buffer(n_avg).map(qua.FUNCTIONS.average()).buffer(len(lo_values)).save("I")
+            Q_st.buffer(len(taus)).buffer(n_avg).map(qua.FUNCTIONS.average()).buffer(len(lo_values)).save("Q")
+            state_st.boolean_to_int().buffer(len(taus)).buffer(n_avg).map(qua.FUNCTIONS.average()).buffer(len(lo_values)).save("state")
         else:
-            I_st.buffer(len(taus)).average().save("I")
-            Q_st.buffer(len(taus)).average().save("Q")
-        n_st.save("iteration")
+            I_st.buffer(len(taus)).buffer(n_avg).map(qua.FUNCTIONS.average()).buffer(len(lo_values)).save("I")
+            Q_st.buffer(len(taus)).buffer(n_avg).map(qua.FUNCTIONS.average()).buffer(len(lo_values)).save("Q")
+            state_st.boolean_to_int().buffer(len(taus)).buffer(n_avg).map(qua.FUNCTIONS.average()).buffer(len(lo_values)).save("state")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -141,48 +143,28 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(ac_stark_shift)
     # Get results from QUA program
-    results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
-    # Live plotting
-    fig = plt.figure()
-    interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-    while results.is_processing():
-        # Fetch results
-        I, Q, iteration = results.fetch_all()
-        # Convert the results into Volts
-        I, Q = u.demod2volts(I, readout_len), u.demod2volts(Q, readout_len)
-        # Progress bar
-        elapsed_time = progress_counter(iteration, n_avg, start_time=results.get_start_time())
-        # Plot results
-        plt.suptitle("T1 measurement")
-        plt.subplot(211)
-        plt.cla()
-        plt.plot(4 * taus, I)
-        plt.ylabel("I quadrature [V]")
-        plt.subplot(212)
-        plt.cla()
-        plt.plot(4 * taus, Q)
-        plt.xlabel("Qubit decay time [ns]")
-        plt.ylabel("Q quadrature [V]")
-        plt.tight_layout()
-        plt.pause(1)
+    results = fetching_tool(job, data_list=["I", "Q", "state"])
+    # Fetch results
+    I, Q, state = results.fetch_all()
+    # Convert the results into Volts
+    S = u.demod2volts(I + 1j * Q, readout_len)
+    R = np.abs(S)  # Amplitude
+    phase = np.angle(S)  # Phase
 
+    plt.figure()
+    plt.title('AC stark shift - Power')
+    plt.pcolor(taus, lo_values, state)
+    plt.xlabel('Tau [ns]')
+    plt.ylabel('LO Power [dBm]')
+
+    ac_stark_shift_data['I'] = I
+    ac_stark_shift_data['Q'] = Q
+    ac_stark_shift_data['R'] = R
+    ac_stark_shift_data['phase'] = phase
+    ac_stark_shift_data['state'] = state
     data_handler.save_data(data=ac_stark_shift_data, name="ac_stark_shift")
 
+    hittite_module.set_power(-20)  # dBm
     hittite_module.disconnect()
 
-    # # Fit the results to extract the qubit decay time T1
-    # try:
-    #     from qualang_tools.plot.fitting import Fit
-
-    #     fit = Fit()
-    #     plt.figure()
-    #     decay_fit = fit.T1(4 * taus, I, plot=True)
-    #     qubit_T1 = np.round(np.abs(decay_fit["T1"][0]) / 4) * 4
-    #     plt.xlabel("Delay [ns]")
-    #     plt.ylabel("I quadrature [V]")
-    #     print(f"Qubit decay time to update in the config: qubit_T1 = {qubit_T1:.0f} ns")
-    #     plt.legend((f"Relaxation time T1 = {qubit_T1:.0f} ns",))
-    #     plt.title("T1 measurement")
-    # except (Exception,):
-    #     pass
 # %%

@@ -177,7 +177,7 @@ else:
 
 # IQ Plane
 rotation_angle = (0.0 / 180) * np.pi
-ge_threshold = -1.2e-03
+ge_threshold = -1.368e-03
 
 # PARAMP
 const_flux_len = 100
