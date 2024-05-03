@@ -26,9 +26,6 @@ from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
-import matplotlib
-
-matplotlib.use('TkAgg')
 
 data_handler = DataHandler(root_data_folder="./")
 
@@ -37,8 +34,11 @@ data_handler = DataHandler(root_data_folder="./")
 ###################
 n_avg = 100  # The number of averages
 # The frequency sweep parameters
-f_min = 97 * u.MHz
-f_max = 102 * u.MHz
+f_abs_min = 6.0900 * u.GHz
+f_abs_max = 6.0920 * u.GHz
+
+f_min = f_abs_min - resonator_LO # 97 * u.MHz
+f_max = f_abs_max - resonator_LO # 102 * u.MHz
 df = 10 * u.kHz
 frequencies = np.arange(f_min, f_max + 0.1, df)  # The frequency vector (+ 0.1 to add f_max to frequencies)
 
@@ -121,15 +121,15 @@ else:
         # Progress bar
         elapsed_time = progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
-        plt.suptitle(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
+        plt.suptitle(f"Resonator spectroscopy")
         ax1 = plt.subplot(211)
         plt.cla()
-        plt.plot(frequencies / u.MHz, R, ".")
+        plt.plot((resonator_LO + frequencies) / u.GHz, R, ".")
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
         plt.subplot(212, sharex=ax1)
         plt.cla()
-        plt.plot(frequencies / u.MHz, signal.detrend(np.unwrap(phase)), ".")
-        plt.xlabel("Intermediate frequency [MHz]")
+        plt.plot((resonator_LO + frequencies) / u.GHz, signal.detrend(np.unwrap(phase)), ".")
+        plt.xlabel("Frequency [GHz]")
         plt.ylabel("Phase [rad]")
         plt.tight_layout()
         plt.pause(1)
@@ -148,11 +148,11 @@ else:
 
         fit = Fit()
         plt.figure()
-        res_spec_fit = fit.transmission_resonator_spectroscopy(frequencies / u.MHz, R, plot=True)
-        plt.title(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
-        plt.xlabel("Intermediate frequency [MHz]")
+        res_spec_fit = fit.transmission_resonator_spectroscopy((resonator_LO + frequencies) / u.GHz, R, plot=True)
+        plt.suptitle(f"Resonator spectroscopy")
+        plt.xlabel("Frequency [GHz]")
         plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
-        print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit['f'][0]:.6f} MHz")
+        print(f"Resonator resonance frequency to update in the config: resonator_IF = {resonator_LO + res_spec_fit['f'][0]:.6f} Hz")
     except (Exception,):
         pass
 

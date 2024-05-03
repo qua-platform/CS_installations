@@ -155,7 +155,7 @@ mixer_resonator_g = 0.0
 mixer_resonator_phi = 0.0
 
 readout_len = 15_000
-readout_amp = 0.03
+readout_amp = 0.4#0.03
 
 time_of_flight = 24
 depletion_time = 20 * u.us
