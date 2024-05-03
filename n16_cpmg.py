@@ -105,6 +105,7 @@ with qua.program() as echo:
             taus = get_equivalent_log_array(taus)
             I_st.buffer(len(taus)).average().save("I")
             Q_st.buffer(len(taus)).average().save("Q")
+            state_st.boolean_to_int().buffer(len(taus)).average().save("state")
         else:
             I_st.buffer(len(taus)).average().save("I")
             Q_st.buffer(len(taus)).average().save("Q")
