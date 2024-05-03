@@ -74,12 +74,12 @@ def arrange_data_for_crht(state_data):
     }
 
 
-def plot_cr_duration_vs_phase(state_c, state_t, t_vec, ph_vec, axss):
-    data = 2 * [state_c] + 2 * [state_t]
+def plot_cr_duration_vs_phase(qst_data_c, qst_data_t, t_vec_clock, ph_vec, axss):
+    data = 2 * [qst_data_c] + 2 * [qst_data_t]
     for i, (axs, bss) in enumerate(zip(axss, TARGET_BASES)):
         for j, (ax, dt, st) in enumerate(zip(axs, data, 2 * CONTROL_STATES)):
             ax.cla()
-            ax.pcolor(4 * t_vec, ph_vec, dt[:, :, i, j % 2].T)
+            ax.pcolor(t_vec_ns, ph_vec, dt[:, :, i, j % 2].T)
             if i == 0 and j < 2:
                 ax.set_title(f"Q_C w/ Q_C={st}")
             if i == 0 and j >= 2:
@@ -96,14 +96,15 @@ nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
 thresholds = [ge_threshold_q1, ge_threshold_q2]
-t_vec = np.arange(8, 200, 4) # in clock cylcle = 4ns
+t_vec_clock = np.arange(8, 200, 4) # in clock cylcle = 4ns
+t_vec_ns = 4 * t_vec_clock
 ph_vec = np.arange(0, 1, 0.25) # ratio relative to 2 * pi
 n_avg = 100 # num of iterations
 
 assert len(qubit_suffixes) == nb_of_qubits
 assert len(resonators) == nb_of_qubits
 assert len(thresholds) == nb_of_qubits
-assert np.all(t_vec % 2 == 0) and (t_vec.min() >= 8), "t_vec should only have even numbers if play echoes"
+assert np.all(t_vec_clock % 2 == 0) and (t_vec_clock.min() >= 8), "t_vec_clock should only have even numbers if play echoes"
 
 
 with program() as cr_calib:
@@ -118,7 +119,7 @@ with program() as cr_calib:
     
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
-        with for_(*from_array(t, t_vec)):
+        with for_(*from_array(t, t_vec_clock)):
             # t/2 for main and echo
             assign(t_half, t >> 1)
             with for_(*from_array(ph, ph_vec)):
@@ -192,9 +193,9 @@ with program() as cr_calib:
                 .buffer(len(CONTROL_STATES))\
                 .buffer(len(TARGET_BASES))\
                 .buffer(len(ph_vec))\
-                .buffer(len(t_vec))\
+                .buffer(len(t_vec_clock))\
                 .average()\
-                .save(f"state_{qubit_suffixes[q]}")
+                .save(f"qst_data_{qubit_suffixes[q]}")
 
 
 #####################################
@@ -225,31 +226,31 @@ else:
     fig, axss = plt.subplots(3, 4, figsize=(12, 9), sharex=True, sharey=True)
     interrupt_on_close(fig, job)
     # Tool to easily fetch results from the OPX (results_handle used in it)
-    results = fetching_tool(job, ["n", "state_c", "state_t"], mode="live")
+    results = fetching_tool(job, ["n", "qst_data_c", "qst_data_t"], mode="live")
     # Live plotting
     while results.is_processing():
         # Fetch results
-        n, state_c, state_t = results.fetch_all()
+        n, qst_data_c, qst_data_t = results.fetch_all()
         # Progress bar
         progress_counter(n, n_avg, start_time=results.start_time)
         # Plot cr_duration vs phase for Qc/Qt x Qc state x bases 
-        plot_cr_duration_vs_phase(state_c, state_t, t_vec, ph_vec, axss)
+        plot_cr_duration_vs_phase(qst_data_c, qst_data_t, t_vec_clock, ph_vec, axss)
 
     # TODO: Delete (loading dummy data for test)
-    data = np.load("./crht_test_data/data.npz")
-    t_vec = data["t_vec"]
-    state_c = data["state_c"] # len(t_vec) x 3 x 2
-    state_t = data["state_t"] # len(t_vec) x 3 x 2
-    state_c = np.tile(state_c[:, None, ...], reps=[1, len(ph_vec), 1, 1]) # len(t_vec) x len(ph_vec) x 3 x 2
-    state_t = np.tile(state_t[:, None, ...], reps=[1, len(ph_vec), 1, 1]) # len(t_vec) x len(ph_vec) x 3 x 2
+    test_data = np.load("./crht_test_data/data.npz")
+    t_vec_ns = test_data["t_vec_ns"]
+    qst_data_c = test_data["qst_data_c"] # len(t_vec_clock) x 3 x 2
+    qst_data_t = test_data["qst_data_t"] # len(t_vec_clock) x 3 x 2
+    qst_data_c = np.tile(qst_data_c[:, None, ...], reps=[1, len(ph_vec), 1, 1]) # len(t_vec_clock) x len(ph_vec) x 3 x 2
+    qst_data_t = np.tile(qst_data_t[:, None, ...], reps=[1, len(ph_vec), 1, 1]) # len(t_vec_clock) x len(ph_vec) x 3 x 2
     
     # Perform CR Hamiltonian tomography
     SEED = 0
     coeffs = []
     for ph in range(len(ph_vec)):
         crht = CRHamiltonianTomographyAnalysis(
-            ts=4 * t_vec,
-            xyz=arrange_data_for_crht(state_t[:, ph, ...]), # target data
+            ts=t_vec_ns,
+            xyz_data=arrange_data_for_crht(qst_data_t[:, ph, ...]), # target data
         )
         crht.fit_params(random_state=SEED, do_print=False)
         coeffs.append(crht.interaction_coeffs)
@@ -271,10 +272,10 @@ else:
     data = {
         "fig_live": fig,
         "fig_analysis": fig_analysis,
-        "t_vec_ns": 4 * t_vec,
+        "t_vec_ns": t_vec_ns,
         "ph_vec": ph_vec,
-        "data_c": state_c,
-        "data_t": state_t,
+        "qst_data_c": qst_data_c,
+        "qst_data_t": qst_data_t,
         "random_state": SEED,
     }
     data.update(crht.params_fitted_dict)

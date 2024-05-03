@@ -81,13 +81,14 @@ nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
 thresholds = [ge_threshold_q1, ge_threshold_q2]
-t_vec = np.arange(8, 200, 4) # in clock cylcle = 4ns
+t_vec_clock = np.arange(8, 200, 4) # in clock cylcle = 4ns
+t_vec_ns = 4 * t_vec_clock
 n_avg = 100 # num of iterations
 
 assert len(qubit_suffixes) == nb_of_qubits
 assert len(resonators) == nb_of_qubits
 assert len(thresholds) == nb_of_qubits
-assert np.all(t_vec % 2 == 0) and (t_vec.min() >= 8), "t_vec should only have even numbers if play echoes"
+assert np.all(t_vec_clock % 2 == 0) and (t_vec_clock.min() >= 8), "t_vec_clock should only have even numbers if play echoes"
 
 
 
@@ -102,7 +103,7 @@ with program() as cr_calib:
     
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
-        with for_(*from_array(t, t_vec)):
+        with for_(*from_array(t, t_vec_clock)):
             # t/2 for main and echo
             assign(t_half, t >> 1)
             # to allow time to save the data
@@ -167,9 +168,9 @@ with program() as cr_calib:
                 .boolean_to_int()\
                 .buffer(len(CONTROL_STATES))\
                 .buffer(len(TARGET_BASES))\
-                .buffer(len(t_vec))\
+                .buffer(len(t_vec_clock))\
                 .average()\
-                .save(f"state_{qubit_suffixes[q]}")
+                .save(f"qst_data_{qubit_suffixes[q]}")
 
 
 #####################################
@@ -182,7 +183,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -200,24 +201,23 @@ else:
     fig, axss = plt.subplots(4, 2, figsize=(10, 10))
     interrupt_on_close(fig, job)
     # Tool to easily fetch results from the OPX (results_handle used in it)
-    results = fetching_tool(job, ["n", "state_c", "state_t"], mode="live")
-    #results = fetching_tool(job, ["n", "state_c", "state_t"])
+    results = fetching_tool(job, ["n", "qst_data_c", "qst_data_t"], mode="live")
     # Live plotting
     while results.is_processing():
         # Fetch results
-        n, state_c, state_t = results.fetch_all()
+        n, qst_data_c, qst_data_t = results.fetch_all()
         # Progress bar
         progress_counter(n, n_avg, start_time=results.start_time)
         # plotting data
         # control qubit
         fig = CRHamiltonianTomographyAnalysis(
-            ts=4 * t_vec, # 2: echo, 4: clock
-            xyz=arrange_data_for_crht(state_c),
+            ts=t_vec_ns,
+            xyz_data=arrange_data_for_crht(qst_data_c),
         ).plot_data(fig, axss[:, 0], label="control")
         # target qubit
         fig = CRHamiltonianTomographyAnalysis(
-            ts=4 * t_vec, # 2: echo, 4: clock
-            xyz=arrange_data_for_crht(state_t),
+            ts=t_vec_ns,
+            xyz_data=arrange_data_for_crht(qst_data_t),
         ).plot_data(fig, axss[:, 1], label="target")
         plt.tight_layout()
         plt.pause(0.1)
@@ -225,19 +225,18 @@ else:
     plt.show()
 
     # TODO: Delete (loading dummy data for test)
-    data = np.load("./crht_test_data/data.npz")
-    t_vec = data["t_vec"]
-    state_c = data["state_c"] # len(t_vec) x 3 x 2
-    state_t = data["state_t"] # len(t_vec) x 3 x 2
+    test_data = np.load("./crht_test_data/data.npz")
+    t_vec_ns = test_data["t_vec_ns"]
+    qst_data_c = test_data["qst_data_c"] # len(t_vec_clock) x 3 x 2
+    qst_data_t = test_data["qst_data_t"] # len(t_vec_clock) x 3 x 2
 
     # cross resonance Hamiltonian tomography analysis
     SEED = 0
     crht = CRHamiltonianTomographyAnalysis(
-        ts=4 * t_vec, # 2: echo, 4: clock
-        xyz=arrange_data_for_crht(state_t), # target data
+        ts=t_vec_ns,
+        xyz_data=arrange_data_for_crht(qst_data_t), # target data
     )
     crht.fit_params(random_state=SEED)
-    coefs = {k: 1e6 * v for k, v in crht.get_interaction_rates().items()}
     fig_analysis = crht.plot_fit_result()
 
     # close the quantum machines at the end
@@ -247,9 +246,9 @@ else:
     data = {
         "fig_live": fig,
         "fig_analysis": fig_analysis,
-        "t_vec_ns": 2 * 4 * t_vec, # 2: echo, 4: clock
-        "data_c": state_c,
-        "data_t": state_t,
+        "t_vec_clock_ns": t_vec_ns,
+        "qst_data_c": qst_data_c,
+        "qst_data_t": qst_data_t,
         "random_state": SEED,
     }
     data.update(crht.params_fitted_dict)

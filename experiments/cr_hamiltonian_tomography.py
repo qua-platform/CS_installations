@@ -13,14 +13,14 @@ PAULI_2Q = ["IX", "IY", "IZ", "ZX", "ZY", "ZZ"]
 
 
 @dataclass
-class PauliMeasurement:
+class QuantumStateTomographyResults:
     """
     A class keeps the measurement results of different quantum states and basiss
     for cross resonance Hamiltonian tomography.
 
     Attributes:
         ts (np.ndarray): An array of time stamps at which measurements are taken. The time steps have to be equidistant.
-        data (Dict[str, Dict[str, np.ndarray]]): A nested dictionary where the first key represents the quantum
+        xyz_data (Dict[str, Dict[str, np.ndarray]]): A nested dictionary where the first key represents the quantum
             state of the control qubit, the second key represents the Pauli matrix basis (X, Y, Z) of the target qubit,
             and the value is an array of measurement results corresponding to `ts`.
 
@@ -29,14 +29,14 @@ class PauliMeasurement:
             data is not a 1D numpy array, or if the length of any basis's data array does not match the length of `ts`.
     """
     ts: np.ndarray
-    data: Dict[str, Dict[str, np.ndarray]] = field(default_factory=dict)
+    xyz_data: Dict[str, Dict[str, np.ndarray]] = field(default_factory=dict)
 
     def __post_init__(self):
         for st in CONTROL_STATES:
-            if st not in self.data:
+            if st not in self.xyz_data:
                 raise ValueError(f"Missing data for state {st}.")
 
-            st_data = self.data[st]
+            st_data = self.xyz_data[st]
             for bss in TARGET_BASES:
                 if bss not in st_data:
                     raise ValueError(f"Missing data for basis {bss} in state {st}.")
@@ -156,15 +156,15 @@ class CRHamiltonianTomographyFunctions:
 
 
 class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
-    def __init__(self, ts, xyz):
+    def __init__(self, ts, xyz_data):
         """
         CR Hamiltonian Tomography class.
 
         :param ts: durations of CR drive.
-        :param xyz: Dictionary containing measurement data for 'x', 'y', and 'z' basiss.
+        :param xyz_data: Dictionary containing measurement data for 'x', 'y', and 'z' basiss.
         """
         self.ts = ts
-        self.pauli_meas = PauliMeasurement(ts=ts, data=xyz)
+        self.qst_result = QuantumStateTomographyResults(ts=ts, xyz_data=xyz_data)
         self.params_fitted = {s: [] for s in CONTROL_STATES}
         self.params_fitted_dict = {s: {nm: None for nm in PARAM_NAMES} for s in CONTROL_STATES}
         self.interaction_coeffs = {p: None for p in PAULI_2Q}
@@ -256,12 +256,12 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
         np.random.seed(random_state)
         for st in CONTROL_STATES:
             if params_init is None:
-                p0 = self._pick_params_init(xyz=self.pauli_meas.data[st])
+                p0 = self._pick_params_init(xyz=self.qst_result.xyz_data[st])
             else:
                 p0 = params_init[st]
 
             self.params_fitted[st], _ = self._fit_bloch_vec_evolution(
-                xyz=self.pauli_meas.data[st],
+                xyz=self.qst_result.xyz_data[st],
                 p0=p0,
             )
             # for clarity
@@ -319,8 +319,8 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
         axs[0].set_title(label)
         for ax, bss in zip(axs, TARGET_BASES):
             ax.cla()
-            v0 = self.pauli_meas.data["0"][bss]
-            v1 = self.pauli_meas.data["1"][bss]
+            v0 = self.qst_result.xyz_data["0"][bss]
+            v1 = self.qst_result.xyz_data["1"][bss]
             ax.scatter(self.ts, v0, s=20, color="b", label="ctrl in |0>")
             ax.scatter(self.ts, v1, s=20, color="r", label="ctrl in |1>")
             ax.set_ylabel(f"<{bss}(t)>", fontsize=16)
@@ -329,7 +329,7 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
         if len(axs) == 4:  
             ax = axs[3]
             ax.cla()
-            R = self.compute_R(self.pauli_meas.data["0"], self.pauli_meas.data["1"])
+            R = self.compute_R(self.qst_result.xyz_data["0"], self.qst_result.xyz_data["1"])
             ax.plot(self.ts, R, "k")
             ax.set_xlabel("time")
             ax.set_ylabel("R", fontsize=16)
@@ -355,8 +355,8 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
             raise RuntimeError("some of the interaction coefficients have not been computed yet.")
 
         for ax, bss in zip(axs, TARGET_BASES):
-            v0 = self.pauli_meas.data["0"][bss]
-            v1 = self.pauli_meas.data["1"][bss]
+            v0 = self.qst_result.xyz_data["0"][bss]
+            v1 = self.qst_result.xyz_data["1"][bss]
             if bss == "x":
                 eV0 = self._compute_X(self.ts, *self.params_fitted["0"])
                 eV1 = self._compute_X(self.ts, *self.params_fitted["1"])
@@ -402,7 +402,7 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
             ax.set_xlim((self.ts[0], self.ts[-1]))
 
         # plot "R"
-        R = self.compute_R(self.pauli_meas.data["0"], self.pauli_meas.data["1"])
+        R = self.compute_R(self.qst_result.xyz_data["0"], self.qst_result.xyz_data["1"])
         axs[3].plot(self.ts, R, "k")
         axs[3].set_xlabel("time")
         axs[3].set_ylabel("R", fontsize=16)
