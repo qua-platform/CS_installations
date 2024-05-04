@@ -64,16 +64,6 @@ warnings.filterwarnings("ignore")
 # Functions and macros
 ######################
 
-def arrange_data_for_crht(state_data):
-    return {
-        st: {
-            bss: state_data[:, j, i]
-            for j, bss in enumerate(TARGET_BASES)
-        }
-        for i, st in enumerate(CONTROL_STATES)
-    }
-
-
 ############
 # Parameters
 ############
@@ -89,7 +79,6 @@ assert len(qubit_suffixes) == nb_of_qubits
 assert len(resonators) == nb_of_qubits
 assert len(thresholds) == nb_of_qubits
 assert np.all(t_vec_clock % 2 == 0) and (t_vec_clock.min() >= 8), "t_vec_clock should only have even numbers if play echoes"
-
 
 
 with program() as cr_calib:
@@ -170,7 +159,7 @@ with program() as cr_calib:
                 .buffer(len(TARGET_BASES))\
                 .buffer(len(t_vec_clock))\
                 .average()\
-                .save(f"qst_data_{qubit_suffixes[q]}")
+                .save(f"crqst_data_{qubit_suffixes[q]}")
 
 
 #####################################
@@ -184,6 +173,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 ###########################
 
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -201,23 +191,23 @@ else:
     fig, axss = plt.subplots(4, 2, figsize=(10, 10))
     interrupt_on_close(fig, job)
     # Tool to easily fetch results from the OPX (results_handle used in it)
-    results = fetching_tool(job, ["n", "qst_data_c", "qst_data_t"], mode="live")
+    results = fetching_tool(job, ["n", "crqst_data_c", "crqst_data_t"], mode="live")
     # Live plotting
     while results.is_processing():
         # Fetch results
-        n, qst_data_c, qst_data_t = results.fetch_all()
+        n, crqst_data_c, crqst_data_t = results.fetch_all()
         # Progress bar
         progress_counter(n, n_avg, start_time=results.start_time)
         # plotting data
         # control qubit
         fig = CRHamiltonianTomographyAnalysis(
             ts=t_vec_ns,
-            xyz_data=arrange_data_for_crht(qst_data_c),
+            crqst_data=crqst_data_c,
         ).plot_data(fig, axss[:, 0], label="control")
         # target qubit
         fig = CRHamiltonianTomographyAnalysis(
             ts=t_vec_ns,
-            xyz_data=arrange_data_for_crht(qst_data_t),
+            crqst_data=crqst_data_t,
         ).plot_data(fig, axss[:, 1], label="target")
         plt.tight_layout()
         plt.pause(0.1)
@@ -227,14 +217,14 @@ else:
     # TODO: Delete (loading dummy data for test)
     test_data = np.load("./crht_test_data/data.npz")
     t_vec_ns = test_data["t_vec_ns"]
-    qst_data_c = test_data["qst_data_c"] # len(t_vec_clock) x 3 x 2
-    qst_data_t = test_data["qst_data_t"] # len(t_vec_clock) x 3 x 2
+    crqst_data_c = test_data["crqst_data_c"] # len(t_vec_clock) x len(target_bases) x len(control_states)
+    crqst_data_t = test_data["crqst_data_t"] # len(t_vec_clock) x len(target_bases) x len(control_states)
 
     # cross resonance Hamiltonian tomography analysis
     SEED = 0
     crht = CRHamiltonianTomographyAnalysis(
         ts=t_vec_ns,
-        xyz_data=arrange_data_for_crht(qst_data_t), # target data
+        crqst_data=crqst_data_t, # target data
     )
     crht.fit_params(random_state=SEED)
     fig_analysis = crht.plot_fit_result()
@@ -242,30 +232,31 @@ else:
     # close the quantum machines at the end
     qm.close()
 
-    # Arrange data to save
-    data = {
-        "fig_live": fig,
-        "fig_analysis": fig_analysis,
-        "t_vec_clock_ns": t_vec_ns,
-        "qst_data_c": qst_data_c,
-        "qst_data_t": qst_data_t,
-        "random_state": SEED,
-    }
-    data.update(crht.params_fitted_dict)
-    data.update(crht.interaction_coeffs)
+    if save_data:
+        # A`rrange data to save
+        data = {
+            "fig_live": fig,
+            "fig_analysis": fig_analysis,
+            "t_vec_clock_ns": t_vec_ns,
+            "crqst_data_c": crqst_data_c,
+            "crqst_data_t": crqst_data_t,
+            "random_state": SEED,
+        }
+        data.update(crht.params_fitted_dict)
+        data.update(crht.interaction_coeffs)
 
-    # Initialize the DataHandler
-    script_name = Path(__file__).name
-    data_handler = DataHandler(root_data_folder=save_dir)
-    data_handler.create_data_folder(name=Path(__file__).stem)
-    data_handler.additional_files = {
-        script_name: script_name,
-        "configuration_with_octave.py": "configuration_with_octave.py",
-        "calibration_db.json": "calibration_db.json",
-        "optimal_weights.npz": "optimal_weights.npz",
-    }
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
 
-    # Save results
-    data_folder = data_handler.save_data(data=data)
+        # Save results
+        data_folder = data_handler.save_data(data=data)
 
 # %%

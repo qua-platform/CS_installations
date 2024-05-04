@@ -64,22 +64,12 @@ warnings.filterwarnings("ignore")
 # The QUA program #
 ###################
 
-def arrange_data_for_crht(state_data):
-    return {
-        st: {
-            bss: state_data[:, j, i]
-            for j, bss in enumerate(TARGET_BASES)
-        }
-        for i, st in enumerate(CONTROL_STATES)
-    }
-
-
-def plot_cr_duration_vs_phase(qst_data_c, qst_data_t, t_vec_clock, ph_vec, axss):
-    data = 2 * [qst_data_c] + 2 * [qst_data_t]
+def plot_cr_duration_vs_phase(crqst_data_c, crqst_data_t, t_vec_ns, ph_vec, axss):
+    data = 2 * [crqst_data_c] + 2 * [crqst_data_t]
     for i, (axs, bss) in enumerate(zip(axss, TARGET_BASES)):
         for j, (ax, dt, st) in enumerate(zip(axs, data, 2 * CONTROL_STATES)):
             ax.cla()
-            ax.pcolor(t_vec_ns, ph_vec, dt[:, :, i, j % 2].T)
+            ax.pcolor(t_vec_ns, ph_vec, dt[:, :, i, j % 2])
             if i == 0 and j < 2:
                 ax.set_title(f"Q_C w/ Q_C={st}")
             if i == 0 and j >= 2:
@@ -119,11 +109,11 @@ with program() as cr_calib:
     
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
-        with for_(*from_array(t, t_vec_clock)):
-            # t/2 for main and echo
-            assign(t_half, t >> 1)
-            with for_(*from_array(ph, ph_vec)):
-                # to allow time to save the data
+        with for_(*from_array(ph, ph_vec)):
+            # to allow time to save the data
+            with for_(*from_array(t, t_vec_clock)):
+                # t/2 for main and echo
+                assign(t_half, t >> 1)
                 wait(400 * u.ns)
                 for bss in TARGET_BASES:
                     for st in CONTROL_STATES:
@@ -192,10 +182,10 @@ with program() as cr_calib:
                 .boolean_to_int()\
                 .buffer(len(CONTROL_STATES))\
                 .buffer(len(TARGET_BASES))\
-                .buffer(len(ph_vec))\
                 .buffer(len(t_vec_clock))\
+                .buffer(len(ph_vec))\
                 .average()\
-                .save(f"qst_data_{qubit_suffixes[q]}")
+                .save(f"crqst_data_{qubit_suffixes[q]}")
 
 
 #####################################
@@ -208,7 +198,8 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 
-simulate = True
+simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -226,23 +217,23 @@ else:
     fig, axss = plt.subplots(3, 4, figsize=(12, 9), sharex=True, sharey=True)
     interrupt_on_close(fig, job)
     # Tool to easily fetch results from the OPX (results_handle used in it)
-    results = fetching_tool(job, ["n", "qst_data_c", "qst_data_t"], mode="live")
+    results = fetching_tool(job, ["n", "crqst_data_c", "crqst_data_t"], mode="live")
     # Live plotting
     while results.is_processing():
         # Fetch results
-        n, qst_data_c, qst_data_t = results.fetch_all()
+        n, crqst_data_c, crqst_data_t = results.fetch_all()
         # Progress bar
         progress_counter(n, n_avg, start_time=results.start_time)
         # Plot cr_duration vs phase for Qc/Qt x Qc state x bases 
-        plot_cr_duration_vs_phase(qst_data_c, qst_data_t, t_vec_clock, ph_vec, axss)
+        plot_cr_duration_vs_phase(crqst_data_c, crqst_data_t, t_vec_clock, ph_vec, axss)
 
     # TODO: Delete (loading dummy data for test)
     test_data = np.load("./crht_test_data/data.npz")
     t_vec_ns = test_data["t_vec_ns"]
-    qst_data_c = test_data["qst_data_c"] # len(t_vec_clock) x 3 x 2
-    qst_data_t = test_data["qst_data_t"] # len(t_vec_clock) x 3 x 2
-    qst_data_c = np.tile(qst_data_c[:, None, ...], reps=[1, len(ph_vec), 1, 1]) # len(t_vec_clock) x len(ph_vec) x 3 x 2
-    qst_data_t = np.tile(qst_data_t[:, None, ...], reps=[1, len(ph_vec), 1, 1]) # len(t_vec_clock) x len(ph_vec) x 3 x 2
+    crqst_data_c = test_data["crqst_data_c"] # len(t_vec_clock) x len(target_bases) x len(control_states)
+    crqst_data_t = test_data["crqst_data_t"] # len(t_vec_clock) x len(target_bases) x len(control_states)
+    crqst_data_c = np.tile(crqst_data_c[None, ...], reps=[len(ph_vec), 1, 1, 1]) # len(ph_vec) x len(t_vec_clock) x 3 x 2
+    crqst_data_t = np.tile(crqst_data_t[None, ...], reps=[len(ph_vec), 1, 1, 1]) # len(ph_vec) x len(t_vec_clock) x 3 x 2
     
     # Perform CR Hamiltonian tomography
     SEED = 0
@@ -250,16 +241,16 @@ else:
     for ph in range(len(ph_vec)):
         crht = CRHamiltonianTomographyAnalysis(
             ts=t_vec_ns,
-            xyz_data=arrange_data_for_crht(qst_data_t[:, ph, ...]), # target data
+            crqst_data=crqst_data_t[ph, ...], # target data: len(ph_vec) x len(t_vec_clock) x 3 x 2
         )
         crht.fit_params(random_state=SEED, do_print=False)
         coeffs.append(crht.interaction_coeffs)
 
     # Plot the estimated interaction coefficients
     fig_analysis, ax = plt.subplots(1, 1, figsize=(6, 5))
-    arrs_coeff = {p: np.array([coeff[p] for coeff in coeffs]) for p in PAULI_2Q}
+    coeffs_array_dict = {p: np.array([coeff[p] for coeff in coeffs]) for p in PAULI_2Q}
     for p in PAULI_2Q:
-        ax.plot(ph_vec, arrs_coeff[p])
+        ax.plot(ph_vec, coeffs_array_dict[p])
     ax.set_xlabel("phase [rad]")
     ax.set_ylabel("interaction coefficients [MHz]")
     ax.legend(PAULI_2Q)
@@ -268,30 +259,31 @@ else:
 
     qm.close()
 
-    # Arrange data to save
-    data = {
-        "fig_live": fig,
-        "fig_analysis": fig_analysis,
-        "t_vec_ns": t_vec_ns,
-        "ph_vec": ph_vec,
-        "qst_data_c": qst_data_c,
-        "qst_data_t": qst_data_t,
-        "random_state": SEED,
-    }
-    data.update(crht.params_fitted_dict)
-    data.update(crht.interaction_coeffs)
+    if save_data:
+        # Arrange data to save
+        data = {
+            "fig_live": fig,
+            "fig_analysis": fig_analysis,
+            "t_vec_ns": t_vec_ns,
+            "ph_vec": ph_vec,
+            "crqst_data_c": crqst_data_c,
+            "crqst_data_t": crqst_data_t,
+            "random_state": SEED,
+        }
+        data.update(crht.params_fitted_dict)
+        data.update(crht.interaction_coeffs)
 
-    # Initialize the DataHandler
-    script_name = Path(__file__).name
-    data_handler = DataHandler(root_data_folder=save_dir)
-    data_handler.create_data_folder(name=Path(__file__).stem)
-    data_handler.additional_files = {
-        script_name: script_name,
-        "configuration_with_octave.py": "configuration_with_octave.py",
-        "calibration_db.json": "calibration_db.json",
-        "optimal_weights.npz": "optimal_weights.npz",
-    }
-    # Save results
-    data_folder = data_handler.save_data(data=data)
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
 
 # %%

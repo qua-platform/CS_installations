@@ -1,5 +1,3 @@
-from dataclasses import dataclass, field
-from typing import Dict
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
@@ -10,45 +8,6 @@ CONTROL_STATES = ["0", "1"] # control state: 0 or 1
 TARGET_BASES = ["x", "y", "z"] # target basiss x, y, z
 PARAM_NAMES = ["delta", "omega_x", "omega_y"]
 PAULI_2Q = ["IX", "IY", "IZ", "ZX", "ZY", "ZZ"]
-
-
-@dataclass
-class QuantumStateTomographyResults:
-    """
-    A class keeps the measurement results of different quantum states and basiss
-    for cross resonance Hamiltonian tomography.
-
-    Attributes:
-        ts (np.ndarray): An array of time stamps at which measurements are taken. The time steps have to be equidistant.
-        xyz_data (Dict[str, Dict[str, np.ndarray]]): A nested dictionary where the first key represents the quantum
-            state of the control qubit, the second key represents the Pauli matrix basis (X, Y, Z) of the target qubit,
-            and the value is an array of measurement results corresponding to `ts`.
-
-    Raises:
-        ValueError: If any expected state or basis is missing in the provided data, or if any basis's
-            data is not a 1D numpy array, or if the length of any basis's data array does not match the length of `ts`.
-    """
-    ts: np.ndarray
-    xyz_data: Dict[str, Dict[str, np.ndarray]] = field(default_factory=dict)
-
-    def __post_init__(self):
-        for st in CONTROL_STATES:
-            if st not in self.xyz_data:
-                raise ValueError(f"Missing data for state {st}.")
-
-            st_data = self.xyz_data[st]
-            for bss in TARGET_BASES:
-                if bss not in st_data:
-                    raise ValueError(f"Missing data for basis {bss} in state {st}.")
-
-                value = st_data[bss]
-                if not isinstance(value, np.ndarray) or value.ndim != 1:
-                    raise ValueError(f"Data for basis {bss} in state {st} must be a 1D numpy array.")
-
-                if len(value) != len(self.ts):
-                    raise ValueError(
-                        f"Data for basis {bss} in state {st} must have the same length as ts."
-                    )
 
 
 class CRHamiltonianTomographyFunctions:
@@ -156,18 +115,55 @@ class CRHamiltonianTomographyFunctions:
 
 
 class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
-    def __init__(self, ts, xyz_data):
+    def __init__(self, ts, crqst_data):
         """
         CR Hamiltonian Tomography class.
 
         :param ts: durations of CR drive.
-        :param xyz_data: Dictionary containing measurement data for 'x', 'y', and 'z' basiss.
+        :params crqst_data (np.ndarray):
+            A 3-dimensional numpy array (len(ts) x len(TARGET_BASES) x len(CONTROL_STATES))
+            where the first to durations of CR drive, the second to TARGET_BASES.
+            the thir dimension corresponds to CONTROL_STATES.
         """
         self.ts = ts
-        self.qst_result = QuantumStateTomographyResults(ts=ts, xyz_data=xyz_data)
+        self.crqst_data = crqst_data
+        self.crqst_data_dict = self.rearrange_data_ndarray2dict(crqst_data)
         self.params_fitted = {s: [] for s in CONTROL_STATES}
         self.params_fitted_dict = {s: {nm: None for nm in PARAM_NAMES} for s in CONTROL_STATES}
         self.interaction_coeffs = {p: None for p in PAULI_2Q}
+
+    def rearrange_data_ndarray2dict(self, crqst_data):
+        """
+        Transforms a 3D numpy array into a nested dictionary format
+        suitable for CRQuantumStateTomographyResults.
+
+        :params crqst_data (np.ndarray): A 3-dimensional numpy array
+            where the first dimension corresponds to CONTROL_STATES,
+            the second to different measurement instances,
+            and the third to TARGET_BASES.
+
+        :returns: dict: A nested dictionary {control_state: {target_basis: data_array}}.
+
+        Raises:
+            ValueError: If the dimensions of the input do not match expected sizes
+                based on CONTROL_STATES and TARGET_BASES.
+        """
+        if crqst_data.ndim != 3:
+            raise ValueError("Input data must be a 3-dimensional array.")
+
+        if crqst_data.shape[2] != len(CONTROL_STATES) or crqst_data.shape[1] != len(TARGET_BASES):
+            raise ValueError("Dimensions of the input array must match the length of CONTROL_STATES and TARGET_BASES.")
+
+        if crqst_data.shape[0] != self.ts.shape[0]:
+            raise ValueError("Length of each tomographic data must be the same as the length of cr durations")
+
+        return {
+            st: {
+                bss: crqst_data[:, j, i]
+                for j, bss in enumerate(TARGET_BASES)
+            }
+            for i, st in enumerate(CONTROL_STATES)
+        }
 
     def _bloch_vec_evolution(self, ts, d, mx, my):
         """
@@ -253,15 +249,15 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
         :param _print: Boolean flag to control the printing of fitting results.
         :return: Self.
         """
-        np.random.seed(random_state)
         for st in CONTROL_STATES:
             if params_init is None:
-                p0 = self._pick_params_init(xyz=self.qst_result.xyz_data[st])
+                np.random.seed(random_state) # seed to pick a random (theta, phi)
+                p0 = self._pick_params_init(xyz=self.crqst_data_dict[st])
             else:
                 p0 = params_init[st]
 
             self.params_fitted[st], _ = self._fit_bloch_vec_evolution(
-                xyz=self.qst_result.xyz_data[st],
+                xyz=self.crqst_data_dict[st],
                 p0=p0,
             )
             # for clarity
@@ -319,8 +315,8 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
         axs[0].set_title(label)
         for ax, bss in zip(axs, TARGET_BASES):
             ax.cla()
-            v0 = self.qst_result.xyz_data["0"][bss]
-            v1 = self.qst_result.xyz_data["1"][bss]
+            v0 = self.crqst_data_dict["0"][bss]
+            v1 = self.crqst_data_dict["1"][bss]
             ax.scatter(self.ts, v0, s=20, color="b", label="ctrl in |0>")
             ax.scatter(self.ts, v1, s=20, color="r", label="ctrl in |1>")
             ax.set_ylabel(f"<{bss}(t)>", fontsize=16)
@@ -329,7 +325,7 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
         if len(axs) == 4:  
             ax = axs[3]
             ax.cla()
-            R = self.compute_R(self.qst_result.xyz_data["0"], self.qst_result.xyz_data["1"])
+            R = self.compute_R(self.crqst_data_dict["0"], self.crqst_data_dict["1"])
             ax.plot(self.ts, R, "k")
             ax.set_xlabel("time")
             ax.set_ylabel("R", fontsize=16)
@@ -355,8 +351,8 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
             raise RuntimeError("some of the interaction coefficients have not been computed yet.")
 
         for ax, bss in zip(axs, TARGET_BASES):
-            v0 = self.qst_result.xyz_data["0"][bss]
-            v1 = self.qst_result.xyz_data["1"][bss]
+            v0 = self.crqst_data_dict["0"][bss]
+            v1 = self.crqst_data_dict["1"][bss]
             if bss == "x":
                 eV0 = self._compute_X(self.ts, *self.params_fitted["0"])
                 eV1 = self._compute_X(self.ts, *self.params_fitted["1"])
@@ -402,7 +398,7 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
             ax.set_xlim((self.ts[0], self.ts[-1]))
 
         # plot "R"
-        R = self.compute_R(self.qst_result.xyz_data["0"], self.qst_result.xyz_data["1"])
+        R = self.compute_R(self.crqst_data_dict["0"], self.crqst_data_dict["1"])
         axs[3].plot(self.ts, R, "k")
         axs[3].set_xlabel("time")
         axs[3].set_ylabel("R", fontsize=16)
