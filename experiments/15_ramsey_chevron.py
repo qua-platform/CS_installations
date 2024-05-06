@@ -151,7 +151,6 @@ else:
         # Arrange data to save
         data = {
             "fig_live": fig,
-            "fig_analysis": fig_analysis,
             "t_vec": t_vec,
             "I1": I1,
             "I1": I1,

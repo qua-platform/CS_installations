@@ -131,7 +131,7 @@ else:
         fidelity_vec[1].append(fidelity_q2)
 
     # Plot the data
-    plt.figure()
+    fig = plt.figure()
     plt.suptitle("Readout amplitude optimization")
     plt.subplot(121)
     plt.plot(a_vec * readout_amp_q1, fidelity_vec[0], ".-")
