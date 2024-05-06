@@ -128,35 +128,25 @@ with program() as cr_calib:
                         else:
                             wait(pi_len >> 2, "q1_xy")
 
-                        # Play CR + QST
-                        # q1_xy=0, q2_xy=0, cr_c1t2=0, rr1=0, rr2=0
+                        # Play CR
                         align()
-                        # q1_xy=0, q2_xy=0, cr_c1t2=t/2, rr1=0, rr2=0
                         play("square_positive", "cr_c1t2", duration=t_half)
-                        # q1_xy=t/2, q2_xy=0, cr_c1t2=t/2, rr1=0, rr2=0
                         wait(t_half, "q1_xy")
-                        # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t/2, rr1=0, rr2=0
+                        # Play Echo
                         play("x180", "q1_xy")
-                        # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t/2+p/4, rr1=0, rr2=0
                         wait(pi_len >> 2, "cr_c1t2")
-                        # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t+p/4, rr1=0, rr2=0
                         play("square_negative", "cr_c1t2", duration=t_half)
-                        # q1_xy=t+p/4, q2_xy=0, cr_c1t2=t+p/4, rr1=0, rr2=0
                         wait(t_half, "q1_xy")
-                        # q1_xy=t+p/2, q2_xy=0, cr_c1t2=t+p/4, rr1=0, rr2=0
                         play("x180", "q1_xy")
-                        # q1_xy=t+p/2, q2_xy=t+p/2, cr_c1t2=t+p/4, rr1=t+p/2, rr2=t+p/2
                         wait(t + (pi_len >> 1), "q2_xy", "rr1", "rr2")
                         
-                        # q1_xy=t+3*p/4, q2_xy=t+p/2, cr_c1t2=t+p/4, rr1=t+p/2, rr2=t+p/2
+                        # QST
                         if bss == "x":
                             play("-y90", "q2_xy")
                         elif bss == "y":
                             play("x90", "q2_xy")
                         else:
                             wait(pi_len >> 2, "q2_xy")
-
-                        # q1_xy=t+3*p/4, q2_xy=t+3*p/4, cr_c1t2=t+p/4, rr1=t+3*p/4, rr2=t+3*p/4
                         wait(pi_len >> 2, "rr1", "rr2")
 
                         # Measure the state of the resonators
