@@ -99,6 +99,7 @@ with program() as CR_time_rabi_one_qst:
                     one_qb_QST("q2_xy", pi_len, c)
                     align()
                     # Measure the state of the resonators
+                    # multiplexed_readout(I, I_st, Q, Q_st, resonators=resonators, weights="")
                     multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
                     # Wait for the qubit to decay to the ground state
                     wait(thermalization_time * u.ns)
