@@ -35,7 +35,7 @@ Next steps before going to the next node:
 
 Reference: Sarah Sheldon, Easwar Magesan, Jerry M. Chow, and Jay M. Gambetta Phys. Rev. A 93, 060302(R) (2016)
 """
-
+import numpy as np
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
 from qm import SimulationConfig
@@ -81,14 +81,13 @@ nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
 thresholds = [ge_threshold_q1, ge_threshold_q2]
-t_vec = np.arange(8, 200, 4) # in clock cylcle = 4ns
-n_avg = 100 # num of iterations
+t_vec = np.arange(26, 8*1400, 8*16) # in clock cylcle = 4ns
+n_avg = 1  # num of iterations
 
 assert len(qubit_suffixes) == nb_of_qubits
 assert len(resonators) == nb_of_qubits
 assert len(thresholds) == nb_of_qubits
 assert np.all(t_vec % 2 == 0) and (t_vec.min() >= 8), "t_vec should only have even numbers if play echoes"
-
 
 
 with program() as cr_calib:
@@ -128,7 +127,7 @@ with program() as cr_calib:
                     # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t/2, rr1=0, rr2=0
                     play("x180", "q1_xy")
                     # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t/2+p/4, rr1=0, rr2=0
-                    wait(pi_len >> 2, "cr_c1t2")
+                    wait(pi_len, "cr_c1t2")
                     # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t+p/4, rr1=0, rr2=0
                     play("square_negative", "cr_c1t2", duration=t_half)
                     # q1_xy=t+p/4, q2_xy=0, cr_c1t2=t+p/4, rr1=0, rr2=0
@@ -136,7 +135,7 @@ with program() as cr_calib:
                     # q1_xy=t+p/2, q2_xy=0, cr_c1t2=t+p/4, rr1=0, rr2=0
                     play("x180", "q1_xy")
                     # q1_xy=t+p/2, q2_xy=t+p/2, cr_c1t2=t+p/4, rr1=t+p/2, rr2=t+p/2
-                    wait(t + (pi_len >> 1), "q2_xy", "rr1", "rr2")
+                    wait(t + (pi_len << 1), "q2_xy", "rr1", "rr2")
                     
                     # q1_xy=t+3*p/4, q2_xy=t+p/2, cr_c1t2=t+p/4, rr1=t+p/2, rr2=t+p/2
                     if bss == "x":
@@ -144,10 +143,10 @@ with program() as cr_calib:
                     elif bss == "y":
                         play("x90", "q2_xy")
                     else:
-                        wait(pi_len >> 2, "q2_xy")
+                        wait(pi_len, "q2_xy")
 
                     # q1_xy=t+3*p/4, q2_xy=t+3*p/4, cr_c1t2=t+p/4, rr1=t+3*p/4, rr2=t+3*p/4
-                    wait(pi_len >> 2, "rr1", "rr2")
+                    wait(pi_len, "rr1", "rr2")
 
                     # Measure the state of the resonators
                     # Make sure you updated the ge_threshold and angle if you want to use state discrimination
@@ -155,7 +154,7 @@ with program() as cr_calib:
                     # multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="optimized_")
 
                     # Wait for the qubit to decay to the ground state
-                    wait(thermalization_time * u.ns)
+                    # wait(thermalization_time * u.ns)
                     # Make sure you updated the ge_threshold
                     for q in range(nb_of_qubits):
                         assign(state[q], I[q] > thresholds[q])
@@ -176,14 +175,14 @@ with program() as cr_calib:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+# qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 
 ###########################
 # Run or Simulate Program #
 ###########################
 
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -193,81 +192,101 @@ if simulate:
     plt.show()
 
 else:
-    # Open the quantum machine
-    qm = qmm.open_qm(config)
-    # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(cr_calib)
-    # Prepare the figure for live plotting
+    # # Open the quantum machine
+    # qm = qmm.open_qm(config)
+    # # Send the QUA program to the OPX, which compiles and executes it
+    # job = qm.execute(cr_calib)
+    # # Prepare the figure for live plotting
     fig, axss = plt.subplots(4, 2, figsize=(10, 10))
-    interrupt_on_close(fig, job)
-    # Tool to easily fetch results from the OPX (results_handle used in it)
-    results = fetching_tool(job, ["n", "state_c", "state_t"], mode="live")
+    # interrupt_on_close(fig, job)
+    # # Tool to easily fetch results from the OPX (results_handle used in it)
+    # results = fetching_tool(job, ["n", "state_c", "state_t"], mode="live")
     #results = fetching_tool(job, ["n", "state_c", "state_t"])
     # Live plotting
-    while results.is_processing():
-        # Fetch results
-        n, state_c, state_t = results.fetch_all()
-        # Progress bar
-        progress_counter(n, n_avg, start_time=results.start_time)
-        # plotting data
-        # control qubit
-        fig = CRHamiltonianTomographyAnalysis(
-            ts=4 * t_vec, # 2: echo, 4: clock
-            xyz=arrange_data_for_crht(state_c),
-        ).plot_data(fig, axss[:, 0], label="control")
-        # target qubit
-        fig = CRHamiltonianTomographyAnalysis(
-            ts=4 * t_vec, # 2: echo, 4: clock
-            xyz=arrange_data_for_crht(state_t),
-        ).plot_data(fig, axss[:, 1], label="target")
-        plt.tight_layout()
-        plt.pause(0.1)
+    # while results.is_processing():
+    #     # Fetch results
+    #     n, state_c, state_t = results.fetch_all()
+    #     # Progress bar
+    #     progress_counter(n, n_avg, start_time=results.start_time)
+    #     # plotting data
+    #     # control qubit
 
-    plt.show()
-
-    # TODO: Delete (loading dummy data for test)
-    data = np.load("./crht_test_data/data.npz")
-    t_vec = data["t_vec"]
-    state_c = data["state_c"] # len(t_vec) x 3 x 2
-    state_t = data["state_t"] # len(t_vec) x 3 x 2
-
-    # cross resonance Hamiltonian tomography analysis
-    SEED = 0
-    crht = CRHamiltonianTomographyAnalysis(
-        ts=4 * t_vec, # 2: echo, 4: clock
-        xyz=arrange_data_for_crht(state_t), # target data
+    from simulation_backend import simulate_program
+    results = simulate_program(cr_calib, num_shots=10_000, plot_schedules=[0,1,2,3,4])
+    results = np.array(results)
+    results = results.reshape(
+        nb_of_qubits,
+        len(t_vec),
+        len(TARGET_BASES),
+        len(CONTROL_STATES),
     )
-    crht.fit_params(random_state=SEED)
-    coefs = {k: 1e6 * v for k, v in crht.get_interaction_rates().items()}
-    fig_analysis = crht.plot_fit_result()
+    print(results)
+    # plt.plot(results[0][0][2])
+    # plt.show()
+    # results = np.moveaxis(results, 3, 1)
+    # results = np.moveaxis(results, 3, 2)
+    print(results.shape)
+    state_c = results[0,:,:,:]
+    state_t = results[1,:,:,:]
 
-    # close the quantum machines at the end
-    qm.close()
+    fig = CRHamiltonianTomographyAnalysis(
+        ts=4 * t_vec, # 2: echo, 4: clock
+        xyz=arrange_data_for_crht(state_c),
+    ).plot_data(fig, axss[:, 0], label="control")
+    # target qubit
+    fig = CRHamiltonianTomographyAnalysis(
+        ts=4 * t_vec, # 2: echo, 4: clock
+        xyz=arrange_data_for_crht(state_t),
+    ).plot_data(fig, axss[:, 1], label="target")
+    plt.tight_layout()
+    plt.pause(0.1)
 
-    # Arrange data to save
-    data = {
-        "fig_live": fig,
-        "fig_analysis": fig_analysis,
-        "t_vec_ns": 2 * 4 * t_vec, # 2: echo, 4: clock
-        "data_c": state_c,
-        "data_t": state_t,
-        "random_state": SEED,
-    }
-    data.update(crht.params_fitted_dict)
-    data.update(crht.interaction_coeffs)
+plt.show()
 
-    # Initialize the DataHandler
-    script_name = Path(__file__).name
-    data_handler = DataHandler(root_data_folder=save_dir)
-    data_handler.create_data_folder(name=Path(__file__).stem)
-    data_handler.additional_files = {
-        script_name: script_name,
-        "configuration_with_octave.py": "configuration_with_octave.py",
-        "calibration_db.json": "calibration_db.json",
-        "optimal_weights.npz": "optimal_weights.npz",
-    }
+# # # TODO: Delete (loading dummy data for test)
+# data = np.load("./crht_test_data/data.npz")
+# t_vec = data["t_vec"]
+# state_c = data["state_c"] # len(t_vec) x 3 x 2
+# state_t = data["state_t"] # len(t_vec) x 3 x 2
+# # print(state_c.shape)
 
-    # Save results
-    data_folder = data_handler.save_data(data=data)
+# cross resonance Hamiltonian tomography analysis
+SEED = 0
+crht = CRHamiltonianTomographyAnalysis(
+    ts=4 * t_vec, # 2: echo, 4: clock
+    xyz=arrange_data_for_crht(state_t), # target data
+)
+crht.fit_params(random_state=SEED)
+coefs = {k: 1e6 * v for k, v in crht.get_interaction_rates().items()}
+fig_analysis = crht.plot_fit_result()
+
+# close the quantum machines at the end
+qm.close()
+
+# Arrange data to save
+data = {
+    "fig_live": fig,
+    "fig_analysis": fig_analysis,
+    "t_vec_ns": 2 * 4 * t_vec, # 2: echo, 4: clock
+    "data_c": state_c,
+    "data_t": state_t,
+    "random_state": SEED,
+}
+data.update(crht.params_fitted_dict)
+data.update(crht.interaction_coeffs)
+
+# Initialize the DataHandler
+script_name = Path(__file__).name
+data_handler = DataHandler(root_data_folder=save_dir)
+data_handler.create_data_folder(name=Path(__file__).stem)
+data_handler.additional_files = {
+    script_name: script_name,
+    "configuration_with_octave.py": "configuration_with_octave.py",
+    "calibration_db.json": "calibration_db.json",
+    "optimal_weights.npz": "optimal_weights.npz",
+}
+
+# Save results
+data_folder = data_handler.save_data(data=data)
 
 # %%

@@ -38,8 +38,9 @@ warnings.filterwarnings("ignore")
 ###################
 # The QUA program #
 ###################
-t_vec = np.arange(4, 200, 2) # in clock cylcle = 4ns
-n_avg = 1000 # num of iterations
+# t_vec = np.arange(4, 1400, 16) # in clock cylcle = 4ns
+t_vec = np.arange(4, 1400, 128) # in clock cylcle = 4ns
+n_avg = 1 # num of iterations
 resonators = [1, 2] # rr1, rr2
 
 with program() as cr_time_rabi_one_qst:
@@ -81,14 +82,14 @@ with program() as cr_time_rabi_one_qst:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+# qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 
 ###########################
 # Run or Simulate Program #
 ###########################
 
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -99,23 +100,34 @@ if simulate:
 
 else:
     # Open the quantum machine
-    qm = qmm.open_qm(config)
+    # qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(cr_time_rabi_one_qst)
+    # job = qm.execute(cr_time_rabi_one_qst)
     # Prepare the figure for live plotting
     fig = plt.figure()
-    interrupt_on_close(fig, job)
+    # interrupt_on_close(fig, job)
     # Tool to easily fetch results from the OPX (results_handle used in it)
-    results = fetching_tool(job, ["n", "I1", "Q1", "I2", "Q2"], mode="live")
+    # results = fetching_tool(job, ["n", "I1", "Q1", "I2", "Q2"], mode="live")
     # Live plotting
-    while results.is_processing():
-        # Fetch results
-        n, I1, Q1, I2, Q2 = results.fetch_all()
-        # Progress bar
-        progress_counter(n, n_avg, start_time=results.start_time)
-        # Plot tomography
-        plot_1qb_tomography_results(I2, times * 4)
+    # while results.is_processing():
+    #     # Fetch results
+    #     n, I1, Q1, I2, Q2 = results.fetch_all()
+    #     # Progress bar
+    #     progress_counter(n, n_avg, start_time=results.start_time)
+
+    from simulation_backend import simulate_program
+
+    results = simulate_program(cr_time_rabi_one_qst, num_shots=1_000, plot_second_schedule=True)
+    results = np.array(results)
+    results = results.reshape(
+        2,  # num_qubits
+        len(t_vec),
+        3,  # bases
+        2,  # control states
+    )
+    I2 = results[1]
+    # Plot tomography
+    plot_1qb_tomography_results(I2, t_vec * 4)
     # Close the quantum machines at the end
-    qm.close()
 
 # %%

@@ -40,7 +40,7 @@ def plot_1qb_tomography_results(array, xaxis, fig=None, axs=None):
     for i in range(3):
         axs[i].cla()
         axs[i].plot(xaxis, array[:, i, 0], label="control |0>")
-        axs[i].plot(xaxis, array[:, i, 1], label="control |0>")
+        axs[i].plot(xaxis, array[:, i, 1], label="control |1>")
         axs[i].set_title(f"<{chr(88 + i)}>")
         axs[i].set_xlabel("CR length [ns]")
         axs[i].set_ylabel("State probability")
@@ -48,8 +48,8 @@ def plot_1qb_tomography_results(array, xaxis, fig=None, axs=None):
     # axs[3].plot(xaxis, get_r_vector(array), label='Data dimension 0')
     # axs[3].set_xlabel("CR length [ns]")
     # axs[3].set_ylabel("R-vector")
+    plt.legend()
     plt.tight_layout()
-    plt.pause(0.1)
     plt.show()
 
 

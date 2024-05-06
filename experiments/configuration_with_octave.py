@@ -94,17 +94,22 @@ const_amp = 0.125 # V
 saturation_len = 10 * u.us 
 saturation_amp = 0.125 # V
 # Pi pulse
-pi_len = 40 # ns
+# pi_len = 40 # ns
+pi_len = 260 # ns
 assert pi_len % 5 == 0
 pi_sigma = pi_len / 5
-pi_amp_q1 = 0.125
-pi_amp_q2 = 0.125
+pi_amp_q1 = 0.0215
+pi_amp_q2 = 0.0185
+# pi_amp_q1 = 0.125
+# pi_amp_q2 = 0.125
 
 # DRAG coefficients
 drag_coef_q1 = 0
 drag_coef_q2 = 0
-anharmonicity_q1 = -200 * u.MHz
-anharmonicity_q2 = -180 * u.MHz
+anharmonicity_q1 = -320 * u.MHz
+anharmonicity_q2 = -320 * u.MHz
+# anharmonicity_q1 = -200 * u.MHz
+# anharmonicity_q2 = -180 * u.MHz
 AC_stark_detuning_q1 = -200 * u.MHz
 AC_stark_detuning_q2 = -180 * u.MHz
 drag_params_q1 = pi_len, pi_sigma, drag_coef_q1, anharmonicity_q1, AC_stark_detuning_q1
@@ -245,10 +250,14 @@ cr_c2t1_square_positive_half_len = cr_c2t1_square_positive_len // 2  # for cr ec
 assert 2 * cr_c2t1_square_positive_half_len == cr_c2t1_square_positive_len
 cr_c2t1_square_negative_half_len = cr_c2t1_square_positive_half_len
 # Pulse amplitudes
-cr_c1t2_square_positive_amp = 0.2
+cr_c1t2_square_positive_amp = 0.02
 cr_c1t2_square_negative_amp = (-1) * cr_c1t2_square_positive_amp
-cr_c2t1_square_positive_amp = 0.2
+cr_c2t1_square_positive_amp = 0.02
 cr_c2t1_square_negative_amp = (-1) * cr_c2t1_square_positive_amp
+# cr_c1t2_square_positive_amp = 0.2
+# cr_c1t2_square_negative_amp = (-1) * cr_c1t2_square_positive_amp
+# cr_c2t1_square_positive_amp = 0.2
+# cr_c2t1_square_negative_amp = (-1) * cr_c2t1_square_positive_amp
 # Pulse phase
 cr_c1t2_drive_phase = 0
 cr_c2t1_drive_phase = 0
@@ -266,9 +275,9 @@ cr_cancel_c2t1_square_positive_half_len = cr_c2t1_square_positive_len // 2
 assert 2 * cr_cancel_c2t1_square_positive_half_len == cr_c2t1_square_positive_len
 cr_cancel_c2t1_square_negative_half_len = cr_cancel_c2t1_square_positive_half_len
 # Cancel pulse amplitudes
-cr_cancel_c1t2_square_positive_amp = 0.05
+cr_cancel_c1t2_square_positive_amp = 0.005
 cr_cancel_c1t2_square_negative_amp = (-1) * cr_cancel_c1t2_square_positive_amp
-cr_cancel_c2t1_square_positive_amp = 0.05
+cr_cancel_c2t1_square_positive_amp = 0.005
 cr_cancel_c2t1_square_negative_amp = (-1) * cr_cancel_c2t1_square_positive_amp
 # Cancel pulse phase
 cr_cancel_c1t2_drive_phase = 0

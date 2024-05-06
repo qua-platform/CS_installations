@@ -40,14 +40,14 @@ warnings.filterwarnings("ignore")
 ###################
 # The QUA program #
 ###################
-n_avg = 1000  # The number of averages
+n_avg = 1# The number of averages
 
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
 a_vec = np.arange(0.1, 1.7, 0.01)
 
 # Number of applied Rabi pulses sweep
-max_nb_of_pulses = 1  # Maximum number of qubit pulses
-nb_of_pulses = np.arange(0, max_nb_of_pulses, 2)  # Always play an odd/even number of pulses to end up in the same state
+max_nb_of_pulses = 4  # Maximum number of qubit pulses
+nb_of_pulses = np.arange(2, max_nb_of_pulses, 2)  # Always play an odd/even number of pulses to end up in the same state
 
 with program() as rabi:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
@@ -67,7 +67,7 @@ with program() as rabi:
                 # Start using Rotated integration weights (cf. IQ_blobs.py)
                 multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
                 # Wait for the qubit to decay to the ground state
-                wait(thermalization_time * u.ns)
+                wait(16 * u.ns)
         # Save the averaging iteration to get the progress bar
         save(n, n_st)
 
@@ -83,6 +83,11 @@ with program() as rabi:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
+from simulation_backend import simulate_program
+q1, q2, = simulate_program(rabi, num_shots=10_000)
+plt.plot(a_vec, q1)
+plt.plot(a_vec, q2)
+plt.show()
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 ###########################
