@@ -1,13 +1,12 @@
 # %%
 """
-        Cross-Resonance Time Rabi with single-qubit Quantum State Tomography
+                                    Cross-Resonance Time Rabi
 The sequence consists two consecutive pulse sequences with the qubit's thermal decay in between.
 In the first sequence, we set the control qubit in |g> and play a rectangular cross-resonance pulse to
 the target qubit; the cross-resonance pulse has a variable duration. In the second sequence, we initialize the control
 qubit in |e> and play the variable duration cross-resonance pulse to the target qubit. Note that in
 the second sequence after the cross-resonance pulse we send a x180_c pulse. With it, the target qubit starts
-in |g> in both sequences when CR lenght -> zero. At the end of both sequences we perform single-qubit Quantum
- State Tomography on the target qubit.
+in |g> in both sequences when CR lenght -> zero.
 
 Prerequisites:
     - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
@@ -28,9 +27,11 @@ import matplotlib.pyplot as plt
 from qualang_tools.loops import from_array
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results.data_handler import DataHandler
 from macros import qua_declaration, multiplexed_readout, one_qb_QST, plot_1qb_tomography_results
 import warnings
 import matplotlib
+import time
 
 matplotlib.use("TKAgg")
 warnings.filterwarnings("ignore")
@@ -38,20 +39,22 @@ warnings.filterwarnings("ignore")
 ###################
 # The QUA program #
 ###################
-t_vec = np.arange(4, 200, 2) # in clock cylcle = 4ns
-n_avg = 1000 # num of iterations
 resonators = [1, 2] # rr1, rr2
+t_vec_clock = np.arange(8, 400, 4) # in clock cylcle = 4ns
+t_vec_ns = t_vec_clock # in clock cylcle = 4ns
+n_avg = 1000
+
 
 with program() as cr_time_rabi_one_qst:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
     t = declare(int)
-    c = declare(int)
-    s = declare(int)
-    
+    s = declare(int)  # QUA variable for the control state
+    c = declare(int)  # QUA variable for the projection index in QST
+
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
-        with for_(*from_array(t, t_vec)):
-            with for_(c, 0, c < 3, c + 1):
+        with for_(*from_array(t, t_vec_clock)):
+            with for_(c, 0, c < 2, c + 1): # bases 
                 with for_(s, 0, s < 2, s + 1): # states
                     with if_(s == 1):
                         play("x180", "q1_xy")
@@ -61,7 +64,6 @@ with program() as cr_time_rabi_one_qst:
                     reset_phase("cr_c1t2")
                     play("square_positive", "cr_c1t2", duration=t)
                     align()
-                    # Target
                     one_qb_QST("q2_xy", pi_len, c)
                     align()
                     # Measure the state of the resonators
@@ -74,8 +76,8 @@ with program() as cr_time_rabi_one_qst:
     with stream_processing():
         n_st.save("n")
         for r, rr in enumerate(resonators):
-            I_st[r].buffer(2).buffer(3).buffer(len(t_vec)).average().save(f"I{rr}")
-            Q_st[r].buffer(2).buffer(3).buffer(len(t_vec)).average().save(f"Q{rr}")
+            I_st[r].buffer(2).buffer(3).buffer(len(t_vec_clock)).average().save(f"I{rr}")
+            Q_st[r].buffer(2).buffer(3).buffer(len(t_vec_clock)).average().save(f"Q{rr}")
 
 
 #####################################
@@ -88,7 +90,8 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 
-simulate = True
+simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -103,18 +106,63 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(cr_time_rabi_one_qst)
     # Prepare the figure for live plotting
-    fig = plt.figure()
+    fig, axss = plt.subplots(3, 2, figsize=(8, 8), sharex=True)
     interrupt_on_close(fig, job)
     # Tool to easily fetch results from the OPX (results_handle used in it)
     results = fetching_tool(job, ["n", "I1", "Q1", "I2", "Q2"], mode="live")
     # Live plotting
     while results.is_processing():
+        start_time = results.get_start_time()
         # Fetch results
         n, I1, Q1, I2, Q2 = results.fetch_all()
         # Progress bar
         progress_counter(n, n_avg, start_time=results.start_time)
-        # Plot tomography
-        plot_1qb_tomography_results(I2, times * 4)
+        # calculate the elapsed time
+        elapsed_time = time.time() - start_time
+        # Convert the results into Volts
+        I1, Q1 = u.demod2volts(I1, readout_len), u.demod2volts(Q1, readout_len)
+        I2, Q2 = u.demod2volts(I2, readout_len), u.demod2volts(Q2, readout_len)
+        # Plots
+        plt.suptitle("echo CR Time Rabi")
+        for i, (axs, bss) in enumerate(zip(axss, ["X", "y", "z"])):
+            for ax, q in zip(axs, ["c", "t"]):
+                I = I1 if q == "c" else I2
+                ax.cla()
+                for j, st in enumerate(["0", "1"]):
+                    ax.plot(t_vec_ns, I[:, i, j], label=[f"|{st}>"])
+                ax.legend(["0", "1"])
+                ax.set_title(f"Q_{q}") if i == 0 else None
+                ax.set_xlabel("cr durations [ns]") if i == 2 else None
+                ax.set_ylabel(f"I quadrature of <{bss}> [V]") if q == "c" else None
+        plt.tight_layout()
+        plt.pause(0.1)
+
+    if save_data:
+        # Arrange data to save
+        data = {
+            "fig_live": fig,
+            "t_vec_ns": t_vec_ns,
+            "I1": I1,
+            "I1": I1,
+            "Q1": Q1,
+            "Q2": Q2,
+            "iteration": np.array([n]),  # convert int to np.array of int
+            "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
+        }
+
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
+
     # Close the quantum machines at the end
     qm.close()
 

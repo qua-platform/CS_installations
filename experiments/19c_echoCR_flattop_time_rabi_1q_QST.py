@@ -2,7 +2,7 @@
 """
         echo-Cross-Resonance Time Rabi with single-qubit Quantum State Tomography
     The sequence consists two consecutive pulse sequences with the qubit's thermal decay in between.
-In the first sequence, we set the control qubit in |g> and play a rectangular echo-cross-resonance pulse to
+In the first sequence, we set the control qubit in |g> and play a flattop with gaussian rise echo-cross-resonance pulse to
 the target qubit; the echo-cross-resonance pulse has a variable duration. In the second sequence, we initialize the control
 qubit in |e> and play the variable duration echo-cross-resonance pulse to the target qubit. At the end of both
 sequences we perform single-qubit Quantum State Tomography on the target qubit.
@@ -19,6 +19,7 @@ Prerequisites:
 Reference: A. D. Corcoles et al., Phys. Rev. A 87, 030301 (2013)
 
 """
+
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
 from qm import SimulationConfig
@@ -38,6 +39,30 @@ import time
 matplotlib.use("TKAgg")
 warnings.filterwarnings("ignore")
 
+
+####################
+# Helper functions #
+####################
+def play_flattop(cr: str, duration: int, sign: str):
+    """
+    QUA macro to play a gapless flat_top gaussian
+    """
+    if sign == "positive":
+        wait(17, cr + "_twin")
+        play("gaussian_rise", cr + "_twin")
+        wait(int(cr_c1t2_rise_fall_len // 4), cr)
+        play("flattop", cr, duration=duration)
+        wait(duration, cr + "_twin")
+        play("gaussian_fall", cr + "_twin")
+    elif sign == "negative":
+        wait(17, cr + "_twin")
+        play("gaussian_rise" * amp(-1), cr + "_twin")
+        wait(int(cr_c1t2_rise_fall_len // 4), cr)
+        play("flattop" * amp(-1), cr, duration=duration)
+        wait(duration, cr + "_twin")
+        play("gaussian_fall" * amp(-1), cr + "_twin")
+
+
 ###################
 # The QUA program #
 ###################
@@ -47,43 +72,37 @@ t_vec_ns = t_vec_clock # in clock cylcle = 4ns
 n_avg = 1000
 
 
-with program() as cr_time_rabi_one_qst:
+with program() as CR_time_rabi_one_qst:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
-    t = declare(int)
+    t = declare(int)  # QUA variable for the qubit pulse duration
     s = declare(int)  # QUA variable for the control state
     c = declare(int)  # QUA variable for the projection index in QST
-    
+
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
         with for_(*from_array(t, t_vec_clock)):
-            with for_(c, 0, c < 3, c + 1): # bases 
+            with for_(c, 0, c < 3, c + 1): # bases
                 with for_(s, 0, s < 2, s + 1): # states
                     with if_(s == 1):
                         play("x180", "q1_xy")
                         align()
-                    #                           ____           ____ 
-                    # Control(fC): ____________| pi |_________| pi |_______________
-                    #                  ________                      _____
-                    #      CR(fT): ___|        |_____          _____| QST |________
-                    #                                |________|            _____
-                    # Readout(fR): _______________________________________|     |__
-                    reset_phase("cr_c1t2")
-                    play("square_positive", "cr_c1t2", duration=t >> 1)
+
+                    # control - CR
+                    play_flattop("cr_c1t2", duration=t >> 1, sign="positive")
                     align()
                     play("x180", "q1_xy")
                     align()
-                    play("square_negative", "cr_c1t2", duration=t >> 1)
+                    play_flattop("cr_c1t2", duration=t >> 1, sign="negative")
                     align()
                     play("x180", "q1_xy")
                     align()
                     one_qb_QST("q2_xy", pi_len, c)
                     align()
                     # Measure the state of the resonators
-                    multiplexed_readout(I, I_st, Q, Q_st, resonators=resonators, weights="")
-                    # multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
+                    multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
                     # Wait for the qubit to decay to the ground state
                     wait(thermalization_time * u.ns)
-    
+
     with stream_processing():
         n_st.save("n")
         for r, rr in enumerate(resonators):
@@ -96,7 +115,6 @@ with program() as cr_time_rabi_one_qst:
 #####################################
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
-
 ###########################
 # Run or Simulate Program #
 ###########################
@@ -107,15 +125,14 @@ save_data = True
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, cr_time_rabi_one_qst, simulation_config)
-    job.get_simulated_samples().con1.plot(analog_ports=['1', '2', '3', '4', '5', '6'])
-    plt.show()
+    job = qmm.simulate(config, CR_time_rabi_one_qst, simulation_config)
+    job.get_simulated_samples().con1.plot()
 
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(cr_time_rabi_one_qst)
+    job = qm.execute(CR_time_rabi_one_qst)
     # Prepare the figure for live plotting
     fig, axss = plt.subplots(3, 2, figsize=(8, 8), sharex=True)
     interrupt_on_close(fig, job)
@@ -133,9 +150,8 @@ else:
         # Convert the results into Volts
         I1, Q1 = u.demod2volts(I1, readout_len), u.demod2volts(Q1, readout_len)
         I2, Q2 = u.demod2volts(I2, readout_len), u.demod2volts(Q2, readout_len)
-
         # Plots
-        plt.suptitle("echo CR Time Rabi")
+        plt.suptitle("echo CR flattop Time Rabi")
         for i, (axs, bss) in enumerate(zip(axss, ["X", "y", "z"])):
             for ax, q in zip(axs, ["c", "t"]):
                 I = I1 if q == "1" else I2
@@ -177,8 +193,5 @@ else:
 
     # Close the quantum machines at the end
     qm.close()
-
-# %%
-
 
 # %%

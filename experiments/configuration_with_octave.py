@@ -547,6 +547,14 @@ config = {
                 "Q": "zero_wf",
             },
         },
+        "cr_c2t1_square_negative_pulse": {
+            "operation": "control",
+            "length": cr_c2t1_square_negative_len,
+            "waveforms": {
+                "I": "cr_c2t1_square_negative_wf",
+                "Q": "zero_wf",
+            },
+        },
         "cr_c1t2_square_positive_half_pulse": {
             "operation": "control",
             "length": cr_c1t2_square_positive_half_len,
