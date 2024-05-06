@@ -139,6 +139,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 ###########################
 
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -182,24 +183,25 @@ else:
 
     qm.close()
 
-    # Arrange data to save
-    data = {
-        "fig_live": fig,
-        "state_c": state_c,
-        "state_t": state_t,
-    }
+    if save_data:
+        # Arrange data to save
+        data = {
+            "fig_live": fig,
+            "state_c": state_c,
+            "state_t": state_t,
+        }
 
-    # Initialize the DataHandler
-    script_name = Path(__file__).name
-    data_handler = DataHandler(root_data_folder=save_dir)
-    data_handler.create_data_folder(name=Path(__file__).stem)
-    data_handler.additional_files = {
-        script_name: script_name,
-        "configuration_with_octave.py": "configuration_with_octave.py",
-        "calibration_db.json": "calibration_db.json",
-        "optimal_weights.npz": "optimal_weights.npz",
-    }
-    # Save results
-    data_folder = data_handler.save_data(data=data)
+        # Initialize the DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+        data_handler.additional_files = {
+            script_name: script_name,
+            "configuration_with_octave.py": "configuration_with_octave.py",
+            "calibration_db.json": "calibration_db.json",
+            "optimal_weights.npz": "optimal_weights.npz",
+        }
+        # Save results
+        data_folder = data_handler.save_data(data=data)
 
 # %%
