@@ -256,10 +256,24 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
             else:
                 p0 = params_init[st]
 
-            self.params_fitted[st], _ = self._fit_bloch_vec_evolution(
-                xyz=self.crqst_data_dict[st],
-                p0=p0,
-            )
+            import itertools
+            
+            signss = itertools.product([-1, 1], repeat=len(p0))
+            errs = []
+            params_fitted_list = []
+            for signs in signss:
+                params_fitted, _ = self._fit_bloch_vec_evolution(
+                    xyz=self.crqst_data_dict[st],
+                    p0=np.array(signs) * p0,
+                )
+                crqst_fitted_dict = self.compute_XYZ(self.ts, *params_fitted)
+                err = np.array([((crqst_fitted_dict[bss] - self.crqst_data_dict[st][bss]) ** 2).sum() for bss in TARGET_BASES]).sum()
+                errs.append(err)
+                params_fitted_list.append(params_fitted)
+                #print(signs, err, np.linalg.norm(params_fitted), params_fitted,)
+            
+            idx_best_fit = np.argmin(np.array(errs))
+            self.params_fitted[st] = params_fitted_list[idx_best_fit]
             # for clarity
             self.params_fitted_dict[st] = {nm: p for nm, p in zip(PARAM_NAMES, self.params_fitted[st])}
 
@@ -406,3 +420,17 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
         plt.show()
 
         return fig
+
+
+def plot_crqst_result(t_vec_ns, crqst_data_c, crqst_data_t, fig, axss):
+    # control qubit
+    fig = CRHamiltonianTomographyAnalysis(
+        ts=t_vec_ns,
+        crqst_data=crqst_data_c,
+    ).plot_data(fig, axss[:, 0], label="control")
+    # target qubit
+    fig = CRHamiltonianTomographyAnalysis(
+        ts=t_vec_ns,
+        crqst_data=crqst_data_t,
+    ).plot_data(fig, axss[:, 1], label="target")
+    return fig
