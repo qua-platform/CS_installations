@@ -2,13 +2,13 @@ from typing import List
 
 import qm
 
+from qualang_tools.simulator.quantum.architectures import TransmonSettings
 from qualang_tools.simulator.quantum.architectures.from_qua_channels import (
     TransmonPairBackendChannelIQ, ChannelType, TransmonPairBackendChannelReadout)
 from qualang_tools.simulator.quantum.architectures.transmon_pair import TransmonPair
 from qualang_tools.simulator.quantum.architectures.transmon_pair_backend_from_qua import TransmonPairBackendFromQUA
 from qualang_tools.simulator.quantum.architectures.transmon_pair_settings import TransmonPairSettings
 from qualang_tools.simulator.quantum import simulate
-from quantum_environment.transmon_settings import TransmonSettings
 from tests.test_quantum_simulator.conftest import _freq_from_qua_config
 from configuration_with_octave import config
 
