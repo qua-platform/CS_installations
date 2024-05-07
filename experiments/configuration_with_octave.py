@@ -98,8 +98,8 @@ saturation_amp = 0.125 # V
 pi_len = 260 # ns
 assert pi_len % 5 == 0
 pi_sigma = pi_len / 5
-pi_amp_q1 = 0.0215
-pi_amp_q2 = 0.0185
+pi_amp_q1 = 0.0215*4
+pi_amp_q2 = 0.0185*4
 # pi_amp_q1 = 0.125
 # pi_amp_q2 = 0.125
 

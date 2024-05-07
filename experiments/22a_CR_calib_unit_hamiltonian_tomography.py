@@ -81,7 +81,7 @@ nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
 thresholds = [ge_threshold_q1, ge_threshold_q2]
-t_vec = np.arange(26, 8*1400, 8*16) # in clock cylcle = 4ns
+t_vec = np.arange(26, 4*1400, 256) # in clock cylcle = 4ns
 n_avg = 1  # num of iterations
 
 assert len(qubit_suffixes) == nb_of_qubits
@@ -127,7 +127,7 @@ with program() as cr_calib:
                     # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t/2, rr1=0, rr2=0
                     play("x180", "q1_xy")
                     # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t/2+p/4, rr1=0, rr2=0
-                    wait(pi_len, "cr_c1t2")
+                    wait(pi_len >> 2, "cr_c1t2")
                     # q1_xy=t/2+p/4, q2_xy=0, cr_c1t2=t+p/4, rr1=0, rr2=0
                     play("square_negative", "cr_c1t2", duration=t_half)
                     # q1_xy=t+p/4, q2_xy=0, cr_c1t2=t+p/4, rr1=0, rr2=0
@@ -135,7 +135,7 @@ with program() as cr_calib:
                     # q1_xy=t+p/2, q2_xy=0, cr_c1t2=t+p/4, rr1=0, rr2=0
                     play("x180", "q1_xy")
                     # q1_xy=t+p/2, q2_xy=t+p/2, cr_c1t2=t+p/4, rr1=t+p/2, rr2=t+p/2
-                    wait(t + (pi_len << 1), "q2_xy", "rr1", "rr2")
+                    wait(t + (pi_len >> 1), "q2_xy", "rr1", "rr2")
                     
                     # q1_xy=t+3*p/4, q2_xy=t+p/2, cr_c1t2=t+p/4, rr1=t+p/2, rr2=t+p/2
                     if bss == "x":
@@ -143,10 +143,10 @@ with program() as cr_calib:
                     elif bss == "y":
                         play("x90", "q2_xy")
                     else:
-                        wait(pi_len, "q2_xy")
+                        wait(pi_len >> 2, "q2_xy")
 
                     # q1_xy=t+3*p/4, q2_xy=t+3*p/4, cr_c1t2=t+p/4, rr1=t+3*p/4, rr2=t+3*p/4
-                    wait(pi_len, "rr1", "rr2")
+                    wait(pi_len >> 2, "rr1", "rr2")
 
                     # Measure the state of the resonators
                     # Make sure you updated the ge_threshold and angle if you want to use state discrimination

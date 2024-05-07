@@ -39,8 +39,8 @@ warnings.filterwarnings("ignore")
 ###################
 # The QUA program #
 ###################
-t_vec = np.arange(4, 200, 2) # in clock cylcle = 4ns
-n_avg = 1000 # num of iterations
+t_vec = np.arange(4, 5*1400, 128) # in clock cylcle = 4ns
+n_avg = 1 # num of iterations
 resonators = [1, 2] # rr1, rr2
 
 with program() as cr_time_rabi_one_qst:
@@ -79,7 +79,7 @@ with program() as cr_time_rabi_one_qst:
                     multiplexed_readout(I, I_st, Q, Q_st, resonators=resonators, weights="")
                     # multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
                     # Wait for the qubit to decay to the ground state
-                    wait(thermalization_time * u.ns)
+                    # wait(thermalization_time * u.ns)
     
     with stream_processing():
         n_st.save("n")
@@ -91,7 +91,7 @@ with program() as cr_time_rabi_one_qst:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+# qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 
 ###########################
@@ -108,24 +108,36 @@ if simulate:
     plt.show()
 
 else:
-    # Open the quantum machine
-    qm = qmm.open_qm(config)
-    # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(cr_time_rabi_one_qst)
-    # Prepare the figure for live plotting
-    fig = plt.figure()
-    interrupt_on_close(fig, job)
-    # Tool to easily fetch results from the OPX (results_handle used in it)
-    results = fetching_tool(job, ["n", "I1", "Q1", "I2", "Q2"], mode="live")
-    # Live plotting
-    while results.is_processing():
-        # Fetch results
-        n, I1, Q1, I2, Q2 = results.fetch_all()
-        # Progress bar
-        progress_counter(n, n_avg, start_time=results.start_time)
-        # Plot tomography
-        plot_1qb_tomography_results(I2, times * 4)
+    # # Open the quantum machine
+    # qm = qmm.open_qm(config)
+    # # Send the QUA program to the OPX, which compiles and executes it
+    # job = qm.execute(cr_time_rabi_one_qst)
+    # # Prepare the figure for live plotting
+    # fig = plt.figure()
+    # interrupt_on_close(fig, job)
+    # # Tool to easily fetch results from the OPX (results_handle used in it)
+    # results = fetching_tool(job, ["n", "I1", "Q1", "I2", "Q2"], mode="live")
+    # # Live plotting
+    # while results.is_processing():
+    #     # Fetch results
+    #     n, I1, Q1, I2, Q2 = results.fetch_all()
+    #     # Progress bar
+    #     progress_counter(n, n_avg, start_time=results.start_time)
+    #     # Plot tomography
+
+    from simulation_backend import simulate_program
+
+    results = simulate_program(cr_time_rabi_one_qst, num_shots=100_000, plot_schedules=[0,1,2,3])
+    results = np.array(results)
+    results = results.reshape(
+        2,  # num_qubits
+        len(t_vec),
+        3,  # bases
+        2,  # control states
+    )
+    I2 = results[1]
+    # Plot tomography
+    plot_1qb_tomography_results(I2, t_vec * 4)
     # Close the quantum machines at the end
-    qm.close()
 
 # %%
