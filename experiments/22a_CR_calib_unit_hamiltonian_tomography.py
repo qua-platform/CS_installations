@@ -81,7 +81,7 @@ nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
 thresholds = [ge_threshold_q1, ge_threshold_q2]
-t_vec = np.arange(26, 4*1400, 256) # in clock cylcle = 4ns
+t_vec = np.arange(26, 5*1400, 128) # in clock cylcle = 4ns
 n_avg = 1  # num of iterations
 
 assert len(qubit_suffixes) == nb_of_qubits
@@ -212,8 +212,8 @@ else:
     #     # control qubit
 
     from simulation_backend import simulate_program
-    results = simulate_program(cr_calib, num_shots=10_000, plot_schedules=[0,1,2,3,4])
-    results = np.array(results)
+    results = simulate_program(cr_calib, num_shots=5_000, plot_schedules=[0,1,2,3,4])
+    results = 2*np.array(results) - 1
     results = results.reshape(
         nb_of_qubits,
         len(t_vec),

@@ -210,13 +210,17 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
         spectrum = np.abs(np.fft.fft(data - data.mean()))
 
         # Find peaks in the frequency spectrum (DC removed alraedy)
-        peaks, _ = find_peaks(spectrum, prominence=0.1 * N)
+        peaks, _ = find_peaks(spectrum, prominence=0.05 * N)
         if len(peaks) == 0:
             print("the data should have more than 1 period")
-        highest_peak_idx = np.argmax(spectrum[peaks])
 
-        # Identify dominant frequency (peak frequency)
-        return freq[peaks[highest_peak_idx]]
+        try:
+            highest_peak_idx = np.argmax(spectrum[peaks])
+            # Identify dominant frequency (peak frequency)
+            return freq[peaks[highest_peak_idx]]
+
+        except ValueError:
+            return 0
 
     def _pick_params_init(self, xyz):
         """
