@@ -83,8 +83,6 @@ assert np.all(t_vec_clock % 2 == 0) and (t_vec_clock.min() >= 8), "t_vec_clock s
 
 with program() as cr_calib:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
-    state = [declare(bool) for _ in range(nb_of_qubits)]
-    state_st = [declare_stream() for _ in range(nb_of_qubits)]
     t = declare(int)
     c = declare(int)
     s = declare(int)
@@ -135,21 +133,28 @@ with program() as cr_calib:
 
                     # Wait for the qubit to decay to the ground state
                     wait(thermalization_time * u.ns)
-                    # Make sure you updated the ge_threshold
-                    for q in range(nb_of_qubits):
-                        assign(state[q], I[q] > thresholds[q])
-                        save(state[q], state_st[q])
+                    # # Make sure you updated the ge_threshold
+                    # for q in range(nb_of_qubits):
+                    #     assign(state[q], I[q] > thresholds[q])
+                    #     save(state[q], state_st[q])
 
     with stream_processing():
         n_st.save("n")
         for q in range(nb_of_qubits):
-            state_st[q]\
+            I_st[q]\
                 .boolean_to_int()\
                 .buffer(len(CONTROL_STATES))\
                 .buffer(len(TARGET_BASES))\
                 .buffer(len(t_vec_clock))\
                 .average()\
-                .save(f"crqst_data_{qubit_suffixes[q]}")
+                .save(f"I{qubit_suffixes[q]}")
+            Q_st[q]\
+                .boolean_to_int()\
+                .buffer(len(CONTROL_STATES))\
+                .buffer(len(TARGET_BASES))\
+                .buffer(len(t_vec_clock))\
+                .average()\
+                .save(f"Q{qubit_suffixes[q]}")
 
 
 #####################################
