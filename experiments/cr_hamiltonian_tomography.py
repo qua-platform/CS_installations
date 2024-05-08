@@ -1,4 +1,5 @@
 import numpy as np
+import itertools
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
@@ -8,6 +9,20 @@ CONTROL_STATES = ["0", "1"] # control state: 0 or 1
 TARGET_BASES = ["x", "y", "z"] # target basiss x, y, z
 PARAM_NAMES = ["delta", "omega_x", "omega_y"]
 PAULI_2Q = ["IX", "IY", "IZ", "ZX", "ZY", "ZZ"]
+
+# generate a set of points on sphere for initial values for delta, omega_x, omega_y
+signss = itertools.product([-1, 1], repeat=3)
+# pick a non polar point
+p0_center = [np.cos(np.pi/4), np.sin(np.pi/4) * np.cos(np.pi/4), np.sin(np.pi/4) * np.sin(np.pi/4)]
+p0_centers = [np.array(signs) * p0_center for signs in signss]
+# polar points
+p0_poles = [np.array(p0) * sign for p0 in [(1, 0, 0), (0, 1, 0), (0, 0, 1)] for sign in [-1, 1]]
+# concatenate the two kinds
+p0s = p0_centers + p0_poles
+# scale the prepared points to expand the initial values
+scales = np.arange(0.9, 1.15, 0.05)
+# a set of initial values
+P0s = [scale * p0 for p0 in p0s for scale in scales]
 
 
 class CRHamiltonianTomographyFunctions:
@@ -214,7 +229,7 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
         # Identify dominant frequency (peak frequency)
         return freq[peaks[highest_peak_idx]]
 
-    def _pick_params_init(self, xyz):
+    def _pick_params_inits(self, xyz):
         """
         Choose initial parameter estimates for the fitting process based on frequency analysis.
 
@@ -227,51 +242,37 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
         freq_init = np.median(np.array(freq_inits))
 
         # omega_init = initial value for sqrt(delta ** 2 + omega_x ** 2 + omega_y ** 2)
-        # we pick the initial value for each parameter only from all positives
-        theta, phi = 0.5 * np.pi * np.random.rand(2)
-        return (
-            2 * np.pi * freq_init
-            * np.array(
-                [
-                    np.cos(theta),  # delta
-                    np.sin(theta) * np.cos(phi),  # omega_x
-                    np.sin(theta) * np.sin(phi),  # omega_y
-                ]
-            )
-        )
+        return [2 * np.pi * freq_init * p0 for p0 in P0s]
 
-    def fit_params(self, params_init=None, random_state=0, do_print=True):
+    def fit_params(self, params_init=None, do_print=True):
         """
         Fit the Hamiltonian parameters for each state and compute interaction rates.
 
         :param params_init: Initial parameter estimates (optional).
-        :param random_state: Seed for the random number generator.
         :param _print: Boolean flag to control the printing of fitting results.
         :return: Self.
         """
         for st in CONTROL_STATES:
-            if params_init is None:
-                np.random.seed(random_state) # seed to pick a random (theta, phi)
-                p0 = self._pick_params_init(xyz=self.crqst_data_dict[st])
-            else:
-                p0 = params_init[st]
+            p0 = self._pick_params_inits(xyz=self.crqst_data_dict[st])
 
-            import itertools
+            # prepare a set of initial values
+            p0s = self._pick_params_inits(self, p0)
             
-            signss = itertools.product([-1, 1], repeat=len(p0))
+            # fit the model
             errs = []
             params_fitted_list = []
-            for signs in signss:
+            for p0 in p0s:
                 params_fitted, _ = self._fit_bloch_vec_evolution(
                     xyz=self.crqst_data_dict[st],
-                    p0=np.array(signs) * p0,
+                    p0=p0,
                 )
                 crqst_fitted_dict = self.compute_XYZ(self.ts, *params_fitted)
+                # squared error
                 err = np.array([((crqst_fitted_dict[bss] - self.crqst_data_dict[st][bss]) ** 2).sum() for bss in TARGET_BASES]).sum()
                 errs.append(err)
                 params_fitted_list.append(params_fitted)
-                #print(signs, err, np.linalg.norm(params_fitted), params_fitted,)
             
+            # pick the best fitted (minimal error)
             idx_best_fit = np.argmin(np.array(errs))
             self.params_fitted[st] = params_fitted_list[idx_best_fit]
             # for clarity
