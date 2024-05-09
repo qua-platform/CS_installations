@@ -233,7 +233,6 @@ if save_data:
         "t_vec_clock_ns": t_vec_ns,
         "crqst_data_c": results[0,:,:,:],
         "crqst_data_t": results[1,:,:,:],
-        "random_state": SEED,
     }
     data.update(crht.params_fitted_dict)
     data.update(crht.interaction_coeffs)
