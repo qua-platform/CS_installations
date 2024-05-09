@@ -50,7 +50,7 @@ from macros import qua_declaration, multiplexed_readout, one_qb_QST, plot_1qb_to
 import warnings
 import matplotlib
 from qualang_tools.results.data_handler import DataHandler
-from cr_hamiltonian_tomography import CRHamiltonianTomographyAnalysis, TARGET_BASES, CONTROL_STATES
+from cr_hamiltonian_tomography import CRHamiltonianTomographyAnalysis, plot_crqst_result, TARGET_BASES, CONTROL_STATES
 
 matplotlib.use("TKAgg")
 warnings.filterwarnings("ignore")
@@ -71,9 +71,9 @@ nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
 thresholds = [ge_threshold_q1, ge_threshold_q2]
-t_vec_clock = np.arange(8, 200, 4) # in clock cylcle = 4ns
+t_vec_clock = np.arange(8, 200, 4) # np.arange(8, 8000, 256) for simulate_dynamics
 t_vec_ns = 4 * t_vec_clock
-n_avg = 100 # num of iterations
+n_avg = 1 # num of iterations
 
 assert len(qubit_suffixes) == nb_of_qubits
 assert len(resonators) == nb_of_qubits
@@ -133,23 +133,17 @@ with program() as cr_calib:
 
                     # Wait for the qubit to decay to the ground state
                     wait(thermalization_time * u.ns)
-                    # # Make sure you updated the ge_threshold
-                    # for q in range(nb_of_qubits):
-                    #     assign(state[q], I[q] > thresholds[q])
-                    #     save(state[q], state_st[q])
 
     with stream_processing():
         n_st.save("n")
         for q in range(nb_of_qubits):
             I_st[q]\
-                .boolean_to_int()\
                 .buffer(len(CONTROL_STATES))\
                 .buffer(len(TARGET_BASES))\
                 .buffer(len(t_vec_clock))\
                 .average()\
                 .save(f"I{qubit_suffixes[q]}")
             Q_st[q]\
-                .boolean_to_int()\
                 .buffer(len(CONTROL_STATES))\
                 .buffer(len(TARGET_BASES))\
                 .buffer(len(t_vec_clock))\
@@ -168,6 +162,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 ###########################
 
 simulate = False
+simulate_dynamics = True
 save_data = True
 
 if simulate:
@@ -177,7 +172,25 @@ if simulate:
     job.get_simulated_samples().con1.plot(analog_ports=['1', '2', '3', '4', '5', '6'])
     plt.show()
 
+elif simulate_dynamics:
+    # Prepare the figure for live plotting
+    assert n_avg == 1, "set n_avg = 1 to keep the simulation fast" 
+    from simulation_backend import simulate_program
+    fig, axss = plt.subplots(4, 2, figsize=(10, 10))
+    results = simulate_program(cr_calib, num_shots=5_000, plot_schedules=[0,1,2,3,4,5])
+    results = -2*np.array(results) + 1 # rescale the results from [0, 1] to [-1, 1] with multiplying minus
+    results = results.reshape(
+        nb_of_qubits,
+        len(t_vec_ns),
+        len(TARGET_BASES),
+        len(CONTROL_STATES),
+    )
+    I1, I2 = results[0,:,:,:], results[1,:,:,:]
+    fig = plot_crqst_result(t_vec_ns, I1, I2, fig, axss)
+    plt.tight_layout()
+
 else:
+    # # Prepare the figure 
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
@@ -186,29 +199,20 @@ else:
     fig, axss = plt.subplots(4, 2, figsize=(10, 10))
     interrupt_on_close(fig, job)
     # Tool to easily fetch results from the OPX (results_handle used in it)
-    results = fetching_tool(job, ["n", "crqst_data_c", "crqst_data_t"], mode="live")
+    results = fetching_tool(job, ["n", "I1", "Q1", "I2", "Q2"], mode="live")
     # Live plotting
     while results.is_processing():
         # Fetch results
-        n, crqst_data_c, crqst_data_t = results.fetch_all()
+        n, I1, Q1, I2, Q2 = results.fetch_all()
         # Progress bar
         progress_counter(n, n_avg, start_time=results.start_time)
         # plotting data
         # control qubit
-        fig = CRHamiltonianTomographyAnalysis(
-            ts=t_vec_ns,
-            crqst_data=crqst_data_c,
-        ).plot_data(fig, axss[:, 0], label="control")
-        # target qubit
-        fig = CRHamiltonianTomographyAnalysis(
-            ts=t_vec_ns,
-            crqst_data=crqst_data_t,
-        ).plot_data(fig, axss[:, 1], label="target")
+        fig = plot_crqst_result(t_vec_ns, I1, I2, fig, axss)
         plt.tight_layout()
         plt.pause(0.1)
 
-    plt.show()
-
+if not simulate:
     # TODO: Delete (loading dummy data for test)
     test_data = np.load("./crht_test_data/data.npz")
     t_vec_ns = test_data["t_vec_ns"]
@@ -216,13 +220,13 @@ else:
     crqst_data_t = test_data["crqst_data_t"] # len(t_vec_clock) x len(target_bases) x len(control_states)
 
     # cross resonance Hamiltonian tomography analysis
-    SEED = 0
     crht = CRHamiltonianTomographyAnalysis(
         ts=t_vec_ns,
-        crqst_data=crqst_data_t, # target data
+        crqst_data=I2, # target data
     )
-    crht.fit_params(random_state=SEED)
+    crht.fit_params()
     fig_analysis = crht.plot_fit_result()
+    plt.show()
 
     # close the quantum machines at the end
     qm.close()
@@ -233,9 +237,12 @@ else:
             "fig_live": fig,
             "fig_analysis": fig_analysis,
             "t_vec_clock_ns": t_vec_ns,
-            "crqst_data_c": crqst_data_c,
-            "crqst_data_t": crqst_data_t,
-            "random_state": SEED,
+            "crqst_data_c": I1,
+            "crqst_data_t": I2,
+            "I1": I1,
+            "Q1": Q1,
+            "I2": I2,
+            "Q2": Q2,
         }
         data.update(crht.params_fitted_dict)
         data.update(crht.interaction_coeffs)

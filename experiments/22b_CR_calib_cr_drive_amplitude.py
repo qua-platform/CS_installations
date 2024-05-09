@@ -52,7 +52,10 @@ from macros import qua_declaration, multiplexed_readout, one_qb_QST, plot_1qb_to
 import warnings
 import matplotlib
 from qualang_tools.results.data_handler import DataHandler
-from cr_hamiltonian_tomography import CRHamiltonianTomographyAnalysis, TARGET_BASES, CONTROL_STATES, PAULI_2Q
+from cr_hamiltonian_tomography import (
+    CRHamiltonianTomographyAnalysis, plot_crqst_result, plot_interaction_coeffs, 
+    TARGET_BASES, CONTROL_STATES,
+)
 
 matplotlib.use("TKAgg")
 warnings.filterwarnings("ignore")
@@ -62,7 +65,7 @@ warnings.filterwarnings("ignore")
 # The QUA program #
 ###################
 
-def plot_cr_duration_vs_amplitude(crqst_data_c, crqst_data_t, t_vec_ns, a_vec, axss):
+def plot_cr_duration_vs_amplitude(I1, I2 t_vec_ns, a_vec, axss):
     data = 2 * [crqst_data_c] + 2 * [crqst_data_t]
     for i, (axs, bss) in enumerate(zip(axss, TARGET_BASES)):
         for j, (ax, dt, st) in enumerate(zip(axs, data, 2 * CONTROL_STATES)):
@@ -84,10 +87,10 @@ nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
 thresholds = [ge_threshold_q1, ge_threshold_q2]
-t_vec_clock = np.arange(8, 200, 4) # in clock cylcle = 4ns
+t_vec_clock = np.arange(8, 200, 4) # np.arange(8, 8000, 256) for simulate_dynamics
 t_vec_ns = 4 * t_vec_clock
-a_vec = np.arange(0.1, 2, 0.1) # scaling factor for amplitude
-n_avg = 100 # num of iterations
+a_vec = np.array([1]) #np.arange(0.1, 2, 0.1) # scaling factor for amplitude
+n_avg = 1 # num of iterations
 
 assert len(qubit_suffixes) == nb_of_qubits
 assert len(resonators) == nb_of_qubits
@@ -151,22 +154,24 @@ with program() as cr_calib:
 
                         # Wait for the qubit to decay to the ground state
                         wait(thermalization_time * u.ns)
-                        # Make sure you updated the ge_threshold
-                        for q in range(nb_of_qubits):
-                            assign(state[q], I[q] > thresholds[q])
-                            save(state[q], state_st[q])
 
     with stream_processing():
         n_st.save("n")
         for q in range(nb_of_qubits):
-            state_st[q]\
-                .boolean_to_int()\
+            I_st[q]\
                 .buffer(len(CONTROL_STATES))\
                 .buffer(len(TARGET_BASES))\
                 .buffer(len(t_vec_clock))\
                 .buffer(len(a_vec))\
                 .average()\
-                .save(f"crqst_data_{qubit_suffixes[q]}")
+                .save(f"I{qubit_suffixes[q]}")
+            Q_st[q]\
+                .buffer(len(CONTROL_STATES))\
+                .buffer(len(TARGET_BASES))\
+                .buffer(len(t_vec_clock))\
+                .buffer(len(a_vec))\
+                .average()\
+                .save(f"Q{qubit_suffixes[q]}")
 
 
 #####################################
@@ -180,6 +185,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 ###########################
 
 simulate = False
+simulate_dynamics = True
 save_data = True
 
 if simulate:
@@ -188,6 +194,24 @@ if simulate:
     job = qmm.simulate(config, cr_calib, simulation_config)
     job.get_simulated_samples().con1.plot(analog_ports=['1', '2', '3', '4', '5', '6'])
     plt.show()
+
+elif simulate_dynamics:
+    # Prepare the figure for live plotting
+    assert n_avg == 1, "set n_avg = 1 to keep the simulation fast" 
+    from simulation_backend import simulate_program
+    fig, axss = plt.subplots(4, 2, figsize=(10, 10))
+    results = simulate_program(cr_calib, num_shots=5_000, plot_schedules=[0,1,2,3,4,5])
+    results = -2*np.array(results) + 1 # rescale the results from [0, 1] to [-1, 1] with multiplying minus
+    results = results.reshape(
+        nb_of_qubits,
+        len(a_vec),
+        len(t_vec_ns),
+        len(TARGET_BASES),
+        len(CONTROL_STATES),
+    )
+    I1, I2 = results[0, ...], results[1, ...]
+    fig = plot_crqst_result(t_vec_ns, I1[0, ...], I2[0, ...], fig, axss) # plot only a_vec[0]
+    plt.tight_layout()
 
 else:
     # Open the quantum machine
@@ -198,44 +222,38 @@ else:
     fig, axss = plt.subplots(3, 4, figsize=(12, 9), sharex=True, sharey=True)
     interrupt_on_close(fig, job)
     # Tool to easily fetch results from the OPX (results_handle used in it)
-    results = fetching_tool(job, ["n", "crqst_data_c", "crqst_data_t"], mode="live")
+    results = fetching_tool(job, ["n", "I1", "Q1", "I2", "Q2"],  mode="live")
     # Live plotting
     while results.is_processing():
         # Fetch results
-        n, crqst_data_c, crqst_data_t = results.fetch_all()
+        n, I1, Q1, I2, Q2 = results.fetch_all()
         # Progress bar
         progress_counter(n, n_avg, start_time=results.start_time)
         # Plot cr_duration vs amplitude for Qc/Qt x Qc state x bases 
-        plot_cr_duration_vs_amplitude(crqst_data_c, crqst_data_t, t_vec_clock, a_vec, axss)
+        plot_cr_duration_vs_amplitude(I1, I2, t_vec_ns, a_vec, axss)
+
+if not simulate:
 
     # TODO: Delete (loading dummy data for test)
     test_data = np.load("./crht_test_data/data.npz")
     t_vec_ns = test_data["t_vec_ns"]
-    crqst_data_c = test_data["crqst_data_c"] # len(t_vec_clock) x len(target_bases) x len(control_states)
-    crqst_data_t = test_data["crqst_data_t"] # len(t_vec_clock) x len(target_bases) x len(control_states)
-    crqst_data_c = np.tile(crqst_data_c[None, ...], reps=[len(a_vec), 1, 1, 1]) # len(a_vec) x len(t_vec_clock) x 3 x 2
-    crqst_data_t = np.tile(crqst_data_t[None, ...], reps=[len(a_vec), 1, 1, 1]) # len(a_vec) x len(t_vec_clock) x 3 x 2
+    I1 = test_data["crqst_data_c"] # len(t_vec_clock) x len(target_bases) x len(control_states)
+    I2 = test_data["crqst_data_t"] # len(t_vec_clock) x len(target_bases) x len(control_states)
+    I1 = np.tile(I1[None, ...], reps=[len(a_vec), 1, 1, 1]) # len(a_vec) x len(t_vec_clock) x 3 x 2
+    I2 = np.tile(I2[None, ...], reps=[len(a_vec), 1, 1, 1]) # len(a_vec) x len(t_vec_clock) x 3 x 2
     
     # Perform CR Hamiltonian tomography
-    SEED = 0
     coeffs = []
     for a in range(len(a_vec)):
         crht = CRHamiltonianTomographyAnalysis(
             ts=t_vec_ns,
-            crqst_data=crqst_data_t[a, ...], # target data: len(a_vec) x len(t_vec_clock) x 3 x 2
+            crqst_data=I2[a, ...], # target data: len(a_vec) x len(t_vec_clock) x 3 x 2
         )
-        crht.fit_params(random_state=SEED, do_print=False)
+        crht.fit_params()
         coeffs.append(crht.interaction_coeffs)
 
     # Plot the estimated interaction coefficients
-    fig_analysis, ax = plt.subplots(1, 1, figsize=(6, 5))
-    coeffs_array_dict = {p: np.array([coeff[p] for coeff in coeffs]) for p in PAULI_2Q}
-    for p in PAULI_2Q:
-        ax.plot(a_vec, coeffs_array_dict[p])
-    ax.set_xlabel("amplitude")
-    ax.set_ylabel("interaction coefficients [MHz]")
-    ax.legend(PAULI_2Q)
-    plt.tight_layout()
+    fig_analysis = plot_interaction_coeffs(coeffs, a_vec, xlabel="cr amplitude")
     plt.show()
 
     qm.close()
@@ -247,9 +265,12 @@ else:
             "fig_analysis": fig_analysis,
             "t_vec_ns": t_vec_ns,
             "a_vec": a_vec,
-            "crqst_data_c": crqst_data_c,
-            "crqst_data_t": crqst_data_t,
-            "random_state": SEED,
+            "crqst_data_c": I1,
+            "crqst_data_t": I2,
+            "I1": I1,
+            "Q1": Q1,
+            "I2": I2,
+            "Q2": Q2,
         }
         data.update(crht.params_fitted_dict)
         data.update(crht.interaction_coeffs)

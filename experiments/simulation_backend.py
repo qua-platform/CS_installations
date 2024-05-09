@@ -56,6 +56,13 @@ channel_map = {
         operator_q=transmon_pair.transmon_2_drive_operator(quadrature='Q'),
         type=ChannelType.DRIVE
     ),
+    "cr_cancel_c1t2": TransmonPairBackendChannelIQ(
+        qubit_index=1,
+        carrier_frequency=qubit_2_freq,
+        operator_i=transmon_pair.transmon_2_drive_operator(quadrature='I'),
+        operator_q=transmon_pair.transmon_2_drive_operator(quadrature='Q'),
+        type=ChannelType.CONTROL
+    ),
     "rr1": TransmonPairBackendChannelReadout(0),
     "rr2": TransmonPairBackendChannelReadout(1),
 }

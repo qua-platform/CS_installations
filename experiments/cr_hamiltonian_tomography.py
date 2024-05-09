@@ -253,10 +253,8 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
         :return: Self.
         """
         for st in CONTROL_STATES:
-            p0 = self._pick_params_inits(xyz=self.crqst_data_dict[st])
-
             # prepare a set of initial values
-            p0s = self._pick_params_inits(p0)
+            p0s = self._pick_params_inits(xyz=self.crqst_data_dict[st])
             
             # fit the model
             errs = []
@@ -317,7 +315,7 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
             raise RuntimeError("some of the interaction coefficients have not been computed yet.")
         return self.interaction_coeffs
 
-    def plot_data(self, fig=None, axs=None, label="", show=False):
+    def plot_crqst_data(self, fig=None, axs=None, label="", show=False):
         """
         Plot the original measurement data along with the fitted data and interaction rates.
 
@@ -422,6 +420,24 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
 
         return fig
 
+
+def plot_interaction_coeffs(coeffs, xaxis, xlabel="amplitude", fig=None):
+    """
+    Plot the xaxis (amplitudes or phase) vs interaction rates.
+
+    :return: The matplotlib figure object containing the plots.
+    """
+    if fig is None: 
+        fig, ax = plt.subplots(1, 1, figsize=(6, 5))
+
+    coeffs_array_dict = {p: np.array([coeff[p] for coeff in coeffs]) for p in PAULI_2Q}
+    for p in PAULI_2Q:
+        ax.plot(xaxis, coeffs_array_dict[p])
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel("interaction coefficients [MHz]")
+    ax.legend(PAULI_2Q)
+    plt.tight_layout()
+    return fig
 
 def plot_crqst_result(t_vec_ns, crqst_data_c, crqst_data_t, fig, axss):
     # control qubit
