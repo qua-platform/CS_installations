@@ -256,7 +256,7 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
             p0 = self._pick_params_inits(xyz=self.crqst_data_dict[st])
 
             # prepare a set of initial values
-            p0s = self._pick_params_inits(self, p0)
+            p0s = self._pick_params_inits(p0)
             
             # fit the model
             errs = []
