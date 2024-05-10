@@ -17,6 +17,7 @@ qubit_2_freq = _freq_from_qua_config("q2_xy", config)
 print(f"Simulating with q1 resonant frequency {qubit_1_freq}")
 print(f"Simulating with q2 resonant frequency {qubit_2_freq}")
 
+# all frequencies are in Hz
 transmon_pair_settings = TransmonPairSettings(
     TransmonSettings(
         resonant_frequency=qubit_1_freq,

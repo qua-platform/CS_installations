@@ -117,7 +117,7 @@ else:
 
     from simulation_backend import simulate_program
 
-    results = simulate_program(cr_time_rabi_one_qst, num_shots=10_000)#, plot_schedules=[0,1,2])
+    results = simulate_program(cr_time_rabi_one_qst, num_shots=10_000, plot_schedules=[1])
     results = np.array(results)
     results = results.reshape(
         2,  # num_qubits

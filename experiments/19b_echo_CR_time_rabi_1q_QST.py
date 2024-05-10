@@ -39,7 +39,7 @@ warnings.filterwarnings("ignore")
 ###################
 # The QUA program #
 ###################
-t_vec = np.arange(4, 5*1400, 128) # in clock cylcle = 4ns
+t_vec = np.arange(4, 3*1400, 128) # in clock cylcle = 4ns
 n_avg = 1 # num of iterations
 resonators = [1, 2] # rr1, rr2
 
@@ -127,7 +127,7 @@ else:
 
     from simulation_backend import simulate_program
 
-    results = simulate_program(cr_time_rabi_one_qst, num_shots=100_000, plot_schedules=[0,1,2,3])
+    results = simulate_program(cr_time_rabi_one_qst, num_shots=10_000, plot_schedules=[0,1,2,3])
     results = np.array(results)
     results = results.reshape(
         2,  # num_qubits
