@@ -13,6 +13,7 @@ from qualang_tools.units import unit
 
 CONFIG_DIRECTORY = "config"
 
+
 def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOctaveConfig):
     """Create a QuAM with a number of qubits.
 

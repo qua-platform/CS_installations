@@ -1,7 +1,7 @@
 """
 A simple sandbox to showcase different QUA functionalities during the installation.
 """
-
+from matplotlib import pyplot as plt
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
@@ -51,3 +51,5 @@ else:
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it - Execute does not block python!
     job = qm.execute(hello_qua)
+
+plt.show()

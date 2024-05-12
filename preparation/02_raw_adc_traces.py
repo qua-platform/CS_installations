@@ -70,7 +70,7 @@ with program() as raw_trace_prog:
 # Run or Simulate Program #
 ###########################
 
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -120,3 +120,5 @@ else:
     rr1.opx_input_offset_Q -= np.mean(adc2)
     rr2.opx_input_offset_Q -= np.mean(adc2)
     machine.save(CONFIG_DIRECTORY)
+
+# plt.show()
