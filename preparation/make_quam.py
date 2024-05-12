@@ -1,3 +1,17 @@
+"""
+This file creates the template of a config for all the parameters in your
+superconducting qubit chip. By running this file as a script, a config
+directory can be created which stores a dictionary structure which reflects
+the components and parameters in your chip.
+
+Here you can change which components (e.g., Transmon, Z-Flux Line, Resonator)
+will be defined and how many to define.
+
+You should only run this once at the start of your installation, or if there
+is a fundamental change to the template (e.g., you connect a new device with
+different components).
+"""
+import os.path
 from pathlib import Path
 import json
 
@@ -25,30 +39,47 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
     """
     # Class containing tools to help handling units and conversions.
     u = unit(coerce_to_integer=True)
-    # Initiate the QuAM class
-    quam = QuAM()
 
-    # Add the Octave to the quam
+    quam = QuAM()  # QuAM root container object
+
     octave = Octave(
         name="octave1",
-        ip="172.16.33.101",
+        ip=ValueError(),
         port=11050,
     )
     quam.octave = octave
+
     octave.initialize_frequency_converters()
     # octave.print_summary()
     octave_config = octave.get_octave_config()
 
     # Define the connectivity
     quam.wiring = {
+        # Stage #1: Single-qubit control
         "qubits": [
             {
-                "port_I": ("con1", 3 * k + 3),
-                "port_Q": ("con1", 3 * k + 4),
-                "port_Z": ("con1", 3 * k + 5),
-            }
-            for k in range(num_qubits)  # TODO: what if k>2?
+                "port_I": ("con1", 3),
+                "port_Q": ("con1", 4),
+                "port_Z": ("con1", 5),
+            },
+            {
+                "port_Z": ("con1", 6),
+                # these two won't output anything on a 6-channel OPX
+                "port_I": ("con1", 7),
+                "port_Q": ("con1", 8),
+            },
         ],
+        # # Stage #2: Two-qubit control
+        # "qubits": [
+        #     {
+        #         "port_I": ("con1", 3),
+        #         "port_Q": ("con1", 4),
+        #     },
+        #     {
+        #         "port_I": ("con1", 5),
+        #         "port_Q": ("con1", 6),
+        #     }
+        # ],
         "resonator": {
             "opx_output_I": ("con1", 1),
             "opx_output_Q": ("con1", 2),
@@ -56,7 +87,7 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
             "opx_input_Q": ("con1", 2),
         },
     }
-    quam.network = {"host": "172.16.33.101", "cluster_name": "Cluster_81"}
+    quam.network = {"host": ValueError(), "cluster_name": "Cluster_1"}
     # Add the transmon components (xy, z and resonator) to the quam
     for idx in range(num_qubits):
         # Create qubit components
@@ -108,14 +139,16 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
         )
         quam.qubits[transmon.name] = transmon
         quam.active_qubit_names.append(transmon.name)
-        # Set the Octave frequency and channels TODO: be careful to set the right upconverters!!
-        octave.RF_outputs[2 * (idx + 1)].channel = transmon.xy.get_reference()
-        octave.RF_outputs[2 * (idx + 1)].LO_frequency = 7 * u.GHz  # Remember to set the LO frequency
+        # Set the Octave frequency and channels
+        # TODO: be careful to set the right upconverters!! This is setup for q1: 3+4, q2: 5+6, etc.
+        octave.RF_outputs[2 * idx + 1].channel = transmon.xy.get_reference()
+        octave.RF_outputs[2 * idx + 1].LO_frequency = 7 * u.GHz  # Remember to set the LO frequency
 
         octave.RF_outputs[1].channel = transmon.resonator.get_reference()
         octave.RF_inputs[1].channel = transmon.resonator.get_reference()
         octave.RF_outputs[1].LO_frequency = 4 * u.GHz
         octave.RF_inputs[1].LO_frequency = 4 * u.GHz
+
     return quam, octave_config
 
 
@@ -124,6 +157,11 @@ if __name__ == "__main__":
     folder.mkdir(exist_ok=True)
 
     machine, _ = create_quam_superconducting_referenced(num_qubits=2)
+
+    if os.path.exists(folder / CONFIG_DIRECTORY):
+        raise FileExistsError(f"Directory '{CONFIG_DIRECTORY}' already exists. "
+                              f"If you want to overwrite its contents, please delete it.")
+
     machine.save(folder / CONFIG_DIRECTORY, content_mapping={"wiring.json": {"wiring", "network"}})
 
     qua_file = folder / "qua_config.json"

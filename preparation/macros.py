@@ -42,8 +42,13 @@ def multiplexed_readout(quam: "QuAM", I, I_st, Q, Q_st, sequential=False, amplit
     """Perform multiplexed readout on two resonators"""
 
     for ind, q in enumerate(quam.active_qubits):
+        if weights != "":
+            raise NotImplementedError()
         # TODO: demod.accumulated?
-        q.resonator.measure("readout", I[ind], Q[ind])  # TODO: implement amplitude sweep
+        if amplitude == 1.0:
+            q.resonator.measure("readout", qua_vars=[I[ind], Q[ind]])
+        else:
+            q.resonator.measure("readout", qua_vars=[I[ind], Q[ind]], amplitude_scale=amplitude)
 
         if I_st is not None:
             save(I[ind], I_st[ind])
