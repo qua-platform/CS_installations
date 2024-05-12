@@ -122,8 +122,8 @@
                 "operations": {
                     "readout": {
                         "length": 1000,
-                        "threshold": 0.0,
                         "amplitude": 0.00123,
+                        "threshold": 0.0,
                         "__class__": "quam.components.pulses.ConstantReadoutPulse"
                     }
                 },
@@ -222,8 +222,8 @@
                 "operations": {
                     "readout": {
                         "length": 1000,
-                        "threshold": 0.0,
                         "amplitude": 0.00123,
+                        "threshold": 0.0,
                         "__class__": "quam.components.pulses.ConstantReadoutPulse"
                     }
                 },

@@ -121,13 +121,13 @@ if __name__ == "__main__":
     folder.mkdir(exist_ok=True)
 
     machine, _ = create_quam_superconducting_referenced(num_qubits=2)
-    machine.save(folder / "quam", content_mapping={"wiring.json": {"wiring", "network"}})
+    machine.save(folder / "config", content_mapping={"wiring.json": {"wiring", "network"}})
 
     qua_file = folder / "qua_config.json"
     qua_config = machine.generate_config()
     json.dump(qua_config, qua_file.open("w"), indent=4)
 
-    quam_loaded = QuAM.load(folder / "quam")
+    quam_loaded = QuAM.load(folder / "config")
     qua_file_loaded = folder / "qua_config2.json"
     qua_config_loaded = quam_loaded.generate_config()
     json.dump(qua_config_loaded, qua_file.open("w"), indent=4)
