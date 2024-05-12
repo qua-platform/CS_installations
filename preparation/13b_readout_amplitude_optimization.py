@@ -12,12 +12,14 @@ Prerequisites:
 
 Next steps before going to the next node:
     - Update the readout amplitude (readout_amp) in the state.
-    - Save the current state by calling machine.save("quam")
+    - Save the current state by calling machine.save(CONFIG_DIRECTORY)
 """
 
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
+
+from CS_installations.preparation.make_quam import CONFIG_DIRECTORY
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.loops import from_array
 from qualang_tools.units import unit
@@ -36,7 +38,7 @@ from macros import qua_declaration, multiplexed_readout
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load(CONFIG_DIRECTORY)
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -159,4 +161,4 @@ else:
     rr1.operations["readout"].amplitude *= amplitudes[np.argmax(fidelity_vec[0])]
     rr2.operations["readout"].amplitude *= amplitudes[np.argmax(fidelity_vec[1])]
 
-    # machine.save("quam")
+    # machine.save(CONFIG_DIRECTORY)

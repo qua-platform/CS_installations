@@ -13,12 +13,14 @@ Prerequisites:
 
 Before proceeding to the next node:
     - Update the readout frequency, labeled as f_res and f_opt, in the state.
-    - Save the current state by calling machine.save("quam")
+    - Save the current state by calling machine.save(CONFIG_DIRECTORY)
 """
 
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
+
+from CS_installations.preparation.make_quam import CONFIG_DIRECTORY
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -35,7 +37,7 @@ from scipy import signal
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load(CONFIG_DIRECTORY)
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -72,7 +74,7 @@ with program() as resonator_spec:
             # Update the frequency of the digital oscillator linked to the resonator element
             update_frequency(rr.name, f)
             # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
-            rr.measure("readout", I_var=I, Q_var=Q)
+            rr.measure("readout", qua_vars=[I, Q])
             # Wait for the resonator to deplete
             rr.wait(machine.get_depletion_time * u.ns)
             # Save the 'I' & 'Q' quadratures to their respective streams
@@ -118,6 +120,10 @@ else:
         S = u.demod2volts(I + 1j * Q, rr.operations["readout"].length)
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
+        # Debugging
+        # def lorentzian(x, x0, a, gam):
+        #     return a * gam ** 2 / (gam ** 2 + (x - x0) ** 2)
+        # R = -lorentzian(frequencies, frequencies.mean(), 1, 1e7)
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
@@ -128,7 +134,7 @@ else:
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
         plt.subplot(212, sharex=ax1)
         plt.cla()
-        plt.plot(frequencies / u.MHz, signal.detrend(np.unwrap(phase)), ".")
+        # plt.plot(frequencies / u.MHz, signal.detrend(np.unwrap(phase)), ".")
         plt.xlabel("Intermediate frequency [MHz]")
         plt.ylabel("Phase [rad]")
         plt.pause(0.1)
@@ -138,21 +144,18 @@ else:
     qm.close()
 
     # Fit the results to extract the resonance frequency
-    try:
-        from qualang_tools.plot.fitting import Fit
+    from qualang_tools.plot.fitting import Fit
 
-        fit = Fit()
-        plt.figure()
-        res_spec_fit = fit.reflection_resonator_spectroscopy(frequencies / u.MHz, R, plot=True)
-        plt.title(f"{rr.name} spectroscopy - LO = {rr.frequency_converter_up.LO_frequency / u.GHz} GHz")
-        plt.xlabel("Intermediate frequency [MHz]")
-        plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
-        print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit['f'][0]:.6f} MHz")
+    fit = Fit()
+    plt.figure()
+    res_spec_fit = fit.reflection_resonator_spectroscopy(frequencies / u.MHz, R, plot=True)
+    plt.title(f"{rr.name} spectroscopy - LO = {rr.frequency_converter_up.LO_frequency / u.GHz} GHz")
+    plt.xlabel("Intermediate frequency [MHz]")
+    plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
+    print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit['f'][0]:.6f} MHz")
+    print(f"Resonator FWHM = {res_spec_fit['k'][0]:.5f} MHz")
 
-        # Update QUAM
-        rr.intermediate_frequency = res_spec_fit["f"][0]
-        rr.frequency_bare = rr.rf_frequency
-        machine.save("quam")
-
-    except (Exception,):
-        pass
+    # Update QUAM
+    rr.intermediate_frequency = res_spec_fit["f"][0]
+    rr.frequency_bare = rr.rf_frequency
+    machine.save(CONFIG_DIRECTORY)

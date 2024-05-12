@@ -16,12 +16,14 @@ Prerequisites:
 Before proceeding to the next node:
     - Adjust the flux bias to the minimum frequency point, labeled as "max_frequency_point", in the state.
     - Adjust the flux bias to the minimum frequency point, labeled as "min_frequency_point", in the state.
-    - Save the current state by calling machine.save("quam")
+    - Save the current state by calling machine.save(CONFIG_DIRECTORY)
 """
 
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
+
+from CS_installations.preparation.make_quam import CONFIG_DIRECTORY
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -42,7 +44,7 @@ from macros import qua_declaration, multiplexed_readout
 u = unit(coerce_to_integer=True)
 # Instantiate the abstract machine
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load(CONFIG_DIRECTORY)
 # Load the config
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
@@ -157,4 +159,4 @@ else:
 # Update machine with max frequency point for both resonator and qubit
 # q1.z.min_offset =
 # q2.z.min_offset =
-# machine.save("quam")
+# machine.save(CONFIG_DIRECTORY)

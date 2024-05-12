@@ -11,6 +11,8 @@ from quam.core import QuamRoot
 from qualang_tools.units import unit
 
 
+CONFIG_DIRECTORY = "config"
+
 def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOctaveConfig):
     """Create a QuAM with a number of qubits.
 
@@ -121,13 +123,13 @@ if __name__ == "__main__":
     folder.mkdir(exist_ok=True)
 
     machine, _ = create_quam_superconducting_referenced(num_qubits=2)
-    machine.save(folder / "config", content_mapping={"wiring.json": {"wiring", "network"}})
+    machine.save(folder / CONFIG_DIRECTORY, content_mapping={"wiring.json": {"wiring", "network"}})
 
     qua_file = folder / "qua_config.json"
     qua_config = machine.generate_config()
     json.dump(qua_config, qua_file.open("w"), indent=4)
 
-    quam_loaded = QuAM.load(folder / "config")
+    quam_loaded = QuAM.load(folder / CONFIG_DIRECTORY)
     qua_file_loaded = folder / "qua_config2.json"
     qua_config_loaded = quam_loaded.generate_config()
     json.dump(qua_config_loaded, qua_file.open("w"), indent=4)

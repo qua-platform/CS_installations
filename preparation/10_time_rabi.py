@@ -13,12 +13,14 @@ Prerequisites:
 
 Next steps before going to the next node:
     - Update the qubit pulse duration (pi_len) in the state.
-    - Save the current state by calling machine.save("quam")
+    - Save the current state by calling machine.save(CONFIG_DIRECTORY)
 """
 
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
+
+from CS_installations.preparation.make_quam import CONFIG_DIRECTORY
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -37,7 +39,7 @@ from macros import qua_declaration, multiplexed_readout
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load(CONFIG_DIRECTORY)
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -172,7 +174,7 @@ else:
         )
         q1.xy.operations[operation].length = round(1 / rabi_fit1["f"][0] / 2 / 4) * 4
         q2.xy.operations[operation].length = round(1 / rabi_fit2["f"][0] / 2 / 4) * 4.0
-        # machine.save("quam")
+        # machine.save(CONFIG_DIRECTORY)
 
     except (Exception,):
         pass

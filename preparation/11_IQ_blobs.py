@@ -16,12 +16,14 @@ Prerequisites:
 Next steps before going to the next node:
     - Update the rotation angle (rotation_angle) in the state.
     - Update the g -> e threshold (ge_threshold) in the state.
-    - Save the current state by calling machine.save("quam")
+    - Save the current state by calling machine.save(CONFIG_DIRECTORY)
 """
 
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
+
+from CS_installations.preparation.make_quam import CONFIG_DIRECTORY
 from qualang_tools.results import fetching_tool
 from qualang_tools.units import unit
 from qualang_tools.analysis.discriminator import two_state_discriminator
@@ -38,7 +40,7 @@ from macros import qua_declaration, multiplexed_readout
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load(CONFIG_DIRECTORY)
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -121,4 +123,4 @@ else:
     q2.resonator.operations["readout"].integration_weights_angle += angle2
     # rr2.readout_fidelity = fidelity2
     q2.resonator.operations["readout"].threshold = threshold2
-    # machine.save("quam")
+    # machine.save(CONFIG_DIRECTORY)

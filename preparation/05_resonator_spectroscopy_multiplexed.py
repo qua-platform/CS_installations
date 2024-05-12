@@ -13,13 +13,14 @@ Prerequisites:
 
 Before proceeding to the next node:
     - Update the readout frequency, labeled as f_res and f_opt, in the state for both resonators.
-    - Save the current state by calling machine.save("quam")
+    - Save the current state by calling machine.save(CONFIG_DIRECTORY)
 """
 
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
 
+from CS_installations.preparation.make_quam import CONFIG_DIRECTORY
 from qualang_tools.results import fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -38,7 +39,7 @@ from components import QuAM
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load(CONFIG_DIRECTORY)
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -176,7 +177,7 @@ else:
         plt.title(f"{rr2.name}")
         plt.tight_layout()
         rr2.intermediate_frequency = res_2["f"][0] * u.MHz
-        machine.save("quam")
+        machine.save(CONFIG_DIRECTORY)
 
     except (Exception,):
         pass

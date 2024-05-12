@@ -13,6 +13,8 @@ from qm import QuantumMachinesManager
 from qm import SimulationConfig
 import matplotlib.pyplot as plt
 import numpy as np
+
+from CS_installations.preparation.make_quam import CONFIG_DIRECTORY
 from qualang_tools.units import unit
 from components import QuAM
 
@@ -23,7 +25,7 @@ from components import QuAM
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load(CONFIG_DIRECTORY)
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -117,4 +119,4 @@ else:
     rr2.opx_input_offset_I -= np.mean(adc1)
     rr1.opx_input_offset_Q -= np.mean(adc2)
     rr2.opx_input_offset_Q -= np.mean(adc2)
-    machine.save("quam")
+    machine.save(CONFIG_DIRECTORY)

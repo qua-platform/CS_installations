@@ -5,6 +5,8 @@ A simple sandbox to showcase different QUA functionalities during the installati
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
+
+from CS_installations.preparation.make_quam import CONFIG_DIRECTORY
 from components import QuAM
 
 
@@ -12,7 +14,7 @@ from components import QuAM
 #  Load QuAM and open Communication with the QOP  #
 ###################################################
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load(CONFIG_DIRECTORY)
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
