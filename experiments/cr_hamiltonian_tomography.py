@@ -439,15 +439,16 @@ def plot_interaction_coeffs(coeffs, xaxis, xlabel="amplitude", fig=None):
     plt.tight_layout()
     return fig
 
+
 def plot_crqst_result(t_vec_ns, crqst_data_c, crqst_data_t, fig, axss):
     # control qubit
     fig = CRHamiltonianTomographyAnalysis(
         ts=t_vec_ns,
         crqst_data=crqst_data_c,
-    ).plot_data(fig, axss[:, 0], label="control")
+    ).plot_crqst_data(fig, axss[:, 0], label="control")
     # target qubit
     fig = CRHamiltonianTomographyAnalysis(
         ts=t_vec_ns,
         crqst_data=crqst_data_t,
-    ).plot_data(fig, axss[:, 1], label="target")
+    ).plot_crqst_data(fig, axss[:, 1], label="target")
     return fig

@@ -1,4 +1,3 @@
-
 # %%
 """
                                  CR_calib_unit_hamiltonian_tomography
@@ -71,7 +70,7 @@ nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
 thresholds = [ge_threshold_q1, ge_threshold_q2]
-t_vec_clock = np.arange(8, 200, 4) # np.arange(8, 8000, 256) for simulate_dynamics
+t_vec_clock = np.arange(8, 8000, 256) # for simulate_dynamics
 t_vec_ns = 4 * t_vec_clock
 n_avg = 1 # num of iterations
 
@@ -82,6 +81,7 @@ assert np.all(t_vec_clock % 2 == 0) and (t_vec_clock.min() >= 8), "t_vec_clock s
 
 
 with program() as cr_calib:
+    
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
     t = declare(int)
     c = declare(int)
@@ -213,11 +213,11 @@ else:
         plt.pause(0.1)
 
 if not simulate:
-    # TODO: Delete (loading dummy data for test)
-    test_data = np.load("./crht_test_data/data.npz")
-    t_vec_ns = test_data["t_vec_ns"]
-    crqst_data_c = test_data["crqst_data_c"] # len(t_vec_clock) x len(target_bases) x len(control_states)
-    crqst_data_t = test_data["crqst_data_t"] # len(t_vec_clock) x len(target_bases) x len(control_states)
+    # # TODO: Delete (loading dummy data for test)
+    # test_data = np.load("./crht_test_data/data.npz")
+    # t_vec_ns = test_data["t_vec_ns"]
+    # crqst_data_c = test_data["crqst_data_c"] # len(t_vec_clock) x len(target_bases) x len(control_states)
+    # crqst_data_t = test_data["crqst_data_t"] # len(t_vec_clock) x len(target_bases) x len(control_states)
 
     # cross resonance Hamiltonian tomography analysis
     crht = CRHamiltonianTomographyAnalysis(
@@ -232,7 +232,7 @@ if not simulate:
     qm.close()
 
     if save_data:
-        # A`rrange data to save
+        # Arrange data to save
         data = {
             "fig_live": fig,
             "fig_analysis": fig_analysis,

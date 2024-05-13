@@ -1,3 +1,4 @@
+# %%
 from typing import List
 
 import qm
@@ -9,11 +10,11 @@ from qualang_tools.simulator.quantum.architectures.transmon_pair import Transmon
 from qualang_tools.simulator.quantum.architectures.transmon_pair_backend_from_qua import TransmonPairBackendFromQUA
 from qualang_tools.simulator.quantum.architectures.transmon_pair_settings import TransmonPairSettings
 from qualang_tools.simulator.quantum import simulate
-from tests.test_quantum_simulator.conftest import _freq_from_qua_config
+from macros import freq_from_qua_config
 from configuration_with_octave import config
 
-qubit_1_freq = _freq_from_qua_config("q1_xy", config)
-qubit_2_freq = _freq_from_qua_config("q2_xy", config)
+qubit_1_freq = freq_from_qua_config("q1_xy", config)
+qubit_2_freq = freq_from_qua_config("q2_xy", config)
 print(f"Simulating with q1 resonant frequency {qubit_1_freq}")
 print(f"Simulating with q2 resonant frequency {qubit_2_freq}")
 
@@ -80,3 +81,5 @@ def simulate_program(qua_program: qm.Program, num_shots: int, plot_schedules: Li
         num_shots=num_shots,
         schedules_to_plot=plot_schedules,
     )
+
+# %%

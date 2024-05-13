@@ -315,3 +315,12 @@ def filter_calc(exponential):
         feedforward_taps = 2 * feedforward_taps / max(feedforward_taps)
 
     return feedforward_taps, feedback_taps
+
+
+def freq_from_qua_config(element: str, config: dict) -> int:
+    element_config = config['elements'][element]
+    IF = element_config['intermediate_frequency']
+    channel_port = element_config['RF_inputs']['port']
+    LO = config['octaves'][channel_port[0]]['RF_outputs'][channel_port[1]]['LO_frequency']
+
+    return LO + IF
