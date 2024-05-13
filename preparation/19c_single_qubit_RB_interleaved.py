@@ -22,7 +22,6 @@ Prerequisites:
 """
 
 from qm.qua import *
-from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
@@ -34,7 +33,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 from components import QuAM, Transmon
-
+from macros import node_save
 
 ###################################################
 #  Load QuAM and open Communication with the QOP  #
@@ -42,7 +41,7 @@ from components import QuAM, Transmon
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load(CONFIG_DIRECTORY)
+machine = QuAM.load("state.json")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -252,7 +251,7 @@ with program() as rb:
                     else:
                         q1.resonator.play("readout")
                     # Make sure you updated the ge_threshold and angle if you want to use state discrimination
-                    qubit.resonator.measure("readout", I_var=I, Q_var=Q)
+                    qubit.resonator.measure("readout", qua_vars=(I, Q))
                     save(I, I_st)
                     save(Q, Q_st)
                     # Make sure you updated the ge_threshold
@@ -304,6 +303,8 @@ if simulate:
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
+    # Calibrate the active qubits
+    # machine.calibrate_active_qubits(qm)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(rb)
     # Get results from QUA program
@@ -387,6 +388,19 @@ else:
     plt.ylabel("Sequence Fidelity")
     plt.title(f"Single qubit interleaved RB for {qubit.name} ({get_interleaved_gate(interleaved_gate_index)})")
 
-    # np.savez("rb_values", value)
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
+
+    # Save data from the node
+    data = {
+        f"{qubit.name}_depth": x,
+        f"{qubit.name}_fidelity": value_avg,
+        f"{qubit.name}_error": error_avg,
+        f"{qubit.name}_fit": power_law(x, *pars),
+        f"{qubit.name}_covariance_par": pars,
+        f"{qubit.name}_error_rate": one_minus_p,
+        f"{qubit.name}_clifford_set_infidelity": r_c,
+        f"{qubit.name}_gate_infidelity": r_g,
+        "figure": fig,
+    }
+    node_save(f"randomized_benchmarking_interleaved_{get_interleaved_gate(interleaved_gate_index)}", data, machine)

@@ -15,14 +15,12 @@ The data undergoes post-processing to calibrate three distinct parameters:
 """
 
 from qm.qua import *
-from qm import QuantumMachinesManager
 from qm import SimulationConfig
-
-from CS_installations.preparation.make_quam import CONFIG_DIRECTORY
 from qualang_tools.units import unit
 from components import QuAM
-import matplotlib.pyplot as plt
+from macros import node_save
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 
 
@@ -32,7 +30,7 @@ from scipy.signal import savgol_filter
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load(CONFIG_DIRECTORY)
+machine = QuAM.load("state.json")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -83,6 +81,8 @@ if simulate:
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
+    # Calibrate the active qubits
+    # machine.calibrate_active_qubits(qm)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(raw_trace_prog)
     # Creates a result handle to fetch data from the OPX
@@ -134,7 +134,7 @@ else:
     plt.plot(delay * np.ones(2), yl, "k--")
     plt.xlabel("Time [ns]")
     plt.legend()
-    plt.grid("all")
+    plt.grid(True)
     plt.tight_layout()
     plt.show()
 
@@ -147,4 +147,16 @@ else:
         q.resonator.opx_input_offset_I -= np.mean(adc1)
         q.resonator.opx_input_offset_Q -= np.mean(adc2)
         q.resonator.time_of_flight += delay
-    machine.save(CONFIG_DIRECTORY)
+
+    # Save data from the node
+    data = {
+        "offset_1": np.mean(adc1),
+        "offset_2": np.mean(adc2),
+        "delay": delay,
+        "raw_adc_1": adc1,
+        "raw_adc_2": adc2,
+        "raw_adc_1_single_shot": adc1_single_run,
+        "raw_adc_2_single_shot": adc2_single_run,
+        "figure": fig,
+    }
+    node_save("time_of_flight", data, machine)

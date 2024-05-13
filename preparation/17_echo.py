@@ -15,11 +15,10 @@ Prerequisites:
 
 Next steps before going to the next node:
     - Update the qubits T2 echo in the state.
-    - Save the current state by calling machine.save(CONFIG_DIRECTORY)
+    - Save the current state by calling machine.save("quam")
 """
 
 from qm.qua import *
-from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
@@ -30,7 +29,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from components import QuAM
-from macros import qua_declaration, multiplexed_readout
+from macros import qua_declaration, multiplexed_readout, node_save
 
 
 ###################################################
@@ -39,7 +38,7 @@ from macros import qua_declaration, multiplexed_readout
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load(CONFIG_DIRECTORY)
+machine = QuAM.load("state.json")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -116,6 +115,8 @@ if simulate:
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
+    # Calibrate the active qubits
+    # machine.calibrate_active_qubits(qm)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(echo)
     # Get results from QUA program
@@ -160,6 +161,18 @@ else:
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
+
+    # Save data from the node
+    data = {
+        f"{q1.name}_amplitude": 8 * idle_times,
+        f"{q1.name}_I": np.abs(I1),
+        f"{q1.name}_Q": np.angle(Q1),
+        f"{q2.name}_amplitude": 8 * idle_times,
+        f"{q2.name}_I": np.abs(I2),
+        f"{q2.name}_Q": np.angle(Q2),
+        "figure": fig,
+    }
+
 # Fit the data to extract T2 echo
 try:
     from qualang_tools.plot.fitting import Fit
@@ -173,17 +186,22 @@ try:
     plt.ylabel("I [V]")
     plt.title(f"{q1.name}")
     plt.legend((f"T2 = {int(fit_I1['T1'][0])} ns",))
+    # Update the state
+    q1.T2echo = int(fit_I1["T1"][0])
+    data[f"{q1.name}"] = {"T2": q1.T2echo, "fit_successful": True}
+
     plt.subplot(122)
     fit_I2 = fit.T1(8 * idle_times, I2, plot=True)
     plt.xlabel("idle_times [ns]")
     plt.title(f"{q2.name}")
     plt.legend((f"T2 = {int(fit_I2['T1'][0])} ns",))
     plt.tight_layout()
-
     # Update the state
-    q1.T2echo = int(fit_I1["T1"][0])
     q2.T2echo = int(fit_I2["T1"][0])
+    data[f"{q2.name}"] = {"T2": q1.T2echo, "fit_successful": True}
 except (Exception,):
+    data["fit_successful"] = False
     pass
 
-# machine.save(CONFIG_DIRECTORY)
+# Save data from the node
+node_save("echo", data, machine)

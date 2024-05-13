@@ -32,12 +32,11 @@ Prerequisites:
 
 Next steps before going to the next node:
     - Update the FIR and IIR filter taps in the state (qubits[].z.wiring.filter.fir_taps & qubits[].z.wiring.filter.iir_taps).
-    - Save the current state by calling machine.save(CONFIG_DIRECTORY)
+    - Save the current state by calling machine.save("quam")
     - WARNING: the digital filters will add a global delay --> need to recalibrate IQ blobs (rotation_angle & ge_threshold).
 """
 
 from qm.qua import *
-from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
@@ -49,8 +48,8 @@ import numpy as np
 from scipy import optimize, signal
 
 from components import QuAM
-from macros import qua_declaration, multiplexed_readout
-from digital_filters import exponential_decay, single_exponential_correction
+from macros import qua_declaration, multiplexed_readout, node_save
+from qualang_tools.digital_filters import exponential_decay, single_exponential_correction
 
 
 ###################################################
@@ -59,7 +58,7 @@ from digital_filters import exponential_decay, single_exponential_correction
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load(CONFIG_DIRECTORY)
+machine = QuAM.load("state.json")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -94,7 +93,7 @@ def baked_waveform(qubit, waveform, pulse_duration):
 ###################
 # The QUA program #
 ###################
-qb = q2  # Qubit under study
+qb = q1  # Qubit under study
 flux_operation = "const"
 flux_pulse_len = q1.z.operations[flux_operation].length
 flux_pulse_amp = q1.z.operations[flux_operation].amplitude
@@ -183,6 +182,8 @@ if simulate:
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
+    # Calibrate the active qubits
+    # machine.calibrate_active_qubits(qm)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(cryoscope)
     # Get results from QUA program
@@ -203,7 +204,7 @@ else:
         # Derive the Bloch vector components from the two projections
         Sx = state[:, 0] * 2 - 1
         Sy = state[:, 1] * 2 - 1
-        qubit_state = Sx + 1j * Sy
+        qubit_state = (Sx - np.mean(Sx[10:])) + 1j * (Sy - np.mean(Sy[10:]))
         # Accumulated phase: angle between Sx and Sy
         qubit_phase = np.unwrap(np.angle(qubit_state))
         qubit_phase = qubit_phase - qubit_phase[-1]
@@ -212,7 +213,7 @@ else:
         detuning = signal.savgol_filter(qubit_phase / 2 / np.pi, 13, 3, deriv=1, delta=0.001)
         # Flux line step response in freq domain and voltage domain
         step_response_freq = detuning / np.average(detuning[-int(flux_pulse_len / 2) :])
-        step_response_volt = np.sqrt(step_response_freq)
+        step_response_volt = np.where(step_response_freq < 0, 0, np.sqrt(step_response_freq))
         # Qubit coherence: |Sx+iSy|
         qubit_coherence = np.abs(qubit_state)
 
@@ -269,12 +270,12 @@ else:
     with_filter = no_filter * signal.lfilter(fir, [1, iir[0]], pulse)  # Output filter , DAC Output
 
     # Plot all data
-    plt.figure()
+    fig = plt.figure()
     plt.suptitle("Cryoscope with filter implementation")
     plt.subplot(121)
     plt.plot(xplot, step_response_volt, "o-", label="Data")
     plt.plot(xplot, exponential_decay(xplot, A, tau), label="Fit")
-    plt.text(100, 0.95, f"A = {A:.2f}\ntau = {tau:.2f}", bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.5))
+    # plt.text(100, 0.95, f"A = {A:.2f}\ntau = {tau:.2f}", bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.5))
     plt.axhline(y=1.01)
     plt.axhline(y=0.99)
     plt.xlabel("Flux pulse duration [ns]")
@@ -287,7 +288,7 @@ else:
     plt.plot(with_filter, label="After Bias-T with filter")
     plt.plot(pulse, label="Ideal WF")  # pulse
     plt.plot(list(step_response_volt), label="Experimental data")
-    plt.text(40, 0.93, f"IIR = {iir}\nFIR = {fir}", bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.5))
+    # plt.text(40, 0.93, f"IIR = {iir}\nFIR = {fir}", bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.5))
     plt.xlabel("Flux pulse duration [ns]")
     plt.ylabel("Step response")
     plt.legend(loc="upper right")
@@ -299,4 +300,16 @@ else:
     # Update the state
     qb.z.filter_fir_taps = list(fir)
     qb.z.filter_iir_taps = list(iir)
-# machine.save(CONFIG_DIRECTORY)
+
+    # Save data from the node
+    data = {
+        f"{qb.name}_time": xplot,
+        f"{qb.name}_step_response_volt": step_response_volt,
+        f"{qb.name}_state": state,
+        f"{qb.name}_fir": list(fir),
+        f"{qb.name}_iir": list(iir),
+        f"{qb.name}_A": A,
+        f"{qb.name}_tau": tau,
+        "figure": fig,
+    }
+    node_save("cryoscope_1ns", data, machine)

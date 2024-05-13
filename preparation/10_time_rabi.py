@@ -13,14 +13,11 @@ Prerequisites:
 
 Next steps before going to the next node:
     - Update the qubit pulse duration (pi_len) in the state.
-    - Save the current state by calling machine.save(CONFIG_DIRECTORY)
+    - Save the current state by calling machine.save("quam")
 """
 
 from qm.qua import *
-from qm import QuantumMachinesManager
 from qm import SimulationConfig
-
-from CS_installations.preparation.make_quam import CONFIG_DIRECTORY
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -30,7 +27,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from components import QuAM
-from macros import qua_declaration, multiplexed_readout
+from macros import qua_declaration, multiplexed_readout, node_save
 
 
 ###################################################
@@ -39,7 +36,7 @@ from macros import qua_declaration, multiplexed_readout
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load(CONFIG_DIRECTORY)
+machine = QuAM.load("state.json")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -105,6 +102,8 @@ if simulate:
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
+    # Calibrate the active qubits
+    # machine.calibrate_active_qubits(qm)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(rabi)
     # Get results from QUA program
@@ -148,6 +147,17 @@ else:
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
 
+    # Save data from the node
+    data = {
+        f"{q1.name}_time": times * 4,
+        f"{q1.name}_I": np.abs(I1),
+        f"{q1.name}_Q": np.angle(Q1),
+        f"{q2.name}_time": times * 4,
+        f"{q2.name}_I": np.abs(I2),
+        f"{q2.name}_Q": np.angle(Q2),
+        "figure": fig,
+    }
+
     # Fit the results to extract the x180 length
     try:
         from qualang_tools.plot.fitting import Fit
@@ -160,21 +170,24 @@ else:
         plt.title(f"{q1.name}")
         plt.xlabel("Rabi pulse duration [ns]")
         plt.ylabel("I quadrature [V]")
+        q1.xy.operations[operation].length = int(round(1 / rabi_fit1["f"][0] / 2 / 4) * 4)
+        data[f"{q1.name}"] = {"x180_length": q1.xy.operations[operation].length, "fit_successful": True}
+        print(
+            f"Optimal x180_len for {q1.name} = {q1.xy.operations[operation].length} ns for {q1.xy.operations[operation].amplitude:} V"
+        )
         plt.subplot(122)
         rabi_fit2 = fit.rabi(4 * times, I2, plot=True)
         plt.title(f"{q2.name}")
         plt.xlabel("Rabi pulse duration [ns]")
         plt.ylabel("I quadrature [V]")
         plt.tight_layout()
+        q2.xy.operations[operation].length = int(round(1 / rabi_fit2["f"][0] / 2 / 4) * 4)
+        data[f"{q2.name}"] = {"x180_length": q2.xy.operations[operation].length, "fit_successful": True}
         print(
-            f"Optimal x180_len for {q1.name} = {round(1 / rabi_fit1['f'][0] / 2 / 4) * 4} ns for {q1.xy.operations[operation].amplitude:} V"
+            f"Optimal x180_len for {q2.name} = {q2.xy.operations[operation].length} ns for {q2.xy.operations[operation].amplitude:} V"
         )
-        print(
-            f"Optimal x180_len for {q2.name} = {round(1 / rabi_fit2['f'][0] / 2 / 4) * 4} ns for {q2.xy.operations[operation].amplitude:} V"
-        )
-        q1.xy.operations[operation].length = round(1 / rabi_fit1["f"][0] / 2 / 4) * 4
-        q2.xy.operations[operation].length = round(1 / rabi_fit2["f"][0] / 2 / 4) * 4.0
-        # machine.save(CONFIG_DIRECTORY)
 
     except (Exception,):
         pass
+    # Save data from the node
+    node_save("time_rabi", data, machine)

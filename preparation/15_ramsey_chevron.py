@@ -13,11 +13,10 @@ Prerequisites:
 
 Next steps before going to the next node:
     - Update the qubit frequency (f_01) in the state.
-    - Save the current state by calling machine.save(CONFIG_DIRECTORY)
+    - Save the current state by calling machine.save("quam")
 """
 
 from qm.qua import *
-from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
@@ -28,7 +27,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from components import QuAM
-from macros import qua_declaration, multiplexed_readout
+from macros import qua_declaration, multiplexed_readout, node_save
 
 
 ###################################################
@@ -37,7 +36,7 @@ from macros import qua_declaration, multiplexed_readout
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load(CONFIG_DIRECTORY)
+machine = QuAM.load("state.json")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -116,6 +115,8 @@ if simulate:
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
+    # Calibrate the active qubits
+    # machine.calibrate_active_qubits(qm)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(ramsey)
     # Get results from QUA program
@@ -160,3 +161,17 @@ else:
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
+
+    # Save data from the node
+    data = {
+        f"{q1.name}_amplitude": 4 * t_delay,
+        f"{q1.name}_frequency": dfs + q1.xy.intermediate_frequency,
+        f"{q1.name}_I": np.abs(I1),
+        f"{q1.name}_Q": np.angle(Q1),
+        f"{q2.name}_amplitude": 4 * t_delay,
+        f"{q2.name}_frequency": dfs + q2.xy.intermediate_frequency,
+        f"{q2.name}_I": np.abs(I2),
+        f"{q2.name}_Q": np.angle(Q2),
+        "figure": fig,
+    }
+    node_save("ramsey_chevron", data, machine)

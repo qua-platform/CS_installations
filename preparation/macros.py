@@ -1,8 +1,11 @@
 from qm.qua import *
-from components import FluxLine, QuAM
+from quam_components import QuAM
 
-# def wait_depletion_time(quam: "QuAM"):
-#
+
+def node_save(name: str, data: dict, quam: QuAM):
+    quam.data_handler.save_data(data=data, name=name)
+    quam.save(path=quam.data_handler.path / "state.json")
+    quam.save(path="state.json")
 
 
 def apply_all_flux_to_min(quam: "QuAM"):
@@ -38,17 +41,11 @@ def qua_declaration(nb_of_qubits):
     return I, I_st, Q, Q_st, n, n_st
 
 
-def multiplexed_readout(quam: "QuAM", I, I_st, Q, Q_st, sequential=False, amplitude=1.0, weights=""):
+def multiplexed_readout(quam: "QuAM", I, I_st, Q, Q_st, sequential: bool = False, amplitude_scale=None, weights=""):
     """Perform multiplexed readout on two resonators"""
 
     for ind, q in enumerate(quam.active_qubits):
-        if weights != "":
-            raise NotImplementedError()
-        # TODO: demod.accumulated?
-        if amplitude == 1.0:
-            q.resonator.measure("readout", qua_vars=[I[ind], Q[ind]])
-        else:
-            q.resonator.measure("readout", qua_vars=[I[ind], Q[ind]], amplitude_scale=amplitude)
+        q.resonator.measure("readout", qua_vars=(I[ind], Q[ind]), amplitude_scale=amplitude_scale)
 
         if I_st is not None:
             save(I[ind], I_st[ind])

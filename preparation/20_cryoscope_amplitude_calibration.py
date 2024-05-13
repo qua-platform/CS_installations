@@ -20,7 +20,6 @@ Prerequisites:
 """
 
 from qm.qua import *
-from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
@@ -31,7 +30,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from components import QuAM
-from macros import qua_declaration, multiplexed_readout
+from macros import qua_declaration, multiplexed_readout, node_save
 
 
 ###################################################
@@ -40,7 +39,7 @@ from macros import qua_declaration, multiplexed_readout
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load(CONFIG_DIRECTORY)
+machine = QuAM.load("state.json")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -128,6 +127,8 @@ if simulate:
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
+    # Calibrate the active qubits
+    # machine.calibrate_active_qubits(qm)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(cryoscope)
     # Get results from QUA program
@@ -185,5 +186,15 @@ else:
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
-# TODO: store the fit parameters
-# machine.save(CONFIG_DIRECTORY)
+    # TODO: store the fit parameters
+
+    # Save data from the node
+    data = {
+        f"{qb.name}_time": xplot,
+        f"{qb.name}_coarse_detuning": coarse_detuning,
+        f"{qb.name}_fit": np.polyval(pol, xplot),
+        f"{qb.name}_fit_coef": pol,
+        f"{qb.name}_state": state,
+        "figure": fig,
+    }
+    node_save("cryoscope_vs_amplitude", data, machine)
