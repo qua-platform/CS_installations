@@ -21,8 +21,9 @@ from qm import SimulationConfig
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
+# from qualang_tools.testing.quantum_machines_manager_stub import QuantumMachinesManagerStub
 from qualang_tools.units import unit
-from components import QuAM
+from quam_components import QuAM
 from macros import node_save
 import numpy as np
 import matplotlib.pyplot as plt
@@ -41,6 +42,7 @@ config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
 # Open Communication with the QOP
 qmm = machine.connect()
+# qmm = QuantumMachinesManagerStub()
 
 # Get the relevant QuAM components
 rr = machine.active_qubits[0].resonator  # The resonator to measure
@@ -122,6 +124,12 @@ else:
         phase = np.angle(S)  # Phase
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
+
+        # # Debugging
+        # def lorentzian(x, x0, a, gam):
+        #     return a * gam ** 2 / (gam ** 2 + (x - x0) ** 2)
+        # R = -lorentzian(frequencies, frequencies.mean(), 1, 1e7)
+
         # Plot results
         plt.suptitle(f"{rr.name} spectroscopy - LO = {rr.frequency_converter_up.LO_frequency / u.GHz} GHz")
         ax1 = plt.subplot(211)
@@ -130,7 +138,7 @@ else:
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
         plt.subplot(212, sharex=ax1)
         plt.cla()
-        plt.plot(frequencies / u.MHz, signal.detrend(np.unwrap(phase)), ".")
+        # plt.plot(frequencies / u.MHz, signal.detrend(np.unwrap(phase)), ".")
         plt.xlabel("Intermediate frequency [MHz]")
         plt.ylabel("Phase [rad]")
         plt.pause(0.1)
@@ -140,7 +148,12 @@ else:
     qm.close()
 
     # Save data from the node
-    data = {"frequencies": frequencies, "R": R, "phase": signal.detrend(np.unwrap(phase)), "figure_raw": fig}
+    data = {
+        "frequencies": frequencies,
+        "R": R,
+        # "phase": signal.detrend(np.unwrap(phase)),
+        "figure_raw": fig
+    }
 
     # Fit the results to extract the resonance frequency
     try:
@@ -153,12 +166,17 @@ else:
         plt.xlabel("Intermediate frequency [MHz]")
         plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
         print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit['f'][0]:.6f} MHz")
+        print(f"Resonator FWHM = {res_spec_fit['k'][0]:.5f} MHz")
 
         # Update QUAM
         rr.intermediate_frequency = int(res_spec_fit["f"][0] * u.MHz)
         rr.frequency_bare = rr.rf_frequency
         # Save data from the node
-        data[f"{rr.name}"] = {"resonator_frequency": int(res_spec_fit["f"][0] * u.MHz), "successful_fit": True}
+        data[f"{rr.name}"] = {
+            "resonator_frequency": int(res_spec_fit["f"][0] * u.MHz),
+            "fwhm": int(res_spec_fit["k"][0] * u.MHz),
+            "successful_fit": True
+        }
         data["figure_fit"] = fig_fit
 
     except (Exception,):

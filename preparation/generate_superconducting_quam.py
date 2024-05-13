@@ -209,7 +209,7 @@ if __name__ == "__main__":
     folder.mkdir(exist_ok=True)
 
     machine, _ = create_quam_superconducting_referenced(num_qubits=2)
-    machine.save(folder / "static_quam_machine", content_mapping={"wiring.json": {"wiring", "network"}})
+    machine.save(folder / ".quam_machine", content_mapping={"wiring.json": {"wiring", "network"}})
     machine.save(folder / "state.json")
 
     qua_file = folder / "qua_config.json"
