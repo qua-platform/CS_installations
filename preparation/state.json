@@ -178,7 +178,7 @@
                 "operations": {
                     "readout": {
                         "length": 1000,
-                        "amplitude": 0.00123,
+                        "amplitude": 0.01,
                         "threshold": 0.0,
                         "__class__": "quam.components.pulses.SquareReadoutPulse"
                     }
@@ -334,7 +334,7 @@
                 "operations": {
                     "readout": {
                         "length": 1000,
-                        "amplitude": 0.00123,
+                        "amplitude": 0.01,
                         "threshold": 0.0,
                         "__class__": "quam.components.pulses.SquareReadoutPulse"
                     }

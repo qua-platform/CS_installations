@@ -26,6 +26,7 @@ from qm import SimulationConfig
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
+# from qualang_tools.testing.quantum_machines_manager_stub import QuantumMachinesManagerStub
 from qualang_tools.units import unit
 
 import matplotlib.pyplot as plt
@@ -47,6 +48,7 @@ config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
 # Open Communication with the QOP
 qmm = machine.connect()
+# qmm = QuantumMachinesManagerStub()
 
 # Get the relevant QuAM components
 rr1 = machine.active_qubits[0].resonator
@@ -120,7 +122,7 @@ if simulate:
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, multi_res_spec_vs_amp, simulation_config)
     job.get_simulated_samples().con1.plot()
-
+    plt.show()
 else:
     # Open a quantum machine to execute the QUA program
     qm = qmm.open_qm(config)
@@ -143,6 +145,17 @@ else:
 
         A1 = np.abs(s1)
         A2 = np.abs(s2)
+
+        # # Debugging
+        # def lorentzian(x, x0, a, gam):
+        #     return a * gam ** 2 / (gam ** 2 + (x - x0) ** 2)
+        # A1 = np.array(
+        #     [
+        #         -lorentzian(dfs, dfs.mean(), amp, amp*2e6)
+        #     for amp in np.linspace(1, 2, len(amps))]
+        # ).T
+        # A2 = A1.copy()
+
         # Normalize data
         row_sums = A1.sum(axis=0)
         A1 = A1 / row_sums[np.newaxis, :]
@@ -171,6 +184,25 @@ else:
         plt.pause(0.1)
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
+
+    # Fit the results to extract the resonance frequency
+    from qualang_tools.plot.fitting import Fit
+
+    fit = Fit()
+    plt.figure()
+    for i, amp in enumerate(amps):
+        try:
+            # only fits a negative Lorentzian, otherwise throws error
+            res_spec_fit = fit.reflection_resonator_spectroscopy(dfs / u.MHz, -A1.T[i])
+            plt.plot(amp, res_spec_fit['k'][0], 'k.')
+        except:
+            print(f"Couldn't fit Lorentzian to spectrum at amplitude {amp}.")
+            continue
+    plt.title(f"{rr1.name} FWHM")
+    plt.xlabel("Amplitude")
+    plt.ylabel("FWHM")
+    plt.show()
+
 
     # rr1.operations["readout"].amplitude =
     # rr2.operations["readout"].amplitude =

@@ -102,7 +102,7 @@ with program() as multi_res_spec:
 #######################
 # Simulate or execute #
 #######################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
