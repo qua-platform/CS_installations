@@ -24,14 +24,11 @@
                 "8": {
                     "offset": 0.0
                 },
-                "9": {
+                "6": {
                     "offset": 0.0
                 }
             },
-            "digital_outputs": {
-                "3": {},
-                "7": {}
-            },
+            "digital_outputs": {},
             "analog_inputs": {
                 "1": {
                     "offset": 0.0
@@ -65,16 +62,6 @@
                 "-y90": "q0.xy.-y90_DragGaussian.pulse",
                 "saturation": "q0.xy.saturation.pulse"
             },
-            "digitalInputs": {
-                "octave_switch": {
-                    "port": [
-                        "con1",
-                        3
-                    ],
-                    "delay": 87,
-                    "buffer": 15
-                }
-            },
             "intermediate_frequency": 100000000,
             "RF_inputs": {
                 "port": [
@@ -97,16 +84,6 @@
         "q0.resonator": {
             "operations": {
                 "readout": "q0.resonator.readout.pulse"
-            },
-            "digitalInputs": {
-                "octave_switch": {
-                    "port": [
-                        "con1",
-                        3
-                    ],
-                    "delay": 87,
-                    "buffer": 15
-                }
             },
             "intermediate_frequency": 50000000,
             "RF_inputs": {
@@ -146,16 +123,6 @@
                 "-y90": "q1.xy.-y90_DragGaussian.pulse",
                 "saturation": "q1.xy.saturation.pulse"
             },
-            "digitalInputs": {
-                "octave_switch": {
-                    "port": [
-                        "con1",
-                        7
-                    ],
-                    "delay": 87,
-                    "buffer": 15
-                }
-            },
             "intermediate_frequency": 100000000,
             "RF_inputs": {
                 "port": [
@@ -171,23 +138,13 @@
             "singleInput": {
                 "port": [
                     "con1",
-                    9
+                    6
                 ]
             }
         },
         "q1.resonator": {
             "operations": {
                 "readout": "q1.resonator.readout.pulse"
-            },
-            "digitalInputs": {
-                "octave_switch": {
-                    "port": [
-                        "con1",
-                        7
-                    ],
-                    "delay": 87,
-                    "buffer": 15
-                }
             },
             "intermediate_frequency": 50000000,
             "RF_inputs": {
@@ -1838,7 +1795,7 @@
                     "LO_frequency": 7000000000,
                     "LO_source": "internal",
                     "gain": 0,
-                    "output_mode": "always_on",
+                    "output_mode": "always_off",
                     "input_attenuators": "off",
                     "I_connection": [
                         "con1",
@@ -1853,7 +1810,7 @@
                     "LO_frequency": 7000000000,
                     "LO_source": "internal",
                     "gain": 0,
-                    "output_mode": "always_on",
+                    "output_mode": "always_off",
                     "input_attenuators": "off",
                     "I_connection": [
                         "con1",

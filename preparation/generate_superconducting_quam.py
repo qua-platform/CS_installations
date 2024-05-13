@@ -60,10 +60,10 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
     }
     quam.network = {
         "host": "172.16.33.101",
-        "cluster_name": "Cluster_1",
+        "cluster_name": "Cluster_81",
         "octave_ip": "172.16.33.101",
         "octave_port": 11050,
-        "data_folder": "C:/git/qua-libs/Quantum-Control-Applications/Superconducting/quam/Two-Flux-Tunable-Transmons/DATA",
+        "data_folder": "data",
     }
     # Add the Octave to the quam
     octave = Octave(
@@ -76,19 +76,15 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
     octave_config = octave.get_octave_config()
     # Add the transmon components (xy, z and resonator) to the quam
     for idx in range(num_qubits):
+        octave_idx = 2 * (idx + 1)
         # Create qubit components
         transmon = Transmon(
             id=idx,
             xy=IQChannel(
                 opx_output_I=f"#/wiring/qubits/{idx}/port_I",
                 opx_output_Q=f"#/wiring/qubits/{idx}/port_Q",
-                frequency_converter_up=octave.RF_outputs[2 * (idx + 1)].get_reference(),
+                frequency_converter_up=octave.RF_outputs[octave_idx].get_reference(),
                 intermediate_frequency=100 * u.MHz,
-                digital_outputs={
-                    "octave_switch": DigitalOutputChannel(
-                        opx_output=f"#/wiring/qubits/{idx}/digital_port", delay=87, buffer=15
-                    )
-                },  # 57ns, 18ns for QOP222 and above
             ),
             z=FluxLine(opx_output=f"#/wiring/qubits/{idx}/port_Z"),
             resonator=ReadoutResonator(
@@ -96,11 +92,6 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
                 opx_output_Q="#/wiring/resonator/opx_output_Q",
                 opx_input_I="#/wiring/resonator/opx_input_I",
                 opx_input_Q="#/wiring/resonator/opx_input_Q",
-                digital_outputs={
-                    "octave_switch": DigitalOutputChannel(
-                        opx_output=f"#/wiring/qubits/{idx}/digital_port", delay=87, buffer=15
-                    )
-                },  # 57ns, 18ns for QOP222 and above
                 opx_input_offset_I=0.0,
                 opx_input_offset_Q=0.0,
                 frequency_converter_up=octave.RF_outputs[1].get_reference(),
@@ -198,9 +189,8 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
         quam.active_qubit_names.append(transmon.name)
 
         # TODO: be careful to set the right upconverters!!
-        #  The following `octave_idx` assumes q1: 3+4, q2: 5+6, etc...
+        #  The above `octave_idx` assumes q1: 3+4, q2: 5+6, etc...
         #  Note: RF_outputs is a dictionary which is 1-indexed, not a list.
-        octave_idx = 2 * (idx + 1)
         octave.RF_outputs[octave_idx].channel = transmon.xy.get_reference()
         octave.RF_outputs[octave_idx].LO_frequency = 7 * u.GHz  # Remember to set the LO frequency
 
@@ -214,18 +204,12 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
     return quam, octave_config
 
 
-CONFIG_DIR = "quam_machine"
-
 if __name__ == "__main__":
     folder = Path("")
     folder.mkdir(exist_ok=True)
 
-    if os.path.exists(folder / CONFIG_DIR):
-        raise FileExistsError(f"Directory '{CONFIG_DIR}' already exists. "
-                              f"If you want to overwrite its contents, please delete it.")
-
     machine, _ = create_quam_superconducting_referenced(num_qubits=2)
-    machine.save(folder / CONFIG_DIR, content_mapping={"wiring.json": {"wiring", "network"}})
+    machine.save(folder / "static_quam_machine", content_mapping={"wiring.json": {"wiring", "network"}})
     machine.save(folder / "state.json")
 
     qua_file = folder / "qua_config.json"

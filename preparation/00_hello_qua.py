@@ -1,10 +1,10 @@
 """
 A simple sandbox to showcase different QUA functionalities during the installation.
 """
-
+from matplotlib import pyplot as plt
 from qm.qua import *
 from qm import SimulationConfig
-from components import QuAM
+from quam_components import QuAM
 from macros import node_save
 
 ###################################################
@@ -45,6 +45,7 @@ if simulate:
     job = qmm.simulate(config, hello_qua, simulation_config)
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
+    plt.show()
 else:
     # Open a quantum machine to execute the QUA program
     qm = qmm.open_qm(config)

@@ -13,7 +13,7 @@ from qm import SimulationConfig
 import matplotlib.pyplot as plt
 import numpy as np
 from qualang_tools.units import unit
-from components import QuAM
+from quam_components import QuAM
 from macros import node_save
 
 ###################################################
@@ -108,6 +108,8 @@ else:
     plt.xlabel("Time [ns]")
     plt.legend()
     plt.tight_layout()
+
+    plt.show()
 
     print(f"\nInput1 mean: {np.mean(adc1)} V\n" f"Input2 mean: {np.mean(adc2)} V")
 

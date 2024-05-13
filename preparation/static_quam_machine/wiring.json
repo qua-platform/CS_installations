@@ -2,7 +2,9 @@
     "network": {
         "host": "172.16.33.101",
         "cluster_name": "Cluster_81",
-        "data_folder": "C:/git/qua-libs/Quantum-Control-Applications/Superconducting/quam/Two-Flux-Tunable-Transmons/DATA"
+        "octave_ip": "172.16.33.101",
+        "octave_port": 11050,
+        "data_folder": "data"
     },
     "wiring": {
         "qubits": [
@@ -18,13 +20,13 @@
                 "port_Z": [
                     "con1",
                     5
-                ],
-                "digital_port": [
-                    "con1",
-                    3
                 ]
             },
             {
+                "port_Z": [
+                    "con1",
+                    6
+                ],
                 "port_I": [
                     "con1",
                     7
@@ -32,14 +34,6 @@
                 "port_Q": [
                     "con1",
                     8
-                ],
-                "port_Z": [
-                    "con1",
-                    9
-                ],
-                "digital_port": [
-                    "con1",
-                    7
                 ]
             }
         ],
