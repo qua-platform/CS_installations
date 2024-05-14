@@ -26,6 +26,13 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
     quam = QuAM()
 
     quam.wiring = {
+        "resonator": {
+            "opx_output_I": ("con1", 1),
+            "opx_output_Q": ("con1", 2),
+            "opx_input_I": ("con1", 1),
+            "opx_input_Q": ("con1", 2),
+            "digital_port": ("con1", 1),
+        },
         # Stage #1: Single-qubit control
         "qubits": [
             {
@@ -50,13 +57,6 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
         #         "port_Q": ("con1", 6),
         #     }
         # ],
-        "resonator": {
-            "opx_output_I": ("con1", 1),
-            "opx_output_Q": ("con1", 2),
-            "opx_input_I": ("con1", 1),
-            "opx_input_Q": ("con1", 2),
-            "digital_port": ("con1", 1),
-        },
     }
     quam.network = {
         "host": "172.16.33.101",
