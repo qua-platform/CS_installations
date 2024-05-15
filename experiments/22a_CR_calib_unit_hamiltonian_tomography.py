@@ -236,7 +236,7 @@ if not simulate:
         data = {
             "fig_live": fig,
             "fig_analysis": fig_analysis,
-            "t_vec_clock_ns": t_vec_ns,
+            "t_vec_ns": t_vec_ns,
             "crqst_data_c": I1,
             "crqst_data_t": I2,
             "I1": I1,
