@@ -36,7 +36,7 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
     # octave.print_summary()
     octave_config = octave.get_octave_config()
 
-    # Define the connectivity [xy.I, xy.Q, z]
+    # Define the connectivity
     quam.wiring = {
         "qubits": {
             "q1": {
@@ -75,7 +75,7 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
 
     quam.network = {"host": "172.16.33.101", "cluster_name": "Cluster_81"}
     # Add the transmon components (xy, z and resonator) to the quam
-    for qubit_name in quam.wiring:
+    for qubit_name in quam.wiring.qubits:
         # Create qubit components
         transmon = Transmon(
             id=qubit_name,
