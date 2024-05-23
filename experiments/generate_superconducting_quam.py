@@ -36,41 +36,61 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
     # octave.print_summary()
     octave_config = octave.get_octave_config()
 
-    # Define the connectivity
+    # Define the connectivity [xy.I, xy.Q, z]
     quam.wiring = {
-        "qubits": [
-            {
-                "port_I": ("con1", 3 * k + 3),
-                "port_Q": ("con1", 3 * k + 4),
-                "port_Z": ("con1", 3 * k + 5),
-            }
-            for k in range(2)  # TODO: what if k>2?
-        ],
-        "resonator": {
+        "qubits": {
+            "q1": {
+                "xy": {"opx_output_I": ("con1", 1), "opx_output_Q": ("con1", 2)},
+                "z": {"opx_output": ("con2", 5)},
+            },
+            "q2": {
+                "xy": {"opx_output_I": ("con1", 7), "opx_output_Q": ("con1", 8)},
+                "z": {"opx_output": ("con2", 6)},
+            },
+            "q3": {
+                "xy": {"opx_output_I": ("con1", 5), "opx_output_Q": ("con1", 6)},
+                "z": {"opx_output": ("con2", 7)},
+            },
+            "q4": {
+                "xy": {"opx_output_I": ("con1", 9), "opx_output_Q": ("con1", 10)},
+                "z": {"opx_output": ("con2", 8)},
+            },
+            "q00": {
+                "xy": {"opx_output_I": ("con1", 9), "opx_output_Q": ("con1", 10)},
+                "z": {"opx_output": ("con2", 9)},
+            },
+            "q5": {
+                "xy": {"opx_output_I": ("con1", 3), "opx_output_Q": ("con1", 4)},
+                "z": {"opx_output": ("con2", 3)},
+            },
+        }
+    }
+    for qubit_wiring in quam.wiring["qubits"].values():
+        qubit_wiring["resonator"] = {
             "opx_output_I": ("con1", 1),
             "opx_output_Q": ("con1", 2),
             "opx_input_I": ("con1", 1),
             "opx_input_Q": ("con1", 2),
-        },
-    }
+        }
+
     quam.network = {"host": "172.16.33.101", "cluster_name": "Cluster_81"}
     # Add the transmon components (xy, z and resonator) to the quam
-    for idx in range(num_qubits):
+    for qubit_name in quam.wiring:
         # Create qubit components
         transmon = Transmon(
-            id=idx,
+            id=qubit_name,
             xy=IQChannel(
-                opx_output_I=f"#/wiring/qubits/{0}/port_I",
-                opx_output_Q=f"#/wiring/qubits/{0}/port_Q",
+                opx_output_I=f"#/wiring/qubits/{qubit_name}/xy/opx_output_I",
+                opx_output_Q=f"#/wiring/qubits/{qubit_name}/xy/opx_output_Q",
                 frequency_converter_up=octave.RF_outputs[2 * (0 + 1)].get_reference(),
                 intermediate_frequency=100 * u.MHz,
             ),
-            z=FluxLine(opx_output=f"#/wiring/qubits/{0}/port_Z"),
+            z=FluxLine(opx_output=f"#/wiring/qubits/{qubit_name}/z/opx_output"),
             resonator=ReadoutResonator(
-                opx_output_I="#/wiring/resonator/opx_output_I",
-                opx_output_Q="#/wiring/resonator/opx_output_Q",
-                opx_input_I="#/wiring/resonator/opx_input_I",
-                opx_input_Q="#/wiring/resonator/opx_input_Q",
+                opx_output_I=f"#/wiring/qubits/{qubit_name}/resonator/opx_output_I",
+                opx_output_Q=f"#/wiring/qubits/{qubit_name}/resonator/opx_output_Q",
+                opx_input_I=f"#/wiring/qubits/{qubit_name}/resonator/opx_input_I",
+                opx_input_Q=f"#/wiring/qubits/{qubit_name}/resonator/opx_input_Q",
                 opx_input_offset_I=0.0,
                 opx_input_offset_Q=0.0,
                 frequency_converter_up=octave.RF_outputs[1].get_reference(),
