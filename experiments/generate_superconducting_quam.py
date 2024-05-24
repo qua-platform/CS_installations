@@ -40,6 +40,8 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
     quam.octaves["octave2"] = octave2
 
     octave_config = octave1.get_octave_config()
+    octave_config.add_device_info(octave2.name, octave2.host, octave2.port)
+    octave_config.add_opx_octave_port_mapping(portmap=octave2.get_portmap())
 
     # Define the connectivity
     quam.wiring = {
