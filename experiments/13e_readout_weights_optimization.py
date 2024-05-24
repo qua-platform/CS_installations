@@ -21,7 +21,7 @@ Prerequisites:
 
 Next steps before going to the next node:
     - Update the integration weights in the state by following the steps at the end of the script.
-    - Save the current state by calling machine.save("quam")
+    - Save the current state by calling machine.save("quam_state")
 """
 
 from qm.qua import *
@@ -39,7 +39,7 @@ import matplotlib.pyplot as plt
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load("quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -285,4 +285,4 @@ else:
     rr.opt_weights.weights_minus_imag = weights_minus_imag
     rr.opt_weights.weights_imag = weights_imag
     rr.opt_weights.weights_minus_real = weights_minus_real
-    # machine.save("quam")
+    # machine.save("quam_state")

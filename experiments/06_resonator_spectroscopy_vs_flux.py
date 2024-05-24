@@ -16,7 +16,7 @@ Prerequisites:
 Before proceeding to the next node:
     - Adjust the flux bias to the minimum frequency point, labeled as "max_frequency_point", in the state.
     - Adjust the flux bias to the minimum frequency point, labeled as "min_frequency_point", in the state.
-    - Save the current state by calling machine.save("quam")
+    - Save the current state by calling machine.save("quam_state")
 """
 
 from qm.qua import *
@@ -42,7 +42,7 @@ from macros import qua_declaration, multiplexed_readout
 u = unit(coerce_to_integer=True)
 # Instantiate the abstract machine
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load("quam_state")
 # Load the config
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
@@ -157,4 +157,4 @@ else:
 # Update machine with max frequency point for both resonator and qubit
 # q1.z.min_offset =
 # q2.z.min_offset =
-# machine.save("quam")
+# machine.save("quam_state")

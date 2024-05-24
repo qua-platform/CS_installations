@@ -14,7 +14,7 @@ Prerequisites:
 Before proceeding to the next node:
     - Adjust the qubit frequency setting, labeled as "f_01", in the state.
     - Modify the qubit pulse amplitude setting, labeled as "pi_amp", in the state.
-    - Save the current state by calling machine.save("quam")
+    - Save the current state by calling machine.save("quam_state")
 """
 
 from qm.qua import *
@@ -38,7 +38,7 @@ from macros import qua_declaration, multiplexed_readout
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load("quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()

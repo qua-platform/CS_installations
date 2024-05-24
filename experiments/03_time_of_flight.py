@@ -30,7 +30,7 @@ from scipy.signal import savgol_filter
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load("quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -145,4 +145,4 @@ else:
         q.resonator.opx_input_offset_I -= np.mean(adc1)
         q.resonator.opx_input_offset_Q -= np.mean(adc2)
         q.resonator.time_of_flight += delay
-    machine.save("quam")
+    machine.save("quam_state")

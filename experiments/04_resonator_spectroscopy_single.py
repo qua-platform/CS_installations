@@ -13,7 +13,7 @@ Prerequisites:
 
 Before proceeding to the next node:
     - Update the readout frequency, labeled as f_res and f_opt, in the state.
-    - Save the current state by calling machine.save("quam")
+    - Save the current state by calling machine.save("quam_state")
 """
 
 from qm.qua import *
@@ -35,7 +35,7 @@ from scipy import signal
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load("quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -152,7 +152,7 @@ else:
         # Update QUAM
         rr.intermediate_frequency = res_spec_fit["f"][0]
         rr.frequency_bare = rr.rf_frequency
-        machine.save("quam")
+        machine.save("quam_state")
 
     except (Exception,):
         pass

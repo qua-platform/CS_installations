@@ -20,7 +20,7 @@ Prerequisites:
 
 Next steps before going to the next node:
     - Update the iSWAP gate parameters in the state.
-    - Save the current state by calling machine.save("quam")
+    - Save the current state by calling machine.save("quam_state")
 """
 
 from qm.qua import *
@@ -44,7 +44,7 @@ from macros import qua_declaration, multiplexed_readout
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load("quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -171,5 +171,5 @@ else:
     # Update the state
     # q1.z.iswap.length =
     # q1.z.iswap.level =
-# machine.save("quam")
+# machine.save("quam_state")
 # np.savez(save_dir / 'iswap', I1=I1, Q1=Q1, I2=I2, ts=ts, dcs=dcs)

@@ -40,7 +40,7 @@ from macros import qua_declaration, multiplexed_readout
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load("quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -186,4 +186,4 @@ else:
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
 # TODO: store the fit parameters
-# machine.save("quam")
+# machine.save("quam_state")

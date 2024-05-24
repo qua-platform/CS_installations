@@ -32,7 +32,7 @@ Prerequisites:
 
 Next steps before going to the next node:
     - Update the FIR and IIR filter taps in the state (qubits[].z.wiring.filter.fir_taps & qubits[].z.wiring.filter.iir_taps).
-    - Save the current state by calling machine.save("quam")
+    - Save the current state by calling machine.save("quam_state")
     - WARNING: the digital filters will add a global delay --> need to recalibrate IQ blobs (rotation_angle & ge_threshold).
 """
 
@@ -59,7 +59,7 @@ from digital_filters import exponential_decay, single_exponential_correction
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load("quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -299,4 +299,4 @@ else:
     # Update the state
     qb.z.filter_fir_taps = list(fir)
     qb.z.filter_iir_taps = list(iir)
-# machine.save("quam")
+# machine.save("quam_state")

@@ -17,7 +17,7 @@ Prerequisites:
 Before proceeding to the next node:
     - Update the readout frequency, labeled as "f_res" and "f_opt", in the state.
     - Adjust the readout amplitude, labeled as "readout_pulse_amp", in the state.
-    - Save the current state by calling machine.save("quam")
+    - Save the current state by calling machine.save("quam_state")
 """
 
 from qm.qua import *
@@ -42,7 +42,7 @@ from macros import qua_declaration
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("quam")
+machine = QuAM.load("quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.octave.get_octave_config()
@@ -175,4 +175,4 @@ else:
 
     # rr1.operations["readout"].amplitude =
     # rr2.operations["readout"].amplitude =
-    # machine.save("quam")
+    # machine.save("quam_state")
