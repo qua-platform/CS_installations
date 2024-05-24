@@ -89,7 +89,6 @@ class QuAM(QuamRoot):
                 octave_config = octave.get_octave_config()
             else:
                 octave_config.add_device_info(octave.name, octave.ip, octave.port)
-                octave_config.add_opx_octave_port_mapping(portmap=octave.get_portmap())
 
         return octave_config
 
