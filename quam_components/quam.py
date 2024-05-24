@@ -32,6 +32,11 @@ class QuAM(QuamRoot):
         return super().load(*args, **kwargs)
 
     @property
+    def octave(self) -> Octave:
+        """Return the first octave."""
+        return list(self.octaves.values())[0]
+
+    @property
     def data_handler(self) -> DataHandler:
         """Return the existing data handler or open a new one to conveniently handle data saving."""
         if self._data_handler is None:
