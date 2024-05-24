@@ -11,6 +11,11 @@ from quam.core import QuamRoot
 from qualang_tools.units import unit
 
 
+network = {"host": "qum.phys.sinica.edu.tw", "cluster_name": "QPX_1", "port": 9800}
+octave1_network = dict(ip=network["host"], port=11250)
+octave2_network = dict(ip=network["host"], port=11251)
+
+
 def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOctaveConfig):
     """Create a QuAM with a number of qubits.
 
@@ -26,14 +31,15 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
     quam = QuAM()
 
     # Add the Octave to the quam
-    octave = Octave(
-        name="octave1",
-        ip="172.16.33.101",
-        port=11050,
-    )
-    quam.octave = octave
-    octave.initialize_frequency_converters()
-    # octave.print_summary()
+    octave1 = Octave(name="octave1", **octave1_network)
+    octave1.initialize_frequency_converters()
+    quam.octaves["octave1"] = octave1
+
+    octave2 = Octave(name="octave2", **octave2_network)
+    octave2.initialize_frequency_converters()
+    quam.octaves["octave2"] = octave2
+
+    octave = octave1  # TODO Eventually remove all references to "octave"
     octave_config = octave.get_octave_config()
 
     # Define the connectivity
@@ -73,7 +79,7 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
             "opx_input_Q": ("con1", 2),
         }
 
-    quam.network = {"host": "172.16.33.101", "cluster_name": "Cluster_81"}
+    quam.network = network
     # Add the transmon components (xy, z and resonator) to the quam
     for qubit_name in quam.wiring.qubits:
         # Create qubit components
