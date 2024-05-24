@@ -16,7 +16,7 @@ octave1_network = dict(ip=network["host"], port=11250)
 octave2_network = dict(ip=network["host"], port=11251)
 
 
-def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOctaveConfig):
+def create_quam_superconducting_referenced(num_qubits: int) -> QuAM:
     """Create a QuAM with a number of qubits.
 
     Args:
@@ -38,10 +38,6 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
     octave2 = Octave(name="octave2", **octave2_network)
     octave2.initialize_frequency_converters()
     quam.octaves["octave2"] = octave2
-
-    octave_config = octave1.get_octave_config()
-    octave_config.add_device_info(octave2.name, octave2.host, octave2.port)
-    octave_config.add_opx_octave_port_mapping(portmap=octave2.get_portmap())
 
     # Define the connectivity
     quam.wiring = {
@@ -153,7 +149,7 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
         octave1.RF_inputs[1].channel = transmon.resonator.get_reference()
         octave1.RF_outputs[1].LO_frequency = 4 * u.GHz
         octave1.RF_inputs[1].LO_frequency = 4 * u.GHz
-    return quam, octave_config
+    return quam
 
 
 def rewire_for_active_qubits(quam: QuAM, active_qubit_names: List[str]):
@@ -174,7 +170,7 @@ if __name__ == "__main__":
     folder = Path("")
     folder.mkdir(exist_ok=True)
 
-    machine, _ = create_quam_superconducting_referenced(num_qubits=5)
+    machine = create_quam_superconducting_referenced(num_qubits=5)
     machine.save(folder / "quam_state", content_mapping={"wiring.json": {"wiring", "network"}})
 
     qua_file = folder / "qua_config.json"

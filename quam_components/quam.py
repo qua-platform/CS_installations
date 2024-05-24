@@ -81,6 +81,18 @@ class QuAM(QuamRoot):
             settings["port"] = self.network["port"]
         return QuantumMachinesManager(**settings)
 
+    def get_octave_config(self) -> dict:
+        """Return the Octave configuration."""
+        octave_config = None
+        for octave in self.octaves.values():
+            if octave_config is None:
+                octave_config = octave.get_octave_config()
+            else:
+                octave_config.add_device_info(octave.name, octave.host, octave.port)
+                octave_config.add_opx_octave_port_mapping(portmap=octave.get_portmap())
+
+        return octave_config
+
     def calibrate_octave_ports(self, QM: QuantumMachine) -> None:
         """Calibrate the Octave ports for all the active qubits.
 

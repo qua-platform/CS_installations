@@ -46,7 +46,7 @@ machine = QuAM.load("quam_state")
 # Load the config
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
-octave_config = machine.octave.get_octave_config()
+octave_config = machine.get_octave_config()
 # Open the Quantum Machine Manager
 # Open Communication with the QOP
 qmm = machine.connect()
