@@ -129,7 +129,7 @@ def get_prog(qubit, resonator):
             # Get a value from the pseudo-random number generator on the OPX FPGA
             assign(r_, r.rand_int(21))
             # Wait for the qubit to decay to the ground state - Can be replaced by active reset
-            wait(machine.get_thermalization_time * u.ns)
+            wait(machine.thermalization_time * u.ns)
             # Plays a random XY sequence
             # The switch/case method allows to map a python index (here "i") to a QUA number (here "r_") in order to switch
             # between elements in a python list (here "sequence") that cannot be converted into a QUA array (here because it

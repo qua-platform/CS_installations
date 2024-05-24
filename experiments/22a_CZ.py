@@ -100,7 +100,7 @@ with program() as cz:
                 # Measure the state of the resonators
                 multiplexed_readout(machine, I, I_st, Q, Q_st)
                 # Wait for the qubits to decay to the ground state
-                wait(machine.get_thermalization_time * u.ns)
+                wait(machine.thermalization_time * u.ns)
 
     with stream_processing():
         # for the progress counter

@@ -91,7 +91,7 @@ with program() as ramsey:
                 # QUA macro the readout the state of the active resonators (defined in macros.py)
                 multiplexed_readout(machine, I, I_st, Q, Q_st)
                 # Wait for the qubits to decay to the ground state
-                wait(machine.get_thermalization_time * u.ns)
+                wait(machine.thermalization_time * u.ns)
 
     with stream_processing():
         n_st.save("n")

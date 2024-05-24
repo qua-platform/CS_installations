@@ -50,14 +50,14 @@ with program() as iq_blobs:
         # ground iq blobs
         # reset_qubit("cooldown", q1.xy.name, rr1.name, cooldown_time=cooldown_time)
         reset_qubit("cooldown", q2.xy.name, rr2.name, cooldown_time=cooldown_time)
-        # wait(machine.get_thermalization_time * u.ns)
+        # wait(machine.thermalization_time * u.ns)
         reset_qubit("active", q1.xy.name, rr1.name, threshold=q1.ge_threshold, max_tries=1, Ig=I_g[0])
         align()
         multiplexed_readout(I_g, I_g_st, Q_g, Q_g_st, resonators=active_qubits, weights="rotated_")
 
         # excited iq blobs
         align()
-        # wait(machine.get_thermalization_time * u.ns)
+        # wait(machine.thermalization_time * u.ns)
         reset_qubit("active", q1.xy.name, rr1.name, threshold=q1.ge_threshold, max_tries=10, Ig=I_g[0])
         q1.xy.play("x180")
         q2.xy.play("x180")

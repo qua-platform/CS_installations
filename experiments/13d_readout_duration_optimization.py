@@ -141,7 +141,7 @@ with program() as ro_duration_opt:
             assign(Q[ind], QQ[ind] + QI[ind])
             save(Q[ind], Qg_st)
         # Wait for the qubit to decay to the ground state
-        wait(machine.get_thermalization_time * u.ns, rr.name)
+        wait(machine.thermalization_time * u.ns, rr.name)
 
         align()
 
@@ -171,7 +171,7 @@ with program() as ro_duration_opt:
             save(Q[ind], Qe_st)
 
         # Wait for the qubit to decay to the ground state
-        wait(machine.get_thermalization_time * u.ns, rr.name)
+        wait(machine.thermalization_time * u.ns, rr.name)
         # Save the averaging iteration to get the progress bar
         save(n, n_st)
 

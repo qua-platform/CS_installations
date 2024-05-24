@@ -79,14 +79,14 @@ with program() as ro_amp_freq_opt:
         with for_(*from_array(a, amplitudes)):
             with for_(n, 0, n < n_runs, n + 1):
                 # ground iq blobs for both qubits
-                wait(machine.get_thermalization_time * u.ns)
+                wait(machine.thermalization_time * u.ns)
                 align()
                 multiplexed_readout(I_g, I_g_st, Q_g, Q_g_st, resonators=active_qubits, weights="rotated_", amplitude=a)
 
                 # excited iq blobs for both qubits
                 align()
                 # Wait for thermalization again in case of measurement induced transitions
-                wait(machine.get_thermalization_time * u.ns)
+                wait(machine.thermalization_time * u.ns)
                 q1.xy.play("x180")
                 q2.xy.play("x180")
                 align()

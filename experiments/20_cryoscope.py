@@ -154,7 +154,7 @@ with program() as cryoscope:
                 assign(state[0], I[0] > q1.resonator.operations["readout"].threshold)
                 assign(state[1], I[1] > q2.resonator.operations["readout"].threshold)
                 # Wait cooldown time and save the results
-                wait(machine.get_thermalization_time * u.ns)
+                wait(machine.thermalization_time * u.ns)
                 save(state[0], state_st[0])
                 save(state[1], state_st[1])
 

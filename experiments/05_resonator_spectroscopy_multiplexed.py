@@ -77,7 +77,7 @@ with program() as multi_res_spec:
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
             # wait for the resonators to deplete
-            wait(machine.get_depletion_time * u.ns, rr1.name, rr2.name)
+            wait(machine.depletion_time * u.ns, rr1.name, rr2.name)
 
             # resonator 1
             update_frequency(rr1.name, df + rr1.intermediate_frequency)

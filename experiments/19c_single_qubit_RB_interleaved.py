@@ -237,7 +237,7 @@ with program() as rb:
             with if_((depth == 2) | (depth == depth_target)):
                 with for_(n, 0, n < n_avg, n + 1):
                     # Can replace by active reset
-                    qubit.resonator.wait(machine.get_thermalization_time * u.ns)
+                    qubit.resonator.wait(machine.thermalization_time * u.ns)
                     # Align the two elements to play the sequence after qubit initialization
                     qubit.resonator.align(qubit.xy.name)
                     # The strict_timing ensures that the sequence will be played without gaps

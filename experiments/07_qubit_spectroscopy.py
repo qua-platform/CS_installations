@@ -94,7 +94,7 @@ with program() as multi_qubit_spec:
             # QUA macro the readout the state of the active resonators (defined in macros.py)
             multiplexed_readout(machine, I, I_st, Q, Q_st, sequential=False)
             # Wait for the qubit to decay to the ground state
-            wait(machine.get_thermalization_time * u.ns)
+            wait(machine.thermalization_time * u.ns)
 
     with stream_processing():
         n_st.save("n")

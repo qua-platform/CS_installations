@@ -70,7 +70,7 @@ with program() as ro_amp_opt:
         save(counter, n_st)
         with for_(n, 0, n < n_runs, n + 1):
             # ground iq blobs for both qubits
-            wait(machine.get_thermalization_time * u.ns)
+            wait(machine.thermalization_time * u.ns)
             align()
             # Measure the state of the resonator with varying readout pulse amplitudes
             multiplexed_readout(machine, I_g, I_g_st, Q_g, Q_g_st, amplitude=a)
@@ -78,7 +78,7 @@ with program() as ro_amp_opt:
             # excited iq blobs for both qubits
             align()
             # Wait for thermalization again in case of measurement induced transitions
-            wait(machine.get_thermalization_time * u.ns)
+            wait(machine.thermalization_time * u.ns)
             q1.xy.play("x180")
             q2.xy.play("x180")
             align()

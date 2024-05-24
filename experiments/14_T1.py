@@ -79,7 +79,7 @@ with program() as T1:
             align()
             multiplexed_readout(machine, I, I_st, Q, Q_st)
             # Wait for the qubits to decay to the ground state
-            wait(machine.get_thermalization_time * u.ns)
+            wait(machine.thermalization_time * u.ns)
 
     with stream_processing():
         # Cast the data into a 1D vector, average the 1D vectors together and store the results on the OPX processor

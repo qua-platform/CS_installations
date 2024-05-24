@@ -93,7 +93,7 @@ with program() as ramsey:
             # Measure the state of the resonators
             multiplexed_readout(machine, I, I_st, Q, Q_st)
             # Wait for the qubits to decay to the ground state
-            wait(machine.get_thermalization_time * u.ns)
+            wait(machine.thermalization_time * u.ns)
             # Reset the frame of the qubits in order not to accumulate rotations
             reset_frame(q1.xy.name, q2.xy.name)
 

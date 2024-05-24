@@ -90,7 +90,7 @@ with program() as multi_res_spec_vs_flux:
                 # QUA macro the readout the state of the active resonators (defined in macros.py)
                 multiplexed_readout(machine, I, I_st, Q, Q_st, sequential=False)
                 # wait for the resonators to relax
-                wait(machine.get_depletion_time * u.ns, q1.resonator.name, q2.resonator.name)
+                wait(machine.depletion_time * u.ns, q1.resonator.name, q2.resonator.name)
 
     with stream_processing():
         n_st.save("n")
