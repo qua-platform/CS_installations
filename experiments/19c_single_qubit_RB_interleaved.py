@@ -252,7 +252,7 @@ with program() as rb:
                     else:
                         q1.resonator.play("readout")
                     # Make sure you updated the ge_threshold and angle if you want to use state discrimination
-                    qubit.resonator.measure("readout", I_var=I, Q_var=Q)
+                    qubit.resonator.measure("readout", qua_vars=(I, Q))
                     save(I, I_st)
                     save(Q, Q_st)
                     # Make sure you updated the ge_threshold

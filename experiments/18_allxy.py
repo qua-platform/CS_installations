@@ -103,7 +103,7 @@ def allXY(pulses, qubit: Transmon, resonator: ReadoutResonator):
         rr2.play("readout")
     else:
         rr1.play("readout")
-    resonator.measure("readout", I_var=I_xy, Q_var=Q_xy)
+    resonator.measure("readout", qua_vars=(I_xy, Q_xy))
     return I_xy, Q_xy
 
 

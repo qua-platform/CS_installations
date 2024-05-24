@@ -72,7 +72,7 @@ with program() as resonator_spec:
             # Update the frequency of the digital oscillator linked to the resonator element
             update_frequency(rr.name, f)
             # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
-            rr.measure("readout", I_var=I, Q_var=Q)
+            rr.measure("readout", qua_vars=(I, Q))
             # Wait for the resonator to deplete
             rr.wait(machine.depletion_time * u.ns)
             # Save the 'I' & 'Q' quadratures to their respective streams
