@@ -149,6 +149,7 @@ def create_quam_superconducting_referenced(num_qubits: int) -> QuAM:
         octave1.RF_inputs[1].channel = transmon.resonator.get_reference()
         octave1.RF_outputs[1].LO_frequency = 4 * u.GHz
         octave1.RF_inputs[1].LO_frequency = 4 * u.GHz
+        octave1.RF_outputs[1].output_mode = "always_on"
     return quam
 
 
