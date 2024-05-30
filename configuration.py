@@ -13,7 +13,7 @@ u = unit(coerce_to_integer=True)
 # Network parameters #
 ######################
 qop_ip = "172.16.33.101"  # Write the QM router IP address
-cluster_name = None  # Write your cluster_name if version >= QOP220
+cluster_name = "Cluster_81"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 # Path to save data
@@ -270,7 +270,13 @@ config = {
                 3: {"offset": 0.0},  # I qubit
                 4: {"offset": 0.0},  # Q qubit
             },
-            "digital_outputs": {},
+            "digital_outputs": {
+                1: {},
+                3: {},
+                5: {},
+                7: {},
+                9: {},
+            },
             "analog_inputs": {
                 1: {"offset": 0.0, "gain_db": 0},  # I from down-conversion
                 2: {"offset": 0.0, "gain_db": 0},  # Q from down-conversion
@@ -292,6 +298,13 @@ config = {
                 "y180": f"y180_pulse_{qubit_key}",
                 "-y90": f"-y90_pulse_{qubit_key}",
             },
+            "digitalInputs": {
+                "switch": {
+                    "port": ("con1", 3),
+                    "delay": 57,
+                    "buffer": 18,
+                },
+            },
         } for qubit_key in MULTIPLEX_DRIVE_CONSTANTS["drive1"]["QUBITS"]},
 
         # readout line 1
@@ -306,6 +319,13 @@ config = {
                 "readout": "readout_pulse_"+rr,
                 "midcircuit_readout": "midcircuit_readout_pulse_"+rr,
             },
+            "digitalInputs": {
+                "switch": {
+                    "port": ("con1", 1),
+                    "delay": 57,
+                    "buffer": 18,
+                },
+            },
         } for rr in RL_CONSTANTS["rl1"]["RESONATORS"]},
 
     },
@@ -315,13 +335,13 @@ config = {
                 RL_CONSTANTS["rl1"]["rf_input"]: {
                     "LO_frequency": RL_CONSTANTS["rl1"]["LO"],
                     "LO_source": "internal",
-                    "output_mode": "always_on",
+                    "output_mode": "triggered",
                     "gain": 0,
                 },
                 MULTIPLEX_DRIVE_CONSTANTS['drive1']["RF_port"]: {
                     "LO_frequency": MULTIPLEX_DRIVE_CONSTANTS['drive1']["LO"],
                     "LO_source": "internal",
-                    "output_mode": "always_on",
+                    "output_mode": "triggered",
                     "gain": 0,
                 },
             },
@@ -342,11 +362,13 @@ config = {
                 "I": "const_wf",
                 "Q": "zero_wf",
             },
+            "digital_marker": "ON",
         },
         "saturation_pulse": {
             "operation": "control",
             "length": saturation_len,
             "waveforms": {"I": "saturation_drive_wf", "Q": "zero_wf"},
+            "digital_marker": "ON",
         },
         **{f"x90_pulse_{key}":
             {
@@ -355,7 +377,8 @@ config = {
                 "waveforms": {
                     "I": f"x90_I_wf_{key}",
                     "Q": f"x90_Q_wf_{key}"
-                }
+                },
+                "digital_marker": "ON",
             }
             for key in QUBIT_CONSTANTS.keys()
         },
@@ -366,7 +389,8 @@ config = {
                 "waveforms": {
                     "I": f"x180_I_wf_{key}",
                     "Q": f"x180_Q_wf_{key}"
-                }
+                },
+                "digital_marker": "ON",
             }
             for key in QUBIT_CONSTANTS.keys()
         },
@@ -377,7 +401,8 @@ config = {
                 "waveforms": {
                     "I": f"minus_x90_I_wf_{key}",
                     "Q": f"minus_x90_Q_wf_{key}"
-                }
+                },
+                "digital_marker": "ON",
             }
             for key in QUBIT_CONSTANTS.keys()
         },
@@ -388,7 +413,8 @@ config = {
                 "waveforms": {
                     "I": f"y90_I_wf_{key}",
                     "Q": f"y90_Q_wf_{key}"
-                }
+                },
+                "digital_marker": "ON",
             }
             for key in QUBIT_CONSTANTS.keys()
         },
@@ -399,7 +425,8 @@ config = {
                 "waveforms": {
                     "I": f"y180_I_wf_{key}",
                     "Q": f"y180_Q_wf_{key}"
-                }
+                },
+                "digital_marker": "ON",
             }
             for key in QUBIT_CONSTANTS.keys()
         },
@@ -410,7 +437,8 @@ config = {
                 "waveforms": {
                     "I": f"minus_y90_I_wf_{key}",
                     "Q": f"minus_y90_Q_wf_{key}"
-                }
+                },
+                "digital_marker": "ON",
             }
             for key in QUBIT_CONSTANTS.keys()
         },
