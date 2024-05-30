@@ -97,7 +97,7 @@ class QuAM(QuamRoot):
         Args:
             QM (QuantumMachine): the running quantum machine.
         """
-        from qm.octave.mixer_calibration import NoCalibrationElements
+        from qm.octave.octave_mixer_calibration import NoCalibrationElements
 
         for name in self.active_qubit_names:
             try:
