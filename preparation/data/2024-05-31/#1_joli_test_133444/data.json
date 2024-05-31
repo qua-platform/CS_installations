@@ -1,0 +1,530 @@
+{
+    "offset_1": 123456,
+    "frequencies": "./arrays.npz#frequencies",
+    "R": "./arrays.npz#R",
+    "figure": "./figure.png",
+    "config": {
+        "version": 1,
+        "controllers": {
+            "con1": {
+                "type": "opx1000",
+                "fems": {
+                    "1": {
+                        "type": "MW",
+                        "analog_outputs": {
+                            "1": {
+                                "sampling_rate": 2000000000.0,
+                                "full_scale_power_dbm": -11,
+                                "band": 2,
+                                "delay": 0
+                            }
+                        }
+                    },
+                    "2": {
+                        "type": "LF",
+                        "analog_outputs": {
+                            "1": {
+                                "offset": 0.0,
+                                "sampling_rate": 2000000000.0,
+                                "output_mode": "direct",
+                                "delay": 0
+                            },
+                            "2": {
+                                "offset": 0.0,
+                                "sampling_rate": 2000000000.0,
+                                "output_mode": "amplified",
+                                "delay": 0
+                            },
+                            "3": {
+                                "offset": 0.0,
+                                "sampling_rate": 2000000000.0,
+                                "output_mode": "direct",
+                                "delay": 0
+                            },
+                            "4": {
+                                "offset": 0.0,
+                                "sampling_rate": 2000000000.0,
+                                "output_mode": "direct",
+                                "delay": 0
+                            },
+                            "5": {
+                                "offset": 0.0,
+                                "sampling_rate": 2000000000.0,
+                                "output_mode": "direct",
+                                "delay": 0
+                            }
+                        },
+                        "analog_inputs": {
+                            "1": {
+                                "offset": 0.0,
+                                "sampling_rate": 2000000000,
+                                "gain_db": 0
+                            },
+                            "2": {
+                                "offset": 0.0,
+                                "sampling_rate": 2000000000,
+                                "gain_db": 0
+                            }
+                        },
+                        "digital_outputs": {
+                            "1": {}
+                        }
+                    }
+                }
+            }
+        },
+        "elements": {
+            "mw_element_1": {
+                "MWInput": {
+                    "port": [
+                        "con1",
+                        1,
+                        1
+                    ],
+                    "oscillator_frequency": 5000000000.0
+                },
+                "intermediate_frequency": 50000000.0,
+                "operations": {
+                    "const": "const_pulse_mw"
+                }
+            },
+            "lf_element_1": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        2,
+                        1
+                    ]
+                },
+                "intermediate_frequency": 1000000,
+                "operations": {
+                    "const": "const_single_pulse",
+                    "arbitrary": "arbitrary_pulse",
+                    "up": "up_pulse",
+                    "down": "down_pulse"
+                }
+            },
+            "lf_element_2": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        2,
+                        2
+                    ]
+                },
+                "intermediate_frequency": 0,
+                "operations": {
+                    "const": "const_single_pulse",
+                    "arbitrary": "arbitrary_pulse",
+                    "up": "up_pulse",
+                    "down": "down_pulse"
+                }
+            },
+            "scope_trigger": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        2,
+                        3
+                    ]
+                },
+                "operations": {
+                    "const": "const_single_pulse"
+                }
+            },
+            "mdac_trigger": {
+                "digitalInputs": {
+                    "in0": {
+                        "port": [
+                            "con1",
+                            2,
+                            1
+                        ],
+                        "delay": 0,
+                        "buffer": 0
+                    }
+                },
+                "operations": {
+                    "trigger": "switchON_pulse"
+                }
+            },
+            "lf_readout_element": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        2,
+                        4
+                    ]
+                },
+                "intermediate_frequency": 1000000,
+                "operations": {
+                    "readout": "readout_pulse"
+                },
+                "outputs": {
+                    "out1": [
+                        "con1",
+                        2,
+                        1
+                    ]
+                },
+                "time_of_flight": 144,
+                "smearing": 0
+            },
+            "lf_readout_element_twin": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        2,
+                        4
+                    ]
+                },
+                "intermediate_frequency": 1000000,
+                "operations": {
+                    "readout": "readout_pulse"
+                },
+                "outputs": {
+                    "out1": [
+                        "con1",
+                        2,
+                        1
+                    ]
+                },
+                "time_of_flight": 144,
+                "smearing": 0
+            },
+            "dc_readout_element": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        2,
+                        5
+                    ]
+                },
+                "operations": {
+                    "readout": "dc_readout_pulse"
+                },
+                "outputs": {
+                    "out1": [
+                        "con1",
+                        2,
+                        1
+                    ],
+                    "out2": [
+                        "con1",
+                        2,
+                        2
+                    ]
+                },
+                "time_of_flight": 144,
+                "smearing": 0
+            },
+            "dc_readout_element_twin": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        2,
+                        5
+                    ]
+                },
+                "operations": {
+                    "readout": "dc_readout_pulse"
+                },
+                "outputs": {
+                    "out1": [
+                        "con1",
+                        2,
+                        1
+                    ],
+                    "out2": [
+                        "con1",
+                        2,
+                        2
+                    ]
+                },
+                "time_of_flight": 144,
+                "smearing": 0
+            }
+        },
+        "pulses": {
+            "arbitrary_pulse": {
+                "operation": "control",
+                "length": 20,
+                "waveforms": {
+                    "single": "arbitrary_wf"
+                }
+            },
+            "bias_pulse": {
+                "operation": "control",
+                "length": 16,
+                "waveforms": {
+                    "single": "bias_wf"
+                }
+            },
+            "up_pulse": {
+                "operation": "control",
+                "length": 500,
+                "waveforms": {
+                    "single": "up_wf"
+                }
+            },
+            "down_pulse": {
+                "operation": "control",
+                "length": 500,
+                "waveforms": {
+                    "single": "down_wf"
+                }
+            },
+            "const_single_pulse": {
+                "operation": "control",
+                "length": 100,
+                "waveforms": {
+                    "single": "const_wf"
+                }
+            },
+            "trigger_pulse": {
+                "operation": "control",
+                "length": 1000,
+                "digital_marker": "ON"
+            },
+            "const_pulse_mw": {
+                "operation": "control",
+                "length": 100,
+                "waveforms": {
+                    "I": "const_wf",
+                    "Q": "zero_wf"
+                }
+            },
+            "switchON_pulse": {
+                "operation": "control",
+                "length": 100,
+                "digital_marker": "ON"
+            },
+            "switchOFF_pulse": {
+                "operation": "control",
+                "length": 100,
+                "digital_marker": "OFF"
+            },
+            "readout_pulse": {
+                "operation": "measurement",
+                "length": 5000,
+                "waveforms": {
+                    "single": "readout_wf"
+                },
+                "integration_weights": {
+                    "cos": "cosine_weights",
+                    "sin": "sine_weights",
+                    "minus_sin": "minus_sine_weights",
+                    "rotated_cos": "rotated_cosine_weights",
+                    "rotated_sin": "rotated_sine_weights",
+                    "rotated_minus_sin": "rotated_minus_sine_weights"
+                },
+                "digital_marker": "ON"
+            },
+            "dc_readout_pulse": {
+                "operation": "measurement",
+                "length": 5000,
+                "waveforms": {
+                    "single": "dc_readout_wf"
+                },
+                "integration_weights": {
+                    "const": "const_weights"
+                },
+                "digital_marker": "ON"
+            }
+        },
+        "waveforms": {
+            "zero_wf": {
+                "type": "constant",
+                "sample": 0.0
+            },
+            "const_wf": {
+                "type": "constant",
+                "sample": 0.2
+            },
+            "bias_wf": {
+                "type": "constant",
+                "sample": 0.25
+            },
+            "up_wf": {
+                "type": "constant",
+                "sample": 0.5
+            },
+            "down_wf": {
+                "type": "constant",
+                "sample": -0.5
+            },
+            "readout_wf": {
+                "type": "constant",
+                "sample": 0.1
+            },
+            "dc_readout_wf": {
+                "type": "constant",
+                "sample": 0.1
+            },
+            "arbitrary_wf": {
+                "type": "arbitrary",
+                "samples": [
+                    0.0,
+                    0.00886018777329083,
+                    0.020063252492694746,
+                    0.03396633901599479,
+                    0.05089424368285021,
+                    0.0711066656181945,
+                    0.09476161195079541,
+                    0.12187770290189255,
+                    0.15229900088574033,
+                    0.1856665964262655,
+                    0.22140136158049029,
+                    0.25870190167400714,
+                    0.2965607372272688,
+                    0.333800159669259,
+                    0.3691271596450651,
+                    0.401204555487245,
+                    0.4287332529952062,
+                    0.45053877476225934,
+                    0.46565410929362133,
+                    0.4733907653684089,
+                    0.4733907653684089,
+                    0.46565410929362133,
+                    0.45053877476225934,
+                    0.4287332529952062,
+                    0.401204555487245,
+                    0.3691271596450651,
+                    0.333800159669259,
+                    0.2965607372272688,
+                    0.25870190167400714,
+                    0.22140136158049029,
+                    0.1856665964262655,
+                    0.15229900088574033,
+                    0.12187770290189255,
+                    0.09476161195079541,
+                    0.0711066656181945,
+                    0.05089424368285021,
+                    0.03396633901599479,
+                    0.020063252492694746,
+                    0.00886018777329083,
+                    0.0
+                ],
+                "sampling_rate": 2000000000.0
+            }
+        },
+        "digital_waveforms": {
+            "ON": {
+                "samples": [
+                    [
+                        1,
+                        0
+                    ]
+                ]
+            },
+            "OFF": {
+                "samples": [
+                    [
+                        0,
+                        0
+                    ]
+                ]
+            }
+        },
+        "integration_weights": {
+            "const_weights": {
+                "cosine": [
+                    [
+                        1.0,
+                        5000
+                    ]
+                ],
+                "sine": [
+                    [
+                        0.0,
+                        5000
+                    ]
+                ]
+            },
+            "cosine_weights": {
+                "cosine": [
+                    [
+                        1.0,
+                        5000
+                    ]
+                ],
+                "sine": [
+                    [
+                        0.0,
+                        5000
+                    ]
+                ]
+            },
+            "sine_weights": {
+                "cosine": [
+                    [
+                        0.0,
+                        5000
+                    ]
+                ],
+                "sine": [
+                    [
+                        1.0,
+                        5000
+                    ]
+                ]
+            },
+            "minus_sine_weights": {
+                "cosine": [
+                    [
+                        0.0,
+                        5000
+                    ]
+                ],
+                "sine": [
+                    [
+                        -1.0,
+                        5000
+                    ]
+                ]
+            },
+            "rotated_cosine_weights": {
+                "cosine": [
+                    [
+                        1.0,
+                        5000
+                    ]
+                ],
+                "sine": [
+                    [
+                        0.0,
+                        5000
+                    ]
+                ]
+            },
+            "rotated_sine_weights": {
+                "cosine": [
+                    [
+                        -0.0,
+                        5000
+                    ]
+                ],
+                "sine": [
+                    [
+                        1.0,
+                        5000
+                    ]
+                ]
+            },
+            "rotated_minus_sine_weights": {
+                "cosine": [
+                    [
+                        0.0,
+                        5000
+                    ]
+                ],
+                "sine": [
+                    [
+                        -1.0,
+                        5000
+                    ]
+                ]
+            }
+        }
+    }
+}

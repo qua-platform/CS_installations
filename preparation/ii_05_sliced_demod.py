@@ -7,6 +7,9 @@ from qualang_tools.results import fetching_tool
 import matplotlib.pyplot as plt
 
 
+# get the config
+config = get_config(sampling_rate=1e9)
+
 ###################
 # The QUA program #
 ###################
@@ -76,6 +79,10 @@ if simulate:
     job = qmm.simulate(config, sliced_demodulation, simulation_config)
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
+    # Get the waveform report
+    samples = job.get_simulated_samples()
+    waveform_report = job.get_simulated_waveform_report()
+    waveform_report.create_plot(samples, plot=True, save_path=None)
 else:
     # Open a quantum machine to execute the QUA program
     qm = qmm.open_qm(config)

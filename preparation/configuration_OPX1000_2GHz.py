@@ -14,13 +14,13 @@ u = unit(coerce_to_integer=True)
 ######################
 # Network parameters #
 ######################
-# qop_ip = "172.16.33.100"  # Simulator
-# qop_port = 9515  # Write the QOP port if version < QOP220
-# cluster_name = None   # Write your cluster_name if version >= QOP220
+qop_ip = "172.16.33.100"  # Simulator
+qop_port = 9515  # Write the QOP port if version < QOP220
+cluster_name = None   # Write your cluster_name if version >= QOP220
 
-qop_ip = "192.168.10.32"  # Akiva OPX1000
-cluster_name = "Beta6"  # Write your cluster_name if version >= QOP220
-qop_port = None  # Write the QOP port if version < QOP220
+# qop_ip = "192.168.10.32"  # Akiva OPX1000
+# cluster_name = "Beta6"  # Write your cluster_name if version >= QOP220
+# qop_port = None  # Write the QOP port if version < QOP220
 
 # Path to save data
 save_dir = Path().absolute() / "QM" / "INSTALLATION" / "data"

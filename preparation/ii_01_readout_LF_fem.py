@@ -1,12 +1,31 @@
+"""
+Spectroscopy using the LF-fem.
+Comments:
+    - Bandwidth = +/-750MHz for direct mode and +/-400MHz for amplified mode.
+"""
+
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from configuration_OPX1000_2GHz import *
+from configuration_OPX1000 import *
 from qualang_tools.loops import from_array
 from qualang_tools.results import fetching_tool, progress_counter
+from qualang_tools.results.data_handler import DataHandler
 from macros import interrupt_on_close
 from scipy import signal
 import matplotlib.pyplot as plt
+import plotly.io as pio
+pio.renderers.default='browser'
+
+# get the config
+config = get_config(sampling_rate=2e9)
+
+
+def save_data(data, name):
+    _data_handler = DataHandler(root_data_folder=save_dir)
+    _data_handler.save_data(data=data, name=name)
+
+
 
 
 ###################
@@ -24,14 +43,13 @@ with program() as rf_reflectometry:
     Q_st = declare_stream()
 
     with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
-        play("const", "lf_element_2")
-        play("const"*amp(1), "lf_element_1")
+        play("const", "scope_trigger")
         with for_(*from_array(f, frequencies)):
             update_frequency("lf_readout_element", f)
-            measure("readout"*amp(1), "lf_readout_element", None, demod.full("cos", I, "out1"), demod.full("sin", Q, "out1"))
+            measure("readout", "lf_readout_element", None, demod.full("cos", I, "out1"), demod.full("sin", Q, "out1"))
             save(I, I_st)
             save(Q, Q_st)
-            wait(250)
+            wait(200 * u.ns)
         save(n, n_st)
 
     with stream_processing():
@@ -57,6 +75,10 @@ if simulate:
     job = qmm.simulate(config, rf_reflectometry, simulation_config)
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
+    # Get the waveform report
+    samples = job.get_simulated_samples()
+    waveform_report = job.get_simulated_waveform_report()
+    waveform_report.create_plot(samples, plot=True, save_path=None)
     samples = job.get_simulated_samples()
     waveform_report = job.get_simulated_waveform_report()
 else:
@@ -92,6 +114,14 @@ else:
         plt.pause(0.1)
         plt.tight_layout()
 
+data = {
+        "offset_1": 123456,
+        "frequencies": frequencies,
+        "R": R,
+        "figure": fig,
+        "config": config,
+    }
+save_data(data,"joli_test")
 # config["controllers"]["con1"]["fems"][3]["analog_outputs"][3] = {"offset": 0.0, "sampling_rate": 2e9, "output_mode": "amplified", "delay": 0}
 # with program() as rf_reflectometry:
 #     I = declare(fixed)

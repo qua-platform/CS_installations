@@ -2,12 +2,13 @@ from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from configuration_OPX1000 import *
-
 from typing import Union
 from numpy.typing import NDArray
 import matplotlib.pyplot as plt
 from scipy.signal import butter, lfilter, bilinear
 from qualang_tools.digital_filters import highpass_correction
+import plotly.io as pio
+pio.renderers.default='browser'
 
 def highpass_correction(tau: float, Ts: float = 1):
     """
@@ -27,7 +28,7 @@ def highpass_correction(tau: float, Ts: float = 1):
     Ts *= 1e-9
     flt = butter(1, np.array([1 / tau / Ts]), btype="highpass", analog=True)
     ahp2, bhp2 = bilinear(flt[1], flt[0], 1e9)
-    feedforward_taps = list(np.array([1 + (ahp2[0] - 1) * 3.2, (ahp2[0] - 1) * 3.2 - 1]))
+    feedforward_taps = list(np.array([1 + (ahp2[0] - 1) * 3.16, (ahp2[0] - 1) * 3.16 - 1]))
     feedback_tap = [1 - 2**-20]
     return feedforward_taps, feedback_tap
 
@@ -67,6 +68,8 @@ def get_filtered_voltage(
     return np.array(y), y_filtered, y_corrected
 
 
+# get the config
+config = get_config(sampling_rate=1e9)
 
 ###################
 # The QUA program #
@@ -79,12 +82,14 @@ wf, wf_filtered, wf_corrected = get_filtered_voltage(wf_ideal, 1e-9, f_cutoff, T
 iir, fir = highpass_correction(1e9/f_cutoff)
 config["waveforms"]["arbitrary_wf"] = {"type": "arbitrary", "samples": wf_filtered.tolist()}
 config["pulses"]["arbitrary_pulse"]["length"] = len(wf_filtered)
-config["controllers"]["con1"]["fems"][3]["analog_outputs"][1] = {"offset": 0.0, "sampling_rate": 1e9, "output_mode": "direct", "upsampling_mode": "pulse", "delay": 0, "filter": {"feedforward": iir, "feedback": fir}}
+config["controllers"]["con1"]["fems"][2]["analog_outputs"][1] = {
+    "offset": 0.0, "sampling_rate": 1e9, "output_mode": "direct", "upsampling_mode": "mw",
+    "delay": 0, "filter": {"feedforward": iir, "feedback": fir}}
 
 with program() as biastee_compensation:
-    play("const", "lf_element_2")
+    play("const", "scope_trigger")
     play("arbitrary", "lf_element_1")
-    play("arbitrary", "lf_element_1")
+    play("arbitrary", "lf_element_2")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -95,7 +100,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -105,6 +110,10 @@ if simulate:
     # Plot the simulated samples
     plt.figure()
     job.get_simulated_samples().con1.plot()
+    # Get the waveform report
+    samples = job.get_simulated_samples()
+    waveform_report = job.get_simulated_waveform_report()
+    waveform_report.create_plot(samples, plot=True, save_path=None)
     plt.show()
 else:
     # Open a quantum machine to execute the QUA program
