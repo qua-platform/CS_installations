@@ -5,16 +5,122 @@ All the macros below have been written and tested with the basic configuration. 
 """
 
 from qm.qua import *
+from typing import Literal
 from qualang_tools.addons.variables import assign_variables_to_element
 import matplotlib.pyplot as plt
-from configuration_with_octave import u
-from datetime import datetime
-import os
-import time
+from configuration_with_octave import u, pi_len
+
 
 ##############
 # QUA macros #
 ##############
+
+def prepare_control_state(st: Literal["0", "1"], elem="q1_xy", pi_len: int = pi_len):
+    """
+    QUA macro to prepare control qubit's state either |0> or |1>
+    
+    :param st: control state.
+    :param elem: element for pi pulse
+    :param pi_len: duration of pi pulse (ns)
+    """
+    # Prepare control state in 1
+    if st == "1":
+        play("x180", elem)
+    # Prepare control state in 0
+    else:
+        wait(pi_len >> 2, elem)
+
+
+def play_cr_pulse(
+    kind: Literal["direct", "direct+echo", "direct+cancel", "direct+cancel+echo"],
+    t, t_half, a=1,
+    pi_len: int = pi_len,
+    qc="1", qt="2",
+):
+    """
+    QUA macro to form CR sequences
+    :param kind: 
+        kind = "direct": direct only
+        kind = "direct+echo": direct and echo
+        kind = "direct+cancel": direct and cancel
+        kind = "direct+cancel+echo": full (direct + cancel + echo for each)
+    :param t: total duration of cr pulse (cycle)
+    :param t_half: half of total duration of cr pulse (cycle)
+    :param a: scaling ratio for the amplitude of cr pulse
+    :param pi_len: duration of pi pulse (ns)
+    :param qc: the control qubit.
+    :param qt: the target qubit.
+    """
+
+    if qc == "1" and qt == "2":
+        qc_xy = "q1_xy"
+        qt_xy = "q2_xy"
+        cr = "cr_c1t2"
+        cr_cancel = "cr_cancel_c1t2"
+        rrc = "rr1"
+        rrt = "rr2"
+
+    elif qc == "2" and qt == "1":
+        qc_xy = "q2_xy"
+        qt_xy = "q1_xy"
+        cr = "cr_c2t1"
+        cr_cancel = "cr_cancel_c2t1"
+        rrc = "rr2"
+        rrt = "rr1"
+    
+    else:
+        raise ValueError("The assignement of the control and target qubits is invalid")
+
+    align()
+
+    if kind == "direct":
+        play("square_positive" * amp(a), cr, duration=t)
+        wait(t, qt_xy, "rr1", "rr2")
+    
+    elif kind == "direct+cancel":
+        play("square_positive" * amp(a), cr, duration=t)
+        play("square_positive" * amp(a), cr_cancel, duration=t)
+        wait(t, qt_xy, rrc, rrt)
+
+    elif kind == "direct+echo":
+        play("square_positive" * amp(a), cr, duration=t_half)
+        wait(t_half, "q1_xy")
+        play("x180", "q1_xy")
+        wait(pi_len >> 2, cr)
+        play("square_negative" * amp(a), cr, duration=t_half)
+        wait(t_half, "q1_xy")
+        play("x180", "q1_xy")
+        wait(t + (pi_len >> 1), qt_xy, rrc, rrt)
+
+    elif kind == "direct+cancel+echo":
+        play("square_positive" * amp(a), cr, duration=t_half)
+        play("square_positive" * amp(a), cr_cancel, duration=t_half)
+        wait(t_half, "q1_xy")
+        play("x180", "q1_xy")
+        wait(pi_len >> 2, cr, cr_cancel)
+        play("square_negative" * amp(a), cr, duration=t_half)
+        play("square_negative" * amp(a), cr_cancel, duration=t_half)
+        wait(t_half, "q1_xy")
+        play("x180", "q1_xy")
+        wait(t + (pi_len >> 1), qt_xy, rrc, rrt)
+
+
+def perform_QST_target(bss: Literal["x", "y", "z"], elem="q2_xy", pi_len: int = pi_len):
+    """
+    QUA macro to perfom QST on the target qubit
+    
+    :param bss: projection basis and is among "x", "y" and "z".
+    :param elem: element for pi pulse
+    :param pi_len: duration of pi pulse (ns)
+    """
+    if bss == "x":
+        play("-y90", elem)
+    elif bss == "y":
+        play("x90", elem)
+    else:
+        wait(pi_len >> 2, elem)
+
+    wait(pi_len >> 2, "rr1", "rr2")
 
 
 def one_qb_QST(qb: str, len: float, projection_index):

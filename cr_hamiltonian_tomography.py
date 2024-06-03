@@ -3,6 +3,8 @@ import itertools
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import matplotlib.cm as cm
 
 
 CONTROL_STATES = ["0", "1"] # control state: 0 or 1
@@ -440,7 +442,24 @@ def plot_interaction_coeffs(coeffs, xaxis, xlabel="amplitude", fig=None):
     return fig
 
 
-def plot_crqst_result(t_vec_ns, crqst_data_c, crqst_data_t, fig, axss):
+def plot_cr_duration_vs_scan_param(t_vec_ns, crqst_data_c, crqst_data_t, scan_param, scan_param_name, axss):
+    data = 2 * [crqst_data_c] + 2 * [crqst_data_t]
+    for i, (axs, bss) in enumerate(zip(axss, TARGET_BASES)):
+        for j, (ax, dt, st) in enumerate(zip(axs, data, 2 * CONTROL_STATES)):
+            ax.cla()
+            ax.pcolor(t_vec_ns, scan_param, dt[:, :, i, j % 2])
+            if i == 0 and j < 2:
+                ax.set_title(f"Q_C w/ Q_C={st}")
+            if i == 0 and j >= 2:
+                ax.set_title(f"Q_T w/ Q_C={st}")
+            if j == 0:
+                ax.set_ylabel(f"<{bss}(t)>\n{scan_param_name}", fontsize=14)
+            if i == 2:
+                ax.set_xlabel(f"time [ns]", fontsize=14)
+    plt.tight_layout()
+
+
+def plot_crqst_result_2D(t_vec_ns, crqst_data_c, crqst_data_t, fig, axss):
     # control qubit
     fig = CRHamiltonianTomographyAnalysis(
         ts=t_vec_ns,
@@ -451,4 +470,88 @@ def plot_crqst_result(t_vec_ns, crqst_data_c, crqst_data_t, fig, axss):
         ts=t_vec_ns,
         crqst_data=crqst_data_t,
     ).plot_crqst_data(fig, axss[:, 1], label="target")
+    return fig
+
+
+def plot_crqst_result_3D(t_vec_ns, crqst_data_t):
+    # Axes properties
+    conf = {
+        "projection": "3d",
+        "proj_type": "persp", # ortho or persp
+        "box_aspect": (1, 1, 1),
+        "elev": 20,
+        "azim": 30,
+        "roll": 0,
+        "axisbelow": True,
+        "facecolor": "w", 
+        "xticks": [],
+        "yticks": [],
+        "zticks": [],
+        }
+
+    # Create the figure and 3D subplots
+    fig = plt.figure(figsize=(16, 10))
+
+    # Create two 3D subplots
+    ax1 = fig.add_subplot(121, projection=conf["projection"])
+    ax2 = fig.add_subplot(122, projection=conf["projection"])
+
+    # Generate data for the wireframe of the sphere
+    u = np.linspace(0, 2 * np.pi, 100)  # Longitude values
+    v = np.linspace(0, np.pi, 50)       # Latitude values
+    x_sphere = np.outer(np.cos(u), np.sin(v))  # X coordinates of the sphere
+    y_sphere = np.outer(np.sin(u), np.sin(v))  # Y coordinates of the sphere
+    z_sphere = np.outer(np.ones(np.size(u)), np.cos(v))  # Z coordinates of the sphere
+
+    # Define the colors in the colormap
+    colors = ['blue', 'purple', 'red']
+    # Create a colormap with a smooth transition between the specified colors
+    cmap = mcolors.LinearSegmentedColormap.from_list("BlueRedPurple", colors)
+    colors = cmap(np.linspace(0, 1, len(t_vec_ns))) 
+
+    for i, ax in enumerate([ax1, ax2]):
+        # Plot the wireframe of the sphere
+        ax.plot_wireframe(x_sphere, y_sphere, z_sphere, color='k', linewidth=1, alpha=0.05)
+        
+        # Get the data
+        x, y, z = crqst_data_t[:, 0, i], crqst_data_t[:, 1, i], crqst_data_t[:, 2, i]
+
+        # Plot the data
+        ax.scatter(x, y, z, marker="o", color="k")
+
+        # Quiver plot - arrows from the origin to each point (x, y, z)
+        ax.quiver(
+            np.zeros_like(x), np.zeros_like(y), np.zeros_like(z),  # Origins (all zeros)
+            x, y, z,  # Directions (end points)
+            color=colors,  # Color mapping based on t
+            arrow_length_ratio=0.1,
+            length=1.0,
+            normalize=False,
+        )
+
+        # Label the axes
+        ax.text(1.5, 0, 0.1, 'X', color='k', fontsize=12)
+        ax.text(0, 1.5, 0.1, 'Y', color='k', fontsize=12)
+        ax.text(0, 0.1, 1.5, 'Z', color='k', fontsize=12)
+
+        # x, y, z axes
+        ax.quiver(0, 0, 0, 1.6, 0, 0, color='k', alpha=0.1, arrow_length_ratio=0.05)
+        ax.quiver(0, 0, 0, 0, 1.6, 0, color='k', alpha=0.1, arrow_length_ratio=0.05)
+        ax.quiver(0, 0, 0, 0, 0, 1.6, color='k', alpha=0.1, arrow_length_ratio=0.08)
+
+        # Remove the x, y, z panes (spines)
+        ax.xaxis.pane.fill = False
+        ax.yaxis.pane.fill = False
+        ax.zaxis.pane.fill = False
+
+        # Remove the x, y, z panes
+        ax.xaxis.pane.set_edgecolor([1, 1, 1])
+        ax.yaxis.pane.set_edgecolor([1, 1, 1])
+        ax.zaxis.pane.set_edgecolor([1, 1, 1])
+
+        # Remove the borders of the panes
+        ax.xaxis.line.set_linewidth(0)
+        ax.yaxis.line.set_linewidth(0)
+        ax.zaxis.line.set_linewidth(0)
+
     return fig

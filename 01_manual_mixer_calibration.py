@@ -32,8 +32,12 @@ with program() as manual_mixer_calib:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
-qm = qmm.open_qm(config)
+qmm = QuantumMachinesManager(
+    host=qop_ip,
+    port=qop_port,
+    cluster_name=cluster_name,
+    octave=octave_config,
+)qm = qmm.open_qm(config)
 job = qm.execute(manual_mixer_calib)
 
 # When done, the halt command can be called and the offsets can be written directly into the config file.

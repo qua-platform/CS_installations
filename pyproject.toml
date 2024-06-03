@@ -36,7 +36,8 @@ dataclasses-json = "^0.6.5"
 jax = "^0.4.28"
 jaxlib = "^0.4.28"
 qiskit-dynamics = "^0.5.1"
-qualang-tools = {path = "/workspaces/py-qua-tools", develop = true}
+qualang-tools = "0.17.4"
+quaqsim = {git = "http://github.com/qua-platform/qua-qsim.git"}
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"

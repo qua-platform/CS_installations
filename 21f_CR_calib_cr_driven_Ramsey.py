@@ -5,7 +5,7 @@
 The CR_calib scripts are designed for calibrating cross-resonance (CR) gates involving a system
 with a control qubit and a target qubit. These scripts help estimate the parameters of a Hamiltonian,
 which is represented as:
-    H = I ⊗ (a_X X + a_Y Y + a_Z Z) + Z ⊗ (b_I I + b_X X + b_Y Y + b_Z Z)
+    H = I ⊗ (a_X X + a_Y Y + a_Z Z) + Z ⊗ (b_X X + b_Y Y + b_Z Z)
 
 This script is to calibrate the AC Stark shift of the control qubit due to CR drive via driven Ramsey.
 The difference from the ordinary Ramsey is that we apply CR drive in between the pi pulses. 
@@ -84,16 +84,21 @@ with program() as ramsey:
     with stream_processing():
         n_st.save("n")
         # resonator 1
-        I_st[0].buffer(len(t_vec)).average().save("I1")
-        Q_st[0].buffer(len(t_vec)).average().save("Q1")
+        I_st[0].buffer(len(t_vec)).average().save("I_c")
+        Q_st[0].buffer(len(t_vec)).average().save("Q_c")
         # resonator 2
-        I_st[1].buffer(len(t_vec)).average().save("I2")
-        Q_st[1].buffer(len(t_vec)).average().save("Q2")
+        I_st[1].buffer(len(t_vec)).average().save("I_t")
+        Q_st[1].buffer(len(t_vec)).average().save("Q_t")
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip,
+    port=qop_port,
+    cluster_name=cluster_name,
+    octave=octave_config,
+)
 
 ###########################
 # Run or Simulate Program #
@@ -117,15 +122,15 @@ else:
     fig = plt.figure()
     interrupt_on_close(fig, job)
     # Tool to easily fetch results from the OPX (results_handle used in it)
-    results = fetching_tool(job, ["n", "I1", "Q1", "I2", "Q2"], mode="live")
+    results = fetching_tool(job, ["n", "I_c", "Q_c", "I_t", "Q_t"], mode="live")
     # Live plotting
     while results.is_processing():
         start_time = results.get_start_time()
         # Fetch results
-        n, I1, Q1, I2, Q2 = results.fetch_all()
+        n, I_c, Q_c, I_t, Q_t = results.fetch_all()
         # Convert the results into Volts
-        I1, Q1 = u.demod2volts(I1, readout_len), u.demod2volts(Q1, readout_len)
-        I2, Q2 = u.demod2volts(I2, readout_len), u.demod2volts(Q2, readout_len)
+        I_c, Q_c = u.demod2volts(I_c, readout_len), u.demod2volts(Q_c, readout_len)
+        I_t, Q_t = u.demod2volts(I_t, readout_len), u.demod2volts(Q_t, readout_len)
         # Progress bar
         progress_counter(n, n_avg, start_time=results.start_time)
         # calculate the elapsed time
@@ -133,22 +138,22 @@ else:
         # Plot
         plt.subplot(221)
         plt.cla()
-        plt.plot(4 * t_vec, I1)
+        plt.plot(4 * t_vec, I_c)
         plt.ylabel("I quadrature [V]")
         plt.title("Qubit 1")
         plt.subplot(223)
         plt.cla()
-        plt.plot(4 * t_vec, Q1)
+        plt.plot(4 * t_vec, Q_c)
         plt.ylabel("Q quadrature [V]")
         plt.xlabel("Idle times [ns]")
         plt.subplot(222)
         plt.cla()
-        plt.plot(4 * t_vec, I2)
+        plt.plot(4 * t_vec, I_t)
         plt.title("Qubit 2")
         plt.subplot(224)
         plt.cla()
-        plt.plot(4 * t_vec, Q2)
-        plt.title("Q2")
+        plt.plot(4 * t_vec, Q_t)
+        plt.title("Q_t")
         plt.xlabel("Idle times [ns]")
         plt.tight_layout()
         plt.pause(0.1)
@@ -159,21 +164,21 @@ else:
         fig_analysis = plt.figure()
         plt.suptitle(f"Ramsey measurement with CR drive")
         plt.subplot(221)
-        fit.ramsey(4 * t_vec, I1, plot=True)
+        fit.ramsey(4 * t_vec, I_c, plot=True)
         plt.xlabel("Idle times [ns]")
         plt.ylabel("I quadrature [V]")
         plt.title("Qubit 1")
         plt.subplot(223)
-        fit.ramsey(4 * t_vec, Q1, plot=True)
+        fit.ramsey(4 * t_vec, Q_c, plot=True)
         plt.xlabel("Idle times [ns]")
         plt.ylabel("I quadrature [V]")
         plt.title("Qubit 2")
         plt.subplot(222)
-        fit.ramsey(4 * t_vec, I2, plot=True)
+        fit.ramsey(4 * t_vec, I_t, plot=True)
         plt.xlabel("Idle times [ns]")
         plt.ylabel("I quadrature [V]")
         plt.subplot(224)
-        fit.ramsey(4 * t_vec, Q2, plot=True)
+        fit.ramsey(4 * t_vec, Q_t, plot=True)
         plt.xlabel("Idle times [ns]")
         plt.ylabel("I quadrature [V]")
         plt.tight_layout()
@@ -186,10 +191,10 @@ else:
             "fig_live": fig,
             "fig_analysis": fig_analysis,
             "t_vec": t_vec,
-            "I1": I1,
-            "I1": I1,
-            "Q1": Q1,
-            "Q2": Q2,
+            "I_c": I_c,
+            "I_c": I_c,
+            "Q_c": Q_c,
+            "Q_t": Q_t,
             "iteration": np.array([n]),  # convert int to np.array of int
             "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
         }

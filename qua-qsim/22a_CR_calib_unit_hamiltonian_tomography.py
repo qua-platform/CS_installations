@@ -69,14 +69,12 @@ warnings.filterwarnings("ignore")
 nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
-thresholds = [ge_threshold_q1, ge_threshold_q2]
 t_vec_clock = np.arange(8, 8000, 256) # for simulate_dynamics
 t_vec_ns = 4 * t_vec_clock
 n_avg = 1 # num of iterations
 
 assert len(qubit_suffixes) == nb_of_qubits
 assert len(resonators) == nb_of_qubits
-assert len(thresholds) == nb_of_qubits
 assert np.all(t_vec_clock % 2 == 0) and (t_vec_clock.min() >= 8), "t_vec_clock should only have even numbers if play echoes"
 
 
@@ -154,8 +152,12 @@ with program() as cr_calib:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
-
+qmm = QuantumMachinesManager(
+    host=qop_ip,
+    port=qop_port,
+    cluster_name=cluster_name,
+    octave=octave_config,
+)
 
 ###########################
 # Run or Simulate Program #
@@ -185,8 +187,8 @@ elif simulate_dynamics:
         len(TARGET_BASES),
         len(CONTROL_STATES),
     )
-    I1, I2 = results[0,:,:,:], results[1,:,:,:]
-    fig = plot_crqst_result(t_vec_ns, I1, I2, fig, axss)
+    Ic, It = results[0,:,:,:], results[1,:,:,:]
+    fig = plot_crqst_result(t_vec_ns, Ic, It, fig, axss)
     plt.tight_layout()
 
 else:
@@ -199,16 +201,16 @@ else:
     fig, axss = plt.subplots(4, 2, figsize=(10, 10))
     interrupt_on_close(fig, job)
     # Tool to easily fetch results from the OPX (results_handle used in it)
-    results = fetching_tool(job, ["n", "I1", "Q1", "I2", "Q2"], mode="live")
+    results = fetching_tool(job, ["n", "Ic", "Qc", "It", "Qt"], mode="live")
     # Live plotting
     while results.is_processing():
         # Fetch results
-        n, I1, Q1, I2, Q2 = results.fetch_all()
+        n, Ic, Qc, It, Qt = results.fetch_all()
         # Progress bar
         progress_counter(n, n_avg, start_time=results.start_time)
         # plotting data
         # control qubit
-        fig = plot_crqst_result(t_vec_ns, I1, I2, fig, axss)
+        fig = plot_crqst_result(t_vec_ns, Ic, It, fig, axss)
         plt.tight_layout()
         plt.pause(0.1)
 
@@ -222,7 +224,7 @@ if not simulate:
     # cross resonance Hamiltonian tomography analysis
     crht = CRHamiltonianTomographyAnalysis(
         ts=t_vec_ns,
-        crqst_data=I2, # target data
+        crqst_data=It, # target data
     )
     crht.fit_params()
     fig_analysis = crht.plot_fit_result()
@@ -237,12 +239,12 @@ if not simulate:
             "fig_live": fig,
             "fig_analysis": fig_analysis,
             "t_vec_ns": t_vec_ns,
-            "crqst_data_c": I1,
-            "crqst_data_t": I2,
-            "I1": I1,
-            "Q1": Q1,
-            "I2": I2,
-            "Q2": Q2,
+            "crqst_data_c": Ic,
+            "crqst_data_t": It,
+            "Ic": Ic,
+            "Qc": Qc,
+            "It": It,
+            "Qt": Qt,
         }
         data.update(crht.params_fitted_dict)
         data.update(crht.interaction_coeffs)

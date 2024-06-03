@@ -38,15 +38,7 @@ warnings.filterwarnings("ignore")
 # baking
 def bake_cross_resonance():
     with baking(config, padding_method="right") as b:
-        # Prepare control state in 1
-        if st_c == "1":
-            b.play("x180", "q1_xy")
-        # Prepare target state in 1  
-        if st_t == "1":
-            b.play("x180", "q2_xy")
-
         # Play ZI(-pi/2) and IX(-pi/2)
-        b.align("q1_xy", "q2_xy")
         b.frame_rotation_2pi(+0.25, "q1_xy") # +0.25 for Z(-pi/2)
         b.play("-x90", "q2_xy")
 
@@ -79,14 +71,14 @@ def bake_cross_resonance():
 # Parameters
 nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
-resonators = [1, 2] # rr1, rr2
 thresholds = [ge_threshold_q1, ge_threshold_q2]
+resonators = [1, 2] # rr1, rr2
 state_ct_pairs = [["0", "0"], ["0", "1"], ["1", "0"], ["1", "1"]]
 n_avg = 100 # num of iterations
 
 assert len(qubit_suffixes) == nb_of_qubits
-assert len(resonators) == nb_of_qubits
 assert len(thresholds) == nb_of_qubits
+assert len(resonators) == nb_of_qubits
 
 # back cr for combinations of state_c and state_t
 baked_cr = bake_cross_resonance()
@@ -95,7 +87,6 @@ with program() as cnot_calib:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
     state = [declare(bool) for _ in range(nb_of_qubits)]
     state_st = [declare_stream() for _ in range(nb_of_qubits)]
-    proj_idx = declare(int)
     st_c = declare(int)
     st_t = declare(int)
     
@@ -104,29 +95,27 @@ with program() as cnot_calib:
         # to allow time to save the data
         wait(400 * u.ns)
         with for_(st_c, 0, st_c < 2, st_c + 1):
-            with for_(st_t, 0, st_t < 2, st_t + 1):
-                with for_(proj_idx, 0, proj_idx < 9, proj_idx + 1):
-                    # Prepare control state in 1
-                    with if_(st_c == 1):
-                        play("x180", "q1_xy")
-                    # Prepare target state in 1 
-                    with if_(st_t == 1):
-                        play("x180", "q2_xy")
-            
-                    # Play baked CR
-                    baked_cr.run()
-                    
-                    # Measure the state of the resonators
-                    # Make sure you updated the ge_threshold and angle if you want to use state discrimination
-                    multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
-                    # multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="optimized_")
+            with for_(st_t, 0, st_t < 2, st_t + 1):\
+                # Prepare control state in 1
+                with if_(st_c == 1):
+                    play("x180", "q1_xy")
+                # Prepare target state in 1 
+                with if_(st_t == 1):
+                    play("x180", "q2_xy")
+        
+                # Play baked CR
+                baked_cr.run()
+                
+                # Measure the state of the resonators
+                # Make sure you updated the ge_threshold and angle if you want to use state discrimination
+                multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
 
-                    # Wait for the qubit to decay to the ground state
-                    wait(thermalization_time * u.ns)
-                    # Make sure you updated the ge_threshold
-                    for q in range(nb_of_qubits):
-                        assign(state[q], I[q] > thresholds[q])
-                        save(state[q], state_st[q])
+                # Wait for the qubit to decay to the ground state
+                wait(thermalization_time * u.ns)
+                # Make sure you updated the ge_threshold
+                for q in range(nb_of_qubits):
+                    assign(state[q], I[q] > thresholds[q])
+                    save(state[q], state_st[q])
 
     with stream_processing():
         n_st.save("n")
@@ -141,8 +130,12 @@ with program() as cnot_calib:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
-
+qmm = QuantumMachinesManager(
+    host=qop_ip,
+    port=qop_port,
+    cluster_name=cluster_name,
+    octave=octave_config,
+)
 
 ###########################
 # Run or Simulate Program #

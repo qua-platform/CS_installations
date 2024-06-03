@@ -1,6 +1,6 @@
 # %%
 """
-                                 CR_calib_cancel_drive_amplitude
+                                 CR_calib_cr_drive_amplitude
 
 The CR_calib scripts are designed for calibrating cross-resonance (CR) gates involving a system
 with a control qubit and a target qubit. These scripts help estimate the parameters of a Hamiltonian,
@@ -17,10 +17,9 @@ For the calibration sequences, we employ echoed CR drive.
                                                          ______
             Readout(fR): _____________________ _________|  RR  |__
 
-This script is to calibrate the phase of CR cancellation drive.
-CR cancellation pulse is applied to the target qubit at the target qubit frequency.
-Each sequence, which varies in the duration of the CR drive and the phase of CR cancel drive,
-ends with state tomography of the target state (across X, Y, and Z bases).
+This script is to calibrate the amplitude of CR drive.
+Each sequence, which varies in the duration and amplitude of the CR drive, ends with
+state tomography of the target state (across X, Y, and Z bases).
 This process is repeated with the control state in both |0> and |1> states.
 We fit the two sets of CR duration versus tomography data to a theoretical model,
 yielding two sets of three parameters: delta, omega_x, and omega_y.
@@ -32,10 +31,9 @@ Prerequisites:
     - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
 
 Next steps before going to the next node:
-    - Find the amplitude where a_X (coeff of I_X) and a_Y (coeff of I_Y) is zero simultaneously.
-      If the two coeffs do not vanish simultaneously, the value of phi could be wrong.
-      Set cr_c1t2_drive_am in the configuration file.
-      Set cr_cancel_c1t2_square_positive_amp in the configuration file accordingly.
+    - Pick an amplitude for cr_c1t2_square_positive_amp.
+      In the end, we want to make the CR gate as short short as possible with highest fidelity.
+      Thus, we want to pick a large enough amplitude for the CR drive however without causing too much of AC Stark shift.
 
 Reference: Sarah Sheldon, Easwar Magesan, Jerry M. Chow, and Jay M. Gambetta Phys. Rev. A 93, 060302(R) (2016)
 """
@@ -67,7 +65,7 @@ warnings.filterwarnings("ignore")
 # The QUA program #
 ###################
 
-def plot_cr_duration_vs_amplitude(I1, I2 t_vec_ns, a_vec, axss):
+def plot_cr_duration_vs_amplitude(Ic, It t_vec_ns, a_vec, axss):
     data = 2 * [crqst_data_c] + 2 * [crqst_data_t]
     for i, (axs, bss) in enumerate(zip(axss, TARGET_BASES)):
         for j, (ax, dt, st) in enumerate(zip(axs, data, 2 * CONTROL_STATES)):
@@ -88,15 +86,13 @@ def plot_cr_duration_vs_amplitude(I1, I2 t_vec_ns, a_vec, axss):
 nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
-thresholds = [ge_threshold_q1, ge_threshold_q2]
 t_vec_clock = np.arange(8, 200, 4) # np.arange(8, 8000, 256) for simulate_dynamics
 t_vec_ns = 4 * t_vec_clock
-a_vec = np.array([1]) # np.arange(0.1, 2, 0.1) # scaling factor for amplitude
+a_vec = np.array([1]) #np.arange(0.1, 2, 0.1) # scaling factor for amplitude
 n_avg = 1 # num of iterations
 
 assert len(qubit_suffixes) == nb_of_qubits
 assert len(resonators) == nb_of_qubits
-assert len(thresholds) == nb_of_qubits
 assert np.all(t_vec_clock % 2 == 0) and (t_vec_clock.min() >= 8), "t_vec_clock should only have even numbers if play echoes"
 
 
@@ -122,12 +118,7 @@ with program() as cr_calib:
                     for st in CONTROL_STATES:
                         # Align all elements (as no implicit align)
                         align()
-                        # SHift the phase of CR drive and CR cancel pulse
-                        reset_frame("cr_c1t2")
-                        reset_frame("cr_cancel_c1t2")
-                        frame_rotation_2pi(cr_c1t2_drive_phase, "cr_c1t2")
-                        frame_rotation_2pi(cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
-                
+
                         # Prepare control state in 1  
                         if st == "1":
                             play("x180", "q1_xy")
@@ -137,17 +128,15 @@ with program() as cr_calib:
                         # Play CR
                         align()
                         play("square_positive" * amp(a), "cr_c1t2", duration=t_half)
-                        play("square_positive" * amp(a), "cr_cancel_c1t2", duration=t_half) # main and echo should sum up to t
                         wait(t_half, "q1_xy")
                         # Play Echo
                         play("x180", "q1_xy")
-                        wait(pi_len >> 2, "cr_c1t2", "cr_cancel_c1t2")
+                        wait(pi_len >> 2, "cr_c1t2")
                         play("square_negative" * amp(a), "cr_c1t2", duration=t_half)
-                        play("square_negative" * amp(a), "cr_cancel_c1t2", duration=t_half) # main and echo should sum up to t
                         wait(t_half, "q1_xy")
                         play("x180", "q1_xy")
                         wait(t + (pi_len >> 1), "q2_xy", "rr1", "rr2")
-                        
+
                         # QST
                         if bss == "x":
                             play("-y90", "q2_xy")
@@ -186,8 +175,12 @@ with program() as cr_calib:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
-
+qmm = QuantumMachinesManager(
+    host=qop_ip,
+    port=qop_port,
+    cluster_name=cluster_name,
+    octave=octave_config,
+)
 
 ###########################
 # Run or Simulate Program #
@@ -199,7 +192,7 @@ save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=2_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=3_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, cr_calib, simulation_config)
     job.get_simulated_samples().con1.plot(analog_ports=['1', '2', '3', '4', '5', '6'])
     plt.show()
@@ -218,10 +211,9 @@ elif simulate_dynamics:
         len(TARGET_BASES),
         len(CONTROL_STATES),
     )
-    I1, I2 = results[0, ...], results[1, ...]
-    fig = plot_crqst_result(t_vec_ns, I1[0, ...], I2[0, ...], fig, axss) # plot only a_vec[0]
+    Ic, It = results[0, ...], results[1, ...]
+    fig = plot_crqst_result(t_vec_ns, Ic[0, ...], It[0, ...], fig, axss) # plot only a_vec[0]
     plt.tight_layout()
-    plt.pause(0.1)
 
 else:
     # Open the quantum machine
@@ -232,38 +224,38 @@ else:
     fig, axss = plt.subplots(3, 4, figsize=(12, 9), sharex=True, sharey=True)
     interrupt_on_close(fig, job)
     # Tool to easily fetch results from the OPX (results_handle used in it)
-    results = fetching_tool(job, ["n", "I1", "Q1", "I2", "Q2"], mode="live")
+    results = fetching_tool(job, ["n", "Ic", "Qc", "It", "Qt"],  mode="live")
     # Live plotting
     while results.is_processing():
         # Fetch results
-        n, I1, Q1, I2, Q2 = results.fetch_all()
+        n, Ic, Qc, It, Qt = results.fetch_all()
         # Progress bar
         progress_counter(n, n_avg, start_time=results.start_time)
         # Plot cr_duration vs amplitude for Qc/Qt x Qc state x bases 
-        plot_cr_duration_vs_amplitude(I1, I2, t_vec_ns, a_vec, axss)
+        plot_cr_duration_vs_amplitude(Ic, It, t_vec_ns, a_vec, axss)
 
 if not simulate:
 
     # TODO: Delete (loading dummy data for test)
     test_data = np.load("./crht_test_data/data.npz")
     t_vec_ns = test_data["t_vec_ns"]
-    I1 = test_data["crqst_data_c"] # len(t_vec_clock) x len(target_bases) x len(control_states)
-    I2 = test_data["crqst_data_t"] # len(t_vec_clock) x len(target_bases) x len(control_states)
-    I1 = np.tile(I1[None, ...], reps=[len(a_vec), 1, 1, 1]) # len(a_vec) x len(t_vec_clock) x 3 x 2
-    I2 = np.tile(I2[None, ...], reps=[len(a_vec), 1, 1, 1]) # len(a_vec) x len(t_vec_clock) x 3 x 2
+    Ic = test_data["crqst_data_c"] # len(t_vec_clock) x len(target_bases) x len(control_states)
+    It = test_data["crqst_data_t"] # len(t_vec_clock) x len(target_bases) x len(control_states)
+    Ic = np.tile(Ic[None, ...], reps=[len(a_vec), 1, 1, 1]) # len(a_vec) x len(t_vec_clock) x 3 x 2
+    It = np.tile(It[None, ...], reps=[len(a_vec), 1, 1, 1]) # len(a_vec) x len(t_vec_clock) x 3 x 2
     
     # Perform CR Hamiltonian tomography
     coeffs = []
     for a in range(len(a_vec)):
         crht = CRHamiltonianTomographyAnalysis(
             ts=t_vec_ns,
-            crqst_data=I2[a, ...], # target data
+            crqst_data=It[a, ...], # target data: len(a_vec) x len(t_vec_clock) x 3 x 2
         )
         crht.fit_params()
         coeffs.append(crht.interaction_coeffs)
 
     # Plot the estimated interaction coefficients
-    fig_analysis = plot_interaction_coeffs(coeffs, a_vec, xlabel="amplitude")
+    fig_analysis = plot_interaction_coeffs(coeffs, a_vec, xlabel="cr amplitude")
     plt.show()
 
     qm.close()
@@ -275,12 +267,12 @@ if not simulate:
             "fig_analysis": fig_analysis,
             "t_vec_ns": t_vec_ns,
             "a_vec": a_vec,
-            "crqst_data_c": I1,
-            "crqst_data_t": I2,
-            "I1": I1,
-            "Q1": Q1,
-            "I2": I2,
-            "Q2": Q2,
+            "crqst_data_c": Ic,
+            "crqst_data_t": It,
+            "Ic": Ic,
+            "Qc": Qc,
+            "It": It,
+            "Qt": Qt,
         }
         data.update(crht.params_fitted_dict)
         data.update(crht.interaction_coeffs)

@@ -1,6 +1,6 @@
 # %%
 """
-                                 CNOT_bakery
+                                 CNOT
 
 Prerequisites:
     - 
@@ -18,9 +18,10 @@ from qm import SimulationConfig
 # from configuration import *
 from configuration_with_octave import *
 import matplotlib.pyplot as plt
+from qualang_tools.loops import from_array
 from qualang_tools.results import fetching_tool, progress_counter
+from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.plot import interrupt_on_close
-from qualang_tools.bakery import baking
 from macros import qua_declaration, multiplexed_readout, one_qb_QST, plot_1qb_tomography_results
 import warnings
 import matplotlib
@@ -35,53 +36,18 @@ warnings.filterwarnings("ignore")
 # The QUA program #
 ###################
 
-# baking
-def bake_cross_resonance():
-    with baking(config, padding_method="right") as b:
-        # Play ZI(-pi/2) and IX(-pi/2)
-        b.frame_rotation_2pi(+0.25, "q1_xy") # +0.25 for Z(-pi/2)
-        b.play("-x90", "q2_xy")
-
-        # Shift frames to the calibrated phases
-        b.frame_rotation_2pi(cr_c1t2_drive_phase, "cr_c1t2")
-        b.frame_rotation_2pi(cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
-
-        # Play CR
-        b.align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2")
-        # main
-        b.play("square_positive_half", "cr_c1t2")
-        b.play("square_positive_half", "cr_cancel_c1t2")
-        # echo
-        b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
-        b.play("x180", "q1_xy")
-        b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
-        b.play("square_negative_half", "cr_c1t2")
-        b.play("square_negative_half", "cr_cancel_c1t2")
-        b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
-        b.play("x180", "q1_xy")
-        b.align("q1_xy", "cr_c1t2", "cr_cancel_c1t2", "rr1", "rr2")
-
-        # Shift back the phase of cr and cr cancel pulse so they won't be accumulated
-        b.frame_rotation_2pi(-cr_c1t2_drive_phase, "cr_c1t2")
-        b.frame_rotation_2pi(-cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
-
-    return b
-
-
 # Parameters
 nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
-resonators = [1, 2] # rr1, rr2
 thresholds = [ge_threshold_q1, ge_threshold_q2]
+resonators = [1, 2] # rr1, rr2
 state_ct_pairs = [["0", "0"], ["0", "1"], ["1", "0"], ["1", "1"]]
 n_avg = 100 # num of iterations
 
 assert len(qubit_suffixes) == nb_of_qubits
-assert len(resonators) == nb_of_qubits
 assert len(thresholds) == nb_of_qubits
+assert len(resonators) == nb_of_qubits
 
-# back cr for combinations of state_c and state_t
-baked_cr = bake_cross_resonance()
 
 with program() as cnot_calib:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
@@ -89,6 +55,8 @@ with program() as cnot_calib:
     state_st = [declare_stream() for _ in range(nb_of_qubits)]
     st_c = declare(int)
     st_t = declare(int)
+    assign_variables_to_element(f"q1_xy", st_c)
+    assign_variables_to_element(f"q2_xy", st_t)
     
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
@@ -102,13 +70,39 @@ with program() as cnot_calib:
                 # Prepare target state in 1 
                 with if_(st_t == 1):
                     play("x180", "q2_xy")
-        
-                # Play baked CR
-                baked_cr.run()
-                
+
+                # Play ZI(-pi/2) and IX(-pi/2)
+                align("q1_xy", "q2_xy")
+                frame_rotation_2pi(+0.25, "q1_xy") # +0.25 for Z(-pi/2)
+                play("-x90", "q2_xy")
+
+                # Shift frames to the calibrated phases
+                frame_rotation_2pi(cr_c1t2_drive_phase, "cr_c1t2")
+                frame_rotation_2pi(cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
+
+                # Play CR
+                align("q1_xy", "q2_xy", "cr_c1t2", "cr_cancel_c1t2")
+                # main
+                play("square_positive_half", "cr_c1t2")
+                play("square_positive_half", "cr_cancel_c1t2")
+                # echo
+                align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
+                play("x180", "q1_xy")
+                align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
+                play("square_negative_half", "cr_c1t2")
+                play("square_negative_half", "cr_cancel_c1t2")
+                align("q1_xy", "cr_c1t2", "cr_cancel_c1t2")
+                play("x180", "q1_xy")
+
+                align("q1_xy", "rr1", "rr2")
                 # Measure the state of the resonators
                 # Make sure you updated the ge_threshold and angle if you want to use state discrimination
                 multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
+
+                # Shift back the phase of cr and cr cancel pulse so they won't be accumulated
+                align("rr1", "rr2", "cr_c1t2", "cr_cancel_c1t2")
+                frame_rotation_2pi(-cr_c1t2_drive_phase, "cr_c1t2")
+                frame_rotation_2pi(-cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
 
                 # Wait for the qubit to decay to the ground state
                 wait(thermalization_time * u.ns)
@@ -130,8 +124,12 @@ with program() as cnot_calib:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
-
+qmm = QuantumMachinesManager(
+    host=qop_ip,
+    port=qop_port,
+    cluster_name=cluster_name,
+    octave=octave_config,
+)
 
 ###########################
 # Run or Simulate Program #
@@ -181,6 +179,7 @@ else:
     plt.show()
 
     qm.close()
+
 
     if save_data:
         # Arrange data to save

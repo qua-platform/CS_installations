@@ -85,7 +85,7 @@ qubit_IF_q2_ef = -250 * u.MHz
 # Relaxation time
 qubit_T1_q1 = 3 * u.us
 qubit_T1_q2 = 3 * u.us
-thermalization_time = 5 * max(qubit_T1_q1, qubit_T1_q2)
+thermalization_time = 200 # 5 * max(qubit_T1_q1, qubit_T1_q2)
 
 # CW pulse paramter
 const_len = 1000
