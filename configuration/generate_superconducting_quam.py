@@ -3,7 +3,7 @@ import os.path
 from typing import Dict
 from quam.components import pulses, Octave, IQChannel, DigitalOutputChannel
 
-from quam_components import Transmon, ReadoutResonator, QuAM, FluxLine
+from quam_components import Transmon, TransmonPair, ReadoutResonator, QuAM, FluxLine, TunableCoupler
 from qualang_tools.units import unit
 from pathlib import Path
 import json
@@ -17,17 +17,18 @@ def create_default_wiring(num_qubits: int) -> dict:
     Create a wiring config tailored to the number of qubits.
 
     """
-    wiring = {"qubits": {}}
+    wiring = {"qubits": {}, "qubit_pairs": []}
 
     # Generate example wiring by default
-    xy_lines, flux_lines, res_lines = _example_wiring(num_qubits)
+    xy_lines, flux_lines, res_lines, coupler_lines = _example_wiring(num_qubits)
 
     # Uncomment this to manually set wiring for each qubit
     # res_lines  = [("con1", 1, "octave1", 1)]*num_qubits
     # xy_lines   = [("con1", 3, "octave1", 2), ...]
     # flux_lines = [("con1", 9), ...]
+    # coupler_line = [("con2", 1), ...]
 
-    for q_idx in range(0, num_qubits):
+    for q_idx in range(num_qubits):
         res_con, res_I_ch_out, res_octave, res_octave_ch = res_lines[q_idx]
         xy_con, xy_I_ch, xy_octave, xy_octave_ch = xy_lines[q_idx]
         z_opx, z_ch = flux_lines[q_idx]
@@ -51,8 +52,22 @@ def create_default_wiring(num_qubits: int) -> dict:
                 "frequency_converter_down": "#/octaves/octave1/RF_inputs/1",
             },
         }
+
+    for q_idx in range(num_qubits - 1):
+        c_opx, c_ch = coupler_lines[q_idx]
+        
+        wiring["qubit_pairs"].append({
+            "qubit_control": f"#/qubits/q{q_idx}", # reference to f"q{q_idx}"
+            "qubit_target": f"#/qubits/q{q_idx + 1}", # reference to f"q{q_idx + 1}"
+            "coupler": {"opx_output": (c_opx, c_ch)},
+        })
+        
     return wiring
 
+
+def add_default_coupler_pulses(coupler):
+    coupler.operations["const"] = pulses.SquarePulse(amplitude=0.1, length=100)
+    
 
 def add_default_transmon_pulses(transmon):
     # TODO: make sigma=length/5
@@ -256,6 +271,21 @@ def create_quam_superconducting(num_qubits: int = None, wiring: dict = None, oct
     RF_input_resonator.LO_frequency = 4 * u.GHz
     print(f"Please set the LO frequency of {RF_input_resonator.get_reference()}")
 
+    # Add qubit pairs along with couplers
+    for i, qubit_pair_wiring in enumerate(machine.wiring.qubit_pairs):
+        qubit_control_name = qubit_pair_wiring.qubit_control.name
+        qubit_target_name = qubit_pair_wiring.qubit_target.name
+        coupler_name = f"coupler_{qubit_control_name}_{qubit_target_name}"
+        coupler = TunableCoupler(id=coupler_name, opx_output=qubit_pair_wiring.coupler.get_reference("opx_output"))
+        add_default_coupler_pulses(coupler)
+
+        # Note: The Q channel is set to the I channel plus one.
+        qubit_pair = TransmonPair(
+            qubit_control=qubit_pair_wiring.get_reference("qubit_control"),
+            qubit_target=qubit_pair_wiring.get_reference("qubit_target"),
+            coupler=coupler,
+        )
+        machine.qubit_pairs.append(qubit_pair)
     return machine
 
 
@@ -267,12 +297,13 @@ def _example_wiring(num_qubits: int):
     1. Assigns wiring for a single feed-line for the resonator.
     2. Assigns XY wiring (I and Q) consecutively for each qubit.
     3. Assigns Z wiring consecutively for each qubit.
+    4. Assigns coupler consecutively for each qubit pair.
 
     Notes:
     - Requires multiple OPX+ after 2 qubits.
     - Requires multiple octaves after 4 qubits.
     """
-    xy_lines, flux_lines, res_lines = [], [], []
+    xy_lines, flux_lines, res_lines, coupler_lines = [], [], [], []
     num_feedlines = 1
     num_opx_chs = 10
     for q_idx in range(num_qubits):
@@ -292,21 +323,28 @@ def _example_wiring(num_qubits: int):
         flux_lines.append((f"con{z_opx}", z_ch))
         res_lines.append((f"con1", 1, "octave1", 1))
 
-    return xy_lines, flux_lines, res_lines
+    for q_idx in range(num_qubits - 1):
+        c_idx = 2 * num_feedlines + 3 * num_qubits + q_idx
+        
+        c_ch = c_idx % num_opx_chs + 1
+        c_opx = c_idx // num_opx_chs + 1
+        coupler_lines.append((f"con{c_opx}", c_ch))
+
+    return xy_lines, flux_lines, res_lines, coupler_lines
 
 
 if __name__ == "__main__":
     folder = Path(__file__).parent
     quam_folder = folder / "quam_state"
 
-    machine = create_quam_superconducting(num_qubits=2)
+    machine = create_quam_superconducting(num_qubits=3)
     machine.save(quam_folder, content_mapping={"wiring.json": {"wiring", "network"}})
 
     qua_file = folder / "qua_config.json"
     qua_config = machine.generate_config()
     json.dump(qua_config, qua_file.open("w"), indent=4)
 
-    quam_loaded = QuAM.load(quam_folder)
-    qua_file_loaded = folder / "qua_config2.json"
-    qua_config_loaded = quam_loaded.generate_config()
-    json.dump(qua_config_loaded, qua_file.open("w"), indent=4)
+    # quam_loaded = QuAM.load(quam_folder)
+    # qua_file_loaded = folder / "qua_config2.json"
+    # qua_config_loaded = quam_loaded.generate_config()
+    # json.dump(qua_config_loaded, qua_file.open("w"), indent=4)

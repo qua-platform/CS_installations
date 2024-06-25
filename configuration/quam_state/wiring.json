@@ -1,4 +1,11 @@
 {
+    "network": {
+        "host": "172.16.33.101",
+        "cluster_name": "Cluster_81",
+        "octave_ip": "172.16.33.101",
+        "octave_port": 11050,
+        "data_folder": "C:/git/qua-libs/Quantum-Control-Applications-QuAM/Superconducting/data"
+    },
     "wiring": {
         "qubits": {
             "q0": {
@@ -16,7 +23,7 @@
                 "z": {
                     "opx_output": [
                         "con1",
-                        7
+                        9
                     ]
                 },
                 "opx_output_digital": [
@@ -63,7 +70,7 @@
                 "z": {
                     "opx_output": [
                         "con1",
-                        8
+                        10
                     ]
                 },
                 "opx_output_digital": [
@@ -94,14 +101,76 @@
                     "frequency_converter_up": "#/octaves/octave1/RF_outputs/1",
                     "frequency_converter_down": "#/octaves/octave1/RF_inputs/1"
                 }
+            },
+            "q2": {
+                "xy": {
+                    "opx_output_I": [
+                        "con1",
+                        7
+                    ],
+                    "opx_output_Q": [
+                        "con1",
+                        8
+                    ],
+                    "frequency_converter_up": "#/octaves/octave1/RF_outputs/4"
+                },
+                "z": {
+                    "opx_output": [
+                        "con2",
+                        1
+                    ]
+                },
+                "opx_output_digital": [
+                    "con1",
+                    7
+                ],
+                "resonator": {
+                    "opx_output_I": [
+                        "con1",
+                        1
+                    ],
+                    "opx_output_Q": [
+                        "con1",
+                        2
+                    ],
+                    "opx_input_I": [
+                        "con1",
+                        1
+                    ],
+                    "opx_input_Q": [
+                        "con1",
+                        2
+                    ],
+                    "digital_port": [
+                        "con1",
+                        1
+                    ],
+                    "frequency_converter_up": "#/octaves/octave1/RF_outputs/1",
+                    "frequency_converter_down": "#/octaves/octave1/RF_inputs/1"
+                }
             }
-        }
-    },
-    "network": {
-        "host": "172.16.33.101",
-        "cluster_name": "Cluster_81",
-        "octave_ip": "172.16.33.101",
-        "octave_port": 11050,
-        "data_folder": "C:/git/qua-libs/Quantum-Control-Applications-QuAM/Superconducting/data"
+        },
+        "qubit_pairs": [
+            {
+                "qubit_control": "#/qubits/q0",
+                "qubit_target": "#/qubits/q1",
+                "coupler": {
+                    "opx_output": [
+                        "con2",
+                        2
+                    ]
+                }
+            },
+            {
+                "qubit_control": "#/qubits/q1",
+                "qubit_target": "#/qubits/q2",
+                "coupler": {
+                    "opx_output": [
+                        "con2",
+                        3
+                    ]
+                }
+            }
+        ]
     }
 }
