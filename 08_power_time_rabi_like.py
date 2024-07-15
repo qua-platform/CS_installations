@@ -74,6 +74,8 @@ with program() as init_search_prog:
 
                 seq.add_step(voltage_point_name="readout", ramp_duration=readout_ramp)
                 seq.add_compensation_pulse(duration=duration_compensation_pulse)
+                # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
+                seq.ramp_to_zero()
 
                 # pulse the barrier
                 wait((duration_init + init_ramp*3) * u.ns, "X4")
@@ -82,12 +84,6 @@ with program() as init_search_prog:
                 # Measure the dot right after the qubit manipulation
                 wait((duration_init + readout_ramp + init_ramp*4 + duration_init_jumps*3) * u.ns, "QDS")
                 lock_in_macro(I=I, Q=Q, I_st=I_st, Q_st=Q_st)
-
-                align()
-
-                # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
-                ramp_to_zero("P5_sticky")
-                ramp_to_zero("P6_sticky")
 
                 align()
 

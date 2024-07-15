@@ -67,6 +67,7 @@ with program() as snr_opt:
             seq.add_step(voltage_point_name="dephasing", ramp_duration=dephasing_ramp)
             seq.add_step(voltage_point_name="readout", ramp_duration=readout_ramp)  # duration in nanoseconds
             seq.add_compensation_pulse(duration=duration_compensation_pulse)
+            seq.ramp_to_zero()
 
             # Measure the dot right after the qubit manipulation
             wait((duration_dephasing + dephasing_ramp + readout_ramp) * u.ns, "QDS")
@@ -87,8 +88,6 @@ with program() as snr_opt:
             # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
             align()
 
-            ramp_to_zero("P5_sticky")
-            ramp_to_zero("P6_sticky")
 
             align()
 

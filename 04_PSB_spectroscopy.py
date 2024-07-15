@@ -81,16 +81,12 @@ with program() as PSB_search_prog:
             seq.add_step(voltage_point_name="dephasing", ramp_duration=dephasing_ramp)
             seq.add_step(duration=lock_in_readout_length, level=[x,y], ramp_duration=readout_ramp)  # duration in nanoseconds
             seq.add_compensation_pulse(duration=duration_compensation_pulse)
+            # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
+            seq.ramp_to_zero()
 
             # Measure the dot right after the qubit manipulation
             wait((duration_dephasing + dephasing_ramp + readout_ramp) * u.ns, "QDS")
             lock_in_macro(I=I, Q=Q, I_st=I_st, Q_st=Q_st)
-
-            align()
-
-            # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
-            ramp_to_zero("P5_sticky")
-            ramp_to_zero("P6_sticky")
 
             align()
 

@@ -64,17 +64,12 @@ with program() as init_search_prog:
                 seq.add_step(voltage_point_name="dephasing", ramp_duration=init_ramp)
                 seq.add_step(voltage_point_name="readout", ramp_duration=readout_ramp)
                 seq.add_compensation_pulse(duration=duration_compensation_pulse)
+                # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
                 seq.ramp_to_zero()
 
                 # Measure the dot right after the qubit manipulation
                 wait((duration_init + duration_dephasing + readout_ramp + init_ramp*4 + duration_init_jumps*2) * u.ns, "QDS")
                 lock_in_macro(I=Id, Q=Qd, I_st=Id_st, Q_st=Qd_st)
-
-                align()
-
-                # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
-                ramp_to_zero("P5_sticky")
-                ramp_to_zero("P6_sticky")
 
                 align()
 
@@ -90,16 +85,12 @@ with program() as init_search_prog:
                 seq.add_step(voltage_point_name="quick_return_11", ramp_duration=init_ramp)
                 seq.add_step(voltage_point_name="readout", ramp_duration=readout_ramp)
                 seq.add_compensation_pulse(duration=duration_compensation_pulse)
+                # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
+                seq.ramp_to_zero()
 
                 # Measure the dot right after the qubit manipulation
                 wait((duration_init + readout_ramp + init_ramp*4 + duration_init_jumps*3) * u.ns, "QDS")
                 lock_in_macro(I=Ii, Q=Qi, I_st=Ii_st, Q_st=Qi_st)
-
-                align()
-
-                # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
-                ramp_to_zero("P5_sticky")
-                ramp_to_zero("P6_sticky")
 
                 align()
 
