@@ -256,8 +256,10 @@ if not simulate:
 
     # Plot the estimated interaction coefficients
     fig_analysis = plot_interaction_coeffs(coeffs, a_vec, xlabel="cr amplitude")
+
     plt.show()
 
+    # Close the quantum machines at the end
     qm.close()
 
     if save_data:

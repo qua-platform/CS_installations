@@ -157,8 +157,7 @@ else:
         plt.xlabel("Idle times [ns]")
         plt.tight_layout()
         plt.pause(0.1)
-    # Close the quantum machines at the end
-    qm.close()
+
     try:
         fit = Fit()
         fig_analysis = plt.figure()
@@ -184,6 +183,9 @@ else:
         plt.tight_layout()
     except (Exception,):
         pass
+
+    # Close the quantum machines at the end
+    qm.close()
 
     if save_data:
         # Arrange data to save
@@ -212,7 +214,5 @@ else:
         # Save results
         data_folder = data_handler.save_data(data=data)
 
-    # Close the quantum machines at the end
-    qm.close()
 
 # %%

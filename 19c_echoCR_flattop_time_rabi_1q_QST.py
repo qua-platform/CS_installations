@@ -171,6 +171,11 @@ else:
         plt.tight_layout()
         plt.pause(0.1)
 
+    plt.show()
+
+    # Close the quantum machines at the end
+    qm.close()
+
     if save_data:
         # Arrange data to save
         data = {
@@ -197,7 +202,5 @@ else:
         # Save results
         data_folder = data_handler.save_data(data=data)
 
-    # Close the quantum machines at the end
-    qm.close()
 
 # %%

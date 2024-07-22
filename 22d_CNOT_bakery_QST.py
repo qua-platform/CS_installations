@@ -193,8 +193,10 @@ else:
     plt.legend(["control", "target"])
     plt.xlim(xlim)
     plt.tight_layout()
+
     plt.show()
 
+    # Close the quantum machines at the end
     qm.close()
 
     if save_data:

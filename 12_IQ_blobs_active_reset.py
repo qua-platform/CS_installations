@@ -64,6 +64,7 @@ qmm = QuantumMachinesManager(
 ###########################
 # Run or Simulate Program #
 ###########################
+
 simulate = False
 save_data = True
 
@@ -88,6 +89,11 @@ else:
     plt.suptitle("qubit 1")
     two_state_discriminator(I_g_q2, Q_g_q2, I_e_q2, Q_e_q2, True, True)
     plt.suptitle("qubit 2")
+
+    plt.show()
+
+    # Close the quantum machines at the end
+    qm.close()
 
     if save_data:
         # Arrange data to save
@@ -118,7 +124,5 @@ else:
         # Save results
         data_folder = data_handler.save_data(data=data)
 
-    # Close the quantum machines at the end
-    qm.close()
 
 # %%

@@ -145,8 +145,6 @@ else:
         plt.xlabel("Wait time (ns)")
         plt.tight_layout()
         plt.pause(0.1)
-    # Close the quantum machines at the end
-    qm.close()
 
     # Fit the results to extract the qubit decay time T1
     try:
@@ -176,6 +174,11 @@ else:
     except (Exception,):
         pass
 
+    plt.show()
+
+    # Close the quantum machines at the end
+    qm.close()
+
     if save_data:
         # Arrange data to save
         data = {
@@ -203,7 +206,5 @@ else:
         # Save results
         data_folder = data_handler.save_data(data=data)
 
-    # Close the quantum machines at the end
-    qm.close()
 
 # %%

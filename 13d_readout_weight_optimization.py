@@ -275,6 +275,11 @@ else:
             weights_minus_real=weights_minus_real,
         )
 
+    plt.show()
+
+    # Close the quantum machines at the end
+    qm.close()
+
     if save_data:
         # Arrange data to save
         data = {
@@ -354,7 +359,5 @@ else:
     #     opt_weights_imag = [(1.0, readout_len)]
     #     opt_weights_minus_real = [(1.0, readout_len)]
 
-    # Close the quantum machines at the end
-    qm.close()
 
 # %%

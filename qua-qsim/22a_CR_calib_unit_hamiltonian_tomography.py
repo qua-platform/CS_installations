@@ -230,7 +230,7 @@ if not simulate:
     fig_analysis = crht.plot_fit_result()
     plt.show()
 
-    # close the quantum machines at the end
+    # Close the quantum machines at the end
     qm.close()
 
     if save_data:

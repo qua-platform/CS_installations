@@ -53,7 +53,8 @@ from macros import (
     prepare_control_state, play_cr_pulse, perform_QST_target,
 )
 from cr_hamiltonian_tomography import (
-    CRHamiltonianTomographyAnalysis, plot_cr_duration_vs_scan_param, plot_interaction_coeffs, 
+    CRHamiltonianTomographyAnalysis, plot_cr_duration_vs_scan_param, 
+    plot_interaction_coeffs, plot_crqst_result_2D, plot_crqst_result_3D,
     TARGET_BASES, CONTROL_STATES,
 )
 
@@ -193,7 +194,7 @@ else:
 
     plt.show()
 
-    # close the quantum machines at the end
+    # Close the quantum machines at the end
     qm.close()
 
     if save_data:

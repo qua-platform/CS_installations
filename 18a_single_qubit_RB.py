@@ -364,7 +364,12 @@ else:
     plt.ylabel("Sequence Fidelity")
     plt.title("Single qubit RB")
 
+    plt.show()
+
     # save the numpy arrays
+    # Close the quantum machines at the end
+    qm.close()
+
     if save_data:
         if state_discrimination:
             # Arrange data to save
@@ -407,7 +412,5 @@ else:
         # Save results
         data_folder = data_handler.save_data(data=data)
 
-    # Close the quantum machines at the end
-    qm.close()
 
 # %%

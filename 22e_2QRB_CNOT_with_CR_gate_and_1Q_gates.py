@@ -60,6 +60,9 @@ def bake_cnot(baker: Baking, q1, q2):
     baker.frame_rotation_2pi(-cr_cancel_c1t2_drive_phase, "cr_cancel_c1t2")
 
 
+def bake_cz():
+    cnot
+
 def prep():
     wait(thermalization_time * u.ns)  # thermal preparation in clock cycles (time = 10 x T1 x 4ns)
     align()

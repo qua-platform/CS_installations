@@ -262,8 +262,10 @@ if not simulate:
 
     # Plot the estimated interaction coefficients
     fig_analysis = plot_interaction_coeffs(coeffs, ph_vec, xlabel="cr phase [2pi]")
+
     plt.show()
 
+    # Close the quantum machines at the end
     qm.close()
 
     if save_data:
