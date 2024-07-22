@@ -72,6 +72,7 @@ warnings.filterwarnings("ignore")
 nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
+thresholds = [ge_threshold_q1, ge_threshold_q2]
 t_vec_clock = np.arange(8, 200, 4) # np.arange(8, 8000, 256) for simulate_dynamics
 t_vec_ns = 4 * t_vec_clock
 ph_vec = np.arange(0, 1, 0.25) # ratio relative to 2 * pi
@@ -127,24 +128,22 @@ with program() as cr_calib:
                         # Wait for the qubit to decay to the ground state
                         wait(thermalization_time * u.ns)
 
+                        # Make sure you updated the ge_threshold
+                        for q in range(nb_of_qubits):
+                            assign(state[q], I[q] > thresholds[q])
+                            save(state[q], state_st[q])
 
     with stream_processing():
         n_st.save("n")
         for q in range(nb_of_qubits):
-            I_st[q]\
+            state_st[q]\
+                .boolean_to_int()\
                 .buffer(len(CONTROL_STATES))\
                 .buffer(len(TARGET_BASES))\
                 .buffer(len(t_vec_clock))\
                 .buffer(len(ph_vec))\
                 .average()\
-                .save(f"I_{qubit_suffixes[q]}")
-            Q_st[q]\
-                .buffer(len(CONTROL_STATES))\
-                .buffer(len(TARGET_BASES))\
-                .buffer(len(t_vec_clock))\
-                .buffer(len(ph_vec))\
-                .average()\
-                .save(f"Q_{qubit_suffixes[q]}")
+                .save(f"state_{qubit_suffixes[q]}")
 
 
 #####################################
@@ -180,22 +179,22 @@ else:
     fig, axss = plt.subplots(3, 4, figsize=(12, 9), sharex=True, sharey=True)
     interrupt_on_close(fig, job)
     # Tool to easily fetch results from the OPX (results_handle used in it)
-    results = fetching_tool(job, ["n", "I_c", "Q_c", "I_t", "Q_t"],  mode="live")
+    results = fetching_tool(job, ["n", "state_c", "state_t"],  mode="live")
     # Live plotting
     while results.is_processing():
         # Fetch results
-        n, I_c, Q_c, I_t, Q_t = results.fetch_all()
+        n, state_c, state_t = results.fetch_all()
         # Progress bar
         progress_counter(n, n_avg, start_time=results.start_time)
         # Plot cr_duration vs phase for Q_c/Q_t x Q_c state x bases 
-        plot_cr_duration_vs_scan_param(I_c, I_t, t_vec_ns, ph_vec, "phase [2pi]", axss)
+        plot_cr_duration_vs_scan_param(state_c, state_t,  t_vec_ns, ph_vec, "phase [2pi]", axss)
 
     # Perform CR Hamiltonian tomography
     coeffs = []
     for ph in range(len(ph_vec)):
         crht = CRHamiltonianTomographyAnalysis(
             ts=t_vec_ns,
-            crqst_data=I_t[ph, ...], # target data: len(ph_vec) x len(t_vec_clock) x 3 x 2
+            crqst_data=state_t[ph, ...], # target data: len(ph_vec) x len(t_vec_clock) x 3 x 2
         )
         crht.fit_params()
         coeffs.append(crht.interaction_coeffs)
@@ -215,12 +214,8 @@ else:
             "fig_analysis": fig_analysis,
             "t_vec_ns": t_vec_ns,
             "ph_vec": ph_vec,
-            "crqst_data_c": I_c,
-            "crqst_data_t": I_t,
-            "I_c": I_c,
-            "Q_c": Q_c,
-            "I_t": I_t,
-            "Q_t": Q_t,
+            "crqst_data_c": state_c,
+            "crqst_data_t": state_t,
         }
         data.update(crht.params_fitted_dict)
         data.update(crht.interaction_coeffs)
