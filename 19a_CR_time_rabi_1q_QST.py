@@ -21,8 +21,8 @@ from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
 from qm import SimulationConfig
 
-# from configuration import *
-from configuration_with_octave import *
+from configuration import *
+# from configuration_with_octave import *
 import matplotlib.pyplot as plt
 from qualang_tools.loops import from_array
 from qualang_tools.results import fetching_tool, progress_counter
@@ -40,8 +40,8 @@ warnings.filterwarnings("ignore")
 # The QUA program #
 ###################
 resonators = [1, 2] # rr1, rr2
-t_vec_clock = np.arange(8, 400, 4) # in clock cylcle = 4ns
-t_vec_ns = t_vec_clock # in clock cylcle = 4ns
+t_vec_cycle = np.arange(4, 400, 4) # in clock cylcle = 4ns
+t_vec_ns = 4 * t_vec_cycle # in clock cylcle = 4ns
 n_avg = 1000
 
 
@@ -53,7 +53,7 @@ with program() as cr_time_rabi_one_qst:
 
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
-        with for_(*from_array(t, t_vec_clock)):
+        with for_(*from_array(t, t_vec_cycle)):
             with for_(c, 0, c < 2, c + 1): # bases 
                 with for_(s, 0, s < 2, s + 1): # states
                     with if_(s == 1):
@@ -61,7 +61,6 @@ with program() as cr_time_rabi_one_qst:
                         align()
 
                     # Control
-                    reset_phase("cr_c1t2")
                     play("square_positive", "cr_c1t2", duration=t)
                     align()
                     one_qb_QST("q2_xy", pi_len, c)
@@ -75,8 +74,8 @@ with program() as cr_time_rabi_one_qst:
     with stream_processing():
         n_st.save("n")
         for r, rr in enumerate(resonators):
-            I_st[r].buffer(2).buffer(3).buffer(len(t_vec_clock)).average().save(f"I{rr}")
-            Q_st[r].buffer(2).buffer(3).buffer(len(t_vec_clock)).average().save(f"Q{rr}")
+            I_st[r].buffer(2).buffer(3).buffer(len(t_vec_cycle)).average().save(f"I{rr}")
+            Q_st[r].buffer(2).buffer(3).buffer(len(t_vec_cycle)).average().save(f"Q{rr}")
 
 
 #####################################
@@ -157,18 +156,11 @@ else:
             "iteration": np.array([n]),  # convert int to np.array of int
             "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
         }
-
-        # Initialize the DataHandler
+        # Save Data
         script_name = Path(__file__).name
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
-        data_handler.additional_files = {
-            script_name: script_name,
-            "configuration_with_octave.py": "configuration_with_octave.py",
-            "calibration_db.json": "calibration_db.json",
-            "optimal_weights.npz": "optimal_weights.npz",
-        }
-        # Save results
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_folder = data_handler.save_data(data=data)
 
 

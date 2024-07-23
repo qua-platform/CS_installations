@@ -23,15 +23,19 @@ Next steps before going to the next node:
     - Update the integration weights in the state by following the steps at the end of the script.
 """
 
-from qm.qua import *
 from qm.QuantumMachinesManager import QuantumMachinesManager
-from configuration_with_octave import *
-
-# from configuration import *
-import matplotlib.pyplot as plt
-import numpy as np
+from qm.qua import *
 from qm import SimulationConfig
-from qualang_tools.results import fetching_tool, progress_counter
+
+from configuration import *
+# from configuration_with_octave import *
+import matplotlib.pyplot as plt
+from qualang_tools.loops import from_array
+from qualang_tools.results import fetching_tool
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.analysis import two_state_discriminator
+from qualang_tools.results import progress_counter
+from macros import qua_declaration, multiplexed_readout
 import warnings
 import matplotlib
 from qualang_tools.results.data_handler import DataHandler
@@ -86,7 +90,6 @@ def plot_three_complex_arrays(x, arr1, arr2, arr3):
     ax3.set_ylabel("subtracted traces [a.u.]")
     ax3.legend()
     plt.tight_layout()
-    plt.show()
     return fig
 
 
@@ -210,7 +213,7 @@ else:
     job = qm.execute(opt_weights)
     # Get results from QUA program
     results = fetching_tool(job, data_list=["iteration"], mode="live")
-    # Live plotting
+    # Get progress counter to monitor runtime of the program
     while results.is_processing():
         start_time = results.get_start_time()
         # Fetch results
@@ -242,6 +245,7 @@ else:
     weights_minus_sin = [[], []]
     weights_minus_cos = [[]]
     res_handles = job.result_handles
+    figs = []
     for i in range(2):
         IIe[i], IIg[i] = divide_array_in_half(res_handles.get(f"II_q{i}").fetch_all())
         IQe[i], IQg[i] = divide_array_in_half(res_handles.get(f"IQ_q{i}").fetch_all())
@@ -259,6 +263,7 @@ else:
         norm_subtracted_trace[i] = normalize_complex_array(subtracted_trace[i])  # <- these are the optimal weights :)
         # Plot the results
         fig = plot_three_complex_arrays(x_plot, ground_trace[i], excited_trace[i], norm_subtracted_trace[i])
+        figs.append(fig)
         plt.suptitle(f"Integration weight optimization for qubit {i+1}")
         plt.tight_layout()
         # Reshape the optimal integration weights to match the configuration
@@ -283,7 +288,8 @@ else:
     if save_data:
         # Arrange data to save
         data = {
-            "fig_live": fig,
+            "fig1": figs[0],
+            "fig2": figs[1],
             "IIg": np.array(IIg),
             "IIe": np.array(IIe),
             "IQg": np.array(IQg),
@@ -307,18 +313,11 @@ else:
             "iteration": np.array([n]),  # convert int to np.array of int
             "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
         }
-
-        # Initialize the DataHandler
+        # Save Data
         script_name = Path(__file__).name
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
-        data_handler.additional_files = {
-            script_name: script_name,
-            "configuration_with_octave.py": "configuration_with_octave.py",
-            "calibration_db.json": "calibration_db.json",
-            "optimal_weights.npz": "optimal_weights.npz",
-        }
-        # Save results
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_folder = data_handler.save_data(data=data)
 
     # After obtaining the optimal weights, you need to load them to the 'integration_weights' dictionary in the config.

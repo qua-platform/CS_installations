@@ -42,8 +42,8 @@ from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
 from qm import SimulationConfig
 
-# from configuration import *
-from configuration_with_octave import *
+from configuration import *
+# from configuration_with_octave import *
 import matplotlib.pyplot as plt
 from qualang_tools.loops import from_array
 from qualang_tools.results import fetching_tool, progress_counter
@@ -73,15 +73,15 @@ nb_of_qubits = 2
 qubit_suffixes = ["c", "t"] # control and target
 resonators = [1, 2] # rr1, rr2
 thresholds = [ge_threshold_q1, ge_threshold_q2]
-t_vec_clock = np.arange(8, 200, 4) # np.arange(8, 8000, 256) for simulate_dynamics
-t_vec_ns = 4 * t_vec_clock
+t_vec_cycle = np.arange(8, 200, 4) # np.arange(8, 8000, 256) for simulate_dynamics
+t_vec_ns = 4 * t_vec_cycle
 ph_vec = np.arange(0, 1, 0.25) # ratio relative to 2 * pi
 n_avg = 1 # num of iterations
 cr_pulse_kind = "direct_only" # "direct+echo", "direct+cancel", "direct+cancel+echo"
 
 assert len(qubit_suffixes) == nb_of_qubits
 assert len(resonators) == nb_of_qubits
-assert np.all(t_vec_clock % 2 == 0) and (t_vec_clock.min() >= 8), "t_vec_clock should only have even numbers if play echoes"
+assert np.all(t_vec_cycle % 2 == 0) and (t_vec_cycle.min() >= 8), "t_vec_cycle should only have even numbers if play echoes"
 
 
 with program() as cr_calib:
@@ -98,7 +98,7 @@ with program() as cr_calib:
         save(n, n_st)
         with for_(*from_array(ph, ph_vec)):
             # to allow time to save the data
-            with for_(*from_array(t, t_vec_clock)):
+            with for_(*from_array(t, t_vec_cycle)):
                 # t/2 for main and echo
                 assign(t_half, t >> 1)
                 wait(400 * u.ns)
@@ -116,7 +116,7 @@ with program() as cr_calib:
                         prepare_control_state(st=st, elem="q1_xy")
 
                         # Play CR
-                        play_cr_pulse(kind=cr_pulse_kind, t=t, t_half=t_half)
+                        play_cr_pulse(kind=cr_pulse_kind, t=t, t_half=t_half, qc="1", qt="2")
 
                         # QST
                         perform_QST_target(bss=bss, elem="q2_xy")
@@ -140,7 +140,7 @@ with program() as cr_calib:
                 .boolean_to_int()\
                 .buffer(len(CONTROL_STATES))\
                 .buffer(len(TARGET_BASES))\
-                .buffer(len(t_vec_clock))\
+                .buffer(len(t_vec_cycle))\
                 .buffer(len(ph_vec))\
                 .average()\
                 .save(f"state_{qubit_suffixes[q]}")
@@ -160,7 +160,7 @@ qmm = QuantumMachinesManager(
 # Run or Simulate Program #
 ###########################
 
-simulate = True
+simulate = False
 save_data = True
 
 if simulate:
@@ -194,7 +194,7 @@ else:
     for ph in range(len(ph_vec)):
         crht = CRHamiltonianTomographyAnalysis(
             ts=t_vec_ns,
-            crqst_data=state_t[ph, ...], # target data: len(ph_vec) x len(t_vec_clock) x 3 x 2
+            crqst_data=state_t[ph, ...], # target data: len(ph_vec) x len(t_vec_cycle) x 3 x 2
         )
         crht.fit_params()
         coeffs.append(crht.interaction_coeffs)
@@ -214,23 +214,17 @@ else:
             "fig_analysis": fig_analysis,
             "t_vec_ns": t_vec_ns,
             "ph_vec": ph_vec,
-            "crqst_data_c": state_c,
-            "crqst_data_t": state_t,
+            "state_c": state_c,
+            "state_t": state_t,
+            **crht.params_fitted_dict,
+            **crht.interaction_coeffs,
         }
-        data.update(crht.params_fitted_dict)
-        data.update(crht.interaction_coeffs)
 
-        # Initialize the DataHandler
+        # Save Data
         script_name = Path(__file__).name
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
-        data_handler.additional_files = {
-            script_name: script_name,
-            "configuration_with_octave.py": "configuration_with_octave.py",
-            "calibration_db.json": "calibration_db.json",
-            "optimal_weights.npz": "optimal_weights.npz",
-        }
-        # Save results
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_folder = data_handler.save_data(data=data)
 
 # %%

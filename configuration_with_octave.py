@@ -63,6 +63,12 @@ base_dir = Path(__file__).resolve().parent
 save_dir = base_dir / "Data"
 save_dir.mkdir(parents=True, exist_ok=True)
 
+default_additional_files = {
+    "configuration.py": "configuration.py",
+    "configuration_with_octave.py": "configuration_with_octave.py",
+    "calibration_db.json": "calibration_db.json",
+    "optimal_weights.npz": "optimal_weights.npz",
+}
 
 #########
 # Units #
@@ -81,6 +87,16 @@ qubit_IF_q1 = -50 * u.MHz
 qubit_IF_q1_ef = -150 * u.MHz
 qubit_IF_q2 = -75 * u.MHz
 qubit_IF_q2_ef = -250 * u.MHz
+
+qubit_IF_cr_c1t2 = qubit_LO_q2 - qubit_LO_q1 + qubit_IF_q2
+qubit_IF_cr_c2t1 = qubit_LO_q1 - qubit_LO_q2 + qubit_IF_q1
+
+assert abs(qubit_IF_q1) <= 350 * u.MHz, "qubit_IF_q1 is out of range [-350, +350] MHz"
+assert abs(qubit_IF_q2) <= 350 * u.MHz, "qubit_IF_q2 is out of range [-350, +350] MHz"
+assert abs(qubit_IF_q1_ef) <= 350 * u.MHz, "qubit_IF_q1_ef is out of range [-350, +350] MHz"
+assert abs(qubit_IF_q2_ef) <= 350 * u.MHz, "qubit_IF_q2_ef is out of range [-350, +350] MHz"
+assert abs(qubit_IF_cr_c1t2) <= 350 * u.MHz, "qubit_IF_cr_c1t2 is out of range [-350, +350] MHz"
+assert abs(qubit_IF_cr_c2t1) <= 350 * u.MHz, "qubit_IF_cr_c2t1 is out of range [-350, +350] MHz" 
 
 # Relaxation time
 qubit_T1_q1 = 3 * u.us
@@ -240,13 +256,6 @@ cr_c1t2_square_positive_len = 120
 cr_c1t2_square_negative_len = cr_c1t2_square_positive_len
 cr_c2t1_square_positive_len = 120
 cr_c2t1_square_negative_len = cr_c2t1_square_positive_len
-# Pulse half durations
-cr_c1t2_square_positive_half_len = cr_c1t2_square_positive_len // 2  # for cr echo
-assert 2 * cr_c1t2_square_positive_half_len == cr_c1t2_square_positive_len
-cr_c1t2_square_negative_half_len = cr_c1t2_square_positive_half_len
-cr_c2t1_square_positive_half_len = cr_c2t1_square_positive_len // 2  # for cr echo
-assert 2 * cr_c2t1_square_positive_half_len == cr_c2t1_square_positive_len
-cr_c2t1_square_negative_half_len = cr_c2t1_square_positive_half_len
 # Pulse amplitudes
 cr_c1t2_square_positive_amp = 0.02
 cr_c1t2_square_negative_amp = (-1) * cr_c1t2_square_positive_amp
@@ -261,13 +270,6 @@ cr_cancel_c1t2_square_positive_len = cr_c1t2_square_positive_len
 cr_cancel_c1t2_square_negative_len = cr_cancel_c1t2_square_positive_len
 cr_cancel_c2t1_square_positive_len = cr_c2t1_square_positive_len
 cr_cancel_c2t1_square_negative_len = cr_cancel_c2t1_square_positive_len
-# Cancel pulse half durations
-cr_cancel_c1t2_square_positive_half_len = cr_c1t2_square_positive_len // 2
-assert 2 * cr_cancel_c1t2_square_positive_half_len == cr_c1t2_square_positive_len
-cr_cancel_c1t2_square_negative_half_len = cr_cancel_c1t2_square_positive_half_len
-cr_cancel_c2t1_square_positive_half_len = cr_c2t1_square_positive_len // 2
-assert 2 * cr_cancel_c2t1_square_positive_half_len == cr_c2t1_square_positive_len
-cr_cancel_c2t1_square_negative_half_len = cr_cancel_c2t1_square_positive_half_len
 # Cancel pulse amplitudes
 cr_cancel_c1t2_square_positive_amp = 0.05
 cr_cancel_c1t2_square_negative_amp = (-1) * cr_cancel_c1t2_square_positive_amp
@@ -400,7 +402,7 @@ config = {
             },
         },
         "q2_xy": {
-            "RF_inputs": {"port": ("octave1", 3)},
+            "RF_inputs": {"port": ("octave1", 4)},
             "intermediate_frequency": qubit_IF_q2,
             "operations": {
                 "cw": "const_pulse",
@@ -414,7 +416,7 @@ config = {
             },
         },
         "q2_xy_ef": {
-            "RF_inputs": {"port": ("octave1", 3)},
+            "RF_inputs": {"port": ("octave1", 4)},
             "intermediate_frequency": qubit_IF_q2_ef,
             "operations": {
                 "cw": "const_pulse",
@@ -423,37 +425,33 @@ config = {
         },
         "cr_c1t2": {
             "RF_inputs": {"port": ("octave1", 2)},
-            "intermediate_frequency": qubit_IF_q2,
+            "intermediate_frequency": qubit_IF_cr_c1t2,
             "operations": {
                 "square_positive": "cr_c1t2_square_positive_pulse",
                 "square_negative": "cr_c1t2_square_negative_pulse",
-                "square_positive_half": "cr_c1t2_square_positive_half_pulse",
-                "square_negative_half": "cr_c1t2_square_negative_half_pulse",
                 "flattop": "cr_c1t2_flattop_pulse",
             },
         },
         "cr_c1t2_twin": {
             "RF_inputs": {"port": ("octave1", 2)},
-            "intermediate_frequency": qubit_IF_q2,
+            "intermediate_frequency": qubit_IF_cr_c1t2,
             "operations": {
                 "gaussian_rise": "cr_c1t2_gaussian_rise_pulse",
                 "gaussian_fall": "cr_c1t2_gaussian_fall_pulse",
             },
         },
         "cr_cancel_c1t2": {
-            "RF_inputs": {"port": ("octave1", 3)},
+            "RF_inputs": {"port": ("octave1", 4)},
             "intermediate_frequency": qubit_IF_q2,
             "operations": {
                 "square_positive": "cr_cancel_c1t2_square_positive_pulse",
                 "square_negative": "cr_cancel_c1t2_square_negative_pulse",
-                "square_positive_half": "cr_cancel_c1t2_square_positive_half_pulse",
-                "square_negative_half": "cr_cancel_c1t2_square_negative_half_pulse",
                 "flattop": "cr_cancel_c1t2_flattop_pulse",
             },
         },
         "cr_c2t1": {
-            "RF_inputs": {"port": ("octave1", 3)},
-            "intermediate_frequency": qubit_IF_q1,
+            "RF_inputs": {"port": ("octave1", 4)},
+            "intermediate_frequency": qubit_IF_cr_c2t1,
             "operations": {
                 "square_positive": "cr_c2t1_square_positive_pulse",
                 "square_negative": "cr_c2t1_square_negative_pulse",
@@ -461,8 +459,8 @@ config = {
             },
         },
         "cr_c2t1_twin": {
-            "RF_inputs": {"port": ("octave1", 3)},
-            "intermediate_frequency": qubit_IF_q1,
+            "RF_inputs": {"port": ("octave1", 4)},
+            "intermediate_frequency": qubit_IF_cr_c2t1,
             "operations": {
                 "gaussian_rise": "cr_c2t1_gaussian_rise_pulse",
                 "gaussian_fall": "cr_c2t1_gaussian_fall_pulse",
@@ -493,7 +491,7 @@ config = {
                     "output_mode": "always_on",
                     "gain": 0,
                 },
-                3: {
+                4: {
                     "LO_frequency": qubit_LO_q2,
                     "LO_source": "internal",
                     "output_mode": "always_on",
@@ -553,38 +551,6 @@ config = {
         "cr_c2t1_square_negative_pulse": {
             "operation": "control",
             "length": cr_c2t1_square_negative_len,
-            "waveforms": {
-                "I": "cr_c2t1_square_negative_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "cr_c1t2_square_positive_half_pulse": {
-            "operation": "control",
-            "length": cr_c1t2_square_positive_half_len,
-            "waveforms": {
-                "I": "cr_c1t2_square_positive_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "cr_c2t1_square_positive_half_pulse": {
-            "operation": "control",
-            "length": cr_c2t1_square_positive_half_len,
-            "waveforms": {
-                "I": "cr_c2t1_square_positive_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "cr_c1t2_square_negative_half_pulse": {
-            "operation": "control",
-            "length": cr_c1t2_square_negative_half_len,
-            "waveforms": {
-                "I": "cr_c1t2_square_negative_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "cr_c2t1_square_negative_half_pulse": {
-            "operation": "control",
-            "length": cr_c2t1_square_negative_half_len,
             "waveforms": {
                 "I": "cr_c2t1_square_negative_wf",
                 "Q": "zero_wf",
@@ -670,38 +636,6 @@ config = {
                 "Q": "zero_wf",
             },
         },
-        "cr_cancel_c1t2_square_positive_half_pulse": {
-            "operation": "control",
-            "length": cr_cancel_c1t2_square_positive_half_len,
-            "waveforms": {
-                "I": "cr_cancel_c1t2_square_positive_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "cr_cancel_c2t1_square_positive_half_pulse": {
-            "operation": "control",
-            "length": cr_cancel_c2t1_square_positive_half_len,
-            "waveforms": {
-                "I": "cr_cancel_c2t1_square_positive_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "cr_cancel_c1t2_square_negative_half_pulse": {
-            "operation": "control",
-            "length": cr_cancel_c1t2_square_negative_half_len,
-            "waveforms": {
-                "I": "cr_cancel_c1t2_square_negative_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "cr_cancel_c2t1_square_negative_half_pulse": {
-            "operation": "control",
-            "length": cr_cancel_c2t1_square_negative_half_len,
-            "waveforms": {
-                "I": "cr_cancel_c2t1_square_negative_wf",
-                "Q": "zero_wf",
-            },
-        },
         "cr_cancel_c1t2_flattop_pulse": {
             "operation": "control",
             "length": cr_cancel_c1t2_flattop_len,
@@ -780,6 +714,9 @@ config = {
                 "rotated_cos": "rotated_cosine_weights_q1",
                 "rotated_sin": "rotated_sine_weights_q1",
                 "rotated_minus_sin": "rotated_minus_sine_weights_q1",
+                "opt_cos": "opt_cosine_weights_q1",
+                "opt_sin": "opt_sine_weights_q1",
+                "opt_minus_sin": "opt_minus_sine_weights_q1",
             },
             "digital_marker": "ON",
         },
@@ -845,6 +782,9 @@ config = {
                 "rotated_cos": "rotated_cosine_weights_q2",
                 "rotated_sin": "rotated_sine_weights_q2",
                 "rotated_minus_sin": "rotated_minus_sine_weights_q2",
+                "opt_cos": "opt_cosine_weights_q2",
+                "opt_sin": "opt_sine_weights_q2",
+                "opt_minus_sin": "opt_minus_sine_weights_q2",
             },
             "digital_marker": "ON",
         },
@@ -939,6 +879,30 @@ config = {
         "rotated_minus_sine_weights_q2": {
             "cosine": [(-np.sin(rotation_angle_q2), readout_len)],
             "sine": [(-np.cos(rotation_angle_q2), readout_len)],
+        },
+        "opt_cosine_weights_q1": {
+            "cosine": opt_weights_real_q1,
+            "sine": opt_weights_minus_imag_q1,
+        },
+        "opt_sine_weights_q1": {
+            "cosine": opt_weights_imag_q1,
+            "sine": opt_weights_real_q1,
+        },
+        "opt_minus_sine_weights_q1": {
+            "cosine": opt_weights_minus_imag_q1,
+            "sine": opt_weights_minus_real_q1,
+        },
+        "opt_cosine_weights_q2": {
+            "cosine": opt_weights_real_q2,
+            "sine": opt_weights_minus_imag_q2,
+        },
+        "opt_sine_weights_q2": {
+            "cosine": opt_weights_imag_q2,
+            "sine": opt_weights_real_q2,
+        },
+        "opt_minus_sine_weights_q2": {
+            "cosine": opt_weights_minus_imag_q2,
+            "sine": opt_weights_minus_real_q2,
         },
     },
 }

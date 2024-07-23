@@ -24,8 +24,8 @@ from qm.qua import *
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm import SimulationConfig
 
-# from configuration import *
-from configuration_with_octave import *
+from configuration import *
+# from configuration_with_octave import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -44,14 +44,14 @@ warnings.filterwarnings("ignore")
 ###################
 # The QUA program #
 ###################
-n_avg = 1000  # The number of averages
+n_avg = 10  # The number of averages
 # The frequency sweep around the resonators' frequency "resonator_IF_q"
 span = 10 * u.MHz
 df = 100 * u.kHz
 f_vec = np.arange(-span, +span + 0.1, df)
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
 a_min = 0.001
-a_max = 1.99
+a_max = 1.98
 da = 0.01
 a_vec = np.arange(a_min, a_max + da / 2, da)  # The amplitude vector +da/2 to add a_max to the scan
 
@@ -212,18 +212,11 @@ else:
             "phase1": phase1,
             "phase2": phase2,
         }
-
-        # Initialize the DataHandler
+        # Save Data
         script_name = Path(__file__).name
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
-        data_handler.additional_files = {
-            script_name: script_name,
-            "configuration_with_octave.py": "configuration_with_octave.py",
-            "calibration_db.json": "calibration_db.json",
-            "optimal_weights.npz": "optimal_weights.npz",
-        }
-        # Save results
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_folder = data_handler.save_data(data=data)
 
 

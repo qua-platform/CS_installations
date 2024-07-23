@@ -20,8 +20,8 @@ from qm.qua import *
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm import SimulationConfig
 
-# from configuration import *
-from configuration_with_octave import *
+from configuration import *
+# from configuration_with_octave import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -175,18 +175,11 @@ else:
             "R": R,
             "phase": phase,
         }
-
-        # Initialize the DataHandler
+        # Save Data
         script_name = Path(__file__).name
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
-        data_handler.additional_files = {
-            script_name: script_name,
-            "configuration_with_octave.py": "configuration_with_octave.py",
-            "calibration_db.json": "calibration_db.json",
-            "optimal_weights.npz": "optimal_weights.npz",
-        }
-        # Save results
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_folder = data_handler.save_data(data=data)
 
 

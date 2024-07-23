@@ -20,12 +20,15 @@ from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
 from qm import SimulationConfig
 
-# from configuration import *
-from configuration_with_octave import *
+from configuration import *
+# from configuration_with_octave import *
 import matplotlib.pyplot as plt
 from qualang_tools.loops import from_array
-from qualang_tools.results import fetching_tool, progress_counter
-from macros import multiplexed_readout, qua_declaration
+from qualang_tools.results import fetching_tool
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.analysis import two_state_discriminator
+from qualang_tools.results import progress_counter
+from macros import qua_declaration, multiplexed_readout
 import warnings
 import matplotlib
 from qualang_tools.results.data_handler import DataHandler
@@ -37,7 +40,7 @@ warnings.filterwarnings("ignore")
 ###################
 # The QUA program #
 ###################
-n_avg = 4000
+n_avg = 100
 # The frequency sweep around the resonators' frequency "resonator_IF_q"
 f_vec = np.arange(-10e6, 10e6, 0.1e6)
 
@@ -147,6 +150,8 @@ else:
         "Qe1_var",
         "iteration",
     ]
+    fig = plt.figure()
+    interrupt_on_close(fig, job)
     results = fetching_tool(job, data_list=data_list, mode="live")
     while results.is_processing():
         start_time = results.get_start_time()
@@ -305,18 +310,11 @@ else:
             "iteration": np.array([n]),  # convert int to np.array of int
             "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
         }
-
-        # Initialize the DataHandler
+        # Save Data
         script_name = Path(__file__).name
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
-        data_handler.additional_files = {
-            script_name: script_name,
-            "configuration_with_octave.py": "configuration_with_octave.py",
-            "calibration_db.json": "calibration_db.json",
-            "optimal_weights.npz": "optimal_weights.npz",
-        }
-        # Save results
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_folder = data_handler.save_data(data=data)
 
 

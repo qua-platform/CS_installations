@@ -7,15 +7,31 @@ from qm.qua import *
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm import SimulationConfig
 
-# from configuration import *
-from configuration_with_octave import *
+from configuration import *
+# from configuration_with_octave import *
 
 
 ###################
 # The QUA program #
 ###################
 with program() as hello_qua:
+
+    play("cw", "rr1")
+    align()
+    play("cw", "rr2")
+    align()
     play("cw", "q1_xy")
+    align()
+    play("cw", "q2_xy")
+    align()
+    play("square_positive", "cr_c1t2")
+    align()
+    play("square_positive", "cr_c2t1")
+    align()
+    play("square_positive", "cr_cancel_c1t2")
+    align()
+    play("square_positive", "cr_cancel_c2t1")
+
 
 
 #####################################
@@ -32,7 +48,7 @@ qmm = QuantumMachinesManager(
 # Run or Simulate Program #
 ###########################
 
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration

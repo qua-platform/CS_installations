@@ -18,8 +18,8 @@ Prerequisites:
 from qm.qua import *
 from qm.QuantumMachinesManager import QuantumMachinesManager
 
-# from configuration import *
-from configuration_with_octave import *
+from configuration import *
+# from configuration_with_octave import *
 import matplotlib.pyplot as plt
 import numpy as np
 from qm import SimulationConfig
@@ -31,17 +31,15 @@ import warnings
 import matplotlib
 import time
 
-
 matplotlib.use("TKAgg")
 warnings.filterwarnings("ignore")
-
 
 ##############################
 # Program-specific variables #
 ##############################
 qb = "q1_xy"  # The qubit under study
 res = "rr1"  # The resonator to measure the qubit defined above
-n_avg = 1000  # The number of averages
+n_avg = 100  # The number of averages
 
 # All XY sequences. The sequence names must match corresponding operation in the config
 sequence = [
@@ -226,18 +224,11 @@ else:
             "iteration": np.array([n]),  # convert int to np.array of int
             "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
         }
-
-        # Initialize the DataHandler
+        # Save Data
         script_name = Path(__file__).name
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
-        data_handler.additional_files = {
-            script_name: script_name,
-            "configuration_with_octave.py": "configuration_with_octave.py",
-            "calibration_db.json": "calibration_db.json",
-            "optimal_weights.npz": "optimal_weights.npz",
-        }
-        # Save results
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_folder = data_handler.save_data(data=data)
 
 

@@ -16,8 +16,8 @@ Before proceeding to the next node, take the following steps:
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
 
-# from configuration import *
-from configuration_with_octave import *
+from configuration import *
+# from configuration_with_octave import *
 
 ###################
 # The QUA program #
@@ -26,7 +26,14 @@ element = "rr1"
 
 with program() as manual_mixer_calib:
     with infinite_loop_():
-        play("cw" * amp(0), element)
+        play("cw", "rr1")
+        # play("cw", "rr2")
+        # play("cw", "q1_xy")
+        # play("cw", "q1_xy_ef")
+        # play("cw", "q2_xy")
+        # play("cw", "q2_xy_ef")
+        # play("square_positive", "cr_c1t2")
+        # play("square_positive", "cr_c2t1")
 
 
 #####################################

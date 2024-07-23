@@ -3,8 +3,8 @@ from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
 from qm import SimulationConfig
 
-# from configuration import *
-from configuration_with_octave import *
+from configuration import *
+# from configuration_with_octave import *
 import matplotlib.pyplot as plt
 from qualang_tools.results import fetching_tool
 from qualang_tools.analysis import two_state_discriminator
@@ -86,8 +86,10 @@ else:
     # Plot the IQ blobs, rotate them to get the separation along the 'I' quadrature, estimate a threshold between them
     # for state discrimination and derive the fidelity matrix
     two_state_discriminator(I_g_q1, Q_g_q1, I_e_q1, Q_e_q1, True, True)
+    fig1 = plt.gcf()
     plt.suptitle("qubit 1")
     two_state_discriminator(I_g_q2, Q_g_q2, I_e_q2, Q_e_q2, True, True)
+    fig2 = plt.gcf()
     plt.suptitle("qubit 2")
 
     plt.show()
@@ -98,7 +100,8 @@ else:
     if save_data:
         # Arrange data to save
         data = {
-            "fig_live": fig,
+            "fig1": fig1,
+            "fig2": fig2,
             "I_g_q1":I_g_q1,
             "Q_g_q1":Q_g_q1,
             "I_e_q1":I_e_q1,
@@ -108,20 +111,12 @@ else:
             "I_e_q2":I_e_q2,
             "Q_e_q2":Q_e_q2,
             "iteration": np.array([n]),  # convert int to np.array of int
-            "elapsed_time": np.array([elapsed_time]),  # convert float to np.array of float
         }
-
-        # Initialize the DataHandler
+        # Save Data
         script_name = Path(__file__).name
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
-        data_handler.additional_files = {
-            script_name: script_name,
-            "configuration_with_octave.py": "configuration_with_octave.py",
-            "calibration_db.json": "calibration_db.json",
-            "optimal_weights.npz": "optimal_weights.npz",
-        }
-        # Save results
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_folder = data_handler.save_data(data=data)
 
 

@@ -84,24 +84,24 @@ def play_cr_pulse(
 
     elif kind == "direct+echo":
         play("square_positive" * amp(a), cr, duration=t_half)
-        wait(t_half, "q1_xy")
-        play("x180", "q1_xy")
+        wait(t_half, qc_xy)
+        play("x180", qc_xy)
         wait(pi_len >> 2, cr)
         play("square_negative" * amp(a), cr, duration=t_half)
-        wait(t_half, "q1_xy")
-        play("x180", "q1_xy")
+        wait(t_half, qc_xy)
+        play("x180", qc_xy)
         wait(t + (pi_len >> 1), qt_xy, rrc, rrt)
 
     elif kind == "direct+cancel+echo":
         play("square_positive" * amp(a), cr, duration=t_half)
         play("square_positive" * amp(a), cr_cancel, duration=t_half)
-        wait(t_half, "q1_xy")
-        play("x180", "q1_xy")
+        wait(t_half, qc_xy)
+        play("x180", qc_xy)
         wait(pi_len >> 2, cr, cr_cancel)
         play("square_negative" * amp(a), cr, duration=t_half)
         play("square_negative" * amp(a), cr_cancel, duration=t_half)
-        wait(t_half, "q1_xy")
-        play("x180", "q1_xy")
+        wait(t_half, qc_xy)
+        play("x180", qc_xy)
         wait(t + (pi_len >> 1), qt_xy, rrc, rrt)
 
 

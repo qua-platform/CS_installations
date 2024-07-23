@@ -19,8 +19,8 @@ from qm.qua import *
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm import SimulationConfig
 
-# from configuration import *
-from configuration_with_octave import *
+from configuration import *
+# from configuration_with_octave import *
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 import matplotlib
@@ -137,7 +137,6 @@ else:
     plt.legend()
     plt.grid("all")
     plt.tight_layout()
-    plt.show()
 
     # Update the config
     print(f"DC offset to add to I in the config: {-adc1_mean:.6f} V")
@@ -169,19 +168,11 @@ else:
             "adc2_single_run": adc2_single_run,
             "iteration": np.array([n_avg]),  # convert int to np.array of int
         }
-
-        # Initialize the DataHandler
+        # Save Data
         script_name = Path(__file__).name
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
-        data_handler.additional_files = {
-            script_name: script_name,
-            "configuration_with_octave.py": "configuration_with_octave.py",
-            "calibration_db.json": "calibration_db.json",
-            "optimal_weights.npz": "optimal_weights.npz",
-        }
-        # Save results
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_folder = data_handler.save_data(data=data)
-
 
 # %%
