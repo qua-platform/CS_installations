@@ -1,11 +1,11 @@
 from pathlib import Path
 from typing import Callable, List, Literal, Dict, Tuple, Optional, Union
+
 import cirq
 import numpy as np
-from qm.QuantumMachinesManager import QuantumMachinesManager
+from qm import QuantumMachinesManager
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.qua import *
-from qm.qua._dsl import QuaExpression
 
 from qualang_tools.bakery.bakery import Baking
 from .RBBaker import RBBaker
@@ -30,7 +30,7 @@ class TwoQubitRb:
         single_qubit_gate_generator: Callable[[Baking, int, float, float, float], None],
         two_qubit_gate_generators: Dict[Literal["sqr_iSWAP", "CNOT", "CZ"], Callable[[Baking, int, int], None]],
         prep_func: Callable[[], None],
-        measure_func: Callable[[], Tuple[QuaExpression, QuaExpression]],
+        measure_func: Callable[[], Tuple],
         verify_generation: bool = False,
         interleaving_gate: Optional[List[cirq.GateOperation]] = None,
     ):
@@ -68,7 +68,7 @@ class TwoQubitRb:
                 Callable arguments: None
 
             measure_func: A callable used to measure the qubits. This function does not use the baking object, and is a proper QUA code macro.
-                Callable[[], Tuple[QuaExpression, QuaExpression]]: A tuple containing the measured values of the two qubits as Qua expressions.
+                Callable[[], Tuple[_Expression, _Expression]]: A tuple containing the measured values of the two qubits as Qua expressions.
                 The expression must evaluate to a boolean value. False means |0>, True means |1>. The MSB is the first qubit.
 
             verify_generation: A boolean indicating whether to verify the generated sequences. Not be used in production, as it is very slow.
