@@ -49,7 +49,7 @@
                         "axis_angle": 0,
                         "amplitude": 0.1,
                         "sigma": 7,
-                        "alpha": 1.0,
+                        "alpha": 0.0,
                         "anharmonicity": "#/qubits/q0/anharmonicity",
                         "__class__": "quam.components.pulses.DragPulse"
                     },
@@ -183,15 +183,15 @@
                         "__class__": "quam.components.pulses.SquareReadoutPulse"
                     }
                 },
-                "opx_output_I": "#/wiring/resonator/opx_output_I",
-                "opx_output_Q": "#/wiring/resonator/opx_output_Q",
-                "frequency_converter_up": "#/octave/RF_outputs/1",
-                "intermediate_frequency": 50000000,
                 "opx_input_I": "#/wiring/resonator/opx_input_I",
                 "opx_input_Q": "#/wiring/resonator/opx_input_Q",
                 "opx_input_offset_I": 0.0,
                 "opx_input_offset_Q": 0.0,
-                "frequency_converter_down": "#/octave/RF_inputs/1"
+                "frequency_converter_down": "#/octave/RF_inputs/1",
+                "opx_output_I": "#/wiring/resonator/opx_output_I",
+                "opx_output_Q": "#/wiring/resonator/opx_output_Q",
+                "frequency_converter_up": "#/octave/RF_outputs/1",
+                "intermediate_frequency": 50000000
             }
         },
         "q1": {
@@ -204,7 +204,7 @@
                         "axis_angle": 0,
                         "amplitude": 0.1,
                         "sigma": 7,
-                        "alpha": 1.0,
+                        "alpha": 0.0,
                         "anharmonicity": "#/qubits/q1/anharmonicity",
                         "__class__": "quam.components.pulses.DragPulse"
                     },
@@ -338,15 +338,15 @@
                         "__class__": "quam.components.pulses.SquareReadoutPulse"
                     }
                 },
-                "opx_output_I": "#/wiring/resonator/opx_output_I",
-                "opx_output_Q": "#/wiring/resonator/opx_output_Q",
-                "frequency_converter_up": "#/octave/RF_outputs/1",
-                "intermediate_frequency": 50000000,
                 "opx_input_I": "#/wiring/resonator/opx_input_I",
                 "opx_input_Q": "#/wiring/resonator/opx_input_Q",
                 "opx_input_offset_I": 0.0,
                 "opx_input_offset_Q": 0.0,
-                "frequency_converter_down": "#/octave/RF_inputs/1"
+                "frequency_converter_down": "#/octave/RF_inputs/1",
+                "opx_output_I": "#/wiring/resonator/opx_output_I",
+                "opx_output_Q": "#/wiring/resonator/opx_output_Q",
+                "frequency_converter_up": "#/octave/RF_outputs/1",
+                "intermediate_frequency": 50000000
             }
         }
     },

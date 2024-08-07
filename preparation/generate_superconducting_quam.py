@@ -107,7 +107,7 @@ def create_quam_superconducting_referenced(num_qubits: int) -> (QuamRoot, QmOcta
         transmon.xy.operations["x180_DragGaussian"] = pulses.DragPulse(
             amplitude=0.1,
             sigma=7,
-            alpha=1.0,
+            alpha=0.0,
             anharmonicity=f"#/qubits/{transmon.name}/anharmonicity",
             length=40,
             axis_angle=0,
