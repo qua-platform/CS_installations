@@ -1,0 +1,93 @@
+{
+    "network": {
+        "host": "172.16.33.107",
+        "cluster_name": "Beta_8",
+        "octave_ips": [
+            "172.16.33.109"
+        ],
+        "octave_ports": [
+            80
+        ],
+        "data_folder": "C:\\Git\\QM-CS-Michal\\Customers\\OskarPainter\\OPX1000"
+    },
+    "wiring": {
+        "qubits": {
+            "q0": {
+                "xy": {
+                    "opx_output_I": "#/ports/analog_outputs/con1/3/3",
+                    "opx_output_Q": "#/ports/analog_outputs/con1/3/4",
+                    "digital_port": "#/ports/digital_outputs/con1/3/3",
+                    "frequency_converter_up": "#/octaves/octave1/RF_outputs/2"
+                },
+                "z": {
+                    "opx_output": "#/ports/analog_outputs/con1/4/1"
+                },
+                "resonator": {
+                    "opx_output_I": "#/ports/analog_outputs/con1/3/1",
+                    "opx_output_Q": "#/ports/analog_outputs/con1/3/2",
+                    "opx_input_I": "#/ports/analog_inputs/con1/3/1",
+                    "opx_input_Q": "#/ports/analog_inputs/con1/3/2",
+                    "digital_port": "#/ports/digital_outputs/con1/3/1",
+                    "frequency_converter_up": "#/octaves/octave1/RF_outputs/1",
+                    "frequency_converter_down": "#/octaves/octave1/RF_inputs/1"
+                }
+            },
+            "q1": {
+                "xy": {
+                    "opx_output_I": "#/ports/analog_outputs/con1/3/5",
+                    "opx_output_Q": "#/ports/analog_outputs/con1/3/6",
+                    "digital_port": "#/ports/digital_outputs/con1/3/5",
+                    "frequency_converter_up": "#/octaves/octave1/RF_outputs/3"
+                },
+                "z": {
+                    "opx_output": "#/ports/analog_outputs/con1/4/2"
+                },
+                "resonator": {
+                    "opx_output_I": "#/ports/analog_outputs/con1/3/1",
+                    "opx_output_Q": "#/ports/analog_outputs/con1/3/2",
+                    "opx_input_I": "#/ports/analog_inputs/con1/3/1",
+                    "opx_input_Q": "#/ports/analog_inputs/con1/3/2",
+                    "digital_port": "#/ports/digital_outputs/con1/3/1",
+                    "frequency_converter_up": "#/octaves/octave1/RF_outputs/1",
+                    "frequency_converter_down": "#/octaves/octave1/RF_inputs/1"
+                }
+            },
+            "q2": {
+                "xy": {
+                    "opx_output_I": "#/ports/analog_outputs/con1/3/7",
+                    "opx_output_Q": "#/ports/analog_outputs/con1/3/8",
+                    "digital_port": "#/ports/digital_outputs/con1/3/7",
+                    "frequency_converter_up": "#/octaves/octave1/RF_outputs/4"
+                },
+                "z": {
+                    "opx_output": "#/ports/analog_outputs/con1/4/3"
+                },
+                "resonator": {
+                    "opx_output_I": "#/ports/analog_outputs/con1/3/1",
+                    "opx_output_Q": "#/ports/analog_outputs/con1/3/2",
+                    "opx_input_I": "#/ports/analog_inputs/con1/3/1",
+                    "opx_input_Q": "#/ports/analog_inputs/con1/3/2",
+                    "digital_port": "#/ports/digital_outputs/con1/3/1",
+                    "frequency_converter_up": "#/octaves/octave1/RF_outputs/1",
+                    "frequency_converter_down": "#/octaves/octave1/RF_inputs/1"
+                }
+            }
+        },
+        "qubit_pairs": [
+            {
+                "qubit_control": "#/qubits/q0",
+                "qubit_target": "#/qubits/q1",
+                "coupler": {
+                    "opx_output": "#/ports/analog_outputs/con1/4/4"
+                }
+            },
+            {
+                "qubit_control": "#/qubits/q1",
+                "qubit_target": "#/qubits/q2",
+                "coupler": {
+                    "opx_output": "#/ports/analog_outputs/con1/4/5"
+                }
+            }
+        ]
+    }
+}
