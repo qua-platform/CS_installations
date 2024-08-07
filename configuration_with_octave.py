@@ -38,13 +38,9 @@ NV_IF_freq = 40 * u.MHz
 NV_LO_freq = 2.83 * u.GHz
 
 # Pulses lengths
-initialization_len_1 = 3000 * u.ns
-meas_len_1 = 500 * u.ns
-long_meas_len_1 = 5_000 * u.ns
-
-initialization_len_2 = 3000 * u.ns
-meas_len_2 = 500 * u.ns
-long_meas_len_2 = 5_000 * u.ns
+initialization_len = 3000 * u.ns
+meas_len = 500 * u.ns
+long_meas_len = 5_000 * u.ns
 
 # Relaxation time from the metastable state to the ground state after during initialization
 relaxation_time = 300 * u.ns
@@ -60,20 +56,12 @@ x180_len_NV = 32  # in units of ns
 x90_amp_NV = x180_amp_NV / 2  # in units of volts
 x90_len_NV = x180_len_NV  # in units of ns
 
-# RF parameters
-rf_frequency = 10 * u.MHz
-rf_amp = 0.1
-rf_length = 1000
-
 # Readout parameters
-signal_threshold_1 = -2_000  # ADC untis, to convert to volts divide by 4096 (12 bit ADC)
-signal_threshold_2 = -2_000  # ADC untis, to convert to volts divide by 4096 (12 bit ADC)
+signal_threshold = -2_000  # ADC untis, to convert to volts divide by 4096 (12 bit ADC)
 
 # Delays
-detection_delay_1 = 80 * u.ns
-detection_delay_2 = 80 * u.ns
-laser_delay_1 = 0 * u.ns
-laser_delay_2 = 0 * u.ns
+detection_delay = 80 * u.ns
+laser_delay = 0 * u.ns
 mw_delay = 0 * u.ns
 rf_delay = 0 * u.ns
 
@@ -100,8 +88,6 @@ config = {
                 1: {},  # Octave switch
                 2: {},  # AOM/Laser 1
                 3: {},  # SPCM1 - indicator
-                4: {},  # AOM/Laser 2
-                5: {},  # SPCM2 - indicator
             },
             "analog_inputs": {
                 1: {"offset": 0},  # SPCM1
@@ -130,35 +116,16 @@ config = {
                 },
             },
         },
-        "RF": {
-            "singleInput": {"port": ("con1", 3)},
-            "intermediate_frequency": rf_frequency,
-            "operations": {
-                "const": "const_pulse_single",
-            },
-        },
         "AOM1": {
             "digitalInputs": {
                 "marker": {
                     "port": ("con1", 2),
-                    "delay": laser_delay_1,
+                    "delay": laser_delay,
                     "buffer": 0,
                 },
             },
             "operations": {
-                "laser_ON": "laser_ON_1",
-            },
-        },
-        "AOM2": {
-            "digitalInputs": {
-                "marker": {
-                    "port": ("con1", 4),
-                    "delay": laser_delay_2,
-                    "buffer": 0,
-                },
-            },
-            "operations": {
-                "laser_ON": "laser_ON_2",
+                "laser_ON": "laser_ON",
             },
         },
         "SPCM1": {
@@ -166,45 +133,22 @@ config = {
             "digitalInputs": {  # for visualization in simulation
                 "marker": {
                     "port": ("con1", 3),
-                    "delay": detection_delay_1,
+                    "delay": detection_delay,
                     "buffer": 0,
                 },
             },
             "operations": {
-                "readout": "readout_pulse_1",
-                "long_readout": "long_readout_pulse_1",
+                "readout": "readout_pulse",
+                "long_readout": "long_readout_pulse",
             },
             "outputs": {"out1": ("con1", 1)},
             "outputPulseParameters": {
-                "signalThreshold": signal_threshold_1,  # ADC units
+                "signalThreshold": signal_threshold,  # ADC units
                 "signalPolarity": "Below",
                 "derivativeThreshold": -2_000,
                 "derivativePolarity": "Above",
             },
-            "time_of_flight": detection_delay_1,
-            "smearing": 0,
-        },
-        "SPCM2": {
-            "singleInput": {"port": ("con1", 1)},  # not used
-            "digitalInputs": {  # for visualization in simulation
-                "marker": {
-                    "port": ("con1", 5),
-                    "delay": detection_delay_2,
-                    "buffer": 0,
-                },
-            },
-            "operations": {
-                "readout": "readout_pulse_2",
-                "long_readout": "long_readout_pulse_2",
-            },
-            "outputs": {"out1": ("con1", 2)},
-            "outputPulseParameters": {
-                "signalThreshold": signal_threshold_2,  # ADC units
-                "signalPolarity": "Below",
-                "derivativeThreshold": -2_000,
-                "derivativePolarity": "Above",
-            },
-            "time_of_flight": detection_delay_2,
+            "time_of_flight": detection_delay,
             "smearing": 0,
         },
     },
@@ -257,49 +201,26 @@ config = {
             "length": x180_len_NV,
             "waveforms": {"I": "zero_wf", "Q": "x180_wf"},
         },
-        "const_pulse_single": {
+        "laser_ON": {
             "operation": "control",
-            "length": rf_length,  # in ns
-            "waveforms": {"single": "rf_const_wf"},
-        },
-        "laser_ON_1": {
-            "operation": "control",
-            "length": initialization_len_1,
+            "length": initialization_len,
             "digital_marker": "ON",
         },
-        "laser_ON_2": {
-            "operation": "control",
-            "length": initialization_len_2,
-            "digital_marker": "ON",
-        },
-        "readout_pulse_1": {
+        "readout_pulse": {
             "operation": "measurement",
-            "length": meas_len_1,
+            "length": meas_len,
             "digital_marker": "ON",
             "waveforms": {"single": "zero_wf"},
         },
-        "long_readout_pulse_1": {
+        "long_readout_pulse": {
             "operation": "measurement",
-            "length": long_meas_len_1,
-            "digital_marker": "ON",
-            "waveforms": {"single": "zero_wf"},
-        },
-        "readout_pulse_2": {
-            "operation": "measurement",
-            "length": meas_len_2,
-            "digital_marker": "ON",
-            "waveforms": {"single": "zero_wf"},
-        },
-        "long_readout_pulse_2": {
-            "operation": "measurement",
-            "length": long_meas_len_2,
+            "length": long_meas_len,
             "digital_marker": "ON",
             "waveforms": {"single": "zero_wf"},
         },
     },
     "waveforms": {
         "cw_wf": {"type": "constant", "sample": mw_amp_NV},
-        "rf_const_wf": {"type": "constant", "sample": rf_amp},
         "x180_wf": {"type": "constant", "sample": x180_amp_NV},
         "x90_wf": {"type": "constant", "sample": x90_amp_NV},
         "minus_x90_wf": {"type": "constant", "sample": -x90_amp_NV},
