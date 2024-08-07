@@ -92,12 +92,3 @@ Note:
  - The `module` refers to either the FEM number in the OPX1000, or the OPX+ number if using the OPX+.
  - The `i_ch` refers to the I-channel number on the module, and the Q-channel is taken to be `i_ch + 1`.
 
-#### Current Wiring
-The current `custom_port_wiring` is developed for the OPX1000 with LF-FEMs in slots 1-3, and with 2 Octaves for 5 qubits. It deviates from the default wiring as follows:
-![OPX1000 5Q Wiring Scheme](.img/opx1000/wiring-opx1000-5q.gif)
-
-(see [here](.img) for the static wiring images)
-
-There are two main motivations behind this wiring scheme:
-1. Up to at least QOP3.1.0, an FEM should only correspond to a single octave.
-2. Up to at least QOP3.1.0, crosstalk can only be compensated on ports on the same FEM.
