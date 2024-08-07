@@ -1,4 +1,4 @@
-# N Flux-Tunable Transmon Qubits
+# N Fixed Transmon Qubits
 ## Setup
 The QuAM framework stores a database of calibration values in a collection of .json files. These files are generated when you run `make_quam.py`. In order to use them in experiment, you need to direct QuAM to the correct location. You can do this by creating an environment variable called `QUAM_STATE_PATH`, and setting its value to the directory of the `quam_state` folder created during `make_quam.py`.
 
