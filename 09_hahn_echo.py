@@ -46,8 +46,8 @@ with program() as hahn_echo:
     n_st = declare_stream()  # stream to save iterations
 
     # Spin initialization
-    play("laser_ON", "AOM1")
-    wait(wait_for_initialization * u.ns, "AOM1")
+    play("on", "laser")
+    wait(wait_for_initialization * u.ns, "laser")
 
     # Hahn echo sequence
     with for_(n, 0, n < n_avg, n + 1):
@@ -59,11 +59,11 @@ with program() as hahn_echo:
             wait(t, "NV")  # Variable idle time
             play("x90" * amp(1), "NV")  # Pi/2 pulse to qubit
             align()  # Play the laser pulse after the Echo sequence
-            # Measure and detect the photons on SPCM1
-            play("laser_ON", "AOM1")
-            measure("readout", "SPCM1", None, time_tagging.analog(times1, meas_len_1, counts1))
+            # Measure and detect the photons on the spcm
+            play("on", "laser")
+            measure("readout", "spcm", None, time_tagging.analog(times1, meas_len_1, counts1))
             save(counts1, counts_1_st)  # save counts
-            wait(wait_between_runs * u.ns, "AOM1")
+            wait(wait_between_runs * u.ns, "laser")
 
             align()
             # Second Ramsey sequence with x90 - idle time - -x90
@@ -73,11 +73,11 @@ with program() as hahn_echo:
             wait(t, "NV")  # variable delay in spin Echo
             play("-x90" * amp(1), "NV")  # Pi/2 pulse to qubit
             align()  # Play the laser pulse after the Echo sequence
-            # Measure and detect the photons on SPCM1
-            play("laser_ON", "AOM1")
-            measure("readout", "SPCM1", None, time_tagging.analog(times2, meas_len_1, counts2))
+            # Measure and detect the photons on the spcm
+            play("on", "laser")
+            measure("readout", "spcm", None, time_tagging.analog(times2, meas_len_1, counts2))
             save(counts2, counts_2_st)  # save counts
-            wait(wait_between_runs * u.ns, "AOM1")
+            wait(wait_between_runs * u.ns, "laser")
 
             align()
             # Third Ramsey sequence for measuring the dark counts
@@ -87,11 +87,11 @@ with program() as hahn_echo:
             wait(t, "NV")  # variable delay in spin Echo
             play("-x90" * amp(0), "NV")  # Pi/2 pulse to qubit
             align()  # Play the laser pulse after the Echo sequence
-            # Measure and detect the dark counts on SPCM1
-            play("laser_ON", "AOM1")
-            measure("readout", "SPCM1", None, time_tagging.analog(times_dark, meas_len_1, counts_dark))
+            # Measure and detect the dark counts on the spcm
+            play("on", "laser")
+            measure("readout", "spcm", None, time_tagging.analog(times_dark, meas_len_1, counts_dark))
             save(counts_dark, counts_dark_st)  # save counts
-            wait(wait_between_runs * u.ns, "AOM1")
+            wait(wait_between_runs * u.ns, "laser")
 
         save(n, n_st)  # save number of iteration inside for_loop
 

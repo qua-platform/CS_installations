@@ -40,8 +40,8 @@ with program() as power_rabi:
     n_st = declare_stream()  # stream to save iterations
 
     # Spin initialization
-    play("laser_ON", "AOM1")
-    wait(wait_for_initialization * u.ns, "AOM1")
+    play("on", "laser")
+    wait(wait_for_initialization * u.ns, "laser")
 
     # Power Rabi sweep
     with for_(n, 0, n < n_avg, n + 1):
@@ -49,9 +49,9 @@ with program() as power_rabi:
             # Play the Rabi pulse with varying amplitude
             play("x180" * amp(a), "NV")  # 'a' is a pre-factor to the amplitude defined in the config ("mw_amp_NV")
             align()  # Play the laser pulse after the mw pulse
-            play("laser_ON", "AOM1")
-            # Measure and detect the photons on SPCM1
-            measure("readout", "SPCM1", None, time_tagging.analog(times, meas_len_1, counts))
+            play("on", "laser")
+            # Measure and detect the photons on the spcm
+            measure("readout", "spcm", None, time_tagging.analog(times, meas_len_1, counts))
             save(counts, counts_st)  # save counts
 
             # Wait and align all elements before measuring the dark events
@@ -61,9 +61,9 @@ with program() as power_rabi:
             # Play the Rabi pulse with zero amplitude
             play("x180" * amp(0), "NV")
             align()  # Play the laser pulse after the mw pulse
-            play("laser_ON", "AOM1")
-            # Measure and detect the dark counts on SPCM1
-            measure("readout", "SPCM1", None, time_tagging.analog(times, meas_len_1, counts))
+            play("on", "laser")
+            # Measure and detect the dark counts on the spcm
+            measure("readout", "spcm", None, time_tagging.analog(times, meas_len_1, counts))
             save(counts, counts_dark_st)  # save dark counts
             wait(wait_between_runs * u.ns)  # wait in between iterations
 

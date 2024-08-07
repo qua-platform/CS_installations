@@ -47,8 +47,8 @@ with program() as T1:
     n_st = declare_stream()  # stream to save iterations
 
     # Spin initialization
-    play("laser_ON", "AOM1")
-    wait(wait_for_initialization * u.ns, "AOM1")
+    play("on", "laser")
+    wait(wait_for_initialization * u.ns, "laser")
 
     # T1 sequence
     with for_(n, 0, n < n_avg, n + 1):
@@ -60,11 +60,11 @@ with program() as T1:
             # To measure in |0> keeping the sequence time constant
             play("x180" * amp(0), "NV")
             align()  # Play the laser pulse after the mw sequence
-            # Measure and detect the photons on SPCM1
-            play("laser_ON", "AOM1")
-            measure("readout", "SPCM1", None, time_tagging.analog(times1, meas_len_1, counts1))
+            # Measure and detect the photons on the spcm
+            play("on", "laser")
+            measure("readout", "spcm", None, time_tagging.analog(times1, meas_len_1, counts1))
             save(counts1, counts_1_st)  # save counts
-            wait(wait_between_runs * u.ns, "AOM1")
+            wait(wait_between_runs * u.ns, "laser")
 
             align()
             # Measure in |1>
@@ -74,11 +74,11 @@ with program() as T1:
             # To measure in |1>
             play("x180" * amp(1), "NV")
             align()  # Play the laser pulse after the mw sequence
-            # Measure and detect the photons on SPCM1
-            play("laser_ON", "AOM1")
-            measure("readout", "SPCM1", None, time_tagging.analog(times2, meas_len_1, counts2))
+            # Measure and detect the photons on the spcm
+            play("on", "laser")
+            measure("readout", "spcm", None, time_tagging.analog(times2, meas_len_1, counts2))
             save(counts2, counts_2_st)  # save counts
-            wait(wait_between_runs * u.ns, "AOM1")
+            wait(wait_between_runs * u.ns, "laser")
 
             # Measure dark counts
             if start_from_one:  # Choose to start either from |0> or |1>
@@ -86,11 +86,11 @@ with program() as T1:
             wait(t, "NV")  # variable delay in spin Echo
             play("x180" * amp(0), "NV")  # Pi pulse to qubit to measure second state
             align()  # Play the laser pulse after the mw sequence
-            # Measure and detect the dark counts on SPCM1
-            play("laser_ON", "AOM1")
-            measure("readout", "SPCM1", None, time_tagging.analog(times_dark, meas_len_1, counts_dark))
+            # Measure and detect the dark counts on the spcm
+            play("on", "laser")
+            measure("readout", "spcm", None, time_tagging.analog(times_dark, meas_len_1, counts_dark))
             save(counts_dark, counts_dark_st)  # save counts
-            wait(wait_between_runs * u.ns, "AOM1")
+            wait(wait_between_runs * u.ns, "laser")
 
         save(n, n_st)  # save number of iteration inside for_loop
 

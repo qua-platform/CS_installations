@@ -167,17 +167,17 @@ with program() as rb:
             # Only played the depth corresponding to target_depth
             with if_((depth == 1) | (depth == depth_target)):
                 # Spin initialization
-                play("laser_ON", "AOM1")
-                wait(wait_for_initialization * u.ns, "AOM1")
+                play("on", "laser")
+                wait(wait_for_initialization * u.ns, "laser")
 
                 with for_(n, 0, n < n_avg, n + 1):
                     # The strict_timing ensures that the sequence will be played without gaps
                     with strict_timing_():
                         play_sequence(sequence_list, depth)
                     align()  # Play the laser pulse after the Echo sequence
-                    # Measure and detect the photons on SPCM1
-                    play("laser_ON", "AOM1")
-                    measure("readout", "SPCM1", None, time_tagging.analog(times, meas_len_1, counts))
+                    # Measure and detect the photons on the spcm
+                    play("on", "laser")
+                    measure("readout", "spcm", None, time_tagging.analog(times, meas_len_1, counts))
                     save(counts, counts_st)  # save counts
                     wait(wait_between_runs * u.ns)  # wait in between iterations
 

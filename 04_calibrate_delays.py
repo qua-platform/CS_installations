@@ -45,9 +45,9 @@ with program() as calib_delays:
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         # Wait before starting the play the laser pulse
-        wait(laser_delay * u.ns, "AOM1")
+        wait(laser_delay * u.ns, "laser")
         # Play the laser pulse for a duration given here by "initialization_len"
-        play("laser_ON", "AOM1", duration=initialization_len * u.ns)
+        play("on", "laser", duration=initialization_len * u.ns)
 
         # Delay the microwave pulse with respect to the laser pulse so that it arrive at the middle of the laser pulse
         wait((laser_delay + (initialization_len - mw_len) // 2) * u.ns, "NV")
@@ -55,9 +55,9 @@ with program() as calib_delays:
         play("cw" * amp(1), "NV", duration=mw_len * u.ns)
 
         # Measure the photon counted by the SPCM
-        measure("readout", "SPCM1", None, time_tagging.analog(times, meas_len, counts))
+        measure("readout", "spcm", None, time_tagging.analog(times, meas_len, counts))
         # Adjust the wait time between each averaging iteration
-        wait(wait_between_runs * u.ns, "SPCM1")
+        wait(wait_between_runs * u.ns, "spcm")
         # Save the time tags to the stream
         with for_(i, 0, i < counts, i + 1):
             save(times[i], times_st)
@@ -65,9 +65,9 @@ with program() as calib_delays:
         align()  # global align before measuring the dark counts
 
         # Wait before starting the play the laser pulse
-        wait(laser_delay * u.ns, "AOM1")
+        wait(laser_delay * u.ns, "laser")
         # Play the laser pulse for a duration given here by "initialization_len"
-        play("laser_ON", "AOM1", duration=initialization_len * u.ns)
+        play("on", "laser", duration=initialization_len * u.ns)
 
         # Delay the microwave pulse with respect to the laser pulse so that it arrive at the middle of the laser pulse
         wait((laser_delay + (initialization_len - mw_len) // 2) * u.ns, "NV")
@@ -75,9 +75,9 @@ with program() as calib_delays:
         play("cw" * amp(0), "NV", duration=mw_len * u.ns)
 
         # Measure the photon counted by the SPCM
-        measure("readout", "SPCM1", None, time_tagging.analog(times, meas_len, counts))
+        measure("readout", "spcm", None, time_tagging.analog(times, meas_len, counts))
         # Adjust the wait time between each averaging iteration
-        wait(wait_between_runs * u.ns, "SPCM1")
+        wait(wait_between_runs * u.ns, "spcm")
         # Save the time tags to the stream
         with for_(i, 0, i < counts, i + 1):
             save(times[i], times_st_dark)

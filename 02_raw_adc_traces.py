@@ -30,12 +30,12 @@ with program() as TimeTagging_calibration:
     n = declare(int)  # QUA variable for the averaging loop
     adc_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
-        # Drive the AOM to play the readout laser pulse
-        play("laser_ON", "AOM1")
+        # Drive the laser to play the readout laser pulse
+        play("on", "laser")
         # Record the raw ADC traces in the stream called "adc_st"
-        measure("long_readout", "SPCM1", adc_st)
+        measure("long_readout", "spcm", adc_st)
         # Waits for the
-        wait(1000, "SPCM1")
+        wait(1000, "spcm")
 
     with stream_processing():
         # Will save average:

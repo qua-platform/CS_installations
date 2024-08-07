@@ -49,10 +49,10 @@ with program() as cw_odmr:
             # Play the mw pulse...
             play("cw" * amp(1), "NV", duration=readout_len * u.ns)
             # ... and the laser pulse simultaneously (the laser pulse is delayed by 'laser_delay_1')
-            play("laser_ON", "AOM1", duration=readout_len * u.ns)
-            wait(1_000 * u.ns, "SPCM1")  # so readout don't catch the first part of spin reinitialization
-            # Measure and detect the photons on SPCM1
-            measure("long_readout", "SPCM1", None, time_tagging.analog(times, readout_len, counts))
+            play("on", "laser", duration=readout_len * u.ns)
+            wait(1_000 * u.ns, "spcm")  # so readout don't catch the first part of spin reinitialization
+            # Measure and detect the photons on the spcm
+            measure("long_readout", "spcm", None, time_tagging.analog(times, readout_len, counts))
 
             save(counts, counts_st)  # save counts on stream
 
@@ -62,9 +62,9 @@ with program() as cw_odmr:
             # Play the mw pulse with zero amplitude...
             play("cw" * amp(0), "NV", duration=readout_len * u.ns)
             # ... and the laser pulse simultaneously (the laser pulse is delayed by 'laser_delay_1')
-            play("laser_ON", "AOM1", duration=readout_len * u.ns)
-            wait(1_000 * u.ns, "SPCM1")  # so readout don't catch the first part of spin reinitialization
-            measure("long_readout", "SPCM1", None, time_tagging.analog(times, readout_len, counts))
+            play("on", "laser", duration=readout_len * u.ns)
+            wait(1_000 * u.ns, "spcm")  # so readout don't catch the first part of spin reinitialization
+            measure("long_readout", "spcm", None, time_tagging.analog(times, readout_len, counts))
 
             save(counts, counts_dark_st)  # save counts on stream
 

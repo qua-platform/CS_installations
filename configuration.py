@@ -6,25 +6,16 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.loops import from_array
 
-#######################
-# AUXILIARY FUNCTIONS #
-#######################
-u = unit(coerce_to_integer=True)
 
-
-#############
-# VARIABLES #
-#############
+##################
+# OPX Connection #
+##################
 qop_ip = "127.0.0.1"  # Write the OPX IP address
 cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 octave_ip = qop_ip  # Write the Octave IP address
 octave_port = 11050  # 11xxx, where xxx are the last three digits of the Octave IP address
 
-
-############################
-# Set octave configuration #
-############################
 octave_config = QmOctaveConfig()
 octave_config.set_calibration_db(os.getcwd())
 octave_config.add_device_info("octave1", octave_ip, octave_port)
@@ -33,6 +24,9 @@ octave_config.add_device_info("octave1", octave_ip, octave_port)
 #############
 # VARIABLES #
 #############
+# Unit conversion helper
+u = unit(coerce_to_integer=True)
+
 # Frequencies
 NV_IF_freq = 40 * u.MHz
 NV_LO_freq = 2.83 * u.GHz
@@ -63,7 +57,6 @@ signal_threshold = -2_000  # ADC untis, to convert to volts divide by 4096 (12 b
 detection_delay = 80 * u.ns
 laser_delay = 0 * u.ns
 mw_delay = 0 * u.ns
-rf_delay = 0 * u.ns
 
 trigger_delay = 87  # 57ns with QOP222 and above otherwise 87ns
 trigger_buffer = 15  # 18ns with QOP222 and above otherwise 15ns
@@ -82,15 +75,14 @@ config = {
             "analog_outputs": {
                 1: {"offset": 0.0, "delay": mw_delay},  # NV I
                 2: {"offset": 0.0, "delay": mw_delay},  # NV Q
-                3: {"offset": 0.0, "delay": rf_delay},  # RF
             },
             "digital_outputs": {
                 1: {},  # Octave switch
-                2: {},  # AOM/Laser 1
-                3: {},  # SPCM1 - indicator
+                2: {},  # Laser
+                3: {},  # spcm - indicator
             },
             "analog_inputs": {
-                1: {"offset": 0},  # SPCM1
+                1: {"offset": 0},  # spcm
                 2: {"offset": 0},  # SPCM2
             },
         }
@@ -116,7 +108,7 @@ config = {
                 },
             },
         },
-        "AOM1": {
+        "laser": {
             "digitalInputs": {
                 "marker": {
                     "port": ("con1", 2),
@@ -125,10 +117,10 @@ config = {
                 },
             },
             "operations": {
-                "laser_ON": "laser_ON",
+                "on": "on",
             },
         },
-        "SPCM1": {
+        "spcm": {
             "singleInput": {"port": ("con1", 1)},  # not used
             "digitalInputs": {  # for visualization in simulation
                 "marker": {
@@ -158,8 +150,9 @@ config = {
                 1: {
                     "LO_frequency": NV_LO_freq,
                     "LO_source": "internal",  # can be external or internal. internal is the default
-                    "output_mode": "always_on",  # can be: "always_on" / "always_off"/ "triggered" / "triggered_reversed". "always_off" is the default
-                    "gain": 0,  # can be in the range [-20 : 0.5 : 20]dB
+                    # can be: "always_on" / "always_off" / "triggered" / "triggered_reversed".
+                    "output_mode": "always_on",
+                    "gain": 0,  # can be in the range [-20 : 0.5 : 20] dB
                 },
             },
             "connectivity": "con1",
@@ -201,7 +194,7 @@ config = {
             "length": x180_len_NV,
             "waveforms": {"I": "zero_wf", "Q": "x180_wf"},
         },
-        "laser_ON": {
+        "on": {
             "operation": "control",
             "length": initialization_len,
             "digital_marker": "ON",

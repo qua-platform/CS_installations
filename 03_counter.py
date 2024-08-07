@@ -1,6 +1,6 @@
 """
         COUNTER
-The program consists in playing a laser pulse while performing time tagging continuously.
+The program consists of playing a laser pulse while performing time-tagging continuously.
 This allows measuring the received photons as a function of time while adjusting external parameters
 to validate the experimental set-up.
 """
@@ -35,7 +35,7 @@ with program() as counter:
         # Loop over the chunks to measure for the total integration time
         with for_(n, 0, n < n_count, n + 1):
             # Play the laser pulse...
-            play("laser_ON", "AOM", duration=single_integration_time_cycles)
+            play("on", "laser", duration=single_integration_time_cycles)
             # ... while measuring the events from the SPCM
             measure("readout", "SPCM", None, time_tagging.analog(times, single_integration_time_ns, counts))
             # Increment the received counts
