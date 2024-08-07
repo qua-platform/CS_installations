@@ -1,0 +1,34 @@
+Metadata-Version: 2.1
+Name: qm-octave
+Version: 2.1.0
+Summary: SDK to control an Octave with QUA
+Author: QM
+Author-email: info@quantum-machines.co
+Requires-Python: >=3.7,<3.12
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Dist: betterproto (==2.0.0b5) ; python_version >= "3.7" and python_version < "3.11"
+Requires-Dist: betterproto (==2.0.0b6) ; python_version >= "3.11" and python_version < "4.0"
+Requires-Dist: grpcio (>=1.59.2,<2.0.0)
+Requires-Dist: grpclib (>=0.4.3rc3,<0.5.0) ; python_version >= "3.10" and python_version < "4.0"
+Requires-Dist: protobuf (>=3.17.3,<4.0.0) ; python_version >= "3.7" and python_version < "3.11"
+Requires-Dist: protobuf (>=4.24,<5.0) ; python_version >= "3.11"
+Description-Content-Type: text/markdown
+
+# QM Octave
+Quantum machine's Octave sdk
+
+Versions
+---------------------------------------------------------------------------
+Version Number |                    Description                           |
+---------------------------------------------------------------------------
+1.0.0          | Initial release                                          |
+1.0.3          | Bugfix release                                           |  
+1.1.0          | Stable release                                           |  
+1.2.0          | Release compatible with new calibration API released     |  
+               | as part of QUA SDK version 1.1.5                         |
+---------------------------------------------------------------------------
