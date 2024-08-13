@@ -29,7 +29,7 @@ from configuration import *
 # Frequency vector
 f_vec = np.arange(-30 * u.MHz, 70 * u.MHz, 2 * u.MHz)
 n_avg = 1_000_000  # number of averages
-readout_len = long_meas_len_1  # Readout duration for this experiment
+readout_len = long_meas_len  # Readout duration for this experiment
 
 with program() as cw_odmr:
     times = declare(int, size=100)  # QUA vector for storing the time-tags
@@ -110,6 +110,15 @@ else:
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot data
+        plt.subplot(121)
+        plt.cla()
+
+        plt.plot((NV_LO_freq * 0 + f_vec) / u.MHz, (counts - counts_dark) / 1000 / (readout_len * 1e-9), label="difference counts")
+        plt.xlabel("MW frequency [MHz]")
+        plt.ylabel("Intensity [kcps]")
+        plt.title("ODMR Difference Plot")
+        plt.legend()
+        plt.subplot(122)
         plt.cla()
         plt.plot((NV_LO_freq * 0 + f_vec) / u.MHz, counts / 1000 / (readout_len * 1e-9), label="photon counts")
         plt.plot((NV_LO_freq * 0 + f_vec) / u.MHz, counts_dark / 1000 / (readout_len * 1e-9), label="dark counts")

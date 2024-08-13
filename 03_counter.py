@@ -37,7 +37,7 @@ with program() as counter:
             # Play the laser pulse...
             play("on", "laser", duration=single_integration_time_cycles)
             # ... while measuring the events from the SPCM
-            measure("readout", "SPCM", None, time_tagging.analog(times, single_integration_time_ns, counts))
+            measure("readout", "spcm", None, time_tagging.analog(times, single_integration_time_ns, counts))
             # Increment the received counts
             assign(total_counts, total_counts + counts)
         # Save the counts
@@ -78,7 +78,7 @@ else:
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while res_handles.is_processing():
         new_counts = counts_handle.fetch_all()
-        counts.append(new_counts["value"] / total_integration_time / 1000)
+        counts.append(new_counts["value"] / total_integration_time * 1e9 /1000)
         time.append(new_counts["timestamp"] / u.s)  # Convert timestamps to seconds
         plt.cla()
         if len(time) > 50:

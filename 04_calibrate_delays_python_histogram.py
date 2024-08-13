@@ -116,10 +116,13 @@ else:
                     counts_vec[times[i][j]] += 1
             old_count = new_count
         # Plot the histogram
+        plt.axvline(laser_delay, linestyle="--", label="Expected laser offset")
+        plt.axvline((laser_delay + (initialization_len - mw_len) // 2), label="Expected MW offset")
         plt.plot(t_vec + 0.5, counts_vec / 1000 / (1 * 1e-9) / iteration)
         plt.xlabel("t [ns]")
         plt.ylabel(f"counts [kcps / 1ns]")
         plt.title("Delays")
+        plt.legend()
         plt.pause(0.1)
 
         b_cont = res_handles.is_processing()

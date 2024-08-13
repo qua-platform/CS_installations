@@ -126,8 +126,12 @@ else:
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot data
         plt.cla()
-        plt.plot(t_vec[::resolution] + resolution / 2, times_hist / 1000 / (resolution / u.s) / iteration)
+        plt.axvline(laser_delay, linestyle="--", label="Expected laser offset")
+        plt.axvline((laser_delay + (initialization_len - mw_len) // 2), label="Expected MW offset")
+        plt.plot(t_vec[::resolution] + resolution / 2, times_hist / 1000 / (resolution / u.s) / iteration, label="MW ON")
+        plt.plot(t_vec[::resolution] + resolution / 2, times_hist_dark / 1000 / (resolution / u.s) / iteration, label="MW OFF")
         plt.xlabel("t [ns]")
         plt.ylabel(f"counts [kcps / {resolution}ns]")
         plt.title("Delays")
+        plt.legend()
         plt.pause(0.1)
