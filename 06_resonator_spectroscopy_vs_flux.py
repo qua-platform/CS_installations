@@ -24,6 +24,7 @@ from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from configuration import *
+from qualang_tools.results.data_handler import DataHandler
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -160,45 +161,12 @@ else:
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
 
-    # Fitting to cosine resonator frequency response
-    def cosine_func(x, amplitude, frequency, phase, offset):
-        return amplitude * np.cos(2 * np.pi * frequency * x + phase) + offset
+    # Save results
+    save_data_dict = {"fig_live": fig}
+    script_name = Path(__file__).name
+    data_handler = DataHandler(root_data_folder=save_dir)
+    data_handler.additional_files = {script_name: script_name, **default_additional_files}
+    data_handler.save_data(data=save_data_dict, name=Path(__file__).stem)
 
-    # Array for the flux minima
-    minima = np.zeros(len(flux))
-    # Frequency range for the 2 resonators
-    frequencies = [dfs + rIF for rIF in resonators_IF]
-    # Amplitude for the 2 resonators
-    R = [R1, R2, R3, R4]
-    plt.figure()
-    for rr in range(5):
-        print(f"Resonator rr{rr+1}")
-        # Find the resonator frequency vs flux minima
-        for i in range(len(flux)):
-            minima[i] = frequencies[rr][np.argmin(R[rr].T[i])]
-
-        # Cosine fit
-        initial_guess = [1, 0.5, 0, 0]  # Initial guess for the parameters
-        fit_params, _ = curve_fit(cosine_func, flux, minima, p0=initial_guess)
-
-        # Get the fitted values
-        amplitude_fit, frequency_fit, phase_fit, offset_fit = fit_params
-        print("fitting parameters", fit_params)
-
-        # Generate the fitted curve using the fitted parameters
-        fitted_curve = cosine_func(flux, amplitude_fit, frequency_fit, phase_fit, offset_fit)
-        plt.subplot(5, 1, rr + 1)
-        plt.pcolor(flux, frequencies[rr] / u.MHz, R1)
-        plt.plot(flux, minima / u.MHz, "x-", color="red", label="Flux minima")
-        plt.plot(flux, fitted_curve / u.MHz, label="Fitted Cosine", color="orange")
-        plt.xlabel("Flux bias [V]")
-        plt.ylabel("Readout IF [MHz]")
-        plt.title(f"Resonator rr{rr+1}")
-        plt.legend()
-        plt.tight_layout()
-
-        print(
-            f"DC flux value corresponding to the maximum frequency point for resonator {rr}: {flux[np.argmax(fitted_curve)]}"
-        )
 
 # %%

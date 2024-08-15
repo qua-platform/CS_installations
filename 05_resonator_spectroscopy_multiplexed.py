@@ -20,6 +20,7 @@ from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from configuration import *
+from qualang_tools.results.data_handler import DataHandler
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -52,11 +53,10 @@ with program() as multi_res_spec:
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the frequency
             # wait for the resonators to deplete
-            wait(depletion_time * u.ns, *resonators)
+            wait(10 * depletion_time * u.ns, *resonators)
 
             for i, (rr, resonator_IF) in enumerate(zip(resonators, resonators_IF)):
-                # resonator 1
-                update_frequency(rr, df + resonator_IF)  # Update the frequency the rr1 element
+                update_frequency(rr, df + resonator_IF)  # Update the frequency the rr element
                 # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
                 measure(
                     "readout",
@@ -185,5 +185,11 @@ else:
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
 
+    # Save results
+    save_data_dict = {"fig_live": fig}
+    script_name = Path(__file__).name
+    data_handler = DataHandler(root_data_folder=save_dir)
+    data_handler.additional_files = {script_name: script_name, **default_additional_files}
+    data_handler.save_data(data=save_data_dict, name=Path(__file__).stem)
 
 # %%

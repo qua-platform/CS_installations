@@ -18,6 +18,7 @@ from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from configuration import *
+from qualang_tools.results.data_handler import DataHandler
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 
@@ -128,3 +129,10 @@ else:
     print(f"DC offset to add to I in the config: {-adc1_mean:.6f} V")
     print(f"DC offset to add to Q in the config: {-adc2_mean:.6f} V")
     print(f"Time Of Flight to add in the config: {delay} ns")
+
+    # Save results
+    save_data_dict = {"fig_live": fig}
+    script_name = Path(__file__).name
+    data_handler = DataHandler(root_data_folder=save_dir)
+    data_handler.additional_files = {script_name: script_name, **default_additional_files}
+    data_handler.save_data(data=save_data_dict, name=Path(__file__).stem)

@@ -31,13 +31,9 @@ qop_ip = "127.0.0.1"  # Write the QM router IP address
 cluster_name = None  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
-qop_ip = "172.16.33.101" # Write the QM router IP address
-cluster_name = "Cluster_83" # Write the QM router IP address
-qop_port = None  # Write the QOP port if version < QOP220
-octave_config = None
-
 # Path to save data
 save_dir = Path().absolute() / "QM" / "INSTALLATION" / "data"
+default_additional_files = {"configuration.py": "configuration.py"}
 
 #####################
 # OPX configuration #

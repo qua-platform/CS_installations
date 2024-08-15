@@ -15,6 +15,7 @@ Before proceeding to the next node, take the following steps:
 from qm import QuantumMachinesManager
 from qm.qua import *
 from configuration import *
+from qualang_tools.results.data_handler import DataHandler
 
 ###################
 # The QUA program #
