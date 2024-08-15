@@ -58,8 +58,8 @@ with program() as multi_qubit_spec_vs_flux:
     index = declare(int, value=0)  # index to get the right resonator freq for a given flux
 
     # Adjust the flux line biases if needed
-    set_dc_offset("q3_z", "single", min_frequency_point3)
-    set_dc_offset("q4_z", "single", min_frequency_point4)
+    set_dc_offset("q3_z", "single", max_frequency_point3)
+    set_dc_offset("q4_z", "single", max_frequency_point4)
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
             # Update the frequency of the two qubit elements

@@ -175,7 +175,7 @@ max_frequency_point1 = 0.0
 max_frequency_point2 = 0.0
 max_frequency_point3 = 0.0
 max_frequency_point4 = 0.0
-max_frequency_point5 = 0.0
+min_frequency_point5 = 0.0
 
 # Resonator frequency versus flux fit parameters according to resonator_spec_vs_flux
 # amplitude * np.cos(2 * np.pi * frequency * x + phase) + offset
