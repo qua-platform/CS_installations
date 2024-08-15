@@ -143,7 +143,7 @@ else:
     qm.close()
 
     # Save results
-    save_data_dict = {"fig_live": fig}
+    save_data_dict = {"fig_live": fig, "I": I, "Q": Q}
     script_name = Path(__file__).name
     data_handler = DataHandler(root_data_folder=save_dir)
     data_handler.additional_files = {script_name: script_name, **default_additional_files}

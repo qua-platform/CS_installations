@@ -47,46 +47,45 @@ a_max = 1.99
 da = 0.01
 amplitudes = np.arange(a_min, a_max + da / 2, da)  # The amplitude vector +da/2 to add a_max to the scan
 
+resonators = ["rr1", "rr2", "rr3", "rr4", "rr5"]
+resonators_IF = [resonator_IF_q1, resonator_IF_q2, resonator_IF_q3, resonator_IF_q4, resonator_IF_q5]
+
+# should be set in the config
+max_frequency_point1 = 0.0
+max_frequency_point2 = 0.0
+max_frequency_point3 = 0.0
+max_frequency_point4 = 0.0
+
+
 with program() as multi_res_spec_vs_amp:
     # QUA macro to declare the measurement variables and their corresponding streams for a given number of resonators
-    I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
+    I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=len(resonators))
     df = declare(int)  # QUA variable for sweeping the readout frequency detuning around the resonance
     a = declare(fixed)  # QUA variable for sweeping the readout amplitude pre-factor
 
+    # Adjust the flux line biases if needed
+    set_dc_offset("q1_z", "single", max_frequency_point1)
+    set_dc_offset("q2_z", "single", max_frequency_point2)
+    set_dc_offset("q3_z", "single", max_frequency_point3)
+    set_dc_offset("q4_z", "single", max_frequency_point4)
+
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the frequency
-            # Update the frequency of the two resonator elements
-            update_frequency("rr1", df + resonator_IF_q1)
-            update_frequency("rr2", df + resonator_IF_q2)
-
             with for_(*from_array(a, amplitudes)):  # QUA for_ loop for sweeping the readout amplitude
-                # resonator 1
-                wait(depletion_time * u.ns, "rr1")  # wait for the resonator to relax
-                measure(
-                    "readout" * amp(a),
-                    "rr1",
-                    None,
-                    dual_demod.full("cos", "out1", "sin", "out2", I[0]),
-                    dual_demod.full("minus_sin", "out1", "cos", "out2", Q[0]),
-                )
-                # Save the 'I' & 'Q' quadratures for rr1 to their respective streams
-                save(I[0], I_st[0])
-                save(Q[0], Q_st[0])
-
-                # align("rr1", "rr2")  # Uncomment to measure sequentially
-
-                # resonator 2
-                wait(depletion_time * u.ns, "rr2")  # wait for the resonator to relax
-                measure(
-                    "readout" * amp(a),
-                    "rr2",
-                    None,
-                    dual_demod.full("cos", "out1", "sin", "out2", I[1]),
-                    dual_demod.full("minus_sin", "out1", "cos", "out2", Q[1]),
-                )
-                # Save the 'I' & 'Q' quadratures for rr2 to their respective streams
-                save(I[1], I_st[1])
-                save(Q[1], Q_st[1])
+                for i, (rr, resonator_IF) in enumerate(zip(resonators, resonators_IF)):
+                    update_frequency(rr, df + resonator_IF)  # Update the frequency the rr element
+                    # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
+                    measure(
+                        "readout" * amp(a),
+                        rr,
+                        None,
+                        dual_demod.full("cos", "out1", "sin", "out2", I[i]),
+                        dual_demod.full("minus_sin", "out1", "cos", "out2", Q[i]),
+                    )
+                    # Save the 'I' & 'Q' quadratures for rr1 to their respective streams
+                    save(I[i], I_st[i])
+                    save(Q[i], Q_st[i])
+                wait(10 * depletion_time * u.ns, *resonators)
         # Save the averaging iteration to get the progress bar
         save(n, n_st)
 
@@ -94,12 +93,9 @@ with program() as multi_res_spec_vs_amp:
         n_st.save("n")
         # Cast the data into a 2D matrix, average the 2D matrices together and store the results on the OPX processor
         # Note that the buffering goes from the most inner loop (left) to the most outer one (right)
-        # resonator 1
-        I_st[0].buffer(len(amplitudes)).buffer(len(dfs)).average().save("I1")
-        Q_st[0].buffer(len(amplitudes)).buffer(len(dfs)).average().save("Q1")
-        # resonator 2
-        I_st[1].buffer(len(amplitudes)).buffer(len(dfs)).average().save("I2")
-        Q_st[1].buffer(len(amplitudes)).buffer(len(dfs)).average().save("Q2")
+        for i, rr in enumerate(resonators):
+            I_st[i].buffer(len(amplitudes)).buffer(len(dfs)).average().save(f"I{i+1}")
+            Q_st[i].buffer(len(amplitudes)).buffer(len(dfs)).average().save(f"Q{i+1}")
 
 #####################################
 #  Open Communication with the QOP  #
