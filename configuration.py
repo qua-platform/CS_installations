@@ -31,6 +31,11 @@ qop_ip = "127.0.0.1"  # Write the QM router IP address
 cluster_name = None  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
+qop_ip = "172.16.33.101" # Write the QM router IP address
+cluster_name = "Cluster_83" # Write the QM router IP address
+qop_port = None  # Write the QOP port if version < QOP220
+octave_config = None
+
 # Path to save data
 save_dir = Path().absolute() / "QM" / "INSTALLATION" / "data"
 
@@ -168,11 +173,17 @@ flux_settle_time = 100 * u.ns
 
 max_frequency_point1 = 0.0
 max_frequency_point2 = 0.0
+max_frequency_point3 = 0.0
+max_frequency_point4 = 0.0
+max_frequency_point5 = 0.0
 
 # Resonator frequency versus flux fit parameters according to resonator_spec_vs_flux
 # amplitude * np.cos(2 * np.pi * frequency * x + phase) + offset
 amplitude_fit1, frequency_fit1, phase_fit1, offset_fit1 = [0, 0, 0, 0]
 amplitude_fit2, frequency_fit2, phase_fit2, offset_fit2 = [0, 0, 0, 0]
+amplitude_fit3, frequency_fit3, phase_fit3, offset_fit3 = [0, 0, 0, 0]
+amplitude_fit4, frequency_fit4, phase_fit4, offset_fit4 = [0, 0, 0, 0]
+amplitude_fit5, frequency_fit5, phase_fit5, offset_fit5 = [0, 0, 0, 0]
 
 const_flux_len = 200
 const_flux_amp = 0.45
@@ -180,21 +191,33 @@ const_flux_amp = 0.45
 #############################################
 #                Resonators                 #
 #############################################
-resonator_LO = 6.35 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
+resonator_LO = 6.40 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
 # Resonators IF
-resonator_IF_q1 = 75 * u.MHz
-resonator_IF_q2 = 133 * u.MHz
+resonator_IF_q1 = -75 * u.MHz
+resonator_IF_q2 = -125 * u.MHz
+resonator_IF_q3 = -175 * u.MHz
+resonator_IF_q4 = -225 * u.MHz
+resonator_IF_q5 = -275 * u.MHz
 
 # Mixer parameters
 mixer_resonator_g_q1 = 0.0
 mixer_resonator_g_q2 = 0.0
+mixer_resonator_g_q3 = 0.0
+mixer_resonator_g_q4 = 0.0
+mixer_resonator_g_q5 = 0.0
 mixer_resonator_phi_q1 = -0.00
 mixer_resonator_phi_q2 = -0.00
+mixer_resonator_phi_q3 = -0.00
+mixer_resonator_phi_q4 = -0.00
+mixer_resonator_phi_q5 = -0.00
 
 # Readout pulse parameters
 readout_len = 4000
 readout_amp_q1 = 0.125
 readout_amp_q2 = 0.125
+readout_amp_q3 = 0.125
+readout_amp_q4 = 0.125
+readout_amp_q5 = 0.125
 
 # TOF and depletion time
 time_of_flight = 24  # must be a multiple of 4
@@ -230,6 +253,7 @@ rotation_angle_q2 = (0.0 / 180) * np.pi
 ge_threshold_q1 = 0.0
 ge_threshold_q2 = 0.0
 
+
 #############################################
 #                  Config                   #
 #############################################
@@ -238,14 +262,16 @@ config = {
     "controllers": {
         "con1": {
             "analog_outputs": {
-                1: {"offset": 0.0},  # I qubit1 XY
-                2: {"offset": 0.0},  # Q qubit1 XY
-                3: {"offset": 0.0},  # I qubit2 XY
-                4: {"offset": 0.0},  # Q qubit2 XY
-                5: {"offset": 0.0},  # I readout line
-                6: {"offset": 0.0},  # Q readout line
+                1: {"offset": 0.0},  # I readout line
+                2: {"offset": 0.0},  # Q readout line
+                3: {"offset": 0.0},  # I qubit1 XY
+                4: {"offset": 0.0},  # Q qubit1 XY
+                5: {"offset": 0.0},  # I qubit2 XY
+                6: {"offset": 0.0},  # Q qubit2 XY
                 7: {"offset": max_frequency_point1},  # qubit1 Z
                 8: {"offset": max_frequency_point2},  # qubit2 Z
+                9: {"offset": max_frequency_point3},  # qubit3 Z (detune q3 "left" to q1)
+                10: {"offset": max_frequency_point4},  # qubit4 Z (detune q4 "right" to q2)
             },
             "digital_outputs": {
                 1: {},
@@ -259,8 +285,8 @@ config = {
     "elements": {
         "rr1": {
             "mixInputs": {
-                "I": ("con1", 5),
-                "Q": ("con1", 6),
+                "I": ("con1", 1),
+                "Q": ("con1", 2),
                 "lo_frequency": resonator_LO,
                 "mixer": "mixer_resonator",
             },
@@ -278,8 +304,8 @@ config = {
         },
         "rr2": {
             "mixInputs": {
-                "I": ("con1", 5),
-                "Q": ("con1", 6),
+                "I": ("con1", 1),
+                "Q": ("con1", 2),
                 "lo_frequency": resonator_LO,
                 "mixer": "mixer_resonator",
             },
@@ -295,10 +321,67 @@ config = {
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
-        "q1_xy": {
+        "rr3": {
             "mixInputs": {
                 "I": ("con1", 1),
                 "Q": ("con1", 2),
+                "lo_frequency": resonator_LO,
+                "mixer": "mixer_resonator",
+            },
+            "intermediate_frequency": resonator_IF_q3,  # frequency at offset ch8
+            "operations": {
+                "cw": "const_pulse",
+                "readout": "readout_pulse_q3",
+            },
+            "outputs": {
+                "out1": ("con1", 1),
+                "out2": ("con1", 2),
+            },
+            "time_of_flight": time_of_flight,
+            "smearing": 0,
+        },
+        "rr4": {
+            "mixInputs": {
+                "I": ("con1", 1),
+                "Q": ("con1", 2),
+                "lo_frequency": resonator_LO,
+                "mixer": "mixer_resonator",
+            },
+            "intermediate_frequency": resonator_IF_q4,  # frequency at offset ch8
+            "operations": {
+                "cw": "const_pulse",
+                "readout": "readout_pulse_q4",
+            },
+            "outputs": {
+                "out1": ("con1", 1),
+                "out2": ("con1", 2),
+            },
+            "time_of_flight": time_of_flight,
+            "smearing": 0,
+        },
+        "rr5": {
+            "mixInputs": {
+                "I": ("con1", 1),
+                "Q": ("con1", 2),
+                "lo_frequency": resonator_LO,
+                "mixer": "mixer_resonator",
+            },
+            "intermediate_frequency": resonator_IF_q5,  # frequency at offset ch8
+            "operations": {
+                "cw": "const_pulse",
+                "readout": "readout_pulse_q5",
+            },
+            "outputs": {
+                "out1": ("con1", 1),
+                "out2": ("con1", 2),
+            },
+            "time_of_flight": time_of_flight,
+            "smearing": 0,
+        },
+        "q1_xy": {
+            "mixInputs": {
+                "I": ("con1", 3),
+                "Q": ("con1", 4),
                 "lo_frequency": qubit_LO_q1,
                 "mixer": "mixer_qubit_q1",
             },
@@ -344,6 +427,22 @@ config = {
         "q2_z": {
             "singleInput": {
                 "port": ("con1", 8),
+            },
+            "operations": {
+                "const": "const_flux_pulse",
+            },
+        },
+        "q3_z": {
+            "singleInput": {
+                "port": ("con1", 9),
+            },
+            "operations": {
+                "const": "const_flux_pulse",
+            },
+        },
+        "q4_z": {
+            "singleInput": {
+                "port": ("con1", 10),
             },
             "operations": {
                 "const": "const_flux_pulse",
@@ -510,6 +609,48 @@ config = {
             },
             "digital_marker": "ON",
         },
+        "readout_pulse_q3": {
+            "operation": "measurement",
+            "length": readout_len,
+            "waveforms": {
+                "I": "readout_wf_q3",
+                "Q": "zero_wf",
+            },
+            "integration_weights": {
+                "cos": "cosine_weights",
+                "sin": "sine_weights",
+                "minus_sin": "minus_sine_weights",
+            },
+            "digital_marker": "ON",
+        },
+        "readout_pulse_q4": {
+            "operation": "measurement",
+            "length": readout_len,
+            "waveforms": {
+                "I": "readout_wf_q4",
+                "Q": "zero_wf",
+            },
+            "integration_weights": {
+                "cos": "cosine_weights",
+                "sin": "sine_weights",
+                "minus_sin": "minus_sine_weights",
+            },
+            "digital_marker": "ON",
+        },
+        "readout_pulse_q5": {
+            "operation": "measurement",
+            "length": readout_len,
+            "waveforms": {
+                "I": "readout_wf_q5",
+                "Q": "zero_wf",
+            },
+            "integration_weights": {
+                "cos": "cosine_weights",
+                "sin": "sine_weights",
+                "minus_sin": "minus_sine_weights",
+            },
+            "digital_marker": "ON",
+        },
     },
     "waveforms": {
         "const_wf": {"type": "constant", "sample": const_amp},
@@ -542,6 +683,9 @@ config = {
         "minus_y90_I_wf_q2": {"type": "arbitrary", "samples": minus_y90_I_wf_q2.tolist()},
         "minus_y90_Q_wf_q2": {"type": "arbitrary", "samples": minus_y90_Q_wf_q2.tolist()},
         "readout_wf_q2": {"type": "constant", "sample": readout_amp_q2},
+        "readout_wf_q3": {"type": "constant", "sample": readout_amp_q3},
+        "readout_wf_q4": {"type": "constant", "sample": readout_amp_q4},
+        "readout_wf_q5": {"type": "constant", "sample": readout_amp_q5},
     },
     "digital_waveforms": {
         "ON": {"samples": [(1, 0)]},
@@ -633,6 +777,21 @@ config = {
                 "intermediate_frequency": resonator_IF_q2,
                 "lo_frequency": resonator_LO,
                 "correction": IQ_imbalance(mixer_resonator_g_q2, mixer_resonator_phi_q2),
+            },
+            {
+                "intermediate_frequency": resonator_IF_q3,
+                "lo_frequency": resonator_LO,
+                "correction": IQ_imbalance(mixer_resonator_g_q3, mixer_resonator_phi_q3),
+            },
+            {
+                "intermediate_frequency": resonator_IF_q4,
+                "lo_frequency": resonator_LO,
+                "correction": IQ_imbalance(mixer_resonator_g_q4, mixer_resonator_phi_q4),
+            },
+            {
+                "intermediate_frequency": resonator_IF_q5,
+                "lo_frequency": resonator_LO,
+                "correction": IQ_imbalance(mixer_resonator_g_q5, mixer_resonator_phi_q5),
             },
         ],
     },

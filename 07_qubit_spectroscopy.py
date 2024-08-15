@@ -48,14 +48,22 @@ span = 10 * u.MHz
 df = 100 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)
 
+# # should be set in the config
+# max_frequency_point1 = 0.0
+# max_frequency_point2 = 0.0
+# min_frequency_point3 = 0.0
+# min_frequency_point4 = 0.0
+
 
 with program() as multi_qubit_spec:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
     df = declare(int)  # QUA variable for the readout frequency
 
     # Adjust the flux line biases if needed
-    # set_dc_offset("q1_z", "single", 0.0)
-    # set_dc_offset("q2_z", "single", 0.0)
+    set_dc_offset("q1_z", "single", max_frequency_point1)
+    set_dc_offset("q2_z", "single", max_frequency_point2)
+    set_dc_offset("q3_z", "single", min_frequency_point3)
+    set_dc_offset("q4_z", "single", min_frequency_point4)
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
             # Update the frequency of the two qubit elements

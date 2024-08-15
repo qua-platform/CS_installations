@@ -1,3 +1,4 @@
+# %%
 """
         RESONATOR SPECTROSCOPY VERSUS FLUX
 This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to
@@ -41,44 +42,46 @@ span = 10 * u.MHz
 df = 100 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)
 # Flux bias sweep in V
-flux_min = -0.49
-flux_max = 0.49
+flux_min = -0.1
+flux_max = 0.1
 step = 0.01
 flux = np.arange(flux_min, flux_max + step / 2, step)
 
+resonators = ["rr1", "rr2", "rr3", "rr4", "rr5"]
+resonators_IF = [resonator_IF_q1, resonator_IF_q2, resonator_IF_q3, resonator_IF_q4, resonator_IF_q5]
+
+
 with program() as multi_res_spec_vs_flux:
     # QUA macro to declare the measurement variables and their corresponding streams for a given number of resonators
-    I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
+    I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=5)
     df = declare(int)  # QUA variable for sweeping the readout frequency detuning around the resonance
     dc = declare(fixed)  # QUA variable for sweeping the flux bias
 
-    set_dc_offset("q2_z", "single", 0)
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
-            # Update the frequency of the two resonator elements
-            update_frequency("rr1", df + resonator_IF_q1)
-            update_frequency("rr2", df + resonator_IF_q2)
+            for rr, resonator_IF in zip(resonators, resonators_IF):
+                update_frequency(rr, df + resonator_IF)  # Update the frequency the rr element
 
             with for_(*from_array(dc, flux)):
                 # Flux sweeping
                 set_dc_offset("q1_z", "single", dc)
                 set_dc_offset("q2_z", "single", dc)
+                set_dc_offset("q3_z", "single", dc)
+                set_dc_offset("q4_z", "single", dc)
                 wait(flux_settle_time * u.ns)  # Wait for the flux to settle
                 # Macro to perform multiplexed readout on the specified resonators
                 # It also save the 'I' and 'Q' quadratures into their respective streams
-                multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], sequential=False)
+                multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2, 3, 4, 5], sequential=False)
                 # wait for the resonators to relax
-                wait(depletion_time * u.ns, "rr1", "rr2")
+                wait(depletion_time * u.ns, *resonators)
         save(n, n_st)
 
     with stream_processing():
-        n_st.save("n")
-        # resonator 1
-        I_st[0].buffer(len(flux)).buffer(len(dfs)).average().save("I1")
-        Q_st[0].buffer(len(flux)).buffer(len(dfs)).average().save("Q1")
-        # resonator 2
-        I_st[1].buffer(len(flux)).buffer(len(dfs)).average().save("I2")
-        Q_st[1].buffer(len(flux)).buffer(len(dfs)).average().save("Q2")
+        n_st.save("iteration")
+        for i, rr in enumerate(resonators):
+            I_st[i].buffer(len(flux)).buffer(len(dfs)).average().save(f"I{i+1}")
+            Q_st[i].buffer(len(flux)).buffer(len(dfs)).average().save(f"Q{i+1}")
+
 
 #####################################
 #  Open Communication with the QOP  #
@@ -102,49 +105,58 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(multi_res_spec_vs_flux)
     # Prepare the figure for live plotting
-    fig = plt.figure()
+    fig, axss = plt.subplots(2, 5, figsize=(20, 7))
     interrupt_on_close(fig, job)
     # Tool to easily fetch results from the OPX (results_handle used in it)
-    results = fetching_tool(job, ["n", "I1", "Q1", "I2", "Q2"], mode="live")
+    results = fetching_tool(job, ["I1", "Q1", "I2", "Q2", "I3", "Q3", "I4", "Q4", "I5", "Q5", "iteration"], mode="live")
     # Live plotting
     while results.is_processing():
         # Fetch results
-        n, I1, Q1, I2, Q2 = results.fetch_all()
+        I1, Q1, I2, Q2, I3, Q3, I4, Q4, I5, Q5, iteration = results.fetch_all()
         # Progress bar
-        progress_counter(n, n_avg, start_time=results.start_time)
+        progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Data analysis
         S1 = u.demod2volts(I1 + 1j * Q1, readout_len)
         S2 = u.demod2volts(I2 + 1j * Q2, readout_len)
+        S3 = u.demod2volts(I3 + 1j * Q3, readout_len)
+        S4 = u.demod2volts(I4 + 1j * Q4, readout_len)
+        S5 = u.demod2volts(I5 + 1j * Q5, readout_len)
         R1 = np.abs(S1)
         phase1 = np.angle(S1)
         R2 = np.abs(S2)
         phase2 = np.angle(S2)
+        R3 = np.abs(S3)
+        phase3 = np.angle(S3)
+        R4 = np.abs(S4)
+        phase4 = np.angle(S4)
+        R5 = np.abs(S5)
+        phase5 = np.angle(S5)
         # Plots
         plt.suptitle("Resonator spectroscopy")
-        plt.subplot(221)
-        plt.cla()
+
+        axss[0, 0].plot((resonator_IF_q1 + dfs) / u.MHz, R1)
         plt.title(f"Resonator 1 - LO: {resonator_LO / u.GHz} GHz")
         plt.ylabel("Readout IF [MHz]")
-        plt.pcolor(flux, (dfs + resonator_IF_q1) / u.MHz, R1)
-        plt.axhline(resonator_IF_q1 / u.MHz, color="k")
-        plt.subplot(222)
-        plt.cla()
+        axss[0, 1].pcolor(flux, (resonator_IF_q2 + dfs) / u.MHz, R2)
         plt.title(f"Resonator 2 - LO: {resonator_LO / u.GHz} GHz")
-        plt.pcolor(flux, (dfs + resonator_IF_q2) / u.MHz, R2)
-        plt.axhline(resonator_IF_q2 / u.MHz, color="k")
-        plt.subplot(223)
-        plt.cla()
+        axss[0, 2].pcolor(flux, (resonator_IF_q3 + dfs) / u.MHz, R3)
+        plt.title(f"Resonator 3 - LO: {resonator_LO / u.GHz} GHz")
+        axss[0, 3].pcolor(flux, (resonator_IF_q4 + dfs) / u.MHz, R4)
+        plt.title(f"Resonator 4 - LO: {resonator_LO / u.GHz} GHz")
+        axss[0, 4].pcolor(flux, (resonator_IF_q5 + dfs) / u.MHz, R5)
+        plt.title(f"Resonator 5 - LO: {resonator_LO / u.GHz} GHz")
+        axss[1, 0].pcolor(flux, (resonator_IF_q1 + dfs) / u.MHz, signal.detrend(np.unwrap(phase1)))
         plt.xlabel("Flux bias [V]")
         plt.ylabel("Readout IF [MHz]")
-        plt.pcolor(flux, (dfs + resonator_IF_q1) / u.MHz, signal.detrend(np.unwrap(phase1)))
-        plt.axhline(resonator_IF_q1 / u.MHz, color="k")
-        plt.subplot(224)
-        plt.cla()
+        axss[1, 1].pcolor(flux, (resonator_IF_q2 + dfs) / u.MHz, signal.detrend(np.unwrap(phase2)))
         plt.xlabel("Flux bias [V]")
-        plt.pcolor(flux, (dfs + resonator_IF_q2) / u.MHz, signal.detrend(np.unwrap(phase2)))
-        plt.axhline(resonator_IF_q2 / u.MHz, color="k")
-        plt.tight_layout()
-        plt.pause(0.1)
+        axss[1, 2].pcolor(flux, (resonator_IF_q3 + dfs) / u.MHz, signal.detrend(np.unwrap(phase3)))
+        plt.xlabel("Flux bias [V]")
+        plt.ylabel("Phase [rad]")
+        axss[1, 3].pcolor(flux, (resonator_IF_q4 + dfs) / u.MHz, signal.detrend(np.unwrap(phase4)))
+        plt.xlabel("Flux bias [V]")
+        axss[1, 4].pcolor(flux, (resonator_IF_q5 + dfs) / u.MHz, signal.detrend(np.unwrap(phase5)))
+        plt.xlabel("Flux bias [V]")
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
 
@@ -155,11 +167,11 @@ else:
     # Array for the flux minima
     minima = np.zeros(len(flux))
     # Frequency range for the 2 resonators
-    frequencies = [dfs + resonator_IF_q1, dfs + resonator_IF_q1]
+    frequencies = [dfs + rIF for rIF in resonators_IF]
     # Amplitude for the 2 resonators
-    R = [R1, R2]
+    R = [R1, R2, R3, R4]
     plt.figure()
-    for rr in range(2):
+    for rr in range(5):
         print(f"Resonator rr{rr+1}")
         # Find the resonator frequency vs flux minima
         for i in range(len(flux)):
@@ -175,7 +187,7 @@ else:
 
         # Generate the fitted curve using the fitted parameters
         fitted_curve = cosine_func(flux, amplitude_fit, frequency_fit, phase_fit, offset_fit)
-        plt.subplot(2, 1, rr + 1)
+        plt.subplot(5, 1, rr + 1)
         plt.pcolor(flux, frequencies[rr] / u.MHz, R1)
         plt.plot(flux, minima / u.MHz, "x-", color="red", label="Flux minima")
         plt.plot(flux, fitted_curve / u.MHz, label="Fitted Cosine", color="orange")
@@ -188,3 +200,5 @@ else:
         print(
             f"DC flux value corresponding to the maximum frequency point for resonator {rr}: {flux[np.argmax(fitted_curve)]}"
         )
+
+# %%

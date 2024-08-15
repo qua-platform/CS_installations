@@ -1,3 +1,4 @@
+# %%
 """
         RESONATOR SPECTROSCOPY MULTIPLEXED
 This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to extract the
@@ -35,61 +36,48 @@ span = 12 * u.MHz  # the span around the resonant frequencies
 step = 100 * u.kHz
 dfs = np.arange(-span, span, step)
 
+resonators = ["rr1", "rr2", "rr3", "rr4", "rr5"]
+resonators_IF = [resonator_IF_q1, resonator_IF_q2, resonator_IF_q3, resonator_IF_q4, resonator_IF_q5]
+
 with program() as multi_res_spec:
     n = declare(int)  # QUA variable for the averaging loop
     df = declare(int)  # QUA variable for the readout frequency detuning around the resonance
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
     # Here we define one 'I', 'Q', 'I_st' & 'Q_st' for each resonator via a python list
-    I = [declare(fixed) for _ in range(2)]
-    Q = [declare(fixed) for _ in range(2)]
-    I_st = [declare_stream() for _ in range(2)]
-    Q_st = [declare_stream() for _ in range(2)]
+    I = [declare(fixed) for _ in range(len(resonators))]
+    Q = [declare(fixed) for _ in range(len(resonators))]
+    I_st = [declare_stream() for _ in range(len(resonators))]
+    Q_st = [declare_stream() for _ in range(len(resonators))]
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the frequency
             # wait for the resonators to deplete
-            wait(depletion_time * u.ns, "rr1", "rr2")
+            wait(depletion_time * u.ns, *resonators)
 
-            # resonator 1
-            update_frequency("rr1", df + resonator_IF_q1)  # Update the frequency the rr1 element
-            # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
-            measure(
-                "readout",
-                "rr1",
-                None,
-                dual_demod.full("cos", "out1", "sin", "out2", I[0]),
-                dual_demod.full("minus_sin", "out1", "cos", "out2", Q[0]),
-            )
-            # Save the 'I' & 'Q' quadratures for rr1 to their respective streams
-            save(I[0], I_st[0])
-            save(Q[0], Q_st[0])
+            for i, (rr, resonator_IF) in enumerate(zip(resonators, resonators_IF)):
+                # resonator 1
+                update_frequency(rr, df + resonator_IF)  # Update the frequency the rr1 element
+                # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
+                measure(
+                    "readout",
+                    rr,
+                    None,
+                    dual_demod.full("cos", "out1", "sin", "out2", I[i]),
+                    dual_demod.full("minus_sin", "out1", "cos", "out2", Q[i]),
+                )
+                # Save the 'I' & 'Q' quadratures for rr1 to their respective streams
+                save(I[i], I_st[i])
+                save(Q[i], Q_st[i])
 
-            # align("rr1", "rr2")  # Uncomment to measure sequentially
-            # resonator 2
-            update_frequency("rr2", df + resonator_IF_q2)  # Update the frequency the rr1 element
-            # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
-            measure(
-                "readout",
-                "rr2",
-                None,
-                dual_demod.full("cos", "out1", "sin", "out2", I[1]),
-                dual_demod.full("minus_sin", "out1", "cos", "out2", Q[1]),
-            )
-            # Save the 'I' & 'Q' quadratures for rr2 to their respective streams
-            save(I[1], I_st[1])
-            save(Q[1], Q_st[1])
         # Save the averaging iteration to get the progress bar
         save(n, n_st)
 
     with stream_processing():
         n_st.save("iteration")
-        # resonator 1
-        I_st[0].buffer(len(dfs)).average().save("I1")
-        Q_st[0].buffer(len(dfs)).average().save("Q1")
+        for i, rr in enumerate(resonators):
+            I_st[i].buffer(len(dfs)).average().save(f"I{i+1}")
+            Q_st[i].buffer(len(dfs)).average().save(f"Q{i+1}")
 
-        # resonator 2
-        I_st[1].buffer(len(dfs)).average().save("I2")
-        Q_st[1].buffer(len(dfs)).average().save("Q2")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -113,41 +101,55 @@ else:
     # Execute the QUA program
     job = qm.execute(multi_res_spec)
     # Tool to easily fetch results from the OPX (results_handle used in it)
-    results = fetching_tool(job, ["I1", "Q1", "I2", "Q2", "iteration"], mode="live")
+    results = fetching_tool(job, ["I1", "Q1", "I2", "Q2", "I3", "Q3", "I4", "Q4", "I5", "Q5", "iteration"], mode="live")
     # Live plotting
-    fig = plt.figure()
+    fig, axss = plt.subplots(2, 5, figsize=(20, 7))
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch results
-        I1, Q1, I2, Q2, iteration = results.fetch_all()
+        I1, Q1, I2, Q2, I3, Q3, I4, Q4, I5, Q5, iteration = results.fetch_all()
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Data analysis
         S1 = u.demod2volts(I1 + 1j * Q1, readout_len)
         S2 = u.demod2volts(I2 + 1j * Q2, readout_len)
+        S3 = u.demod2volts(I3 + 1j * Q3, readout_len)
+        S4 = u.demod2volts(I4 + 1j * Q4, readout_len)
+        S5 = u.demod2volts(I5 + 1j * Q5, readout_len)
         R1 = np.abs(S1)
         phase1 = np.angle(S1)
         R2 = np.abs(S2)
         phase2 = np.angle(S2)
+        R3 = np.abs(S3)
+        phase3 = np.angle(S3)
+        R4 = np.abs(S4)
+        phase4 = np.angle(S4)
+        R5 = np.abs(S5)
+        phase5 = np.angle(S5)
         # Plot
         plt.suptitle("Multiplexed resonator spectroscopy")
-        plt.subplot(221)
-        plt.cla()
-        plt.plot((resonator_IF_q1 + dfs) / u.MHz, R1)
+        axss[0, 0].plot((resonator_IF_q1 + dfs) / u.MHz, R1)
         plt.title(f"Resonator 1 - LO: {resonator_LO / u.GHz} GHz")
         plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
-        plt.subplot(222)
-        plt.cla()
-        plt.plot((resonator_IF_q2 + dfs) / u.MHz, R2)
+        axss[0, 1].plot((resonator_IF_q2 + dfs) / u.MHz, R2)
         plt.title(f"Resonator 2 - LO: {resonator_LO / u.GHz} GHz")
-        plt.subplot(223)
-        plt.cla()
-        plt.plot((resonator_IF_q1 + dfs) / u.MHz, signal.detrend(np.unwrap(phase1)))
+        axss[0, 2].plot((resonator_IF_q3 + dfs) / u.MHz, R3)
+        plt.title(f"Resonator 3 - LO: {resonator_LO / u.GHz} GHz")
+        axss[0, 3].plot((resonator_IF_q4 + dfs) / u.MHz, R4)
+        plt.title(f"Resonator 4 - LO: {resonator_LO / u.GHz} GHz")
+        axss[0, 4].plot((resonator_IF_q5 + dfs) / u.MHz, R5)
+        plt.title(f"Resonator 5 - LO: {resonator_LO / u.GHz} GHz")
+        axss[1, 0].plot((resonator_IF_q1 + dfs) / u.MHz, signal.detrend(np.unwrap(phase1)))
         plt.xlabel("Readout IF [MHz]")
         plt.ylabel("Phase [rad]")
-        plt.subplot(224)
-        plt.cla()
-        plt.plot((resonator_IF_q2 + dfs) / u.MHz, signal.detrend(np.unwrap(phase2)))
+        axss[1, 1].plot((resonator_IF_q2 + dfs) / u.MHz, signal.detrend(np.unwrap(phase2)))
+        plt.xlabel("Readout IF [MHz]")
+        axss[1, 2].plot((resonator_IF_q3 + dfs) / u.MHz, signal.detrend(np.unwrap(phase3)))
+        plt.xlabel("Readout IF [MHz]")
+        plt.ylabel("Phase [rad]")
+        axss[1, 3].plot((resonator_IF_q4 + dfs) / u.MHz, signal.detrend(np.unwrap(phase4)))
+        plt.xlabel("Readout IF [MHz]")
+        axss[1, 4].plot((resonator_IF_q5 + dfs) / u.MHz, signal.detrend(np.unwrap(phase5)))
         plt.xlabel("Readout IF [MHz]")
         plt.tight_layout()
         plt.pause(0.1)
@@ -157,16 +159,31 @@ else:
 
         fit = Fit()
         plt.figure()
-        plt.subplot(121)
+        plt.subplot(151)
         fit.reflection_resonator_spectroscopy((resonator_IF_q1 + dfs) / u.MHz, R1, plot=True)
         plt.xlabel("rr1 IF [MHz]")
         plt.ylabel("Amplitude [V]")
-        plt.subplot(122)
+        plt.subplot(152)
         fit.reflection_resonator_spectroscopy((resonator_IF_q2 + dfs) / u.MHz, R2, plot=True)
         plt.xlabel("rr2 IF [MHz]")
+        plt.title(f"Multiplexed resonator spectroscopy")
+        plt.subplot(153)
+        fit.reflection_resonator_spectroscopy((resonator_IF_q3 + dfs) / u.MHz, R3, plot=True)
+        plt.xlabel("rr3 IF [MHz]")
+        plt.title(f"Multiplexed resonator spectroscopy")
+        plt.subplot(154)
+        fit.reflection_resonator_spectroscopy((resonator_IF_q4 + dfs) / u.MHz, R4, plot=True)
+        plt.xlabel("rr4 IF [MHz]")
+        plt.title(f"Multiplexed resonator spectroscopy")
+        plt.subplot(155)
+        fit.reflection_resonator_spectroscopy((resonator_IF_q5 + dfs) / u.MHz, R5, plot=True)
+        plt.xlabel("rr5 IF [MHz]")
         plt.title(f"Multiplexed resonator spectroscopy")
         plt.tight_layout()
     except (Exception,):
         pass
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
+
+
+# %%

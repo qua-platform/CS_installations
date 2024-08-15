@@ -48,6 +48,7 @@ fitted_curve1 = (cosine_func(dcs, amplitude_fit1, frequency_fit1, phase_fit1, of
 fitted_curve2 = (cosine_func(dcs, amplitude_fit2, frequency_fit2, phase_fit2, offset_fit2)).astype(int)
 
 
+
 with program() as multi_qubit_spec_vs_flux:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
     df = declare(int)  # QUA variable for the qubit detuning
@@ -56,6 +57,9 @@ with program() as multi_qubit_spec_vs_flux:
     resonator_freq2 = declare(int, value=fitted_curve2.tolist())  # res freq vs flux table
     index = declare(int, value=0)  # index to get the right resonator freq for a given flux
 
+    # Adjust the flux line biases if needed
+    set_dc_offset("q3_z", "single", min_frequency_point3)
+    set_dc_offset("q4_z", "single", min_frequency_point4)
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
             # Update the frequency of the two qubit elements
