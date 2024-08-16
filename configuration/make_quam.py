@@ -1,3 +1,5 @@
+
+# %%
 import os.path
 from typing import Dict, List, Type, TypeVar
 from pathlib import Path
@@ -29,6 +31,7 @@ def create_quam_superconducting(
     quam_class: Type[QuamTypes],
     wiring: dict = None,
     octaves: Dict[str, Octave] = None,
+    # using_opx_1000: bool = False,
 ) -> QuamTypes:
     """Create a QuAM with a number of qubits.
 
@@ -47,19 +50,19 @@ def create_quam_superconducting(
     else:
         raise ValueError("Wiring must be provided.")
 
-    host_ip = "192.168.1.52"
+    host_ip = "10.1.1.110"
 
-    octave_ips = [host_ip] * 3
+    octave_ips = [host_ip] 
     # or "192.168.88.X" if configured internally
     # octave_ips = ["192.168.88.251", ...]
 
-    octave_ports = [11243, 11240, 11241]  # 11XXX where XXX are the last digits of the Octave IP
+    octave_ports = [11050]  # 11XXX where XXX are the last digits of the Octave IP
     # or 80 if configured internally
     # octave_ips = [80] * 3
 
     machine.network = {
         "host": host_ip,
-        "cluster_name": "Cluster_Name",
+        "cluster_name": "QC1",
         "octave_ips": octave_ips,
         "octave_ports": octave_ports,
         "data_folder": r"C:\data\path\to\folder",
@@ -187,8 +190,11 @@ def create_quam_superconducting(
 
     # Add additional input ports for calibrating the mixers
     print(qubit_wiring.xy.frequency_converter_up.get_reference())
-    machine.ports.get_analog_input("con1", 2, 1, create=True)
-    machine.ports.get_analog_input("con1", 2, 2, create=True)
+    # if using_opx_1000:
+    #     machine.ports.get_analog_input("con1", 2, 1, create=True)
+    #     machine.ports.get_analog_input("con1", 2, 2, create=True)
+    # else:
+        
 
     return machine
 
@@ -197,7 +203,7 @@ if __name__ == "__main__":
     folder = Path(__file__).parent
     quam_folder = folder / "quam_state"
 
-    quam_class = FEMQuAM
+    quam_class = OPXPlusQuAM
 
     using_opx_1000 = quam_class is FEMQuAM
     # module refers to the FEM number (OPX1000) or OPX+ connection index (OPX+)
@@ -206,35 +212,8 @@ if __name__ == "__main__":
             "q1": {
                 "res": (1, 1, 1, 1),  # (module, i_ch, octave, octave_ch)
                 "xy": (1, 3, 1, 2),  # (module, i_ch, octave, octave_ch)
-                "flux": (2, 5),  # (module, i_ch)
+                "flux": (2, 5),  # (module, ch)
             },
-            "q2": {
-                "res": (1, 1, 1, 1),
-                "xy": (1, 5, 1, 3),
-                "flux": (3, 1),
-            },
-            "q3": {
-                "res": (1, 1, 1, 1),
-                "xy": (1, 7, 1, 4),
-                "flux": (3, 2),
-            },
-            "q4": {
-                "res": (1, 1, 1, 1),
-                "xy": (2, 1, 2, 1),
-                "flux": (3, 3),
-            },
-            "q5": {
-                "res": (1, 1, 1, 1),
-                "xy": (2, 3, 2, 2),
-                "flux": (3, 4),
-            },
-        },
-        "qubit_pairs": {
-            # (module, ch)
-            "q12": {"coupler": (3, 5)},
-            "q23": {"coupler": (3, 6)},
-            "q34": {"coupler": (3, 7)},
-            "q45": {"coupler": (3, 8)},
         },
     }
 
@@ -256,3 +235,5 @@ if __name__ == "__main__":
     # quam_loaded = QuAM.load(quam_folder)
     # qua_config_loaded = quam_loaded.generate_config()
     # json.dump(qua_config_loaded, qua_file.open("w"), indent=4)
+
+# %%
