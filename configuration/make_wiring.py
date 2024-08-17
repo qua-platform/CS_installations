@@ -1,5 +1,8 @@
+import os
 import json
-
+from typing import Dict
+from quam.core import QuamRoot
+from quam.components import Octave
 
 def default_port_allocation(num_qubits: int, using_opx_1000: bool, starting_fem: int = 1):
     """
@@ -87,7 +90,7 @@ def custom_port_allocation(wiring: dict):
     res_ports, xy_ports, flux_ports = [], [], []
 
     num_qubits = len(wiring["qubits"])
-    for q_idx in range(1, num_qubits + 1):
+    for q_idx in range(num_qubits):
         q_key = f"q{q_idx}"
         if q_key in wiring["qubits"]:
             res_ports.append(wiring["qubits"][q_key]["res"])
@@ -193,3 +196,87 @@ def create_qubit_pair_wiring_opx_plus(coupler_ports, qubit_control, qubit_target
         "qubit_target": f"#/qubits/q{qubit_target}",  # reference to f"q{q_idx + 1}"
         "coupler": {"opx_output": f"#/ports/analog_outputs/{c_module}/{c_ch}"},
     }
+
+
+def create_ports_from_wiring(machine: QuamRoot, wiring: dict = None):
+    if wiring is not None:
+        machine.wiring = wiring
+    else:
+        raise ValueError("Wiring must be provided.")
+    for qubit_wiring in wiring["qubits"].values():
+        # Create all necessary ports
+        machine.ports.reference_to_port(qubit_wiring["xy"]["digital_port"], create=True)
+        machine.ports.reference_to_port(qubit_wiring["xy"]["opx_output_I"], create=True)
+        machine.ports.reference_to_port(qubit_wiring["xy"]["opx_output_Q"], create=True)
+
+        # Add flux line if included in wiring
+        if "z" in qubit_wiring:
+            machine.ports.reference_to_port(
+                qubit_wiring["z"]["opx_output"], create=True
+            )
+
+        # Add resonator ports
+        machine.ports.reference_to_port(
+            qubit_wiring["resonator"]["opx_output_I"], create=True
+        )
+        machine.ports.reference_to_port(
+            qubit_wiring["resonator"]["opx_output_Q"], create=True
+        )
+        machine.ports.reference_to_port(
+            qubit_wiring["resonator"]["opx_input_I"], create=True
+        )
+        machine.ports.reference_to_port(
+            qubit_wiring["resonator"]["opx_input_Q"], create=True
+        )
+        machine.ports.reference_to_port(
+            qubit_wiring["resonator"]["digital_port"], create=True
+        )
+
+
+def create_network_connectivity(machine: QuamRoot, host_ip = None, Cluster_name = None, octave_ips = [], octave_ports = []):
+    if host_ip is None:
+        print("Please insert host_ip")
+
+    if Cluster_name is None:
+        print("Please insert Cluster_name")
+
+    if Cluster_name is None:
+        print("Please insert Cluster_name")
+
+    if not octave_ips:
+        print("Please insert octave_ips")
+
+    if not octave_ips:
+        print("Please insert octave_ports")
+
+    machine.network = {
+        "host": host_ip,
+        "cluster_name": Cluster_name,
+        "octave_ips": octave_ips,
+        "octave_ports": octave_ports,
+        "data_folder": r"C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\data",
+    }
+    print("Please update the default network settings in: quam.network")
+
+    return machine.network
+
+
+def create_octaves(machine: QuamRoot, octaves: Dict[str, Octave] = None):
+    octave_ips = machine.network["octave_ips"]
+
+    if octaves is not None:
+        machine.octaves = octaves
+        print("If you haven't configured the octaves, please run: octave.initialize_frequency_converters()")
+
+    else:
+        # Add the Octave to the quam
+        for i in range(len(octave_ips)):
+            octave = Octave(
+                name=f"octave{i+1}",
+                ip=machine.network["octave_ips"][i],
+                port=machine.network["octave_ports"][i],
+                calibration_db_path=os.path.dirname(__file__),
+            )
+            machine.octaves[f"octave{i+1}"] = octave
+            octave.initialize_frequency_converters()
+            print("Please update the octave settings in: quam.octave")

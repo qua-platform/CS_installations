@@ -15,7 +15,7 @@ from time import sleep
 # Instantiate the QuAM class from the state file
 
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 
 # Generate the OPX and Octave configurations
 config = machine.generate_config()

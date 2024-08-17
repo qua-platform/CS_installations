@@ -28,7 +28,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -69,7 +69,7 @@ with program() as raw_trace_prog:
 # Run or Simulate Program #
 ###########################
 
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -110,6 +110,7 @@ else:
     plt.xlabel("Time [ns]")
     plt.legend()
     plt.tight_layout()
+    plt.show()
 
     print(f"\nInput1 mean: {np.mean(adc1)} V\n" f"Input2 mean: {np.mean(adc2)} V")
 
@@ -129,6 +130,6 @@ else:
         "figure": fig,
     }
 
-    node_save(machine, "raw_adc_traces", data, additional_files=True)
+    node_save(machine, "raw_adc_traces", data, additional_files=False)
 
 

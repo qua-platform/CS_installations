@@ -43,7 +43,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -191,6 +191,6 @@ else:
     # rr1.operations["readout"].amplitude *= amplitudes[np.argmax(fidelity_vec[0])]
     # rr2.operations["readout"].amplitude *= amplitudes[np.argmax(fidelity_vec[1])]
 
-    node_save(machine, "readout_amplitude_optimization", data, additional_files=True)
+    node_save(machine, "readout_amplitude_optimization", data, additional_files=False)
 
 # %%

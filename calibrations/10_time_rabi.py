@@ -40,7 +40,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -171,4 +171,4 @@ else:
         except (Exception,):
             data[f"{qubit.name}"] = {"successful_fit": False}
     # Save data from the node
-    node_save(machine, "time_rabi", data, additional_files=True)
+    node_save(machine, "time_rabi", data, additional_files=False)

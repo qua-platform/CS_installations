@@ -1,22 +1,11 @@
 {
-    "network": {
-        "host": "172.16.33.107",
-        "cluster_name": "Beta_8",
-        "octave_ips": [
-            "172.16.33.109"
-        ],
-        "octave_ports": [
-            80
-        ],
-        "data_folder": "C:\\Git\\QM-CS-Michal\\Customers\\Lincoln_Labs\\data"
-    },
     "wiring": {
         "qubits": {
             "q0": {
                 "xy": {
-                    "opx_output_I": "#/ports/analog_outputs/con1/3/5",
-                    "opx_output_Q": "#/ports/analog_outputs/con1/3/6",
-                    "digital_port": "#/ports/digital_outputs/con1/3/5"
+                    "opx_output_I": "#/ports/analog_outputs/con1/3/3",
+                    "opx_output_Q": "#/ports/analog_outputs/con1/3/4",
+                    "digital_port": "#/ports/digital_outputs/con1/3/3"
                 },
                 "z": {
                     "opx_output": "#/ports/analog_outputs/con1/4/1"
@@ -33,9 +22,9 @@
             },
             "q1": {
                 "xy": {
-                    "opx_output_I": "#/ports/analog_outputs/con1/3/7",
-                    "opx_output_Q": "#/ports/analog_outputs/con1/3/8",
-                    "digital_port": "#/ports/digital_outputs/con1/3/7"
+                    "opx_output_I": "#/ports/analog_outputs/con1/3/5",
+                    "opx_output_Q": "#/ports/analog_outputs/con1/3/6",
+                    "digital_port": "#/ports/digital_outputs/con1/3/5"
                 },
                 "z": {
                     "opx_output": "#/ports/analog_outputs/con1/4/2"
@@ -49,8 +38,38 @@
                     "frequency_converter_up": "#/octaves/octave1/RF_outputs/1",
                     "frequency_converter_down": "#/octaves/octave1/RF_inputs/1"
                 }
+            },
+            "q2": {
+                "xy": {
+                    "opx_output_I": "#/ports/analog_outputs/con1/3/7",
+                    "opx_output_Q": "#/ports/analog_outputs/con1/3/8",
+                    "digital_port": "#/ports/digital_outputs/con1/3/7"
+                },
+                "z": {
+                    "opx_output": "#/ports/analog_outputs/con1/4/3"
+                },
+                "resonator": {
+                    "opx_output_I": "#/ports/analog_outputs/con1/3/1",
+                    "opx_output_Q": "#/ports/analog_outputs/con1/3/2",
+                    "opx_input_I": "#/ports/analog_inputs/con1/3/1",
+                    "opx_input_Q": "#/ports/analog_inputs/con1/3/2",
+                    "digital_port": "#/ports/digital_outputs/con1/3/1",
+                    "frequency_converter_up": "#/octaves/octave1/RF_outputs/1",
+                    "frequency_converter_down": "#/octaves/octave1/RF_inputs/1"
+                }
             }
         },
         "qubit_pairs": []
+    },
+    "network": {
+        "host": "172.16.33.107",
+        "cluster_name": "Beta_8",
+        "octave_ips": [
+            "172.16.33.109"
+        ],
+        "octave_ports": [
+            80
+        ],
+        "data_folder": "C:\\Git\\QM-CS-Michal\\Customers\\Lincoln_Labs\\data"
     }
 }

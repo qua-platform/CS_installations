@@ -48,7 +48,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handle units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -290,6 +290,6 @@ else:
         "figure": plt.gcf(),
     }
 
-    node_save(machine, "readout_weights_optimization", data, additional_files=True)
+    node_save(machine, "readout_weights_optimization", data, additional_files=False)
 
 # %%

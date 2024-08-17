@@ -22,7 +22,7 @@ from quam_libs.components import QuAM
 # Instantiate the QuAM class from the state file
 
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
@@ -34,13 +34,12 @@ qm = qmm.open_qm(config)
 ###################
 # The QUA program #
 ###################
-element = machine.qubits["q0"].resonator.name
+element = machine.qubits["q0"].resonator
 
 with program() as cw_output:
     with infinite_loop_():
         # It is best to calibrate LO leakage first and without any power played (cf. note below)
-        play("cw" * amp(0), element)
-
+        element.play("const", amplitude_scale=0)
 
 
 job = qm.execute(cw_output)
