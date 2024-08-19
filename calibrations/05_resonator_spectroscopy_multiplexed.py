@@ -37,6 +37,7 @@ import xarray as xr
 from lib.fit_utils import fit_resonator
 from lib.qua_datasets import apply_angle, subtract_slope
 from lib.plot_utils import QubitGrid, grid_iter
+from lib.save_utils import fetch_results_as_xarray
 
 matplotlib.use("TKAgg")
 
@@ -168,29 +169,7 @@ else:
 
 # %%
 handles = job.result_handles
-
-def extract_string(input_string):
-    # Find the index of the first occurrence of a digit in the input string
-    index = next((i for i, c in enumerate(input_string) if c.isdigit()), None)
-    
-    if index is not None:
-        # Extract the substring from the start of the input string to the index
-        extracted_string = input_string[:index]
-        return extracted_string
-    else:
-        return None
-
-stream_handles = handles.keys()
-meas_vars = list(set([extract_string(handle) for handle in stream_handles]))
-data = [[handles.get(f'{meas_var}{i+1}').fetch_all() for i, qubit in enumerate(qubits)] for meas_var in meas_vars]
-ds = xr.Dataset(
-    {
-        f"{meas_var}": (["qubit", "freq"], data[i])
-        for i, meas_var in enumerate(meas_vars)
-    },
-    coords={"freq": dfs, "qubit": [qubit.name for qubit in qubits]},
-)
-
+ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs})
 
 ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 ds = ds.assign({'phase': subtract_slope(
@@ -275,47 +254,5 @@ for index, q in enumerate(machine.active_qubits):
 
 node_save(machine, "resonator_spectroscopy_multiplexed", data, additional_files=True)
 
-
-# %%
-
-# if not simulate and live_plot:
-#     # Save data from the node
-#     data = {"figure_raw": fig}
-#     for rr, s in zip(resonators, s_data):
-#         data[f"{rr.name}_frequencies"] = rr.intermediate_frequency + dfs
-#         data[f"{rr.name}_S"] = s
-#         data[f"{rr.name}_R"] = np.abs(s)
-#         data[f"{rr.name}_phase"] = signal.detrend(np.unwrap(np.angle(s)))
-
-#     fig_analysis, axs = plt.subplots(1, num_qubits, figsize=(4 * num_qubits, 5))
-#     plt.suptitle("Multiplexed resonator spectroscopy")
-#     for i, (ax, rr, s) in enumerate(zip(axs, resonators, s_data)):
-#         try:
-#             from qualang_tools.plot.fitting import Fit
-
-#             fit = Fit()
-#             plt.sca(ax)
-#             res_1 = fit.reflection_resonator_spectroscopy(
-#                 (rr.intermediate_frequency + dfs) / u.MHz, np.abs(s), plot=True
-#             )
-#             plt.xlabel(f"{rr.name} IF [MHz]")
-#             plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
-#             plt.title(f"{rr.name}")
-#             intermediate_frequency = int(res_1["f"][0] * u.MHz)
-#             rr.RF_frequency = rr.LO_frequency + intermediate_frequency
-#             plt.legend((f"fr = {rr.RF_frequency:.3f} MHz",))
-
-#             data[f"{rr.name}"] = {
-#                 "resonator_frequency": int(rr.RF_frequency),
-#                 "successful_fit": True,
-#             }
-#             data[f"figure_fit_{rr.name}"] = fig_analysis
-#         except (Exception,):
-#             data[f"{rr.name}"] = {"successful_fit": False}
-#             pass
-
-#     plt.show()
-#     # Save data from the node
-#     node_save(machine, "resonator_spectroscopy_multiplexed", data, additional_files=True)
 
 # %%

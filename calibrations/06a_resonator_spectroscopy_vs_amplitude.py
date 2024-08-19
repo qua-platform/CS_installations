@@ -41,6 +41,7 @@ import xarray as xr
 from lib.qua_datasets import apply_angle, subtract_slope
 from lib.plot_utils import QubitGrid, grid_iter
 from lib.fit import peaks_dips
+from lib.save_utils import fetch_results_as_xarray
 
 matplotlib.use("TKAgg")
 
@@ -210,30 +211,7 @@ else:
 
 # %%
 handles = job.result_handles
-
-def extract_string(input_string):
-    # Find the index of the first occurrence of a digit in the input string
-    index = next((i for i, c in enumerate(input_string) if c.isdigit()), None)
-    
-    if index is not None:
-        # Extract the substring from the start of the input string to the index
-        extracted_string = input_string[:index]
-        return extracted_string
-    else:
-        return None
-
-stream_handles = handles.keys()
-meas_vars = list(set([extract_string(handle) for handle in stream_handles if extract_string(handle) is not None]))
-values = [[handles.get(f'{meas_var}{i+1}').fetch_all() for i, qubit in enumerate(qubits)] for meas_var in meas_vars]
-
-# %%
-ds = xr.Dataset(
-    {
-        f"{meas_var}": (["qubit", "freq","amp"], values[i])
-        for i, meas_var in enumerate(meas_vars)
-    },
-    coords={"freq": dfs, "amp": amps, "qubit": [qubit.name for qubit in qubits]},
-)
+ds = fetch_results_as_xarray(handles, qubits, { "amp": amps,"freq": dfs})
 
 # %%
 

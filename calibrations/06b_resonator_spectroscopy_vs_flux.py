@@ -36,6 +36,10 @@ import numpy as np
 from scipy import signal
 
 import matplotlib
+import xarray as xr
+from lib.plot_utils import QubitGrid, grid_iter
+from lib.save_utils import fetch_results_as_xarray
+from lib.fit import fit_oscillation
 
 matplotlib.use("TKAgg")
 
@@ -46,7 +50,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load(r"C:\Users\tomdv\Documents\QCC_QUAM\CS_installations\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -55,7 +59,7 @@ qmm = machine.connect()
 
 # Get the relevant QuAM components
 qubits = machine.active_qubits
-resonators = [qubit.resonator for qubit in machine.active_qubits]
+resonators = [qubit.resonator for qubit in qubits]
 num_qubits = len(qubits)
 num_resonators = len(resonators)
 
@@ -66,9 +70,12 @@ num_resonators = len(resonators)
 
 n_avg = 20  # Number of averaging loops
 # Flux bias sweep in V
-dcs = np.linspace(-0.04, 0.04, 51)
+dcs = np.linspace(-0.5, 0.5, 201)
 # The frequency sweep around the resonator resonance frequency f_opt
-dfs = np.arange(-4e6, 4e6, 0.1e6)
+dfs = np.arange(-10e6, 10e6, 0.1e6)
+
+flux_point = "independent"  # 'independent' or 'joint'
+update_flux_min = False  # Update the min flux point
 
 with program() as multi_res_spec_vs_flux:
     # Declare 'I' and 'Q' and the corresponding streams for the two resonators.
@@ -178,27 +185,102 @@ else:
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat up
     qm.close()
+# %%
 
-    # Update machine with min frequency point for both resonator and qubit
-    # resonators[0].intermediate_frequency = 0
-    # resonators[1].intermediate_frequency = 0
-    # resonators[2].intermediate_frequency = 0
-    # resonators[3].intermediate_frequency = 0
-    # resonators[4].intermediate_frequency = 0
-    # qubits[0].z.min_offset = 0.0
-    # qubits[1].z.min_offset = 0.0
-    # qubits[2].z.min_offset = 0.0
-    # qubits[3].z.min_offset = 0.0
-    # qubits[4].z.min_offset = 0.0
+# %%
+handles = job.result_handles
+ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs, "flux": dcs})
+# %%
+ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 
-    # Save data from the node
-    data = {}
-    for i, (qubit, rr) in enumerate(zip(qubits, resonators)):
-        data[f"{rr.name}_flux_bias"] = dcs
-        data[f"{rr.name}_frequency"] = qubit.resonator.intermediate_frequency + dfs
-        data[f"{rr.name}_R"] = A_data[i]
-        data[f"{rr.name}_min_offset"] = qubit.z.min_offset
-    data["figure"] = fig
-    node_save(machine, "resonator_spectroscopy_vs_flux", data, additional_files=True)
+def abs_freq(q):
+    def foo(freq):
+        return freq + q.resonator.intermediate_frequency + q.resonator.LO_frequency
+    return foo
+
+ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
+
+ds.freq_full.attrs['long_name'] = 'Frequency'
+ds.freq_full.attrs['units'] = 'GHz'
+
+data = {}
+data['ds'] = ds
+
+# %%
+peak_freq = ds.IQ_abs.idxmin(dim='freq')
+# fit to a cosine using the qiskit function
+# a * np.cos(2 * np.pi * f * t + phi) + offset
+fit_osc = fit_oscillation(peak_freq.dropna(dim='flux'), 'flux')
+
+# making sure the phase is between -pi and pi
+idle_offset = -fit_osc.sel(fit_vals='phi')
+idle_offset = np.mod(idle_offset+np.pi, 2*np.pi) - np.pi
+
+# converting the phase phi from radians to voltage
+idle_offset = idle_offset/fit_osc.sel(fit_vals='f')/2/np.pi
+
+# finding the location of the minimum frequency flux point
+flux_min = idle_offset + ((idle_offset < 0  ) -0.5 )  /fit_osc.sel(fit_vals = 'f')
+flux_min = flux_min * (np.abs(flux_min) < 0.5) + 0.5 * (flux_min > 0.5) - 0.5 * (flux_min < -0.5)
+
+# finding the frequency as the sweet spot flux
+rel_freq_shift = peak_freq.sel(flux=idle_offset, method='nearest')
+abs_freq_shift = rel_freq_shift + \
+    np.array([q.resonator.LO_frequency + q.resonator.intermediate_frequency for q in qubits])
+q_IF = {}
+
+for q in qubits:
+    q_IF[q.name] = q.resonator.intermediate_frequency
+
+    print(
+        f'DC offset for {q.name} is {idle_offset.sel(qubit = q.name).data*1e3:.0f} mV')
+    print(
+        f"Resonator frequency for {q.name} is {(rel_freq_shift.sel(qubit = q.name).values + q.resonator.intermediate_frequency + q.resonator.LO_frequency)/1e9:.3f} GHz")
+    print(
+        f"(shift of {rel_freq_shift.sel(qubit = q.name).values/1e6:.0f} MHz)")
+    print()
+    #
+# %%
+grid = QubitGrid(ds, [f'q-{i}_0' for i in range(len(qubits))])
+
+for ax, qubit in grid_iter(grid):
+    ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].IQ_abs.plot(ax=ax, add_colorbar=False,
+                                                                            x='flux', y='freq_GHz', robust=True)
+    ax.axvline(idle_offset.loc[qubit], linestyle = 'dashed', linewidth = 0.5, color = 'r')
+    ax.axvline(flux_min.loc[qubit],linestyle = 'dashed', linewidth = 0.5, color = 'orange')
+    ax.set_ylabel('Freq (GHz)')
+    ax.set_xlabel('Flux (V)')
+    ax.set_title(qubit['qubit'])
+grid.fig.suptitle('Resonator spectroscopy vs flux ')
+
+plt.tight_layout()
+plt.show()
+data["figure"] = grid.fig
+# %%
+fit_results = {}
+for q in qubits:   
+    fit_results[q.name] = {}
+    fit_results[q.name]["resonator_frequency"] = rel_freq_shift.sel(qubit = q.name).values + q.resonator.LO_frequency + q.resonator.intermediate_frequency  
+    fit_results[q.name]['min_offset'] = float(flux_min.sel(qubit=q.name).data)  
+    fit_results[q.name]['offset'] = float(idle_offset.sel(qubit=q.name).data)
+    fit_results[q.name]['dv_phi0'] = 1/fit_osc.sel(fit_vals='f', qubit=q.name).values 
+data['fit_results'] = fit_results
+
+# %%
+for q in qubits:   
+    if not (np.isnan(float(idle_offset.sel(qubit=q.name).data))):
+        if flux_point == 'independent':
+            q.z.independent_offset = float(idle_offset.sel(qubit=q.name).data)
+        else:
+            q.z.joint_offset = float(idle_offset.sel(qubit=q.name).data)
+        # q.z.extras['dv_phi0'] = 1/fit_osc.sel(fit_vals='f', qubit=q.name).values
+              
+        if update_flux_min:
+            q.z.min_offset = float(flux_min.sel(qubit=q.name).data) 
+    q.resonator.intermediate_frequency += float(rel_freq_shift.sel(qubit=q.name).data)
+
+# %%
+
+node_save(machine, "resonator_spectroscopy_vs_flux", data, additional_files=True)
 
 # %%

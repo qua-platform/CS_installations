@@ -1,6 +1,6 @@
 from matplotlib import pyplot as plt
 import matplotlib
-# import qiskit_experiments.curve_analysis as ca
+import qiskit_experiments.curve_analysis as ca
 from scipy.optimize import curve_fit
 import numpy as np
 import xarray as xr
