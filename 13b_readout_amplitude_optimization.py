@@ -1,3 +1,4 @@
+# %%
 """
         READOUT OPTIMISATION: AMPLITUDE
 The sequence consists in measuring the state of the resonator after thermalization (qubit in |g>) and after
@@ -26,18 +27,28 @@ from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.analysis import two_state_discriminator
 from macros import multiplexed_readout, qua_declaration
 
+import warnings
+import matplotlib
+
+matplotlib.use("TKAgg")
+warnings.filterwarnings("ignore")
+
 
 ###################
 # The QUA program #
 ###################
 
-n_runs = 1
+n_runs = 1000
 # The readout amplitude sweep (as a pre-factor of the readout amplitude)
-a_min = 0.9
-a_max = 1.1
+a_min = 0.1
+a_max = 1.9
 da = 0.01
 amplitudes = np.arange(a_min, a_max + da / 2, da)  # The amplitude vector +da/2 to add a_max to the scan
 
+# # should be set in the config
+max_frequency_point1 = -0.4 # q3
+max_frequency_point2 = -0.3 # q4
+# max_frequency_point3 = -0.3 # q5
 
 with program() as ro_amp_opt:
     I_g, I_g_st, Q_g, Q_g_st, n, _ = qua_declaration(nb_of_qubits=2)
@@ -46,6 +57,9 @@ with program() as ro_amp_opt:
     counter_st = declare_stream()  # Stream for the counter variable
     a = declare(fixed)  # QUA variable for the readout amplitude
 
+    set_dc_offset("q3_z_dc", "single", max_frequency_point1) 
+    set_dc_offset("q4_z_dc", "single", max_frequency_point2) 
+    # set_dc_offset("q5_z_dc", "single", max_frequency_point3)
     with for_(*from_array(a, amplitudes)):
         # Save the counter to get the progress bar
         save(counter, counter_st)
@@ -53,16 +67,16 @@ with program() as ro_amp_opt:
             # Reset both qubits to ground
             wait(thermalization_time * u.ns)
             # Measure the ground IQ blobs
-            multiplexed_readout(I_g, I_g_st, Q_g, Q_g_st, resonators=[1, 2], weights="rotated_", amplitude=a)
+            multiplexed_readout(I_g, I_g_st, Q_g, Q_g_st, resonators=[5, 4], weights="rotated_", amplitude=a)
 
             align()
             # Reset both qubits to ground
             wait(thermalization_time * u.ns)
             # Measure the excited IQ blobs
-            play("x180", "q1_xy")
-            play("x180", "q2_xy")
+            play("x180", "q5_xy")
+            # play("x180", "q4_xy")
             align()
-            multiplexed_readout(I_e, I_e_st, Q_e, Q_e_st, resonators=[1, 2], weights="rotated_", amplitude=a)
+            multiplexed_readout(I_e, I_e_st, Q_e, Q_e_st, resonators=[5, 4], weights="rotated_", amplitude=a)
         # Increment the counter
         assign(counter, counter + 1)
 
@@ -128,28 +142,31 @@ else:
     plt.figure()
     plt.suptitle("Readout amplitude optimization")
     plt.subplot(121)
-    plt.plot(amplitudes * readout_amp_q1, fidelity_vec[0], "b.-", label="averaged fidelity")
-    plt.plot(amplitudes * readout_amp_q1, ground_fidelity_vec[0], "r.-", label="ground fidelity")
+    plt.plot(amplitudes * readout_amp_q5, fidelity_vec[0], "b.-", label="averaged fidelity")
+    plt.plot(amplitudes * readout_amp_q5, ground_fidelity_vec[0], "r.-", label="ground fidelity")
     plt.title("Qubit 1")
     plt.xlabel("Readout amplitude [V]")
     plt.ylabel("Fidelity [%]")
     plt.legend()
     plt.subplot(122)
     plt.title("Qubit 2")
-    plt.plot(amplitudes * readout_amp_q2, fidelity_vec[1], "b.-", label="averaged fidelity")
-    plt.plot(amplitudes * readout_amp_q2, ground_fidelity_vec[1], "r.-", label="ground fidelity")
+    plt.plot(amplitudes * readout_amp_q4, fidelity_vec[1], "b.-", label="averaged fidelity")
+    plt.plot(amplitudes * readout_amp_q4, ground_fidelity_vec[1], "r.-", label="ground fidelity")
     plt.xlabel("Readout amplitude [V]")
     plt.ylabel("Fidelity [%]")
     plt.legend()
     plt.tight_layout()
+    plt.show()
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
 
     # Save results
-    save_data_dict = {"fig_live": fig}
+    save_data_dict = {} # {"fig_live": fig}
     script_name = Path(__file__).name
     data_handler = DataHandler(root_data_folder=save_dir)
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name=Path(__file__).stem)
 
+
+# %%

@@ -39,25 +39,33 @@ dfs = np.arange(-14e6, +14e6, 0.2e6)
 # Qubit pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
 amps = np.arange(0.0, 1, 0.02)
 
+# should be set in the config
+max_frequency_point1 = -0.4 # q3
+max_frequency_point2 = -0.3 # q4
+max_frequency_point3 = 0.0 # q5
+
 with program() as rabi_chevron:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
     df = declare(int)  # QUA variable for the qubit detuning
     a = declare(fixed)  # QUA variable for the qubit pulse amplitude pre-factor
 
+    set_dc_offset("q3_z_dc", "single", max_frequency_point1) 
+    set_dc_offset("q4_z_dc", "single", max_frequency_point2) 
+    set_dc_offset("q5_z_dc", "single", max_frequency_point3)
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
             # Update the frequency of the two qubit elements
-            update_frequency("q1_xy", df + qubit_IF_q1)
-            update_frequency("q2_xy", df + qubit_IF_q2)
+            update_frequency("q5_xy", df + qubit_IF_q1)
+            update_frequency("q4_xy", df + qubit_IF_q2)
 
             with for_(*from_array(a, amps)):
                 # Play qubit pulses simultaneously
-                play("x180" * amp(a), "q1_xy")
-                play("x180" * amp(a), "q2_xy")
+                play("x180" * amp(a), "q5_xy")
+                play("x180" * amp(a), "q4_xy")
                 # Measure after the qubit pulses
                 align()
                 # Multiplexed readout, also saves the measurement outcomes
-                multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
+                multiplexed_readout(I, I_st, Q, Q_st, resonators=[5, 4], weights="rotated_")
                 # Wait for the qubit to decay to the ground state
                 wait(thermalization_time * u.ns)
         # Save the averaging iteration to get the progress bar

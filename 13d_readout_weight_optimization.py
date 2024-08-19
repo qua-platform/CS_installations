@@ -139,8 +139,8 @@ with program() as opt_weights:
         # Wait for the qubit to decay to the ground state
         wait(thermalization_time * u.ns)
         # Play the qubit drives
-        play("x180", "q1_xy")
-        play("x180", "q2_xy")
+        play("x180", "q5_xy")
+        play("x180", "q4_xy")
         align()
         # Loop over the two resonators
         for rr, res in enumerate([1, 2]):

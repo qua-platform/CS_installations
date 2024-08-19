@@ -1,3 +1,4 @@
+# %%
 """
         TIME OF FLIGHT
 This sequence involves sending a readout pulse and capturing the raw ADC traces.
@@ -27,7 +28,7 @@ from scipy.signal import savgol_filter
 # The QUA program #
 ###################
 resonator = "rr1"  # The resonator element
-n_avg = 100  # Number of averaging loops
+n_avg = 1_000  # Number of averaging loops
 
 with program() as raw_trace_prog:
     n = declare(int)  # QUA variable for the averaging loop
@@ -37,7 +38,7 @@ with program() as raw_trace_prog:
         # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
         reset_phase(resonator)
         # Sends the readout pulse and stores the raw ADC traces in the stream called "adc_st"
-        measure("readout", resonator, adc_st)
+        measure("readout" * amp(1), resonator, adc_st)
         # Wait for the resonator to deplete
         wait(depletion_time * u.ns, resonator)
 
@@ -99,13 +100,13 @@ else:
     plt.subplot(121)
     plt.title("Single run")
     plt.plot(adc1_single_run, "b", label="Input 1")
-    plt.plot(adc2_single_run, "r", label="Input 2")
+    # plt.plot(adc2_single_run, "r", label="Input 2")
     xl = plt.xlim()
     yl = plt.ylim()
     plt.axhline(y=0.5)
     plt.axhline(y=-0.5)
     plt.plot(xl, adc1_mean * np.ones(2), "k--")
-    plt.plot(xl, adc2_mean * np.ones(2), "k--")
+    # plt.plot(xl, adc2_mean * np.ones(2), "k--")
     plt.plot(delay * np.ones(2), yl, "k--")
     plt.xlabel("Time [ns]")
     plt.ylabel("Signal amplitude [V]")
@@ -113,11 +114,11 @@ else:
     plt.subplot(122)
     plt.title("Averaged run")
     plt.plot(adc1, "b", label="Input 1")
-    plt.plot(adc2, "r", label="Input 2")
+    # plt.plot(adc2, "r", label="Input 2")
     xl = plt.xlim()
     yl = plt.ylim()
     plt.plot(xl, adc1_mean * np.ones(2), "k--")
-    plt.plot(xl, adc2_mean * np.ones(2), "k--")
+    # plt.plot(xl, adc2_mean * np.ones(2), "k--")
     plt.plot(delay * np.ones(2), yl, "k--")
     plt.xlabel("Time [ns]")
     plt.legend()
@@ -136,3 +137,5 @@ else:
     data_handler = DataHandler(root_data_folder=save_dir)
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name=Path(__file__).stem)
+
+# %%

@@ -1,3 +1,4 @@
+# %%
 """
         IQ BLOBS
 This sequence involves measuring the state of the resonator 'N' times, first after thermalization (with the qubit
@@ -32,28 +33,36 @@ from macros import qua_declaration, multiplexed_readout
 ###################
 # The QUA program #
 ###################
-n_runs = 10000  # Number of runs
+n_runs = 1000  # Number of runs
+
+# # should be set in the config
+max_frequency_point1 = -0.4 # q3
+max_frequency_point2 = -0.3 # q4
+# max_frequency_point3 = -0.3 # q5
 
 with program() as iq_blobs:
     I_g, I_g_st, Q_g, Q_g_st, n, _ = qua_declaration(nb_of_qubits=2)
     I_e, I_e_st, Q_e, Q_e_st, _, _ = qua_declaration(nb_of_qubits=2)
 
+    set_dc_offset("q3_z_dc", "single", max_frequency_point1) 
+    set_dc_offset("q4_z_dc", "single", max_frequency_point2) 
+    # set_dc_offset("q5_z_dc", "single", max_frequency_point3)
     with for_(n, 0, n < n_runs, n + 1):
         # ground iq blobs for both qubits
         wait(thermalization_time * u.ns)
         align()
-        # play("x180", "q2_xy")
-        multiplexed_readout(I_g, I_g_st, Q_g, Q_g_st, resonators=[1, 2], weights="rotated_")
+        # play("x180", "q4_xy")
+        multiplexed_readout(I_g, I_g_st, Q_g, Q_g_st, resonators=[5, 4], weights="rotated_")
 
         # excited iq blobs for both qubits
         align()
         # Wait for the qubit to decay to the ground state in the case of measurement induced transitions
         wait(thermalization_time * u.ns)
         # Play the qubit pi pulses
-        play("x180", "q1_xy")
-        play("x180", "q2_xy")
+        play("x180", "q5_xy")
+        # play("x180", "q4_xy")
         align()
-        multiplexed_readout(I_e, I_e_st, Q_e, Q_e_st, resonators=[1, 2], weights="rotated_")
+        multiplexed_readout(I_e, I_e_st, Q_e, Q_e_st, resonators=[5, 4], weights="rotated_")
 
     with stream_processing():
         # Save all streamed points for plotting the IQ blobs
@@ -97,7 +106,17 @@ else:
     qm.close()
 
     # Save results
-    save_data_dict = {"fig_live": fig}
+    # save_data_dict = {"fig_live": fig}
+    save_data_dict = {
+        "I_g_q1": I_g_q1,
+        "Q_g_q1": Q_g_q1,
+        "I_e_q1": I_e_q1,
+        "Q_e_q1": Q_e_q1,
+        "I_g_q2": I_g_q2,
+        "Q_g_q2": Q_g_q2,
+        "I_e_q2": I_e_q2,
+        "Q_e_q2": Q_e_q2,
+    }
     script_name = Path(__file__).name
     data_handler = DataHandler(root_data_folder=save_dir)
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
@@ -145,3 +164,5 @@ else:
     #     assign(cont_condition, ((I > threshold) & (count < 3)))
     #
     #########################################
+
+# %%

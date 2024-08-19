@@ -36,9 +36,9 @@ from scipy import signal
 ###################
 # The QUA program #
 ###################
-n_avg = 1000  # The number of averages
+n_avg = 20  # The number of averages
 # The frequency sweep around the resonators' frequency "resonator_IF_q"
-span = 10 * u.MHz
+span = 2* u.MHz
 df = 100 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
@@ -51,10 +51,9 @@ resonators = ["rr1", "rr2", "rr3", "rr4", "rr5"]
 resonators_IF = [resonator_IF_q1, resonator_IF_q2, resonator_IF_q3, resonator_IF_q4, resonator_IF_q5]
 
 # should be set in the config
-max_frequency_point1 = 0.0
-max_frequency_point2 = 0.0
-max_frequency_point3 = 0.0
-max_frequency_point4 = 0.0
+max_frequency_point1 = 0.0 # q3
+max_frequency_point2 = +0.05 # q4
+max_frequency_point3 = +0.04 # q5
 
 
 with program() as multi_res_spec_vs_amp:
@@ -63,11 +62,10 @@ with program() as multi_res_spec_vs_amp:
     df = declare(int)  # QUA variable for sweeping the readout frequency detuning around the resonance
     a = declare(fixed)  # QUA variable for sweeping the readout amplitude pre-factor
 
-    # Adjust the flux line biases if needed
-    set_dc_offset("q1_z", "single", max_frequency_point1)
-    set_dc_offset("q2_z", "single", max_frequency_point2)
-    set_dc_offset("q3_z", "single", max_frequency_point3)
-    set_dc_offset("q4_z", "single", max_frequency_point4)
+    # # Adjust the flux line biases if needed
+    set_dc_offset("q3_z_dc", "single", max_frequency_point1)
+    set_dc_offset("q4_z_dc", "single", max_frequency_point2)
+    set_dc_offset("q5_z_dc", "single", max_frequency_point3)
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the frequency
@@ -79,8 +77,8 @@ with program() as multi_res_spec_vs_amp:
                         "readout" * amp(a),
                         rr,
                         None,
-                        dual_demod.full("cos", "out1", "sin", "out2", I[i]),
-                        dual_demod.full("minus_sin", "out1", "cos", "out2", Q[i]),
+                        demod.full("cos", I[i], "out1"),
+                        demod.full("sin", Q[i], "out1"),
                     )
                     # Save the 'I' & 'Q' quadratures for rr1 to their respective streams
                     save(I[i], I_st[i])
@@ -90,7 +88,7 @@ with program() as multi_res_spec_vs_amp:
         save(n, n_st)
 
     with stream_processing():
-        n_st.save("n")
+        n_st.save("iteration")
         # Cast the data into a 2D matrix, average the 2D matrices together and store the results on the OPX processor
         # Note that the buffering goes from the most inner loop (left) to the most outer one (right)
         for i, rr in enumerate(resonators):
@@ -119,54 +117,74 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(multi_res_spec_vs_amp)
     # Prepare the figure for live plotting
-    fig = plt.figure()
+    fig, axss = plt.subplots(2, 5, figsize=(20, 7))
     interrupt_on_close(fig, job)
     # Tool to easily fetch results from the OPX (results_handle used in it)
-    results = fetching_tool(job, ["n", "I1", "Q1", "I2", "Q2"], mode="live")
-    # Live plotting
-    while results.is_processing():
-        # Fetch results
-        n, I1, Q1, I2, Q2 = results.fetch_all()
-        # Progress bar
-        progress_counter(n, n_avg, start_time=results.start_time)
-        # Data analysis
-        S1 = u.demod2volts(I1 + 1j * Q1, readout_len)
-        S2 = u.demod2volts(I2 + 1j * Q2, readout_len)
-        R1 = np.abs(S1)
-        phase1 = np.angle(S1)
-        R2 = np.abs(S2)
-        phase2 = np.angle(S2)
-        # Normalize data
-        row_sums = R1.sum(axis=0)
-        R1 /= row_sums[np.newaxis, :]
-        row_sums = R2.sum(axis=0)
-        R2 /= row_sums[np.newaxis, :]
-        # Plot
-        plt.suptitle("Resonator spectroscopy")
-        plt.subplot(221)
-        plt.cla()
-        plt.title(f"Resonator 1 - LO: {resonator_LO / u.GHz} GHz")
-        plt.ylabel("Readout IF [MHz]")
-        plt.pcolor(amplitudes * readout_amp_q1, (dfs + resonator_IF_q1) / u.MHz, R1)
-        plt.axhline(resonator_IF_q1 / u.MHz, color="k")
-        plt.subplot(222)
-        plt.cla()
-        plt.title(f"Resonator 2 - LO: {resonator_LO / u.GHz} GHz")
-        plt.pcolor(amplitudes * readout_amp_q2, (dfs + resonator_IF_q2) / u.MHz, R2)
-        plt.axhline(resonator_IF_q2 / u.MHz, color="k")
-        plt.subplot(223)
-        plt.cla()
-        plt.xlabel("Readout amplitude [V]")
-        plt.ylabel("Readout IF [MHz]")
-        plt.pcolor(amplitudes * readout_amp_q1, (dfs + resonator_IF_q1) / u.MHz, signal.detrend(np.unwrap(phase1)))
-        plt.axhline(resonator_IF_q1 / u.MHz, color="k")
-        plt.subplot(224)
-        plt.cla()
-        plt.xlabel("Readout amplitude [V]")
-        plt.pcolor(amplitudes * readout_amp_q2, (dfs + resonator_IF_q2) / u.MHz, signal.detrend(np.unwrap(phase2)))
-        plt.axhline(resonator_IF_q2 / u.MHz, color="k")
-        plt.tight_layout()
-        plt.pause(0.1)
+    # results = fetching_tool(job, ["I1", "Q1", "I2", "Q2", "I3", "Q3", "I4", "Q4", "I5", "Q5", "iteration"], mode="live")
+    results = fetching_tool(job, ["I1", "Q1", "I2", "Q2", "I3", "Q3", "I4", "Q4", "I5", "Q5", "iteration"])
+    # # Live plotting
+    # while results.is_processing():
+    # Fetch results
+    I1, Q1, I2, Q2, I3, Q3, I4, Q4, I5, Q5, n = results.fetch_all()
+    # Progress bar
+    # progress_counter(n, n_avg, start_time=results.start_time)
+    # Data analysis
+    S1 = u.demod2volts(I1 + 1j * Q1, readout_len)
+    S2 = u.demod2volts(I2 + 1j * Q2, readout_len)
+    S3 = u.demod2volts(I3 + 1j * Q3, readout_len)
+    S4 = u.demod2volts(I4 + 1j * Q4, readout_len)
+    S5 = u.demod2volts(I5 + 1j * Q5, readout_len)
+    R1 = np.abs(S1)
+    phase1 = np.angle(S1)
+    R2 = np.abs(S2)
+    phase2 = np.angle(S2)
+    R3 = np.abs(S3)
+    phase3 = np.angle(S3)
+    R4 = np.abs(S4)
+    phase4 = np.angle(S4)
+    R5 = np.abs(S5)
+    phase5 = np.angle(S5)
+    # Normalize data
+    row_sums = R1.sum(axis=0)
+    R1 /= row_sums[np.newaxis, :]
+    row_sums = R2.sum(axis=0)
+    R2 /= row_sums[np.newaxis, :]
+    row_sums = R3.sum(axis=0)
+    R3 /= row_sums[np.newaxis, :]
+    row_sums = R4.sum(axis=0)
+    R4 /= row_sums[np.newaxis, :]
+    row_sums = R5.sum(axis=0)
+    R5 /= row_sums[np.newaxis, :]
+    # Plot
+    plt.suptitle("Resonator spectroscopy")
+    axss[0, 0].set_title(f"Resonator 1 - LO: {resonator_LO / u.GHz} GHz")
+    axss[0, 0].set_ylabel("Readout IF [MHz]")
+    axss[0, 0].pcolor(amplitudes * readout_amp_q1, (dfs + resonator_IF_q1) / u.MHz, R1)
+    axss[0, 1].set_title(f"Resonator 2 - LO: {resonator_LO / u.GHz} GHz")
+    axss[0, 1].pcolor(amplitudes * readout_amp_q2, (dfs + resonator_IF_q2) / u.MHz, R2)
+    axss[0, 2].set_title(f"Resonator 3 - LO: {resonator_LO / u.GHz} GHz")
+    axss[0, 2].pcolor(amplitudes * readout_amp_q3, (dfs + resonator_IF_q3) / u.MHz, R3)
+    axss[0, 3].set_title(f"Resonator 4 - LO: {resonator_LO / u.GHz} GHz")
+    axss[0, 3].pcolor(amplitudes * readout_amp_q4, (dfs + resonator_IF_q4) / u.MHz, R4)
+    axss[0, 4].set_title(f"Resonator 5 - LO: {resonator_LO / u.GHz} GHz")
+    axss[0, 4].pcolor(amplitudes * readout_amp_q5, (dfs + resonator_IF_q5) / u.MHz, R5)
+
+    axss[1, 0].set_xlabel("Readout amplitude [V]")
+    axss[1, 0].set_ylabel("Readout IF [MHz]")
+    axss[1, 0].pcolor(amplitudes * readout_amp_q1, (dfs + resonator_IF_q1) / u.MHz, signal.detrend(np.unwrap(phase1)))
+    axss[1, 0].set_xlabel("Readout amplitude [V]")
+    axss[1, 1].pcolor(amplitudes * readout_amp_q2, (dfs + resonator_IF_q2) / u.MHz, signal.detrend(np.unwrap(phase2)))
+    axss[1, 1].set_xlabel("Readout amplitude [V]")
+    axss[1, 2].pcolor(amplitudes * readout_amp_q3, (dfs + resonator_IF_q3) / u.MHz, signal.detrend(np.unwrap(phase1)))
+    axss[1, 2].set_xlabel("Readout amplitude [V]")
+    axss[1, 3].pcolor(amplitudes * readout_amp_q4, (dfs + resonator_IF_q4) / u.MHz, signal.detrend(np.unwrap(phase2)))
+    axss[1, 3].set_xlabel("Readout amplitude [V]")
+    axss[1, 4].pcolor(amplitudes * readout_amp_q5, (dfs + resonator_IF_q5) / u.MHz, signal.detrend(np.unwrap(phase1)))
+    axss[1, 4].set_xlabel("Readout amplitude [V]")
+
+    plt.tight_layout()
+    # plt.pause(1)
+    plt.show()
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
@@ -177,3 +195,5 @@ else:
     data_handler = DataHandler(root_data_folder=save_dir)
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name=Path(__file__).stem)
+
+# %%

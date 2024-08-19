@@ -27,12 +27,13 @@ def IQ_imbalance(g, phi):
 ######################
 # Network parameters #
 ######################
-qop_ip = "127.0.0.1"  # Write the QM router IP address
-cluster_name = None  # Write your cluster_name if version >= QOP220
+qop_ip = "192.168.10.230"  # Write the QM router IP address
+cluster_name = "cluster1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 # Path to save data
-save_dir = Path().absolute() / "QM" / "INSTALLATION" / "data"
+save_dir = Path().absolute() / "Data"
+save_dir.mkdir(exist_ok=True)
 default_additional_files = {"configuration.py": "configuration.py"}
 
 #####################
@@ -44,11 +45,11 @@ octave_config = None
 #############################################
 #                  Qubits                   #
 #############################################
-qubit_LO_q1 = 3.95 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
-qubit_LO_q2 = 3.95 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
+qubit_LO_q1 = 4.70 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
+qubit_LO_q2 = 4.70 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
 # Qubits IF
-qubit_IF_q1 = 50 * u.MHz
-qubit_IF_q2 = 75 * u.MHz
+qubit_IF_q1 = (-65 + 0.6) * u.MHz # q5
+qubit_IF_q2 = (-97 - 1.4) * u.MHz # q4
 
 # Mixer parameters
 mixer_qubit_g_q1 = 0.00
@@ -57,8 +58,8 @@ mixer_qubit_phi_q1 = 0.0
 mixer_qubit_phi_q2 = 0.0
 
 # Relaxation time
-qubit1_T1 = 3 * u.us
-qubit2_T1 = 3 * u.us
+qubit1_T1 = 10 * u.us
+qubit2_T1 = 10 * u.us
 thermalization_time = 5 * max(qubit1_T1, qubit2_T1)
 
 # CW pulse parameter
@@ -68,10 +69,10 @@ const_amp = 125 * u.mV
 saturation_len = 10 * u.us
 saturation_amp = 0.125
 # Pi pulse parameters
-pi_len = 40
+pi_len = 60
 pi_sigma = pi_len / 5
-pi_amp_q1 = 0.125
-pi_amp_q2 = 0.125
+pi_amp_q1 = 0.099
+pi_amp_q2 = 0.320
 
 # DRAG coefficients
 drag_coef_q1 = 0
@@ -165,13 +166,13 @@ minus_y90_Q_wf_q2 = minus_y90_wf_q2
 ##########################################
 #               Flux line                #
 ##########################################
-flux_settle_time = 100 * u.ns
+flux_settle_time = 5000 * u.ns
 
 max_frequency_point1 = 0.0
 max_frequency_point2 = 0.0
 max_frequency_point3 = 0.0
-max_frequency_point4 = 0.0
-min_frequency_point5 = 0.0
+max_frequency_point4 = 0.000
+max_frequency_point5 = 0.040
 
 # Resonator frequency versus flux fit parameters according to resonator_spec_vs_flux
 # amplitude * np.cos(2 * np.pi * frequency * x + phase) + offset
@@ -187,13 +188,13 @@ const_flux_amp = 0.45
 #############################################
 #                Resonators                 #
 #############################################
-resonator_LO = 6.40 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
+resonator_LO = 5.675 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
 # Resonators IF
-resonator_IF_q1 = -75 * u.MHz
-resonator_IF_q2 = -125 * u.MHz
-resonator_IF_q3 = -175 * u.MHz
-resonator_IF_q4 = -225 * u.MHz
-resonator_IF_q5 = -275 * u.MHz
+resonator_IF_q1 = 40 * u.MHz
+resonator_IF_q2 = 330.7 * u.MHz
+resonator_IF_q3 = 154.2 * u.MHz
+resonator_IF_q4 = 420.1 * u.MHz
+resonator_IF_q5 = 229.6 * u.MHz
 
 # Mixer parameters
 mixer_resonator_g_q1 = 0.0
@@ -208,15 +209,15 @@ mixer_resonator_phi_q4 = -0.00
 mixer_resonator_phi_q5 = -0.00
 
 # Readout pulse parameters
-readout_len = 4000
-readout_amp_q1 = 0.125
-readout_amp_q2 = 0.125
-readout_amp_q3 = 0.125
-readout_amp_q4 = 0.125
-readout_amp_q5 = 0.125
+readout_len = 1400 * u.ns
+readout_amp_q1 = 0.010
+readout_amp_q2 = 0.010
+readout_amp_q3 = 0.007
+readout_amp_q4 = 0.015
+readout_amp_q5 = 0.006
 
 # TOF and depletion time
-time_of_flight = 24  # must be a multiple of 4
+time_of_flight = 24 + 264 # must be a multiple of 4
 depletion_time = 2 * u.us
 
 opt_weights = False
@@ -246,8 +247,14 @@ else:
 # state discrimination
 rotation_angle_q1 = (0.0 / 180) * np.pi
 rotation_angle_q2 = (0.0 / 180) * np.pi
+rotation_angle_q3 = (0.0 / 180) * np.pi
+rotation_angle_q4 = (0.0 / 180) * np.pi
+rotation_angle_q5 = (-180.4 / 180) * np.pi
 ge_threshold_q1 = 0.0
 ge_threshold_q2 = 0.0
+ge_threshold_q3 = 0.0
+ge_threshold_q4 = 0.0
+ge_threshold_q5 = -1.222e-04
 
 
 #############################################
@@ -260,20 +267,20 @@ config = {
             "analog_outputs": {
                 1: {"offset": 0.0},  # I readout line
                 2: {"offset": 0.0},  # Q readout line
-                3: {"offset": 0.0},  # I qubit1 XY
-                4: {"offset": 0.0},  # Q qubit1 XY
-                5: {"offset": 0.0},  # I qubit2 XY
-                6: {"offset": 0.0},  # Q qubit2 XY
-                7: {"offset": max_frequency_point1},  # qubit1 Z
-                8: {"offset": max_frequency_point2},  # qubit2 Z
-                9: {"offset": max_frequency_point3},  # qubit3 Z (detune q3 "left" to q1)
-                10: {"offset": max_frequency_point4},  # qubit4 Z (detune q4 "right" to q2)
+                3: {"offset": 0.0},  # I qubit1 XY -> q5 I
+                4: {"offset": 0.0},  # Q qubit1 XY -> q5 Q
+                5: {"offset": 0.0},  # I qubit2 XY -> q4 I
+                6: {"offset": 0.0},  # Q qubit2 XY -> q4 Q
+                7: {"offset": max_frequency_point3},  # qubit1 Z -> q3 DC
+                8: {"offset": max_frequency_point4},  # qubit2 Z -> q4 DC
+                9: {"offset": max_frequency_point5},  # qubit3 Z (detune q3 "left" to q1) -> q5 DC
+                10: {"offset": 0.0},  # qubit4 Z (detune q4 "right" to q2) -> q5 AC
             },
             "digital_outputs": {
                 1: {},
             },
             "analog_inputs": {
-                1: {"offset": 0.0, "gain_db": 0},  # I from down-conversion
+                1: {"offset": -0.366841, "gain_db": +15},  # I from down-conversion
                 2: {"offset": 0.0, "gain_db": 0},  # Q from down-conversion
             },
         },
@@ -374,7 +381,7 @@ config = {
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
-        "q1_xy": {
+        "q5_xy": {
             "mixInputs": {
                 "I": ("con1", 3),
                 "Q": ("con1", 4),
@@ -393,10 +400,10 @@ config = {
                 "-y90": "-y90_pulse_q1",
             },
         },
-        "q2_xy": {
+        "q4_xy": {
             "mixInputs": {
-                "I": ("con1", 3),
-                "Q": ("con1", 4),
+                "I": ("con1", 5),
+                "Q": ("con1", 6),
                 "lo_frequency": qubit_LO_q2,
                 "mixer": "mixer_qubit_q2",
             },
@@ -412,7 +419,7 @@ config = {
                 "-y90": "-y90_pulse_q2",
             },
         },
-        "q1_z": {
+        "q3_z_dc": {
             "singleInput": {
                 "port": ("con1", 7),
             },
@@ -420,7 +427,7 @@ config = {
                 "const": "const_flux_pulse",
             },
         },
-        "q2_z": {
+        "q4_z_dc": {
             "singleInput": {
                 "port": ("con1", 8),
             },
@@ -428,7 +435,7 @@ config = {
                 "const": "const_flux_pulse",
             },
         },
-        "q3_z": {
+        "q5_z_dc": {
             "singleInput": {
                 "port": ("con1", 9),
             },
@@ -436,7 +443,7 @@ config = {
                 "const": "const_flux_pulse",
             },
         },
-        "q4_z": {
+        "q5_z_ac": {
             "singleInput": {
                 "port": ("con1", 10),
             },
@@ -616,6 +623,9 @@ config = {
                 "cos": "cosine_weights",
                 "sin": "sine_weights",
                 "minus_sin": "minus_sine_weights",
+                "rotated_cos": "rotated_cosine_weights_q3",
+                "rotated_sin": "rotated_sine_weights_q3",
+                "rotated_minus_sin": "rotated_minus_sine_weights_q3",
             },
             "digital_marker": "ON",
         },
@@ -630,6 +640,9 @@ config = {
                 "cos": "cosine_weights",
                 "sin": "sine_weights",
                 "minus_sin": "minus_sine_weights",
+                "rotated_cos": "rotated_cosine_weights_q4",
+                "rotated_sin": "rotated_sine_weights_q4",
+                "rotated_minus_sin": "rotated_minus_sine_weights_q4",
             },
             "digital_marker": "ON",
         },
@@ -644,6 +657,9 @@ config = {
                 "cos": "cosine_weights",
                 "sin": "sine_weights",
                 "minus_sin": "minus_sine_weights",
+                "rotated_cos": "rotated_cosine_weights_q5",
+                "rotated_sin": "rotated_sine_weights_q5",
+                "rotated_minus_sin": "rotated_minus_sine_weights_q5",
             },
             "digital_marker": "ON",
         },
@@ -722,6 +738,42 @@ config = {
         "rotated_minus_sine_weights_q2": {
             "cosine": [(np.sin(rotation_angle_q2), readout_len)],
             "sine": [(-np.cos(rotation_angle_q2), readout_len)],
+        },
+        "rotated_cosine_weights_q3": {
+            "cosine": [(np.cos(rotation_angle_q3), readout_len)],
+            "sine": [(np.sin(rotation_angle_q3), readout_len)],
+        },
+        "rotated_sine_weights_q3": {
+            "cosine": [(-np.sin(rotation_angle_q3), readout_len)],
+            "sine": [(np.cos(rotation_angle_q3), readout_len)],
+        },
+        "rotated_minus_sine_weights_q3": {
+            "cosine": [(np.sin(rotation_angle_q3), readout_len)],
+            "sine": [(-np.cos(rotation_angle_q3), readout_len)],
+        },
+        "rotated_cosine_weights_q4": {
+            "cosine": [(np.cos(rotation_angle_q4), readout_len)],
+            "sine": [(np.sin(rotation_angle_q4), readout_len)],
+        },
+        "rotated_sine_weights_q4": {
+            "cosine": [(-np.sin(rotation_angle_q4), readout_len)],
+            "sine": [(np.cos(rotation_angle_q4), readout_len)],
+        },
+        "rotated_minus_sine_weights_q4": {
+            "cosine": [(np.sin(rotation_angle_q4), readout_len)],
+            "sine": [(-np.cos(rotation_angle_q4), readout_len)],
+        },
+        "rotated_cosine_weights_q5": {
+            "cosine": [(np.cos(rotation_angle_q5), readout_len)],
+            "sine": [(np.sin(rotation_angle_q5), readout_len)],
+        },
+        "rotated_sine_weights_q5": {
+            "cosine": [(-np.sin(rotation_angle_q5), readout_len)],
+            "sine": [(np.cos(rotation_angle_q5), readout_len)],
+        },
+        "rotated_minus_sine_weights_q5": {
+            "cosine": [(np.sin(rotation_angle_q5), readout_len)],
+            "sine": [(-np.cos(rotation_angle_q5), readout_len)],
         },
         "opt_cosine_weights_q1": {
             "cosine": opt_weights_real_q1,

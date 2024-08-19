@@ -1,3 +1,4 @@
+# %%
 """
         RESONATOR SPECTROSCOPY INDIVIDUAL RESONATORS
 This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to extract the
@@ -25,18 +26,19 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from scipy import signal
+# import warnings
+# import matplotlib
 
+# matplotlib.use("TKAgg")
+# warnings.filterwarnings("ignore")
 
 ###################
 # The QUA program #
 ###################
 resonator = "rr1"  # The resonator element
-n_avg = 1000  # The number of averages
+n_avg = 100  # The number of averages
 # The frequency sweep parameters
-if resonator == "rr1":
-    frequencies = np.arange(47e6, 51e6, 0.1e6)
-else:
-    frequencies = np.arange(-135e6, -128e6, 0.1e6)
+frequencies = np.arange(1e6, +450e6, 0.1e6)
 
 
 with program() as resonator_spec:
@@ -57,8 +59,8 @@ with program() as resonator_spec:
                 "readout",
                 resonator,
                 None,
-                dual_demod.full("cos", "out1", "sin", "out2", I),
-                dual_demod.full("minus_sin", "out1", "cos", "out2", Q),
+                demod.full("cos", I, "out1"),
+                demod.full("sin", Q, "out1"),
             )
             # Wait for the resonator to deplete
             wait(depletion_time * u.ns, resonator)
@@ -148,3 +150,5 @@ else:
     data_handler = DataHandler(root_data_folder=save_dir)
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name=Path(__file__).stem)
+
+# %%

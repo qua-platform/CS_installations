@@ -27,6 +27,12 @@ from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from scipy import signal
 
+# import warnings
+# import matplotlib
+
+# matplotlib.use("TKAgg")
+# warnings.filterwarnings("ignore")
+
 
 ###################
 # The QUA program #
@@ -40,6 +46,10 @@ dfs = np.arange(-span, span, step)
 resonators = ["rr1", "rr2", "rr3", "rr4", "rr5"]
 resonators_IF = [resonator_IF_q1, resonator_IF_q2, resonator_IF_q3, resonator_IF_q4, resonator_IF_q5]
 
+# should be set in the config
+max_frequency_point1 = -0.4 # q3
+max_frequency_point2 = -0.3 # q4
+max_frequency_point3 = +0.4 # q5
 
 with program() as multi_res_spec:
     n = declare(int)  # QUA variable for the averaging loop
@@ -50,6 +60,10 @@ with program() as multi_res_spec:
     Q = [declare(fixed) for _ in range(len(resonators))]
     I_st = [declare_stream() for _ in range(len(resonators))]
     Q_st = [declare_stream() for _ in range(len(resonators))]
+
+    set_dc_offset("q3_z_dc", "single", max_frequency_point1) 
+    set_dc_offset("q4_z_dc", "single", max_frequency_point2) 
+    set_dc_offset("q5_z_dc", "single", max_frequency_point3)
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the frequency
             # wait for the resonators to deplete

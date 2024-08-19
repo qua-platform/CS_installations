@@ -1,3 +1,4 @@
+# %%
 """
         ALL-XY MEASUREMENT
 The program consists in playing a random sequence of predefined gates after which the theoretical qubit state is known.
@@ -30,8 +31,8 @@ from qualang_tools.results import progress_counter
 ##############################
 # Program-specific variables #
 ##############################
-qb = "q1_xy"  # The qubit under study
-res = "rr1"  # The resonator to measure the qubit defined above
+qb = "q5_xy"  # The qubit under study
+res = "rr5"  # The resonator to measure the qubit defined above
 n_avg = 1000  # The number of averages
 
 # All XY sequences. The sequence names must match corresponding operation in the config
@@ -84,21 +85,26 @@ def allXY(pulses, qubit, resonator):
 
     align(qubit, resonator)
     # Play through the 2nd resonator to be in the same condition as when the readout was optimized
-    if resonator == "rr1":
-        align(qubit, "rr2")
-        measure("readout", "rr2", None)
-    elif resonator == "rr2":
-        align(qubit, "rr1")
-        measure("readout", "rr1", None)
+    if resonator == "rr5":
+        align(qubit, "rr4")
+        measure("readout", "rr4", None)
+    elif resonator == "rr4":
+        align(qubit, "rr5")
+        measure("readout", "rr5", None)
     measure(
         "readout",
         resonator,
         None,
-        dual_demod.full("rotated_cos", "out1", "rotated_sin", "out2", I_xy),
-        dual_demod.full("rotated_minus_sin", "out1", "rotated_cos", "out2", Q_xy),
+        dual_demod.full("cos", "out1", "sin", "out2", I_xy),
+        dual_demod.full("minus_sin", "out1", "cos", "out2", Q_xy),
     )
     return I_xy, Q_xy
 
+
+# # should be set in the config
+max_frequency_point1 = -0.4 # q3
+max_frequency_point2 = -0.3 # q4
+# max_frequency_point3 = 0.04 # q5
 
 ###################
 # The QUA program #
@@ -112,6 +118,9 @@ with program() as ALL_XY:
     I_st = [declare_stream() for _ in range(21)]
     Q_st = [declare_stream() for _ in range(21)]
 
+    set_dc_offset("q3_z_dc", "single", max_frequency_point1) 
+    set_dc_offset("q4_z_dc", "single", max_frequency_point2) 
+    # set_dc_offset("q5_z_dc", "single", max_frequency_point3)
     with for_(n, 0, n < n_avg, n + 1):
         # Get a value from the pseudo-random number generator on the OPX FPGA
         assign(r_, r.rand_int(21))
@@ -146,7 +155,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -202,3 +211,5 @@ else:
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name=Path(__file__).stem)
 
+
+# %%

@@ -1,3 +1,4 @@
+# %%
 """
         POWER RABI WITH ERROR AMPLIFICATION
 This sequence involves repeatedly executing the qubit pulse (such as x180, square_pi, or similar) 'N' times and
@@ -29,6 +30,11 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import progress_counter
 from macros import qua_declaration, multiplexed_readout
 
+import warnings
+import matplotlib
+
+matplotlib.use("TKAgg")
+warnings.filterwarnings("ignore")
 
 ###################
 # The QUA program #
@@ -36,11 +42,16 @@ from macros import qua_declaration, multiplexed_readout
 n_avg = 1000  # The number of averages
 
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-amps = np.arange(0.1, 1.7, 0.01)
+amps = np.arange(0.1, 1.0, 0.01)
 
 # Number of applied Rabi pulses sweep
-max_nb_of_pulses = 1  # Maximum number of qubit pulses
+max_nb_of_pulses = 10  # Maximum number of qubit pulses
 nb_of_pulses = np.arange(0, max_nb_of_pulses, 2)  # Always play an odd/even number of pulses to end up in the same state
+
+# # should be set in the config
+max_frequency_point1 = -0.4 # q3
+# max_frequency_point2 = -0.3 # q4
+max_frequency_point3 = -0.3 # q5
 
 with program() as rabi:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
@@ -48,17 +59,20 @@ with program() as rabi:
     npi = declare(int)  # QUA variable for the number of qubit pulses
     count = declare(int)  # QUA variable for counting the qubit pulses
 
+    set_dc_offset("q3_z_dc", "single", max_frequency_point1) 
+    # set_dc_offset("q4_z_dc", "single", max_frequency_point2) 
+    set_dc_offset("q5_z_dc", "single", max_frequency_point3)
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(npi, nb_of_pulses)):
             with for_(*from_array(a, amps)):
                 # Loop for error amplification (perform many qubit pulses)
                 with for_(count, 0, count < npi, count + 1):
-                    play("x180" * amp(a), "q1_xy")
-                    play("x180" * amp(a), "q2_xy")
+                    # play("x180" * amp(a), "q5_xy")
+                    play("x180" * amp(a), "q4_xy")
                 # Align the elements to measure after playing the qubit pulses.
                 align()
                 # Start using Rotated integration weights (cf. IQ_blobs.py)
-                multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
+                multiplexed_readout(I, I_st, Q, Q_st, resonators=[5, 4], weights="")
                 # Wait for the qubit to decay to the ground state
                 wait(thermalization_time * u.ns)
         # Save the averaging iteration to get the progress bar
@@ -165,3 +179,5 @@ else:
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name=Path(__file__).stem)
 
+
+# %%

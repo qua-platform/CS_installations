@@ -1,3 +1,4 @@
+# %%
 """
         T1 MEASUREMENT
 The sequence consists in putting the qubit in the excited stated by playing the x180 pulse and measuring the resonator
@@ -34,27 +35,35 @@ tau_min = 4  # in clock cycles
 tau_max = 10_000  # in clock cycles
 d_tau = 20  # in clock cycles
 t_delay = np.arange(tau_min, tau_max + 0.1, d_tau)  # Linear sweep
-t_delay = np.logspace(np.log10(tau_min), np.log10(tau_max), 29)  # Log sweep
+# t_delay = np.logspace(np.log10(tau_min), np.log10(tau_max), 29)  # Log sweep
 
+
+# # should be set in the config
+max_frequency_point1 = -0.4 # q3
+# max_frequency_point2 = -0.3 # q4
+max_frequency_point3 = -0.3 # q5
 
 # QUA program
 with program() as T1:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
     t = declare(int)  # QUA variable for the wait time
 
+    set_dc_offset("q3_z_dc", "single", max_frequency_point1) 
+    # set_dc_offset("q4_z_dc", "single", max_frequency_point2) 
+    set_dc_offset("q5_z_dc", "single", max_frequency_point3)
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(t, t_delay)):
             # qubit 1
-            play("x180", "q1_xy")
-            wait(t, "q1_xy")
+            # play("x180", "q5_xy")
+            # wait(t, "q5_xy")
             # qubit 2
-            play("x180", "q2_xy")
-            wait(t, "q2_xy")
+            play("x180", "q4_xy")
+            wait(t, "q4_xy")
 
             # Align the elements to measure after having waited a time "tau" after the qubit pulses.
             align()
             # Measure the state of the resonators
-            multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
+            multiplexed_readout(I, I_st, Q, Q_st, resonators=[5, 4], weights="")
             # Wait for the qubit to decay to the ground state
             wait(thermalization_time * u.ns)
         # Save the averaging iteration to get the progress bar
@@ -167,3 +176,5 @@ else:
         plt.tight_layout()
     except (Exception,):
         pass
+
+# %%

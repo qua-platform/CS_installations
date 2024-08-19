@@ -1,3 +1,4 @@
+# %%
 """
         READOUT OPTIMISATION: FREQUENCY
 This sequence involves measuring the state of the resonator in two scenarios: first, after thermalization
@@ -26,66 +27,80 @@ from qualang_tools.loops import from_array
 from qualang_tools.results import fetching_tool, progress_counter
 from macros import multiplexed_readout, qua_declaration
 
+import warnings
+import matplotlib
+
+matplotlib.use("TKAgg")
+warnings.filterwarnings("ignore")
+
 
 ###################
 # The QUA program #
 ###################
-n_avg = 4000
+n_avg = 1000
 # The frequency sweep around the resonators' frequency "resonator_IF_q"
 dfs = np.arange(-10e6, 10e6, 0.1e6)
+
+# # should be set in the config
+max_frequency_point1 = -0.4 # q3
+max_frequency_point2 = -0.3 # q4
+# max_frequency_point3 = -0.3 # q5
 
 with program() as ro_freq_opt:
     Ig, Ig_st, Qg, Qg_st, n, n_st = qua_declaration(nb_of_qubits=2)
     Ie, Ie_st, Qe, Qe_st, _, _ = qua_declaration(nb_of_qubits=2)
     df = declare(int)  # QUA variable for the readout frequency
 
+    set_dc_offset("q3_z_dc", "single", max_frequency_point1) 
+    set_dc_offset("q4_z_dc", "single", max_frequency_point2) 
+    # set_dc_offset("q5_z_dc", "single", max_frequency_point3)
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
             # Update the frequency of the two resonator elements
-            update_frequency("rr1", df + resonator_IF_q1)
-            update_frequency("rr2", df + resonator_IF_q2)
+            update_frequency("rr5", df + resonator_IF_q5)
+            update_frequency("rr4", df + resonator_IF_q4)
 
             # Reset both qubits to ground
             wait(thermalization_time * u.ns)
             # Measure the ground IQ blobs
-            multiplexed_readout(Ig, Ig_st, Qg, Qg_st, resonators=[1, 2], weights="rotated_")
+            multiplexed_readout(Ig, Ig_st, Qg, Qg_st, resonators=[5, 4], weights="")
 
             align()
             # Reset both qubits to ground
             wait(thermalization_time * u.ns)
             # Measure the excited IQ blobs
-            play("x180", "q1_xy")
-            play("x180", "q2_xy")
+            play("x180", "q5_xy")
+            # play("x180", "q4_xy")
             align()
-            multiplexed_readout(Ie, Ie_st, Qe, Qe_st, resonators=[1, 2], weights="rotated_")
+            multiplexed_readout(Ie, Ie_st, Qe, Qe_st, resonators=[5, 4], weights="")
         # Save the averaging iteration to get the progress bar
         save(n, n_st)
 
     with stream_processing():
-        n_st.save("n")
+        n_st.save("iteration")
         for i in range(2):
             # mean values
-            Ig_st[i].buffer(len(dfs)).average().save(f"Ig{i}_avg")
-            Qg_st[i].buffer(len(dfs)).average().save(f"Qg{i}_avg")
-            Ie_st[i].buffer(len(dfs)).average().save(f"Ie{i}_avg")
-            Qe_st[i].buffer(len(dfs)).average().save(f"Qe{i}_avg")
+            Ig_st[i].buffer(len(dfs)).average().save(f"Ig{i + 1}_avg")
+            Qg_st[i].buffer(len(dfs)).average().save(f"Qg{i + 1}_avg")
+            Ie_st[i].buffer(len(dfs)).average().save(f"Ie{i + 1}_avg")
+            Qe_st[i].buffer(len(dfs)).average().save(f"Qe{i + 1}_avg")
             # variances to get the SNR
             (
                 ((Ig_st[i].buffer(len(dfs)) * Ig_st[i].buffer(len(dfs))).average())
                 - (Ig_st[i].buffer(len(dfs)).average() * Ig_st[i].buffer(len(dfs)).average())
-            ).save(f"Ig{i}_var")
+            ).save(f"Ig{i + 1}_var")
             (
                 ((Qg_st[i].buffer(len(dfs)) * Qg_st[i].buffer(len(dfs))).average())
                 - (Qg_st[i].buffer(len(dfs)).average() * Qg_st[i].buffer(len(dfs)).average())
-            ).save(f"Qg{i}_var")
+            ).save(f"Qg{i + 1}_var")
             (
                 ((Ie_st[i].buffer(len(dfs)) * Ie_st[i].buffer(len(dfs))).average())
                 - (Ie_st[i].buffer(len(dfs)).average() * Ie_st[i].buffer(len(dfs)).average())
-            ).save(f"Ie{i}_var")
+            ).save(f"Ie{i + 1}_var")
             (
                 ((Qe_st[i].buffer(len(dfs)) * Qe_st[i].buffer(len(dfs))).average())
                 - (Qe_st[i].buffer(len(dfs)).average() * Qe_st[i].buffer(len(dfs)).average())
-            ).save(f"Qe{i}_var")
+            ).save(f"Qe{i + 1}_var")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -130,60 +145,64 @@ else:
         "iteration",
     ]
     results = fetching_tool(job, data_list=data_list, mode="live")
-    (
-        Ig1_avg,
-        Qg1_avg,
-        Ie1_avg,
-        Qe1_avg,
-        Ig1_var,
-        Qg1_var,
-        Ie1_var,
-        Qe1_var,
-        Ig2_avg,
-        Qg2_avg,
-        Ie2_avg,
-        Qe2_avg,
-        Ig2_var,
-        Qg2_var,
-        Ie2_var,
-        Qe2_var,
-        iteration,
-    ) = results.fetch_all()
-    # Progress bar
-    progress_counter(iteration, n_avg, start_time=results.get_start_time())
-    # Derive the SNR
-    Z1 = (Ie1_avg - Ig1_avg) + 1j * (Qe1_avg - Qg1_avg)
-    var1 = (Ig1_var + Qg1_var + Ie1_var + Qe1_var) / 4
-    SNR1 = ((np.abs(Z1)) ** 2) / (2 * var1)
-    Z2 = (Ie2_avg - Ig2_avg) + 1j * (Qe2_avg - Qg2_avg)
-    var2 = (Ig2_var + Qg2_var + Ie2_var + Qe2_var) / 4
-    SNR2 = ((np.abs(Z2)) ** 2) / (2 * var2)
-    # Plot results
-    plt.suptitle("Readout frequency optimization")
-    plt.subplot(121)
-    plt.cla()
-    plt.plot(dfs / u.MHz, SNR1, ".-")
-    plt.title(f"Qubit 1 around {resonator_IF_q1 / u.MHz} MHz")
-    plt.xlabel("Readout frequency detuning [MHz]")
-    plt.ylabel("SNR")
-    plt.grid("on")
-    plt.subplot(121)
-    plt.cla()
-    plt.plot(dfs / u.MHz, SNR2, ".-")
-    plt.title(f"Qubit 2 around {resonator_IF_q2 / u.MHz} MHz")
-    plt.xlabel("Readout frequency detuning [MHz]")
-    plt.grid("on")
-    plt.pause(0.1)
-    print(f"The optimal readout frequency is {dfs[np.argmax(SNR1)] + resonator_IF_q1} Hz (SNR={max(SNR1)})")
-    print(f"The optimal readout frequency is {dfs[np.argmax(SNR2)] + resonator_IF_q2} Hz (SNR={max(SNR2)})")
+    # Live plotting
+    while results.is_processing():
+        (
+            Ig1_avg,
+            Qg1_avg,
+            Ie1_avg,
+            Qe1_avg,
+            Ig1_var,
+            Qg1_var,
+            Ie1_var,
+            Qe1_var,
+            Ig2_avg,
+            Qg2_avg,
+            Ie2_avg,
+            Qe2_avg,
+            Ig2_var,
+            Qg2_var,
+            Ie2_var,
+            Qe2_var,
+            iteration,
+        ) = results.fetch_all()
+        # Progress bar
+        # progress_counter(iteration, n_avg, start_time=results.get_start_time())
+        # Derive the SNR
+        Z1 = (Ie1_avg - Ig1_avg) + 1j * (Qe1_avg - Qg1_avg)
+        var1 = (Ig1_var + Qg1_var + Ie1_var + Qe1_var) / 4
+        SNR1 = ((np.abs(Z1)) ** 2) / (2 * var1)
+        Z2 = (Ie2_avg - Ig2_avg) + 1j * (Qe2_avg - Qg2_avg)
+        var2 = (Ig2_var + Qg2_var + Ie2_var + Qe2_var) / 4
+        SNR2 = ((np.abs(Z2)) ** 2) / (2 * var2)
+        # Plot results
+        plt.suptitle("Readout frequency optimization")
+        plt.subplot(121)
+        plt.cla()
+        plt.plot(dfs / u.MHz, SNR1, ".-")
+        plt.title(f"Qubit 1 around {resonator_IF_q5 / u.MHz} MHz")
+        plt.xlabel("Readout frequency detuning [MHz]")
+        plt.ylabel("SNR")
+        plt.grid("on")
+        plt.subplot(122)
+        plt.cla()
+        plt.plot(dfs / u.MHz, SNR2, ".-")
+        plt.title(f"Qubit 2 around {resonator_IF_q4 / u.MHz} MHz")
+        plt.xlabel("Readout frequency detuning [MHz]")
+        plt.grid("on")
+        plt.pause(0.1)
+        print(f"The optimal readout frequency is {dfs[np.argmax(SNR1)] + resonator_IF_q5} Hz (SNR={max(SNR1)})")
+        print(f"The optimal readout frequency is {dfs[np.argmax(SNR2)] + resonator_IF_q4} Hz (SNR={max(SNR2)})")
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
 
     # Save results
-    save_data_dict = {"fig_live": fig}
+    save_data_dict = {} #{"fig_live": fig}
     script_name = Path(__file__).name
     data_handler = DataHandler(root_data_folder=save_dir)
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name=Path(__file__).stem)
 
+
+# %%

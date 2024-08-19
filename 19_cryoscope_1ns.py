@@ -177,7 +177,7 @@ with program() as cryoscope:
                     play("y90", f"q{qubit}_xy")
                 # Measure resonator state after the sequence
                 align()
-                multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
+                multiplexed_readout(I, I_st, Q, Q_st, resonators=[5, 4], weights="rotated_")
                 # State discrimination
                 assign(state[0], I[0] > ge_threshold_q1)
                 assign(state[1], I[1] > ge_threshold_q2)

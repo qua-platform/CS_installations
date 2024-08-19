@@ -20,22 +20,22 @@ with program() as iq_blobs:
 
     with for_(n, 0, n < n_runs, n + 1):
         # ground iq blobs
-        reset_qubit("cooldown", "q1_xy", "rr1", cooldown_time=thermalization_time)
-        reset_qubit("cooldown", "q2_xy", "rr2", cooldown_time=thermalization_time)
-        # reset_qubit("active", "q1_xy", "resonator", threshold=ge_threshold_q1, max_tries=10, Ig=I_g)
+        reset_qubit("cooldown", "q5_xy", "rr5", cooldown_time=thermalization_time)
+        reset_qubit("cooldown", "q4_xy", "rr4", cooldown_time=thermalization_time)
+        # reset_qubit("active", "q5_xy", "resonator", threshold=ge_threshold_q1, max_tries=10, Ig=I_g)
         align()
-        multiplexed_readout(I_g, I_g_st, Q_g, Q_g_st, resonators=[1, 2], weights="rotated_")
+        multiplexed_readout(I_g, I_g_st, Q_g, Q_g_st, resonators=[5, 4], weights="rotated_")
 
         # excited iq blobs
         align()
         # Reset the qubits to the ground state in the case of measurement induced transitions
-        reset_qubit("cooldown", "q1_xy", "rr1", cooldown_time=thermalization_time)
-        reset_qubit("cooldown", "q2_xy", "rr2", cooldown_time=thermalization_time)
+        reset_qubit("cooldown", "q5_xy", "rr5", cooldown_time=thermalization_time)
+        reset_qubit("cooldown", "q4_xy", "rr4", cooldown_time=thermalization_time)
         # Play the qubit pi pulses
-        play("x180", "q1_xy")
-        # play("x180", "q2_xy")
+        play("x180", "q5_xy")
+        # play("x180", "q4_xy")
         align()
-        multiplexed_readout(I_e, I_e_st, Q_e, Q_e_st, resonators=[1, 2], weights="rotated_")
+        multiplexed_readout(I_e, I_e_st, Q_e, Q_e_st, resonators=[5, 4], weights="rotated_")
 
     with stream_processing():
         # Save all streamed points for plotting the IQ blobs

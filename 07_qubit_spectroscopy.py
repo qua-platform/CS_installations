@@ -34,9 +34,15 @@ from qualang_tools.results.data_handler import DataHandler
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
+from qualang_tools.callable_from_qua import *
 from macros import qua_declaration, multiplexed_readout
 import matplotlib.pyplot as plt
 
+import warnings
+import matplotlib
+
+matplotlib.use("TKAgg")
+warnings.filterwarnings("ignore")
 
 ###################
 # The QUA program #
@@ -44,43 +50,41 @@ import matplotlib.pyplot as plt
 n_avg = 1000  # The number of averages
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
 saturation_len = 10 * u.us  # In ns
-saturation_amp = 0.5  # pre-factor to the value defined in the config - restricted to [-2; 2)
+saturation_amp = 1  # pre-factor to the value defined in the config - restricted to [-2; 2)
 # Qubit detuning sweep with respect to qubit_IF
-span = 10 * u.MHz
-df = 100 * u.kHz
-dfs = np.arange(-span, +span + 0.1, df)
+span = 400 * u.MHz
+df = 1 * u.MHz
+dfs = np.arange(-span, 0 - 0.1, df)
 
+q_xy = "q5_xy"
+rr = "rr5"
 # should be set in the config
-max_frequency_point1 = 0.0
-max_frequency_point2 = 0.0
-max_frequency_point3 = 0.0
-max_frequency_point4 = 0.0
-
+max_frequency_point1 = -0.4 # q3
+max_frequency_point2 = -0.3 # q4
+# max_frequency_point3 = 0.04 # q5
 
 with program() as multi_qubit_spec:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
     df = declare(int)  # QUA variable for the readout frequency
 
-    # Adjust the flux line biases if needed
-    set_dc_offset("q1_z", "single", max_frequency_point1)
-    set_dc_offset("q2_z", "single", max_frequency_point2)
-    set_dc_offset("q3_z", "single", max_frequency_point3)
-    set_dc_offset("q4_z", "single", max_frequency_point4)
+    set_dc_offset("q3_z_dc", "single", max_frequency_point1) 
+    set_dc_offset("q4_z_dc", "single", max_frequency_point2) 
+    # set_dc_offset("q5_z_dc", "single", max_frequency_point3)
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
             # Update the frequency of the two qubit elements
-            update_frequency("q1_xy", df + qubit_IF_q1)
-            update_frequency("q2_xy", df + qubit_IF_q2)
+            update_frequency(q_xy, df)
+            # update_frequency("q2_xy", df + qubit_IF_q2)
             # Play the saturation pulse to put the qubit in a mixed state - Can adjust the amplitude on the fly [-2; 2)
             # qubit 1
-            play("saturation" * amp(saturation_amp), "q1_xy", duration=saturation_len * u.ns)
-            align("q1_xy", "rr1")
-            # qubit 2
-            play("saturation" * amp(saturation_amp), "q2_xy", duration=saturation_len * u.ns)
-            align("q2_xy", "rr2")
+            play("saturation" * amp(saturation_amp), q_xy, duration=saturation_len * u.ns)
+            align(q_xy, rr)
+            # # qubit 2
+            # play("saturation" * amp(saturation_amp), "q2_xy", duration=saturation_len * u.ns)
+            # align("q2_xy", "rr2")
 
             # Multiplexed readout, also saves the measurement outcomes
-            multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2])
+            multiplexed_readout(I, I_st, Q, Q_st, resonators=[5, 4])
             # Wait for the qubit to decay to the ground state
             wait(thermalization_time * u.ns)
         # Save the averaging iteration to get the progress bar
@@ -139,27 +143,50 @@ else:
         plt.suptitle("Qubit spectroscopy")
         plt.subplot(221)
         plt.cla()
-        plt.plot((dfs + qubit_IF_q1) / u.MHz, R1)
+        plt.plot((dfs) / u.MHz, R1)
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
         plt.title(f"Qubit 1 - LO = {qubit_LO_q1 / u.GHz} GHz)")
         plt.subplot(223)
         plt.cla()
-        plt.plot((dfs + qubit_IF_q1) / u.MHz, np.unwrap(phase1))
+        plt.plot((dfs) / u.MHz, np.unwrap(phase1))
         plt.ylabel("Phase [rad]")
         plt.xlabel("Qubit intermediate frequency [MHz]")
         plt.subplot(222)
         plt.cla()
-        plt.plot((dfs + qubit_IF_q2) / u.MHz, np.abs(R2))
+        plt.plot((dfs) / u.MHz, np.abs(R2))
         plt.title(f"Qubit 2 - LO = {qubit_LO_q2 / u.GHz} GHz)")
         plt.subplot(224)
         plt.cla()
-        plt.plot((dfs + qubit_IF_q2) / u.MHz, np.unwrap(phase2))
+        plt.plot((dfs) / u.MHz, np.unwrap(phase2))
         plt.xlabel("Qubit intermediate frequency [MHz]")
         plt.tight_layout()
         plt.pause(0.1)
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
+
+    fig = plt.figure()
+    plt.suptitle("Qubit spectroscopy")
+    plt.subplot(221)
+    plt.cla()
+    plt.plot((dfs) / u.MHz, R1)
+    plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
+    plt.title(f"Qubit 1 - LO = {qubit_LO_q1 / u.GHz} GHz)")
+    plt.subplot(223)
+    plt.cla()
+    plt.plot((dfs) / u.MHz, np.unwrap(phase1))
+    plt.ylabel("Phase [rad]")
+    plt.xlabel("Qubit intermediate frequency [MHz]")
+    plt.subplot(222)
+    plt.cla()
+    plt.plot((dfs) / u.MHz, np.abs(R2))
+    plt.title(f"Qubit 2 - LO = {qubit_LO_q2 / u.GHz} GHz)")
+    plt.subplot(224)
+    plt.cla()
+    plt.plot((dfs) / u.MHz, np.unwrap(phase2))
+    plt.xlabel("Qubit intermediate frequency [MHz]")
+    plt.tight_layout()
+    plt.show()
 
     # Save results
     save_data_dict = {"fig_live": fig}

@@ -1,3 +1,4 @@
+# %%
 """
         TIME RABI
 The sequence consists in playing the qubit pulse and measuring the state of the resonator
@@ -31,23 +32,31 @@ from macros import qua_declaration, multiplexed_readout
 ###################
 # The QUA program #
 ###################
-times = np.arange(4, 200, 2)  # In clock cycles = 4ns
+times = np.arange(4, 150, 1)  # In clock cycles = 4ns
 cooldown_time = 1 * u.us
 n_avg = 1000
+
+# should be set in the config
+max_frequency_point1 = -0.4 # q3
+max_frequency_point2 = -0.3 # q4
+# max_frequency_point3 = -0.3 # q5
 
 with program() as rabi:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
     t = declare(int)  # QUA variable for the qubit pulse duration
 
+    set_dc_offset("q3_z_dc", "single", max_frequency_point1) 
+    set_dc_offset("q4_z_dc", "single", max_frequency_point2) 
+    # set_dc_offset("q5_z_dc", "single", max_frequency_point3)
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(t, times)):
             # Play the qubit pulses
-            play("x180", "q1_xy", duration=t)
-            play("x180", "q2_xy", duration=t)
+            play("x180", "q5_xy", duration=t)
+            # play("x180", "q4_xy", duration=t)
             # Align the elements to measure after playing the qubit pulses.
             align()
             # Start using Rotated integration weights (cf. IQ_blobs.py)
-            multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
+            multiplexed_readout(I, I_st, Q, Q_st, resonators=[5, 4], weights="")
             # Wait for the qubit to decay to the ground state
             wait(thermalization_time * u.ns)
         # Save the averaging iteration to get the progress bar
@@ -151,3 +160,5 @@ else:
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name=Path(__file__).stem)
 
+
+# %%

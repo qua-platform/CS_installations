@@ -1,3 +1,4 @@
+# %%
 """
         READOUT OPTIMISATION: DURATION
 This sequence involves measuring the state of the resonator in two scenarios: first, after thermalization
@@ -29,17 +30,22 @@ import numpy as np
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.plot import interrupt_on_close
 
-
 ###################
 # The QUA program #
 ###################
 
-division_length = 10  # in clock cycles
+division_length = 20  # in clock cycles
 number_of_divisions = int(readout_len / (4 * division_length))
 print("Integration weights chunk-size length in clock cycles:", division_length)
 print("The readout has been sliced in the following number of divisions", number_of_divisions)
 
 n_avg = 1e4  # number of averages
+
+# # should be set in the config
+max_frequency_point1 = -0.4 # q3
+max_frequency_point2 = -0.3 # q4
+# max_frequency_point3 = -0.3 # q5
+
 
 with program() as ro_weights_opt:
     n = declare(int)  # QUA variable for the averaging loop
@@ -56,11 +62,14 @@ with program() as ro_weights_opt:
     Qe_st = [declare_stream() for _ in range(2)]  # Stream for 'Q' in the excited state
     n_st = declare_stream()
 
+    set_dc_offset("q3_z_dc", "single", max_frequency_point1) 
+    set_dc_offset("q4_z_dc", "single", max_frequency_point2) 
+    # set_dc_offset("q5_z_dc", "single", max_frequency_point3)
     with for_(n, 0, n < n_avg, n + 1):
         # Measure the ground state.
         wait(thermalization_time * u.ns)
         # Loop over the two resonators
-        for rr, res in enumerate([1, 2]):
+        for rr, res in enumerate([5, 4]):
             # With demod.accumulated, the results are QUA vectors with 1 point for each accumulated chunk
             measure(
                 "readout",
@@ -83,11 +92,11 @@ with program() as ro_weights_opt:
         # Wait for the qubit to decay to the ground state
         wait(thermalization_time * u.ns)
         # Play the qubit drives
-        play("x180", "q1_xy")
-        play("x180", "q2_xy")
+        play("x180", "q5_xy")
+        # play("x180", "q4_xy")
         align()
         # Loop over the two resonators
-        for rr, res in enumerate([1, 2]):
+        for rr, res in enumerate([5, 4]):
             # With demod.accumulated, the results are QUA vectors with 1 point for each accumulated chunk
             measure(
                 "readout",
@@ -281,3 +290,5 @@ else:
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name=Path(__file__).stem)
 
+
+# %%

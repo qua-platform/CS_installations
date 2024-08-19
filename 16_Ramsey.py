@@ -50,24 +50,24 @@ with program() as ramsey:
             align()
 
             # Qubit 1
-            play("x90", "q1_xy")  # 1st x90 gate
-            wait(t, "q1_xy")  # Wait a varying idle time
-            frame_rotation_2pi(phi, "q1_xy")  # Virtual Z-rotation
-            play("x90", "q1_xy")  # 2nd x90 gate
+            play("x90", "q5_xy")  # 1st x90 gate
+            wait(t, "q5_xy")  # Wait a varying idle time
+            frame_rotation_2pi(phi, "q5_xy")  # Virtual Z-rotation
+            play("x90", "q5_xy")  # 2nd x90 gate
 
             # Qubit 2
-            play("x90", "q2_xy")  # 1st x90 gate
-            wait(t, "q2_xy")  # Wait a varying idle time
-            frame_rotation_2pi(phi, "q2_xy")  # Virtual Z-rotation
-            play("x90", "q2_xy")  # 2nd x90 gate
+            play("x90", "q4_xy")  # 1st x90 gate
+            wait(t, "q4_xy")  # Wait a varying idle time
+            frame_rotation_2pi(phi, "q4_xy")  # Virtual Z-rotation
+            play("x90", "q4_xy")  # 2nd x90 gate
 
             # Align the elements to measure after having waited a time "tau" after the qubit pulses.
             align()
             # Measure the state of the resonators
-            multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
+            multiplexed_readout(I, I_st, Q, Q_st, resonators=[5, 4], weights="rotated_")
             # Reset the frame of the qubit in order not to accumulate rotations
-            reset_frame("q1_xy")
-            reset_frame("q2_xy")
+            reset_frame("q5_xy")
+            reset_frame("q4_xy")
             # Wait for the qubit to decay to the ground state
             wait(thermalization_time * u.ns)
         # Save the averaging iteration to get the progress bar

@@ -1,3 +1,4 @@
+# %%
 """
         RAMSEY CHEVRON (IDLE TIME VS FREQUENCY)
 The program consists in playing a Ramsey sequence (x90 - idle_time - x90 - measurement) for different qubit intermediate
@@ -27,40 +28,53 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import progress_counter
 from macros import qua_declaration, multiplexed_readout
 
+import warnings
+import matplotlib
+
+matplotlib.use("TKAgg")
+warnings.filterwarnings("ignore")
 
 ###################
 # The QUA program #
 ###################
-n_avg = 1000  # Number of averages
-dfs = np.arange(-10e6, 10e6, 0.1e6)  # Frequency detuning sweep in Hz
-t_delay = np.arange(4, 300, 4)  # Idle time sweep in clock cycles (Needs to be a list of integers)
+n_avg = 300  # Number of averages
+dfs = np.arange(-4e6, 4e6, 0.1e6)  # Frequency detuning sweep in Hz
+t_delay = np.arange(4, 300, 8)  # Idle time sweep in clock cycles (Needs to be a list of integers)
+
+# # should be set in the config
+max_frequency_point1 = -0.4 # q3
+max_frequency_point2 = -0.3 # q4
+# max_frequency_point3 = -0.3 # q5
 
 with program() as ramsey:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
     t = declare(int)  # QUA variable for the idle time
     df = declare(int)  # QUA variable for the qubit frequency
 
+    set_dc_offset("q3_z_dc", "single", max_frequency_point1) 
+    set_dc_offset("q4_z_dc", "single", max_frequency_point2) 
+    # set_dc_offset("q5_z_dc", "single", max_frequency_point3)
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
             # Update the frequency of the two qubit elements
-            update_frequency("q1_xy", df + qubit_IF_q1)
-            update_frequency("q2_xy", df + qubit_IF_q2)
+            update_frequency("q5_xy", df + qubit_IF_q1)
+            update_frequency("q4_xy", df + qubit_IF_q2)
 
             with for_(*from_array(t, t_delay)):
                 # qubit 1
-                play("x90", "q1_xy")
-                wait(t, "q1_xy")
-                play("x90", "q1_xy")
+                play("x90", "q5_xy")
+                wait(t, "q5_xy")
+                play("x90", "q5_xy")
 
-                # qubit 2
-                play("x90", "q2_xy")
-                wait(t, "q2_xy")
-                play("x90", "q2_xy")
+                # # qubit 2
+                # play("x90", "q4_xy")
+                # wait(t, "q4_xy")
+                # play("x90", "q4_xy")
 
                 # Align the elements to measure after having waited a time "tau" after the qubit pulses.
                 align()
                 # Measure the state of the resonators
-                multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
+                multiplexed_readout(I, I_st, Q, Q_st, resonators=[5, 4], weights="")
                 # Wait for the qubit to decay to the ground state
                 wait(thermalization_time * u.ns)
         # Save the averaging iteration to get the progress bar
@@ -115,7 +129,7 @@ else:
         plt.subplot(221)
         plt.cla()
         plt.pcolor(4 * t_delay, dfs / u.MHz, I1)
-        plt.title(f"qubit 1 I, fcent={(qubit_LO + qubit_IF_q1) / u.MHz} MHz")
+        plt.title(f"qubit 1 I, fcent={(qubit_IF_q1) / u.MHz} MHz")
         plt.ylabel("Frequency detuning [MHz]")
         plt.subplot(223)
         plt.cla()
@@ -126,7 +140,7 @@ else:
         plt.subplot(222)
         plt.cla()
         plt.pcolor(4 * t_delay, dfs / u.MHz, I2)
-        plt.title(f"qubit 2 I, fcent={(qubit_LO + qubit_IF_q2) / u.MHz} MHz")
+        plt.title(f"qubit 2 I, fcent={(qubit_IF_q2) / u.MHz} MHz")
         plt.subplot(224)
         plt.cla()
         plt.pcolor(4 * t_delay, dfs / u.MHz, Q2)
@@ -144,3 +158,5 @@ else:
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name=Path(__file__).stem)
 
+
+# %%
