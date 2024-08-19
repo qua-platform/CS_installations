@@ -1,7 +1,11 @@
 """
 TIME RABI EXPERIMENT
 
-This experiment sweeps the duration of
+This experiment sweeps the duration of a manipulation pulse which is
+calibrated to induce Rabi oscillations.
+
+It includes a sequence of voltage pulses to initialize, manipulate
+and readout the charge qubit state.
 """
 
 from qm.qua import *
@@ -57,7 +61,7 @@ with program() as init_search_prog:
             # initialize the charge qubit
             seq.add_step(voltage_point_name="init", ramp_duration=ramp_duration)
             # set detuning to zero for a variable amount of time to induce Rabi oscillations
-            seq.add_step(duration=t, level=level_manipulation)  # to manipulate the detuning
+            seq.add_step(voltage_point_name="manipulation", duration=t)  # to manipulate the detuning
             # pulse to the readout point of the qubit
             seq.add_step(voltage_point_name="readout", ramp_duration=ramp_duration)
             # apply auto-compensation for the capacitive charge build-up on the bias-tee
@@ -85,7 +89,6 @@ with program() as init_search_prog:
         I_st.buffer(len(times)).average().save("I")
         Q_st.buffer(len(times)).average().save("Q")
 
-
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=None)
 
 simulate = True
@@ -111,7 +114,7 @@ else:
         # Fetch the data from the last OPX run corresponding to the current slow axis iteration
         I, Q, iteration = results.fetch_all()
         # Convert results into Volts
-        S = u.demod2volts(I + 1j * Q, lock_in_readout_length)
+        S = u.demod2volts(I + 1j * Q, rf_readout_length)
         R = np.abs(S)  # Amplitude
         phase_d = np.angle(S)  # Phase
         # Progress bar
