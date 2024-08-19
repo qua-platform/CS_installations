@@ -10,8 +10,8 @@ from qualang_tools.units import unit
 # Network parameters #
 ######################
 qop_ip = "127.0.0.1"  # Write the QM router IP address
-cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
-qop_port = None  # Write the QOP port if version < QOP220
+cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOright_plunger20
+qop_port = None  # Write the QOP port if version < QOright_plunger20
 
 ######################
 # QDAC-II parameters #
@@ -33,9 +33,9 @@ readout_amp = 0.0  # should be 0 since the OPX doesn't ouptut voltage when measu
 readout_len = 4 * u.ms  # should be greater than the time-constant, which is 1 / (2*pi*bandwidth)
 # Note: if average drain current exceeds 10mV, 4ms integration can lead to fixed-point overflow
 
-lock_in_freq = 100 * u.kHz
-lock_in_amp = 100 * u.mV
-lock_in_length = 1 * u.ms
+lock_in_freq = 1 * u.MHz
+lock_in_amp = 10 * u.mV
+lock_in_length = 10 * u.us
 
 # RF-Reflectometry readout parameters
 rf_readout_length = 1 * u.us
@@ -53,7 +53,7 @@ time_of_flight = 24
 #      DC GATES      #
 ######################
 ## Section defining the points from the charge stability map - can be done in the config
-# Relevant points in the charge stability map as ["P1", "P2"] in V
+# Relevant points in the charge stability map as ["left_plunger", "right_plunger"] in V
 level_init = [0.1, -0.1]
 level_manip = [0.2, -0.2]
 level_readout = [0.12, -0.12]
@@ -66,8 +66,8 @@ duration_compensation_pulse = 4 * u.us
 
 # Step parameters
 step_length = 16  # in ns
-P1_step_amp = 0.25  # in V
-P2_step_amp = 0.25  # in V
+left_plunger_step_amp = 0.25  # in V
+right_plunger_step_amp = 0.25  # in V
 charge_sensor_amp = 0.25  # in V
 
 # Time to ramp down to zero for sticky elements in ns
@@ -113,7 +113,41 @@ config = {
         },
     },
     "elements": {
-        "source_tank_circuit": {
+        "left_plunger": {
+            "singleInput": {
+                "port": ("con1", 1),
+            },
+            "operations": {
+                "step": "left_plunger_step_pulse",
+            },
+        },
+        "left_plunger_sticky": {
+            "singleInput": {
+                "port": ("con1", 1),
+            },
+            "sticky": {"analog": True, "duration": hold_offset_duration},
+            "operations": {
+                "step": "left_plunger_step_pulse",
+            },
+        },
+        "right_plunger": {
+            "singleInput": {
+                "port": ("con1", 2),
+            },
+            "operations": {
+                "step": "right_plunger_step_pulse",
+            },
+        },
+        "right_plunger_sticky": {
+            "singleInput": {
+                "port": ("con1", 2),
+            },
+            "sticky": {"analog": True, "duration": hold_offset_duration},
+            "operations": {
+                "step": "right_plunger_step_pulse",
+            },
+        },
+        "source_resonator": {
             "singleInput": {
                 "port": ("con1", 1),
             },
@@ -127,7 +161,7 @@ config = {
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
-        "plunger_tank_circuit": {
+        "plunger_resonator": {
             "singleInput": {
                 "port": ("con1", 2),
             },
@@ -141,9 +175,9 @@ config = {
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
-        "TIA": {
+        "drain_tia": {
             "singleInput": {
-                "port": ("con1", 1),
+                "port": ("con1", 1),  # won't be used
             },
             "operations": {
                 "readout": "readout_pulse",
@@ -154,7 +188,7 @@ config = {
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
-        "TIA_lock_in": {
+        "drain_tia_lock_in": {
             "singleInput": {
                 "port": ("con1", 1),
             },
@@ -170,18 +204,18 @@ config = {
         },
     },
     "pulses": {
-        "P1_step_pulse": {
+        "left_plunger_step_pulse": {
             "operation": "control",
             "length": step_length,
             "waveforms": {
-                "single": "P1_step_wf",
+                "single": "left_plunger_step_wf",
             },
         },
-        "P2_step_pulse": {
+        "right_plunger_step_pulse": {
             "operation": "control",
             "length": step_length,
             "waveforms": {
-                "single": "P2_step_wf",
+                "single": "right_plunger_step_wf",
             },
         },
         "bias_charge_pulse": {
@@ -220,9 +254,21 @@ config = {
                 "Q": "zero_wf",
             },
         },
+        "lock_in_pulse": {
+            "operation": "measurement",
+            "length": lock_in_length,
+            "waveforms": {
+                "single": "lock_in_wf",
+            },
+            "integration_weights": {
+                "cos": "cosine_weights",
+                "sin": "sine_weights",
+            },
+            "digital_marker": "ON",
+        },
         "source_rf_readout_pulse": {
             "operation": "measurement",
-            "length": source_rf_readout_length,
+            "length": rf_readout_length,
             "waveforms": {
                 "single": "source_rf_wf",
             },
@@ -257,11 +303,12 @@ config = {
         },
     },
     "waveforms": {
-        "P1_step_wf": {"type": "constant", "sample": P1_step_amp},
-        "P2_step_wf": {"type": "constant", "sample": P2_step_amp},
+        "left_plunger_step_wf": {"type": "constant", "sample": left_plunger_step_amp},
+        "right_plunger_step_wf": {"type": "constant", "sample": right_plunger_step_amp},
         "charge_sensor_step_wf": {"type": "constant", "sample": charge_sensor_amp},
         "pi_wf": {"type": "constant", "sample": pi_amp},
         "pi_half_wf": {"type": "constant", "sample": pi_half_amp},
+        "lock_in_wf": {"type": "constant", "sample": lock_in_amp},
         "readout_pulse_wf": {"type": "constant", "sample": readout_amp},
         "source_reflect_wf": {"type": "constant", "sample": source_rf_readout_amp},
         "plunger_reflect_wf": {"type": "constant", "sample": plunger_rf_readout_amp},

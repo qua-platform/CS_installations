@@ -40,9 +40,6 @@ Therefore, the channels in the diagram need to be shifted to start from **CH09**
 
 ![](.img/page-4.png)
 
-### Charge Stability Map (Transport Measurement)
-![](.img/page-5.png)
-
 ### Charge Stability Map (Source Reflectometry)
 ![](.img/page-6.png)
 

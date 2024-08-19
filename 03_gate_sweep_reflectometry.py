@@ -1,16 +1,16 @@
 """
-GATE SWEEP (LOCK-IN MEASUREMENT)
+GATE SWEEP (REFLECTOMETRY MEASUREMENT)
 
 This script is designed to sweep the source-drain bias using the QDAC-II to
 step the voltage of the source/plunger gate.
 
-The lock-in measurement is performed using a fast-line to the relevant gate.
-In this experiment, you should see a blockade at low biases and a ramp at
-high biases.
+The reflectometry measurement is performed using a fast-line to an LC
+circuit on the relevant gate. In this experiment, you should see a blockade
+at low biases and a ramp at high biases.
 
 Prerequisites:
-- Connect the QDAC-II DC channel to the appropriate device port.
-- Connect the drain_tia to the corresponding input channel.
+- Connect the LC circuit between the bias-tee and the relevant gate.
+- Connect the OPX analog output/input to the coupler before the bias-tee.
 
 """
 
@@ -32,8 +32,9 @@ n_avg = 100  # The number of averages
 n_points = 101
 gate_dc_offsets = np.linspace(-0.5, 0.5, n_points)
 gate_to_sweep = "source"  # or "plunger"
+gate_to_measure = "source"  # or "plunger"
 
-with program() as gate_sweep_lock_in:
+with program() as gate_sweep_reflectometry:
     n = declare(int)  # QUA variable for the averaging loop
     i = declare(int)  # QUA variable for indexing the QDAC-II voltage step
     I = declare(fixed)
@@ -51,7 +52,7 @@ with program() as gate_sweep_lock_in:
         with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
             measure(
                 "readout",
-                "drain_tia_lock_in",
+                f"{gate_to_measure}_resonator",
                 None,
                 demod.full("cos", I, "out1"),
                 demod.full("sin", Q, "out1")
@@ -88,7 +89,7 @@ if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
-    job = qmm.simulate(config, gate_sweep_lock_in, simulation_config)
+    job = qmm.simulate(config, gate_sweep_reflectometry, simulation_config)
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
 
@@ -96,7 +97,7 @@ else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(gate_sweep_lock_in)
+    job = qm.execute(gate_sweep_reflectometry)
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure

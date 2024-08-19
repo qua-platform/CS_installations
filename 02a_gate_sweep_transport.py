@@ -4,13 +4,13 @@ GATE SWEEP (TRANSPORT MEASUREMENT)
 This script is designed to sweep the source-drain or plunger gate bias using
 the QDAC-II to step the voltage of the source/plunger gate.
 
-The transport measurement is conducted through a TIA connected to the Drain
+The transport measurement is conducted through a drain_tia connected to the Drain
 gate. In this experiment, you should see a blockade at low biases and a ramp at
 high biases.
 
 Prerequisites:
 - Connect the QDAC-II DC channel to the appropriate device port.
-- Connect the TIA to the corresponding input channel.
+- Connect the drain_tia to the corresponding input channel.
 
 """
 
@@ -36,9 +36,9 @@ gate_to_sweep = "source"  # or "plunger"
 with program() as gate_sweep_transport:
     n = declare(int)  # QUA variable for the averaging loop
     i = declare(int)  # QUA variable for indexing the QDAC-II voltage step
-    I_drain = declare(fixed)
+    i_drain = declare(fixed)
     n_st = declare_stream()
-    I_drain_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace for the DC line
+    i_drain_st = declare_stream()  # The stream to store the raw ADC trace for the DC line
 
     with for_(i, 0, i < n_points + 1, i + 1):
         # Pause the OPX to update the external DC voltages in Python
@@ -47,13 +47,13 @@ with program() as gate_sweep_transport:
         wait(1 * u.ms)
 
         with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
-            measure("readout", "TIA", None, integration.full("constant", I_drain, "out1"))
-            save(I_drain, I_drain_st)
+            measure("readout", "drain_tia", None, integration.full("constant", i_drain, "out1"))
+            save(i_drain, i_drain_st)
 
         save(i, n_st)
 
     with stream_processing():
-        I_drain_st.buffer(n_avg).map(FUNCTIONS.average()).save_all("I_drain")
+        i_drain_st.buffer(n_avg).map(FUNCTIONS.average()).save_all("i_drain")
 
 
 #####################################
@@ -100,19 +100,21 @@ else:
         wait_until_job_is_paused(job)
         if i == 0:
             # Get results from QUA program and initialize live plotting
-            results = fetching_tool(job, data_list=["I_drain", "iteration"], mode="live")
+            results = fetching_tool(job, data_list=["i_drain", "iteration"], mode="live")
     # Fetch the data from the last OPX run corresponding to the current slow axis iteration
-    I_drain, iteration = results.fetch_all()
-    I_drain = u.demod2volts(I_drain, readout_len)
-    I_drain_pA = I_drain * tia_iv_scale_factor * 1e12
+    i_drain, iteration = results.fetch_all()
+    i_drain = u.demod2volts(i_drain, readout_len)
+    i_drain_pA = i_drain * tia_iv_scale_factor * 1e12
     # Progress bar
     progress_counter(iteration, n_points)
     # Plot results
     plt.suptitle(f"{gate_to_sweep.capitalize()}-Gate Sweep (Transport)")
     plt.cla()
-    plt.plot(gate_dc_offsets[: iteration + 1], I_drain)
+    plt.plot(gate_dc_offsets[: iteration + 1], i_drain)
     plt.xlabel("Gate Voltage [V]")
     plt.ylabel(r"Drain Current [pA]")
     plt.yscale('log')  # set the y-axis scaling to be logarithmic
     plt.tight_layout()
     plt.pause(0.1)
+
+plt.show()
