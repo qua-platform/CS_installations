@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 ###################
 n_avg = 100  # The number of averages
 n_points = 101
-gate_dc_offsets = np.linspace(-0.2, 0.2, n_points)
+gate_dc_offsets = np.linspace(-0.5, 0.5, n_points)
 gate_to_sweep = "source"  # or "plunger"
 
 with program() as gate_sweep_transport:
@@ -47,7 +47,7 @@ with program() as gate_sweep_transport:
         wait(1 * u.ms)
 
         with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
-            measure("readout", "TIA", None, integration.full("constant", I_drain, "out1"))
+            measure("readout", "TIA_lock_in", None, demod.full("constant", I_drain, "out1"))
             save(I_drain, I_drain_st)
 
         save(i, n_st)
@@ -104,7 +104,7 @@ else:
     # Fetch the data from the last OPX run corresponding to the current slow axis iteration
     I_drain, iteration = results.fetch_all()
     I_drain = u.demod2volts(I_drain, readout_len)
-    I_drain_pA = I_drain * TIA_IV_scale_factor * 1e12
+    I_drain_pA = I_drain * tia_iv_scale_factor * 1e12
     # Progress bar
     progress_counter(iteration, n_points)
     # Plot results

@@ -11,11 +11,16 @@ conda activate qm
 # Install relevant packages
 pip install qm-qua, qualang-tools, qcodes_contrib_drivers
 ```
-## Experiment Setup
+These packages provide access to the following features:
+ - **qm-qua**: The QUA SDK required for connecting to and programming the OPX.
+ - **qualang-tools**: A library to help with writing QUA programs on the OPX.
+ - **qcodes_contrib_drivers**: Contains an open-source driver for connecting to and controlling the QDAC-II
+
+## Experiments
 ### QDAC-II Note
 > &#x26a0;&#xfe0f; **When using the QDAC-II** it is best to skip the **first row** and start the wiring from the DC channels on the **second row**.
 
-Therefore, the channels in the diagram need to be shifted to start from **CH 09**:
+Therefore, the channels in the diagram need to be shifted to start from **CH09**:
  - **CH09** ↔ Source-Gate
  - **CH10** ↔ Left Plunger-Gate
  - **CH11** ↔ Right Plunger-Gate
@@ -26,9 +31,13 @@ Therefore, the channels in the diagram need to be shifted to start from **CH 09*
 ![](.img/page-2.png)
 
 ### Source-Drain Sweep (Transport Measurement)
+**Purpose**: to measure the transport current through the source and drain while sweeping a gate voltage.
+
 ![](.img/page-3.png)
 
 ### Source-Drain Sweep (Lock-in Measurement)
+**Purpose**: to measure the transport current through the source and drain while sweeping a gate voltage.
+
 ![](.img/page-4.png)
 
 ### Charge Stability Map (Transport Measurement)

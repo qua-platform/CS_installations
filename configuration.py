@@ -27,15 +27,24 @@ qdac_right_plunger_ch = 11  # if only one plunger, use CH11!
 u = unit(coerce_to_integer=True)
 
 # DC readout parameters
-TIA_IV_scale_factor = 1e-10  # (Femto LCA-200-10G Transimpedance in A/V)
-TIA_bandwidth = 200  # in Hz
+tia_iv_scale_factor = 1e-10  # from spec (Femto LCA-200-10G Transimpedance in A/V)
+tia_bandwidth = 200  # in Hz, from spec
 readout_amp = 0.0  # should be 0 since the OPX doesn't ouptut voltage when measuring transport current
 readout_len = 4 * u.ms  # should be greater than the time-constant, which is 1 / (2*pi*bandwidth)
+# Note: if average drain current exceeds 10mV, 4ms integration can lead to fixed-point overflow
+
+lock_in_freq = 100 * u.kHz
+lock_in_amp = 100 * u.mV
+lock_in_length = 1 * u.ms
 
 # RF-Reflectometry readout parameters
-resonator_IF = 300 * u.MHz
-reflectometry_readout_length = 1 * u.us
-reflectometry_readout_amp = 30 * u.mV
+rf_readout_length = 1 * u.us
+
+source_resonator_IF = 300 * u.MHz
+source_rf_readout_amp = 30 * u.mV
+
+plunger_resonator_IF = 300 * u.MHz
+plunger_rf_readout_amp = 30 * u.mV
 
 # Time of flight
 time_of_flight = 24
@@ -91,28 +100,43 @@ config = {
     "controllers": {
         "con1": {
             "analog_outputs": {
-                1: {"offset": 0.0},  # RF reflectometry
+                1: {"offset": 0.0},  # Source gate RF-reflectometry
             },
             "digital_outputs": {
                 1: {},
                 2: {},
             },
             "analog_inputs": {
-                1: {"offset": 0.0, "gain_db": 0},  # RF reflectometry input
+                1: {"offset": 0.0, "gain_db": 0},  # Source gate RF-input/Drain DC-input
+                2: {"offset": 0.0, "gain_db": 0},  # Plunger gate RF-input
             },
         },
     },
     "elements": {
-        "tank_circuit": {
+        "source_tank_circuit": {
             "singleInput": {
                 "port": ("con1", 1),
             },
-            "intermediate_frequency": resonator_IF,
+            "intermediate_frequency": source_resonator_IF,
             "operations": {
-                "readout": "reflectometry_readout_pulse",
+                "readout": "source_rf_readout_pulse",
             },
             "outputs": {
                 "out1": ("con1", 1),
+            },
+            "time_of_flight": time_of_flight,
+            "smearing": 0,
+        },
+        "plunger_tank_circuit": {
+            "singleInput": {
+                "port": ("con1", 2),
+            },
+            "intermediate_frequency": plunger_resonator_IF,
+            "operations": {
+                "readout": "plunger_rf_readout_pulse",
+            },
+            "outputs": {
+                "out1": ("con1", 2),
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -123,6 +147,20 @@ config = {
             },
             "operations": {
                 "readout": "readout_pulse",
+            },
+            "outputs": {
+                "out1": ("con1", 1),
+            },
+            "time_of_flight": time_of_flight,
+            "smearing": 0,
+        },
+        "TIA_lock_in": {
+            "singleInput": {
+                "port": ("con1", 1),
+            },
+            "intermediate_frequency": lock_in_freq,
+            "operations": {
+                "readout": "lock_in_pulse",
             },
             "outputs": {
                 "out1": ("con1", 1),
@@ -182,11 +220,23 @@ config = {
                 "Q": "zero_wf",
             },
         },
-        "reflectometry_readout_pulse": {
+        "source_rf_readout_pulse": {
             "operation": "measurement",
-            "length": reflectometry_readout_length,
+            "length": source_rf_readout_length,
             "waveforms": {
-                "single": "reflect_wf",
+                "single": "source_rf_wf",
+            },
+            "integration_weights": {
+                "cos": "cosine_weights",
+                "sin": "sine_weights",
+            },
+            "digital_marker": "ON",
+        },
+        "plunger_rf_readout_pulse": {
+            "operation": "measurement",
+            "length": rf_readout_length,
+            "waveforms": {
+                "single": "plunger_rf_wf",
             },
             "integration_weights": {
                 "cos": "cosine_weights",
@@ -213,7 +263,8 @@ config = {
         "pi_wf": {"type": "constant", "sample": pi_amp},
         "pi_half_wf": {"type": "constant", "sample": pi_half_amp},
         "readout_pulse_wf": {"type": "constant", "sample": readout_amp},
-        "reflect_wf": {"type": "constant", "sample": reflectometry_readout_amp},
+        "source_reflect_wf": {"type": "constant", "sample": source_rf_readout_amp},
+        "plunger_reflect_wf": {"type": "constant", "sample": plunger_rf_readout_amp},
         "const_wf": {"type": "constant", "sample": cw_amp},
         "zero_wf": {"type": "constant", "sample": 0.0},
     },
@@ -226,12 +277,12 @@ config = {
             "sine": [(0.0, readout_len)],
         },
         "cosine_weights": {
-            "cosine": [(1.0, reflectometry_readout_length)],
-            "sine": [(0.0, reflectometry_readout_length)],
+            "cosine": [(1.0, rf_readout_length)],
+            "sine": [(0.0, rf_readout_length)],
         },
         "sine_weights": {
-            "cosine": [(0.0, reflectometry_readout_length)],
-            "sine": [(1.0, reflectometry_readout_length)],
+            "cosine": [(0.0, rf_readout_length)],
+            "sine": [(1.0, rf_readout_length)],
         },
     },
 }
