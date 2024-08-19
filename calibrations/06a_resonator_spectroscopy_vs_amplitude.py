@@ -37,17 +37,21 @@ import numpy as np
 from scipy import signal
 
 import matplotlib
+import xarray as xr
+from lib.qua_datasets import apply_angle, subtract_slope
+from lib.plot_utils import QubitGrid, grid_iter
+from lib.fit import peaks_dips
 
 matplotlib.use("TKAgg")
 
-
+# %%
 ###################################################
 #  Load QuAM and open Communication with the QOP  #
 ###################################################
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load(r"C:\Users\tomdv\Documents\QCC_QUAM\CS_installations\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -69,12 +73,19 @@ n_avg = 100  # The number of averages
 
 # Uncomment this to override the initial readout amplitude for all resonators
 # for rr in resonators:
-#     rr.operations["readout"].amplitude = 0.01
+#     rr.operations["readout"].amplitude = 0.25
 
+for q in machine.active_qubits:
+    q.resonator.operations["readout"].amplitude = 0.4
+    q.z.min_offset = -0.05
+    q.resonator.time_of_flight = 264
+    config = machine.generate_config()
+    
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
-amps = np.arange(0.05, 1.99, 0.02)
+# amps = np.arange(0.05, 1.00, 0.02)
+amps = np.logspace(-2, 0.0, 100)
 # The frequency sweep around the resonator resonance frequencies f_opt
-dfs = np.arange(-6e6, +6e6, 0.25e6)
+dfs = np.arange(-10e6, +10e6, 0.05e6)
 
 with program() as multi_res_spec_vs_amp:
     # Declare 'I' and 'Q' and the corresponding streams for the two resonators.
@@ -89,7 +100,7 @@ with program() as multi_res_spec_vs_amp:
     for i, q in enumerate(qubits):
 
         # resonator of this qubit
-        rr = resonators[i]
+        rr = q.resonator
 
         with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
             save(n, n_st)
@@ -105,7 +116,7 @@ with program() as multi_res_spec_vs_amp:
 
                     # wait for the resonator to relax
                     rr.wait(machine.depletion_time * u.ns)
-
+                    wait(1000, rr.name)  # wait for the resonator to relax
                     # save data
                     save(I[i], I_st[i])
                     save(Q[i], Q_st[i])
@@ -177,6 +188,8 @@ else:
     plt.show()
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
+    while job.status == 'running':
+        pass
     qm.close()
 
     # resonators[0].operations["readout"].amplitude = 0.008
@@ -186,13 +199,112 @@ else:
     # resonators[4].operations["readout"].amplitude = 0.008
 
     # Save data from the node
-    data = {}
-    for i, rr in enumerate(resonators):
-        data[f"{rr.name}_amplitude"] = amps * rr.operations["readout"].amplitude
-        data[f"{rr.name}_frequency"] = dfs + rr.intermediate_frequency
-        data[f"{rr.name}_R"] = A_data[i]
-        data[f"{rr.name}_readout_amplitude"] = prev_amps[i]
-    data["figure"] = fig
-    node_save(machine, "resonator_spectroscopy_vs_amplitude", data, additional_files=True)
+    # data = {}
+    # for i, rr in enumerate(resonators):
+    #     data[f"{rr.name}_amplitude"] = amps * rr.operations["readout"].amplitude
+    #     data[f"{rr.name}_frequency"] = dfs + rr.intermediate_frequency
+    #     data[f"{rr.name}_R"] = A_data[i]
+    #     data[f"{rr.name}_readout_amplitude"] = prev_amps[i]
+    # data["figure"] = fig
+    # node_save(machine, "resonator_spectroscopy_vs_amplitude", data, additional_files=True)
+
+# %%
+handles = job.result_handles
+
+def extract_string(input_string):
+    # Find the index of the first occurrence of a digit in the input string
+    index = next((i for i, c in enumerate(input_string) if c.isdigit()), None)
+    
+    if index is not None:
+        # Extract the substring from the start of the input string to the index
+        extracted_string = input_string[:index]
+        return extracted_string
+    else:
+        return None
+
+stream_handles = handles.keys()
+meas_vars = list(set([extract_string(handle) for handle in stream_handles if extract_string(handle) is not None]))
+values = [[handles.get(f'{meas_var}{i+1}').fetch_all() for i, qubit in enumerate(qubits)] for meas_var in meas_vars]
+
+# %%
+ds = xr.Dataset(
+    {
+        f"{meas_var}": (["qubit", "freq","amp"], values[i])
+        for i, meas_var in enumerate(meas_vars)
+    },
+    coords={"freq": dfs, "amp": amps, "qubit": [qubit.name for qubit in qubits]},
+)
+
+# %%
+
+ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
+
+def abs_freq(q):
+    def foo(freq):
+        return freq + q.resonator.intermediate_frequency + q.resonator.LO_frequency
+    return foo
+
+def abs_amp(q):
+    def foo(amp):
+        return amp * q.resonator.operations['readout'].amplitude
+    return foo
+
+ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
+ds = ds.assign_coords({'abs_amp' : (['qubit','amp'],np.array([abs_amp(q)(amps) for q in qubits]))})
+
+ds.freq_full.attrs['long_name'] = 'Frequency'
+ds.freq_full.attrs['units'] = 'GHz'
+ds.abs_amp.attrs['long_name'] = 'Amplitude'
+ds.abs_amp.attrs['units'] = 'V'
+ds = ds.assign({'IQ_abs_norm': ds['IQ_abs']/ds.IQ_abs.mean(dim=['freq'])})
+
+data = {}
+data['ds'] = ds
+
+# %%
+
+# %%
+res_min_vs_amp = [peaks_dips(ds.IQ_abs_norm.sel(
+    amp=amp), dim='freq', prominence_factor=5).position for amp in ds.amp]
+res_min_vs_amp = xr.concat(res_min_vs_amp, 'amp')
+res_freq_full = ds.freq_full.sel(freq=0, method='nearest') + res_min_vs_amp
+res_low_power = res_min_vs_amp.sel(amp=slice(0.001,0.03)).mean(dim='amp')
+res_hi_power = res_min_vs_amp.isel(amp=-1)
+
+rr_pwr = xr.where(abs(res_min_vs_amp-res_low_power) < 0.15 *
+                  (abs(res_hi_power-res_low_power)), res_min_vs_amp.amp, 0).max(dim='amp')
+
+RO_power_ratio = 0.3
+rr_pwr = RO_power_ratio*rr_pwr
+    
+# %%
+grid = QubitGrid(ds, [f'q-{i}_0' for i in range(1, 5)])
+
+for ax, qubit in grid_iter(grid):
+    ds.loc[qubit].IQ_abs_norm.plot(ax=ax, add_colorbar=False,
+                                    x='freq_full', y='abs_amp', robust=True,
+                                    yscale = 'log')
+    ax.plot(
+        res_freq_full.loc[qubit], ds.abs_amp.loc[qubit], color='orange', linewidth=0.5)
+    ax.axhline(y=abs_amp(machine.qubits[qubit['qubit']])(
+            rr_pwr.loc[qubit]).values, color='r', linestyle='--')
+
+grid.fig.suptitle('Resonator spectroscopy VS. power at base')
+plt.tight_layout()
+plt.show()
+data["figure"] = grid.fig
+
+fit_results = {}
+for q in machine.active_qubits:
+    fit_results[q.name] = {}
+    if float(rr_pwr.sel(qubit=q.name)) > 0:
+        q.resonator.operations["readout"].amplitude *= float(rr_pwr.sel(qubit=q.name))
+    q.resonator.intermediate_frequency+=int(res_low_power.sel(qubit=q.name).values)   
+    fit_results[q.name]["RO_amplitude"]=float(rr_pwr.sel(qubit=q.name)) 
+data['resonator_frequency'] = fit_results
+
+# %%
+
+node_save(machine, "resonator_spectroscopy_vs_amplitude", data, additional_files=True)
 
 # %%
