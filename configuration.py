@@ -49,48 +49,13 @@ plunger_rf_readout_amp = 30 * u.mV
 # Time of flight
 time_of_flight = 24
 
-######################
-#      DC GATES      #
-######################
-## Section defining the points from the charge stability map - can be done in the config
-# Relevant points in the charge stability map as ["left_plunger", "right_plunger"] in V
-level_init = [0.1, -0.1]
-level_manip = [0.2, -0.2]
-level_readout = [0.12, -0.12]
 
-# Duration of each step in ns
-duration_init = 2500
-duration_manip = 1000
-duration_readout = readout_len + 100
-duration_compensation_pulse = 4 * u.us
-
-# Step parameters
-step_length = 16  # in ns
-left_plunger_step_amp = 0.25  # in V
-right_plunger_step_amp = 0.25  # in V
-charge_sensor_amp = 0.25  # in V
-
-# Time to ramp down to zero for sticky elements in ns
-hold_offset_duration = 4  # in ns
-bias_tee_cut_off_frequency = 10 * u.kHz
-
-######################
-#    QUBIT PULSES    #
-######################
-qubit_LO = 4 * u.GHz
-qubit_IF = 100 * u.MHz
-qubit_g = 0.0
-qubit_phi = 0.0
-
-# Pi pulse
-pi_amp = 0.25  # in V
-pi_length = 32  # in ns
-# Pi half
-pi_half_amp = 0.25  # in V
-pi_half_length = 16  # in ns
-# CW pulse
-cw_amp = 0.3  # in V
-cw_len = 100  # in ns
+#######################
+# DC PULSE PARAMETERS #
+#######################
+step_length = 4 * u.ns  # Will be replaced with sub-ns
+left_plunger_step_amp = 0.1  # in V
+right_plunger_step_amp = 0.1  # in V
 
 #############################################
 #                  Config                   #
@@ -121,28 +86,10 @@ config = {
                 "step": "left_plunger_step_pulse",
             },
         },
-        "left_plunger_sticky": {
-            "singleInput": {
-                "port": ("con1", 1),
-            },
-            "sticky": {"analog": True, "duration": hold_offset_duration},
-            "operations": {
-                "step": "left_plunger_step_pulse",
-            },
-        },
         "right_plunger": {
             "singleInput": {
                 "port": ("con1", 2),
             },
-            "operations": {
-                "step": "right_plunger_step_pulse",
-            },
-        },
-        "right_plunger_sticky": {
-            "singleInput": {
-                "port": ("con1", 2),
-            },
-            "sticky": {"analog": True, "duration": hold_offset_duration},
             "operations": {
                 "step": "right_plunger_step_pulse",
             },
@@ -218,42 +165,6 @@ config = {
                 "single": "right_plunger_step_wf",
             },
         },
-        "bias_charge_pulse": {
-            "operation": "control",
-            "length": step_length,
-            "waveforms": {
-                "single": "charge_sensor_step_wf",
-            },
-        },
-        "trigger_pulse": {
-            "operation": "control",
-            "length": 1000,
-            "digital_marker": "ON",
-        },
-        "cw_pulse": {
-            "operation": "control",
-            "length": cw_len,
-            "waveforms": {
-                "I": "const_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "pi_pulse": {
-            "operation": "control",
-            "length": pi_length,
-            "waveforms": {
-                "I": "pi_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "pi_half_pulse": {
-            "operation": "control",
-            "length": pi_half_length,
-            "waveforms": {
-                "I": "pi_half_wf",
-                "Q": "zero_wf",
-            },
-        },
         "lock_in_pulse": {
             "operation": "measurement",
             "length": lock_in_length,
@@ -305,15 +216,10 @@ config = {
     "waveforms": {
         "left_plunger_step_wf": {"type": "constant", "sample": left_plunger_step_amp},
         "right_plunger_step_wf": {"type": "constant", "sample": right_plunger_step_amp},
-        "charge_sensor_step_wf": {"type": "constant", "sample": charge_sensor_amp},
-        "pi_wf": {"type": "constant", "sample": pi_amp},
-        "pi_half_wf": {"type": "constant", "sample": pi_half_amp},
         "lock_in_wf": {"type": "constant", "sample": lock_in_amp},
         "readout_pulse_wf": {"type": "constant", "sample": readout_amp},
         "source_reflect_wf": {"type": "constant", "sample": source_rf_readout_amp},
         "plunger_reflect_wf": {"type": "constant", "sample": plunger_rf_readout_amp},
-        "const_wf": {"type": "constant", "sample": cw_amp},
-        "zero_wf": {"type": "constant", "sample": 0.0},
     },
     "digital_waveforms": {
         "ON": {"samples": [(1, 0)]},
