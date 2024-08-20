@@ -102,6 +102,13 @@ class QuAM(QuamRoot):
             qp.coupler.to_decouple_idle()
         align()
 
+    def apply_all_flux_to_joint_idle(self) -> None:
+        """Apply the offsets that bring all the active qubits to the joint sweet spot."""
+        align()
+        for q in self.active_qubits:
+            q.z.to_joint_idle()
+        align()
+
     def apply_all_flux_to_min(self) -> None:
         """Apply the offsets that bring all the active qubits to the minimum frequency point."""
         align()

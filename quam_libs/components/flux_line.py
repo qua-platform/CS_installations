@@ -23,6 +23,8 @@ class FluxLine(SingleChannel):
     independent_offset: float = 0.0
     joint_offset: float = 0.0
     min_offset: float = 0.0
+    
+    quad_term: float = 0.0
 
     def __post_init__(self) -> None:
         if isinstance(self.opx_output, LFFEMAnalogOutputPort):
