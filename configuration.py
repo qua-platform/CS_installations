@@ -9,8 +9,8 @@ from qualang_tools.units import unit
 ######################
 # Network parameters #
 ######################
-qop_ip = "127.0.0.1"  # Write the QM router IP address
-cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOright_plunger20
+qop_ip = "172.16.33.101"  # Write the QM router IP address
+cluster_name = "Cluster_83"  # Write your cluster_name if version >= QOright_plunger20
 qop_port = None  # Write the QOP port if version < QOright_plunger20
 
 ######################
@@ -53,7 +53,7 @@ time_of_flight = 24
 #######################
 # DC PULSE PARAMETERS #
 #######################
-step_length = 4 * u.ns  # Will be replaced with sub-ns
+step_length = 16 * u.ns  # Will be replaced with sub-ns
 left_plunger_step_amp = 0.1  # in V
 right_plunger_step_amp = 0.1  # in V
 
@@ -66,6 +66,7 @@ config = {
         "con1": {
             "analog_outputs": {
                 1: {"offset": 0.0},  # Source gate RF-reflectometry
+                2: {"offset": 0.0},  # Plunger gate RF-reflectometry
             },
             "digital_outputs": {
                 1: {},
@@ -218,8 +219,8 @@ config = {
         "right_plunger_step_wf": {"type": "constant", "sample": right_plunger_step_amp},
         "lock_in_wf": {"type": "constant", "sample": lock_in_amp},
         "readout_pulse_wf": {"type": "constant", "sample": readout_amp},
-        "source_reflect_wf": {"type": "constant", "sample": source_rf_readout_amp},
-        "plunger_reflect_wf": {"type": "constant", "sample": plunger_rf_readout_amp},
+        "source_rf_wf": {"type": "constant", "sample": source_rf_readout_amp},
+        "plunger_rf_wf": {"type": "constant", "sample": plunger_rf_readout_amp},
     },
     "digital_waveforms": {
         "ON": {"samples": [(1, 0)]},

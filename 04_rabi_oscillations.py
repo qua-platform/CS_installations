@@ -50,10 +50,9 @@ baked_signals = baked_waveform(dc_amp, dc_el)
 times = np.arange(1, max_length + 1, 1)  # x-axis for plotting - must be in ns
 
 with program() as rabi:
-    i = declare(int)
-
-    with for_(i, 0, i < len(times), i + 1):
+    for i in range(max_length):
         baked_signals[i].run()
+        wait(20 * u.ns)
 
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
 
@@ -64,9 +63,13 @@ simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=50_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=250)  # In clock cycles = 4ns
     job = qmm.simulate(config, rabi, simulation_config)
-    job.get_simulated_samples().con1.plot()
+    waveform_on_ch2 = job.get_simulated_samples().con1.analog['1-2']
+    plt.step(range(len(waveform_on_ch2)), waveform_on_ch2)
+    plt.xlabel('Time [ns]')
+    plt.ylabel('Output Voltage [V]')
+    plt.title('Pulse Train for Rabi Oscillations')
     plt.show()
 else:
     qm = qmm.open_qm(config)
