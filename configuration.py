@@ -46,9 +46,9 @@ octave_config = None
 #############################################
 #                  Qubits                   #
 #############################################
-qubit_LO_q1 = 4.70 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
+qubit_LO_q1 = 0 * u.GHz  # Used only for mixer correction and frequency rescaling for plots or computation
 # Qubits IF
-qubit_IF_q1 = (-65 + 0.6) * u.MHz # q1
+qubit_IF_q1 = 400 * u.MHz # q1
 
 # Mixer parameters
 mixer_qubit_g_q1 = 0.00
