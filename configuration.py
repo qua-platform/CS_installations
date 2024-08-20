@@ -19,7 +19,7 @@ qop_port = None  # Write the QOP port if version < QOright_plunger20
 qdac_ip = "127.0.0.2"  # Write the QDAC instrument IP address here
 qdac_source_gate_ch = 9
 qdac_left_plunger_ch = 10
-qdac_right_plunger_ch = 11  # if only one plunger, use CH11!
+qdac_right_plunger_ch = 11  # if only one plunger, use this channel!
 
 ######################
 #       READOUT      #

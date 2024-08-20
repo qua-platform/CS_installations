@@ -117,4 +117,5 @@ else:
     plt.tight_layout()
     plt.pause(0.1)
 
+qdac.close()
 plt.show()

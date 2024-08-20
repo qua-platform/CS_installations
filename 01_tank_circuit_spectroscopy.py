@@ -48,12 +48,12 @@ with program() as reflectometry_spectroscopy:
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(f, frequencies)):
             # Update the frequency of the tank_circuit element
-            update_frequency("tank_circuit", f)
+            update_frequency("source_resonator", f)
             # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
             # frequency and the integrated quadratures are stored in "I" and "Q"
             measure(
                 "readout",
-                "tank_circuit",
+                "source_resonator",
                 None,
                 demod.full("cos", I, "out1"),
                 demod.full("sin", Q, "out1")

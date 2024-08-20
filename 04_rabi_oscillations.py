@@ -20,27 +20,13 @@ import copy
 from qualang_tools.loops.loops import from_array
 from qualang_tools.voltage_gates import VoltageGateSequence
 
-local_config = copy.deepcopy(config)
+times = np.arange(1, 16, 1)
 
-level_init = [-0.1, -0.1]
-level_manipulation = [0.1, 0.1]
-level_readout = [-0.2, 0.2]
-
-duration_init = 1_000
-duration_readout = 1_000
-
-ramp_duration = 100
-
-readout_element = "source_resonator"  # or "plunger_resonator"
-
-seq = VoltageGateSequence(local_config, ["left_plunger_sticky", "right_plunger_sticky"])
-seq.add_points("init", level_init, duration_init)
-seq.add_points("manipulation", level_manipulation, duration_init)  # duration tbc
-seq.add_points("readout", level_readout, duration_readout)
-
-n_shots = 100
-
-times = np.arange(4, 100, 1)
+# todo: add baking
+# todo: send email with python package instructions
+# todo: mention might need adder
+# todo: change lock_in frequency to 200Hz and fix comments
+# todo: update 2b diagram
 
 with program() as init_search_prog:
     n = declare(int)  # QUA integer used as an index for the averaging loop
@@ -127,4 +113,5 @@ else:
         plt.ylabel('X4 scaling amp [a.u.]')
         plt.pause(0.1)
 
+qdac.close()
 plt.show()

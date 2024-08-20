@@ -9,6 +9,7 @@ In this experiment, you should see a blockade at low biases and a ramp at
 high biases.
 
 Prerequisites:
+# todo: the OPX should go to the slow side
 - Connect the QDAC-II DC channel to the appropriate device port.
 - Connect the drain_tia to the corresponding input channel.
 
@@ -49,6 +50,8 @@ with program() as gate_sweep_lock_in:
         wait(1 * u.ms)
 
         with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
+            reset_phase("drain_tia_lock_in")
+
             measure(
                 "readout",
                 "drain_tia_lock_in",
@@ -135,4 +138,5 @@ else:
     plt.tight_layout()
     plt.pause(0.1)
 
+qdac.close()
 plt.show()
