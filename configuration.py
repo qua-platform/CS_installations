@@ -6,11 +6,13 @@ import numpy as np
 from qualang_tools.units import unit
 
 
+data_folder_path = r"C:\Documents\qm\CS_installations\data"
+
 ######################
 # Network parameters #
 ######################
-qop_ip = "172.16.33.101"  # Write the QM router IP address
-cluster_name = "Cluster_83"  # Write your cluster_name if version >= QOright_plunger20
+qop_ip = "127.0.0.1"  # Write the QM router IP address
+cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOright_plunger20
 qop_port = None  # Write the QOP port if version < QOright_plunger20
 
 ######################

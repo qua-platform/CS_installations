@@ -1,5 +1,5 @@
 """
-TIME OF FLIGHT
+RAW ADC TRACES
 
 This sequence involves sending a readout pulse and capturing the raw ADC traces.
 The data undergoes post-processing to calibrate three distinct parameters:
@@ -26,7 +26,7 @@ from qm import SimulationConfig
 from configuration import *
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
-
+from qualang_tools.results.data_handler import DataHandler
 
 ###################
 # The QUA program #
@@ -63,7 +63,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 #######################
 # Simulate or execute #
 #######################
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -126,5 +126,14 @@ else:
     # Update the config
     print(f"DC offset to add to Q in the config: {-adc1_mean:.6f} V")
     print(f"Time Of Flight to add in the config: {delay} ns")
+
+    data_handler = DataHandler(root_data_folder=data_folder_path)
+    data = {
+        "dc_offset": adc1_mean,
+        "time_of_flight": delay,
+        "figure": fig
+    }
+    # Save results
+    data_folder = data_handler.save_data(data=data, name="raw_adc_traces")
 
 plt.show()

@@ -23,7 +23,7 @@ from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool
+from qualang_tools.results import progress_counter, fetching_tool, DataHandler
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
@@ -79,7 +79,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 #######################
 # Simulate or execute #
 #######################
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -109,7 +109,7 @@ else:
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
-        plt.suptitle("RF-reflectometry spectroscopy")
+        plt.suptitle("Tank-circuit Spectroscopy")
         plt.subplot(211)
         plt.cla()
         plt.plot(frequencies / u.MHz, R)
@@ -122,4 +122,15 @@ else:
         plt.ylabel("Phase [rad]")
         plt.tight_layout()
         plt.pause(0.1)
+
+    data_handler = DataHandler(root_data_folder=data_folder_path)
+    data = {
+        "frequency": frequencies,
+        "measured_amplitude": S,
+        "measured_phase": R,
+        "figure": fig
+    }
+    # Save results
+    data_folder = data_handler.save_data(data=data, name="tank_circuit_spectroscopy")
+
 plt.show()

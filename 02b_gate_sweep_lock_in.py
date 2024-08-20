@@ -21,7 +21,7 @@ from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import wait_until_job_is_paused, fetching_tool, progress_counter
+from qualang_tools.results import wait_until_job_is_paused, fetching_tool, progress_counter, DataHandler
 from qcodes_contrib_drivers.drivers.QDevil import QDAC2
 
 from configuration import *
@@ -69,6 +69,7 @@ with program() as gate_sweep_lock_in:
     with stream_processing():
         I_st.buffer(n_avg).map(FUNCTIONS.average()).save_all("I")
         Q_st.buffer(n_avg).map(FUNCTIONS.average()).save_all("Q")
+        n_st.save("iteration")
 
 
 #####################################
@@ -87,7 +88,7 @@ else:
 #######################
 # Simulate or execute #
 #######################
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -117,12 +118,11 @@ else:
             # Get results from QUA program and initialize live plotting
             results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
     # Fetch the data from the last OPX run corresponding to the current slow axis iteration
-    I, Q, DC_signal, iteration = results.fetch_all()
+    I, Q, iteration = results.fetch_all()
     # Convert results into Volts
-    S = u.demod2volts(I + 1j * Q, rf_readout_length)
+    S = u.demod2volts(I + 1j * Q, lock_in_length)
     R = np.abs(S)  # Amplitude
     phase = np.angle(S)  # Phase
-    DC_signal = u.demod2volts(DC_signal, readout_len)
     # Progress bar
     progress_counter(iteration, n_points)
     # Plot results
@@ -139,6 +139,17 @@ else:
     plt.ylabel("Phase [rad]")
     plt.tight_layout()
     plt.pause(0.1)
+
+    data_handler = DataHandler(root_data_folder=data_folder_path)
+    data = {
+        "swept_gate": gate_to_sweep,
+        "gate_dc_offsets": gate_dc_offsets,
+        "measured_amplitude": S,
+        "measured_phase": R,
+        "figure": fig
+    }
+    # Save results
+    data_folder = data_handler.save_data(data=data, name=f"{gate_to_sweep}_gate_sweep_lock_in")
 
 qdac.close()
 plt.show()

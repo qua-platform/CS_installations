@@ -18,7 +18,7 @@ from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import wait_until_job_is_paused, fetching_tool, progress_counter
+from qualang_tools.results import wait_until_job_is_paused, fetching_tool, progress_counter, DataHandler
 from qcodes_contrib_drivers.drivers.QDevil import QDAC2
 
 from configuration import *
@@ -54,6 +54,7 @@ with program() as gate_sweep_transport:
 
     with stream_processing():
         i_drain_st.buffer(n_avg).map(FUNCTIONS.average()).save_all("i_drain")
+        n_st.save("iteration")
 
 
 #####################################
@@ -72,7 +73,7 @@ else:
 #######################
 # Simulate or execute #
 #######################
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -109,12 +110,23 @@ else:
     # Plot results
     plt.suptitle(f"{gate_to_sweep.capitalize()}-Gate Sweep (Transport)")
     plt.cla()
-    plt.plot(gate_dc_offsets[: iteration + 1], i_drain)
+    plt.plot(gate_dc_offsets[: iteration + 1], i_drain_pA)
     plt.xlabel("Gate Voltage [V]")
     plt.ylabel(r"Drain Current [pA]")
     plt.yscale('log')  # set the y-axis scaling to be logarithmic
     plt.tight_layout()
     plt.pause(0.1)
+
+    data_handler = DataHandler(root_data_folder=data_folder_path)
+    data = {
+        "swept_gate": gate_to_sweep,
+        "gate_dc_offsets": gate_dc_offsets,
+        "readout_drain_current": i_drain,
+        "readout_drain_current_pA": i_drain_pA,
+        "figure": fig
+    }
+    # Save results
+    data_folder = data_handler.save_data(data=data, name=f"{gate_to_sweep}_gate_sweep_transport")
 
 qdac.close()
 plt.show()

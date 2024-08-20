@@ -31,6 +31,10 @@ Therefore, the channels in the diagram need to be shifted to start from **CH09**
 
 ![](.img/page-2.png)
 
+### Plunger Gate Rabi Oscillations
+**Purpose**: to verify a pulse train which would be used to create Rabi oscillations
+![](.img/page-8.png)
+
 ### Source-Drain Sweep (Transport Measurement)
 **Purpose**: to measure the transport current through the source and drain while sweeping a gate voltage.
 
@@ -47,5 +51,3 @@ Therefore, the channels in the diagram need to be shifted to start from **CH09**
 ### Charge Stability Map (Plunger Reflectometry)
 ![](.img/page-7.png)
 
-### Plunger Gate Rabi Oscillations
-![](.img/page-8.png)
