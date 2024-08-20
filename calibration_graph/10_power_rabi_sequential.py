@@ -87,7 +87,7 @@ with program() as power_rabi:
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
-            q.z.to_independent_idle()
+            qubit.z.to_independent_idle()
         elif flux_point == "joint":
             machine.apply_all_flux_to_joint_idle()
         else:
