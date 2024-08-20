@@ -12,6 +12,8 @@ Prerequisites:
 - Connect the LC circuit between the bias-tee and the relevant gate.
 - Connect the OPX analog output/input to the coupler before the bias-tee.
 
+Note:
+- Need to remove `pause` and `wait` to see simulation output.
 """
 
 from qm.qua import *
@@ -83,7 +85,7 @@ else:
 #######################
 # Simulate or execute #
 #######################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration

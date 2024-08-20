@@ -33,9 +33,9 @@ readout_amp = 0.0  # should be 0 since the OPX doesn't ouptut voltage when measu
 readout_len = 4 * u.ms  # should be greater than the time-constant, which is 1 / (2*pi*bandwidth)
 # Note: if average drain current exceeds 10mV, 4ms integration can lead to fixed-point overflow
 
-lock_in_freq = 1 * u.MHz
+lock_in_freq = 200 * u.Hz
 lock_in_amp = 10 * u.mV
-lock_in_length = 10 * u.us
+lock_in_length = 100 * u.us
 
 # RF-Reflectometry readout parameters
 rf_readout_length = 1 * u.us

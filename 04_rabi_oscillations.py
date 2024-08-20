@@ -65,8 +65,9 @@ if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=250)  # In clock cycles = 4ns
     job = qmm.simulate(config, rabi, simulation_config)
-    waveform_on_ch2 = job.get_simulated_samples().con1.analog['1-2']
-    plt.step(range(len(waveform_on_ch2)), waveform_on_ch2)
+    ch = '1-2' if plunger_gate == 'right' else '1-1'
+    waveform = job.get_simulated_samples().con1.analog[ch]
+    plt.step(range(len(waveform)), waveform)
     plt.xlabel('Time [ns]')
     plt.ylabel('Output Voltage [V]')
     plt.title('Pulse Train for Rabi Oscillations')

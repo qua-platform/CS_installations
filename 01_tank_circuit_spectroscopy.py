@@ -122,3 +122,4 @@ else:
         plt.ylabel("Phase [rad]")
         plt.tight_layout()
         plt.pause(0.1)
+plt.show()

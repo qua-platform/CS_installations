@@ -9,12 +9,13 @@ conda create -n qm python==3.10
 conda activate qm
 
 # Install relevant packages
-pip install qm-qua, qualang-tools, qcodes_contrib_drivers
+pip install qm-qua, qualang-tools, qcodes_contrib_drivers, pyvisa_py
 ```
 These packages provide access to the following features:
  - **qm-qua**: The QUA SDK required for connecting to and programming the OPX.
  - **qualang-tools**: A library to help with writing QUA programs on the OPX.
- - **qcodes_contrib_drivers**: Contains an open-source driver for connecting to and controlling the QDAC-II
+ - **qcodes_contrib_drivers**: Contains an open-source driver for connecting to and controlling the QDAC-II.
+ - **pysvisa_py**: Library to handle VISA connections to the QDAC-II driver.
 
 ## Experiments
 ### QDAC-II Note

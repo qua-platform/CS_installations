@@ -9,10 +9,12 @@ In this experiment, you should see a blockade at low biases and a ramp at
 high biases.
 
 Prerequisites:
-# todo: the OPX should go to the slow side
+- Connect the OPX AO to the source-gate either directly or through an adder.
 - Connect the QDAC-II DC channel to the appropriate device port.
 - Connect the drain_tia to the corresponding input channel.
 
+Note:
+- Need to remove `pause` and `wait` to see simulation output.
 """
 
 from qm.qua import *
@@ -85,7 +87,7 @@ else:
 #######################
 # Simulate or execute #
 #######################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration

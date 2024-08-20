@@ -72,7 +72,7 @@ else:
 #######################
 # Simulate or execute #
 #######################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -81,7 +81,6 @@ if simulate:
     job = qmm.simulate(config, gate_sweep_transport, simulation_config)
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
-
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
