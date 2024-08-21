@@ -37,7 +37,7 @@ readout_len = 4 * u.ms  # should be greater than the time-constant, which is 1 /
 
 lock_in_freq = 200 * u.Hz
 lock_in_amp = 10 * u.mV
-lock_in_length = 100 * u.us
+lock_in_length = 4 * u.ms
 
 # RF-Reflectometry readout parameters
 rf_readout_length = 1 * u.us
