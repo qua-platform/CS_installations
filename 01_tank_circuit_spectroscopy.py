@@ -34,7 +34,7 @@ from scipy import signal
 ###################
 n_avg = 100  # Number of averaging loops
 # The frequency axis
-frequencies = np.linspace(250 * u.MHz, 350 * u.MHz, 101)
+frequencies = np.arange(250 * u.MHz, 350 * u.MHz, 1 * u.MHz)
 
 with program() as reflectometry_spectroscopy:
     f = declare(int)  # QUA variable for the frequency sweep
@@ -79,7 +79,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 #######################
 # Simulate or execute #
 #######################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration

@@ -21,7 +21,7 @@ config/controllers/"con1"/analog_inputs.
 """
 
 from qm.qua import *
-from qm.QuantumMachinesManager import QuantumMachinesManager
+from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from configuration import *
 import matplotlib.pyplot as plt
@@ -63,7 +63,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 #######################
 # Simulate or execute #
 #######################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration

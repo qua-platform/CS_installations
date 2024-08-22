@@ -29,8 +29,7 @@ import matplotlib.pyplot as plt
 # The QUA program #
 ###################
 n_avg = 100  # The number of averages
-n_points = 101
-gate_dc_offsets = np.linspace(-0.5, 0.5, n_points)
+gate_dc_offsets = np.arange(-0.5, 0.5, 0.05)
 gate_to_sweep = "source"  # or "plunger"
 
 with program() as gate_sweep_transport:
@@ -40,7 +39,7 @@ with program() as gate_sweep_transport:
     n_st = declare_stream()
     i_drain_st = declare_stream()  # The stream to store the raw ADC trace for the DC line
 
-    with for_(i, 0, i < n_points + 1, i + 1):
+    with for_(i, 0, i < len(gate_dc_offsets) + 1, i + 1):
         # Pause the OPX to update the external DC voltages in Python
         pause()
         # Wait for the voltages to settle (depends on the voltage source bandwidth)
@@ -90,7 +89,7 @@ else:
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-    for i in range(n_points):  # Loop over voltages
+    for i in range(len(gate_dc_offsets)):  # Loop over voltages
         # Set voltage
         gate.output_mode(range='low')
         gate.dc_constant_V(gate_dc_offsets[i])
@@ -101,21 +100,21 @@ else:
         if i == 0:
             # Get results from QUA program and initialize live plotting
             results = fetching_tool(job, data_list=["i_drain", "iteration"], mode="live")
-    # Fetch the data from the last OPX run corresponding to the current slow axis iteration
-    i_drain, iteration = results.fetch_all()
-    i_drain = u.demod2volts(i_drain, readout_len)
-    i_drain_pA = i_drain * tia_iv_scale_factor * 1e12
-    # Progress bar
-    progress_counter(iteration, n_points)
-    # Plot results
-    plt.suptitle(f"{gate_to_sweep.capitalize()}-Gate Sweep (Transport)")
-    plt.cla()
-    plt.plot(gate_dc_offsets[: iteration + 1], i_drain_pA)
-    plt.xlabel("Gate Voltage [V]")
-    plt.ylabel(r"Drain Current [pA]")
-    plt.yscale('log')  # set the y-axis scaling to be logarithmic
-    plt.tight_layout()
-    plt.pause(0.1)
+        # Fetch the data from the last OPX run corresponding to the current slow axis iteration
+        i_drain, iteration = results.fetch_all()
+        i_drain = u.demod2volts(i_drain, readout_len)
+        i_drain_pA = i_drain * tia_iv_scale_factor * 1e12
+        # Progress bar
+        progress_counter(iteration, len(gate_dc_offsets))
+        # Plot results
+        plt.suptitle(f"{gate_to_sweep.capitalize()}-Gate Sweep (Transport)")
+        plt.cla()
+        plt.plot(gate_dc_offsets[: iteration + 1], i_drain_pA)
+        plt.xlabel("Gate Voltage [V]")
+        plt.ylabel(r"Drain Current [pA]")
+        plt.yscale('log')  # set the y-axis scaling to be logarithmic
+        plt.tight_layout()
+        plt.pause(1)
 
     data_handler = DataHandler(root_data_folder=data_folder_path)
     data = {
