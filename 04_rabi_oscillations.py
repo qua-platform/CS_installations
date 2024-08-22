@@ -13,7 +13,7 @@ import numpy as np
 from qualang_tools.bakery import baking
 
 
-plunger_gate = "right"
+plunger_gate = "left"
 max_length = 16  # in ns
 
 ####################
@@ -50,16 +50,18 @@ baked_signals = baked_waveform(dc_amp, dc_el)
 times = np.arange(1, max_length + 1, 1)  # x-axis for plotting - must be in ns
 
 with program() as rabi:
-    for i in range(max_length):
-        baked_signals[i].run()
-        wait(20 * u.ns)
+
+    with infinite_loop_():
+        for i in range(max_length):
+            baked_signals[i].run()
+            wait(40 * u.ns)
 
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
 
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -75,3 +77,4 @@ if simulate:
 else:
     qm = qmm.open_qm(config)
     job = qm.execute(rabi)
+    # job.halt()

@@ -31,7 +31,7 @@ from qualang_tools.results.data_handler import DataHandler
 ###################
 # The QUA program #
 ###################
-n_avg = 100  # Number of averaging loops
+n_avg = 1_000  # Number of averaging loops
 readout_element = "source_resonator"  # or "plunger_resonator" or "drain_lock_in"
 
 with program() as tof_prog:
@@ -43,9 +43,9 @@ with program() as tof_prog:
         # Needed to average the cosine signal.
         reset_phase(readout_element)
         # Sends the readout pulse and stores the raw ADC traces in the stream called "adc_st"
-        measure("readout", readout_element, adc_st)
+        measure("readout"*amp(0), readout_element, adc_st)
         # Wait 
-        wait(1_000 * u.ns, readout_element)
+        wait(10_000 * u.ns, readout_element)
 
     with stream_processing():
         # Please adjust the analog inputs according to the connectivity (input1/2 -> rf)
@@ -63,7 +63,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 #######################
 # Simulate or execute #
 #######################
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration

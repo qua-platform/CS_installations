@@ -6,13 +6,13 @@ import numpy as np
 from qualang_tools.units import unit
 
 
-data_folder_path = r"C:\Documents\qm\CS_installations\data"
+data_folder_path = r"C:\Users\KevinAVillegasRosale\OneDrive - QM Machines LTD\Documents\GitKraken\CS_installations\data"
 
 ######################
 # Network parameters #
 ######################
-qop_ip = "127.0.0.1"  # Write the QM router IP address
-cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOright_plunger20
+qop_ip = "192.168.88.254"  # Write the QM router IP address
+cluster_name = "Cluster1"  # Write your cluster_name if version >= QOright_plunger20
 qop_port = None  # Write the QOP port if version < QOright_plunger20
 
 ######################
@@ -29,18 +29,18 @@ qdac_right_plunger_ch = 11  # if only one plunger, use this channel!
 u = unit(coerce_to_integer=True)
 
 # DC readout parameters
-tia_iv_scale_factor = 1e-10  # from spec (Femto LCA-200-10G Transimpedance in A/V)
+tia_iv_scale_factor = 1e-9  # from spec (Femto LCA-200-10G Transimpedance in A/V)
 tia_bandwidth = 200  # in Hz, from spec
 readout_amp = 0.0  # should be 0 since the OPX doesn't ouptut voltage when measuring transport current
-readout_len = 4 * u.ms  # should be greater than the time-constant, which is 1 / (2*pi*bandwidth)
+readout_len = 0.1 * u.ms  # should be greater than the time-constant, which is 1 / (2*pi*bandwidth)
 # Note: if average drain current exceeds 10mV, 4ms integration can lead to fixed-point overflow
 
 lock_in_freq = 200 * u.Hz
-lock_in_amp = 10 * u.mV
-lock_in_length = 4 * u.ms
+lock_in_amp = 450 * u.mV
+lock_in_length = 1 * u.ms
 
 # RF-Reflectometry readout parameters
-rf_readout_length = 1 * u.us
+rf_readout_length = 10 * u.us
 
 source_resonator_IF = 300 * u.MHz
 source_rf_readout_amp = 30 * u.mV
@@ -69,13 +69,14 @@ config = {
             "analog_outputs": {
                 1: {"offset": 0.0},  # Source gate RF-reflectometry
                 2: {"offset": 0.0},  # Plunger gate RF-reflectometry
+                10: {"offset": 0.0}
             },
             "digital_outputs": {
                 1: {},
                 2: {},
             },
             "analog_inputs": {
-                1: {"offset": 0.0, "gain_db": 0},  # Source gate RF-input/Drain DC-input
+                1: {"offset": -0.058160 + 0.000608, "gain_db": 0},  # Source gate RF-input/Drain DC-input
                 2: {"offset": 0.0, "gain_db": 0},  # Plunger gate RF-input
             },
         },
@@ -83,7 +84,7 @@ config = {
     "elements": {
         "left_plunger": {
             "singleInput": {
-                "port": ("con1", 1),
+                "port": ("con1", 10),
             },
             "operations": {
                 "step": "left_plunger_step_pulse",

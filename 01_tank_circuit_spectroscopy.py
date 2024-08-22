@@ -32,9 +32,9 @@ from scipy import signal
 ###################
 # The QUA program #
 ###################
-n_avg = 100  # Number of averaging loops
+n_avg = 2  # Number of averaging loops
 # The frequency axis
-frequencies = np.arange(250 * u.MHz, 350 * u.MHz, 1 * u.MHz)
+frequencies = np.arange(200 * u.MHz, 400 * u.MHz, 0.1 * u.MHz)
 
 with program() as reflectometry_spectroscopy:
     f = declare(int)  # QUA variable for the frequency sweep
@@ -79,7 +79,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 #######################
 # Simulate or execute #
 #######################
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -104,7 +104,9 @@ else:
         I, Q, iteration = results.fetch_all()
         # Convert results into Volts
         S = u.demod2volts(I + 1j * Q, rf_readout_length)
+        # S = 20*np.log10(S)
         R = np.abs(S)  # Amplitude
+        R = 20*np.log10(R)
         phase = np.angle(S)  # Phase
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
@@ -112,9 +114,14 @@ else:
         plt.suptitle("Tank-circuit Spectroscopy")
         plt.subplot(211)
         plt.cla()
-        plt.plot(frequencies / u.MHz, R)
+        max_to_min = np.max(R) - np.min(R)
+        plt.plot(frequencies / u.MHz, R, label=f"{max_to_min:3f} dB")
+        plt.axhline(y=np.max(R), color='r', linestyle='--')
+        plt.axhline(y=np.min(R), color='r', linestyle='--')
+        plt.legend()
         plt.xlabel("Readout frequency [MHz]")
-        plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
+        plt.ylabel("Magnitude [dB]")
+        plt.grid()
         plt.subplot(212)
         plt.cla()
         plt.plot(frequencies / u.MHz, signal.detrend(np.unwrap(phase)))
