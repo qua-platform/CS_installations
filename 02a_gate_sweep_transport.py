@@ -93,6 +93,7 @@ else:
         # Set voltage
         gate.output_mode(range='low')
         gate.dc_constant_V(gate_dc_offsets[i])
+        # gate._set_fixed_voltage_immediately(gate_dc_offsets[i])
         # Resume the QUA program (escape the 'pause' statement)
         job.resume()
         # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
