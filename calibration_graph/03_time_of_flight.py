@@ -25,9 +25,20 @@ import numpy as np
 from scipy.signal import savgol_filter
 
 import matplotlib
-
 matplotlib.use("TKAgg")
 
+from qualibrate import QualibrationNode, NodeParameters
+
+class Parameters(NodeParameters):
+    num_averages: int = 400
+    time_of_flight: int = 24
+    qubit: str = "q1"
+    simulate: bool = False
+
+node = QualibrationNode(
+    name="Time-of-Flight",
+    parameter_class=Parameters
+)
 
 ###################################################
 #  Load QuAM and open Communication with the QOP  #
@@ -43,18 +54,17 @@ octave_config = machine.get_octave_config()
 qmm = machine.connect()
 
 # Get the relevant QuAM components
-resonator = machine.active_qubits[1].resonator  # The resonator element
+resonator = machine.qubits[node.parameters.qubit].resonator  # The resonator element
 
 ###################
 # The QUA program #
 ###################
-n_avg = 400  # Number of averaging loops
 
 with program() as raw_trace_prog:
     n = declare(int)  # QUA variable for the averaging loop
     adc_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace
 
-    with for_(n, 0, n < n_avg, n + 1):
+    with for_(n, 0, n < node.parmaeters.num_averages, n + 1):
         # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
         reset_phase(resonator.name)
         # Measure the resonator (send a readout pulse and record the raw ADC trace)
@@ -64,18 +74,15 @@ with program() as raw_trace_prog:
 
     with stream_processing():
         # Will save average:
-        adc_st.input1().average().save("adc1")
-        adc_st.input2().average().save("adc2")
-        # # Will save only last run:
-        adc_st.input1().save("adc1_single_run")
-        adc_st.input2().save("adc2_single_run")
+        adc_st.input1().average().save("adc")
+        # Will save only last run:
+        adc_st.input1().save("adc_single_run")
 
 
 #######################
 # Simulate or execute #
 #######################
-simulate = False
-if simulate:
+if node.parameters.simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
@@ -90,79 +97,61 @@ else:
     # machine.calibrate_octave_ports(qm)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(raw_trace_prog)
+
     # Creates a result handle to fetch data from the OPX
     res_handles = job.result_handles
     # Waits (blocks the Python console) until all results have been acquired
     res_handles.wait_for_all_values()
     # Fetch the raw ADC traces and convert them into Volts
-    adc1 = u.raw2volts(res_handles.get("adc1").fetch_all())
-    adc2 = u.raw2volts(res_handles.get("adc2").fetch_all())
-    adc1_single_run = u.raw2volts(res_handles.get("adc1_single_run").fetch_all())
-    adc2_single_run = u.raw2volts(res_handles.get("adc2_single_run").fetch_all())
-    # Derive the average values
-    adc1_mean = np.mean(adc1)
-    adc2_mean = np.mean(adc2)
-    # Remove the average values
-    adc1_unbiased = adc1 - np.mean(adc1)
-    adc2_unbiased = adc2 - np.mean(adc2)
+    adc = u.raw2volts(res_handles.get("adc").fetch_all())
+    adc_single_run = u.raw2volts(res_handles.get("adc_single_run").fetch_all())
     # Filter the data to get the pulse arrival time
-    signal = savgol_filter(np.abs(adc1_unbiased + 1j * adc2_unbiased), 11, 3)
+    signal = savgol_filter(np.abs(adc), 11, 3)
     # Detect the arrival of the readout signal
     th = (np.mean(signal[:100]) + np.mean(signal[:-100])) / 2
     delay = np.where(signal > th)[0][0]
-    delay = int(np.round(delay / 4) * 4)  # Find the closest multiple integer of 4ns
+    delay = np.round(delay / 4) * 4  # Find the closest multiple integer of 4ns
 
     # Plot data
     fig = plt.figure()
     plt.subplot(121)
     plt.title("Single run")
-    plt.plot(adc1_single_run, "b", label="Input 1")
-    plt.plot(adc2_single_run, "r", label="Input 2")
+    plt.plot(adc_single_run.real, "b", label="I")
+    plt.plot(adc_single_run.imag, "r", label="Q")
     xl = plt.xlim()
     yl = plt.ylim()
-    plt.axhline(y=0.5)
-    plt.axhline(y=-0.5)
-    plt.plot(xl, adc1_mean * np.ones(2), "k--")
-    plt.plot(xl, adc2_mean * np.ones(2), "k--")
-    plt.plot(delay * np.ones(2), yl, "k--")
+    plt.axvline(delay, color="k", linestyle="--", label="TOF")
+    plt.fill_between(range(len(adc_single_run)), -0.5, 0.5, color="grey", alpha=0.2, label="ADC Range")
     plt.xlabel("Time [ns]")
     plt.ylabel("Signal amplitude [V]")
     plt.legend()
     plt.subplot(122)
     plt.title("Averaged run")
-    plt.plot(adc1, "b", label="Input 1")
-    plt.plot(adc2, "r", label="Input 2")
-    xl = plt.xlim()
-    yl = plt.ylim()
-    plt.plot(xl, adc1_mean * np.ones(2), "k--")
-    plt.plot(xl, adc2_mean * np.ones(2), "k--")
-    plt.plot(delay * np.ones(2), yl, "k--")
+    plt.plot(adc.real, "b", label="I")
+    plt.plot(adc.imag, "r", label="Q")
+    plt.axvline(delay, color="k", linestyle="--", label="TOF")
     plt.xlabel("Time [ns]")
     plt.legend()
-    plt.grid(True)
+    plt.grid("all")
     plt.tight_layout()
     plt.show()
 
-    print(f"DC offset to add to I in the config: {-adc1_mean:.6f} V")
-    print(f"DC offset to add to Q in the config: {-adc2_mean:.6f} V")
+    # Update the config
     print(f"Time Of Flight to add in the config: {delay} ns")
 
     # Update QUAM
-    for q in machine.active_qubits:
-        q.resonator.opx_input_offset_I -= np.mean(adc1)
-        q.resonator.opx_input_offset_Q -= np.mean(adc2)
-        q.resonator.time_of_flight += delay
+    with node.record_state_updates():
+        for q in machine.active_qubits:
+            q.resonator.time_of_flight += delay
 
-    # Save data from the node
-    data = {
-        "offset_1": np.mean(adc1),
-        "offset_2": np.mean(adc2),
+    node.machine = machine
+
+    node.results = {
         "delay": delay,
-        "raw_adc_1": adc1,
-        "raw_adc_2": adc2,
-        "raw_adc_1_single_shot": adc1_single_run,
-        "raw_adc_2_single_shot": adc2_single_run,
+        "raw_adc": adc,
+        "raw_adc_single_shot": adc_single_run,
         "figure": fig,
+        "initial_parameters": node.parameters.to_dict()
     }
 
-    node_save(machine, "time_of_flight", data, additional_files=True)
+    node.save()
