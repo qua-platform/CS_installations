@@ -28,6 +28,7 @@ from qualang_tools.loops import from_array
 from qualang_tools.units import unit
 from quam_libs.components import QuAM
 from quam_libs.macros import qua_declaration, multiplexed_readout, node_save
+from quam.components import pulses
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -65,17 +66,8 @@ operation = "x180"  # The qubit operation to play
 n_avg = 500  # The number of averages
 flux_point = "joint"  # "independent", "joint" or "zero"
 
-# # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-# amps = np.arange(0.8, 1.2, 0.005)
-# # Number of applied Rabi pulses sweep
-# N_pi = 10  # Maximum number of qubit pulses
-
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
 amps = np.arange(0.0,2.0, 0.025)
-# Number of applied Rabi pulses sweep
-N_pi = 1  # Maximum number of qubit pulses
-
-N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[::2]
 
 with program() as power_rabi:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
@@ -96,22 +88,26 @@ with program() as power_rabi:
         
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
-            with for_(*from_array(npi, N_pi_vec)):
-                with for_(*from_array(a, amps)):
-                    # Loop for error amplification (perform many qubit pulses)
-                    with for_(count, 0, count < npi, count + 1):
-                        qubit.xy.play("x180", amplitude_scale=a)
-                    align()
-                    qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
-                    save(I[i], I_st[i])
-                    save(Q[i], Q_st[i])
-                    wait(machine.thermalization_time * u.ns)
+            with for_(*from_array(a, amps)):
+                # Loop for error amplification (perform many qubit pulses)
+                # Reset the qubit frequency
+                update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
+                # Drive the qubit to the excited state
+                qubit.xy.play("x180")
+                # Update the qubit frequency to scan around the excepted f_01
+                update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency -qubit.anharmonicity)                
+                qubit.xy.play("x180", amplitude_scale=a)
+                align()
+                qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                save(I[i], I_st[i])
+                save(Q[i], Q_st[i])
+                wait(machine.thermalization_time * u.ns)
 
     with stream_processing():
         n_st.save("n")
         for i, qubit in enumerate(qubits):
-            I_st[i].buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(f"I{i + 1}")
-            Q_st[i].buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(f"Q{i + 1}")
+            I_st[i].buffer(len(amps)).average().save(f"I{i + 1}")
+            Q_st[i].buffer(len(amps)).average().save(f"Q{i + 1}")
 
 
 ###########################
@@ -227,7 +223,7 @@ else:
 
 # %%
 handles = job.result_handles
-ds = fetch_results_as_xarray(handles, qubits, {"amp": amps, "N": N_pi_vec})
+ds = fetch_results_as_xarray(handles, qubits, {"amp": amps})
 # %%
 def abs_amp(q):
     def foo(amp):
@@ -235,56 +231,38 @@ def abs_amp(q):
     return foo
 
 ds = ds.assign_coords({'abs_amp' : (['qubit','amp'],np.array([abs_amp(q)(amps) for q in qubits]))})
+ds = ds.assign({'IQ_abs' : np.sqrt(ds.I**2 + ds.Q**2)})
 data = {}
 data['ds'] = ds
 
 # %%
 fit_results = {}
 
-if N_pi == 1:
-    fit = fit_oscillation(ds.I, 'amp')
-    fit_evals = oscillation(ds.amp,fit.sel(fit_vals = 'a'),fit.sel(fit_vals = 'f'),fit.sel(fit_vals = 'phi'),fit.sel(fit_vals = 'offset'))
-    for q in qubits:
-        fit_results[q.name] = {}
-        f_fit = fit.loc[q.name].sel(fit_vals='f')
-        phi_fit = fit.loc[q.name].sel(fit_vals='phi')
-        phi_fit = phi_fit - np.pi * (phi_fit > np.pi/2)
-        factor = float(1.0 * (np.pi - phi_fit)/ (2* np.pi* f_fit))
-        new_pi_amp = q.xy.operations[operation].amplitude * factor
-        if new_pi_amp < 0.3:
-            print(f"amplitude for Pi pulse is modified by a factor of {factor:.2f}")
-            print(f"new amplitude is {1e3 * new_pi_amp:.2f} mV \n")
-            fit_results[q.name]['Pi_amplitude'] = new_pi_amp
-        else: 
-            print(f"Fitted amplitude too high, new amplitude is 300 mV \n")
-            fit_results[q.name]['Pi_amplitude'] = 0.3
-    data['fit_results'] = fit_results# %%
+fit = fit_oscillation(ds.IQ_abs, 'amp')
+fit_evals = oscillation(ds.amp,fit.sel(fit_vals = 'a'),fit.sel(fit_vals = 'f'),fit.sel(fit_vals = 'phi'),fit.sel(fit_vals = 'offset'))
+for q in qubits:
+    fit_results[q.name] = {}
+    f_fit = fit.loc[q.name].sel(fit_vals='f')
+    phi_fit = fit.loc[q.name].sel(fit_vals='phi')
+    phi_fit = phi_fit - np.pi * (phi_fit > np.pi/2)
+    factor = float(1.0 * (np.pi - phi_fit)/ (2* np.pi* f_fit))
+    new_pi_amp = q.xy.operations[operation].amplitude * factor
+    if new_pi_amp < 0.3:
+        print(f"amplitude for E-F Pi pulse is modified by a factor of {factor:.2f} w.r.t the original pi pulse amplitude")
+        print(f"new amplitude is {1e3 * new_pi_amp:.2f} mV \n")
+        fit_results[q.name]['Pi_amplitude'] = new_pi_amp
+    else: 
+        print(f"Fitted amplitude too high, new amplitude is 300 mV \n")
+        fit_results[q.name]['Pi_amplitude'] = 0.3
+data['fit_results'] = fit_results# %%
 
-elif N_pi > 1:
-    I_n=ds.I.mean(dim='N')
-    datamaxIndx = I_n.argmax(dim='amp')
-    for q in qubits:
-        new_pi_amp = ds.abs_amp.sel(qubit = q.name)[datamaxIndx.sel(qubit = q.name)]
-        fit_results[q.name] = {}
-        if new_pi_amp < 0.3:
-            fit_results[q.name]['Pi_amplitude'] = new_pi_amp    
-            print(f"amplitude for Pi pulse is modified by a factor of {I_n.idxmax(dim='amp').sel(qubit = q.name):.2f}")
-            print(f"new amplitude is {1e3 * new_pi_amp:.2f} mV \n")
-        else: 
-            print(f"Fitted amplitude too high, new amplitude is 300 mV \n")
-            fit_results[q.name]['Pi_amplitude'] = 0.3
 # %%
 
 grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
 for ax, qubit in grid_iter(grid):
-    if N_pi == 1:
-        (ds.assign_coords(amp_mV  = ds.abs_amp *1e3).loc[qubit].I*1e3).plot(ax = ax, x = 'amp_mV')
-        ax.plot(ds.abs_amp.loc[qubit]*1e3, 1e3*fit_evals.loc[qubit][0])
-        ax.set_ylabel('Trans. amp. I [mV]')
-    elif N_pi > 1:
-        (ds.assign_coords(amp_mV  = ds.abs_amp *1e3).loc[qubit].I*1e3).plot(ax = ax, x = 'amp_mV', y = 'N')
-        ax.axvline(1e3*ds.abs_amp.loc[qubit][datamaxIndx.loc[qubit]], color = 'r')
-        ax.set_ylabel('num. of pulses')
+    (ds.assign_coords(amp_mV  = ds.abs_amp *1e3).loc[qubit].IQ_abs*1e3).plot(ax = ax, x = 'amp_mV')
+    ax.plot(ds.abs_amp.loc[qubit]*1e3, 1e3*fit_evals.loc[qubit][0])
+    ax.set_ylabel('Trans. amp. I [mV]')
     ax.set_xlabel('Amplitude [mV]')
     ax.set_title(qubit['qubit'])
 grid.fig.suptitle('Rabi : I vs. amplitude')
@@ -294,8 +272,21 @@ data['figure'] = grid.fig
 
 # %%
 for q in qubits:
-    q.xy.operations[operation].amplitude = fit_results[q.name]['Pi_amplitude']
-
+    # check if an EF_x180 operation exists
+    if 'EF_x180' in q.xy.operations:
+        # set the new amplitude for the X180 operation
+        q.xy.operations['EF_x180'].amplitude = fit_results[q.name]['Pi_amplitude']
+    else:
+        # create a new operation with the new amplitude based on "operation"
+        q.xy.operations["EF_x180"] = pulses.DragPulse(
+            amplitude=fit_results[q.name]['Pi_amplitude'],
+            sigma=q.xy.operations[operation].sigma,
+            alpha=q.xy.operations[operation].alpha,
+            anharmonicity=q.xy.operations[operation].anharmonicity,
+            length=q.xy.operations[operation].length,
+            axis_angle=0,
+            digital_marker=q.xy.operations[operation].digital_marker,
+        )
 # %%
-node_save(machine, "power_rabi", data, additional_files=True)
+node_save(machine, "power_rabi_EF", data, additional_files=True)
 # %%

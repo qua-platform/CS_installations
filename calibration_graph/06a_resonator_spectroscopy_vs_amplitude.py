@@ -61,7 +61,7 @@ qmm = machine.connect()
 
 # Get the relevant QuAM components
 qubits = machine.active_qubits
-resonators = [qubit.resonator for qubit in machine.active_qubits]
+resonators = [qubit.resonator for qubit in qubits]
 prev_amps = [rr.operations["readout"].amplitude for rr in resonators]
 num_qubits = len(qubits)
 num_resonators = len(resonators)
@@ -76,7 +76,7 @@ n_avg = 100  # The number of averages
 # for rr in resonators:
 #     rr.operations["readout"].amplitude = 0.25
 
-for q in machine.active_qubits:
+for q in qubits:
     q.resonator.operations["readout"].amplitude = 0.4
     q.z.min_offset = -0.05
     q.resonator.time_of_flight = 264
@@ -273,7 +273,7 @@ plt.show()
 data["figure"] = grid.fig
 
 fit_results = {}
-for q in machine.active_qubits:
+for q in qubits:
     fit_results[q.name] = {}
     if float(rr_pwr.sel(qubit=q.name)) > 0:
         q.resonator.operations["readout"].amplitude *= float(rr_pwr.sel(qubit=q.name))

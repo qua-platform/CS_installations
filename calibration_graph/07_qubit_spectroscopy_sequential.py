@@ -267,7 +267,7 @@ from lib.fit import peaks_dips
 shifts = np.abs((ds.IQ_abs-ds.IQ_abs.mean(dim = 'freq'))).idxmax(dim = 'freq')
 
 # approximate peak freqeuency
-abs_freqs = dict([(q.name, shifts.sel(qubit = q.name).values + q.xy.intermediate_frequency + q.xy.LO_frequency) for q in machine.active_qubits])
+abs_freqs = dict([(q.name, shifts.sel(qubit = q.name).values + q.xy.intermediate_frequency + q.xy.LO_frequency) for q in qubits])
 
 # the roration angle to align the meaningfull data with I axis
 angle =  np.arctan2(ds.sel(freq = shifts).Q - ds.Q.mean(dim = 'freq'), ds.sel(freq = shifts).I - ds.I.mean(dim = 'freq'))
@@ -279,11 +279,11 @@ ds = ds.assign({'I_rot' :  np.real(ds.IQ_abs * np.exp(1j * (ds.phase - angle)  )
 result = peaks_dips(ds.I_rot,dim = 'freq',prominence_factor=5)
 
 # extract the qubit frequency
-abs_freqs = dict([(q.name, result.sel(qubit= q.name).position.values + q.xy.intermediate_frequency + q.xy.LO_frequency) for q in machine.active_qubits])
+abs_freqs = dict([(q.name, result.sel(qubit= q.name).position.values + q.xy.intermediate_frequency + q.xy.LO_frequency) for q in qubits])
 
 fit_results = {}
 
-for q in machine.active_qubits:
+for q in qubits:
     fit_results[q.name] = {}
     if not np.isnan(result.sel(qubit = q.name).position.values):
         fit_results[q.name]['fit_successful'] = True
@@ -332,7 +332,7 @@ data['figure'] = grid.fig
 
 # %%
 
-for q in machine.active_qubits:
+for q in qubits:
     fit_results[q.name] = {}
     if not np.isnan(result.sel(qubit = q.name).position.values):        
         q.xy.intermediate_frequency += float(result.sel(qubit = q.name).position.values)
