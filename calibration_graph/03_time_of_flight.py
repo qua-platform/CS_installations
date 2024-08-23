@@ -37,7 +37,7 @@ class Parameters(NodeParameters):
 
 node = QualibrationNode(
     name="Time-of-Flight",
-    parameter_class=Parameters
+    parameters_class=Parameters
 )
 
 ###################################################
