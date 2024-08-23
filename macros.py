@@ -9,6 +9,9 @@ from typing import Literal
 from qualang_tools.addons.variables import assign_variables_to_element
 import matplotlib.pyplot as plt
 from configuration_with_octave import u, pi_len
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix
 
 
 ##############
@@ -430,3 +433,185 @@ def freq_from_qua_config(element: str, config: dict) -> int:
     LO = config['octaves'][channel_port[0]]['RF_outputs'][channel_port[1]]['LO_frequency']
 
     return LO + IF
+
+
+def perform_gef_discrimination_blob_mean(Ig, Qg, Ie, Qe, If, Qf, suptitle="qubit 1"):
+    """
+    Given three blobs in the IQ plane representing g, e, f states,
+    finds the averange (mean) point of each blob, classify the label of each data point,
+    and computes the confusion matrix of the resulting classification and overall fidelity.
+    Plots the raw data of IQ blobs, resulting classification and confusion matrix.
+
+    .. note::
+        This function assumes that there are only three blobs in the IQ plane representing gef states (ground, excited, further)
+
+    :param float Ig: A vector containing the `I` quadrature of data points in the ground state
+    :param float Qg: A vector containing the `Q` quadrature of data points in the ground state
+    :param float Ie: A vector containing the `I` quadrature of data points in the excited state
+    :param float Qe: A vector containing the `Q` quadrature of data points in the excited state
+    :param float If: A vector containing the `I` quadrature of data points in the further excited state
+    :param float Qf: A vector containing the `Q` quadrature of data points in the further excited  state
+    :param string suptitle: suptitle for the figure
+    :returns: A tuple of (fig, Xg_mean, Xe_mean, Xf_mean, fidelity, y_true, y_pred).
+        fig - figure handler.
+        Xg_mean - average of g state data.
+        Xe_mean - average of e state data.
+        Xf_mean - average of f state data.
+        fidelity - The fidelity for discriminating the states.
+        y_true - ground truth of each data point (0: g, 1: e, 2: f).
+        y_pred - predicted labels of each data point (0: g, 1: e, 2: f).
+    """
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from sklearn.metrics import confusion_matrix
+
+    Xg = np.column_stack((Ig, Qg))
+    Xe = np.column_stack((Ie, Qe))
+    Xf = np.column_stack((If, Qf))
+    X = np.concatenate([Xg, Xe, Xf], axis=0)
+
+    # Condition to have the Q equal for both states:
+    Xg_mean = Xg.mean(axis=0)
+    Xe_mean = Xe.mean(axis=0)
+    Xf_mean = Xf.mean(axis=0)
+    X_mean = np.column_stack((Xg_mean, Xe_mean, Xf_mean))
+
+    Xg_diff = np.mean((Xg[..., None] - X_mean[None, ...]) ** 2, axis=1)
+    Xe_diff = np.mean((Xe[..., None] - X_mean[None, ...]) ** 2, axis=1)
+    Xf_diff = np.mean((Xf[..., None] - X_mean[None, ...]) ** 2, axis=1)
+
+    yg_pred = Xg_diff.argmin(axis=1)
+    ye_pred = Xe_diff.argmin(axis=1)
+    yf_pred = Xf_diff.argmin(axis=1)
+    y_pred = np.hstack([yg_pred, ye_pred, yf_pred])
+    y_true = np.hstack([np.zeros(Xg.shape[0]), np.ones(Xe.shape[0]), 2 * np.ones(Xf.shape[0])])
+
+    fidelity = (y_true == y_pred).mean() # accuracy of classifier
+
+    def plot_IQ(ax, Xg, Xe, Xf, alpha=1.0, no_legend=False):
+        if no_legend:
+            ax.scatter(Xg[:, 0], Xg[:, 1], color='r', s=10, alpha=alpha, label="_nolegend_")
+            ax.scatter(Xe[:, 0], Xe[:, 1], color='g', s=10, alpha=alpha, label="_nolegend_")
+            ax.scatter(Xf[:, 0], Xf[:, 1], color='b', s=10, alpha=alpha, label="_nolegend_")
+        else:
+            ax.scatter(Xg[:, 0], Xg[:, 1], color='r', s=10, alpha=alpha)
+            ax.scatter(Xe[:, 0], Xe[:, 1], color='g', s=10, alpha=alpha)
+            ax.scatter(Xf[:, 0], Xf[:, 1], color='b', s=10, alpha=alpha)
+        ax.set_xlabel("I")
+        ax.set_ylabel("Q")
+        # ax.set_aspect('eq|ual')
+
+    def plot_confusion_matrix(ax, y_true, y_pred, normalize=True):
+        # Generate confusion matrix
+        cm = confusion_matrix(y_true, y_pred)
+
+        # Plotting
+        cax = ax.matshow(cm, cmap='Blues')
+        if normalize:
+            # Normalize the confusion matrix by row (by the sum of true instances)
+            cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+
+        # Annotate the confusion matrix with text
+        for (i, j), val in np.ndenumerate(cm):
+            if normalize:
+                ax.text(j, i, f'{val:3.2f}', ha='center', va='center', color='black')
+            else:
+                ax.text(j, i, f'{val}', ha='center', va='center', color='black')
+
+        # Set axis labels and title
+        ax.set_xlabel('Predicted Labels')
+        ax.set_ylabel('True Labels')
+        ax.set_xticks(np.arange(len(np.unique(y_true))))
+        ax.set_yticks(np.arange(len(np.unique(y_true))))
+        ax.set_xticklabels(np.unique(y_true))
+        ax.set_yticklabels(np.unique(y_true))
+        plt.title('Confusion Matrix')
+
+
+    fig, axss = plt.subplots(2, 3, figsize=(11, 7))
+    plt.suptitle(suptitle, fontsize=16)
+
+    # plot all
+    ax = axss[0, 0]
+    plot_IQ(axss[0, 0], Xg, Xe, Xf, alpha=1.0)
+    ax.set_title("g, e, f states")
+    ax.legend(["g", "e", "f"])
+
+    # plot
+    ax = axss[0, 1]
+    plot_IQ(ax, Xg, Xe, Xf, alpha=0.1, no_legend=True)
+    ax.scatter(Xg[yg_pred == 0, 0], Xg[yg_pred == 0, 1], color='r', s=12)
+    ax.scatter(Xg[yg_pred != 0, 0], Xg[yg_pred != 0, 1], color='k', s=12)
+    ax.set_title("g state classification")
+    ax.legend(["g", "not g"])
+
+    # plot
+    ax = axss[1, 0]
+    plot_IQ(ax, Xg, Xe, Xf, alpha=0.1, no_legend=True)
+    ax.scatter(Xe[ye_pred == 1, 0], Xe[ye_pred == 1, 1], color='g', s=12)
+    ax.scatter(Xe[ye_pred != 1, 0], Xe[ye_pred != 1, 1], color='k', s=12)
+    ax.set_title("e state classification")
+    ax.legend(["e", "not e"])
+
+    # plot
+    ax = axss[1, 1]
+    plot_IQ(ax, Xg, Xe, Xf, alpha=0.1, no_legend=True)
+    ax.scatter(Xf[yf_pred == 2, 0], Xf[yf_pred == 2, 1], color='b', s=12)
+    ax.scatter(Xf[yf_pred != 2, 0], Xf[yf_pred != 2, 1], color='k', s=12)
+    ax.set_title("f state classification")
+    ax.legend(["f", "not f"])
+
+    ax = axss[0, 2]
+    plot_confusion_matrix(ax, y_true, y_pred, normalize=False)
+    ax.set_title("confusion matrix [count]")
+
+    ax = axss[1, 2]
+    plot_confusion_matrix(ax, y_true, y_pred, normalize=True)
+    ax.set_title("confusion matrix [probability]")
+
+    plt.tight_layout()
+    return fig, Xg_mean, Xe_mean, Xf_mean, fidelity, y_true, y_pred
+
+
+def gef_state_discriminator_blob_mean(I, Q, state, state_st, blob_mean):
+    """
+    Given three blobs in the IQ plane representing g, e, f states,
+    The discrimination is performed by identifying the closest blob mean for each IQ pair.
+
+    .. note::
+        This function assumes that there are only three blobs in the IQ plane representing gef states (ground, excited, further)
+        Unexpected output will be returned in other cases.
+
+    :param float I: A variable containing the `I` quadrature of data points
+    :param float Q: A variable containing the `Q` quadrature of data points
+    :param float state: A vector with length 3 (g,e,f) to contain the discriminated states 
+    :param float state_st: A stream variable for state
+    """
+    
+    s = declare(int)
+    dist = declare(fixed, size=3)
+    blob_closest = declare(int)
+    xs = declare(fixed, size=3)
+    ys = declare(fixed, size=3)
+    xs2 = declare(fixed, size=3)
+    ys2 = declare(fixed, size=3)
+
+    assign(xs[0], I - blob_mean["g"][0])
+    assign(xs[1], I - blob_mean["e"][0])
+    assign(xs[2], I - blob_mean["f"][0])
+    assign(ys[0], Q - blob_mean["g"][1])
+    assign(ys[1], Q - blob_mean["e"][1])
+    assign(ys[2], Q - blob_mean["f"][1])
+
+    # (0: g, 1: e, 2: f)
+    with for_(s, 0, s < 3, s + 1):
+        assign(xs2[s], xs[s] * xs[s])
+        assign(ys2[s], ys[s] * ys[s])
+        assign(dist[s], xs2[s] + ys2[s])
+
+    assign(blob_closest, Math.argmin(dist))
+    
+    # (0: g, 1: e, 2: f)
+    with for_(s, 0, s < 3, s + 1):
+        assign(state[s], blob_closest == s)
+        save(state[s], state_st)

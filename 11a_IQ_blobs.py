@@ -22,8 +22,8 @@ from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
 from qm.simulate import SimulationConfig
 
-from configuration import *
-# from configuration_with_octave import *
+from configuration_with_octave import *
+# from configuration import *
 import matplotlib.pyplot as plt
 from qualang_tools.results import fetching_tool
 from qualang_tools.analysis import two_state_discriminator
@@ -37,7 +37,7 @@ matplotlib.use("TKAgg")
 ###################
 # The QUA program #
 ###################
-n_runs = 10000  # Number of runs
+n_runs = 1000  # Number of runs
 
 with program() as iq_blobs:
     I_g, I_g_st, Q_g, Q_g_st, n, _ = qua_declaration(nb_of_qubits=2)
