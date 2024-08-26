@@ -143,22 +143,24 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(ramsey)
     # Get results from QUA program
-    data_list = sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], ["n"])
-    results = fetching_tool(job, data_list, mode="live")
+    for i in range(num_qubits):
+        print(f"Fetching results for qubit {qubits[i].name}")
+        data_list = sum([[f"I{i + 1}", f"Q{i + 1}"] ], ["n"])
+        results = fetching_tool(job, data_list, mode="live")
     # Live plotting
     # fig, axes = plt.subplots(2, num_qubits, figsize=(4 * num_qubits, 8))
     # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-    while results.is_processing():
+        while results.is_processing():
         # Fetch results
-        fetched_data = results.fetch_all()
-        n = fetched_data[0]
+            fetched_data = results.fetch_all()
+            n = fetched_data[0]
         # I_data = fetched_data[1::2]
         # Q_data = fetched_data[2::2]
         # Convert the results into Volts
         # I_volts = [u.demod2volts(I, qubit.resonator.operations["readout"].length) for I, qubit in zip(I_data, qubits)]
         # Q_volts = [u.demod2volts(Q, qubit.resonator.operations["readout"].length) for Q, qubit in zip(Q_data, qubits)]
         # Progress bar
-        progress_counter(n, n_avg, start_time=results.start_time)
+            progress_counter(n, n_avg, start_time=results.start_time)
         # Plot results
         # plt.suptitle("Ramsey")
         # for i, (ax, qubit) in enumerate(zip(axes, qubits)):

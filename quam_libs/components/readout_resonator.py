@@ -18,3 +18,4 @@ class ReadoutResonator(InOutIQChannel):
 
     f_01: float = None
     f_12: float = None
+    confusion_matrix: list = None

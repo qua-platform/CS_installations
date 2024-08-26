@@ -65,15 +65,15 @@ operation = "x180"  # The qubit operation to play
 n_avg = 500  # The number of averages
 flux_point = "joint"  # "independent", "joint" or "zero"
 
-# # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-# amps = np.arange(0.8, 1.2, 0.005)
-# # Number of applied Rabi pulses sweep
-# N_pi = 10  # Maximum number of qubit pulses
+# Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
+amps = np.arange(0.8, 1.2, 0.005)
+# Number of applied Rabi pulses sweep
+N_pi = 10  # Maximum number of qubit pulses
 
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-amps = np.arange(0.0,2.0, 0.025)
-# Number of applied Rabi pulses sweep
-N_pi = 1  # Maximum number of qubit pulses
+# amps = np.arange(0.0,2.0, 0.025)
+# # Number of applied Rabi pulses sweep
+# N_pi = 1  # Maximum number of qubit pulses
 
 N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[::2]
 
@@ -300,5 +300,5 @@ for q in qubits:
     q.xy.operations[operation].amplitude = fit_results[q.name]['Pi_amplitude']
 
 # %%
-node_save(machine, "power_rabi", data, additional_files=True)
+node_save(machine, f"power_rabi_{N_pi}", data, additional_files=True)
 # %%

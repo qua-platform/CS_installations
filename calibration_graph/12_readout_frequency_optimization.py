@@ -76,6 +76,7 @@ with program() as ro_freq_opt:
     Q_g_st = [declare_stream() for _ in range(num_qubits)]
     I_e_st = [declare_stream() for _ in range(num_qubits)]
     Q_e_st = [declare_stream() for _ in range(num_qubits)]
+    n_st = declare_stream()
     
     for i, qubit in enumerate(qubits):
 
@@ -90,6 +91,7 @@ with program() as ro_freq_opt:
         wait(1000)
 
         with for_(n, 0, n < n_avg, n + 1):
+            save(n, n_st)
             with for_(*from_array(df, dfs)):
                 # Update the resonator frequencies
                 update_frequency(qubit.resonator.name, df + qubit.resonator.intermediate_frequency)
@@ -117,6 +119,7 @@ with program() as ro_freq_opt:
                 save(Q_e[i], Q_e_st[i])
 
     with stream_processing():
+        n_st.save("n")
         for i in range(num_qubits):
             I_g_st[i].buffer(len(dfs)).average().save(f"I_g{i + 1}")
             Q_g_st[i].buffer(len(dfs)).average().save(f"Q_g{i + 1}")
@@ -144,38 +147,47 @@ else:
     job = qm.execute(ro_freq_opt)
     # Get results from QUA program
 
-    result_keys = [f"D{i + 1}" for i in range(num_qubits)]
-    results = fetching_tool(job, result_keys)
-    D_data = results.fetch_all()
+    for i in range(num_qubits):
+        print(f"Fetching results for qubit {qubits[i].name}")
+        data_list = sum([[f"I_g{i + 1}", f"Q_g{i + 1}",f"I_e{i + 1}", f"Q_e{i + 1}"] ], ["n"])
+        results = fetching_tool(job, data_list, mode="live")
+        while results.is_processing():
+            fetched_data = results.fetch_all()
+            n = fetched_data[0]
+            progress_counter(n, n_avg, start_time=results.start_time)
 
-    # Plot the results
-    fig, axes = plt.subplots(num_qubits, 1, figsize=(10, 4 * num_qubits))
-    if num_qubits == 1:
-        axes = [axes]
+    # result_keys = [f"D{i + 1}" for i in range(num_qubits)]
+    # results = fetching_tool(job, result_keys)
+    # D_data = results.fetch_all()
 
-    for i, qubit in enumerate(qubits):
-        axes[i].plot(dfs, D_data[i])
-        axes[i].set_xlabel("Readout detuning [MHz]")
-        axes[i].set_ylabel("Distance between IQ blobs [a.u.]")
-        # axes[i].set_title(f"{qubit.name} - f_opt = {int(qubit.resonator.f_01 / u.MHz)} MHz")
-        print(f"{qubit.resonator.name}: Shifting readout frequency by {dfs[np.argmax(D_data[i])]} Hz")
+    # # Plot the results
+    # fig, axes = plt.subplots(num_qubits, 1, figsize=(10, 4 * num_qubits))
+    # if num_qubits == 1:
+    #     axes = [axes]
 
-    plt.tight_layout()
-    plt.show()
+    # for i, qubit in enumerate(qubits):
+    #     axes[i].plot(dfs, D_data[i])
+    #     axes[i].set_xlabel("Readout detuning [MHz]")
+    #     axes[i].set_ylabel("Distance between IQ blobs [a.u.]")
+    #     # axes[i].set_title(f"{qubit.name} - f_opt = {int(qubit.resonator.f_01 / u.MHz)} MHz")
+    #     print(f"{qubit.resonator.name}: Shifting readout frequency by {dfs[np.argmax(D_data[i])]} Hz")
+
+    # plt.tight_layout()
+    # plt.show()
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
 
     # Save data from the node
-    data = {}
-    for i, qubit in enumerate(qubits):
-        data[f"{qubit.resonator.name}_frequency"] = dfs + qubit.resonator.intermediate_frequency
-        data[f"{qubit.resonator.name}_D"] = D_data[i]
-        data[f"{qubit.resonator.name}_if_opt"] = qubit.resonator.intermediate_frequency + dfs[np.argmax(D_data[i])]
-        # Update the state
-        qubit.resonator.intermediate_frequency += dfs[np.argmax(D_data[i])]
+    # data = {}
+    # for i, qubit in enumerate(qubits):
+    #     data[f"{qubit.resonator.name}_frequency"] = dfs + qubit.resonator.intermediate_frequency
+    #     data[f"{qubit.resonator.name}_D"] = D_data[i]
+    #     data[f"{qubit.resonator.name}_if_opt"] = qubit.resonator.intermediate_frequency + dfs[np.argmax(D_data[i])]
+    #     # Update the state
+    #     qubit.resonator.intermediate_frequency += dfs[np.argmax(D_data[i])]
 
-    data["figure"] = fig
+    # data["figure"] = fig
     # node_save(machine, "readout_frequency_optimization", data, additional_files=True)
 
 # %%
@@ -197,7 +209,7 @@ data['ds'] = ds
 
 # %%
 detuning = ds.D.rolling({"freq" : 5 }).mean("freq").idxmax('freq')
-chi = (ds.IQ_abs_e.idxmin() - ds.IQ_abs_g.idxmin()) / 2
+chi = (ds.IQ_abs_e.idxmin(dim = "freq") - ds.IQ_abs_g.idxmin(dim = "freq")) / 2
 fit_results = {q.name : {'detuning' :detuning.loc[q.name].values, 'chi' : chi.loc[q.name].values} for q in qubits}
 data['fit_results'] = fit_results
 
@@ -209,7 +221,7 @@ for q in qubits:
 grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
 for ax, qubit in grid_iter(grid):
     (1e3*ds.assign_coords(freq_MHz=ds.freq / 1e6).D.loc[qubit]).plot(ax=ax, x = 'freq_MHz')
-    ax.axvline(fit_results[qubit['qubit']]/1e6, color='red', linestyle='--')
+    ax.axvline(fit_results[qubit['qubit']]['detuning']/1e6, color='red', linestyle='--')
     ax.set_xlabel("Frequency [MHz]")
     ax.set_ylabel("Distance between IQ blobs [m.v.]")
 plt.tight_layout()
@@ -220,6 +232,7 @@ grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
 for ax, qubit in grid_iter(grid):
     (1e3*ds.assign_coords(freq_MHz=ds.freq / 1e6).IQ_abs_g.loc[qubit]).plot(ax=ax, x = 'freq_MHz', label = "g.s")
     (1e3*ds.assign_coords(freq_MHz=ds.freq / 1e6).IQ_abs_e.loc[qubit]).plot(ax=ax, x = 'freq_MHz', label = "e.s")
+    ax.axvline(fit_results[qubit['qubit']]['detuning']/1e6, color='red', linestyle='--')
     ax.set_xlabel("Frequency [MHz]")
     ax.set_ylabel("Resonator response [mV]")
     ax.legend()

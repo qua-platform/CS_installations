@@ -210,7 +210,7 @@ for index, q in enumerate(qubits):
     print(f"Qi for {q.name} is {Qi:,.0f} \n")
 # %%
 
-grid = QubitGrid(ds, [f'q-{i}_0' for i in range(1, 5)])
+grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
 for ax, qubit in grid_iter(grid):
     (ds.assign_coords(freq_MHz=ds.freq /
         1e6).loc[qubit].IQ_abs*1e3).plot(ax=ax, x='freq_MHz')
@@ -221,7 +221,7 @@ grid.fig.suptitle('Resonator spectroscopy (raw data)')
 plt.tight_layout()
 data["raw_amplitude"] = grid.fig
 
-grid = QubitGrid(ds, [f'q-{i}_0' for i in range(1, 5)])
+grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
 for ax, qubit in grid_iter(grid):
     (ds.assign_coords(freq_MHz=ds.freq /
         1e6).loc[qubit].phase*1e3).plot(ax=ax, x='freq_MHz')
@@ -232,7 +232,7 @@ grid.fig.suptitle('Resonator spectroscopy (raw data)')
 plt.tight_layout()
 data["raw_phase"] = grid.fig
 
-grid = QubitGrid(ds, [f'q-{i}_0' for i in range(1, 5)])
+grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
 for ax, qubit in grid_iter(grid):
     (ds.assign_coords(freq_GHz=ds.freq_full /
         1e9).loc[qubit].IQ_abs*1e3).plot(ax=ax, x='freq_GHz')

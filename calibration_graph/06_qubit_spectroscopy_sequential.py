@@ -346,9 +346,11 @@ for q in qubits:
         used_amp = q.xy.operations["saturation"].amplitude * saturation_amp    
         factor_cw = float(target_peak_width/result.sel(qubit = q.name).width.values)
         factor_pi = np.pi/(result.sel(qubit = q.name).width.values * Pi_length*1e-9)
-        
-        q.xy.operations["saturation"].amplitude = factor_cw*used_amp/saturation_amp
-        
+        if factor_cw*used_amp/saturation_amp < 0.5:
+            q.xy.operations["saturation"].amplitude = factor_cw*used_amp/saturation_amp
+        else:
+            q.xy.operations["saturation"].amplitude = 0.5
+            
         if factor_pi*used_amp < 0.3:
             q.xy.operations["x180"].amplitude = factor_pi*used_amp
         elif factor_pi*used_amp >= 0.3:

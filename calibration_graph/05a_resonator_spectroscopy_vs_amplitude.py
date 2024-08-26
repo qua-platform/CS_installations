@@ -256,7 +256,7 @@ RO_power_ratio = 0.3
 rr_pwr = RO_power_ratio*rr_pwr
     
 # %%
-grid = QubitGrid(ds, [f'q-{i}_0' for i in range(1, 5)])
+grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
 
 for ax, qubit in grid_iter(grid):
     ds.loc[qubit].IQ_abs_norm.plot(ax=ax, add_colorbar=False,

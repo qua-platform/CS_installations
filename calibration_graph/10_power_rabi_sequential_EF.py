@@ -29,7 +29,7 @@ from qualang_tools.units import unit
 from quam_libs.components import QuAM
 from quam_libs.macros import qua_declaration, multiplexed_readout, node_save
 from quam.components import pulses
-
+import copy
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -58,12 +58,17 @@ qmm = machine.connect()
 qubits = machine.active_qubits
 num_qubits = len(qubits)
 
+for q in qubits:
+    # Check if an optimized GEF frequency exists
+    if not hasattr(q, 'GEF_frequency_shift'):
+        q.GEF_frequency_shift = 0
+
 ###################
 # The QUA program #
 ###################
 
 operation = "x180"  # The qubit operation to play
-n_avg = 500  # The number of averages
+n_avg = 10000  # The number of averages
 flux_point = "joint"  # "independent", "joint" or "zero"
 
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
@@ -89,6 +94,8 @@ with program() as power_rabi:
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_(*from_array(a, amps)):
+                update_frequency(qubit.resonator.name, qubit.resonator.intermediate_frequency+ q.GEF_frequency_shift)
+
                 # Loop for error amplification (perform many qubit pulses)
                 # Reset the qubit frequency
                 update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
@@ -261,7 +268,7 @@ data['fit_results'] = fit_results# %%
 grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
 for ax, qubit in grid_iter(grid):
     (ds.assign_coords(amp_mV  = ds.abs_amp *1e3).loc[qubit].IQ_abs*1e3).plot(ax = ax, x = 'amp_mV')
-    ax.plot(ds.abs_amp.loc[qubit]*1e3, 1e3*fit_evals.loc[qubit][0])
+    ax.plot(ds.abs_amp.loc[qubit]*1e3, 1e3*fit_evals.loc[qubit])
     ax.set_ylabel('Trans. amp. I [mV]')
     ax.set_xlabel('Amplitude [mV]')
     ax.set_title(qubit['qubit'])
