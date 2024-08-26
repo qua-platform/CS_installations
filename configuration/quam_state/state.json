@@ -8,7 +8,7 @@
             "RF_outputs": {
                 "1": {
                     "id": 1,
-                    "channel": "#/qubits/q2/resonator",
+                    "channel": "#/qubits/q0/resonator",
                     "LO_frequency": 6000000000,
                     "output_mode": "always_on"
                 },
@@ -37,11 +37,12 @@
             "RF_inputs": {
                 "1": {
                     "id": 1,
-                    "channel": "#/qubits/q2/resonator",
+                    "channel": "#/qubits/q0/resonator",
                     "LO_frequency": 6000000000
                 },
                 "2": {
-                    "id": 2
+                    "id": 2,
+                    "LO_source": "external"
                 }
             }
         }
@@ -165,18 +166,25 @@
                         "amplitude": 0.25,
                         "axis_angle": 0,
                         "__class__": "quam.components.pulses.SquarePulse"
+                    },
+                    "const": {
+                        "length": 10000,
+                        "digital_marker": "ON",
+                        "amplitude": 0.1,
+                        "axis_angle": 0,
+                        "__class__": "quam.components.pulses.SquarePulse"
                     }
                 },
                 "digital_outputs": {
                     "octave_switch": {
-                        "opx_output": "#/ports/digital_outputs/con1/3/3",
+                        "opx_output": "#/wiring/qubits/q0/xy/digital_port",
                         "delay": 87,
                         "buffer": 15
                     }
                 },
-                "opx_output_I": "#/ports/analog_outputs/con1/3/3",
-                "opx_output_Q": "#/ports/analog_outputs/con1/3/4",
-                "frequency_converter_up": "#/octaves/octave1/RF_outputs/2",
+                "opx_output_I": "#/wiring/qubits/q0/xy/opx_output_I",
+                "opx_output_Q": "#/wiring/qubits/q0/xy/opx_output_Q",
+                "frequency_converter_up": "#/wiring/qubits/q0/xy/frequency_converter_up",
                 "intermediate_frequency": -200000000
             },
             "z": {
@@ -187,7 +195,7 @@
                         "__class__": "quam.components.pulses.SquarePulse"
                     }
                 },
-                "opx_output": "#/ports/analog_outputs/con1/4/1"
+                "opx_output": "#/wiring/qubits/q0/z/opx_output"
             },
             "resonator": {
                 "operations": {
@@ -205,19 +213,19 @@
                 },
                 "digital_outputs": {
                     "octave_switch": {
-                        "opx_output": "#/ports/digital_outputs/con1/3/1",
+                        "opx_output": "#/wiring/qubits/q0/resonator/digital_port",
                         "delay": 87,
                         "buffer": 15
                     }
                 },
-                "opx_input_I": "#/ports/analog_inputs/con1/3/1",
-                "opx_input_Q": "#/ports/analog_inputs/con1/3/2",
+                "opx_input_I": "#/wiring/qubits/q0/resonator/opx_input_I",
+                "opx_input_Q": "#/wiring/qubits/q0/resonator/opx_input_Q",
                 "opx_input_offset_I": 0.0,
                 "opx_input_offset_Q": 0.0,
-                "frequency_converter_down": "#/octaves/octave1/RF_inputs/1",
-                "opx_output_I": "#/ports/analog_outputs/con1/3/1",
-                "opx_output_Q": "#/ports/analog_outputs/con1/3/2",
-                "frequency_converter_up": "#/octaves/octave1/RF_outputs/1",
+                "frequency_converter_down": "#/wiring/qubits/q0/resonator/frequency_converter_down",
+                "opx_output_I": "#/wiring/qubits/q0/resonator/opx_output_I",
+                "opx_output_Q": "#/wiring/qubits/q0/resonator/opx_output_Q",
+                "frequency_converter_up": "#/wiring/qubits/q0/resonator/frequency_converter_up",
                 "intermediate_frequency": -250000000
             }
         },
@@ -339,18 +347,25 @@
                         "amplitude": 0.25,
                         "axis_angle": 0,
                         "__class__": "quam.components.pulses.SquarePulse"
+                    },
+                    "const": {
+                        "length": 10000,
+                        "digital_marker": "ON",
+                        "amplitude": 0.1,
+                        "axis_angle": 0,
+                        "__class__": "quam.components.pulses.SquarePulse"
                     }
                 },
                 "digital_outputs": {
                     "octave_switch": {
-                        "opx_output": "#/ports/digital_outputs/con1/3/5",
+                        "opx_output": "#/wiring/qubits/q1/xy/digital_port",
                         "delay": 87,
                         "buffer": 15
                     }
                 },
-                "opx_output_I": "#/ports/analog_outputs/con1/3/5",
-                "opx_output_Q": "#/ports/analog_outputs/con1/3/6",
-                "frequency_converter_up": "#/octaves/octave1/RF_outputs/3",
+                "opx_output_I": "#/wiring/qubits/q1/xy/opx_output_I",
+                "opx_output_Q": "#/wiring/qubits/q1/xy/opx_output_Q",
+                "frequency_converter_up": "#/wiring/qubits/q1/xy/frequency_converter_up",
                 "intermediate_frequency": -200000000
             },
             "z": {
@@ -361,7 +376,7 @@
                         "__class__": "quam.components.pulses.SquarePulse"
                     }
                 },
-                "opx_output": "#/ports/analog_outputs/con1/4/2"
+                "opx_output": "#/wiring/qubits/q1/z/opx_output"
             },
             "resonator": {
                 "operations": {
@@ -379,19 +394,19 @@
                 },
                 "digital_outputs": {
                     "octave_switch": {
-                        "opx_output": "#/ports/digital_outputs/con1/3/1",
+                        "opx_output": "#/wiring/qubits/q1/resonator/digital_port",
                         "delay": 87,
                         "buffer": 15
                     }
                 },
-                "opx_input_I": "#/ports/analog_inputs/con1/3/1",
-                "opx_input_Q": "#/ports/analog_inputs/con1/3/2",
+                "opx_input_I": "#/wiring/qubits/q1/resonator/opx_input_I",
+                "opx_input_Q": "#/wiring/qubits/q1/resonator/opx_input_Q",
                 "opx_input_offset_I": 0.0,
                 "opx_input_offset_Q": 0.0,
-                "frequency_converter_down": "#/octaves/octave1/RF_inputs/1",
-                "opx_output_I": "#/ports/analog_outputs/con1/3/1",
-                "opx_output_Q": "#/ports/analog_outputs/con1/3/2",
-                "frequency_converter_up": "#/octaves/octave1/RF_outputs/1",
+                "frequency_converter_down": "#/wiring/qubits/q1/resonator/frequency_converter_down",
+                "opx_output_I": "#/wiring/qubits/q1/resonator/opx_output_I",
+                "opx_output_Q": "#/wiring/qubits/q1/resonator/opx_output_Q",
+                "frequency_converter_up": "#/wiring/qubits/q1/resonator/frequency_converter_up",
                 "intermediate_frequency": -250000000
             }
         },
@@ -513,18 +528,25 @@
                         "amplitude": 0.25,
                         "axis_angle": 0,
                         "__class__": "quam.components.pulses.SquarePulse"
+                    },
+                    "const": {
+                        "length": 10000,
+                        "digital_marker": "ON",
+                        "amplitude": 0.1,
+                        "axis_angle": 0,
+                        "__class__": "quam.components.pulses.SquarePulse"
                     }
                 },
                 "digital_outputs": {
                     "octave_switch": {
-                        "opx_output": "#/ports/digital_outputs/con1/3/7",
+                        "opx_output": "#/wiring/qubits/q2/xy/digital_port",
                         "delay": 87,
                         "buffer": 15
                     }
                 },
-                "opx_output_I": "#/ports/analog_outputs/con1/3/7",
-                "opx_output_Q": "#/ports/analog_outputs/con1/3/8",
-                "frequency_converter_up": "#/octaves/octave1/RF_outputs/4",
+                "opx_output_I": "#/wiring/qubits/q2/xy/opx_output_I",
+                "opx_output_Q": "#/wiring/qubits/q2/xy/opx_output_Q",
+                "frequency_converter_up": "#/wiring/qubits/q2/xy/frequency_converter_up",
                 "intermediate_frequency": -200000000
             },
             "z": {
@@ -535,7 +557,7 @@
                         "__class__": "quam.components.pulses.SquarePulse"
                     }
                 },
-                "opx_output": "#/ports/analog_outputs/con1/4/3"
+                "opx_output": "#/wiring/qubits/q2/z/opx_output"
             },
             "resonator": {
                 "operations": {
@@ -553,123 +575,85 @@
                 },
                 "digital_outputs": {
                     "octave_switch": {
-                        "opx_output": "#/ports/digital_outputs/con1/3/1",
+                        "opx_output": "#/wiring/qubits/q2/resonator/digital_port",
                         "delay": 87,
                         "buffer": 15
                     }
                 },
-                "opx_input_I": "#/ports/analog_inputs/con1/3/1",
-                "opx_input_Q": "#/ports/analog_inputs/con1/3/2",
+                "opx_input_I": "#/wiring/qubits/q2/resonator/opx_input_I",
+                "opx_input_Q": "#/wiring/qubits/q2/resonator/opx_input_Q",
                 "opx_input_offset_I": 0.0,
                 "opx_input_offset_Q": 0.0,
-                "frequency_converter_down": "#/octaves/octave1/RF_inputs/1",
-                "opx_output_I": "#/ports/analog_outputs/con1/3/1",
-                "opx_output_Q": "#/ports/analog_outputs/con1/3/2",
-                "frequency_converter_up": "#/octaves/octave1/RF_outputs/1",
+                "frequency_converter_down": "#/wiring/qubits/q2/resonator/frequency_converter_down",
+                "opx_output_I": "#/wiring/qubits/q2/resonator/opx_output_I",
+                "opx_output_Q": "#/wiring/qubits/q2/resonator/opx_output_Q",
+                "frequency_converter_up": "#/wiring/qubits/q2/resonator/frequency_converter_up",
                 "intermediate_frequency": -250000000
             }
         }
     },
-    "qubit_pairs": [
-        {
-            "id": "q0_q1",
-            "qubit_control": "#/qubits/q0",
-            "qubit_target": "#/qubits/q1",
-            "coupler": {
-                "operations": {
-                    "const": {
-                        "length": 100,
-                        "amplitude": 0.1,
-                        "__class__": "quam.components.pulses.SquarePulse"
-                    }
-                },
-                "id": "coupler_q0_q1",
-                "opx_output": "#/ports/analog_outputs/con1/4/4"
-            }
-        },
-        {
-            "id": "q1_q2",
-            "qubit_control": "#/qubits/q1",
-            "qubit_target": "#/qubits/q2",
-            "coupler": {
-                "operations": {
-                    "const": {
-                        "length": 100,
-                        "amplitude": 0.1,
-                        "__class__": "quam.components.pulses.SquarePulse"
-                    }
-                },
-                "id": "coupler_q1_q2",
-                "opx_output": "#/ports/analog_outputs/con1/4/5"
-            }
-        }
-    ],
     "active_qubit_names": [
         "q0",
         "q1",
         "q2"
     ],
-    "active_qubit_pair_names": [
-        "q0_q1",
-        "q1_q2"
-    ],
     "ports": {
         "analog_outputs": {
             "con1": {
-                "3": {
+                "1": {
                     "3": {
                         "controller_id": "con1",
-                        "fem_id": 3,
+                        "fem_id": 1,
                         "port_id": 3,
                         "__class__": "quam.components.ports.analog_outputs.LFFEMAnalogOutputPort"
                     },
                     "4": {
                         "controller_id": "con1",
-                        "fem_id": 3,
+                        "fem_id": 1,
                         "port_id": 4,
                         "__class__": "quam.components.ports.analog_outputs.LFFEMAnalogOutputPort"
                     },
                     "1": {
                         "controller_id": "con1",
-                        "fem_id": 3,
+                        "fem_id": 1,
                         "port_id": 1,
                         "__class__": "quam.components.ports.analog_outputs.LFFEMAnalogOutputPort"
                     },
                     "2": {
                         "controller_id": "con1",
-                        "fem_id": 3,
+                        "fem_id": 1,
                         "port_id": 2,
                         "__class__": "quam.components.ports.analog_outputs.LFFEMAnalogOutputPort"
                     },
                     "5": {
                         "controller_id": "con1",
-                        "fem_id": 3,
+                        "fem_id": 1,
                         "port_id": 5,
                         "__class__": "quam.components.ports.analog_outputs.LFFEMAnalogOutputPort"
                     },
                     "6": {
                         "controller_id": "con1",
-                        "fem_id": 3,
+                        "fem_id": 1,
                         "port_id": 6,
                         "__class__": "quam.components.ports.analog_outputs.LFFEMAnalogOutputPort"
                     },
                     "7": {
                         "controller_id": "con1",
-                        "fem_id": 3,
+                        "fem_id": 1,
                         "port_id": 7,
                         "__class__": "quam.components.ports.analog_outputs.LFFEMAnalogOutputPort"
                     },
                     "8": {
                         "controller_id": "con1",
-                        "fem_id": 3,
+                        "fem_id": 1,
                         "port_id": 8,
                         "__class__": "quam.components.ports.analog_outputs.LFFEMAnalogOutputPort"
                     }
                 },
-                "4": {
+                "3": {
                     "1": {
                         "controller_id": "con1",
-                        "fem_id": 4,
+                        "fem_id": 3,
                         "port_id": 1,
                         "upsampling_mode": "pulse",
                         "output_mode": "amplified",
@@ -677,7 +661,7 @@
                     },
                     "2": {
                         "controller_id": "con1",
-                        "fem_id": 4,
+                        "fem_id": 3,
                         "port_id": 2,
                         "upsampling_mode": "pulse",
                         "output_mode": "amplified",
@@ -685,24 +669,8 @@
                     },
                     "3": {
                         "controller_id": "con1",
-                        "fem_id": 4,
+                        "fem_id": 3,
                         "port_id": 3,
-                        "upsampling_mode": "pulse",
-                        "output_mode": "amplified",
-                        "__class__": "quam.components.ports.analog_outputs.LFFEMAnalogOutputPort"
-                    },
-                    "4": {
-                        "controller_id": "con1",
-                        "fem_id": 4,
-                        "port_id": 4,
-                        "upsampling_mode": "pulse",
-                        "output_mode": "amplified",
-                        "__class__": "quam.components.ports.analog_outputs.LFFEMAnalogOutputPort"
-                    },
-                    "5": {
-                        "controller_id": "con1",
-                        "fem_id": 4,
-                        "port_id": 5,
                         "upsampling_mode": "pulse",
                         "output_mode": "amplified",
                         "__class__": "quam.components.ports.analog_outputs.LFFEMAnalogOutputPort"
@@ -712,30 +680,16 @@
         },
         "analog_inputs": {
             "con1": {
-                "3": {
+                "1": {
                     "1": {
                         "controller_id": "con1",
-                        "fem_id": 3,
+                        "fem_id": 1,
                         "port_id": 1,
                         "__class__": "quam.components.ports.analog_inputs.LFFEMAnalogInputPort"
                     },
                     "2": {
                         "controller_id": "con1",
-                        "fem_id": 3,
-                        "port_id": 2,
-                        "__class__": "quam.components.ports.analog_inputs.LFFEMAnalogInputPort"
-                    }
-                },
-                "2": {
-                    "1": {
-                        "controller_id": "con1",
-                        "fem_id": 2,
-                        "port_id": 1,
-                        "__class__": "quam.components.ports.analog_inputs.LFFEMAnalogInputPort"
-                    },
-                    "2": {
-                        "controller_id": "con1",
-                        "fem_id": 2,
+                        "fem_id": 1,
                         "port_id": 2,
                         "__class__": "quam.components.ports.analog_inputs.LFFEMAnalogInputPort"
                     }
@@ -744,28 +698,28 @@
         },
         "digital_outputs": {
             "con1": {
-                "3": {
+                "1": {
                     "3": {
                         "controller_id": "con1",
-                        "fem_id": 3,
+                        "fem_id": 1,
                         "port_id": 3,
                         "__class__": "quam.components.ports.digital_outputs.FEMDigitalOutputPort"
                     },
                     "1": {
                         "controller_id": "con1",
-                        "fem_id": 3,
+                        "fem_id": 1,
                         "port_id": 1,
                         "__class__": "quam.components.ports.digital_outputs.FEMDigitalOutputPort"
                     },
                     "5": {
                         "controller_id": "con1",
-                        "fem_id": 3,
+                        "fem_id": 1,
                         "port_id": 5,
                         "__class__": "quam.components.ports.digital_outputs.FEMDigitalOutputPort"
                     },
                     "7": {
                         "controller_id": "con1",
-                        "fem_id": 3,
+                        "fem_id": 1,
                         "port_id": 7,
                         "__class__": "quam.components.ports.digital_outputs.FEMDigitalOutputPort"
                     }

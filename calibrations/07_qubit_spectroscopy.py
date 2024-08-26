@@ -52,7 +52,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -79,9 +79,6 @@ with program() as multi_qubit_spec:
     # Macro to declare I, Q, n and their respective streams for a given number of qubit (defined in macros.py)
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     df = declare(int)  # QUA variable for the qubit frequency
-
-    # Bring the active qubits to the minimum frequency point
-    machine.apply_all_flux_to_min()
 
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
@@ -113,13 +110,14 @@ with program() as multi_qubit_spec:
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=1_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, multi_qubit_spec, simulation_config)
     job.get_simulated_samples().con1.plot()
+    plt.show()
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -217,6 +215,6 @@ else:
     plt.show()
     # additional files
     # Save data from the node
-    node_save(machine, "qubit_spectroscopy", data, additional_files=True)
+    node_save(machine, "qubit_spectroscopy", data, additional_files=False)
 
 # %%

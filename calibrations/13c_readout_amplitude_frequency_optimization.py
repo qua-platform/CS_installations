@@ -45,7 +45,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handle units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -73,8 +73,6 @@ with program() as ro_amp_freq_opt:
     df = declare(int)  # QUA variable for the readout frequency detuning
     counter = declare(int, value=0)  # Counter for the progress bar
 
-    # Bring the active qubits to the minimum frequency point
-    machine.apply_all_flux_to_min()
 
     with for_(*from_array(df, dfs)):
         save(counter, n_st)
@@ -197,6 +195,6 @@ else:
         data[f"{qubit.resonator.name}_amp_opt"] = qubit.resonator.operations["readout"].amplitude
         data[f"{qubit.resonator.name}_if_opt"] = qubit.resonator.intermediate_frequency
 
-    node_save(machine, "readout_amplitude_frequency_optimization", data, additional_files=True)
+    node_save(machine, "readout_amplitude_frequency_optimization", data, additional_files=False)
 
 # %%

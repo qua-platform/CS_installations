@@ -46,7 +46,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -65,9 +65,6 @@ n_runs = 10000  # Number of runs
 with program() as iq_blobs:
     I_g, I_g_st, Q_g, Q_g_st, n, _ = qua_declaration(num_qubits=num_qubits)
     I_e, I_e_st, Q_e, Q_e_st, _, _ = qua_declaration(num_qubits=num_qubits)
-
-    # Bring the active qubits to the minimum frequency point
-    machine.apply_all_flux_to_min()
 
     with for_(n, 0, n < n_runs, n + 1):
         # ground iq blobs for all qubits
@@ -157,6 +154,6 @@ else:
 
     qm.close()
 
-    node_save(machine, "iq_blobs", data, additional_files=True)
+    node_save(machine, "iq_blobs", data, additional_files=False)
 
 # %%

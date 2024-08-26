@@ -44,7 +44,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -71,9 +71,6 @@ with program() as rabi_chevron:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     df = declare(int)  # QUA variable for the qubit detuning
     t = declare(int)  # QUA variable for the qubit pulse duration
-
-    # Bring the active qubits to the minimum frequency point
-    machine.apply_all_flux_to_min()
 
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
@@ -157,6 +154,6 @@ else:
         data[f"{qubit.name}_I"] = np.abs(I_volts[i])
         data[f"{qubit.name}_Q"] = np.angle(Q_volts[i])
     data["figure"] = fig
-    node_save(machine, "rabi_chevron_duration", data, additional_files=True)
+    node_save(machine, "rabi_chevron_duration", data, additional_files=False)
 
 # %%

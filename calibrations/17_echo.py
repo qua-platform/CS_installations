@@ -44,7 +44,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handle units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -68,9 +68,6 @@ idle_times = np.arange(4, 2000, 5)  # Linear sweep
 with program() as echo:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     t = declare(int)
-
-    # Bring the active qubits to the minimum frequency point
-    machine.apply_all_flux_to_min()
 
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
@@ -189,6 +186,6 @@ else:
     plt.show()
 
     # Save data from the node
-    node_save(machine, "ramsey", data, additional_files=True)
+    node_save(machine, "ramsey", data, additional_files=False)
 
 # %%

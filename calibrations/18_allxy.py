@@ -41,7 +41,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -126,9 +126,6 @@ def get_prog(qubit, resonator):
         I_st = [declare_stream() for _ in range(21)]
         Q_st = [declare_stream() for _ in range(21)]
 
-        # Bring the active qubits to the minimum frequency point
-        machine.apply_all_flux_to_min()
-
         with for_(n, 0, n < n_points, n + 1):
             save(n, n_st)
             # Get a value from the pseudo-random number generator on the OPX FPGA
@@ -212,6 +209,6 @@ else:
         qm.close()
 
         # Save data from the node
-        node_save(machine, "all_xy", data, additional_files=True)
+        node_save(machine, "all_xy", data, additional_files=False)
 
 # %%

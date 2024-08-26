@@ -47,7 +47,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -83,8 +83,6 @@ with program() as multi_res_spec_vs_amp:
     a = declare(fixed)  # QUA variable for the readout amplitude pre-factor
     df = declare(int)  # QUA variable for the readout frequency
 
-    # Bring the active qubits to the minimum frequency point
-    machine.apply_all_flux_to_min()
 
     for i, q in enumerate(qubits):
 
@@ -193,6 +191,6 @@ else:
         data[f"{rr.name}_R"] = A_data[i]
         data[f"{rr.name}_readout_amplitude"] = prev_amps[i]
     data["figure"] = fig
-    node_save(machine, "resonator_spectroscopy_vs_amplitude", data, additional_files=True)
+    node_save(machine, "resonator_spectroscopy_vs_amplitude", data, additional_files=False)
 
 # %%

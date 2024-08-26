@@ -43,7 +43,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -71,9 +71,6 @@ with program() as resonator_spec:
     I_st = declare_stream()  # Stream for the 'I' quadrature
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
-
-    # Bring the active qubits to the minimum frequency point
-    machine.apply_all_flux_to_min()
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(f, frequencies)):  # QUA for_ loop for sweeping the frequency
@@ -191,6 +188,6 @@ else:
         data["successful_fit"] = False
         pass
     # Save data from the node
-    node_save(machine, "resonator_spectroscopy_single", data, additional_files=True)
+    node_save(machine, "resonator_spectroscopy_single", data, additional_files=False)
 
 # %%

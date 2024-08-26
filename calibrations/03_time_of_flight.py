@@ -35,7 +35,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -43,7 +43,7 @@ octave_config = machine.get_octave_config()
 qmm = machine.connect()
 
 # Get the relevant QuAM components
-resonator = machine.active_qubits[1].resonator  # The resonator element
+resonators = [qubit.resonator for qubit in machine.active_qubits]
 
 ###################
 # The QUA program #
@@ -55,12 +55,14 @@ with program() as raw_trace_prog:
     adc_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace
 
     with for_(n, 0, n < n_avg, n + 1):
-        # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
-        reset_phase(resonator.name)
-        # Measure the resonator (send a readout pulse and record the raw ADC trace)
-        resonator.measure("readout", stream=adc_st)
+        for resonator in resonators:
+            # Make sure that the readout pulse is sent with the same phase so that the acquired signal does not average out
+            reset_phase(resonator.name)
+            # Measure the resonator (send a readout pulse and record the raw ADC trace)
+            resonator.measure("readout", stream=adc_st)
         # Wait for the resonator to deplete
-        wait(machine.depletion_time * u.ns, resonator.name)
+        wait(machine.depletion_time * u.ns, *[rr.name for rr in resonators])
+
 
     with stream_processing():
         # Will save average:

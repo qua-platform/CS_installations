@@ -3,7 +3,7 @@
     "controllers": {
         "con1": {
             "fems": {
-                "3": {
+                "1": {
                     "type": "LF",
                     "analog_outputs": {
                         "3": {
@@ -108,7 +108,7 @@
                         }
                     }
                 },
-                "4": {
+                "3": {
                     "type": "LF",
                     "analog_outputs": {
                         "1": {
@@ -133,39 +133,6 @@
                             "sampling_rate": 1000000000.0,
                             "upsampling_mode": "pulse",
                             "output_mode": "amplified",
-                            "offset": 0.0
-                        },
-                        "4": {
-                            "delay": 0,
-                            "shareable": false,
-                            "sampling_rate": 1000000000.0,
-                            "upsampling_mode": "pulse",
-                            "output_mode": "amplified",
-                            "offset": 0.0
-                        },
-                        "5": {
-                            "delay": 0,
-                            "shareable": false,
-                            "sampling_rate": 1000000000.0,
-                            "upsampling_mode": "pulse",
-                            "output_mode": "amplified",
-                            "offset": 0.0
-                        }
-                    }
-                },
-                "2": {
-                    "type": "LF",
-                    "analog_inputs": {
-                        "1": {
-                            "gain_db": 0,
-                            "shareable": false,
-                            "sampling_rate": 1000000000.0,
-                            "offset": 0.0
-                        },
-                        "2": {
-                            "gain_db": 0,
-                            "shareable": false,
-                            "sampling_rate": 1000000000.0,
                             "offset": 0.0
                         }
                     }
@@ -194,13 +161,14 @@
                 "y180": "q0.xy.y180_DragGaussian.pulse",
                 "y90": "q0.xy.y90_DragGaussian.pulse",
                 "-y90": "q0.xy.-y90_DragGaussian.pulse",
-                "saturation": "q0.xy.saturation.pulse"
+                "saturation": "q0.xy.saturation.pulse",
+                "const": "q0.xy.const.pulse"
             },
             "digitalInputs": {
                 "octave_switch": {
                     "port": [
                         "con1",
-                        3,
+                        1,
                         3
                     ],
                     "delay": 87,
@@ -222,7 +190,7 @@
             "singleInput": {
                 "port": [
                     "con1",
-                    4,
+                    3,
                     1
                 ]
             }
@@ -236,7 +204,7 @@
                 "octave_switch": {
                     "port": [
                         "con1",
-                        3,
+                        1,
                         1
                     ],
                     "delay": 87,
@@ -279,13 +247,14 @@
                 "y180": "q1.xy.y180_DragGaussian.pulse",
                 "y90": "q1.xy.y90_DragGaussian.pulse",
                 "-y90": "q1.xy.-y90_DragGaussian.pulse",
-                "saturation": "q1.xy.saturation.pulse"
+                "saturation": "q1.xy.saturation.pulse",
+                "const": "q1.xy.const.pulse"
             },
             "digitalInputs": {
                 "octave_switch": {
                     "port": [
                         "con1",
-                        3,
+                        1,
                         5
                     ],
                     "delay": 87,
@@ -307,7 +276,7 @@
             "singleInput": {
                 "port": [
                     "con1",
-                    4,
+                    3,
                     2
                 ]
             }
@@ -321,7 +290,7 @@
                 "octave_switch": {
                     "port": [
                         "con1",
-                        3,
+                        1,
                         1
                     ],
                     "delay": 87,
@@ -364,13 +333,14 @@
                 "y180": "q2.xy.y180_DragGaussian.pulse",
                 "y90": "q2.xy.y90_DragGaussian.pulse",
                 "-y90": "q2.xy.-y90_DragGaussian.pulse",
-                "saturation": "q2.xy.saturation.pulse"
+                "saturation": "q2.xy.saturation.pulse",
+                "const": "q2.xy.const.pulse"
             },
             "digitalInputs": {
                 "octave_switch": {
                     "port": [
                         "con1",
-                        3,
+                        1,
                         7
                     ],
                     "delay": 87,
@@ -392,7 +362,7 @@
             "singleInput": {
                 "port": [
                     "con1",
-                    4,
+                    3,
                     3
                 ]
             }
@@ -406,7 +376,7 @@
                 "octave_switch": {
                     "port": [
                         "con1",
-                        3,
+                        1,
                         1
                     ],
                     "delay": 87,
@@ -426,30 +396,6 @@
                 "port": [
                     "octave1",
                     1
-                ]
-            }
-        },
-        "coupler_q0_q1": {
-            "operations": {
-                "const": "coupler_q0_q1.const.pulse"
-            },
-            "singleInput": {
-                "port": [
-                    "con1",
-                    4,
-                    4
-                ]
-            }
-        },
-        "coupler_q1_q2": {
-            "operations": {
-                "const": "coupler_q1_q2.const.pulse"
-            },
-            "singleInput": {
-                "port": [
-                    "con1",
-                    4,
-                    5
                 ]
             }
         }
@@ -578,6 +524,15 @@
             "waveforms": {
                 "I": "q0.xy.saturation.wf.I",
                 "Q": "q0.xy.saturation.wf.Q"
+            }
+        },
+        "q0.xy.const.pulse": {
+            "operation": "control",
+            "length": 10000,
+            "digital_marker": "ON",
+            "waveforms": {
+                "I": "q0.xy.const.wf.I",
+                "Q": "q0.xy.const.wf.Q"
             }
         },
         "q0.z.const.pulse": {
@@ -726,6 +681,15 @@
                 "Q": "q1.xy.saturation.wf.Q"
             }
         },
+        "q1.xy.const.pulse": {
+            "operation": "control",
+            "length": 10000,
+            "digital_marker": "ON",
+            "waveforms": {
+                "I": "q1.xy.const.wf.I",
+                "Q": "q1.xy.const.wf.Q"
+            }
+        },
         "q1.z.const.pulse": {
             "operation": "control",
             "length": 100,
@@ -872,6 +836,15 @@
                 "Q": "q2.xy.saturation.wf.Q"
             }
         },
+        "q2.xy.const.pulse": {
+            "operation": "control",
+            "length": 10000,
+            "digital_marker": "ON",
+            "waveforms": {
+                "I": "q2.xy.const.wf.I",
+                "Q": "q2.xy.const.wf.Q"
+            }
+        },
         "q2.z.const.pulse": {
             "operation": "control",
             "length": 100,
@@ -899,20 +872,6 @@
             "waveforms": {
                 "I": "q2.resonator.const.wf.I",
                 "Q": "q2.resonator.const.wf.Q"
-            }
-        },
-        "coupler_q0_q1.const.pulse": {
-            "operation": "control",
-            "length": 100,
-            "waveforms": {
-                "single": "coupler_q0_q1.const.wf"
-            }
-        },
-        "coupler_q1_q2.const.pulse": {
-            "operation": "control",
-            "length": 100,
-            "waveforms": {
-                "single": "coupler_q1_q2.const.wf"
             }
         }
     },
@@ -1518,6 +1477,14 @@
             "sample": 0.25
         },
         "q0.xy.saturation.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q0.xy.const.wf.I": {
+            "type": "constant",
+            "sample": 0.1
+        },
+        "q0.xy.const.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
@@ -2137,6 +2104,14 @@
             "type": "constant",
             "sample": 0.0
         },
+        "q1.xy.const.wf.I": {
+            "type": "constant",
+            "sample": 0.1
+        },
+        "q1.xy.const.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
         "q1.z.const.wf": {
             "type": "constant",
             "sample": 0.1
@@ -2753,6 +2728,14 @@
             "type": "constant",
             "sample": 0.0
         },
+        "q2.xy.const.wf.I": {
+            "type": "constant",
+            "sample": 0.1
+        },
+        "q2.xy.const.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
         "q2.z.const.wf": {
             "type": "constant",
             "sample": 0.1
@@ -2772,14 +2755,6 @@
         "q2.resonator.const.wf.Q": {
             "type": "constant",
             "sample": 0.0
-        },
-        "coupler_q0_q1.const.wf": {
-            "type": "constant",
-            "sample": 0.1
-        },
-        "coupler_q1_q2.const.wf": {
-            "type": "constant",
-            "sample": 0.1
         }
     },
     "digital_waveforms": {
@@ -2933,12 +2908,12 @@
                     "input_attenuators": "off",
                     "I_connection": [
                         "con1",
-                        3,
+                        1,
                         1
                     ],
                     "Q_connection": [
                         "con1",
-                        3,
+                        1,
                         2
                     ]
                 },
@@ -2950,12 +2925,12 @@
                     "input_attenuators": "off",
                     "I_connection": [
                         "con1",
-                        3,
+                        1,
                         3
                     ],
                     "Q_connection": [
                         "con1",
-                        3,
+                        1,
                         4
                     ]
                 },
@@ -2967,12 +2942,12 @@
                     "input_attenuators": "off",
                     "I_connection": [
                         "con1",
-                        3,
+                        1,
                         5
                     ],
                     "Q_connection": [
                         "con1",
-                        3,
+                        1,
                         6
                     ]
                 },
@@ -2984,12 +2959,12 @@
                     "input_attenuators": "off",
                     "I_connection": [
                         "con1",
-                        3,
+                        1,
                         7
                     ],
                     "Q_connection": [
                         "con1",
-                        3,
+                        1,
                         8
                     ]
                 }
@@ -2998,7 +2973,7 @@
                 "IF_out1": {
                     "port": [
                         "con1",
-                        3,
+                        1,
                         1
                     ],
                     "name": "out1"
@@ -3006,7 +2981,7 @@
                 "IF_out2": {
                     "port": [
                         "con1",
-                        3,
+                        1,
                         2
                     ],
                     "name": "out2"

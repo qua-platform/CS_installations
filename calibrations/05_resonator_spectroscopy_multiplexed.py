@@ -43,7 +43,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -62,7 +62,7 @@ num_resonators = len(resonators)
 
 n_avg = 400  # The number of averages
 # The frequency sweep around the resonator resonance frequency f_opt
-dfs = np.arange(-5e6, +5e6, 0.1e6)
+dfs = np.arange(50e6, 150e6, 1e6)
 # You can adjust the IF frequency here to manually adjust the resonator frequencies instead of updating the state
 # rr1.intermediate_frequency = -50 * u.MHz
 # rr2.intermediate_frequency = 50 * u.MHz
@@ -74,10 +74,6 @@ with program() as multi_res_spec:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     n = declare(int)  # QUA variable for the averaging loop
     df = declare(int)  # QUA variable for the readout frequency
-
-    # Bring the active qubits to the minimum frequency point
-    machine.apply_all_flux_to_min()
-
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
             for i, rr in enumerate(resonators):
@@ -195,6 +191,6 @@ else:
 
     plt.show()
     # Save data from the node
-    node_save(machine, "resonator_spectroscopy_multiplexed", data, additional_files=True)
+    node_save(machine, "resonator_spectroscopy_multiplexed", data, additional_files=False)
 
 # %%

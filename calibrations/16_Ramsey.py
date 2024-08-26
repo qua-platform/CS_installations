@@ -43,7 +43,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handle units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -70,9 +70,6 @@ with program() as ramsey:
     t = declare(int)  # QUA variable for the idle time
     phi = declare(fixed)  # QUA variable for dephasing the second pi/2 pulse (virtual Z-rotation)
 
-    # Bring the active qubits to the minimum frequency point
-    machine.apply_all_flux_to_min()
-
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
 
@@ -86,7 +83,7 @@ with program() as ramsey:
                 for qubit in qubits:
                     qubit.xy.play("x90")
                     qubit.xy.wait(t)
-                    qubit.xy.frame_rotation(phi)
+                    qubit.xy.frame_rotation_2pi(phi)
                     qubit.xy.play("x90")
 
             # Align the elements to measure after playing the qubit pulse.
@@ -199,6 +196,6 @@ else:
     plt.show()
 
     # Save data from the node
-    node_save(machine, "ramsey", data, additional_files=True)
+    node_save(machine, "ramsey", data, additional_files=False)
 
 # %%

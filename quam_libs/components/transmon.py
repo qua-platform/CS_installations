@@ -35,7 +35,7 @@ class Transmon(QuamComponent):
     z: FluxLine = None
     resonator: ReadoutResonator = None
 
-    f_01: float = None
+    f_01: float = 100e6
     f_12: float = "#./inferred_f_12"
     anharmonicity: int = 150e6
 

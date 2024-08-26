@@ -44,7 +44,7 @@ matplotlib.use("TKAgg")
 # Class containing tools to help handle units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("C:\Git\QM-CS-Michal\Customers\Lincoln_Labs\configuration\quam_state")
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -116,9 +116,6 @@ with program() as ro_duration_opt:
     Qg_st = declare_stream()
     Ie_st = declare_stream()
     Qe_st = declare_stream()
-
-    # Bring the active qubits to the minimum frequency point
-    machine.apply_all_flux_to_min()
 
     with for_(n, 0, n < n_avg, n + 1):
         # Measure the ground state.
@@ -275,4 +272,4 @@ else:
         "figure": fig,
     }
 
-    node_save(machine, "readout_duration_optimization", data, additional_files=True)
+    node_save(machine, "readout_duration_optimization", data, additional_files=False)
