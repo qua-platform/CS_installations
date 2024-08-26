@@ -59,7 +59,7 @@ num_qubits = len(qubits)
 ###################
 
 operation = "saturation"  # The qubit operation to play, can be switched to "x180" when the qubits are found.
-n_avg = 100  # Number of averaging loops
+n_avg = 200  # Number of averaging loops
 cooldown_time = max(q.thermalization_time for q in qubits)
 
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
@@ -248,7 +248,7 @@ freq_shift = coeff.sel(degree = 2) * flux_shift ** 2 + coeff.sel(degree = 1) * f
 
 fit_results = {}
 
-for q in machine.active_qubits:
+for q in qubits:
     fit_results[q.name] = {}
     if not np.isnan(flux_shift.sel(qubit = q.name).values):
         if flux_point == "independent":
@@ -294,7 +294,7 @@ plt.show()
 data["figure"] = grid.fig
 
 # %%
-for q in machine.active_qubits:
+for q in qubits:
     if not np.isnan(flux_shift.sel(qubit = q.name).values):
         if flux_point == 'independent':
             q.z.independent_offset += fit_results[q.name]['flux_shift']

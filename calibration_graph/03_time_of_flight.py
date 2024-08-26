@@ -65,9 +65,13 @@ octave_config = machine.get_octave_config()
 # Open Communication with the QOP
 qmm = machine.connect()
 
+# Get the relevant QuAM components
+resonator = machine.qubits[node.parameters.qubit].resonator  # The resonator element
+
 ###################
 # The QUA program #
 ###################
+
 with program() as raw_trace_prog:
     n = declare(int)  # QUA variable for the averaging loop
     adc_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace
@@ -143,6 +147,7 @@ else:
     plt.legend()
     plt.grid("all")
     plt.tight_layout()
+    plt.show()
 
     # Update the config
     print(f"Time Of Flight to add in the config: {delay} ns")
@@ -162,6 +167,7 @@ else:
         "raw_adc": adc,
         "raw_adc_single_shot": adc_single_run,
         "figure": fig,
+        "initial_parameters": node.parameters.to_dict()
     }
 
 node.machine = machine

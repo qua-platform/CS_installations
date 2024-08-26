@@ -44,6 +44,10 @@ class Transmon(QuamComponent):
     T2echo: int = 10_000
     thermalization_time_factor: int = 5
     sigma_time_factor: int = 5
+    
+    GEF_frequency_shift : int = 0
+    chi : float = 0.0
+    
 
     @property
     def inferred_f_12(self) -> float:

@@ -57,7 +57,7 @@ qmm = machine.connect()
 
 # Get the relevant QuAM components
 qubits = machine.active_qubits
-resonators = [qubit.resonator for qubit in machine.active_qubits]
+resonators = [qubit.resonator for qubit in qubits]
 num_qubits = len(qubits)
 num_resonators = len(resonators)
 
@@ -180,7 +180,7 @@ def abs_freq(q):
         return freq + q.resonator.intermediate_frequency + q.resonator.LO_frequency
     return foo
 
-ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in machine.active_qubits]))})
+ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
 
 data = {}
 data['ds'] = ds
@@ -190,7 +190,7 @@ fits = {}
 fit_evals = {}
 fit_results = {}
 
-for index, q in enumerate(machine.active_qubits):
+for index, q in enumerate(qubits):
     frequency_LO_IF = q.resonator.intermediate_frequency + q.resonator.LO_frequency
     fit, fit_eval = fit_resonator(ds.sel(qubit=q.name), frequency_LO_IF)
     fits[q.name] = fit
@@ -248,7 +248,7 @@ plt.tight_layout()
 plt.show()
 
 # %%
-for index, q in enumerate(machine.active_qubits):
+for index, q in enumerate(qubits):
     q.resonator.intermediate_frequency += fit.params['omega_r'].value
 # %%
 
