@@ -13,32 +13,35 @@ The data undergoes post-processing to calibrate three distinct parameters:
     the variable gain of the OPX analog input can be modified to fit the signal within the ADC range of +/-0.5V.
     This gain, ranging from -12 dB to 20 dB, can also be adjusted in the configuration at: config/controllers/"con1"/analog_inputs.
 """
+from qualibrate import QualibrationNode, NodeParameters
 
-from pathlib import Path
+from quam_libs.qualibrate.trackable_object import tracked_updates
+
+
+class Parameters(NodeParameters):
+    qubit: str = "q0"
+    num_averages: int = 400
+    time_of_flight: int = 24
+    intermediate_frequency: int = 1000000
+    readout_amplitude: float = 0.1
+    readout_length: int = 1000
+    simulate: bool = False
+
+node = QualibrationNode(
+    name="01_Time_of_Flight",
+    parameters_class=Parameters
+)
+
+node.parameters = Parameters()
+
 from qm.qua import *
 from qm import SimulationConfig
 from qualang_tools.units import unit
 from quam_libs.components import QuAM
-from quam_libs.macros import node_save
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import savgol_filter
 
-import matplotlib
-matplotlib.use("TKAgg")
-
-from qualibrate import QualibrationNode, NodeParameters
-
-class Parameters(NodeParameters):
-    num_averages: int = 400
-    time_of_flight: int = 24
-    qubit: str = "q1"
-    simulate: bool = False
-
-node = QualibrationNode(
-    name="Time-of-Flight",
-    parameter_class=Parameters
-)
 
 ###################################################
 #  Load QuAM and open Communication with the QOP  #
@@ -46,25 +49,30 @@ node = QualibrationNode(
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+machine = QuAM.load("/home/dean/src/qm/CS_installations/configuration/quam_state/")
+# Get the relevant QuAM components
+resonator = machine.qubits[node.parameters.qubit].resonator  # The resonator element
+
+with tracked_updates(resonator, auto_revert=False) as tracked_resonator:
+    tracked_resonator.time_of_flight = node.parameters.time_of_flight
+    tracked_resonator.operations["readout"].length = node.parameters.readout_length
+    tracked_resonator.operations["readout"].amplitude = node.parameters.readout_amplitude
+    tracked_resonator.intermediate_frequency = node.parameters.intermediate_frequency
+
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
 # Open Communication with the QOP
 qmm = machine.connect()
 
-# Get the relevant QuAM components
-resonator = machine.qubits[node.parameters.qubit].resonator  # The resonator element
-
 ###################
 # The QUA program #
 ###################
-
 with program() as raw_trace_prog:
     n = declare(int)  # QUA variable for the averaging loop
     adc_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace
 
-    with for_(n, 0, n < node.parmaeters.num_averages, n + 1):
+    with for_(n, 0, n < node.parameters.num_averages, n + 1):
         # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
         reset_phase(resonator.name)
         # Measure the resonator (send a readout pulse and record the raw ADC trace)
@@ -89,7 +97,8 @@ if node.parameters.simulate:
     job = qmm.simulate(config, raw_trace_prog, simulation_config)
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
-
+    # save the figure
+    node.results = {"fig": plt.gcf()}
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -134,24 +143,26 @@ else:
     plt.legend()
     plt.grid("all")
     plt.tight_layout()
-    plt.show()
 
     # Update the config
     print(f"Time Of Flight to add in the config: {delay} ns")
 
+    tracked_resonator.revert_changes()
     # Update QUAM
     with node.record_state_updates():
         for q in machine.active_qubits:
-            q.resonator.time_of_flight += delay
-
-    node.machine = machine
+            q.resonator.time_of_flight = node.parameters.time_of_flight + delay
+            q.resonator.operations["readout"].length = node.parameters.readout_length
+            q.resonator.operations["readout"].amplitude = node.parameters.readout_amplitude
+            q.resonator.intermediate_frequency = node.parameters.intermediate_frequency
 
     node.results = {
+        "initial_parameters": node.parameters.model_dump(),
         "delay": delay,
         "raw_adc": adc,
         "raw_adc_single_shot": adc_single_run,
         "figure": fig,
-        "initial_parameters": node.parameters.to_dict()
     }
 
-    node.save()
+node.machine = machine
+node.save()

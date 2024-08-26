@@ -5,6 +5,7 @@ from typing import Dict, List, Type, TypeVar
 from pathlib import Path
 import json
 
+from CS_installations.quam_libs.experiments.two_qubit_rb.test.configuration import time_of_flight
 from qualang_tools.units import unit
 from quam.components import Octave, IQChannel, DigitalOutputChannel
 from quam_libs.components import (
@@ -50,19 +51,19 @@ def create_quam_superconducting(
     else:
         raise ValueError("Wiring must be provided.")
 
-    host_ip = "10.1.1.110"
+    host_ip = "172.16.33.101"
 
     octave_ips = [host_ip] 
     # or "192.168.88.X" if configured internally
     # octave_ips = ["192.168.88.251", ...]
 
-    octave_ports = [11050]  # 11XXX where XXX are the last digits of the Octave IP
+    octave_ports = [11234]  # 11XXX where XXX are the last digits of the Octave IP
     # or 80 if configured internally
     # octave_ips = [80] * 3
 
     machine.network = {
         "host": host_ip,
-        "cluster_name": "QC1",
+        "cluster_name": "Cluster_83",
         "octave_ips": octave_ips,
         "octave_ports": octave_ports,
         "data_folder": r"C:\data\path\to\folder",
@@ -134,6 +135,7 @@ def create_quam_superconducting(
                 frequency_converter_down=qubit_wiring.resonator.frequency_converter_down.get_reference(),
                 intermediate_frequency=-250 * u.MHz,
                 depletion_time=1 * u.us,
+                time_of_flight=28  # 4ns above default so that it appears in state.json
             ),
         )
 
@@ -210,9 +212,9 @@ if __name__ == "__main__":
     custom_port_wiring = {
         "qubits": {
             "q1": {
-                "res": (1, 1, 1, 1),  # (module, i_ch, octave, octave_ch)
+                "res": (1, 9, 1, 1),  # (module, i_ch, octave, octave_ch)
                 "xy": (1, 3, 1, 2),  # (module, i_ch, octave, octave_ch)
-                "flux": (2, 5),  # (module, ch)
+                "flux": (1, 5),  # (module, ch)
             },
         },
     }

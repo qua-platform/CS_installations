@@ -1,0 +1,38 @@
+{
+    "network": {
+        "host": "172.16.33.101",
+        "cluster_name": "Cluster_83",
+        "octave_ips": [
+            "172.16.33.101"
+        ],
+        "octave_ports": [
+            11234
+        ],
+        "data_folder": "C:\\data\\path\\to\\folder"
+    },
+    "wiring": {
+        "qubits": {
+            "q0": {
+                "xy": {
+                    "opx_output_I": "#/ports/analog_outputs/con1/3",
+                    "opx_output_Q": "#/ports/analog_outputs/con1/4",
+                    "digital_port": "#/ports/digital_outputs/con1/3",
+                    "frequency_converter_up": "#/octaves/octave1/RF_outputs/2"
+                },
+                "z": {
+                    "opx_output": "#/ports/analog_outputs/con1/5"
+                },
+                "resonator": {
+                    "opx_output_I": "#/ports/analog_outputs/con1/9",
+                    "opx_output_Q": "#/ports/analog_outputs/con1/10",
+                    "opx_input_I": "#/ports/analog_inputs/con1/1",
+                    "opx_input_Q": "#/ports/analog_inputs/con1/2",
+                    "digital_port": "#/ports/digital_outputs/con1/9",
+                    "frequency_converter_up": "#/octaves/octave1/RF_outputs/1",
+                    "frequency_converter_down": "#/octaves/octave1/RF_inputs/1"
+                }
+            }
+        },
+        "qubit_pairs": []
+    }
+}
