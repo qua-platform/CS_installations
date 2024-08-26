@@ -19,3 +19,6 @@ class ReadoutResonator(InOutIQChannel):
     f_01: float = None
     f_12: float = None
     confusion_matrix: list = None
+    
+    gef_centers : list = None
+    gef_confusion_matrix : list = None

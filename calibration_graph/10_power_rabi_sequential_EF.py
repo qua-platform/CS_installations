@@ -68,11 +68,11 @@ for q in qubits:
 ###################
 
 operation = "x180"  # The qubit operation to play
-n_avg = 10000  # The number of averages
+n_avg = 1000  # The number of averages
 flux_point = "joint"  # "independent", "joint" or "zero"
 
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-amps = np.arange(0.0,2.0, 0.025)
+amps = np.arange(0.0,0.8, 0.025)
 
 with program() as power_rabi:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
