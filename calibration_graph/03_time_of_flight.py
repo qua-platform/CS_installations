@@ -26,6 +26,7 @@ class Parameters(NodeParameters):
     readout_amplitude: float = 0.1
     readout_length: int = 1000
     simulate: bool = False
+    force_values_from_state_json = False
 
 node = QualibrationNode(
     name="01_Time_of_Flight",
@@ -167,8 +168,6 @@ else:
         "raw_adc": adc,
         "raw_adc_single_shot": adc_single_run,
         "figure": fig,
-        "initial_parameters": node.parameters.to_dict()
     }
 
-node.machine = machine
-node.save()
+    node.save()
