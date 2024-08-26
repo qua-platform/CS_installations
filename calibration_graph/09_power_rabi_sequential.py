@@ -262,7 +262,10 @@ if N_pi == 1:
 
 elif N_pi > 1:
     I_n=ds.I.mean(dim='N')
-    datamaxIndx = I_n.argmax(dim='amp')
+    if N_pi_vec[0] % 2 == 0:
+        datamaxIndx = I_n.argmin(dim='amp')
+    else:
+        datamaxIndx = I_n.argmax(dim='amp')
     for q in qubits:
         new_pi_amp = ds.abs_amp.sel(qubit = q.name)[datamaxIndx.sel(qubit = q.name)]
         fit_results[q.name] = {}
