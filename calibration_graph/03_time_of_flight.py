@@ -13,20 +13,18 @@ The data undergoes post-processing to calibrate three distinct parameters:
     the variable gain of the OPX analog input can be modified to fit the signal within the ADC range of +/-0.5V.
     This gain, ranging from -12 dB to 20 dB, can also be adjusted in the configuration at: config/controllers/"con1"/analog_inputs.
 """
+from typing import Optional
 from qualibrate import QualibrationNode, NodeParameters
-
 from quam_libs.qualibrate.trackable_object import tracked_updates
 
-
 class Parameters(NodeParameters):
-    qubit: str = "q0"
+    qubit: str = "q1"
     num_averages: int = 400
-    time_of_flight: int = 24
-    intermediate_frequency: int = 1000000
-    readout_amplitude: float = 0.1
-    readout_length: int = 1000
+    time_of_flight: Optional[int] = None
+    intermediate_frequency: Optional[int] = None
+    readout_amplitude: Optional[float] = None
+    readout_length: Optional[int] = None
     simulate: bool = False
-    force_values_from_state_json = False
 
 node = QualibrationNode(
     name="01_Time_of_Flight",
@@ -50,15 +48,20 @@ from scipy.signal import savgol_filter
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load("/home/dean/src/qm/CS_installations/configuration/quam_state/")
+machine = QuAM.load()
 # Get the relevant QuAM components
 resonator = machine.qubits[node.parameters.qubit].resonator  # The resonator element
+resonators = [q.resonator for q in machine.active_qubits]
 
-with tracked_updates(resonator, auto_revert=False) as tracked_resonator:
-    tracked_resonator.time_of_flight = node.parameters.time_of_flight
-    tracked_resonator.operations["readout"].length = node.parameters.readout_length
-    tracked_resonator.operations["readout"].amplitude = node.parameters.readout_amplitude
-    tracked_resonator.intermediate_frequency = node.parameters.intermediate_frequency
+tracked_resonators = []
+for resonator in resonators:
+    # make temporary updates before running the program and revert at the end.
+    with tracked_updates(resonator, auto_revert=False, dont_assign_to_none=True) as resonator_:
+        resonator_.time_of_flight = node.parameters.time_of_flight
+        resonator_.operations["readout"].length = node.parameters.readout_length
+        resonator_.operations["readout"].amplitude = node.parameters.readout_amplitude
+        resonator_.intermediate_frequency = node.parameters.intermediate_frequency
+        tracked_resonators.append(resonator_)
 
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
@@ -103,7 +106,7 @@ if node.parameters.simulate:
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
     # save the figure
-    node.results = {"fig": plt.gcf()}
+    node.results = {"figure": plt.gcf()}
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -153,21 +156,22 @@ else:
     # Update the config
     print(f"Time Of Flight to add in the config: {delay} ns")
 
-    tracked_resonator.revert_changes()
-    # Update QUAM
+    for resonator_ in tracked_resonators:
+        resonator_.revert_changes()
     with node.record_state_updates():
-        for q in machine.active_qubits:
-            q.resonator.time_of_flight = node.parameters.time_of_flight + delay
-            q.resonator.operations["readout"].length = node.parameters.readout_length
-            q.resonator.operations["readout"].amplitude = node.parameters.readout_amplitude
-            q.resonator.intermediate_frequency = node.parameters.intermediate_frequency
+        for resonator_ in tracked_resonators:
+            resonator_.reapply_changes()
+        for resonator in resonators:
+            resonator.time_of_flight = resonator.time_of_flight + delay
+
 
     node.results = {
-        "initial_parameters": node.parameters.model_dump(),
+        "run_parameters": node.parameters.model_dump(),
         "delay": delay,
         "raw_adc": adc,
         "raw_adc_single_shot": adc_single_run,
         "figure": fig,
     }
 
-    node.save()
+node.machine = machine
+node.save()
