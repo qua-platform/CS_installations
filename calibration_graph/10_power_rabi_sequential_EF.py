@@ -17,8 +17,27 @@ Next steps before going to the next node:
     - Update the qubit pulse amplitude (pi_amp) in the state.
     - Save the current state by calling machine.save("quam")
 """
+from qualibrate import QualibrationNode, NodeParameters
+from typing import Optional, Literal
 
-from pathlib import Path
+
+class Parameters(NodeParameters):
+    qubits: Optional[str] = None
+    num_averages: int = 200
+    operation: str = "x180"
+    min_amp_factor: float = 0.8
+    max_amp_factor: float = 1.2
+    amp_factor_step: float = 0.005
+    flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
+    simulate: bool = False
+
+node = QualibrationNode(
+    name="04b_Power_Rabi_E_to_F",
+    parameters_class=Parameters
+)
+
+node.parameters = Parameters()
+
 
 from qm.qua import *
 from qm import SimulationConfig
@@ -38,7 +57,7 @@ from lib.plot_utils import QubitGrid, grid_iter
 from lib.save_utils import fetch_results_as_xarray
 from lib.fit import fit_oscillation, oscillation
 
-matplotlib.use("TKAgg")
+# matplotlib.use("TKAgg")
 
 
 ###################################################
@@ -55,7 +74,10 @@ octave_config = machine.get_octave_config()
 qmm = machine.connect()
 
 # Get the relevant QuAM components
-qubits = machine.active_qubits
+if node.parameters.qubits is None:
+    qubits = machine.active_qubits
+else:
+    qubits = [machine.qubits[q] for q in node.parameters.qubits.split(', ')]
 num_qubits = len(qubits)
 
 for q in qubits:
@@ -67,12 +89,14 @@ for q in qubits:
 # The QUA program #
 ###################
 
-operation = "x180"  # The qubit operation to play
-n_avg = 1000  # The number of averages
-flux_point = "joint"  # "independent", "joint" or "zero"
+operation = node.parameters.operation  # The qubit operation to play, can be switched to "x180" when the qubits are found.
+n_avg = node.parameters.num_averages  # The number of averages
+flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-amps = np.arange(0.0,0.8, 0.025)
+amps = np.arange(node.parameters.min_amp_factor,
+                 node.parameters.max_amp_factor,
+                 node.parameters.amp_factor_step)
 
 with program() as power_rabi:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
@@ -120,14 +144,14 @@ with program() as power_rabi:
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = False
+simulate = node.parameters.simulate
 
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, power_rabi, simulation_config)
     job.get_simulated_samples().con1.plot()
-
+    node.results = {"figure": plt.gcf()}
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -229,71 +253,79 @@ else:
     # node_save(machine, "power_rabi", data, additional_files=True)
 
 # %%
-handles = job.result_handles
-ds = fetch_results_as_xarray(handles, qubits, {"amp": amps})
-# %%
-def abs_amp(q):
-    def foo(amp):
-        return q.xy.operations[operation].amplitude * amp
-    return foo
-
-ds = ds.assign_coords({'abs_amp' : (['qubit','amp'],np.array([abs_amp(q)(amps) for q in qubits]))})
-ds = ds.assign({'IQ_abs' : np.sqrt(ds.I**2 + ds.Q**2)})
-data = {}
-data['ds'] = ds
+if not simulate:
+    handles = job.result_handles
+    ds = fetch_results_as_xarray(handles, qubits, {"amp": amps})
 
 # %%
-fit_results = {}
+if not simulate:
+    def abs_amp(q):
+        def foo(amp):
+            return q.xy.operations[operation].amplitude * amp
+        return foo
 
-fit = fit_oscillation(ds.IQ_abs, 'amp')
-fit_evals = oscillation(ds.amp,fit.sel(fit_vals = 'a'),fit.sel(fit_vals = 'f'),fit.sel(fit_vals = 'phi'),fit.sel(fit_vals = 'offset'))
-for q in qubits:
-    fit_results[q.name] = {}
-    f_fit = fit.loc[q.name].sel(fit_vals='f')
-    phi_fit = fit.loc[q.name].sel(fit_vals='phi')
-    phi_fit = phi_fit - np.pi * (phi_fit > np.pi/2)
-    factor = float(1.0 * (np.pi - phi_fit)/ (2* np.pi* f_fit))
-    new_pi_amp = q.xy.operations[operation].amplitude * factor
-    if new_pi_amp < 0.3:
-        print(f"amplitude for E-F Pi pulse is modified by a factor of {factor:.2f} w.r.t the original pi pulse amplitude")
-        print(f"new amplitude is {1e3 * new_pi_amp:.2f} mV \n")
-        fit_results[q.name]['Pi_amplitude'] = new_pi_amp
-    else: 
-        print(f"Fitted amplitude too high, new amplitude is 300 mV \n")
-        fit_results[q.name]['Pi_amplitude'] = 0.3
-data['fit_results'] = fit_results# %%
+    ds = ds.assign_coords({'abs_amp' : (['qubit','amp'],np.array([abs_amp(q)(amps) for q in qubits]))})
+    ds = ds.assign({'IQ_abs' : np.sqrt(ds.I**2 + ds.Q**2)})
+    node.results = {}
+    node.results['ds'] = ds
 
 # %%
+if not simulate:
+    fit_results = {}
 
-grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
-for ax, qubit in grid_iter(grid):
-    (ds.assign_coords(amp_mV  = ds.abs_amp *1e3).loc[qubit].IQ_abs*1e3).plot(ax = ax, x = 'amp_mV')
-    ax.plot(ds.abs_amp.loc[qubit]*1e3, 1e3*fit_evals.loc[qubit])
-    ax.set_ylabel('Trans. amp. I [mV]')
-    ax.set_xlabel('Amplitude [mV]')
-    ax.set_title(qubit['qubit'])
-grid.fig.suptitle('Rabi : I vs. amplitude')
-plt.tight_layout()
-plt.show()
-data['figure'] = grid.fig
+    fit = fit_oscillation(ds.IQ_abs, 'amp')
+    fit_evals = oscillation(ds.amp,fit.sel(fit_vals = 'a'),fit.sel(fit_vals = 'f'),fit.sel(fit_vals = 'phi'),fit.sel(fit_vals = 'offset'))
+    for q in qubits:
+        fit_results[q.name] = {}
+        f_fit = fit.loc[q.name].sel(fit_vals='f')
+        phi_fit = fit.loc[q.name].sel(fit_vals='phi')
+        phi_fit = phi_fit - np.pi * (phi_fit > np.pi/2)
+        factor = float(1.0 * (np.pi - phi_fit)/ (2* np.pi* f_fit))
+        new_pi_amp = q.xy.operations[operation].amplitude * factor
+        if new_pi_amp < 0.3:
+            print(f"amplitude for E-F Pi pulse is modified by a factor of {factor:.2f} w.r.t the original pi pulse amplitude")
+            print(f"new amplitude is {1e3 * new_pi_amp:.2f} mV \n")
+            fit_results[q.name]['Pi_amplitude'] = new_pi_amp
+        else:
+            print(f"Fitted amplitude too high, new amplitude is 300 mV \n")
+            fit_results[q.name]['Pi_amplitude'] = 0.3
+    node.results['fit_results'] = fit_results
 
 # %%
-for q in qubits:
-    # check if an EF_x180 operation exists
-    if 'EF_x180' in q.xy.operations:
-        # set the new amplitude for the X180 operation
-        q.xy.operations['EF_x180'].amplitude = fit_results[q.name]['Pi_amplitude']
-    else:
-        # create a new operation with the new amplitude based on "operation"
-        q.xy.operations["EF_x180"] = pulses.DragPulse(
-            amplitude=fit_results[q.name]['Pi_amplitude'],
-            sigma=q.xy.operations[operation].sigma,
-            alpha=q.xy.operations[operation].alpha,
-            anharmonicity=q.xy.operations[operation].anharmonicity,
-            length=q.xy.operations[operation].length,
-            axis_angle=0,
-            digital_marker=q.xy.operations[operation].digital_marker,
-        )
+if not simulate:
+    grid_names = [f'{q.name}_0' for q in qubits]
+    grid = QubitGrid(ds, grid_names)
+    for ax, qubit in grid_iter(grid):
+        (ds.assign_coords(amp_mV  = ds.abs_amp *1e3).loc[qubit].IQ_abs*1e3).plot(ax = ax, x = 'amp_mV')
+        ax.plot(ds.abs_amp.loc[qubit]*1e3, 1e3*fit_evals.loc[qubit])
+        ax.set_ylabel('Trans. amp. I [mV]')
+        ax.set_xlabel('Amplitude [mV]')
+        ax.set_title(qubit['qubit'])
+    grid.fig.suptitle('Rabi : I vs. amplitude')
+    plt.tight_layout()
+    plt.show()
+    node.results['figure'] = grid.fig
+
 # %%
-node_save(machine, "power_rabi_EF", data, additional_files=True)
+if not simulate:
+    with node.record_state_updates():
+        for q in qubits:
+            # check if an EF_x180 operation exists
+            if 'EF_x180' in q.xy.operations:
+                # set the new amplitude for the X180 operation
+                q.xy.operations['EF_x180'].amplitude = fit_results[q.name]['Pi_amplitude'].item()
+            else:
+                # create a new operation with the new amplitude based on "operation"
+                q.xy.operations["EF_x180"] = pulses.DragPulse(
+                    amplitude=fit_results[q.name]['Pi_amplitude'].item(),
+                    sigma=q.xy.operations[operation].sigma,
+                    alpha=q.xy.operations[operation].alpha,
+                    anharmonicity=q.xy.operations[operation].anharmonicity,
+                    length=q.xy.operations[operation].length,
+                    axis_angle=0,
+                    digital_marker=q.xy.operations[operation].digital_marker,
+                )
 # %%
+node.results['initial_parameters'] = node.parameters.model_dump()
+node.machine = machine
+node.save()

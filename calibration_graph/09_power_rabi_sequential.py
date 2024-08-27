@@ -29,9 +29,7 @@ class Parameters(NodeParameters):
     max_amp_factor: float = 1.2
     amp_factor_step: float = 0.005
     max_number_rabi_pulses_per_sweep: int = 10
-    operation_len: Optional[int] = None
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
-    target_peak_width: Optional[int] = None
     simulate: bool = False
 
 node = QualibrationNode(
@@ -257,7 +255,9 @@ else:
 if not simulate:
     handles = job.result_handles
     ds = fetch_results_as_xarray(handles, qubits, {"amp": amps, "N": N_pi_vec})
-    # %%
+
+# %%
+if not simulate:
     def abs_amp(q):
         def foo(amp):
             return q.xy.operations[operation].amplitude * amp
@@ -330,7 +330,7 @@ if not simulate:
 if not simulate:
     with node.record_state_updates():
         for q in qubits:
-            q.xy.operations[operation].amplitude = fit_results[q.name]['Pi_amplitude']
+            q.xy.operations[operation].amplitude = fit_results[q.name]['Pi_amplitude'].item()
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()
