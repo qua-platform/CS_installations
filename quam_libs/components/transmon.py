@@ -6,6 +6,7 @@ from .readout_resonator import ReadoutResonator
 from qualang_tools.octave_tools import octave_calibration_tool
 from qm import QuantumMachine, logger
 from typing import Union
+from qm.qua import align
 
 
 __all__ = ["Transmon"]
@@ -125,3 +126,6 @@ class Transmon(QuamComponent):
                 return qubit_pair
         else:
             raise ValueError("Qubit pair not found: qubit_control={self.name}, " "qubit_target={other.name}")
+        
+    def align(self):
+        align(self.xy.name, self.z.name, self.resonator.name)
