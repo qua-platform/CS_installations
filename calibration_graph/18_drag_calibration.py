@@ -196,5 +196,5 @@ data['figure'] = grid.fig
 for q in qubits:
     q.xy.operations[operation].alpha = fit_results[q.name]['alpha']
 # %%
-node_save(machine, f"DRA_calibrration", data, additional_files=True)
+node_save(machine, f"DRAG_calibration", data, additional_files=True)
 # %%
