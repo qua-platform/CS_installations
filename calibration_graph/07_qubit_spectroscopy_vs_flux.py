@@ -14,8 +14,31 @@ Before proceeding to the next node:
     - Update the relevant flux points in the state.
     - Save the current state by calling machine.save("quam")
 """
+from qualibrate import QualibrationNode, NodeParameters
+from typing import Optional, Literal
 
-from pathlib import Path
+
+class Parameters(NodeParameters):
+    qubits: Optional[str] = None
+    num_averages: int = 20
+    operation: str = "saturation"
+    operation_amplitude_factor: Optional[float] = None
+    operation_len: Optional[int] = None
+    frequency_span_in_mhz: float = 10
+    frequency_step_in_mhz: float = 0.05
+    min_flux_offset_in_v: float = -0.5
+    max_flux_offset_in_v: float = 0.5
+    num_flux_points: int = 201
+    flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
+    simulate: bool = False
+
+node = QualibrationNode(
+    name="03b_Qubit_Spectroscopy_vs_Flux",
+    parameters_class=Parameters
+)
+
+node.parameters = Parameters()
+
 
 from qm.qua import *
 from qm import SimulationConfig
@@ -24,7 +47,7 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 from qualang_tools.units import unit
 from quam_libs.components import QuAM
-from quam_libs.macros import qua_declaration, multiplexed_readout, node_save
+from quam_libs.macros import qua_declaration
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -34,7 +57,7 @@ from lib.plot_utils import QubitGrid, grid_iter
 from lib.save_utils import fetch_results_as_xarray
 from lib.fit import peaks_dips
 
-matplotlib.use("TKAgg")
+# matplotlib.use("TKAgg")
 
 
 ###################################################
@@ -51,27 +74,36 @@ octave_config = machine.get_octave_config()
 qmm = machine.connect()
 
 # Get the relevant QuAM components
-qubits = machine.active_qubits
+if node.parameters.qubits is None:
+    qubits = machine.active_qubits
+else:
+    qubits = [machine.qubits[q] for q in node.parameters.qubits.split(', ')]
 num_qubits = len(qubits)
 
 ###################
 # The QUA program #
 ###################
 
-operation = "saturation"  # The qubit operation to play, can be switched to "x180" when the qubits are found.
-n_avg = 100  # Number of averaging loops
+operation = node.parameters.operation  # The qubit operation to play, can be switched to "x180" when the qubits are found.
+n_avg = node.parameters.num_averages  # The number of averages
 cooldown_time = max(q.thermalization_time for q in qubits)
-
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
-saturation_len = 20 * u.us  # In ns
-saturation_amp = 0.01  # pre-factor to the value defined in the config - restricted to [-2; 2)
-
+operation_len = node.parameters.operation_len  # can be None - will just be ignored
+if node.parameters.operation_amplitude_factor:
+    # pre-factor to the value defined in the config - restricted to [-2; 2)
+    operation_amp = node.parameters.operation_amplitude_factor
+else:
+    operation_amp = 1.
 # Qubit detuning sweep with respect to their resonance frequencies
-dfs = np.arange(-25e6, 20e6, 0.5e6)
+span = node.parameters.frequency_span_in_mhz * u.MHz
+step = node.parameters.frequency_step_in_mhz * u.MHz
+dfs = np.arange(-span//2, +span//2, step, dtype=np.int32)
 # Flux bias sweep
-dcs = np.linspace(-0.01, 0.01, 21)
+dcs = np.linspace(node.parameters.min_flux_offset_in_v,
+                  node.parameters.max_flux_offset_in_v,
+                  node.parameters.num_flux_points)
 
-flux_point = "joint"  # "independent", "joint" or "zero"
+flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 # Adjust the qubits IFs locally to help find the qubits
 # q1.xy.intermediate_frequency = 340e6
 # q2.xy.intermediate_frequency = 0
@@ -114,8 +146,8 @@ with program() as multi_qubit_spec_vs_flux:
                     # Apply saturation pulse to all qubits
                     q.xy.play(
                         operation,
-                        amplitude_scale=saturation_amp,
-                        duration=saturation_len * u.ns,
+                        amplitude_scale=operation_amp,
+                        duration=operation_len,
                     )
 
                     # QUA macro to read the state of the active resonators
@@ -136,16 +168,17 @@ with program() as multi_qubit_spec_vs_flux:
             I_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"I{i + 1}")
             Q_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"Q{i + 1}")
 # %%
-#######################
-# Simulate or execute #
-#######################
-simulate = False
+###########################
+# Run or Simulate Program #
+###########################
+simulate = node.parameters.simulate
 
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, multi_qubit_spec_vs_flux, simulation_config)
     job.get_simulated_samples().con1.plot()
+    node.results = {"figure": plt.gcf()}
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -215,95 +248,96 @@ else:
     # node_save(machine, "qubit_spectroscopy_vs_flux", data, additional_files=True)
 
 # %%
-handles = job.result_handles
-ds = fetch_results_as_xarray(handles, qubits, {"flux": dcs, "freq": dfs})
-# %%
-ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
-def abs_freq(q):
-    def foo(freq):
-        return freq + q.resonator.intermediate_frequency + q.resonator.LO_frequency
-    return foo
-
-ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
-
-ds.freq_full.attrs['long_name'] = 'Frequency'
-ds.freq_full.attrs['units'] = 'GHz'
+if not simulate:
+    handles = job.result_handles
+    ds = fetch_results_as_xarray(handles, qubits, {"flux": dcs, "freq": dfs})
 
 # %%
+if not simulate:
+    ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
+    def abs_freq(q):
+        def foo(freq):
+            return freq + q.resonator.intermediate_frequency + q.resonator.LO_frequency
+        return foo
 
+    ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
+
+    ds.freq_full.attrs['long_name'] = 'Frequency'
+    ds.freq_full.attrs['units'] = 'GHz'
+
+    node.results = {}
+    node.results['ds'] = ds
 
 # %%
-# %%
-data = {}
-data['ds'] = ds
+if not simulate:
+    peaks = peaks_dips(ds.I, dim = 'freq',prominence_factor=7)
+    parabolic_fit_results = peaks.position.polyfit('flux',2)
+    coeff = parabolic_fit_results.polyfit_coefficients
+    fitted = coeff.sel(degree = 2) * ds.flux ** 2 + coeff.sel(degree = 1) * ds.flux + coeff.sel(degree = 0)
+    flux_shift = -coeff[1] / ( 2 * coeff[0])
+    freq_shift = coeff.sel(degree = 2) * flux_shift ** 2 + coeff.sel(degree = 1) * flux_shift + coeff.sel(degree = 0)
 
-peaks = peaks_dips(ds.I, dim = 'freq',prominence_factor=7)
-parabolic_fit_results = peaks.position.polyfit('flux',2)
-coeff = parabolic_fit_results.polyfit_coefficients
-fitted = coeff.sel(degree = 2) * ds.flux ** 2 + coeff.sel(degree = 1) * ds.flux + coeff.sel(degree = 0)
-flux_shift = -coeff[1] / ( 2 * coeff[0])
-freq_shift = coeff.sel(degree = 2) * flux_shift ** 2 + coeff.sel(degree = 1) * flux_shift + coeff.sel(degree = 0)
+    fit_results = {}
 
-
-
-fit_results = {}
-
-for q in qubits:
-    fit_results[q.name] = {}
-    if not np.isnan(flux_shift.sel(qubit = q.name).values):
-        if flux_point == "independent":
-            offset = q.z.independent_offset
-        elif flux_point == "joint":
-            offset = q.z.joint_offset        
-        print(f'flux offset for qubit {q.name} is {offset*1e3 + flux_shift.sel(qubit = q.name).values*1e3:.0f} mV')
-        print(f'a shift of  {flux_shift.sel(qubit = q.name).values*1e3:.0f} mV')
-        print(
-            f"Drive frequency for {q.name} is {(freq_shift.sel(qubit = q.name).values + q.xy.intermediate_frequency + q.xy.LO_frequency)/1e9:.3f} GHz")
-        print(
-            f"(shift of {freq_shift.sel(qubit = q.name).values/1e6:.0f} MHz)")
-        print(
-            f'quad term for qubit {q.name} is {float(coeff.sel(degree = 2, qubit = q.name)/1e9):.3e} GHz/V^2 \n')
-        fit_results[q.name]['flux_shift'] = float(flux_shift.sel(qubit = q.name).values)
-        fit_results[q.name]['drive_freq'] = float(freq_shift.sel(qubit = q.name).values) 
-        fit_results[q.name]['quad_term'] = float(coeff.sel(degree = 2, qubit = q.name))
-    else:
-        print(f'No fit for qubit {q.name}')
-        fit_results[q.name]['flux_shift'] = np.nan
-        fit_results[q.name]['drive_freq'] = np.nan
-        fit_results[q.name]['quad_term'] = np.nan
-data['fit_results'] = fit_results
-
+    for q in qubits:
+        fit_results[q.name] = {}
+        if not np.isnan(flux_shift.sel(qubit = q.name).values):
+            if flux_point == "independent":
+                offset = q.z.independent_offset
+            elif flux_point == "joint":
+                offset = q.z.joint_offset
+            print(f'flux offset for qubit {q.name} is {offset*1e3 + flux_shift.sel(qubit = q.name).values*1e3:.0f} mV')
+            print(f'a shift of  {flux_shift.sel(qubit = q.name).values*1e3:.0f} mV')
+            print(
+                f"Drive frequency for {q.name} is {(freq_shift.sel(qubit = q.name).values + q.xy.intermediate_frequency + q.xy.LO_frequency)/1e9:.3f} GHz")
+            print(
+                f"(shift of {freq_shift.sel(qubit = q.name).values/1e6:.0f} MHz)")
+            print(
+                f'quad term for qubit {q.name} is {float(coeff.sel(degree = 2, qubit = q.name)/1e9):.3e} GHz/V^2 \n')
+            fit_results[q.name]['flux_shift'] = float(flux_shift.sel(qubit = q.name).values)
+            fit_results[q.name]['drive_freq'] = float(freq_shift.sel(qubit = q.name).values)
+            fit_results[q.name]['quad_term'] = float(coeff.sel(degree = 2, qubit = q.name))
+        else:
+            print(f'No fit for qubit {q.name}')
+            fit_results[q.name]['flux_shift'] = np.nan
+            fit_results[q.name]['drive_freq'] = np.nan
+            fit_results[q.name]['quad_term'] = np.nan
+    node.results['fit_results'] = fit_results
 
 
 # %%
-grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
+if not simulate:
+    grid_names = [f'{q.name}_0' for q in qubits]
+    grid = QubitGrid(ds, grid_names)
 
-for ax, qubit in grid_iter(grid):
-    ds.assign_coords(freq_GHz=ds.freq / 1e0).loc[qubit].I.plot(ax=ax, add_colorbar=False,
-                                                                            x='flux', y='freq_GHz', robust=True)
-    fitted.loc[qubit].plot(ax = ax,linewidth = 0.5, ls = '--',color = 'r')
-    ax.plot(flux_shift.loc[qubit], freq_shift.loc[qubit], 'r*')
-    peaks.position.loc[qubit].plot(ax = ax, ls = '', marker = '.', color = 'r')
-    ax.set_ylabel('Freq (GHz)')
-    ax.set_xlabel('Flux (V)')
-    ax.set_title(qubit['qubit'])
-grid.fig.suptitle('Resonator spectroscopy vs flux ')
+    for ax, qubit in grid_iter(grid):
+        ds.assign_coords(freq_GHz=ds.freq / 1e0).loc[qubit].I.plot(ax=ax, add_colorbar=False,
+                                                                                x='flux', y='freq_GHz', robust=True)
+        fitted.loc[qubit].plot(ax = ax,linewidth = 0.5, ls = '--',color = 'r')
+        ax.plot(flux_shift.loc[qubit], freq_shift.loc[qubit], 'r*')
+        peaks.position.loc[qubit].plot(ax = ax, ls = '', marker = '.', color = 'r')
+        ax.set_ylabel('Freq (GHz)')
+        ax.set_xlabel('Flux (V)')
+        ax.set_title(qubit['qubit'])
+    grid.fig.suptitle('Resonator spectroscopy vs flux ')
 
-plt.tight_layout()
-plt.show()
-data["figure"] = grid.fig
-
-# %%
-for q in qubits:
-    if not np.isnan(flux_shift.sel(qubit = q.name).values):
-        if flux_point == 'independent':
-            q.z.independent_offset += fit_results[q.name]['flux_shift']
-        elif flux_point == 'joint':
-            q.z.joint_offset += fit_results[q.name]['flux_shift']
-        q.xy.intermediate_frequency += fit_results[q.name]['drive_freq']
-        q.freq_vs_flux_01_quad_term = fit_results[q.name]['quad_term']
+    plt.tight_layout()
+    plt.show()
+    node.results["figure"] = grid.fig
 
 # %%
-node_save(machine, "qubit_spectroscopy_vs_flux", data, additional_files=True)
+if not simulate:
+    with node.record_state_updates():
+        for q in qubits:
+            if not np.isnan(flux_shift.sel(qubit = q.name).values):
+                if flux_point == 'independent':
+                    q.z.independent_offset += fit_results[q.name]['flux_shift']
+                elif flux_point == 'joint':
+                    q.z.joint_offset += fit_results[q.name]['flux_shift']
+                q.xy.intermediate_frequency += fit_results[q.name]['drive_freq']
+                q.freq_vs_flux_01_quad_term = fit_results[q.name]['quad_term']
 
 # %%
+node.results['initial_parameters'] = node.parameters.model_dump()
+node.machine = machine
+node.save()
