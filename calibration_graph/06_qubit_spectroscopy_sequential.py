@@ -373,10 +373,10 @@ if not simulate:
             if not np.isnan(result.sel(qubit = q.name).position.values):
                 q.xy.intermediate_frequency += float(result.sel(qubit = q.name).position.values)
 
-                prev_angle = q.resonator.operations["readout"].axis_angle
+                prev_angle = q.resonator.operations["readout"].integration_weights_angle
                 if not  prev_angle:
                     prev_angle = 0.0
-                q.resonator.operations["readout"].axis_angle = (prev_angle - angle.sel(qubit = q.name).values )% (2*np.pi)
+                q.resonator.operations["readout"].integration_weights_angle = (prev_angle - angle.sel(qubit = q.name).values )% (2*np.pi)
 
             Pi_length = q.xy.operations["x180"].length
             used_amp = q.xy.operations["saturation"].amplitude * operation_amp

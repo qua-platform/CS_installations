@@ -30,7 +30,7 @@ from qualang_tools.loops import from_array
 from qualang_tools.analysis.discriminator import two_state_discriminator
 from qualang_tools.units import unit
 from quam_libs.components import QuAM
-from quam_libs.macros import qua_declaration, multiplexed_readout, node_save
+from quam_libs.macros import qua_declaration, multiplexed_readout, node_save, active_reset
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -58,12 +58,13 @@ qmm = machine.connect()
 # Get the relevant QuAM components
 qubits = machine.active_qubits
 num_qubits = len(qubits)
-
+# %%
 ###################
 # The QUA program #
 ###################
 n_runs = 2000  # Number of runs
 flux_point = "joint"  # "independent", "joint" or "zero"
+reset_type = "active"  # "active" or "thermal"
 
 with program() as iq_blobs:
     I_g, I_g_st, Q_g, Q_g_st, n, n_st = qua_declaration(num_qubits=num_qubits)
@@ -84,15 +85,21 @@ with program() as iq_blobs:
         with for_(n, 0, n < n_runs, n + 1):
             # ground iq blobs for all qubits
             save(n, n_st)
-            wait(5*machine.thermalization_time * u.ns)
-            align()
+            if reset_type == "active":
+                active_reset(machine, qubit.name)
+            else:
+                wait(5*machine.thermalization_time * u.ns)
+            qubit.align()
             qubit.resonator.measure("readout", qua_vars=(I_g[i], Q_g[i]))
             align()
             # save data
             save(I_g[i], I_g_st[i])
             save(Q_g[i], Q_g_st[i])
             
-            wait(5*machine.thermalization_time * u.ns)
+            if reset_type == "active":
+                active_reset(machine, qubit.name)
+            else:
+                wait(5*machine.thermalization_time * u.ns)
             align()
             qubit.xy.play('x180')
             align()
@@ -276,12 +283,12 @@ data['figure_fidelities'] = grid.fig
 
 # %%
 for qubit in qubits:
-    qubit.resonator.operations["readout"].integration_weights_angle -= float(data["results"][qubit.name]["angle"])/(2 * np.pi)
+    qubit.resonator.operations["readout"].integration_weights_angle -= float(data["results"][qubit.name]["angle"])
     qubit.resonator.operations["readout"].threshold = float(data["results"][qubit.name]["threshold"])
-    # to add conf matrix and RUS threshold to the readout operation rather than the resonator
-    # qubit.resonator.operations["readout"].rus_exit_threshold = data["results"][qubit.name]["rus_threshold"]
+    # to add conf matrix  to the readout operation rather than the resonator
+    qubit.resonator.operations["readout"].rus_exit_threshold = float(data["results"][qubit.name]["rus_threshold"])
     # qubit.resonator.confusion_matrix = data["results"][qubit.name]["confusion_matrix"]
 # %%
-node_save(machine, "IQ_blobs", data, additional_files=True)
+node_save(machine, f"IQ_blobs_{reset_type}", data, additional_files=True)
 
 # %%

@@ -104,3 +104,35 @@ def node_save(
 
     # Save QuAM to configuration directory / `state.json`
     quam.save(content_mapping={"wiring.json": {"wiring", "network"}})
+
+def active_reset(
+    quam: QuAM,
+    name: str,
+    save_qua_var: Optional[StreamType] = None,
+    pi_pulse_name: str = "x180",
+    readout_pulse_name: str = "readout"):
+    
+    qubit = quam.qubits[name]
+    pulse = qubit.resonator.operations[readout_pulse_name]
+
+    I = declare(fixed)
+    Q = declare(fixed)
+    state = declare(bool)
+    attempts = declare(int, value=1)
+    assign(attempts, 1)
+    qubit.align()
+    qubit.resonator.measure("readout", qua_vars=(I, Q))
+    assign(state, I > pulse.threshold)
+    wait(qubit.resonator.depletion_time // 4)
+    qubit.xy.play(pi_pulse_name, condition=state)
+    qubit.align()
+    with while_(I > pulse.rus_exit_threshold):
+        qubit.align()
+        qubit.resonator.measure("readout", qua_vars=(I, Q))
+        assign(state, I > pulse.threshold)
+        wait(qubit.resonator.depletion_time // 4)
+        qubit.xy.play(pi_pulse_name, condition=state)
+        qubit.align()
+        assign(attempts, attempts + 1)
+    if save_qua_var is not None:
+        save(attempts, save_qua_var)
