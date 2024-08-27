@@ -89,7 +89,7 @@ with program() as iq_blobs:
                 active_reset(machine, qubit.name)
             else:
                 wait(5*machine.thermalization_time * u.ns)
-            align()
+            qubit.align()
             qubit.resonator.measure("readout", qua_vars=(I_g[i], Q_g[i]))
             align()
             # save data
