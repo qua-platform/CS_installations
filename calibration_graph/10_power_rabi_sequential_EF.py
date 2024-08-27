@@ -124,10 +124,10 @@ with program() as power_rabi:
                 # Reset the qubit frequency
                 update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
                 # Drive the qubit to the excited state
-                qubit.xy.play("x180")
+                qubit.xy.play(operation)
                 # Update the qubit frequency to scan around the excepted f_01
                 update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency -qubit.anharmonicity)                
-                qubit.xy.play("x180", amplitude_scale=a)
+                qubit.xy.play(operation, amplitude_scale=a)
                 align()
                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                 save(I[i], I_st[i])
@@ -310,14 +310,14 @@ if not simulate:
 if not simulate:
     with node.record_state_updates():
         for q in qubits:
-            # check if an EF_x180 operation exists
-            if 'EF_x180' in q.xy.operations:
-                # set the new amplitude for the X180 operation
-                q.xy.operations['EF_x180'].amplitude = fit_results[q.name]['Pi_amplitude'].item()
+            # check if an EF operation exists
+            if f'EF_{operation}' in q.xy.operations:
+                # set the new amplitude for the EF operation
+                q.xy.operations[f'EF_{operation}'].amplitude = fit_results[q.name]['Pi_amplitude']
             else:
                 # create a new operation with the new amplitude based on "operation"
-                q.xy.operations["EF_x180"] = pulses.DragPulse(
-                    amplitude=fit_results[q.name]['Pi_amplitude'].item(),
+                q.xy.operations[f'EF_{operation}'] = pulses.DragPulse(
+                    amplitude=fit_results[q.name]['Pi_amplitude'],
                     sigma=q.xy.operations[operation].sigma,
                     alpha=q.xy.operations[operation].alpha,
                     anharmonicity=q.xy.operations[operation].anharmonicity,

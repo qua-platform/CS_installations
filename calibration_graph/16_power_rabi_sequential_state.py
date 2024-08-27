@@ -70,12 +70,10 @@ amps = np.arange(0.8, 1.2, 0.005)
 # Number of applied Rabi pulses sweep
 N_pi = 30  # Maximum number of qubit pulses
 
-# Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-# amps = np.arange(0.0,2.0, 0.025)
-# # Number of applied Rabi pulses sweep
-# N_pi = 1  # Maximum number of qubit pulses
-
-N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[::2]
+if operation == "x180":
+    N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[::2]
+elif operation == "x90":
+    N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[::4]
 
 with program() as power_rabi:
     I, _, Q, _, n, n_st = qua_declaration(num_qubits=num_qubits)
@@ -107,7 +105,7 @@ with program() as power_rabi:
                     qubit.align()
                     # Loop for error amplification (perform many qubit pulses)
                     with for_(count, 0, count < npi, count + 1):
-                        qubit.xy.play("x180", amplitude_scale=a)
+                        qubit.xy.play(operation, amplitude_scale=a)
                     align()
                     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                     assign(state[i], Cast.to_int(I[i] > qubit.resonator.operations["readout"].threshold))
@@ -116,7 +114,10 @@ with program() as power_rabi:
     with stream_processing():
         n_st.save("n")
         for i, qubit in enumerate(qubits):
-            state_stream[i].buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(f"state{i + 1}")
+            if operation == "x180":
+                state_stream[i].buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(f"state{i + 1}")
+            elif operation == "x90":
+                state_stream[i].buffer(len(amps)).buffer(np.ceil(N_pi / 4)).average().save(f"state{i + 1}")
 
 
 ###########################
