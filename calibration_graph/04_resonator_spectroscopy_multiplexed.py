@@ -23,8 +23,8 @@ from typing import Optional
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
     num_averages: int = 100
-    frequency_span_in_MHz: float = 15
-    frequency_step_in_MHz: int = 0.1
+    frequency_span_in_mhz: float = 15.
+    frequency_step_in_mhz: float = 0.1
     simulate: bool = False
 
 node = QualibrationNode(
@@ -88,8 +88,8 @@ num_resonators = len(resonators)
 live_plot = True
 n_avg = node.parameters.num_averages  # The number of averages
 # The frequency sweep around the resonator resonance frequency f_opt
-span = node.parameters.frequency_span * u.MHz
-step = node.parameters.frequency_step * u.MHz
+span = node.parameters.frequency_span_in_mhz * u.MHz
+step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span/2, +span/2, step)
 # You can adjust the IF frequency here to manually adjust the resonator frequencies instead of updating the state
 # rr1.intermediate_frequency = -50 * u.MHz

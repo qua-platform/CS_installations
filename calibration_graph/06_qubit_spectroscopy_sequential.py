@@ -36,8 +36,8 @@ class Parameters(NodeParameters):
     operation: str = "saturation"
     operation_amplitude_factor: Optional[float] = None
     operation_len: Optional[int] = None
-    frequency_span_in_MHz: float = 10
-    frequency_step_in_MHz: float = 0.05
+    frequency_span_in_mhz: float = 10
+    frequency_step_in_mhz: float = 0.05
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     target_peak_width: Optional[int] = None
     simulate: bool = False
@@ -103,9 +103,9 @@ if node.parameters.operation_amplitude_factor:
 else:
     operation_amp = 1.
 # Qubit detuning sweep with respect to their resonance frequencies
-span = node.parameters.frequency_span * u.MHz
-step = node.parameters.frequency_step * u.MHz
-dfs = np.arange(-span//2, +span//2, step)
+span = node.parameters.frequency_span_in_mhz * u.MHz
+step = node.parameters.frequency_step_in_mhz * u.MHz
+dfs = np.arange(-span//2, +span//2, step, dtype=np.int32)
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 
 target_peak_width = node.parameters.target_peak_width
@@ -283,7 +283,7 @@ if not simulate:
         def foo(freq):
             return freq + q.xy.intermediate_frequency + q.xy.LO_frequency
         return foo
-    ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
+    ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits], dtype=np.int32))})
     ds = ds.assign({'phase': np.arctan2(ds.Q,ds.I)})
 
     ds.freq_full.attrs['long_name'] = 'Frequency'

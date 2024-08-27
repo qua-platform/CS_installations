@@ -26,11 +26,11 @@ from typing import Optional, Literal
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
     num_averages: int = 20
-    min_flux_offset_in_V: float = -0.5
-    max_flux_offset_in_V: float = 0.5
+    min_flux_offset_in_v: float = -0.5
+    max_flux_offset_in_v: float = 0.5
     num_flux_points: int = 201
-    frequency_span_in_MHz: float = 10
-    frequency_step_in_MHz: float = 0.05
+    frequency_span_in_mhz: float = 10
+    frequency_step_in_mhz: float = 0.05
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
 
@@ -92,12 +92,12 @@ num_resonators = len(resonators)
 
 n_avg = node.parameters.num_averages  # The number of averages
 # Flux bias sweep in V
-dcs = np.linspace(node.parameters.min_flux_offset,
-                  node.parameters.max_flux_offset,
+dcs = np.linspace(node.parameters.min_flux_offset_in_v,
+                  node.parameters.max_flux_offset_in_v,
                   node.parameters.num_flux_points)
 # The frequency sweep around the resonator resonance frequency f_opt
-span = node.parameters.frequency_span * u.MHz
-step = node.parameters.frequency_step * u.MHz
+span = node.parameters.frequency_span_in_mhz * u.MHz
+step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span/2, +span/2, step)
 
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'

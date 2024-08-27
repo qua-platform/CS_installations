@@ -27,8 +27,8 @@ from typing import Optional
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
     num_averages: int = 100
-    frequency_span_in_MHz: float = 10
-    frequency_step_in_MHz: float = 0.1
+    frequency_span_in_mhz: float = 10
+    frequency_step_in_mhz: float = 0.1
     simulate: bool = False
 
 node = QualibrationNode(
@@ -110,8 +110,8 @@ for tracked_qubit in tracked_qubits:
 # amps = np.arange(0.05, 1.00, 0.02)
 amps = np.logspace(-2, 0.0, 100)
 # The frequency sweep around the resonator resonance frequencies f_opt
-span = node.parameters.frequency_span * u.MHz
-step = node.parameters.frequency_step * u.MHz
+span = node.parameters.frequency_span_in_mhz * u.MHz
+step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span//2, +span//2, step)
 
 

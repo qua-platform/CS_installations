@@ -18,11 +18,11 @@ from qualibrate import QualibrationNode, NodeParameters
 from quam_libs.qualibrate.trackable_object import tracked_updates
 
 class Parameters(NodeParameters):
-    qubit: str = "q1"
+    qubit: str = "q0"
     num_averages: int = 100
-    time_of_flight: Optional[int] = None
-    intermediate_frequency_in_MHz: Optional[float] = None
-    readout_amplitude_in_V: Optional[float] = None
+    time_of_flight_in_ns: Optional[int] = None
+    intermediate_frequency_in_mhz: Optional[float] = None
+    readout_amplitude_in_v: Optional[float] = None
     readout_length_in_ns: Optional[int] = None
     simulate: bool = False
 
@@ -56,10 +56,11 @@ tracked_resonators = []
 for resonator in resonators:
     # make temporary updates before running the program and revert at the end.
     with tracked_updates(resonator, auto_revert=False, dont_assign_to_none=True) as resonator:
-        resonator.time_of_flight = node.parameters.time_of_flight
-        resonator.operations["readout"].length = node.parameters.readout_length
-        resonator.operations["readout"].amplitude = node.parameters.readout_amplitude
-        resonator.intermediate_frequency = node.parameters.intermediate_frequency * u.MHz
+        resonator.time_of_flight = node.parameters.time_of_flight_in_ns
+        resonator.operations["readout"].length = node.parameters.readout_length_in_ns
+        resonator.operations["readout"].amplitude = node.parameters.readout_amplitude_in_v
+        if node.parameters.intermediate_frequency_in_mhz is not None:
+            resonator.intermediate_frequency = node.parameters.intermediate_frequency_in_mhz * u.MHz
         tracked_resonators.append(resonator)
 
 # Generate the OPX and Octave configurations
