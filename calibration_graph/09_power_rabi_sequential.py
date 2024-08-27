@@ -128,7 +128,7 @@ with program() as power_rabi:
                 with for_(*from_array(a, amps)):
                     # Loop for error amplification (perform many qubit pulses)
                     with for_(count, 0, count < npi, count + 1):
-                        qubit.xy.play("x180", amplitude_scale=a)
+                        qubit.xy.play(operation, amplitude_scale=a)
                     align()
                     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                     save(I[i], I_st[i])

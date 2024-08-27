@@ -55,15 +55,6 @@ operation = "x180"  # The qubit operation to play
 
 for q in qubits:
     q.xy.operations[operation].alpha = -1.0
-    q.xy.operations["negative"] = pulses.DragPulse(
-        amplitude=q.xy.operations[operation].amplitude,
-        sigma=q.xy.operations[operation].sigma,
-        alpha=q.xy.operations[operation].alpha,
-        anharmonicity=q.xy.operations[operation].anharmonicity,
-        length=q.xy.operations[operation].length,
-        axis_angle=q.xy.operations[operation].axis_angle + np.pi,
-        digital_marker=q.xy.operations[operation].digital_marker,
-    )
     
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
@@ -123,7 +114,7 @@ with program() as stark_detuning:
                     update_frequency(qubit.xy.name, df + qubit.xy.intermediate_frequency)
                     with for_(count, 0, count < npi, count + 1):
                         qubit.xy.play(operation)
-                        qubit.xy.play("negative")
+                        qubit.xy.play(operation, amplitude_scale=-1.0)
                     update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
                     qubit.align()
                     # reset_phase(qubit.resonator.name)
@@ -213,6 +204,7 @@ All_operations = True
 for qubit in qubits:
     qubit.xy.operations[operation].detuning = float(fit_results[qubit.name]['detuning'])
     qubit.xy.operations[operation].alpha = -1.0
+    # Temporary - should be in the QUAM builer
     for gate in [ "x90", "-x90", "y180", "y90", "-y90"]:
         qubit.xy.operations[gate].detuning = f"#../{operation}_DragGaussian/detuning"
 # %%
