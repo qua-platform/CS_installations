@@ -43,7 +43,7 @@ class Parameters(NodeParameters):
     simulate: bool = False
 
 node = QualibrationNode(
-    name="03_Qubit_Spectroscopy",
+    name="03a_Qubit_Spectroscopy",
     parameters_class=Parameters
 )
 
