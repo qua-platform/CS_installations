@@ -17,8 +17,30 @@ Next steps before going to the next node:
     - Update the qubit pulse amplitude (pi_amp) in the state.
     - Save the current state by calling machine.save("quam")
 """
+from qualibrate import QualibrationNode, NodeParameters
+from typing import Optional, Literal
 
-from pathlib import Path
+from quam_libs.qualibrate.trackable_object import tracked_updates
+
+
+class Parameters(NodeParameters):
+    qubits: Optional[str] = None
+    num_averages: int = 200
+    operation: str = "x180"
+    frequency_span_in_mhz: float = 10
+    frequency_step_in_mhz: float = 0.02
+    max_number_pulses_per_sweep: int = 10
+    flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
+    reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
+    simulate: bool = False
+
+node = QualibrationNode(
+    name="09_Stark_Detuning",
+    parameters_class=Parameters
+)
+
+node.parameters = Parameters()
+
 
 from qm.qua import *
 from qm import SimulationConfig
@@ -35,8 +57,8 @@ import matplotlib
 from lib.plot_utils import QubitGrid, grid_iter
 from lib.save_utils import fetch_results_as_xarray
 from lib.fit import fit_oscillation, oscillation
-from quam.components import pulses
-matplotlib.use("TKAgg")
+
+# matplotlib.use("TKAgg")
 
 
 ###################################################
@@ -49,12 +71,18 @@ machine = QuAM.load()
 
 
 # Get the relevant QuAM components
-qubits = machine.active_qubits
+if node.parameters.qubits is None:
+    qubits = machine.active_qubits
+else:
+    qubits = [machine.qubits[q] for q in node.parameters.qubits.split(', ')]
 num_qubits = len(qubits)
-operation = "x180"  # The qubit operation to play
+operation = node.parameters.operation  # The qubit operation to play
 
+tracked_qubits = []
 for q in qubits:
-    q.xy.operations[operation].alpha = -1.0
+    with tracked_updates(q, auto_revert=False, dont_assign_to_none=True) as q:
+        q.xy.operations[operation].alpha = -1.0
+        tracked_qubits.append(q)
     
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
@@ -65,14 +93,17 @@ qmm = machine.connect()
 # The QUA program #
 ###################
 
-n_avg = 500  # The number of averages
-flux_point = "joint"  # "independent", "joint" or "zero"
-reset_type = "active" # "active" or "thermal"
+n_avg = node.parameters.num_averages  # The number of averages
+flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
+reset_type = node.parameters.reset_type_thermal_or_active  # "active" or "thermal"
 
 # Pulse frequency sweep
-dfs = np.arange(-5e6, +5e6, 0.2e6)
+span = node.parameters.frequency_span_in_mhz * u.MHz
+step = node.parameters.frequency_step_in_mhz * u.MHz
+dfs = np.arange(-span//2, +span//2, step, dtype=np.int32)
+
 # Number of applied Rabi pulses sweep
-N_pi = 10  # Maximum number of qubit pulses
+N_pi = node.parameters.max_number_pulses_per_sweep  # Maximum number of qubit pulses
 N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")
 
 
@@ -135,14 +166,14 @@ with program() as stark_detuning:
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = False
+simulate = node.parameters.simulate
 
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, power_rabi, simulation_config)
+    job = qmm.simulate(config, stark_detuning, simulation_config)
     job.get_simulated_samples().con1.plot()
-
+    node.results = {"figure": plt.gcf()}
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -165,48 +196,55 @@ else:
     qm.close()
 
 # %%
-handles = job.result_handles
-ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs, "N": N_pi_vec})
+if not simulate:
+    handles = job.result_handles
+    ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs, "N": N_pi_vec})
 
-data = {}
-# data['ds'] = ds
-
-
-# %%
-fit_results = {}
-
-
-state_n=ds.state.mean(dim='N')
-
-datamaxIndx = state_n.argmin(dim='freq')
-detunings = ds.freq[datamaxIndx]
-fit_results = {qubit.name : {'detuning': float(detunings.sel(qubit=qubit.name).values)} for qubit in qubits}
-for q in qubits:
-    print(f"Detuning for {q.name} is {fit_results[q.name]['detuning']} Hz")
-data['fit_results'] = fit_results
-# %%
-
-grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
-for ax, qubit in grid_iter(grid):
-    (ds.assign_coords(freq_MHz  = ds.freq *1e6).loc[qubit].state).plot(ax = ax, x = 'freq_MHz', y = 'N')
-    ax.axvline(1e6*fit_results[qubit['qubit']]['detuning'], color = 'r')
-    ax.set_ylabel('num. of pulses')
-    ax.set_xlabel('detuning [MHz]')
-    ax.set_title(qubit['qubit'])
-grid.fig.suptitle('Stark detuning')
-plt.tight_layout()
-plt.show()
-data['figure'] = grid.fig
+    node.results = {}
+    node.results['ds'] = ds
 
 # %%
-All_operations = True
+if not simulate:
+    fit_results = {}
 
-for qubit in qubits:
-    qubit.xy.operations[operation].detuning = float(fit_results[qubit.name]['detuning'])
-    qubit.xy.operations[operation].alpha = -1.0
-    # Temporary - should be in the QUAM builer
-    for gate in [ "x90", "-x90", "y180", "y90", "-y90"]:
-        qubit.xy.operations[gate].detuning = f"#../{operation}_DragGaussian/detuning"
+
+    state_n=ds.state.mean(dim='N')
+
+    datamaxIndx = state_n.argmin(dim='freq')
+    detunings = ds.freq[datamaxIndx]
+    fit_results = {qubit.name : {'detuning': float(detunings.sel(qubit=qubit.name).values)} for qubit in qubits}
+    for q in qubits:
+        print(f"Detuning for {q.name} is {fit_results[q.name]['detuning']} Hz")
+    node.results['fit_results'] = fit_results
+
 # %%
-node_save(machine, f"stark_detuning", data, additional_files=True)
+if not simulate:
+    grid_names = [f'{q.name}_0' for q in qubits]
+    grid = QubitGrid(ds, grid_names)
+    for ax, qubit in grid_iter(grid):
+        (ds.assign_coords(freq_MHz  = ds.freq *1e6).loc[qubit].state).plot(ax = ax, x = 'freq_MHz', y = 'N')
+        ax.axvline(1e6*fit_results[qubit['qubit']]['detuning'], color = 'r')
+        ax.set_ylabel('num. of pulses')
+        ax.set_xlabel('detuning [MHz]')
+        ax.set_title(qubit['qubit'])
+    grid.fig.suptitle('Stark detuning')
+    plt.tight_layout()
+    plt.show()
+    node.results['figure'] = grid.fig
+
 # %%
+if not simulate:
+    all_operations = True
+
+    with node.record_state_updates():
+        for qubit in qubits:
+            qubit.xy.operations[operation].detuning = float(fit_results[qubit.name]['detuning'])
+            qubit.xy.operations[operation].alpha = -1.0
+            # Temporary - should be in the QUAM builer
+            for gate in [ "x90", "-x90", "y180", "y90", "-y90"]:
+                qubit.xy.operations[gate].detuning = f"#../{operation}_DragGaussian/detuning"
+
+# %%
+node.results['initial_parameters'] = node.parameters.model_dump()
+node.machine = machine
+node.save()

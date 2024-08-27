@@ -17,8 +17,33 @@ Next steps before going to the next node:
     - Update the qubit pulse amplitude (pi_amp) in the state.
     - Save the current state by calling machine.save("quam")
 """
+from qualibrate import QualibrationNode, NodeParameters
+from typing import Optional, Literal
 
-from pathlib import Path
+from quam_libs.qualibrate.trackable_object import tracked_updates
+
+
+class Parameters(NodeParameters):
+    qubits: Optional[str] = None
+    num_averages: int = 200
+    operation: str = "x180"
+    frequency_span_in_mhz: float = 10
+    frequency_step_in_mhz: float = 0.02
+    min_amp_factor: float = 0.8
+    max_amp_factor: float = 1.2
+    amp_factor_step: float = 0.005
+    max_number_pulses_per_sweep: int = 10
+    flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
+    reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
+    simulate: bool = False
+
+node = QualibrationNode(
+    name="10_DRAG_Calibration",
+    parameters_class=Parameters
+)
+
+node.parameters = Parameters()
+
 
 from qm.qua import *
 from qm import SimulationConfig
@@ -36,7 +61,7 @@ from lib.plot_utils import QubitGrid, grid_iter
 from lib.save_utils import fetch_results_as_xarray
 from lib.fit import fit_oscillation, oscillation
 
-matplotlib.use("TKAgg")
+# matplotlib.use("TKAgg")
 
 
 ###################################################
@@ -52,27 +77,31 @@ octave_config = machine.get_octave_config()
 # Open Communication with the QOP
 qmm = machine.connect()
 
-# Get the relevant QuAM components
-qubits = machine.active_qubits
+if node.parameters.qubits is None:
+    qubits = machine.active_qubits
+else:
+    qubits = [machine.qubits[q] for q in node.parameters.qubits.split(', ')]
 num_qubits = len(qubits)
+operation = node.parameters.operation  # The qubit operation to play
 
 ###################
 # The QUA program #
 ###################
 
-operation = "x180"  # The qubit operation to play
-n_avg = 500  # The number of averages
-flux_point = "joint"  # "independent", "joint" or "zero"
-reset_type = "active" # "active" or "thermal"
+n_avg = node.parameters.num_averages  # The number of averages
+flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
+reset_type = node.parameters.reset_type_thermal_or_active  # "active" or "thermal"
 
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-amps = np.arange(0, 2, 0.02)
-# Number of applied Rabi pulses sweep
-N_pi = 20  # Maximum number of qubit pulses
+amps = np.arange(node.parameters.min_amp_factor,
+                 node.parameters.max_amp_factor,
+                 node.parameters.amp_factor_step)
 
+# Number of applied Rabi pulses sweep
+N_pi = node.parameters.max_number_pulses_per_sweep  # Maximum number of qubit pulses
 N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")
 
-with program() as power_rabi:
+with program() as drag_calibration:
     I, _, Q, _, n, n_st = qua_declaration(num_qubits=num_qubits)
     state = [declare(int) for _ in range(num_qubits)]
     state_stream = [declare_stream() for _ in range(num_qubits)]
@@ -118,21 +147,21 @@ with program() as power_rabi:
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = False
+simulate = node.parameters.simulate
 
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, power_rabi, simulation_config)
+    job = qmm.simulate(config, drag_calibration, simulation_config)
     job.get_simulated_samples().con1.plot()
-
+    node.results = {"figure": plt.gcf()}
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Calibrate the active qubits
     # machine.calibrate_octave_ports(qm)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(power_rabi)
+    job = qm.execute(drag_calibration)
     # Get results from QUA program
     data_list = ["n"] + sum([[f"state{i + 1}"] for i in range(num_qubits)], [])
     results = fetching_tool(job, data_list, mode="live")
@@ -148,53 +177,64 @@ else:
     qm.close()
 
 # %%
-handles = job.result_handles
-ds = fetch_results_as_xarray(handles, qubits, {"amp": amps, "N": N_pi_vec})
-# %%
-def alpha(q):
-    def foo(amp):
-        return q.xy.operations[operation].alpha * amp
-    return foo
-
-ds = ds.assign_coords({'alpha' : (['qubit','amp'],np.array([alpha(q)(amps) for q in qubits]))})
-data = {}
-
-data = {}
-# data['ds'] = ds
+if not simulate:
+    handles = job.result_handles
+    ds = fetch_results_as_xarray(handles, qubits, {"amp": amps, "N": N_pi_vec})
 
 # %%
-fit_results = {}
+if not simulate:
+    def alpha(q):
+        def foo(amp):
+            return q.xy.operations[operation].alpha * amp
+        return foo
 
+    ds = ds.assign_coords({'alpha' : (['qubit','amp'],np.array([alpha(q)(amps) for q in qubits]))})
+    node.results = {}
 
-state_n=ds.state.mean(dim='N')
-
-datamaxIndx = state_n.argmin(dim='amp')
-alphas = ds.amp[datamaxIndx]
-fit_results = {qubit.name : {'alpha': float(alphas.sel(qubit=qubit.name).values*qubit.xy.operations[operation].alpha)} for qubit in qubits}
-for q in qubits:
-    print(f"DRAG coeff for {q.name} is {fit_results[q.name]['alpha']}")
-data['fit_results'] = fit_results
-# %%
-ds.state.plot(col = 'qubit', x = 'alpha', y = 'N', col_wrap = 2)
-plt.show()
-# %%
-
-grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
-for ax, qubit in grid_iter(grid):
-
-    (ds.loc[qubit].state).plot(ax = ax, x = 'alpha', y = 'N')
-    ax.axvline(fit_results[qubit['qubit']]['alpha'], color = 'r')
-    ax.set_ylabel('num. of pulses')
-    ax.set_xlabel('DRAG coeff')
-    ax.set_title(qubit['qubit'])
-grid.fig.suptitle('DRAG calibration')
-plt.tight_layout()
-plt.show()
-data['figure'] = grid.fig
+    node.results = {}
+    node.results['ds'] = ds
 
 # %%
-for q in qubits:
-    q.xy.operations[operation].alpha = fit_results[q.name]['alpha']
+if not simulate:
+    fit_results = {}
+
+    state_n=ds.state.mean(dim='N')
+
+    datamaxIndx = state_n.argmin(dim='amp')
+    alphas = ds.amp[datamaxIndx]
+    fit_results = {qubit.name : {'alpha': float(alphas.sel(qubit=qubit.name).values*qubit.xy.operations[operation].alpha)} for qubit in qubits}
+    for q in qubits:
+        print(f"DRAG coeff for {q.name} is {fit_results[q.name]['alpha']}")
+    node.results['fit_results'] = fit_results
+
 # %%
-node_save(machine, f"DRAG_calibration", data, additional_files=True)
+if not simulate:
+    ds.state.plot(col = 'qubit', x = 'alpha', y = 'N', col_wrap = 2)
+    plt.show()
+
 # %%
+if not simulate:
+    grid_names = [f'{q.name}_0' for q in qubits]
+    grid = QubitGrid(ds, grid_names)
+    for ax, qubit in grid_iter(grid):
+
+        (ds.loc[qubit].state).plot(ax = ax, x = 'alpha', y = 'N')
+        ax.axvline(fit_results[qubit['qubit']]['alpha'], color = 'r')
+        ax.set_ylabel('num. of pulses')
+        ax.set_xlabel('DRAG coeff')
+        ax.set_title(qubit['qubit'])
+    grid.fig.suptitle('DRAG calibration')
+    plt.tight_layout()
+    plt.show()
+    node.results['figure'] = grid.fig
+
+# %%
+if not simulate:
+    with node.record_state_updates():
+        for q in qubits:
+            q.xy.operations[operation].alpha = fit_results[q.name]['alpha']
+
+# %%
+node.results['initial_parameters'] = node.parameters.model_dump()
+node.machine = machine
+node.save()

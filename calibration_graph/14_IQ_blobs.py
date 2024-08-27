@@ -19,8 +19,24 @@ Next steps before going to the next node:
     - Update the g -> e threshold (ge_threshold) in the state.
     - Save the current state by calling machine.save("quam")
 """
+from qualibrate import QualibrationNode, NodeParameters
+from typing import Optional, Literal
 
-from pathlib import Path
+
+class Parameters(NodeParameters):
+    qubits: Optional[str] = None
+    num_runs: int = 2000
+    reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
+    flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
+    simulate: bool = False
+
+node = QualibrationNode(
+    name="07a_IQ_Blobs",
+    parameters_class=Parameters
+)
+
+node.parameters = Parameters()
+
 
 from qm.qua import *
 from qm import SimulationConfig
@@ -30,7 +46,7 @@ from qualang_tools.loops import from_array
 from qualang_tools.analysis.discriminator import two_state_discriminator
 from qualang_tools.units import unit
 from quam_libs.components import QuAM
-from quam_libs.macros import qua_declaration, multiplexed_readout, node_save, active_reset
+from quam_libs.macros import qua_declaration, multiplexed_readout, active_reset
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -39,7 +55,8 @@ import matplotlib
 from lib.plot_utils import QubitGrid, grid_iter
 from lib.save_utils import fetch_results_as_xarray
 import xarray as xr
-matplotlib.use("TKAgg")
+
+# matplotlib.use("TKAgg")
 
 
 ###################################################
@@ -56,15 +73,18 @@ octave_config = machine.get_octave_config()
 qmm = machine.connect()
 
 # Get the relevant QuAM components
-qubits = machine.active_qubits
+if node.parameters.qubits is None:
+    qubits = machine.active_qubits
+else:
+    qubits = [machine.qubits[q] for q in node.parameters.qubits.split(', ')]
 num_qubits = len(qubits)
 # %%
 ###################
 # The QUA program #
 ###################
-n_runs = 2000  # Number of runs
-flux_point = "joint"  # "independent", "joint" or "zero"
-reset_type = "active"  # "active" or "thermal"
+n_runs = node.parameters.num_runs  # Number of runs
+flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
+reset_type = node.parameters.reset_type_thermal_or_active  # "active" or "thermal"
 
 with program() as iq_blobs:
     I_g, I_g_st, Q_g, Q_g_st, n, n_st = qua_declaration(num_qubits=num_qubits)
@@ -87,8 +107,11 @@ with program() as iq_blobs:
             save(n, n_st)
             if reset_type == "active":
                 active_reset(machine, qubit.name)
-            else:
+            elif reset_type == "thermal":
                 wait(5*machine.thermalization_time * u.ns)
+            else:
+                raise ValueError(f"Unrecognized reset type {reset_type}.")
+
             qubit.align()
             qubit.resonator.measure("readout", qua_vars=(I_g[i], Q_g[i]))
             align()
@@ -98,8 +121,10 @@ with program() as iq_blobs:
             
             if reset_type == "active":
                 active_reset(machine, qubit.name)
-            else:
+            elif reset_type == "thermal":
                 wait(5*machine.thermalization_time * u.ns)
+            else:
+                raise ValueError(f"Unrecognized reset type {reset_type}.")
             align()
             qubit.xy.play('x180')
             align()
@@ -128,7 +153,7 @@ if simulate:
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, iq_blobs, simulation_config)
     job.get_simulated_samples().con1.plot()
-
+    node.results = {"figure": plt.gcf()}
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -197,98 +222,103 @@ else:
     # node_save(machine, "iq_blobs", data, additional_files=True)
 
 # %%
-handles = job.result_handles
-ds = fetch_results_as_xarray(handles, qubits, {"N": np.linspace(1, n_runs, n_runs)})
+if not simulate:
+    handles = job.result_handles
+    ds = fetch_results_as_xarray(handles, qubits, {"N": np.linspace(1, n_runs, n_runs)})
 
 
-# Fix the structure of ds to avoid tuples
-def extract_value(element):
-    if isinstance(element, tuple):
-        return element[0]
-    return element
-ds = xr.apply_ufunc(
-    extract_value, 
-    ds,
-    vectorize=True,  # This ensures the function is applied element-wise
-    dask='parallelized',  # This allows for parallel processing
-    output_dtypes=[float]  # Specify the output data type
-)
+    # Fix the structure of ds to avoid tuples
+    def extract_value(element):
+        if isinstance(element, tuple):
+            return element[0]
+        return element
+    ds = xr.apply_ufunc(
+        extract_value,
+        ds,
+        vectorize=True,  # This ensures the function is applied element-wise
+        dask='parallelized',  # This allows for parallel processing
+        output_dtypes=[float]  # Specify the output data type
+    )
 
-data = {}
-data["ds"] = ds
-
-# %%
-data["figs"] = {}
-data["results"] = {}
-
-plot_indvidual = False
-for q in qubits:
-    angle, threshold, fidelity, gg, ge, eg, ee = two_state_discriminator(ds.I_g.sel(qubit = q.name), ds.Q_g.sel(qubit = q.name), ds.I_e.sel(qubit = q.name), ds.Q_e.sel(qubit = q.name), True, b_plot=plot_indvidual)
-    I_rot = ds.I_g.sel(qubit = q.name) * np.cos(angle) - ds.Q_g.sel(qubit = q.name) * np.sin(angle)
-    hist = np.histogram(I_rot, bins=100)
-    RUS_threshold = hist[1][1:][np.argmax(hist[0])]
-    if plot_indvidual:
-        fig = plt.gcf()
-        plt.show()
-        data["figs"][q.name] = fig  
-    data["results"][q.name] = {}
-    data["results"][q.name]["angle"] = float(angle)
-    data["results"][q.name]["threshold"] = float(threshold)
-    data["results"][q.name]["fidelity"] = float(fidelity)
-    data["results"][q.name]["confusion_matrix"] = np.array([[gg, ge], [eg, ee]])
-    data["results"][q.name]["rus_threshold"] = float(RUS_threshold)
+    node.results = {}
+    node.results['ds'] = ds
 
 # %%
+if not simulate:
+    node.results["figs"] = {}
+    node.results["results"] = {}
 
-
-grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
-for ax, qubit in grid_iter(grid):
-    n_avg = n_runs // 2
-    qn = qubit['qubit']
-    ax.plot(1e3*(ds.I_g.sel(qubit =qn) * np.cos(data["results"][qn]["angle"]) - ds.Q_g.sel(qubit =qn) * np.sin(data["results"][qn]["angle"])), 1e3*(ds.I_g.sel(qubit =qn) * np.sin(data["results"][qn]["angle"]) + ds.Q_g.sel(qubit =qn) * np.cos(data["results"][qn]["angle"])), ".", alpha=0.1, label="Ground", markersize=1)
-    ax.plot(1e3 * (ds.I_e.sel(qubit =qn) * np.cos(data["results"][qn]["angle"]) - ds.Q_e.sel(qubit =qn) * np.sin(data["results"][qn]["angle"])), 1e3 * (ds.I_e.sel(qubit =qn) * np.sin(data["results"][qn]["angle"]) + ds.Q_e.sel(qubit =qn) * np.cos(data["results"][qn]["angle"])), ".", alpha=0.1, label="Excited", markersize=1)
-    ax.axvline(1e3 * data["results"][qn]["rus_threshold"], color="k", linestyle="--", lw = 0.5, label="RUS Threshold")
-    ax.axvline(1e3 * data["results"][qn]["threshold"], color="r", linestyle="--", lw = 0.5, label="Threshold")
-    ax.axis("equal")
-    ax.set_xlabel("I [mV]")
-    ax.set_ylabel("Q [mV]")
-    ax.set_title(qubit['qubit'])
-
-ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-grid.fig.suptitle('g.s. and e.s. discriminators (rotated)')
-plt.tight_layout()
-data['figure_IQ_blobs'] = grid.fig
-
-
-grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
-for ax, qubit in grid_iter(grid):
-    confusion = data["results"][qubit['qubit']]["confusion_matrix"]
-    ax.imshow(confusion)
-    ax.set_xticks([0, 1])
-    ax.set_yticks([0, 1])
-    ax.set_xticklabels(labels=["|g>", "|e>"])
-    ax.set_yticklabels(labels=["|g>", "|e>"])
-    ax.set_ylabel("Prepared")
-    ax.set_xlabel("Measured")
-    ax.text(0, 0, f"{100 * confusion[0][0]:.1f}%", ha="center", va="center", color="k")
-    ax.text(1, 0, f"{100 * confusion[0][1]:.1f}%", ha="center", va="center", color="w")
-    ax.text(0, 1, f"{100 * confusion[1][0]:.1f}%", ha="center", va="center", color="w")
-    ax.text(1, 1, f"{100 * confusion[1][1]:.1f}%", ha="center", va="center", color="k")
-    ax.set_title(qubit['qubit'])
-
-grid.fig.suptitle('g.s. and e.s. fidelities')
-plt.tight_layout()
-plt.show()
-data['figure_fidelities'] = grid.fig
+    plot_indvidual = False
+    for q in qubits:
+        angle, threshold, fidelity, gg, ge, eg, ee = two_state_discriminator(ds.I_g.sel(qubit = q.name), ds.Q_g.sel(qubit = q.name), ds.I_e.sel(qubit = q.name), ds.Q_e.sel(qubit = q.name), True, b_plot=plot_indvidual)
+        I_rot = ds.I_g.sel(qubit = q.name) * np.cos(angle) - ds.Q_g.sel(qubit = q.name) * np.sin(angle)
+        hist = np.histogram(I_rot, bins=100)
+        RUS_threshold = hist[1][1:][np.argmax(hist[0])]
+        if plot_indvidual:
+            fig = plt.gcf()
+            plt.show()
+            node.results["figs"][q.name] = fig
+        node.results["results"][q.name] = {}
+        node.results["results"][q.name]["angle"] = float(angle)
+        node.results["results"][q.name]["threshold"] = float(threshold)
+        node.results["results"][q.name]["fidelity"] = float(fidelity)
+        node.results["results"][q.name]["confusion_matrix"] = np.array([[gg, ge], [eg, ee]])
+        node.results["results"][q.name]["rus_threshold"] = float(RUS_threshold)
 
 # %%
-for qubit in qubits:
-    qubit.resonator.operations["readout"].integration_weights_angle -= float(data["results"][qubit.name]["angle"])
-    qubit.resonator.operations["readout"].threshold = float(data["results"][qubit.name]["threshold"])
-    # to add conf matrix  to the readout operation rather than the resonator
-    qubit.resonator.operations["readout"].rus_exit_threshold = float(data["results"][qubit.name]["rus_threshold"])
-    # qubit.resonator.confusion_matrix = data["results"][qubit.name]["confusion_matrix"]
-# %%
-node_save(machine, f"IQ_blobs_{reset_type}", data, additional_files=True)
+if not simulate:
+    grid_names = [f'{q.name}_0' for q in qubits]
+    grid = QubitGrid(ds, grid_names)
+    for ax, qubit in grid_iter(grid):
+        n_avg = n_runs // 2
+        qn = qubit['qubit']
+        ax.plot(1e3*(ds.I_g.sel(qubit =qn) * np.cos(node.results["results"][qn]["angle"]) - ds.Q_g.sel(qubit =qn) * np.sin(node.results["results"][qn]["angle"])), 1e3*(ds.I_g.sel(qubit =qn) * np.sin(node.results["results"][qn]["angle"]) + ds.Q_g.sel(qubit =qn) * np.cos(node.results["results"][qn]["angle"])), ".", alpha=0.1, label="Ground", markersize=1)
+        ax.plot(1e3 * (ds.I_e.sel(qubit =qn) * np.cos(node.results["results"][qn]["angle"]) - ds.Q_e.sel(qubit =qn) * np.sin(node.results["results"][qn]["angle"])), 1e3 * (ds.I_e.sel(qubit =qn) * np.sin(node.results["results"][qn]["angle"]) + ds.Q_e.sel(qubit =qn) * np.cos(node.results["results"][qn]["angle"])), ".", alpha=0.1, label="Excited", markersize=1)
+        ax.axvline(1e3 * node.results["results"][qn]["rus_threshold"], color="k", linestyle="--", lw = 0.5, label="RUS Threshold")
+        ax.axvline(1e3 * node.results["results"][qn]["threshold"], color="r", linestyle="--", lw = 0.5, label="Threshold")
+        ax.axis("equal")
+        ax.set_xlabel("I [mV]")
+        ax.set_ylabel("Q [mV]")
+        ax.set_title(qubit['qubit'])
+
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    grid.fig.suptitle('g.s. and e.s. discriminators (rotated)')
+    plt.tight_layout()
+    node.results['figure_IQ_blobs'] = grid.fig
+
+
+    grid = QubitGrid(ds, grid_names)
+    for ax, qubit in grid_iter(grid):
+        confusion = node.results["results"][qubit['qubit']]["confusion_matrix"]
+        ax.imshow(confusion)
+        ax.set_xticks([0, 1])
+        ax.set_yticks([0, 1])
+        ax.set_xticklabels(labels=["|g>", "|e>"])
+        ax.set_yticklabels(labels=["|g>", "|e>"])
+        ax.set_ylabel("Prepared")
+        ax.set_xlabel("Measured")
+        ax.text(0, 0, f"{100 * confusion[0][0]:.1f}%", ha="center", va="center", color="k")
+        ax.text(1, 0, f"{100 * confusion[0][1]:.1f}%", ha="center", va="center", color="w")
+        ax.text(0, 1, f"{100 * confusion[1][0]:.1f}%", ha="center", va="center", color="w")
+        ax.text(1, 1, f"{100 * confusion[1][1]:.1f}%", ha="center", va="center", color="k")
+        ax.set_title(qubit['qubit'])
+
+    grid.fig.suptitle('g.s. and e.s. fidelities')
+    plt.tight_layout()
+    plt.show()
+    node.results['figure_fidelities'] = grid.fig
 
 # %%
+if not simulate:
+    with node.record_state_updates():
+        for qubit in qubits:
+            qubit.resonator.operations["readout"].integration_weights_angle -= float(node.results["results"][qubit.name]["angle"])
+            qubit.resonator.operations["readout"].threshold = float(node.results["results"][qubit.name]["threshold"])
+            # to add conf matrix  to the readout operation rather than the resonator
+            qubit.resonator.operations["readout"].rus_exit_threshold = float(node.results["results"][qubit.name]["rus_threshold"])
+            # qubit.resonator.confusion_matrix = data["results"][qubit.name]["confusion_matrix"]
+
+# %%
+node.results['initial_parameters'] = node.parameters.model_dump()
+node.machine = machine
+node.save()
