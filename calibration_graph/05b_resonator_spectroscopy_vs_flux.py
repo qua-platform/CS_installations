@@ -26,11 +26,11 @@ from typing import Optional, Literal
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
     num_averages: int = 20
-    min_flux_offset: float = -0.5
-    max_flux_offset: float = 0.5
+    min_flux_offset_in_V: float = -0.5
+    max_flux_offset_in_V: float = 0.5
     num_flux_points: int = 201
-    frequency_span: int = 10_000_000
-    frequency_step: int = 50_000
+    frequency_span_in_MHz: float = 10
+    frequency_step_in_MHz: float = 0.05
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
 
@@ -96,8 +96,9 @@ dcs = np.linspace(node.parameters.min_flux_offset,
                   node.parameters.max_flux_offset,
                   node.parameters.num_flux_points)
 # The frequency sweep around the resonator resonance frequency f_opt
-span = node.parameters.frequency_span
-dfs = np.arange(-span/2, +span/2, node.parameters.frequency_step)
+span = node.parameters.frequency_span * u.MHz
+step = node.parameters.frequency_step * u.MHz
+dfs = np.arange(-span/2, +span/2, step)
 
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 update_flux_min = True  # Update the min flux point

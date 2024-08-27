@@ -19,11 +19,11 @@ from quam_libs.qualibrate.trackable_object import tracked_updates
 
 class Parameters(NodeParameters):
     qubit: str = "q1"
-    num_averages: int = 400
+    num_averages: int = 100
     time_of_flight: Optional[int] = None
-    intermediate_frequency: Optional[int] = None
-    readout_amplitude: Optional[float] = None
-    readout_length: Optional[int] = None
+    intermediate_frequency_in_MHz: Optional[float] = None
+    readout_amplitude_in_V: Optional[float] = None
+    readout_length_in_ns: Optional[int] = None
     simulate: bool = False
 
 node = QualibrationNode(
@@ -50,18 +50,17 @@ u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
 machine = QuAM.load()
 # Get the relevant QuAM components
-resonator = machine.qubits[node.parameters.qubit].resonator  # The resonator element
 resonators = [q.resonator for q in machine.active_qubits]
 
 tracked_resonators = []
 for resonator in resonators:
     # make temporary updates before running the program and revert at the end.
-    with tracked_updates(resonator, auto_revert=False, dont_assign_to_none=True) as resonator_:
-        resonator_.time_of_flight = node.parameters.time_of_flight
-        resonator_.operations["readout"].length = node.parameters.readout_length
-        resonator_.operations["readout"].amplitude = node.parameters.readout_amplitude
-        resonator_.intermediate_frequency = node.parameters.intermediate_frequency
-        tracked_resonators.append(resonator_)
+    with tracked_updates(resonator, auto_revert=False, dont_assign_to_none=True) as resonator:
+        resonator.time_of_flight = node.parameters.time_of_flight
+        resonator.operations["readout"].length = node.parameters.readout_length
+        resonator.operations["readout"].amplitude = node.parameters.readout_amplitude
+        resonator.intermediate_frequency = node.parameters.intermediate_frequency * u.MHz
+        tracked_resonators.append(resonator)
 
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
@@ -156,11 +155,11 @@ else:
     # Update the config
     print(f"Time Of Flight to add in the config: {delay} ns")
 
-    for resonator_ in tracked_resonators:
-        resonator_.revert_changes()
+    for resonator in tracked_resonators:
+        resonator.revert_changes()
     with node.record_state_updates():
-        for resonator_ in tracked_resonators:
-            resonator_.reapply_changes()
+        for resonator in tracked_resonators:
+            resonator.reapply_changes()
         for resonator in resonators:
             resonator.time_of_flight = resonator.time_of_flight + delay
 

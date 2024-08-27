@@ -36,8 +36,8 @@ class Parameters(NodeParameters):
     operation: str = "saturation"
     operation_amplitude_factor: Optional[float] = None
     operation_len: Optional[int] = None
-    frequency_span: int = 10_000_000
-    frequency_step: int = 50_000
+    frequency_span_in_MHz: float = 10
+    frequency_step_in_MHz: float = 0.05
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     target_peak_width: Optional[int] = None
     simulate: bool = False
@@ -57,13 +57,11 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 from qualang_tools.units import unit
 from quam_libs.components import QuAM
-from quam_libs.macros import qua_declaration, multiplexed_readout, node_save
+from quam_libs.macros import qua_declaration
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-import matplotlib
-import xarray as xr
 from lib.plot_utils import QubitGrid, grid_iter
 from lib.save_utils import fetch_results_as_xarray
 
@@ -100,12 +98,14 @@ n_avg = node.parameters.num_averages  # The number of averages
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
 operation_len = node.parameters.operation_len  # can be None - will just be ignored
 if node.parameters.operation_amplitude_factor:
-    operation_amp = node.parameters.operation_amp  # pre-factor to the value defined in the config - restricted to [-2; 2)
+    # pre-factor to the value defined in the config - restricted to [-2; 2)
+    operation_amp = node.parameters.operation_amplitude_factor
 else:
-    operation_amp = 1
+    operation_amp = 1.
 # Qubit detuning sweep with respect to their resonance frequencies
-span = node.parameters.frequency_span
-dfs = np.arange(-span/2, +span/2, node.parameters.frequency_step)
+span = node.parameters.frequency_span * u.MHz
+step = node.parameters.frequency_step * u.MHz
+dfs = np.arange(-span//2, +span//2, step)
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 
 target_peak_width = node.parameters.target_peak_width

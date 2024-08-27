@@ -27,8 +27,8 @@ from typing import Optional
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
     num_averages: int = 100
-    frequency_span: int = 10_000_000
-    frequency_step: int = 100_000
+    frequency_span_in_MHz: float = 10
+    frequency_step_in_MHz: float = 0.1
     simulate: bool = False
 
 node = QualibrationNode(
@@ -96,16 +96,24 @@ n_avg = node.parameters.num_averages  # The number of averages
 # for rr in resonators:
 #     rr.operations["readout"].amplitude = 0.25
 
-for q in qubits:
-    q.resonator.operations["readout"].amplitude = 0.4
+tracked_qubits = []
+for qubit in qubits:
+    with tracked_updates(qubit, auto_revert=False, dont_assign_to_none=True) as qubit:
+        qubit.resonator.operations["readout"].amplitude = 0.4
+        tracked_qubits.append(qubit)
+
 config = machine.generate_config()
-    
+for tracked_qubit in tracked_qubits:
+    tracked_qubit.revert_changes()
+
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
 # amps = np.arange(0.05, 1.00, 0.02)
 amps = np.logspace(-2, 0.0, 100)
 # The frequency sweep around the resonator resonance frequencies f_opt
-span = node.parameters.frequency_span
-dfs = np.arange(-span/2, +span/2, 0.05e6)
+span = node.parameters.frequency_span * u.MHz
+step = node.parameters.frequency_step * u.MHz
+dfs = np.arange(-span//2, +span//2, step)
+
 
 with program() as multi_res_spec_vs_amp:
     # Declare 'I' and 'Q' and the corresponding streams for the two resonators.
