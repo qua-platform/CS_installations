@@ -74,9 +74,9 @@ operation = "saturation"  # The qubit operation to play, can be switched to "x18
 n_avg = 400  # The number of averages
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
 saturation_len = 20 * u.us  # In ns
-saturation_amp = 0.01  # pre-factor to the value defined in the config - restricted to [-2; 2)
+saturation_amp = 0.02  # pre-factor to the value defined in the config - restricted to [-2; 2)
 # Qubit detuning sweep with respect to their resonance frequencies
-dfs = np.arange(-50e6, +50e6, 0.3e6)
+dfs = np.arange(-100e6, +100e6, 0.3e6)
 flux_point = "joint"  # "independent", "joint" or "zero"
 target_peak_width = 3e6  # the desired width of the response to the saturation pulse (including saturation amp), in Hz
 
@@ -330,7 +330,7 @@ data['figure'] = grid.fig
 for q in qubits:
     fit_results[q.name] = {}
     if not np.isnan(result.sel(qubit = q.name).position.values):        
-        q.xy.anharmonicity = anharmonicities[q.name]
+        q.xy.anharmonicity = int(anharmonicities[q.name])
 # %%
 # Save data from the node
 node_save(machine, "qubit_spectroscopy_EF", data, additional_files=True)

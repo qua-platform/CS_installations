@@ -293,6 +293,11 @@ if not simulate:
     plt.show()
     node.results["figure"] = grid.fig
 
+    RO_power_ratio = 0.3
+    rr_pwr = RO_power_ratio*rr_pwr
+    
+# %%
+if not simulate:
     fit_results = {}
     for q in qubits:
         fit_results[q.name] = {}

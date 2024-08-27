@@ -59,7 +59,7 @@ num_qubits = len(qubits)
 ###################
 
 operation = "saturation"  # The qubit operation to play, can be switched to "x180" when the qubits are found.
-n_avg = 200  # Number of averaging loops
+n_avg = 100  # Number of averaging loops
 cooldown_time = max(q.thermalization_time for q in qubits)
 
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
@@ -67,9 +67,9 @@ saturation_len = 20 * u.us  # In ns
 saturation_amp = 0.01  # pre-factor to the value defined in the config - restricted to [-2; 2)
 
 # Qubit detuning sweep with respect to their resonance frequencies
-dfs = np.arange(-25e6, 20e6, 0.25e6)
+dfs = np.arange(-25e6, 20e6, 0.5e6)
 # Flux bias sweep
-dcs = np.linspace(-0.015, 0.015, 26)
+dcs = np.linspace(-0.01, 0.01, 21)
 
 flux_point = "joint"  # "independent", "joint" or "zero"
 # Adjust the qubits IFs locally to help find the qubits
@@ -237,7 +237,7 @@ ds.freq_full.attrs['units'] = 'GHz'
 data = {}
 data['ds'] = ds
 
-peaks = peaks_dips(ds.I, dim = 'freq',prominence_factor=10)
+peaks = peaks_dips(ds.I, dim = 'freq',prominence_factor=7)
 parabolic_fit_results = peaks.position.polyfit('flux',2)
 coeff = parabolic_fit_results.polyfit_coefficients
 fitted = coeff.sel(degree = 2) * ds.flux ** 2 + coeff.sel(degree = 1) * ds.flux + coeff.sel(degree = 0)

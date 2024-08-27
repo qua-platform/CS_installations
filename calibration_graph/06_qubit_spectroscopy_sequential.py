@@ -378,20 +378,19 @@ if not simulate:
                     prev_angle = 0.0
                 q.resonator.operations["readout"].axis_angle = (prev_angle - angle.sel(qubit = q.name).values )% (2*np.pi)
 
-                Pi_length = q.xy.operations["x180"].length
-                used_amp = q.xy.operations["saturation"].amplitude * operation_amp
-                factor_cw = float(target_peak_width/result.sel(qubit = q.name).width.values)
-                factor_pi = np.pi/(result.sel(qubit = q.name).width.values * Pi_length*1e-9)
-
-                q.xy.operations["saturation"].amplitude = factor_cw * used_amp / operation_amp
-
-                if factor_pi*used_amp < 0.3:
-                    q.xy.operations["x180"].amplitude = factor_pi*used_amp
-                elif factor_pi*used_amp >= 0.3:
-                    q.xy.operations["x180"].amplitude = 0.3
-                node.results[f'fit_successful_{q.name}'] = True
+            Pi_length = q.xy.operations["x180"].length
+            used_amp = q.xy.operations["saturation"].amplitude * operation_amp
+            factor_cw = float(target_peak_width/result.sel(qubit = q.name).width.values)
+            factor_pi = np.pi/(result.sel(qubit = q.name).width.values * Pi_length*1e-9)
+            if factor_cw*used_amp/operation_amp < 0.5:
+                q.xy.operations["saturation"].amplitude = factor_cw*used_amp/operation_amp
             else:
-                node.results[f'fit_successful_{q.name}'] = False
+                q.xy.operations["saturation"].amplitude = 0.5
+
+            if factor_pi*used_amp < 0.3:
+                q.xy.operations["x180"].amplitude = factor_pi*used_amp
+            elif factor_pi*used_amp >= 0.3:
+                q.xy.operations["x180"].amplitude = 0.3
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()

@@ -59,6 +59,18 @@ qmm = machine.connect()
 qubits = machine.active_qubits
 num_qubits = len(qubits)
 
+for q in qubits:
+    # Check if an optimized GEF frequency exists
+    if not hasattr(q, 'GEF_frequency_shift'):
+        q.GEF_frequency_shift = 0
+
+for q in qubits:
+    # check if an EF_x180 operation exists
+    if 'EF_x180' in q.xy.operations:
+        GEF_operation = 'EF_x180'
+    else:
+        GEF_operation = "x180"
+        
 ###################
 # The QUA program #
 ###################
@@ -68,6 +80,7 @@ flux_point = "joint"  # "independent", "joint" or "zero"
 with program() as iq_blobs:
     I_g, I_g_st, Q_g, Q_g_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     I_e, I_e_st, Q_e, Q_e_st, _, _ = qua_declaration(num_qubits=num_qubits)
+    I_f, I_f_st, Q_f, Q_f_st, _, _ = qua_declaration(num_qubits=num_qubits)
 
     for i, qubit in enumerate(qubits):
 
@@ -80,6 +93,8 @@ with program() as iq_blobs:
         else:
             machine.apply_all_flux_to_zero()
         wait(1000)
+
+        update_frequency(qubit.resonator.name, qubit.resonator.intermediate_frequency+ q.GEF_frequency_shift)
 
         with for_(n, 0, n < n_runs, n + 1):
             # ground iq blobs for all qubits
@@ -100,7 +115,18 @@ with program() as iq_blobs:
             align()
             save(I_e[i], I_e_st[i])
             save(Q_e[i], Q_e_st[i])
-            
+
+            wait(5*machine.thermalization_time * u.ns)
+            align()
+            qubit.xy.play('x180')
+            update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency -qubit.anharmonicity)                
+            qubit.xy.play(GEF_operation)
+            update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)                
+            align()
+            qubit.resonator.measure("readout", qua_vars=(I_f[i], Q_f[i]))
+            align()
+            save(I_f[i], I_f_st[i])
+            save(Q_f[i], Q_f_st[i])           
 
     with stream_processing():
         n_st.save("n")
@@ -109,7 +135,8 @@ with program() as iq_blobs:
             Q_g_st[i].save_all(f"Q_g{i + 1}")
             I_e_st[i].save_all(f"I_e{i + 1}")
             Q_e_st[i].save_all(f"Q_e{i + 1}")
-
+            I_f_st[i].save_all(f"I_f{i + 1}")
+            Q_f_st[i].save_all(f"Q_f{i + 1}")
 
 ###########################
 # Run or Simulate Program #
@@ -211,37 +238,48 @@ data = {}
 data["ds"] = ds
 
 # %%
-data["figs"] = {}
 data["results"] = {}
 
 plot_indvidual = False
 for q in qubits:
-    angle, threshold, fidelity, gg, ge, eg, ee = two_state_discriminator(ds.I_g.sel(qubit = q.name), ds.Q_g.sel(qubit = q.name), ds.I_e.sel(qubit = q.name), ds.Q_e.sel(qubit = q.name), True, b_plot=plot_indvidual)
-    I_rot = ds.I_g.sel(qubit = q.name) * np.cos(angle) - ds.Q_g.sel(qubit = q.name) * np.sin(angle)
-    hist = np.histogram(I_rot, bins=100)
-    RUS_threshold = hist[1][1:][np.argmax(hist[0])]
-    if plot_indvidual:
-        fig = plt.gcf()
-        plt.show()
-        data["figs"][q.name] = fig  
+    I_g_cent, Q_g_cent = ds.I_g.sel(qubit=q.name).mean(dim="N"), ds.Q_g.sel(qubit=q.name).mean(dim="N")
+    I_e_cent, Q_e_cent = ds.I_e.sel(qubit=q.name).mean(dim="N"), ds.Q_e.sel(qubit=q.name).mean(dim="N")
+    I_f_cent, Q_f_cent = ds.I_f.sel(qubit=q.name).mean(dim="N"), ds.Q_f.sel(qubit=q.name).mean(dim="N")
+
     data["results"][q.name] = {}
-    data["results"][q.name]["angle"] = float(angle)
-    data["results"][q.name]["threshold"] = float(threshold)
-    data["results"][q.name]["fidelity"] = float(fidelity)
-    data["results"][q.name]["confusion_matrix"] = np.array([[gg, ge], [eg, ee]])
-    data["results"][q.name]["rus_threshold"] = float(RUS_threshold)
+    data["results"][q.name]["I_g_cent"] = float(I_g_cent)
+    data["results"][q.name]["Q_g_cent"] = float(Q_g_cent)
+    data["results"][q.name]["I_e_cent"] = float(I_e_cent)
+    data["results"][q.name]["Q_e_cent"] = float(Q_e_cent)
+    data["results"][q.name]["I_f_cent"] = float(I_f_cent)
+    data["results"][q.name]["Q_f_cent"] = float(Q_f_cent)
+    data["results"][q.name]["center_matrix"] = np.array([[I_g_cent, Q_g_cent], [I_e_cent, Q_e_cent], [I_f_cent, Q_f_cent]])
+    
+    confusion = np.zeros((3,3))
+    for p, prep_state in enumerate(["g", "e", "f"]):
+        dist_g = np.sqrt((I_g_cent - ds[f"I_{prep_state}"].sel(qubit=q.name))**2 + (Q_g_cent - ds[f"Q_{prep_state}"].sel(qubit=q.name))**2)
+        dist_e = np.sqrt((I_e_cent - ds[f"I_{prep_state}"].sel(qubit=q.name))**2 + (Q_e_cent - ds[f"Q_{prep_state}"].sel(qubit=q.name))**2)
+        dist_f = np.sqrt((I_f_cent - ds[f"I_{prep_state}"].sel(qubit=q.name))**2 + (Q_f_cent - ds[f"Q_{prep_state}"].sel(qubit=q.name))**2)
+        dist = np.stack([dist_g, dist_e, dist_f], axis=0)
+        counts = np.argmin(dist,axis= 0)
+        confusion[p][0] = np.sum(counts == 0)/len(counts)
+        confusion[p][1] = np.sum(counts == 1)/len(counts)
+        confusion[p][2] = np.sum(counts == 2)/len(counts)
+    data["results"][q.name]["confusion_matrix"] = confusion
 
 # %%
 
 
 grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
 for ax, qubit in grid_iter(grid):
-    n_avg = n_runs // 2
+    
     qn = qubit['qubit']
-    ax.plot(1e3*(ds.I_g.sel(qubit =qn) * np.cos(data["results"][qn]["angle"]) - ds.Q_g.sel(qubit =qn) * np.sin(data["results"][qn]["angle"])), 1e3*(ds.I_g.sel(qubit =qn) * np.sin(data["results"][qn]["angle"]) + ds.Q_g.sel(qubit =qn) * np.cos(data["results"][qn]["angle"])), ".", alpha=0.1, label="Ground", markersize=1)
-    ax.plot(1e3 * (ds.I_e.sel(qubit =qn) * np.cos(data["results"][qn]["angle"]) - ds.Q_e.sel(qubit =qn) * np.sin(data["results"][qn]["angle"])), 1e3 * (ds.I_e.sel(qubit =qn) * np.sin(data["results"][qn]["angle"]) + ds.Q_e.sel(qubit =qn) * np.cos(data["results"][qn]["angle"])), ".", alpha=0.1, label="Excited", markersize=1)
-    ax.axvline(1e3 * data["results"][qn]["rus_threshold"], color="k", linestyle="--", lw = 0.5, label="RUS Threshold")
-    ax.axvline(1e3 * data["results"][qn]["threshold"], color="r", linestyle="--", lw = 0.5, label="Threshold")
+    ax.plot(1e3*ds.I_g.sel(qubit =qn) , 1e3* ds.Q_g.sel(qubit =qn) , ".", alpha=0.1, markersize=1)
+    ax.plot(1e3 * ds.I_e.sel(qubit =qn) , 1e3 * ds.Q_e.sel(qubit =qn) , ".", alpha=0.1, markersize=1)
+    ax.plot(1e3 * ds.I_f.sel(qubit =qn) , 1e3 * ds.Q_f.sel(qubit =qn) , ".", alpha=0.1, markersize=1)
+    ax.plot(1e3 * data["results"][qn]["I_g_cent"], 1e3 * data["results"][qn]["Q_g_cent"], "o", c='C0', ms=3,  mec='k', label="G")
+    ax.plot(1e3 * data["results"][qn]["I_e_cent"], 1e3 * data["results"][qn]["Q_e_cent"], "o", c='C1', ms=3,  mec='k', label="E")
+    ax.plot(1e3 * data["results"][qn]["I_f_cent"], 1e3 * data["results"][qn]["Q_f_cent"], "o", c='C2', ms=3,  mec='k', label="F")
     ax.axis("equal")
     ax.set_xlabel("I [mV]")
     ax.set_ylabel("Q [mV]")
@@ -257,16 +295,15 @@ grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
 for ax, qubit in grid_iter(grid):
     confusion = data["results"][qubit['qubit']]["confusion_matrix"]
     ax.imshow(confusion)
-    ax.set_xticks([0, 1])
-    ax.set_yticks([0, 1])
-    ax.set_xticklabels(labels=["|g>", "|e>"])
-    ax.set_yticklabels(labels=["|g>", "|e>"])
+    ax.set_xticks([0, 1, 2], labels=["|g>", "|e>", "|f>"])
+    ax.set_yticks([0, 1, 2], labels=["|g>", "|e>", "|f>"])
     ax.set_ylabel("Prepared")
     ax.set_xlabel("Measured")
-    ax.text(0, 0, f"{100 * confusion[0][0]:.1f}%", ha="center", va="center", color="k")
-    ax.text(1, 0, f"{100 * confusion[0][1]:.1f}%", ha="center", va="center", color="w")
-    ax.text(0, 1, f"{100 * confusion[1][0]:.1f}%", ha="center", va="center", color="w")
-    ax.text(1, 1, f"{100 * confusion[1][1]:.1f}%", ha="center", va="center", color="k")
+    for prep in range(3):
+        for meas in range(3):
+            color = "k" if prep == meas else "w"
+            ax.text(
+                meas, prep, f"{100 * confusion[prep, meas]:.1f}%", ha="center", va="center", color=color)
     ax.set_title(qubit['qubit'])
 
 grid.fig.suptitle('g.s. and e.s. fidelities')
@@ -276,12 +313,9 @@ data['figure_fidelities'] = grid.fig
 
 # %%
 for qubit in qubits:
-    qubit.resonator.operations["readout"].integration_weights_angle -= float(data["results"][qubit.name]["angle"])/(2 * np.pi)
-    qubit.resonator.operations["readout"].threshold = float(data["results"][qubit.name]["threshold"])
-    # to add conf matrix and RUS threshold to the readout operation rather than the resonator
-    # qubit.resonator.operations["readout"].rus_exit_threshold = data["results"][qubit.name]["rus_threshold"]
-    # qubit.resonator.confusion_matrix = data["results"][qubit.name]["confusion_matrix"]
+    qubit.resonator.gef_centers = data["results"][qubit.name]["center_matrix"].tolist()
+    qubit.resonator.gef_confusion_matrix = data["results"][qubit.name]["confusion_matrix"].tolist()
 # %%
-node_save(machine, "IQ_blobs", data, additional_files=True)
+node_save(machine, "GEF_IQ_blobs", data, additional_files=True)
 
 # %%
