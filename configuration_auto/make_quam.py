@@ -1,8 +1,8 @@
 from qualang_tools.wirer import Instruments, Connectivity, allocate_wiring, visualize
 
 instruments = Instruments()
-instruments.add_lf_fem(con=1, slots=1)
-instruments.add_mw_fem(con=1, slots=2)
+instruments.add_lf_fem(con=1, slots=2)
+instruments.add_mw_fem(con=1, slots=1)
 
 qubits = [1, 2, 3, 4, 5, 6]
 connectivity = Connectivity()
