@@ -24,8 +24,8 @@ from typing import Optional, Literal
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
     num_averages: int = 100
-    frequency_span_in_mhz: float = 4
-    frequency_step_in_mhz: float = 0.02
+    frequency_span_in_mhz: float = 10
+    frequency_step_in_mhz: float = 0.1
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
 

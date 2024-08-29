@@ -23,14 +23,14 @@ from typing import Optional, Literal
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 200
+    num_averages: int = 50
     operation_x180_or_x90: Literal['x180', 'x90'] = "x180"
     min_amp_factor: float = 0.8
     max_amp_factor: float = 1.2
     amp_factor_step: float = 0.005
     max_number_rabi_pulses_per_sweep: int = 30
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
-    reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
+    reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
     simulate: bool = False
 
 node = QualibrationNode(
@@ -100,7 +100,7 @@ N_pi = node.parameters.max_number_rabi_pulses_per_sweep  # Maximum number of qub
 if operation == "x180":
     N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[::2]
 elif operation == "x90":
-    N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[::4]
+    N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[1::4]
 
 with program() as power_rabi:
     I, _, Q, _, n, n_st = qua_declaration(num_qubits=num_qubits)
@@ -219,10 +219,7 @@ if not simulate:
 
     elif N_pi > 1:
         I_n=ds.state.mean(dim='N')
-        if N_pi_vec[0] % 2 == 0:
-            datamaxIndx = I_n.argmin(dim='amp')
-        else:
-            datamaxIndx = I_n.argmax(dim='amp')
+        datamaxIndx = I_n.argmax(dim='amp')
         for q in qubits:
             new_pi_amp = ds.abs_amp.sel(qubit = q.name)[datamaxIndx.sel(qubit = q.name)]
             fit_results[q.name] = {}

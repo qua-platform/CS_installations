@@ -25,10 +25,10 @@ class Parameters(NodeParameters):
     qubits: Optional[str] = None
     num_averages: int = 200
     operation: str = "x180"
-    min_amp_factor: float = 0.8
-    max_amp_factor: float = 1.2
+    min_amp_factor: float = 0.0
+    max_amp_factor: float = 2.0
     amp_factor_step: float = 0.005
-    max_number_rabi_pulses_per_sweep: int = 10
+    max_number_rabi_pulses_per_sweep: int = 1
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
 
@@ -330,9 +330,11 @@ if not simulate:
 if not simulate:
     with node.record_state_updates():
         for q in qubits:
-            q.xy.operations[operation].amplitude = fit_results[q.name]['Pi_amplitude'].item()
+            q.xy.operations[operation].amplitude = fit_results[q.name]['Pi_amplitude']
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()
+
+# %%

@@ -20,15 +20,15 @@ from typing import Optional, Literal
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 20
+    num_averages: int = 100
     operation: str = "saturation"
     operation_amplitude_factor: Optional[float] = None
     operation_len: Optional[int] = None
-    frequency_span_in_mhz: float = 10
-    frequency_step_in_mhz: float = 0.05
-    min_flux_offset_in_v: float = -0.5
-    max_flux_offset_in_v: float = 0.5
-    num_flux_points: int = 201
+    frequency_span_in_mhz: float = 20
+    frequency_step_in_mhz: float = 0.25
+    min_flux_offset_in_v: float = -0.01
+    max_flux_offset_in_v: float = 0.01
+    num_flux_points: int = 21
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
 
@@ -104,9 +104,7 @@ dcs = np.linspace(node.parameters.min_flux_offset_in_v,
                   node.parameters.num_flux_points)
 
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
-# Adjust the qubits IFs locally to help find the qubits
-# q1.xy.intermediate_frequency = 340e6
-# q2.xy.intermediate_frequency = 0
+
 
 with program() as multi_qubit_spec_vs_flux:
     # Macro to declare I, Q, n and their respective streams for a given number of qubit (defined in macros.py)
@@ -149,6 +147,7 @@ with program() as multi_qubit_spec_vs_flux:
                         amplitude_scale=operation_amp,
                         duration=operation_len,
                     )
+                    q.align()
 
                     # QUA macro to read the state of the active resonators
                     q.resonator.measure("readout", qua_vars=(I[i], Q[i]))
@@ -257,7 +256,7 @@ if not simulate:
     ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
     def abs_freq(q):
         def foo(freq):
-            return freq + q.resonator.intermediate_frequency + q.resonator.LO_frequency
+            return freq + q.xy.intermediate_frequency + q.xy.LO_frequency
         return foo
 
     ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
@@ -311,11 +310,12 @@ if not simulate:
     grid = QubitGrid(ds, grid_names)
 
     for ax, qubit in grid_iter(grid):
-        ds.assign_coords(freq_GHz=ds.freq / 1e0).loc[qubit].I.plot(ax=ax, add_colorbar=False,
+        freq_ref = machine.qubits[qubit['qubit']].xy.intermediate_frequency + machine.qubits[qubit['qubit']].xy.LO_frequency
+        ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].I.plot(ax=ax, add_colorbar=False,
                                                                                 x='flux', y='freq_GHz', robust=True)
-        fitted.loc[qubit].plot(ax = ax,linewidth = 0.5, ls = '--',color = 'r')
-        ax.plot(flux_shift.loc[qubit], freq_shift.loc[qubit], 'r*')
-        peaks.position.loc[qubit].plot(ax = ax, ls = '', marker = '.', color = 'r')
+        ((fitted+  freq_ref)/1e9).loc[qubit].plot(ax = ax,linewidth = 0.5, ls = '--',color = 'r')
+        ax.plot(flux_shift.loc[qubit], ((freq_shift.loc[qubit]+   freq_ref)/1e9), 'r*')
+        ((peaks.position.loc[qubit]+  freq_ref)/1e9).plot(ax = ax, ls = '', marker = '.', color = 'g', ms = 0.5)
         ax.set_ylabel('Freq (GHz)')
         ax.set_xlabel('Flux (V)')
         ax.set_title(qubit['qubit'])
@@ -341,3 +341,5 @@ if not simulate:
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()
+
+# %%

@@ -39,6 +39,7 @@ class Transmon(QuamComponent):
     f_01: float = None
     f_12: float = "#./inferred_f_12"
     anharmonicity: int = 150e6
+    freq_vs_flux_01_quad_term : float = 0.0
 
     T1: int = 10_000
     T2ramsey: int = 10_000

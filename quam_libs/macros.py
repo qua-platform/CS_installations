@@ -134,5 +134,7 @@ def active_reset(
         qubit.xy.play(pi_pulse_name, condition=state)
         qubit.align()
         assign(attempts, attempts + 1)
+    wait(500,qubit.xy.name)
+    qubit.align()    
     if save_qua_var is not None:
         save(attempts, save_qua_var)
