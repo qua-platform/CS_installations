@@ -58,7 +58,7 @@ class QuAM(QuamRoot):
     def save(
         self,
         path: Union[Path, str] = None,
-        content_mapping: Dict[str, str] = None,
+        content_mapping: Dict[Union[Path, str], Sequence[str]] = None,
         include_defaults: bool = False,
         ignore: Sequence[str] = None,
     ):

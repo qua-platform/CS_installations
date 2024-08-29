@@ -1,11 +1,11 @@
 from quam.core import quam_dataclass
-from quam.components.channels import InOutIQChannel
+from quam.components.channels import InOutIQChannel, InOutMWChannel
 
-__all__ = ["ReadoutResonator"]
+__all__ = ["ReadoutResonator", "ReadoutResonatorIQ", "ReadoutResonatorMW"]
 
 
 @quam_dataclass
-class ReadoutResonator(InOutIQChannel):
+class ReadoutResonatorBase:
     """QuAM component for a readout resonator
 
     Args:
@@ -22,3 +22,15 @@ class ReadoutResonator(InOutIQChannel):
     
     gef_centers : list = None
     gef_confusion_matrix : list = None
+
+
+@quam_dataclass
+class ReadoutResonatorIQ(InOutIQChannel, ReadoutResonatorBase):
+    pass
+
+@quam_dataclass
+class ReadoutResonatorMW(InOutMWChannel, ReadoutResonatorBase):
+    pass
+
+ReadoutResonator = ReadoutResonatorIQ
+
