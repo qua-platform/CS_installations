@@ -104,7 +104,7 @@ with program() as cryoscope:
 
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     t = declare(int)  # QUA variable for the flux pulse segment index
-    state = [declare(bool) for _ in range(num_qubits)]
+    state = [declare(int) for _ in range(num_qubits)]
     state_st = [declare_stream() for _ in range(num_qubits)]
     global_state = declare(int)
     idx = declare(int)
@@ -214,7 +214,7 @@ with program() as cryoscope:
         for i, qubit in enumerate(qubits):
             I_st[i].buffer(2).buffer(cryoscope_len).average().save(f"I_{i + 1}")
             Q_st[i].buffer(2).buffer(cryoscope_len).average().save(f"Q_{i + 1}")
-            state_st[i].boolean_to_int().buffer(2).buffer(cryoscope_len).average().save(f"state_{i + 1}")
+            state_st[i].buffer(2).buffer(cryoscope_len).average().save(f"state_{i + 1}")
 
 
 # %%
@@ -225,31 +225,31 @@ simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=1000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=100000)  # In clock cycles = 4ns
     job = qmm.simulate(config, cryoscope, simulation_config)
     job.get_simulated_samples().con1.plot()
     plt.show()
-    # analog5 = job.get_simulated_samples().con1.analog['5']
-    # threshold = 0.01
-    # indices = np.where(np.diff(np.sign(analog5 - threshold)) != 0)[0] + 1
-    # # Plot the signal
-    # plt.figure(figsize=(10, 6))
-    # plt.plot(analog5)
-    # plt.axhline(threshold, color='r', linestyle='--', label='Threshold')
-    # for idx in indices:
-    #     plt.axvline(idx, color='g', linestyle='--')
+    analog5 = job.get_simulated_samples().con1.analog['5']
+    threshold = 0.01
+    indices = np.where(np.diff(np.sign(analog5 - threshold)) != 0)[0] + 1
+    # Plot the signal
+    plt.figure(figsize=(10, 6))
+    plt.plot(analog5)
+    plt.axhline(threshold, color='r', linestyle='--', label='Threshold')
+    for idx in indices:
+        plt.axvline(idx, color='g', linestyle='--')
 
-    # subtracted_values = []
+    subtracted_values = []
 
-    # for i in range(0, len(indices), 2):
-    #     if i + 1 < len(indices):
-    #         subtracted_value = indices[i + 1] - indices[i]
-    #         subtracted_values.append(subtracted_value)
+    for i in range(0, len(indices), 2):
+        if i + 1 < len(indices):
+            subtracted_value = indices[i + 1] - indices[i]
+            subtracted_values.append(subtracted_value)
 
-    # # Print the subtracted values
-    # for i, value in enumerate(subtracted_values):
-    #     print(f"Subtracted value {i + 1}: {value}")
-    # plt.show(block=False)
+    # Print the subtracted values
+    for i, value in enumerate(subtracted_values):
+        print(f"Subtracted value {i + 1}: {value}")
+    plt.show(block=False)
 else:
     try:
         # Open the quantum machine
