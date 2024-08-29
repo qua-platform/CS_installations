@@ -143,7 +143,7 @@ with program() as cryoscope:
                 # Wait for the idle time set slightly above the maximum flux pulse duration to ensure that the 2nd x90
                 # pulse arrives after the longest flux pulse
                 for qubit in qubits:
-                    wait((cryoscope_len + 16) // 4, qubit.xy.name)
+                    qubit.xy.wait((cryoscope_len + 16) // 4)
                     # Play second X/2 or Y/2
                     # if tomo == 'x90':
                     with if_(flag):
@@ -185,12 +185,12 @@ with program() as cryoscope:
                         for j in range(16):
                             with case_(j):
                                 baked_signals[j].run() 
-                                play('const', qubits[0].z.name, duration=t)
+                                qubits[0].z.play('const', duration=t)
 
                     # Wait for the idle time set slightly above the maximum flux pulse duration to ensure that the 2nd x90
                     # pulse arrives after the longest flux pulse
                     for qubit in qubits:
-                        wait((cryoscope_len + 16) // 4, qubit.xy.name)
+                        qubit.xy.wait((cryoscope_len + 16) // 4)
                         # Play second X/2 or Y/2
                         with if_(flag):
                             qubit.xy.play("x90")
