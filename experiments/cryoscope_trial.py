@@ -111,6 +111,9 @@ with program() as cryoscope:
     idx2 = declare(int)
     flag = declare(bool)
 
+    # Bring the active qubits to the minimum frequency point
+    machine.apply_all_flux_to_min()
+
     # Outer loop for averaging
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
@@ -186,8 +189,8 @@ with program() as cryoscope:
 
                     # Wait for the idle time set slightly above the maximum flux pulse duration to ensure that the 2nd x90
                     # pulse arrives after the longest flux pulse
-                    for qb in qubits:
-                        wait((cryoscope_len + 16) // 4, qb)
+                    for qubit in qubits:
+                        wait((cryoscope_len + 16) // 4, qubit.xy.name)
                         # Play second X/2 or Y/2
                         with if_(flag):
                             qubit.xy.play("x90")
