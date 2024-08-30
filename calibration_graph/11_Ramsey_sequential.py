@@ -92,7 +92,7 @@ idle_times = np.arange(
 )
 
 # Detuning converted into virtual Z-rotations to observe Ramsey oscillation and get the qubit frequency
-detuning = node.parameters.frequency_detuning_in_mhz
+detuning = 1e6 * node.parameters.frequency_detuning_in_mhz
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 
 with program() as ramsey:
@@ -181,73 +181,10 @@ else:
         # Fetch results
             fetched_data = results.fetch_all()
             n = fetched_data[0]
-        # I_data = fetched_data[1::2]
-        # Q_data = fetched_data[2::2]
-        # Convert the results into Volts
-        # I_volts = [u.demod2volts(I, qubit.resonator.operations["readout"].length) for I, qubit in zip(I_data, qubits)]
-        # Q_volts = [u.demod2volts(Q, qubit.resonator.operations["readout"].length) for Q, qubit in zip(Q_data, qubits)]
-        # Progress bar
-            progress_counter(n, n_avg, start_time=results.start_time)
-        # Plot results
-        # plt.suptitle("Ramsey")
-        # for i, (ax, qubit) in enumerate(zip(axes, qubits)):
-        #     ax[0].cla()
-        #     ax[0].plot(4 * idle_times, I_volts[i])
-        #     ax[0].set_ylabel("I [V]")
-        #     ax[0].set_title(f"{qubit.name}")
-        #     ax[1].cla()
-        #     ax[1].plot(4 * idle_times, Q_volts[i])
-        #     ax[1].set_xlabel("Idle time [ns]")
-        #     ax[1].set_ylabel("Q [V]")
-        #     ax[1].set_title(f"{qubit.name}")
-        # plt.tight_layout()
-        # plt.pause(0.1)
 
-    # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
+            progress_counter(n, n_avg, start_time=results.start_time)
     qm.close()
 
-    # # Save data from the node
-    # data = {}
-    # for i, qubit in enumerate(qubits):
-    #     data[f"{qubit.name}_amplitude"] = 4 * idle_times
-    #     data[f"{qubit.name}_I"] = np.abs(I_volts[i])
-    #     data[f"{qubit.name}_Q"] = np.angle(Q_volts[i])
-    # data["figure"] = fig
-
-    # fig_analysis = plt.figure()
-    # plt.suptitle("Ramsey")
-    # # Fit data to extract the qubits frequency and T2*
-    # for i, qubit in enumerate(qubits):
-    #     try:
-    #         from qualang_tools.plot.fitting import Fit
-
-    #         fit = Fit()
-    #         plt.subplot(num_qubits, 1, i + 1)
-    #         fit_I = fit.ramsey(4 * idle_times, I_volts[i], plot=True)
-    #         plt.xlabel("Idle time [ns]")
-    #         plt.ylabel("I [V]")
-    #         plt.title(f"{qubit.name}")
-    #         plt.legend((f"T2* = {int(fit_I['T2'][0])} ns\n df = {int(fit_I['f'][0] * u.GHz - detuning)/u.kHz} kHz",))
-
-    #         # Update the state
-    #         qubit_detuning = fit_I["f"][0] * u.GHz - detuning
-    #         qubit.T2ramsey = int(fit_I["T2"][0])
-    #         qubit.xy.intermediate_frequency -= qubit_detuning
-    #         data[f"{qubit.name}"] = {
-    #             "T2*": qubit.T2ramsey,
-    #             "if_01": qubit.xy.intermediate_frequency,
-    #             "successful_fit": True,
-    #         }
-    #         print(f"Detuning to add to {qubit.name}: {-qubit_detuning / u.kHz:.3f} kHz")
-    #         plt.tight_layout()
-    #         data["figure_analysis"] = fig_analysis
-    #     except (Exception,):
-    #         data[f"{qubit.name}"] = {"successful_fit": False}
-    #         pass
-    # plt.show()
-
-    # Save data from the node
-    # node_save(machine, "ramsey", data, additional_files=True)
 
 # %%
 if not simulate:
@@ -308,3 +245,5 @@ if not simulate:
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()
+
+# %%

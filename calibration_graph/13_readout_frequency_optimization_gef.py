@@ -23,9 +23,9 @@ from typing import Optional, Literal
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 100
-    frequency_span_in_mhz: float = 4
-    frequency_step_in_mhz: float = 0.02
+    num_averages: int = 40
+    frequency_span_in_mhz: float = 10
+    frequency_step_in_mhz: float = 0.05
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
 
@@ -126,43 +126,44 @@ with program() as ro_freq_opt:
             with for_(*from_array(df, dfs)):
                 # Update the resonator frequencies
                 update_frequency(qubit.resonator.name, df + qubit.resonator.intermediate_frequency)
-
-                # Wait for the qubits to decay to the ground state
-                wait(5*machine.thermalization_time * u.ns)
                 align()
                 # Measure the state of the resonators
                 qubit.resonator.measure("readout", qua_vars=(I_g[i], Q_g[i]))
-                
-                align()
+                qubit.align()
                 # Wait for thermalization again in case of measurement induced transitions
                 wait(5*machine.thermalization_time * u.ns)
+                save(I_g[i], I_g_st[i])
+                save(Q_g[i], Q_g_st[i])
+                
                 # Play the x180 gate to put the qubits in the excited state
                 qubit.xy.play("x180")
                 # Align the elements to measure after playing the qubit pulses.
                 align()
                 # Measure the state of the resonators
                 qubit.resonator.measure("readout", qua_vars=(I_e[i], Q_e[i]))
-
-                align()
+                # wait(1000)
+                qubit.align()
                 # Wait for thermalization again in case of measurement induced transitions
                 wait(5*machine.thermalization_time * u.ns)
+                save(I_e[i], I_e_st[i])
+                save(Q_e[i], Q_e_st[i])
+
                 # Play the x180 gate and EFx180 gate to put the qubits in the f state
                 qubit.xy.play("x180")
                 update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency -qubit.anharmonicity)                
+                qubit.align()
                 qubit.xy.play(operation)
+                qubit.align()
                 update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency) 
                 # Align the elements to measure after playing the qubit pulses.
-                align()
+                qubit.align()
                 # Measure the state of the resonators
-                qubit.resonator.measure("readout", qua_vars=(I_f[i], Q_g[i]))
-
-                # Derive the distance between the blobs for |g> and |e>
-                save(I_g[i], I_g_st[i])
-                save(Q_g[i], Q_g_st[i])
-                save(I_e[i], I_e_st[i])
-                save(Q_e[i], Q_e_st[i])
+                qubit.resonator.measure("readout", qua_vars=(I_f[i], Q_f[i]))
+                # Wait for the qubits to decay to the ground state
+                wait(5*machine.thermalization_time * u.ns)                
                 save(I_f[i], I_f_st[i])
                 save(Q_f[i], Q_f_st[i])
+
                 
     with stream_processing():
         n_st.save("n")
@@ -282,3 +283,5 @@ if not simulate:
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()
+
+# %%

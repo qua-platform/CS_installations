@@ -211,7 +211,7 @@ def fix_oscillation_phi_2pi(fit_data):
     return phase
 
 
-def peaks_dips(da,dim, prominence_factor = 5, number = 1) -> xr.Dataset:
+def peaks_dips(da,dim, prominence_factor = 5, number = 1, remove_baseline = True) -> xr.Dataset:
     """searches in a data array da along the dimention dim for the
     most prominent peak or dip, and returns a dict with its location,
     width and amplitude, along with a smooth base line from which the 
@@ -222,6 +222,7 @@ def peaks_dips(da,dim, prominence_factor = 5, number = 1) -> xr.Dataset:
      dim: the dimension on which the perform the fit
      prominence_factor : how promiment must be the peak compared with noise as defined by the std.
      number : Determines which peak the function returns. 1 is the most prominent peak, 2 is the second most prominent, etc.
+     remove_baseline : if True, the function will remove the baseline from the data before finding the peak.
 
     Returns: DataSet with the following values:
     'amp' : peak amplitude above the base
@@ -268,8 +269,10 @@ def peaks_dips(da,dim, prominence_factor = 5, number = 1) -> xr.Dataset:
 
     peaks_inversion =  (2.0 * (da.mean(dim = dim) - da.min(dim = dim) < da.max(dim = dim) - da.mean(dim = dim) ) - 1)
     da = da * peaks_inversion
+    
     base_line = xr.apply_ufunc(_baseline_als,da, 1e8,0.001, input_core_dims=[[dim],[],[]],output_core_dims=[[dim]],vectorize=True)
-    da =da-base_line
+    if remove_baseline:
+        da =da-base_line
 
     dim_step = da.coords[dim].diff(dim = dim).values[0]
 
@@ -278,7 +281,7 @@ def peaks_dips(da,dim, prominence_factor = 5, number = 1) -> xr.Dataset:
     std = float((da-rolling).std())
     
     prom_peak_index = xr.apply_ufunc(_index_of_largest_peak,da,prominence_factor * std, input_core_dims=[[dim],[]],vectorize=True)
-    peak_position    = xr.apply_ufunc(_position_from_index,da.coords[dim],prom_peak_index, input_core_dims=[[dim],[]],output_core_dims = [[]],vectorize=True)
+    peak_position    = xr.apply_ufunc(_position_from_index,1.0*da.coords[dim],prom_peak_index, input_core_dims=[[dim],[]],output_core_dims = [[]],vectorize=True)
     peak_width = xr.apply_ufunc(_width_from_index,da,prom_peak_index, input_core_dims=[[dim],[]],output_core_dims = [[]],vectorize=True) * dim_step
     peak_amp = da.max(dim = dim)-da.min(dim = dim)-std
 

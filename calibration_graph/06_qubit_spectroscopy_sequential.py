@@ -32,12 +32,12 @@ from typing import Optional, Literal
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 20
+    num_averages: int = 100
     operation: str = "saturation"
-    operation_amplitude_factor: Optional[float] = None
+    operation_amplitude_factor: Optional[float] = 0.01
     operation_len: Optional[int] = None
-    frequency_span_in_mhz: float = 10
-    frequency_step_in_mhz: float = 0.05
+    frequency_span_in_mhz: float = 20
+    frequency_step_in_mhz: float = 0.25
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     target_peak_width: Optional[int] = None
     simulate: bool = False
@@ -86,7 +86,6 @@ if node.parameters.qubits is None:
     qubits = machine.active_qubits
 else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits.split(', ')]
-resonators = [qubit.resonator for qubit in qubits]
 num_qubits = len(qubits)
 
 ###################
@@ -162,7 +161,7 @@ with program() as qubit_spec:
             Q_st[i].buffer(len(dfs)).average().save(f"Q{i + 1}")
 
 
-# %%
+
 ###########################
 # Run or Simulate Program #
 ###########################
@@ -279,11 +278,14 @@ if not simulate:
     ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs})
     ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 
+# %%
+if not simulate:
+    
     def abs_freq(q):
         def foo(freq):
             return freq + q.xy.intermediate_frequency + q.xy.LO_frequency
         return foo
-    ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits], dtype=np.int32))})
+    ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
     ds = ds.assign({'phase': np.arctan2(ds.Q,ds.I)})
 
     ds.freq_full.attrs['long_name'] = 'Frequency'
@@ -396,3 +398,5 @@ if not simulate:
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()
+
+# %%
