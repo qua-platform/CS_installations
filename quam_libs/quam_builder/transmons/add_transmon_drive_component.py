@@ -1,4 +1,4 @@
-from black import Dict
+from typing import Dict
 from quam.components.channels import IQChannel, MWChannel
 
 from quam_libs.quam_builder.transmons.channel_ports import iq_out_channel_ports, mw_out_channel_ports
