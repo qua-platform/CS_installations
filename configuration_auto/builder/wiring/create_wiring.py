@@ -6,7 +6,8 @@ from qualang_tools.wirer.connectivity.element import QubitPairReference
 from qualang_tools.wirer.connectivity.wiring_spec import WiringLineType
 from qualang_tools.wirer.instruments.instrument_channel import AnyInstrumentChannel
 
-from .create_ports import create_octave_port, create_mw_fem_port, create_lf_opx_plus_port
+from .create_analog_ports import create_octave_port, create_mw_fem_port, create_lf_opx_plus_port
+from .create_digital_ports import create_digital_port
 from .paths import *
 
 def create_wiring(connectivity: Connectivity) -> dict:
@@ -24,7 +25,7 @@ def create_wiring(connectivity: Connectivity) -> dict:
                     set_nested_value_with_path(wiring, f"qubits/{element_id}/{line_type.value}/{k}", v)
 
             elif line_type == WiringLineType.COUPLER:
-                for k, v in qubit_pair_wiring(channels, element_id):
+                for k, v in qubit_pair_wiring(channels, element_id).items():
                     set_nested_value_with_path(wiring, f"qubit_pairs/{element_id}/{line_type.value}/{k}", v)
 
             else:
@@ -63,14 +64,17 @@ def qubit_pair_wiring(channels: List[AnyInstrumentChannel], element_id: QubitPai
 
 
 def get_channel_port(channel: AnyInstrumentChannel, channels: List[AnyInstrumentChannel]) -> tuple:
-    if channel.instrument_id == "octave":
-        key, reference = create_octave_port(channel)
-    elif channel.instrument_id == "mw-fem":
-        key, reference = create_mw_fem_port(channel)
-    elif channel.instrument_id in ["lf-fem", "opx+"]:
-        key, reference = create_lf_opx_plus_port(channel, channels)
+    if channel.signal_type == "digital":
+        key, reference = create_digital_port(channel)
     else:
-        raise ValueError(f"Unknown instrument type {channel.instrument_id}")
+        if channel.instrument_id == "octave":
+            key, reference = create_octave_port(channel)
+        elif channel.instrument_id == "mw-fem":
+            key, reference = create_mw_fem_port(channel)
+        elif channel.instrument_id in ["lf-fem", "opx+"]:
+            key, reference = create_lf_opx_plus_port(channel, channels)
+        else:
+            raise ValueError(f"Unknown instrument type {channel.instrument_id}")
 
     return key, reference
 
