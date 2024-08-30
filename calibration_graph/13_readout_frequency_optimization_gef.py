@@ -238,7 +238,7 @@ if not simulate:
 # %%
 if not simulate:
     detuning = ds.D.rolling({"freq" : 5 }).mean("freq").idxmax('freq')
-    fit_results = {q.name : {'GEF_detuning' :detuning.loc[q.name].values} for q in qubits}
+    fit_results = {q.name : {'GEF_detuning' :int(detuning.loc[q.name].values)} for q in qubits}
     node.results['fit_results'] = fit_results
 
     for q in qubits:

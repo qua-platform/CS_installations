@@ -1,4 +1,5 @@
 # %%
+# %%
 """
 POWER RABI WITH ERROR AMPLIFICATION
 This sequence involves repeatedly executing the qubit pulse (such as x180, square_pi, or similar) 'N' times and
@@ -25,13 +26,13 @@ from quam_libs.qualibrate.trackable_object import tracked_updates
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 200
+    num_averages: int = 20
     operation: str = "x180"
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.02
-    max_number_pulses_per_sweep: int = 10
+    max_number_pulses_per_sweep: int = 20
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
-    reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
+    reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
     simulate: bool = False
 
 node = QualibrationNode(
@@ -140,7 +141,7 @@ with program() as stark_detuning:
                         active_reset(machine, qubit.name)
                     else:
                         wait(5*machine.thermalization_time * u.ns)
-                    qubit.align()
+                        qubit.align()
                     # Update the qubit frequency
                     update_frequency(qubit.xy.name, df + qubit.xy.intermediate_frequency)
                     with for_(count, 0, count < npi, count + 1):
@@ -242,7 +243,8 @@ if not simulate:
             qubit.xy.operations[operation].alpha = -1.0
             # Temporary - should be in the QUAM builer
             for gate in [ "x90", "-x90", "y180", "y90", "-y90"]:
-                qubit.xy.operations[gate].detuning = f"#../{operation}_DragGaussian/detuning"
+                if not qubit.xy.operations[gate].detuning == f"#../{operation}_DragGaussian/detuning":
+                    qubit.xy.operations[gate].detuning = f"#../{operation}_DragGaussian/detuning"
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()

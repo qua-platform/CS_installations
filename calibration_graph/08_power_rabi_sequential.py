@@ -25,7 +25,7 @@ class Parameters(NodeParameters):
     qubits: Optional[str] = None
     num_averages: int = 200
     operation: str = "x180"
-    min_amp_factor: float = 0.0
+    min_amp_factor: float = 0.00001
     max_amp_factor: float = 2.0
     amp_factor_step: float = 0.005
     max_number_rabi_pulses_per_sweep: int = 1
@@ -33,7 +33,7 @@ class Parameters(NodeParameters):
     simulate: bool = False
 
 node = QualibrationNode(
-    name="04a_Power_Rabi",
+    name="03c_Power_Rabi",
     parameters_class=Parameters
 )
 

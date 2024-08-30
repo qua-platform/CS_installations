@@ -78,8 +78,8 @@ octave_config = machine.get_octave_config()
 qmm = machine.connect()
 
 # Get the relevant QuAM components
-q1 = machine.active_qubits[0]
-q2 = machine.active_qubits[1]
+q1 = machine.active_qubits[1]
+q2 = machine.active_qubits[2]
 
 
 ####################
@@ -108,8 +108,9 @@ def baked_waveform(qubit, waveform, pulse_duration):
 qb = q1  # Qubit under study
 flux_operation = "const"
 flux_pulse_len = q1.z.operations[flux_operation].length
-flux_pulse_amp = q1.z.operations[flux_operation].amplitude
-n_avg = 1000  # Number of averages
+flux_pulse_amp = q1.z.operations[flux_operation].amplitude*0.3
+n_avg = 10000  # Number of averages
+flux_point = "joint"  # "joint", "independent" or "zero"
 
 # FLux pulse waveform generation
 # The zeros are just here to visualize the rising and falling times of the flux pulse. they need to be set to 0 before
@@ -131,7 +132,14 @@ with program() as cryoscope:
     state_st = [declare_stream() for _ in range(2)]
 
     # Bring the active qubits to the minimum frequency point
-    machine.apply_all_flux_to_min()
+    if flux_point == "independent":
+        machine.apply_all_flux_to_min()
+        qubit.z.to_independent_idle()
+    elif flux_point == "joint":
+        machine.apply_all_flux_to_joint_idle()
+    else:
+        machine.apply_all_flux_to_zero()
+    wait(1000)
 
     # Outer loop for averaging
     with for_(n, 0, n < n_avg, n + 1):
@@ -324,4 +332,6 @@ else:
         f"{qb.name}_tau": tau,
         "figure": fig,
     }
-    node_save(machine, "cryoscope_1ns", data, additional_files=True)
+    # node_save(machine, "cryoscope_1ns", data, additional_files=True)
+
+# %%

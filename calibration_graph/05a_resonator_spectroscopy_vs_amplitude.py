@@ -26,7 +26,7 @@ from typing import Optional
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 100
+    num_averages: int = 10
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.1
     simulate: bool = False
@@ -255,7 +255,7 @@ if not simulate:
             return amp * q.resonator.operations['readout'].amplitude
         return foo
 
-    ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
+    ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits],dtype=np.int32))})
     ds = ds.assign_coords({'abs_amp' : (['qubit','amp'],np.array([abs_amp(q)(amps) for q in qubits]))})
 
     ds.freq_full.attrs['long_name'] = 'Frequency'
@@ -311,7 +311,7 @@ if not simulate:
         fit_results[q.name] = {}
         if float(rr_pwr.sel(qubit=q.name)) > 0:
             with node.record_state_updates():
-                q.resonator.operations["readout"].amplitude *= float(rr_pwr.sel(qubit=q.name))
+                q.resonator.operations["readout"].amplitude = 0.4*float(rr_pwr.sel(qubit=q.name))
         q.resonator.intermediate_frequency+=int(res_low_power.sel(qubit=q.name).values)
         fit_results[q.name]["RO_amplitude"]=float(rr_pwr.sel(qubit=q.name))
     node.results['resonator_frequency'] = fit_results
@@ -320,3 +320,5 @@ if not simulate:
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()
+
+# %%

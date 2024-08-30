@@ -32,7 +32,7 @@ from typing import Optional, Literal
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 100
+    num_averages: int = 50
     operation: str = "saturation"
     operation_amplitude_factor: Optional[float] = 0.01
     operation_len: Optional[int] = None
@@ -227,51 +227,6 @@ else:
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
 
-    # # Save data from the node
-    # data = {}
-    # for i, q in enumerate(qubits):
-    #     data[f"{q.name}_frequency"] = dfs + q.xy.intermediate_frequency
-    #     data[f"{q.name}_R"] = np.abs(s_data[i])
-    #     data[f"{q.name}_phase"] = np.angle(s_data[i])
-    # data["figure"] = fig
-
-    # fig_analysis = plt.figure()
-    # plt.suptitle("Qubit spectroscopy")
-    # # Fit the results to extract the resonance frequency
-    # for i, q in enumerate(qubits):
-        # try:
-        #     from qualang_tools.plot.fitting import Fit
-
-    #         fit = Fit()
-    #         plt.subplot(1, num_qubits, i + 1)
-            # res = fit.reflection_resonator_spectroscopy(
-            #     (q.xy.LO_frequency + q.xy.intermediate_frequency + dfs) / u.MHz,
-            #     -np.unwrap(np.angle(s_data[i])),
-            #     plot=True,
-            # )
-    #         plt.legend((f"f = {res['f'][0]:.3f} MHz",))
-    #         plt.xlabel(f"{q.name} IF [MHz]")
-    #         plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
-    #         plt.title(f"{q.name}")
-
-    #         # q.xy.intermediate_frequency = int(res["f"][0] * u.MHz)
-    #         data[f"{q.name}"] = {
-    #             "res_if": q.xy.intermediate_frequency,
-    #             "fit_successful": True,
-    #         }
-
-    #         plt.tight_layout()
-    #         data["fit_figure"] = fig_analysis
-
-    #     except Exception:
-    #         data[f"{q.name}"] = {"successful_fit": False}
-    #         pass
-
-    # plt.show()
-    # # additional files
-    # # Save data from the node
-    # node_save(machine, "qubit_spectroscopy", data, additional_files=True)
-
 # %%
 if not simulate:
     handles = job.result_handles
@@ -365,6 +320,7 @@ if not simulate:
     plt.tight_layout()
     plt.show()
     node.results['figure'] = grid.fig
+# %%
 
 
 # %%
@@ -378,7 +334,7 @@ if not simulate:
                 prev_angle = q.resonator.operations["readout"].integration_weights_angle
                 if not  prev_angle:
                     prev_angle = 0.0
-                q.resonator.operations["readout"].integration_weights_angle = (prev_angle - angle.sel(qubit = q.name).values )% (2*np.pi)
+                q.resonator.operations["readout"].integration_weights_angle = (prev_angle + angle.sel(qubit = q.name).values )% (2*np.pi)
 
             Pi_length = q.xy.operations["x180"].length
             used_amp = q.xy.operations["saturation"].amplitude * operation_amp
@@ -393,6 +349,10 @@ if not simulate:
                 q.xy.operations["x180"].amplitude = factor_pi*used_amp
             elif factor_pi*used_amp >= 0.3:
                 q.xy.operations["x180"].amplitude = 0.3
+# %%
+if not simulate:
+    ds = ds.drop_vars('freq_full')
+    node.results['ds'] = ds
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()

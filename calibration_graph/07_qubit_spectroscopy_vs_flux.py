@@ -22,7 +22,7 @@ class Parameters(NodeParameters):
     qubits: Optional[str] = None
     num_averages: int = 100
     operation: str = "saturation"
-    operation_amplitude_factor: Optional[float] = None
+    operation_amplitude_factor: Optional[float] = 0.01
     operation_len: Optional[int] = None
     frequency_span_in_mhz: float = 20
     frequency_step_in_mhz: float = 0.25
@@ -336,7 +336,10 @@ if not simulate:
                     q.z.joint_offset += fit_results[q.name]['flux_shift']
                 q.xy.intermediate_frequency += fit_results[q.name]['drive_freq']
                 q.freq_vs_flux_01_quad_term = fit_results[q.name]['quad_term']
-
+# %%
+if not simulate:
+    ds = ds.drop_vars('freq_full')
+    node.results['ds'] = ds
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine

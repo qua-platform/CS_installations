@@ -47,7 +47,7 @@ class Transmon(QuamComponent):
     thermalization_time_factor: int = 5
     sigma_time_factor: int = 5
     
-    GEF_frequency_shift : int = 0
+    GEF_frequency_shift : int = 10
     chi : float = 0.0
     
 

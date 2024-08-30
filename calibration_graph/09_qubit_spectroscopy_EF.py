@@ -39,11 +39,10 @@ class Parameters(NodeParameters):
     frequency_span_in_mhz: float = 100
     frequency_step_in_mhz: float = 0.25
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
-    target_peak_width: Optional[int] = None
     simulate: bool = False
 
 node = QualibrationNode(
-    name="03c_Qubit_Spectroscopy_E_to_F",
+    name="04a_Qubit_Spectroscopy_E_to_F",
     parameters_class=Parameters
 )
 
@@ -76,6 +75,7 @@ u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
 machine = QuAM.load()
 # Generate the OPX and Octave configurations
+
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
 # Open Communication with the QOP
@@ -106,16 +106,6 @@ span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span//2, +span//2, step, dtype=np.int32)
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
-
-target_peak_width = node.parameters.target_peak_width
-if target_peak_width is None:
-    target_peak_width = 3e6  # the desired width of the response to the saturation pulse (including saturation amp), in Hz
-
-# # verify that the anaharmonicity is defined for all qubits
-# for q in qubits:
-#     if not q.anharmonicity:
-#         q.anharmonicity = 200000000
-# config = machine.generate_config()
 
 with program() as qubit_spec:
     # Macro to declare I, Q, n and their respective streams for a given number of qubit (defined in macros.py)
@@ -355,7 +345,7 @@ if not simulate:
         for q in qubits:
             fit_results[q.name] = {}
             if not np.isnan(result.sel(qubit = q.name).position.values):
-                q.xy.anharmonicity = int(anharmonicities[q.name])
+                q.anharmonicity = int(anharmonicities[q.name])
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()

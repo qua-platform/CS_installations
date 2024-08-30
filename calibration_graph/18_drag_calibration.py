@@ -25,16 +25,14 @@ from quam_libs.qualibrate.trackable_object import tracked_updates
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 200
+    num_averages: int = 20
     operation: str = "x180"
-    frequency_span_in_mhz: float = 10
-    frequency_step_in_mhz: float = 0.02
-    min_amp_factor: float = 0.8
-    max_amp_factor: float = 1.2
-    amp_factor_step: float = 0.005
-    max_number_pulses_per_sweep: int = 10
+    min_amp_factor: float = 0.0001
+    max_amp_factor: float = 2.0
+    amp_factor_step: float = 0.05
+    max_number_pulses_per_sweep: int = 20
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
-    reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
+    reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
     simulate: bool = False
 
 node = QualibrationNode(
