@@ -32,6 +32,5 @@ quam = build_quam(
 )
 
 machine = QuAM.load(path)
-machine.qubits["q1"].xy
 
-# visualize(connectivity.elements, available_channels=instruments.available_channels)
+visualize(connectivity.elements, available_channels=instruments.available_channels)

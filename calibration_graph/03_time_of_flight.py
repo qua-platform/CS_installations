@@ -15,7 +15,7 @@ The data undergoes post-processing to calibrate three distinct parameters:
 """
 from typing import Optional
 from qualibrate import QualibrationNode, NodeParameters
-from quam_libs.qualibrate.trackable_object import tracked_updates
+from quam_libs.trackable_object import tracked_updates
 
 class Parameters(NodeParameters):
     qubit: str = "q0"

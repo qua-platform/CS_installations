@@ -4,16 +4,16 @@ from typing import Union, Dict
 
 from quam.components import Octave
 
-from configuration_auto.builder.pulses import add_default_transmon_pulses, add_default_transmon_pair_pulses
-from configuration_auto.builder.transmons.add_transmon_drive_component import add_transmon_drive_component
-from configuration_auto.builder.transmons.add_transmon_flux_component import add_transmon_flux_component
-from configuration_auto.builder.transmons.add_transmon_pair_component import add_transmon_pair_component
-from configuration_auto.builder.transmons.add_transmon_resonator_component import add_transmon_resonator_component
-from configuration_auto.builder.transmons.channel_ports import valid_ports
-from configuration_auto.builder.wiring.create_wiring import create_wiring
+from quam_libs.quam_builder.pulses import add_default_transmon_pulses, add_default_transmon_pair_pulses
+from quam_libs.quam_builder.transmons.add_transmon_drive_component import add_transmon_drive_component
+from quam_libs.quam_builder.transmons.add_transmon_flux_component import add_transmon_flux_component
+from quam_libs.quam_builder.transmons.add_transmon_pair_component import add_transmon_pair_component
+from quam_libs.quam_builder.transmons.add_transmon_resonator_component import add_transmon_resonator_component
+from quam_libs.quam_builder.transmons.channel_ports import valid_ports
+from quam_libs.quam_builder.wiring.create_wiring import create_wiring
 from qualang_tools.wirer import Connectivity
 from qualang_tools.wirer.connectivity.wiring_spec import WiringLineType
-from quam_libs.components import OPXPlusQuAM, FEMQuAM, QuAM, Transmon, TransmonPair
+from quam_libs.components import OPXPlusQuAM, FEMQuAM, QuAM, Transmon
 
 
 def build_quam(connectivity: Connectivity, host_ip: str, cluster_name: str,
@@ -97,8 +97,8 @@ def add_transmons(machine: QuAM):
                         transmon_pair = add_transmon_pair_component(machine, wiring_path, ports)
                     else:
                         raise ValueError(f'Unknown line type: {line_type}')
-                machine.qubit_pairs.append(transmon_pair)
-                machine.active_qubit_pair_names.append(transmon_pair.name)
+                    machine.qubit_pairs.append(transmon_pair)
+                    machine.active_qubit_pair_names.append(transmon_pair.name)
 
 
 def add_pulses(machine: QuAM):
