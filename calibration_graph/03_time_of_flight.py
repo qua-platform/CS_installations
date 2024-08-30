@@ -18,7 +18,7 @@ from qualibrate import QualibrationNode, NodeParameters
 from quam_libs.trackable_object import tracked_updates
 
 class Parameters(NodeParameters):
-    qubit: str = "q0"
+    qubit: str = "q1"
     num_averages: int = 100
     time_of_flight_in_ns: Optional[int] = None
     intermediate_frequency_in_mhz: Optional[float] = None

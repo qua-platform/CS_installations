@@ -1,11 +1,8 @@
 from .paths import PORTS_BASE_JSON_PATH
 from qualang_tools.wirer.instruments.instrument_channel import AnyInstrumentChannel
 
-def create_digital_port(channel: AnyInstrumentChannel) -> (str, str):
-    """
-    Generates a key/JSON reference pair from which a QuAM port can be created
-    for a single digital port.
-    """
+
+def create_digital_output_port(channel: AnyInstrumentChannel) -> (str, str):
     key = f"digital_{channel.io_type}"
 
     reference = PORTS_BASE_JSON_PATH
