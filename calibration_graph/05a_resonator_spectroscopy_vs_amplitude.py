@@ -58,7 +58,7 @@ from lib.qua_datasets import apply_angle, subtract_slope
 from lib.plot_utils import QubitGrid, grid_iter
 from lib.fit import peaks_dips
 from lib.save_utils import fetch_results_as_xarray
-from quam_libs.qualibrate.trackable_object import tracked_updates
+from quam_libs.trackable_object import tracked_updates
 
 # matplotlib.use("TKAgg")
 

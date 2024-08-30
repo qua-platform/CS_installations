@@ -104,12 +104,15 @@ with program() as cryoscope:
 
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     t = declare(int)  # QUA variable for the flux pulse segment index
-    state = [declare(bool) for _ in range(num_qubits)]
+    state = [declare(int) for _ in range(num_qubits)]
     state_st = [declare_stream() for _ in range(num_qubits)]
     global_state = declare(int)
     idx = declare(int)
     idx2 = declare(int)
     flag = declare(bool)
+
+    # Bring the active qubits to the minimum frequency point
+    machine.apply_all_flux_to_min()
 
     # Outer loop for averaging
     with for_(n, 0, n < n_avg, n + 1):
@@ -140,7 +143,7 @@ with program() as cryoscope:
                 # Wait for the idle time set slightly above the maximum flux pulse duration to ensure that the 2nd x90
                 # pulse arrives after the longest flux pulse
                 for qubit in qubits:
-                    wait((cryoscope_len + 16) // 4, qubit.xy.name)
+                    qubit.xy.wait((cryoscope_len + 16) // 4)
                     # Play second X/2 or Y/2
                     # if tomo == 'x90':
                     with if_(flag):
@@ -182,12 +185,12 @@ with program() as cryoscope:
                         for j in range(16):
                             with case_(j):
                                 baked_signals[j].run() 
-                                play('const', qubits[0].z.name, duration=t)
+                                qubits[0].z.play('const', duration=t)
 
                     # Wait for the idle time set slightly above the maximum flux pulse duration to ensure that the 2nd x90
                     # pulse arrives after the longest flux pulse
-                    for qb in qubits:
-                        wait((cryoscope_len + 16) // 4, qb)
+                    for qubit in qubits:
+                        qubit.xy.wait((cryoscope_len + 16) // 4)
                         # Play second X/2 or Y/2
                         with if_(flag):
                             qubit.xy.play("x90")
@@ -211,7 +214,7 @@ with program() as cryoscope:
         for i, qubit in enumerate(qubits):
             I_st[i].buffer(2).buffer(cryoscope_len).average().save(f"I_{i + 1}")
             Q_st[i].buffer(2).buffer(cryoscope_len).average().save(f"Q_{i + 1}")
-            state_st[i].boolean_to_int().buffer(2).buffer(cryoscope_len).average().save(f"state_{i + 1}")
+            state_st[i].buffer(2).buffer(cryoscope_len).average().save(f"state_{i + 1}")
 
 
 # %%
@@ -222,31 +225,31 @@ simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=1000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=100000)  # In clock cycles = 4ns
     job = qmm.simulate(config, cryoscope, simulation_config)
     job.get_simulated_samples().con1.plot()
     plt.show()
-    # analog5 = job.get_simulated_samples().con1.analog['5']
-    # threshold = 0.01
-    # indices = np.where(np.diff(np.sign(analog5 - threshold)) != 0)[0] + 1
-    # # Plot the signal
-    # plt.figure(figsize=(10, 6))
-    # plt.plot(analog5)
-    # plt.axhline(threshold, color='r', linestyle='--', label='Threshold')
-    # for idx in indices:
-    #     plt.axvline(idx, color='g', linestyle='--')
+    analog5 = job.get_simulated_samples().con1.analog['5']
+    threshold = 0.01
+    indices = np.where(np.diff(np.sign(analog5 - threshold)) != 0)[0] + 1
+    # Plot the signal
+    plt.figure(figsize=(10, 6))
+    plt.plot(analog5)
+    plt.axhline(threshold, color='r', linestyle='--', label='Threshold')
+    for idx in indices:
+        plt.axvline(idx, color='g', linestyle='--')
 
-    # subtracted_values = []
+    subtracted_values = []
 
-    # for i in range(0, len(indices), 2):
-    #     if i + 1 < len(indices):
-    #         subtracted_value = indices[i + 1] - indices[i]
-    #         subtracted_values.append(subtracted_value)
+    for i in range(0, len(indices), 2):
+        if i + 1 < len(indices):
+            subtracted_value = indices[i + 1] - indices[i]
+            subtracted_values.append(subtracted_value)
 
-    # # Print the subtracted values
-    # for i, value in enumerate(subtracted_values):
-    #     print(f"Subtracted value {i + 1}: {value}")
-    # plt.show(block=False)
+    # Print the subtracted values
+    for i, value in enumerate(subtracted_values):
+        print(f"Subtracted value {i + 1}: {value}")
+    plt.show(block=False)
 else:
     try:
         # Open the quantum machine

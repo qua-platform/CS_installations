@@ -1,7 +1,7 @@
 {
     "version": 1,
     "controllers": {
-        "con1": {
+        "con2": {
             "analog_outputs": {
                 "3": {
                     "delay": 0,
@@ -79,7 +79,7 @@
             "digitalInputs": {
                 "octave_switch": {
                     "port": [
-                        "con1",
+                        "con2",
                         3
                     ],
                     "delay": 87,
@@ -100,7 +100,7 @@
             },
             "singleInput": {
                 "port": [
-                    "con1",
+                    "con2",
                     5
                 ]
             }
@@ -113,7 +113,7 @@
             "digitalInputs": {
                 "octave_switch": {
                     "port": [
-                        "con1",
+                        "con2",
                         9
                     ],
                     "delay": 87,
@@ -985,11 +985,11 @@
                     "output_mode": "always_on",
                     "input_attenuators": "off",
                     "I_connection": [
-                        "con1",
+                        "con2",
                         9
                     ],
                     "Q_connection": [
-                        "con1",
+                        "con2",
                         10
                     ]
                 },
@@ -1000,11 +1000,11 @@
                     "output_mode": "always_on",
                     "input_attenuators": "off",
                     "I_connection": [
-                        "con1",
+                        "con2",
                         3
                     ],
                     "Q_connection": [
-                        "con1",
+                        "con2",
                         4
                     ]
                 }
@@ -1012,14 +1012,14 @@
             "IF_outputs": {
                 "IF_out1": {
                     "port": [
-                        "con1",
+                        "con2",
                         1
                     ],
                     "name": "out1"
                 },
                 "IF_out2": {
                     "port": [
-                        "con1",
+                        "con2",
                         2
                     ],
                     "name": "out2"

@@ -5,7 +5,6 @@ from typing import Dict, List, Type, TypeVar
 from pathlib import Path
 import json
 
-from CS_installations.quam_libs.experiments.two_qubit_rb.test.configuration import time_of_flight
 from qualang_tools.units import unit
 from quam.components import Octave, IQChannel, DigitalOutputChannel
 from quam_libs.components import (
@@ -63,7 +62,7 @@ def create_quam_superconducting(
 
     machine.network = {
         "host": host_ip,
-        "cluster_name": "Cluster_83",
+        "cluster_name": "Cluster_81",
         "octave_ips": octave_ips,
         "octave_ports": octave_ports,
         "data_folder": r"C:\data\path\to\folder",
@@ -137,6 +136,7 @@ def create_quam_superconducting(
                 depletion_time=1 * u.us,
                 time_of_flight=28  # 4ns above default so that it appears in state.json
             ),
+            # anharmonicity=150 * u.MHz,
         )
 
         machine.qubits[transmon.name] = transmon
@@ -212,9 +212,9 @@ if __name__ == "__main__":
     custom_port_wiring = {
         "qubits": {
             "q1": {
-                "res": (1, 9, 1, 1),  # (module, i_ch, octave, octave_ch)
-                "xy": (1, 3, 1, 2),  # (module, i_ch, octave, octave_ch)
-                "flux": (1, 5),  # (module, ch)
+                "res": (2, 9, 1, 1),  # (module, i_ch, octave, octave_ch)
+                "xy": (2, 3, 1, 2),  # (module, i_ch, octave, octave_ch)
+                "flux": (2, 5),  # (module, ch)
             },
         },
     }

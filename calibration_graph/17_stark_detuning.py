@@ -21,7 +21,7 @@ Next steps before going to the next node:
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal
 
-from quam_libs.qualibrate.trackable_object import tracked_updates
+from quam_libs.trackable_object import tracked_updates
 
 
 class Parameters(NodeParameters):
