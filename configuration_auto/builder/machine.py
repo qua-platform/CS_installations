@@ -25,7 +25,7 @@ def build_quam(connectivity: Connectivity, host_ip: str, cluster_name: str,
     add_ports(machine)
     add_transmons(machine)
     add_pulses(machine)
-    add_octaves(machine, octaves_settings)
+    add_octaves(machine, octaves_settings, quam_state_path)
 
     save_machine(machine, quam_state_path)
 
