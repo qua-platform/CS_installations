@@ -45,8 +45,8 @@ def add_transmon_resonator_component(transmon: Transmon, wiring_path: str, ports
             opx_input=f"{wiring_path}/opx_input",
             digital_outputs=digital_outputs,
             depletion_time=depletion_time,
-            # intermediate_frequency=intermediate_frequency,
-            # time_of_flight=time_of_flight
+            intermediate_frequency=intermediate_frequency,
+            time_of_flight=time_of_flight
         )
 
     else:

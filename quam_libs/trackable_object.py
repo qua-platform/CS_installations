@@ -4,8 +4,6 @@ from copy import deepcopy
 
 from contextlib import contextmanager
 
-from quam import QuamDict
-
 
 @contextmanager
 def tracked_updates(obj, auto_revert: bool = True,
