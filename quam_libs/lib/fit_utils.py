@@ -2,7 +2,7 @@ import numpy as np
 import xarray as xr
 from lmfit import Model, Parameter, Parameters
 from scipy.signal import find_peaks
-from lib.fit import peaks_dips
+from quam_libs.lib.fit import peaks_dips
 
 
 def _S21_abs(w, A, k, phi, kappa_p, omega_p, omega_r, J):

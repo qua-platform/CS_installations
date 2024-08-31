@@ -43,8 +43,8 @@ import numpy as np
 
 import matplotlib
 import xarray as xr
-from lib.plot_utils import QubitGrid, grid_iter
-from lib.save_utils import fetch_results_as_xarray
+from quam_libs.lib.plot_utils import QubitGrid, grid_iter
+from quam_libs.lib.save_utils import fetch_results_as_xarray
 
 matplotlib.use("TKAgg")
 
@@ -261,7 +261,7 @@ data = {}
 data['ds'] = ds
 
 # %%
-from lib.fit import peaks_dips
+from quam_libs.lib.fit import peaks_dips
 
 # search for frequency in whihc the amplitude as farthest from the mean to indicate the approximate location of the peak
 shifts = np.abs((ds.IQ_abs-ds.IQ_abs.mean(dim = 'freq'))).idxmax(dim = 'freq')
