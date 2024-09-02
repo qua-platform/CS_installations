@@ -23,7 +23,7 @@ from typing import Optional, Literal
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 200
+    num_averages: int = 100
     frequency_detuning_in_mhz: float = 1.0
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 4000
@@ -78,7 +78,7 @@ if node.parameters.qubits is None:
 else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits.split(', ')]
 num_qubits = len(qubits)
-
+# %%
 ###################
 # The QUA program #
 ###################
@@ -92,7 +92,7 @@ idle_times = np.arange(
 )
 
 # Detuning converted into virtual Z-rotations to observe Ramsey oscillation and get the qubit frequency
-detuning = 1e6 * node.parameters.frequency_detuning_in_mhz
+detuning = int(1e6 * node.parameters.frequency_detuning_in_mhz)
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 
 with program() as ramsey:
@@ -164,7 +164,7 @@ if simulate:
     node.results = {"figure": plt.gcf()}
 else:
     # Open the quantum machine
-    qm = qmm.open_qm(config)
+    qm = qmm.open_qm(config,keep_dc_offsets_when_closing=False)
     # Calibrate the active qubits
     # machine.calibrate_octave_ports(qm)
     # Send the QUA program to the OPX, which compiles and executes it
