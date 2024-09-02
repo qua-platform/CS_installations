@@ -7,7 +7,7 @@ from qualang_tools.wirer.connectivity.wiring_spec import WiringLineType
 from qualang_tools.wirer.instruments.instrument_channel import AnyInstrumentChannel
 
 from .create_analog_ports import create_octave_port, create_mw_fem_port, create_lf_opx_plus_port
-from .create_digital_ports import create_digital_port
+from .create_digital_ports import create_digital_output_port
 from .paths import *
 
 def create_wiring(connectivity: Connectivity) -> dict:
@@ -41,8 +41,9 @@ def qubit_wiring(channels: List[AnyInstrumentChannel]) -> dict:
     """
     qubit_line_wiring = {}
     for channel in channels:
-        key, reference = get_channel_port(channel, channels)
-        qubit_line_wiring[key] = reference
+        if not(channel.signal_type == "digital" and channel.io_type == "input"):
+            key, reference = get_channel_port(channel, channels)
+            qubit_line_wiring[key] = reference
 
     return qubit_line_wiring
 
@@ -57,15 +58,16 @@ def qubit_pair_wiring(channels: List[AnyInstrumentChannel], element_id: QubitPai
         "target_qubit": f"{QUBITS_BASE_JSON_PATH}/q{element_id.target_index}",
     }
     for channel in channels:
-        key, reference = get_channel_port(channel, channels)
-        qubit_pair_line_wiring[key] = reference
+        if not(channel.signal_type == "digital" and channel.io_type == "input"):
+            key, reference = get_channel_port(channel, channels)
+            qubit_pair_line_wiring[key] = reference
 
     return qubit_pair_line_wiring
 
 
 def get_channel_port(channel: AnyInstrumentChannel, channels: List[AnyInstrumentChannel]) -> tuple:
     if channel.signal_type == "digital":
-        key, reference = create_digital_port(channel)
+        key, reference = create_digital_output_port(channel)
     else:
         if channel.instrument_id == "octave":
             key, reference = create_octave_port(channel)

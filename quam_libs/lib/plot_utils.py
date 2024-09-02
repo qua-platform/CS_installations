@@ -103,7 +103,7 @@ def plot_ar_attempts(ar_data: dict[str, np.typing.NDArray], **hist_kwargs):
         q.reset_active(save_qua_var=f'ar_{q.name}')
 
         # then in the python script, fetch the data and plot it as follows:
-        from lib.plot_utils import plot_ar_attempts
+        from quam_libs.lib.plot_utils import plot_ar_attempts
         ar_dat = {}
         for q in machine.active_qubits:
         for q in machine.active_qubits:
@@ -182,7 +182,7 @@ class QubitPairGrid():
     according to the naming convention. A way to plot the data on the grid would be
 
     '''
-    from lib.qua_datasets import grid_iter
+    from quam_libs.lib.qua_datasets import grid_iter
     grid_names = [ dict(zip(q.extras_[0:len(q.extras_):2],q.extras_[1:len(q.extras_):2]))['grid_name'] for q in machine.active_qubits]
     grid = coupler_grid(ds, grid_names)
 
@@ -290,7 +290,7 @@ class QubitGrid():
     according to the naming convention. A way to plot the data on the grid would be
 
     '''
-    from lib.qua_datasets import grid_iter, QubitGrid
+    from quam_libs.lib.qua_datasets import grid_iter, QubitGrid
     grid = QubitGrid(ds)
 
     for ax, qubit in grid_iter(grid):
@@ -300,7 +300,7 @@ class QubitGrid():
     If the names of the qubits are not of the acceptable form it is possible to use:
 
     '''
-    from lib.qua_datasets import grid_iter, QubitGrid, grid_names
+    from quam_libs.lib.qua_datasets import grid_iter, QubitGrid, grid_names
     grid = QubitGrid(ds, grid_names(machine))
 
     for ax, qubit in grid_iter(grid):

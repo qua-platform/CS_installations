@@ -61,8 +61,8 @@ from quam_libs.macros import qua_declaration
 import matplotlib.pyplot as plt
 import numpy as np
 
-from lib.plot_utils import QubitGrid, grid_iter
-from lib.save_utils import fetch_results_as_xarray
+from quam_libs.lib.plot_utils import QubitGrid, grid_iter
+from quam_libs.lib.save_utils import fetch_results_as_xarray
 
 # matplotlib.use("TKAgg")
 
@@ -291,7 +291,7 @@ if not simulate:
 
 # %%
 if not simulate:
-    from lib.fit import peaks_dips
+    from quam_libs.lib.fit import peaks_dips
 
     # find the peak with minimal prominence as defined, if no such peak found, returns nan
     result = peaks_dips(ds.IQ_abs,dim = 'freq',prominence_factor=5, remove_baseline=False)

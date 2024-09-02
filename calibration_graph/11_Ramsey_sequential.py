@@ -52,9 +52,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import matplotlib
-from lib.plot_utils import QubitGrid, grid_iter
-from lib.save_utils import fetch_results_as_xarray
-from lib.fit import fit_oscillation_decay_exp, oscillation_decay_exp
+from quam_libs.lib.plot_utils import QubitGrid, grid_iter
+from quam_libs.lib.save_utils import fetch_results_as_xarray
+from quam_libs.lib.fit import fit_oscillation_decay_exp, oscillation_decay_exp
 
 # matplotlib.use("TKAgg")
 

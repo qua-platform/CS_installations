@@ -52,8 +52,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import matplotlib
-from lib.plot_utils import QubitGrid, grid_iter
-from lib.save_utils import fetch_results_as_xarray
+from quam_libs.lib.plot_utils import QubitGrid, grid_iter
+from quam_libs.lib.save_utils import fetch_results_as_xarray
 import xarray as xr
 
 # matplotlib.use("TKAgg")

@@ -38,10 +38,10 @@ from scipy import signal
 
 import matplotlib
 import xarray as xr
-from lib.qua_datasets import apply_angle, subtract_slope
-from lib.plot_utils import QubitGrid, grid_iter
-from lib.fit import peaks_dips
-from lib.save_utils import fetch_results_as_xarray
+from quam_libs.lib.qua_datasets import apply_angle, subtract_slope
+from quam_libs.lib.plot_utils import QubitGrid, grid_iter
+from quam_libs.lib.fit import peaks_dips
+from quam_libs.lib.save_utils import fetch_results_as_xarray
 
 matplotlib.use("TKAgg")
 

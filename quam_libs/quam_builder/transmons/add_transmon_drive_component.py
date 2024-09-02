@@ -17,18 +17,17 @@ def add_transmon_drive_component(transmon: Transmon, wiring_path: str, ports: Di
             opx_output_I=f"{wiring_path}/opx_output_I",
             opx_output_Q=f"{wiring_path}/opx_output_Q",
             frequency_converter_up=f"{wiring_path}/frequency_converter_up",
-            intermediate_frequency=-200 * unit().MHz,
+            intermediate_frequency=-200 * u.MHz,
             digital_outputs=digital_outputs
         )
 
         RF_output = transmon.xy.frequency_converter_up
         RF_output.channel = transmon.xy.get_reference()
-        RF_output.output_mode = "always_on"
-        # RF_output.output_mode = "triggered"
-        RF_output.LO_frequency = 4.7 * unit().GHz
+        RF_output.output_mode = "always_on"  # "triggered"
+        RF_output.LO_frequency = 4.7 * u.GHz
 
     elif all(key in ports for key in mw_out_channel_ports):
-        # MW-FEM
+        # MW-FEM single channel
         transmon.xy = MWChannel(
             opx_output=f"{wiring_path}/opx_output",
             digital_outputs=digital_outputs

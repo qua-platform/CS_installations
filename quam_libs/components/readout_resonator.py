@@ -26,11 +26,11 @@ class ReadoutResonatorBase:
 
 @quam_dataclass
 class ReadoutResonatorIQ(InOutIQChannel, ReadoutResonatorBase):
-    pass
+    time_of_flight = 28  # smallest deviation from default (24ns) to work with Qualibrate
 
 @quam_dataclass
 class ReadoutResonatorMW(InOutMWChannel, ReadoutResonatorBase):
-    pass
+    time_of_flight = 28
 
 ReadoutResonator = ReadoutResonatorIQ
 

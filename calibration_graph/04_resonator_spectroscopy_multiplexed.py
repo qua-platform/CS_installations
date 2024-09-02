@@ -50,10 +50,10 @@ from scipy import signal
 
 import matplotlib
 import xarray as xr
-from lib.fit_utils import fit_resonator
-from lib.qua_datasets import apply_angle, subtract_slope
-from lib.plot_utils import QubitGrid, grid_iter
-from lib.save_utils import fetch_results_as_xarray
+from quam_libs.lib.fit_utils import fit_resonator
+from quam_libs.lib.qua_datasets import apply_angle, subtract_slope
+from quam_libs.lib.plot_utils import QubitGrid, grid_iter
+from quam_libs.lib.save_utils import fetch_results_as_xarray
 from quam_libs.trackable_object import tracked_updates
 
 # matplotlib.use("TKAgg")
