@@ -15,21 +15,11 @@ class FluxLine(SingleChannel):
         joint_offset (float): the flux bias for which the .
         min_offset (float): the flux bias for which the .
     """
-
-    # Optimize for DC pulses
-    output_mode: str = "amplified"
-    upsampling_mode: str = "pulse"
-
     independent_offset: float = 0.0
     joint_offset: float = 0.0
     min_offset: float = 0.0
     
     quad_term: float = 0.0
-
-    def __post_init__(self) -> None:
-        if isinstance(self.opx_output, LFFEMAnalogOutputPort):
-            self.opx_output.upsampling_mode = self.upsampling_mode
-            self.opx_output.output_mode = self.output_mode
 
     def to_independent_idle(self):
         """Set the flux bias to the independent offset"""
