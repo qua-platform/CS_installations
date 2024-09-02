@@ -1,0 +1,186 @@
+# %%
+"""
+        RESONATOR SPECTROSCOPY VERSUS READOUT AMPLITUDE
+This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to
+extract the 'I' and 'Q' quadratures.
+This is done across various readout intermediate frequencies and amplitudes.
+Based on the results, one can determine if a qubit is coupled to the resonator by noting the resonator frequency
+splitting. This information can then be used to adjust the readout amplitude, choosing a readout amplitude value
+just before the observed frequency splitting.
+
+Prerequisites:
+    - Calibration of the time of flight, offsets, and gains (referenced as "time_of_flight").
+    - Calibration of the IQ mixer connected to the readout line (be it an external mixer or an Octave port).
+    - Identification of the resonator's resonance frequency (referred to as "resonator_spectroscopy_multiplexed").
+    - Configuration of the readout pulse amplitude (the pulse processor will sweep up to twice this value) and duration.
+    - Specification of the expected resonator depletion time in the configuration.
+
+Before proceeding to the next node:
+    - Update the readout frequency, labeled as "resonator_IF_q", in the configuration.
+    - Adjust the readout amplitude, labeled as "readout_amp_q", in the configuration.
+"""
+
+from qm.qua import *
+from qm import QuantumMachinesManager, SimulationConfig
+# from configuration_opxplus_with_octave import *
+from configuration_opxplus_without_octave import *
+from qualang_tools.results import progress_counter, fetching_tool
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.loops import from_array
+from macros import qua_declaration, multiplexed_readout
+import matplotlib.pyplot as plt
+import math
+from qualang_tools.results.data_handler import DataHandler
+
+
+###################
+# The QUA program #
+###################
+
+rl = "rl1"
+# resonators = [key for key in RR_CONSTANTS.keys()]
+resonators = [key for key in RR_CONSTANTS.keys()]
+resonators_LO = RL_CONSTANTS[rl]["LO"]
+
+n_avg = 10  # The number of averages
+# The frequency sweep around the resonators' frequency
+span = 2.0 * u.MHz
+step = 125 * u.kHz
+dfs = np.arange(-span, +span, step)
+
+# The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
+a_min = 0.00
+a_max = 1.99
+da = 0.25
+amplitudes = np.arange(a_min, a_max + da / 2, da)  # The amplitude vector +da/2 to add a_max to the scan
+
+assert len(dfs) <= 32, "check your frequencies"
+assert len(amplitudes) <= 40, "check you amps vals"
+for rr in resonators:
+    assert a_max * RR_CONSTANTS[rr]['amplitude'] <= 0.499, f"{rr} max amp scan exceeded 0.499"
+
+save_data_dict = {
+    "resonators": resonators,
+    "resonators_LO": resonators_LO,
+    "n_avg": n_avg,
+    "dfs": dfs,
+    "amplitudes": amplitudes,
+    "config": config,
+}
+
+
+with program() as multi_res_spec_vs_amp:
+    # QUA macro to declare the measurement variables and their corresponding streams for a given number of resonators
+    I, I_st, Q, Q_st, n, n_st = qua_declaration(resonators)
+    df = declare(int)  # QUA variable for sweeping the readout frequency detuning around the resonance
+    a = declare(fixed)  # QUA variable for sweeping the readout amplitude pre-factor
+
+    with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
+        with for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the frequency
+            # Update the frequency of the two resonator elements
+            for rr in resonators:
+                update_frequency(rr, df + RR_CONSTANTS[rr]["IF"])
+
+            with for_(*from_array(a, amplitudes)):  # QUA for_ loop for sweeping the readout amplitude
+
+                multiplexed_readout(I, I_st, Q, Q_st, None, None, resonators, amplitude=a)
+
+                # wait for the resonators to empty
+                wait(rr_reset_time >> 2)
+
+        # Save the averaging iteration to get the progress bar
+        save(n, n_st)
+
+    with stream_processing():
+        n_st.save("iteration")
+        for ind, rr in enumerate(resonators):
+            I_st[ind].buffer(len(dfs), len(amplitudes)).average().save(f"I_{rr}")
+            Q_st[ind].buffer(len(dfs), len(amplitudes)).average().save(f"Q_{rr}")
+
+
+if __name__ == "__main__":
+    #####################################
+    #  Open Communication with the QOP  #
+    #####################################
+    qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+
+    #######################
+    # Simulate or execute #
+    #######################
+    simulate = False
+
+    if simulate:
+        # Simulates the QUA program for the specified duration
+        simulation_config = SimulationConfig(duration=1_000)  # In clock cycles = 4ns
+        job = qmm.simulate(config, multi_res_spec_vs_amp, simulation_config)
+        job.get_simulated_samples().con1.plot()
+        plt.show(block=False)
+
+    else:
+        try:
+            # Open a quantum machine to execute the QUA program
+            qm = qmm.open_qm(config)
+            # Send the QUA program to the OPX, which compiles and executes it
+            job = qm.execute(multi_res_spec_vs_amp)
+            fetch_names = ["iteration"]
+            for rr in resonators:
+                fetch_names.append(f"I_{rr}")
+                fetch_names.append(f"Q_{rr}")
+            # Tool to easily fetch results from the OPX (results_handle used in it)
+            results = fetching_tool(job, fetch_names, mode="live")
+            # Prepare the figure for live plotting
+            fig = plt.figure()
+            interrupt_on_close(fig, job)
+            # Data analysis and plotting
+            num_resonators = len(resonators)
+            num_rows = math.ceil(math.sqrt(num_resonators))
+            num_cols = math.ceil(num_resonators / num_rows)
+            # Live plotting
+            while results.is_processing():
+                # Fetch results
+                res = results.fetch_all()
+                # Progress bar
+                progress_counter(res[0], n_avg, start_time=results.start_time)
+
+                plt.suptitle("Multiplexed res spec vs amp")
+
+                for ind, rr in enumerate(resonators):
+
+                    S = res[2*ind+1] + 1j * res[2*ind+2]
+                    R = np.abs(S) 
+                    # R = signal.detrend(np.unwarp(np.angle(S)))
+                    row_sums = R.sum(axis=0)
+                    R /= row_sums[np.newaxis, :]
+
+                    save_data_dict[f"I_{rr}"] = res[2*ind + 1]
+                    save_data_dict[f"Q_{rr}"] = res[2*ind + 2]
+
+                    # Plot
+                    plt.subplot(num_rows, num_cols, ind + 1)
+                    plt.cla()
+                    plt.pcolor(amplitudes * RR_CONSTANTS[rr]["amplitude"],(RR_CONSTANTS[rr]["IF"] + dfs) / u.MHz, R, cmap='magma')
+                    plt.axvline(x=RR_CONSTANTS[rr]["amplitude"])
+                    plt.axhline(y=RR_CONSTANTS[rr]["IF"] / u.MHz, linestyle='--', color="k")
+                    lo_val = resonators_LO / u.GHz
+                    plt.title(f"{rr} - LO: {lo_val} GHz")
+                    plt.ylabel("Freqs [MHz]")
+
+                plt.tight_layout()
+                plt.pause(0.1)
+
+            # Save results
+            script_name = Path(__file__).name
+            data_handler = DataHandler(root_data_folder=save_dir)
+            save_data_dict.update({"fig_live": fig})
+            data_handler.additional_files = {script_name: script_name, **default_additional_files}
+            data_handler.save_data(data=save_data_dict, name="resonator_spectroscopy_amplitude")
+
+        except Exception as e:
+            print(f"An exception occurred: {e}")
+
+        finally:
+            qm.close()
+            print("Experiment QM is now closed")
+            plt.show(block=True)
+
+# %%
