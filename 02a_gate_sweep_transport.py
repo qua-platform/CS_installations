@@ -31,6 +31,7 @@ import matplotlib.pyplot as plt
 n_avg = 100  # The number of averages
 gate_dc_offsets = np.arange(-0.5, 0.5, 0.05)
 gate_to_sweep = "source"  # or "plunger"
+fixed_gate = "plunger" # or "source"
 
 with program() as gate_sweep_transport:
     n = declare(int)  # QUA variable for the averaging loop
@@ -64,10 +65,16 @@ qdac = QDAC2.QDac2('QDAC', visalib='@py', address=f'TCPIP::{qdac_ip}::5025::SOCK
 
 if gate_to_sweep == "source":
     gate = qdac.channel(qdac_source_gate_ch)
+    fixed_gate_qdac = qdac.channel(qdac_right_plunger_ch)
 elif gate_to_sweep == "plunger":
     gate = qdac.channel(qdac_right_plunger_ch)
+    fixed_gate_qdac = qdac.channel(qdac_source_gate_ch)
 else:
     raise ValueError(f'Expected gate to be "source" or "plunger", got {gate_to_sweep}')
+
+valuet_to_set = 0.2
+
+fixed_gate_qdac.dc_constant_V(valuet_to_set)
 
 #######################
 # Simulate or execute #
@@ -104,13 +111,13 @@ else:
         # Fetch the data from the last OPX run corresponding to the current slow axis iteration
         i_drain, iteration = results.fetch_all()
         i_drain = u.demod2volts(i_drain, readout_len)
-        i_drain_pA = i_drain * tia_iv_scale_factor * 1e12
+        i_drain_A = i_drain * tia_iv_scale_factor
         # Progress bar
         progress_counter(iteration, len(gate_dc_offsets))
         # Plot results
         plt.suptitle(f"{gate_to_sweep.capitalize()}-Gate Sweep (Transport)")
         plt.cla()
-        plt.plot(gate_dc_offsets[: iteration + 1], i_drain_pA)
+        plt.plot(gate_dc_offsets[: iteration + 1], i_drain_A)
         plt.xlabel("Gate Voltage [V]")
         plt.ylabel(r"Drain Current [pA]")
         plt.yscale('log')  # set the y-axis scaling to be logarithmic
@@ -119,10 +126,12 @@ else:
 
     data_handler = DataHandler(root_data_folder=data_folder_path)
     data = {
+        "value_to_set": valuet_to_set,
         "swept_gate": gate_to_sweep,
+        "fixed_gate": fixed_gate,
         "gate_dc_offsets": gate_dc_offsets,
         "readout_drain_current": i_drain,
-        "readout_drain_current_pA": i_drain_pA,
+        "readout_drain_current_pA": i_drain_A,
         "figure": fig
     }
     # Save results
