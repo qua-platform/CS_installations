@@ -1,4 +1,5 @@
 import os
+import warnings
 from pathlib import Path
 from quam.core import QuamRoot, quam_dataclass
 from quam.components.octave import Octave
@@ -106,14 +107,20 @@ class QuAM(QuamRoot):
         """Apply the offsets that bring all the active qubits to the joint sweet spot."""
         align()
         for q in self.active_qubits:
-            q.z.to_joint_idle()
+            if q.z is not None:
+                q.z.to_joint_idle()
+            else:
+                warnings.warn(f"Didn't find z-element on qubit {q.name}, didn't set to joint-idle")
         align()
 
     def apply_all_flux_to_min(self) -> None:
         """Apply the offsets that bring all the active qubits to the minimum frequency point."""
         align()
         for q in self.active_qubits:
-            q.z.to_min()
+            if q.z is not None:
+                q.z.to_min()
+            else:
+                warnings.warn(f"Didn't find z-element on qubit {q.name}, didn't set to min")
         align()
 
     def apply_all_flux_to_zero(self) -> None:

@@ -80,28 +80,31 @@ class Transmon(QuamComponent):
         """The transmon thermalization time in ns."""
         return self.thermalization_time_factor * self.T1
 
-    def calibrate_octave(self, QM: QuantumMachine) -> None:
+    def calibrate_octave(self, QM: QuantumMachine, calibrate_drive: bool = True, calibrate_resonator: bool = True) -> None:
         """Calibrate the Octave channels (xy and resonator) linked to this transmon for the LO frequency, intermediate
         frequency and Octave gain as defined in the state.
 
         Args:
             QM (QuantumMachine): the running quantum machine.
         """
-        logger.info(f"Calibrating {self.xy.name}")
-        octave_calibration_tool(
-            QM,
-            self.xy.name,
-            lo_frequencies=self.xy.frequency_converter_up.LO_frequency,
-            intermediate_frequencies=self.xy.intermediate_frequency,
-        )
+        if calibrate_resonator and self.resonator is not None:
+            logger.info(f"Calibrating {self.resonator.name}")
+            octave_calibration_tool(
+                QM,
+                self.resonator.name,
+                lo_frequencies=self.resonator.frequency_converter_up.LO_frequency,
+                intermediate_frequencies=self.resonator.intermediate_frequency,
+            )
 
-        logger.info(f"Calibrating {self.resonator.name}")
-        octave_calibration_tool(
-            QM,
-            self.resonator.name,
-            lo_frequencies=self.resonator.frequency_converter_up.LO_frequency,
-            intermediate_frequencies=self.resonator.intermediate_frequency,
-        )
+        if calibrate_drive and self.xy is not None:
+            logger.info(f"Calibrating {self.xy.name}")
+            octave_calibration_tool(
+                QM,
+                self.xy.name,
+                lo_frequencies=self.xy.frequency_converter_up.LO_frequency,
+                intermediate_frequencies=self.xy.intermediate_frequency,
+            )
+
 
     def set_gate_shape(self, gate_shape: str) -> None:
         """Set the shape fo the single qubit gates defined as ["x180", "x90" "-x90", "y180", "y90", "-y90"]"""

@@ -76,7 +76,7 @@ qmm = machine.connect()
 if node.parameters.qubits is None:
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.split(', ')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
 resonators = [qubit.resonator for qubit in qubits]
 num_qubits = len(qubits)
 num_resonators = len(resonators)
@@ -275,7 +275,7 @@ if not simulate:
 if not simulate:
     with node.record_state_updates():
         for index, q in enumerate(qubits):
-            q.resonator.intermediate_frequency += fit.params['omega_r'].value
+            q.resonator.intermediate_frequency += int(fits[q.name].params['omega_r'].value)
 
 
 # %%

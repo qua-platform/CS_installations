@@ -19,8 +19,31 @@ Prerequisites:
     - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
     - Set the desired flux bias.
 """
+from qualibrate import QualibrationNode, NodeParameters
+from typing import Optional, Literal
 
-from pathlib import Path
+from quam_libs.trackable_object import tracked_updates
+
+
+class Parameters(NodeParameters):
+    qubits: Optional[str] = None
+    use_state_discrimination: bool = True
+    num_random_sequences: int = 50  # Number of random sequences
+    num_averages: int = 20
+    max_circuit_depth: int = 1000  # Maximum circuit depth
+    delta_clifford: int = 10
+    seed: int = 345324
+    flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
+    reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
+    simulate: bool = False
+
+node = QualibrationNode(
+    name="11a_Randomized_Benchmarking",
+    parameters_class=Parameters
+)
+
+node.parameters = Parameters()
+
 
 from qm.qua import *
 from qm import SimulationConfig
@@ -29,15 +52,13 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
 from qualang_tools.units import unit
 from quam_libs.components import QuAM, Transmon
-from quam_libs.macros import node_save
+from quam_libs.macros import node_save, active_reset
 
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import numpy as np
 
-import matplotlib
-
-matplotlib.use("TKAgg")
+# matplotlib.use("TKAgg")
 
 
 ###################################################
@@ -53,21 +74,28 @@ octave_config = machine.get_octave_config()
 # Open Communication with the QOP
 qmm = machine.connect()
 
-# Get the relevant QuAM components
-qubits = machine.active_qubits
+if node.parameters.qubits is None:
+    qubits = machine.active_qubits
+else:
+    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
+num_qubits = len(qubits)
 
 ##############################
 # Program-specific variables #
 ##############################
-num_of_sequences = 50  # Number of random sequences
-n_avg = 10  # Number of averaging loops for each random sequence
-max_circuit_depth = 1000  # Maximum circuit depth
-delta_clifford = 10  #  Play each sequence with a depth step equals to 'delta_clifford - Must be > 1
+num_of_sequences = node.parameters.num_random_sequences  # Number of random sequences
+n_avg = node.parameters.num_averages  # Number of averaging loops for each random sequence
+max_circuit_depth = node.parameters.max_circuit_depth  # Maximum circuit depth
+if node.parameters.delta_clifford < 1:
+    raise NotImplementedError("Delta clifford < 2 is not supported.")
+delta_clifford = node.parameters.delta_clifford  #  Play each sequence with a depth step equals to 'delta_clifford - Must be > 1
+flux_point = node.parameters.flux_point_joint_or_independent
+reset_type = node.parameters.reset_type_thermal_or_active
 assert (max_circuit_depth / delta_clifford).is_integer(), "max_circuit_depth / delta_clifford must be an integer."
 num_depths = max_circuit_depth // delta_clifford + 1
-seed = 345324  # Pseudo-random number generator seed
+seed = node.parameters.seed # Pseudo-random number generator seed
 # Flag to enable state discrimination if the readout has been calibrated (rotated blobs and threshold)
-state_discrimination = False
+state_discrimination = node.parameters.use_state_discrimination
 # List of recovery gates from the lookup table
 inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
 
@@ -196,7 +224,14 @@ def get_rb_program(qubit: Transmon):
             state_st = declare_stream()
 
         # Bring the active qubits to the minimum frequency point
-        machine.apply_all_flux_to_min()
+        if flux_point == "independent":
+            machine.apply_all_flux_to_min()
+            qubit.z.to_independent_idle()
+        elif flux_point == "joint":
+            machine.apply_all_flux_to_joint_idle()
+        else:
+            machine.apply_all_flux_to_zero()
+        wait(1000)
 
         with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
             (
@@ -214,8 +249,10 @@ def get_rb_program(qubit: Transmon):
                 # Only played the depth corresponding to target_depth
                 with if_((depth == 1) | (depth == depth_target)):
                     with for_(n, 0, n < n_avg, n + 1):
-                        # Can replace by active reset
-                        qubit.resonator.wait(machine.thermalization_time * u.ns)
+                        if reset_type == "active":
+                            active_reset(machine, qubit.name)
+                        else:
+                            wait(5*machine.thermalization_time * u.ns)
                         # Align the two elements to play the sequence after qubit initialization
                         qubit.resonator.align(qubit.xy.name)
                         # The strict_timing ensures that the sequence will be played without gaps
@@ -278,7 +315,7 @@ if simulate:
 
 else:
     # Prepare data for saving
-    data = {}
+    node.results = {}
     for qubit in qubits:
         # Open the quantum machine
         qm = qmm.open_qm(config)
@@ -375,17 +412,19 @@ else:
         qm.close()
 
         # Save data from the node
-        data[f"{qubit.name}_depth"] = x
-        data[f"{qubit.name}_fidelity"] = value_avg
-        data[f"{qubit.name}_error"] = error_avg
-        data[f"{qubit.name}_fit"] = power_law(x, *pars)
-        data[f"{qubit.name}_covariance_par"] = pars
-        data[f"{qubit.name}_error_rate"] = one_minus_p
-        data[f"{qubit.name}_clifford_set_infidelity"] = r_c
-        data[f"{qubit.name}_gate_infidelity"] = r_g
-        data[f"{qubit.name}_figure"] = fig
-        data[f"{qubit.name}_figure_analysis"] = fig_analysis
+        node.results[f"{qubit.name}_depth"] = x
+        node.results[f"{qubit.name}_fidelity"] = value_avg
+        node.results[f"{qubit.name}_error"] = error_avg
+        node.results[f"{qubit.name}_fit"] = power_law(x, *pars)
+        node.results[f"{qubit.name}_covariance_par"] = pars
+        node.results[f"{qubit.name}_error_rate"] = one_minus_p
+        node.results[f"{qubit.name}_clifford_set_infidelity"] = r_c
+        node.results[f"{qubit.name}_gate_infidelity"] = r_g
+        node.results[f"{qubit.name}_figure"] = fig
+        node.results[f"{qubit.name}_figure_analysis"] = fig_analysis
 
-    node_save(machine, "randomized_benchmarking", data, additional_files=True)
 
 # %%
+node.results['initial_parameters'] = node.parameters.model_dump()
+node.machine = machine
+node.save()

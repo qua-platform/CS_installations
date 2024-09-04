@@ -80,7 +80,7 @@ qmm = machine.connect()
 if node.parameters.qubits is None:
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.split(', ')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
 resonators = [qubit.resonator for qubit in qubits]
 prev_amps = [rr.operations["readout"].amplitude for rr in resonators]
 num_qubits = len(qubits)
@@ -255,7 +255,7 @@ if not simulate:
             return amp * q.resonator.operations['readout'].amplitude
         return foo
 
-    ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits],dtype=np.int32))})
+    ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
     ds = ds.assign_coords({'abs_amp' : (['qubit','amp'],np.array([abs_amp(q)(amps) for q in qubits]))})
 
     ds.freq_full.attrs['long_name'] = 'Frequency'

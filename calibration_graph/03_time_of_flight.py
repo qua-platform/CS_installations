@@ -158,11 +158,15 @@ else:
 
     for resonator in tracked_resonators:
         resonator.revert_changes()
+
     with node.record_state_updates():
         for resonator in tracked_resonators:
             resonator.reapply_changes()
         for resonator in resonators:
-            resonator.time_of_flight = resonator.time_of_flight + delay
+            if node.parameters.time_of_flight_in_ns is not None:
+                resonator.time_of_flight = node.parameters.time_of_flight_in_ns + delay
+            else:
+                resonator.time_of_flight = resonator.time_of_flight + delay
 
 
     node.results = {

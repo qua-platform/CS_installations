@@ -24,7 +24,7 @@ from typing import Optional, Literal
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
     num_averages: int = 50
-    operation_x180_or_x90: Literal['x180', 'x90'] = "x180"
+    operation_x180_or_any_90: Literal['x180', 'x90', '-x90', 'y90', '-y90'] = "x180"
     min_amp_factor: float = 0.8
     max_amp_factor: float = 1.2
     amp_factor_step: float = 0.005
@@ -77,14 +77,14 @@ qmm = machine.connect()
 if node.parameters.qubits is None:
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.split(', ')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
 num_qubits = len(qubits)
 
 ###################
 # The QUA program #
 ###################
 
-operation = node.parameters.operation_x180_or_x90  # The qubit operation to play, can be switched to "x180" when the qubits are found.
+operation = node.parameters.operation_x180_or_any_90  # The qubit operation to play, can be switched to "x180" when the qubits are found.
 n_avg = node.parameters.num_averages  # The number of averages
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 reset_type = node.parameters.reset_type_thermal_or_active  # "active" or "thermal"
@@ -99,8 +99,11 @@ N_pi = node.parameters.max_number_rabi_pulses_per_sweep  # Maximum number of qub
 
 if operation == "x180":
     N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[::2]
-elif operation == "x90":
+elif operation in ["x90", "-x90", "y90", "-y90"]:
     N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[1::4]
+else:
+    raise ValueError(f"Unrecognized operation {operation}.")
+
 
 with program() as power_rabi:
     I, _, Q, _, n, n_st = qua_declaration(num_qubits=num_qubits)
@@ -143,9 +146,10 @@ with program() as power_rabi:
         for i, qubit in enumerate(qubits):
             if operation == "x180":
                 state_stream[i].buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(f"state{i + 1}")
-            elif operation == "x90":
+            elif operation in ["x90", "-x90", "y90", "-y90"]:
                 state_stream[i].buffer(len(amps)).buffer(np.ceil(N_pi / 4)).average().save(f"state{i + 1}")
-
+            else:
+                raise ValueError(f"Unrecognized operation {operation}.")
 
 ###########################
 # Run or Simulate Program #

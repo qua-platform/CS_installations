@@ -19,6 +19,9 @@ Before proceeding to the next node:
     - Adjust the flux bias to the minimum frequency point, labeled as "min_frequency_point", in the state.
     - Save the current state by calling machine.save("quam")
 """
+import warnings
+
+from docutils.nodes import warning
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal
 
@@ -81,7 +84,10 @@ qmm = machine.connect()
 if node.parameters.qubits is None:
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.split(', ')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
+if any([q.z is None for q in qubits]):
+    warnings.warn("Found qubits without a flux line. Skipping")
+qubits = [q for q in qubits if q.z is not None]
 resonators = [qubit.resonator for qubit in qubits]
 num_qubits = len(qubits)
 num_resonators = len(resonators)
