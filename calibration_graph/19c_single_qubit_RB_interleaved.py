@@ -435,8 +435,8 @@ else:
             f"{qubit.name}_clifford_set_infidelity": r_c,
             f"{qubit.name}_gate_infidelity": r_g,
         }
-        node.results[f"{qubit.name}_figure"]: fig
-        node.results[f"{qubit.name}_figure_analysis"]: fig_analysis
+        node.results[f"{qubit.name}_figure"] = fig
+        node.results[f"{qubit.name}_figure_analysis"] = fig_analysis
 
         plt.show()
 
