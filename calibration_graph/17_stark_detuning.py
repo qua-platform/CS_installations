@@ -72,7 +72,7 @@ machine = QuAM.load()
 
 
 # Get the relevant QuAM components
-if node.parameters.qubits is None:
+if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]

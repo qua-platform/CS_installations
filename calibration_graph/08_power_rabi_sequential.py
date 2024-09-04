@@ -41,7 +41,7 @@ node.parameters = Parameters()
 
 
 from qm.qua import *
-from qm import SimulationConfig
+from qm import SimulationConfig, generate_qua_script
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -74,7 +74,7 @@ octave_config = machine.get_octave_config()
 qmm = machine.connect()
 
 # Get the relevant QuAM components
-if node.parameters.qubits is None:
+if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
@@ -152,6 +152,8 @@ if simulate:
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
 else:
+    with open("amplitude_sweep.py", "w+") as f:
+        f.write(generate_qua_script(power_rabi, config))
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Calibrate the active qubits

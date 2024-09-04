@@ -74,7 +74,7 @@ octave_config = machine.get_octave_config()
 # Open Communication with the QOP
 qmm = machine.connect()
 
-if node.parameters.qubits is None:
+if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
@@ -178,7 +178,7 @@ def play_sequence(sequence_list, depth, qubit: Transmon):
                 qubit.xy.play("x90")
             with case_(17):
                 qubit.xy.play("-x90")
-                qubit.xy.play("-x90")
+                qubit.xy.play("-y90")
                 qubit.xy.play("x90")
             with case_(18):
                 qubit.xy.play("x180")
@@ -218,10 +218,11 @@ def get_rb_program(qubit: Transmon):
         state = declare(bool)  # QUA variable for state discrimination
         # The relevant streams
         m_st = declare_stream()
-        I_st = declare_stream()
-        Q_st = declare_stream()
         if state_discrimination:
             state_st = declare_stream()
+        else:
+            I_st = declare_stream()
+            Q_st = declare_stream()
 
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
@@ -234,10 +235,7 @@ def get_rb_program(qubit: Transmon):
         wait(1000)
 
         with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
-            (
-                sequence_list,
-                inv_gate_list,
-            ) = generate_sequence()  # Generate the random sequence of length max_circuit_depth
+            sequence_list, inv_gate_list = generate_sequence()  # Generate the random sequence of length max_circuit_depth
 
             assign(depth_target, 0)  # Initialize the current depth to 0
 
@@ -254,29 +252,22 @@ def get_rb_program(qubit: Transmon):
                         else:
                             wait(5*machine.thermalization_time * u.ns)
                         # Align the two elements to play the sequence after qubit initialization
-                        qubit.resonator.align(qubit.xy.name)
+                        align(qubit.xy.name, qubit.resonator.name)
                         # The strict_timing ensures that the sequence will be played without gaps
                         with strict_timing_():
                             # Play the random sequence of desired depth
                             play_sequence(sequence_list, depth, qubit)
                         # Align the two elements to measure after playing the circuit.
-                        align()
-                        # # Play through the 2nd resonator to be in the same condition as when the readout was optimized
-                        # if qubit.resonator == q1.resonator:
-                        #     q2.resonator.play("readout")
-                        # else:
-                        #     q1.resonator.play("readout")
+                        align(qubit.xy.name, qubit.resonator.name)
                         # Make sure you updated the ge_threshold and angle if you want to use state discrimination
                         qubit.resonator.measure("readout", qua_vars=(I, Q))
-                        save(I, I_st)
-                        save(Q, Q_st)
                         # Make sure you updated the ge_threshold
                         if state_discrimination:
-                            assign(
-                                state,
-                                I > qubit.resonator.operations["readout"].threshold,
-                            )
+                            assign(state, I > qubit.resonator.operations["readout"].threshold)
                             save(state, state_st)
+                        else:
+                            save(I, I_st)
+                            save(Q, Q_st)
 
                     # Go to the next depth
                     assign(depth_target, depth_target + delta_clifford)
@@ -303,7 +294,7 @@ def get_rb_program(qubit: Transmon):
                 I_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(num_depths).average().save("I_avg")
                 Q_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(num_depths).average().save("Q_avg")
 
-    return rb
+        return rb
 
 
 simulate = False

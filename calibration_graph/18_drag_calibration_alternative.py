@@ -70,7 +70,7 @@ u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
 machine = QuAM.load()
 # Generate the OPX and Octave configurations
-if node.parameters.qubits is None:
+if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits.split(', ')]
