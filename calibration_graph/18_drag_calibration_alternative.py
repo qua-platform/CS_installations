@@ -36,7 +36,7 @@ class Parameters(NodeParameters):
     simulate: bool = False
 
 node = QualibrationNode(
-    name="10_DRAG_Calibration_alternative",
+    name="10b_DRAG_Calibration_180_90",
     parameters_class=Parameters
 )
 
@@ -55,9 +55,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import matplotlib
-from lib.plot_utils import QubitGrid, grid_iter
-from lib.save_utils import fetch_results_as_xarray
-from lib.fit import fit_oscillation, oscillation
+from quam_libs.lib.plot_utils import QubitGrid, grid_iter
+from quam_libs.lib.save_utils import fetch_results_as_xarray
+from quam_libs.lib.fit import fit_oscillation, oscillation
 
 # matplotlib.use("TKAgg")
 
@@ -227,6 +227,8 @@ if not simulate:
 
 # %%
 if not simulate:
+    for qubit in tracked_qubits:
+        qubit.revert_changes()
     with node.record_state_updates():
         for q in qubits:
             q.xy.operations[operation].alpha = fit_results[q.name]['alpha']

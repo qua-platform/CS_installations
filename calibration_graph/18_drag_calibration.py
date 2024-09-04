@@ -36,7 +36,7 @@ class Parameters(NodeParameters):
     simulate: bool = False
 
 node = QualibrationNode(
-    name="10_DRAG_Calibration",
+    name="10a_DRAG_Calibration_180_-180",
     parameters_class=Parameters
 )
 

@@ -52,7 +52,7 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
 from qualang_tools.units import unit
 from quam_libs.components import QuAM, Transmon
-from quam_libs.macros import node_save, active_reset
+from quam_libs.macros import active_reset
 
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
@@ -260,7 +260,7 @@ def get_rb_program(qubit: Transmon):
                             # Play the random sequence of desired depth
                             play_sequence(sequence_list, depth, qubit)
                         # Align the two elements to measure after playing the circuit.
-                        qubit.resonator.align(qubit.xy.name)
+                        align()
                         # # Play through the 2nd resonator to be in the same condition as when the readout was optimized
                         # if qubit.resonator == q1.resonator:
                         #     q2.resonator.play("readout")
@@ -312,7 +312,7 @@ if simulate:
     simulation_config = SimulationConfig(duration=100_000)  # in clock cycles
     job = qmm.simulate(config, get_rb_program(qubits[0]), simulation_config)
     job.get_simulated_samples().con1.plot()
-
+    node.results["figure"] = plt.gcf()
 else:
     # Prepare data for saving
     node.results = {}
