@@ -1,5 +1,4 @@
 # %%
-# %%
 """
 POWER RABI WITH ERROR AMPLIFICATION
 This sequence involves repeatedly executing the qubit pulse (such as x180, square_pi, or similar) 'N' times and
@@ -26,17 +25,18 @@ from quam_libs.trackable_object import tracked_updates
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 20
+    num_averages: int = 200
     operation: str = "x180"
-    frequency_span_in_mhz: float = 10
-    frequency_step_in_mhz: float = 0.02
-    max_number_pulses_per_sweep: int = 20
+    min_amp_factor: float = 0.0001
+    max_amp_factor: float = 2.0
+    amp_factor_step: float = 0.05
+    max_number_pulses_per_sweep: int = 1
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
     simulate: bool = False
 
 node = QualibrationNode(
-    name="09_Stark_Detuning",
+    name="10_DRAG_Calibration_alternative",
     parameters_class=Parameters
 )
 
@@ -55,9 +55,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import matplotlib
-from quam_libs.lib.plot_utils import QubitGrid, grid_iter
-from quam_libs.lib.save_utils import fetch_results_as_xarray
-from quam_libs.lib.fit import fit_oscillation, oscillation
+from lib.plot_utils import QubitGrid, grid_iter
+from lib.save_utils import fetch_results_as_xarray
+from lib.fit import fit_oscillation, oscillation
 
 # matplotlib.use("TKAgg")
 
@@ -69,28 +69,25 @@ from quam_libs.lib.fit import fit_oscillation, oscillation
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
 machine = QuAM.load()
-
-
-# Get the relevant QuAM components
+# Generate the OPX and Octave configurations
 if node.parameters.qubits is None:
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
-num_qubits = len(qubits)
-operation = node.parameters.operation  # The qubit operation to play
+    qubits = [machine.qubits[q] for q in node.parameters.qubits.split(', ')]
 
 tracked_qubits = []
 for q in qubits:
     with tracked_updates(q, auto_revert=False, dont_assign_to_none=True) as q:
-        q.xy.operations[operation].alpha = -1.0
-        q.xy.operations[operation].detuning = 0
+        q.xy.operations["x180"].alpha = -1.0
         tracked_qubits.append(q)
-    
-# Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
 # Open Communication with the QOP
 qmm = machine.connect()
+
+num_qubits = len(qubits)
+operation = node.parameters.operation  # The qubit operation to play
+
 ###################
 # The QUA program #
 ###################
@@ -99,27 +96,19 @@ n_avg = node.parameters.num_averages  # The number of averages
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 reset_type = node.parameters.reset_type_thermal_or_active  # "active" or "thermal"
 
-# Pulse frequency sweep
-span = node.parameters.frequency_span_in_mhz * u.MHz
-step = node.parameters.frequency_step_in_mhz * u.MHz
-dfs = np.arange(-span//2, +span//2, step, dtype=np.int32)
+# Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
+amps = np.arange(node.parameters.min_amp_factor,
+                 node.parameters.max_amp_factor,
+                 node.parameters.amp_factor_step)
 
-# Number of applied Rabi pulses sweep
-N_pi = node.parameters.max_number_pulses_per_sweep  # Maximum number of qubit pulses
-N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")
+# optionsthe pulses to be played
+options = [("x180", "y90"), ("y180", "x90")]
 
-
-
-with program() as stark_detuning:
-    n = declare(int)
-    n_st = declare_stream()
-    I = [declare(fixed) for _ in range(num_qubits)]
-    I_st = [declare_stream() for _ in range(num_qubits)]
-    Q = [declare(fixed) for _ in range(num_qubits)]
-    Q_st = [declare_stream() for _ in range(num_qubits)]
+with program() as drag_calibration:
+    I, _, Q, _, n, n_st = qua_declaration(num_qubits=num_qubits)
     state = [declare(int) for _ in range(num_qubits)]
     state_stream = [declare_stream() for _ in range(num_qubits)]
-    df = declare(int)  # QUA variable for the qubit drive amplitude pre-factor
+    a = declare(fixed)  # QUA variable for the qubit drive amplitude pre-factor
     npi = declare(int)  # QUA variable for the number of qubit pulses
     count = declare(int)  # QUA variable for counting the qubit pulses
 
@@ -136,33 +125,24 @@ with program() as stark_detuning:
         
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
-            with for_(*from_array(npi, N_pi_vec)):
-                with for_(*from_array(df, dfs)):
+            for option in options:
+                with for_(*from_array(a, amps)):
                     if reset_type == "active":
                         active_reset(machine, qubit.name)
                     else:
                         wait(5*machine.thermalization_time * u.ns)
-                        qubit.align()
-                    # Update the qubit frequency
-                    update_frequency(qubit.xy.name, df + qubit.xy.intermediate_frequency)
-                    with for_(count, 0, count < npi, count + 1):
-                        qubit.xy.play(operation)
-                        qubit.xy.play(operation, amplitude_scale=-1.0)
-                    update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
                     qubit.align()
-                    # reset_phase(qubit.resonator.name)
+                    play(option[0] * amp(1, 0, 0, a), qubit.xy.name)
+                    play(option[1] * amp(1, 0, 0, a), qubit.xy.name)
+                    qubit.align()
                     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                     assign(state[i], Cast.to_int(I[i] > qubit.resonator.operations["readout"].threshold))
                     save(state[i], state_stream[i])
-                    save(I[i], I_st[i])
-                    save(Q[i], Q_st[i])
 
     with stream_processing():
         n_st.save("n")
         for i, qubit in enumerate(qubits):
-            state_stream[i].buffer(len(dfs)).buffer(N_pi).average().save(f"state{i + 1}")
-            I_stream = I_st[i].buffer(len(dfs)).buffer(N_pi).average().save(f"I{i + 1}")
-            Q_stream = Q_st[i].buffer(len(dfs)).buffer(N_pi).average().save(f"Q{i + 1}")
+            state_stream[i].buffer(len(amps)).buffer(2).average().save(f"state{i + 1}")
 
 
 ###########################
@@ -173,7 +153,7 @@ simulate = node.parameters.simulate
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, stark_detuning, simulation_config)
+    job = qmm.simulate(config, drag_calibration, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
 else:
@@ -182,7 +162,7 @@ else:
     # Calibrate the active qubits
     # machine.calibrate_octave_ports(qm)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(stark_detuning)
+    job = qm.execute(drag_calibration)
     # Get results from QUA program
     data_list = ["n"] + sum([[f"state{i + 1}"] for i in range(num_qubits)], [])
     results = fetching_tool(job, data_list, mode="live")
@@ -200,50 +180,60 @@ else:
 # %%
 if not simulate:
     handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs, "N": N_pi_vec})
+    ds = fetch_results_as_xarray(handles, qubits, {"amp": amps, "sequence": [0,1]})
+
+# %%
+if not simulate:
+    def alpha(q):
+        def foo(amp):
+            return q.xy.operations[operation].alpha * amp
+        return foo
+
+    ds = ds.assign_coords({'alpha' : (['qubit','amp'],np.array([alpha(q)(amps) for q in qubits]))})
+    node.results = {}
 
     node.results = {}
     node.results['ds'] = ds
-
+# %%
+ds.state.plot(col = 'qubit', hue = 'sequence', x = 'alpha')
+ds.amp[np.abs(ds.state.sel(sequence = 0) - ds.state.sel(sequence = 1)).argmin(dim = 'amp')]
 # %%
 if not simulate:
     fit_results = {}
 
 
-    state_n=ds.state.mean(dim='N')
+    alphas = ds.amp[np.abs(ds.state.sel(sequence = 0) - ds.state.sel(sequence = 1)).argmin(dim = 'amp')]
 
-    datamaxIndx = state_n.argmin(dim='freq')
-    detunings = ds.freq[datamaxIndx]
-    fit_results = {qubit.name : {'detuning': float(detunings.sel(qubit=qubit.name).values)} for qubit in qubits}
+    fit_results = {qubit.name : {'alpha': float(alphas.sel(qubit=qubit.name).values*qubit.xy.operations[operation].alpha)} for qubit in qubits}
     for q in qubits:
-        print(f"Detuning for {q.name} is {fit_results[q.name]['detuning']} Hz")
+        print(f"DRAG coeff for {q.name} is {fit_results[q.name]['alpha']}")
     node.results['fit_results'] = fit_results
+
 
 # %%
 if not simulate:
     grid_names = [f'{q.name}_0' for q in qubits]
     grid = QubitGrid(ds, grid_names)
     for ax, qubit in grid_iter(grid):
-        (ds.assign_coords(freq_MHz  = ds.freq *1e6).loc[qubit].state).plot(ax = ax, x = 'freq_MHz', y = 'N')
-        ax.axvline(1e6*fit_results[qubit['qubit']]['detuning'], color = 'r')
+        (ds.loc[qubit].state).plot(ax = ax, x = 'alpha', hue = 'sequence')
+        ax.axvline(fit_results[qubit['qubit']]['alpha'], color = 'r')
         ax.set_ylabel('num. of pulses')
-        ax.set_xlabel('detuning [MHz]')
+        ax.set_xlabel('DRAG coeff')
         ax.set_title(qubit['qubit'])
-    grid.fig.suptitle('Stark detuning')
+    grid.fig.suptitle('DRAG calibration')
     plt.tight_layout()
     plt.show()
     node.results['figure'] = grid.fig
 
 # %%
 if not simulate:
-    all_operations = True
-
     with node.record_state_updates():
-        for qubit in qubits:
-            qubit.xy.operations[operation].detuning = float(fit_results[qubit.name]['detuning'])
-            qubit.xy.operations[operation].alpha = -1.0
+        for q in qubits:
+            q.xy.operations[operation].alpha = fit_results[q.name]['alpha']
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()
+
+# %%

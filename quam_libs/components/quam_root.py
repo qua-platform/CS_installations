@@ -21,7 +21,7 @@ from qm import QuantumMachinesManager, QuantumMachine
 from qualang_tools.results.data_handler import DataHandler
 
 from dataclasses import field
-from typing import List, Dict, ClassVar, Any, Sequence, Union
+from typing import List, Dict, ClassVar, Any, Optional, Sequence, Union
 
 
 __all__ = ["QuAM", "FEMQuAM", "OPXPlusQuAM"]
@@ -42,6 +42,7 @@ class QuAM(QuamRoot):
     active_qubit_pair_names: List[str] = field(default_factory=list)
 
     _data_handler: ClassVar[DataHandler] = None
+    qmm: ClassVar[Optional[QuantumMachinesManager]] = None
 
     @classmethod
     def load(cls, *args, **kwargs) -> "QuAM":
@@ -72,7 +73,9 @@ class QuAM(QuamRoot):
     def data_handler(self) -> DataHandler:
         """Return the existing data handler or open a new one to conveniently handle data saving."""
         if self._data_handler is None:
-            self._data_handler = DataHandler(root_data_folder=self.network["data_folder"])
+            self._data_handler = DataHandler(
+                root_data_folder=self.network["data_folder"]
+            )
             DataHandler.node_data = {"quam": "./state.json"}
         return self._data_handler
 
@@ -142,7 +145,8 @@ class QuAM(QuamRoot):
         )
         if "port" in self.network:
             settings["port"] = self.network["port"]
-        return QuantumMachinesManager(**settings)
+        self.qmm = QuantumMachinesManager(**settings)
+        return self.qmm
 
     def get_octave_config(self) -> dict:
         """Return the Octave configuration."""
