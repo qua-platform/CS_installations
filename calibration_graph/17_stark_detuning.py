@@ -1,5 +1,4 @@
 # %%
-# %%
 """
 POWER RABI WITH ERROR AMPLIFICATION
 This sequence involves repeatedly executing the qubit pulse (such as x180, square_pi, or similar) 'N' times and
@@ -22,7 +21,6 @@ from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal
 
 from quam_libs.trackable_object import tracked_updates
-
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
@@ -110,8 +108,6 @@ dfs = np.arange(-span//2, +span//2, step, dtype=np.int32)
 N_pi = node.parameters.max_number_pulses_per_sweep  # Maximum number of qubit pulses
 N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")
 
-
-
 with program() as stark_detuning:
     n = declare(int)
     n_st = declare_stream()
@@ -134,8 +130,12 @@ with program() as stark_detuning:
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
-        wait(1000)
+
+        for qubit in qubits:
+            wait(1000, qubit.z.name)
         
+        align()    
+
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_(*from_array(npi, N_pi_vec)):
@@ -143,7 +143,7 @@ with program() as stark_detuning:
                     if reset_type == "active":
                         active_reset(machine, qubit.name)
                     else:
-                        wait(5*machine.thermalization_time * u.ns)
+                        qubit.resonator.wait(machine.thermalization_time * u.ns)
                         qubit.align()
                     # Update the qubit frequency
                     update_frequency(qubit.xy.name, df + qubit.xy.intermediate_frequency)
@@ -158,6 +158,8 @@ with program() as stark_detuning:
                     save(state[i], state_stream[i])
                     save(I[i], I_st[i])
                     save(Q[i], Q_st[i])
+
+        align()
 
     with stream_processing():
         n_st.save("n")
@@ -184,7 +186,7 @@ else:
     # Calibrate the active qubits
     # machine.calibrate_octave_ports(qm)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(stark_detuning)
+    job = qm.execute(stark_detuning, flags=['auto-element-thread'])
     # Get results from QUA program
     data_list = ["n"] + sum([[f"state{i + 1}"] for i in range(num_qubits)], [])
     results = fetching_tool(job, data_list, mode="live")

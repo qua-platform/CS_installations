@@ -28,7 +28,7 @@ from typing import Optional, Literal
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 20
+    num_averages: int = 10
     min_flux_offset_in_v: float = -0.5
     max_flux_offset_in_v: float = 0.5
     num_flux_points: int = 201
@@ -126,8 +126,10 @@ with program() as multi_res_spec_vs_flux:
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
-        wait(1000)
-        
+
+        for qubit in qubits:
+            wait(1000, qubit.z.name)    
+
         # resonator of the qubit
         rr = resonators[i]
 

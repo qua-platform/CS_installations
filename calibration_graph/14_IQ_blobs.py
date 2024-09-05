@@ -100,8 +100,12 @@ with program() as iq_blobs:
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
-        wait(1000)
-
+            
+        for qubit in qubits:
+            wait(1000, qubit.z.name)
+        
+        align()
+        
         with for_(n, 0, n < n_runs, n + 1):
             # ground iq blobs for all qubits
             save(n, n_st)

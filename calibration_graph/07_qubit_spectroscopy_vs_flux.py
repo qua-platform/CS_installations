@@ -20,7 +20,7 @@ from typing import Optional, Literal
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 100
+    num_averages: int = 10
     operation: str = "saturation"
     operation_amplitude_factor: Optional[float] = 0.01
     operation_len: Optional[int] = None
@@ -122,7 +122,11 @@ with program() as multi_qubit_spec_vs_flux:
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
-        wait(1000)
+
+        for qubit in qubits:
+            wait(1000, qubit.z.name) 
+
+        align() 
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
@@ -135,11 +139,14 @@ with program() as multi_qubit_spec_vs_flux:
                     # Flux sweeping for a qubit
                     if flux_point == "independent":
                         q.z.set_dc_offset(dc + q.z.independent_offset)
+                        wait(100, q.z.name)  # Wait for the flux to settle
                     elif flux_point == "joint":
                         q.z.set_dc_offset(dc + q.z.joint_offset)
+                        wait(100, q.z.name)  # Wait for the flux to settle
                     else:
                         raise RuntimeError(f"unknown flux_point")                  
-                    wait(100)  # Wait for the flux to settle
+
+                    align()
 
                     # Apply saturation pulse to all qubits
                     q.xy.play(
@@ -157,7 +164,7 @@ with program() as multi_qubit_spec_vs_flux:
                     save(Q[i], Q_st[i])
 
                     # Wait for the qubits to decay to the ground state
-                    wait(cooldown_time * u.ns)
+                    q.resonator.wait(cooldown_time * u.ns)
 
         align(*([q.xy.name for q in qubits] + [q.resonator.name for q in qubits]))    
 
@@ -184,7 +191,7 @@ else:
     # Calibrate the active qubits
     # machine.calibrate_octave_ports(qm)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(multi_qubit_spec_vs_flux)
+    job = qm.execute(multi_qubit_spec_vs_flux, flags=['auto-element-thread'])
     # Get results from QUA program
 
     data_list = ["n"] + sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])

@@ -25,7 +25,7 @@ from quam_libs.trackable_object import tracked_updates
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 2000
+    num_averages: int = 200
     operation: str = "x180"
     min_amp_factor: float = 0.0001
     max_amp_factor: float = 2.0
@@ -121,8 +121,12 @@ with program() as drag_calibration:
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
-        wait(1000)
+
+        for qubit in qubits:
+            wait(1000, qubit.z.name)
         
+        align()     
+
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             for option in [0,1]:
@@ -130,7 +134,7 @@ with program() as drag_calibration:
                     if reset_type == "active":
                         active_reset(machine, qubit.name)
                     else:
-                        wait(5*machine.thermalization_time * u.ns)
+                        qubit.resonator.wait(machine.thermalization_time * u.ns)
                     qubit.align()
                     if option == 0:
                         play('x180' * amp(1, 0, 0, a), qubit.xy.name)
@@ -143,6 +147,8 @@ with program() as drag_calibration:
                     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                     assign(state[i], Cast.to_int(I[i] > qubit.resonator.operations["readout"].threshold))
                     save(state[i], state_stream[i])
+
+        align()
 
     with stream_processing():
         n_st.save("n")

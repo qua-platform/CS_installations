@@ -113,8 +113,12 @@ with program() as iq_blobs:
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
-        wait(1000)
 
+        for qubit in qubits:
+            wait(1000, qubit.z.name)
+        
+        align()
+        
         update_frequency(qubit.resonator.name, qubit.resonator.intermediate_frequency+ q.GEF_frequency_shift)
 
         with for_(n, 0, n < n_runs, n + 1):
@@ -158,7 +162,9 @@ with program() as iq_blobs:
             qubit.resonator.measure("readout", qua_vars=(I_f[i], Q_f[i]))
             align()
             save(I_f[i], I_f_st[i])
-            save(Q_f[i], Q_f_st[i])           
+            save(Q_f[i], Q_f_st[i])       
+
+        align()
 
     with stream_processing():
         n_st.save("n")

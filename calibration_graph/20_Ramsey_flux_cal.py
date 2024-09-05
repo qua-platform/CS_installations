@@ -119,7 +119,11 @@ with program() as ramsey:
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
-        wait(1000)
+
+        for qubit in qubits:
+            wait(1000, qubit.z.name)
+        
+        align()
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
@@ -136,7 +140,7 @@ with program() as ramsey:
                     if reset_type == "active":
                         active_reset(machine, qubit.name)
                     else:
-                        wait(5*machine.thermalization_time * u.ns)
+                        qubit.resonator.wait(machine.thermalization_time * u.ns)
                         qubit.align()
                     # Rotate the frame of the second x90 gate to implement a virtual Z-rotation
                     # 4*tau because tau was in clock cycles and 1e-9 because tau is ns
@@ -158,6 +162,8 @@ with program() as ramsey:
                     
                     # Reset the frame of the qubits in order not to accumulate rotations
                     reset_frame(qubit.xy.name)
+        
+        align()
 
     with stream_processing():
         n_st.save("n")
@@ -197,6 +203,7 @@ else:
             n = fetched_data[0]
 
             progress_counter(n, n_avg, start_time=results.start_time)
+            
     qm.close()
 
 # %%

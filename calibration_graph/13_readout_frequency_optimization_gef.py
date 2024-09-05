@@ -119,8 +119,12 @@ with program() as ro_freq_opt:
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
-        wait(1000)
 
+        for qubit in qubits:
+            wait(1000, qubit.z.name)
+        
+        align()
+        
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_(*from_array(df, dfs)):

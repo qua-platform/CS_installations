@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 from matplotlib import axes
 from matplotlib import pyplot as plt
 import matplotlib
-from qm.QmJob import QmJob
+from qm import QmJob
 import xarray as xr
 
 

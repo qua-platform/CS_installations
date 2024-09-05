@@ -246,7 +246,11 @@ with program() as randomized_benchmarking:
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
-        wait(1000)
+
+        for qubit in qubits:
+            wait(1000, qubit.z.name)
+        
+        align()
 
         with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
             sequence_list, inv_gate_list = generate_sequence()  # Generate the random sequence of length max_circuit_depth
@@ -265,7 +269,7 @@ with program() as randomized_benchmarking:
                         if reset_type == "active":
                             active_reset(machine, qubit.name)
                         else:
-                            wait(5*machine.thermalization_time * u.ns)
+                            qubit.resonator.wait(machine.thermalization_time * u.ns)
                         # Align the two elements to play the sequence after qubit initialization
                         align(qubit.xy.name, qubit.resonator.name)
                         # The strict_timing ensures that the sequence will be played without gaps
@@ -290,6 +294,8 @@ with program() as randomized_benchmarking:
                 assign(sequence_list[depth], saved_gate)
             # Save the counter for the progress bar
             save(m, m_st)
+
+        align()
 
     with stream_processing():
         m_st.save("iteration")

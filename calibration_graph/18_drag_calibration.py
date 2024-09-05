@@ -25,7 +25,7 @@ from quam_libs.trackable_object import tracked_updates
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 20
+    num_averages: int = 10
     operation: str = "x180"
     min_amp_factor: float = 0.0001
     max_amp_factor: float = 2.0
@@ -134,8 +134,12 @@ with program() as drag_calibration:
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
-        wait(1000)
+
+        for qubit in qubits:
+            wait(1000, qubit.z.name)
         
+        align()      
+
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_(*from_array(npi, N_pi_vec)):
@@ -143,7 +147,7 @@ with program() as drag_calibration:
                     if reset_type == "active":
                         active_reset(machine, qubit.name)
                     else:
-                        wait(5*machine.thermalization_time * u.ns)
+                        qubit.resonator.wait(machine.thermalization_time * u.ns)
                     qubit.align()
                     # Loop for error amplification (perform many qubit pulses)
                     with for_(count, 0, count < npi, count + 1):

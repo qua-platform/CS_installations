@@ -1,3 +1,4 @@
+# %%
 """
         TIME OF FLIGHT
 This sequence involves sending a readout pulse and capturing the raw ADC traces.
@@ -164,9 +165,9 @@ else:
             resonator.reapply_changes()
         for resonator in resonators:
             if node.parameters.time_of_flight_in_ns is not None:
-                resonator.time_of_flight = node.parameters.time_of_flight_in_ns + delay
+                resonator.time_of_flight = node.parameters.time_of_flight_in_ns + int(delay)
             else:
-                resonator.time_of_flight = resonator.time_of_flight + delay
+                resonator.time_of_flight = resonator.time_of_flight + int(delay)
 
 
     node.results = {
@@ -179,3 +180,5 @@ else:
 
 node.machine = machine
 node.save()
+
+# %%

@@ -113,8 +113,12 @@ with program() as power_rabi:
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
-        wait(1000)
+
+        for qubit in qubits:
+            wait(1000, qubit.z.name)
         
+        align()
+
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_(*from_array(a, amps)):
@@ -132,7 +136,9 @@ with program() as power_rabi:
                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])
-                wait(machine.thermalization_time * u.ns)
+                qubit.resonator.wait(machine.thermalization_time * u.ns)
+
+        align()
 
     with stream_processing():
         n_st.save("n")

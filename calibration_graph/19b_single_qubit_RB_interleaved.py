@@ -258,8 +258,12 @@ def get_rb_interleaved_program(qubit: Transmon):
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
-        wait(1000)
 
+        for qubit in qubits:
+            wait(1000, qubit.z.name)
+        
+        align()
+        
         with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
             # Generates the RB sequence with a gate interleaved after each Clifford
             sequence_list, inv_gate_list = generate_sequence(interleaved_gate_index=interleaved_gate_index)
@@ -277,7 +281,7 @@ def get_rb_interleaved_program(qubit: Transmon):
                         if reset_type == "active":
                             active_reset(machine, qubit.name)
                         else:
-                            wait(5*machine.thermalization_time * u.ns)
+                            qubit.resonator.wait(machine.thermalization_time * u.ns)
                         # Align the two elements to play the sequence after qubit initialization
                         qubit.resonator.align(qubit.xy.name)
                         # The strict_timing ensures that the sequence will be played without gaps

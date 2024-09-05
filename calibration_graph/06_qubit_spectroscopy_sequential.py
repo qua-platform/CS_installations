@@ -126,8 +126,12 @@ with program() as qubit_spec:
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
-        wait(1000)
-                  
+
+        for qubit in qubits:
+            wait(1000, qubit.z.name) 
+
+        align() 
+
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_(*from_array(df, dfs)):
@@ -148,10 +152,11 @@ with program() as qubit_spec:
                 q.resonator.measure("readout", qua_vars=(I[i], Q[i]))
 
                 # Wait for the qubit to decay to the ground state
-                wait(machine.thermalization_time * u.ns)
+                q.resonator.wait(machine.thermalization_time * u.ns)
                 # save data
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])
+
         align(*([q.xy.name for q in qubits] + [q.resonator.name for q in qubits]))      
                     
     with stream_processing():
@@ -179,7 +184,7 @@ else:
     # Calibrate the active qubits
     # machine.calibrate_octave_ports(qm)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(qubit_spec)
+    job = qm.execute(qubit_spec, flags=['auto-element-thread'])
     # Get results from QUA program
     data_list = ["n"] + sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])
     results = fetching_tool(job, data_list, mode="live")
