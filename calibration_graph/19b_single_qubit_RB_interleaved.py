@@ -61,8 +61,6 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import numpy as np
 
-# matplotlib.use("TKAgg")
-
 
 ###################################################
 #  Load QuAM and open Communication with the QOP  #
@@ -126,6 +124,8 @@ def get_interleaved_gate(gate_index):
         return "y90"
     elif gate_index == 15:
         return "-y90"
+    else:
+        raise ValueError(f"Interleaved gate index {gate_index} doesn't correspond to a single operation")
 
 
 def power_law(power, a, b, p):
@@ -208,7 +208,7 @@ def play_sequence(sequence_list, depth, qubit: Transmon):
                 qubit.xy.play("x90")
             with case_(17):
                 qubit.xy.play("-x90")
-                qubit.xy.play("-x90")
+                qubit.xy.play("-y90")
                 qubit.xy.play("x90")
             with case_(18):
                 qubit.xy.play("x180")
@@ -284,24 +284,17 @@ def get_rb_interleaved_program(qubit: Transmon):
                         with strict_timing_():
                             # Play the random sequence of desired depth
                             play_sequence(sequence_list, depth, qubit)
-                        # Align the elements to measure after playing the circuit.
-                        align()
-                        # # Play through the 2nd resonator to be in the same condition as when the readout was optimized
-                        # if qubit.resonator == q1.resonator:
-                        #     q2.resonator.play("readout")
-                        # else:
-                        #     q1.resonator.play("readout")
+                        # Align the two elements to measure after playing the circuit.
+                        align(qubit.xy.name, qubit.resonator.name)
                         # Make sure you updated the ge_threshold and angle if you want to use state discrimination
                         qubit.resonator.measure("readout", qua_vars=(I, Q))
-                        save(I, I_st)
-                        save(Q, Q_st)
                         # Make sure you updated the ge_threshold
                         if state_discrimination:
-                            assign(
-                                state,
-                                I > qubit.resonator.operations["readout"].threshold,
-                            )
+                            assign(state, I > qubit.resonator.operations["readout"].threshold)
                             save(state, state_st)
+                        else:
+                            save(I, I_st)
+                            save(Q, Q_st)
                     # always play the random gate followed by the interleaved gate. The factor of 2 is there to always
                     # play the gates by pairs [(random_gate-interleaved_gate)^depth/2-inv_gate]
                     assign(depth_target, depth_target + 2 * delta_clifford)
@@ -327,6 +320,7 @@ def get_rb_interleaved_program(qubit: Transmon):
                 Q_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(num_depths).buffer(num_of_sequences).save("Q")
                 I_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(num_depths).average().save("I_avg")
                 Q_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(num_depths).average().save("Q_avg")
+
     return rb
 
 

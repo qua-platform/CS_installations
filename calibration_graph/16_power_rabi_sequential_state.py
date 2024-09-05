@@ -100,7 +100,7 @@ N_pi = node.parameters.max_number_rabi_pulses_per_sweep  # Maximum number of qub
 if operation == "x180":
     N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[::2]
 elif operation in ["x90", "-x90", "y90", "-y90"]:
-    N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[1::4]
+    N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[::4]
 else:
     raise ValueError(f"Unrecognized operation {operation}.")
 

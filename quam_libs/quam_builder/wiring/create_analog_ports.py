@@ -31,7 +31,7 @@ def create_mw_fem_port(channel: AnyInstrumentChannel) -> (str, str):
     reference = PORTS_BASE_JSON_PATH
     reference += f"/mw_{channel.io_type}s"
 
-    reference += f"/{channel.con}"
+    reference += f"/con{channel.con}"
     reference += f"/{channel.slot}"
     reference += f"/{channel.port}"
 
@@ -51,7 +51,7 @@ def create_lf_opx_plus_port(channel: AnyInstrumentChannel, channels: List[AnyIns
         reference += f"/con{channel.con}"
         reference += f"/{channel.port}"
     else:
-        reference += f"/{channel.con}"
+        reference += f"/con{channel.con}"
         reference += f"/{channel.slot}"
         reference += f"/{channel.port}"
 

@@ -152,8 +152,6 @@ if simulate:
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
 else:
-    with open("amplitude_sweep.py", "w+") as f:
-        f.write(generate_qua_script(power_rabi, config))
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Calibrate the active qubits

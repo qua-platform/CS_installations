@@ -81,8 +81,10 @@ operation = node.parameters.operation  # The qubit operation to play
 
 tracked_qubits = []
 for q in qubits:
-    with tracked_updates(q, auto_revert=False, dont_assign_to_none=True) as q:
+    with tracked_updates(q, auto_revert=False) as q:
+        q.xy.operations[operation].alpha = None
         q.xy.operations[operation].alpha = -1.0
+        q.xy.operations[operation].detuning = None
         q.xy.operations[operation].detuning = 0
         tracked_qubits.append(q)
     
@@ -237,7 +239,8 @@ if not simulate:
 # %%
 if not simulate:
     all_operations = True
-
+    for qubit in tracked_qubits:
+        qubit.revert_changes()
     with node.record_state_updates():
         for qubit in qubits:
             qubit.xy.operations[operation].detuning = float(fit_results[qubit.name]['detuning'])
