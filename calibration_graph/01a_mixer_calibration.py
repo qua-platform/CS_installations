@@ -1,3 +1,5 @@
+# %%
+
 """
 A simple program to calibrate Octave mixers for all qubits and resonators
 """
@@ -17,6 +19,8 @@ node = QualibrationNode(
     name="00_Mixer_Calibration",
     parameters_class=Parameters
 )
+
+node.parameters = Parameters()
 
 ###################################################
 #  Load QuAM and open Communication with the QOP  #
@@ -41,3 +45,5 @@ for qubit in qubits:
     qubit.calibrate_octave(qm,
                            calibrate_drive=node.parameters.calibrate_drive,
                            calibrate_resonator=node.parameters.calibrate_resonator)
+
+# %%

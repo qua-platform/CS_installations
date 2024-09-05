@@ -95,7 +95,7 @@ idle_times = np.arange(
 )
 
 # Detuning converted into virtual Z-rotations to observe Ramsey oscillation and get the qubit frequency
-detuning = int(1e6 * node.parameters.frequency_detuning_in_mhz)
+detuning = int(4e6 * node.parameters.frequency_detuning_in_mhz)
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 dcs = np.arange(-node.parameters.flux_span / 2, node.parameters.flux_span / 2, step = node.parameters.flux_step)
 reset_type = node.parameters.reset_type
@@ -285,20 +285,20 @@ if not simulate:
 
 # %%
 if not simulate:
-    data['fit_results'] = {}
+    node.results['fit_results'] = {}
     for q in machine.active_qubits:
-        data['fit_results'][q.name] = {}
-        data['fit_results'][q.name]['flux_offset'] = flux_offset[q.name]
-        data['fit_results'][q.name]['freq_offset'] = freq_offset[q.name]
+        node.results['fit_results'][q.name] = {}
+        node.results['fit_results'][q.name]['flux_offset'] = flux_offset[q.name]
+        node.results['fit_results'][q.name]['freq_offset'] = freq_offset[q.name]
 # %%
 if not simulate:
     with node.record_state_updates():
-        for q in qubits:
-            q.xy.intermediate_frequency -= freq_offset[q.name] 
+        for qubit in qubits:
+            qubit.xy.intermediate_frequency -= freq_offset[qubit.name] 
             if flux_point == 'independent':
-                q.z.independent_offset += flux_offset[q.name]
+                qubit.z.independent_offset += flux_offset[qubit.name]
             elif flux_point == 'joint':
-                q.z.joint_offset += flux_offset[q.name]            
+                qubit.z.joint_offset += flux_offset[qubit.name]            
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine

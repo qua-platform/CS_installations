@@ -29,8 +29,8 @@ class Parameters(NodeParameters):
     operation: str = "x180"
     min_amp_factor: float = 0.0001
     max_amp_factor: float = 2.0
-    amp_factor_step: float = 0.05
-    max_number_pulses_per_sweep: int = 20
+    amp_factor_step: float = 0.02
+    max_number_pulses_per_sweep: int = 40
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
     simulate: bool = False
@@ -69,6 +69,19 @@ from quam_libs.lib.fit import fit_oscillation, oscillation
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
 machine = QuAM.load()
+operation = node.parameters.operation  # The qubit operation to play
+
+if node.parameters.qubits is None:
+    qubits = machine.active_qubits
+else:
+    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
+
+tracked_qubits = []
+for q in qubits:
+    with tracked_updates(q, auto_revert=False, dont_assign_to_none=True) as q:
+        q.xy.operations[operation].alpha = -1.0
+
+       
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
@@ -80,8 +93,13 @@ if node.parameters.qubits is None or node.parameters.qubits == '':
 else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
 num_qubits = len(qubits)
-operation = node.parameters.operation  # The qubit operation to play
+# %%
+# Print intermediate frequencies of all qubits
+print("Intermediate frequencies of qubits:")
+for qubit in qubits:
+    print(f"{qubit.name}: {qubit.xy.intermediate_frequency / 1e6:.3f} MHz")
 
+# %%
 ###################
 # The QUA program #
 ###################
