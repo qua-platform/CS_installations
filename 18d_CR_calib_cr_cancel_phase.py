@@ -42,8 +42,7 @@ Reference: Sarah Sheldon, Easwar Magesan, Jerry M. Chow, and Jay M. Gambetta Phy
 
 from qm.qua import *
 from qm import QuantumMachinesManager
-# from configuration_opxplus_with_octave import *
-from configuration_opxplus_without_octave import *
+from configuration_mw_fem import *
 import matplotlib.pyplot as plt
 from qm import SimulationConfig
 from qualang_tools.loops import from_array
@@ -62,52 +61,44 @@ from cr_hamiltonian_tomography import (
 )
 
 
-##############################
-# Program-specific variables #
-##############################
+##################
+#   Parameters   #
+##################
 
+# Qubits and resonators 
 qc = 2 # index of control qubit
 qt = 3 # index of target qubit
 
+# Parameters Definition
+n_avg = 100
 cr_type = "direct+cancel+echo" # "direct+cancel", "direct+cancel+echo"
 cr_drive_amp = 1.0
 cr_drive_phase = 0.25
 cr_cancel_amp = 0.2 # ratio
 cr_cancel_phase = 0.5 # in units of 2pi
+ts_cycles = np.arange(4, 400, 4) # in clock cylcle = 4ns
+phases = np.arange(0, 1, 0.25) # ratio relative to 2 * pi
 
+# Readout Parameters
+weights = "rotated_" # ["", "rotated_", "opt_"]
+reset_method = "wait" # ["wait", "active"]
+readout_operation = "readout" # ["readout", "midcircuit_readout"]
+
+# Assertion
+assert n_avg <= 10_000, "revise your number of shots"
+assert np.all(ts_cycles % 2 == 0) and (ts_cycles.min() >= 4), "ts_cycles should only have even numbers if play echoes"
+
+# Derived parameters
 qc_xy = f"q{qc}_xy"
 qt_xy = f"q{qt}_xy"
 cr_drive = f"cr_drive_c{qc}t{qt}"
 cr_cancel = f"cr_cancel_c{qc}t{qt}"
-rrc = f"q{qc}_rr"
-rrt = f"q{qt}_rr"
-
 qubits = [f"q{i}_xy" for i in [qc, qt]]
 resonators = [f"q{i}_rr" for i in [qc, qt]]
-qubits_all = list(QUBIT_CONSTANTS.keys())
-resonators_all = [key for key in RR_CONSTANTS.keys()]
-remaining_resonators = list(set(resonators_all) - set(resonators))
-weights = "rotated_" # ["", "rotated_", "opt_"] 
-reset_method = "wait" # can also be "active"
+ts_ns = 4 * ts_cycles # in clock cylcle = 4ns
 
-n_avg = 3
-
-ts_cycle = np.arange(8, 100, 32) # in clock cylcle = 4ns
-ts_ns = 4 * ts_cycle # in clock cylcle = 4ns
-cr_drive_phase = 0.0
-phases = np.arange(0, 1, 0.25) # ratio relative to 2 * pi
-
-assert len(qubits_all) == len(resonators_all), "qubits and resonators don't have the same length"
-assert len(qubits) == len(resonators), "qubits and resonators under study don't have the same length"
-assert all([qb.replace("_xy", "") == rr.replace("_rr", "") for qb, rr in zip(qubits, resonators)]), "qubits and resonators don't correspond"
-assert weights in ["", "rotated_", "opt_"], 'weight_type must be one of ["", "rotated_", "opt_"]'
-assert reset_method in ["wait", "active"], "Invalid reset_method, use either wait or active"
-assert n_avg <= 10_000, "revise your number of shots"
-assert np.all(ts_cycle % 2 == 0) and (ts_cycle.min() >= 8), "ts_cycle should only have even numbers if play echoes"
-
+# Data to save
 save_data_dict = {
-    "qubits_all": qubits_all,
-    "resonators_all": resonators_all,
     "qubits": qubits,
     "resonators": resonators,
     "qc_xy": qc_xy,
@@ -122,7 +113,11 @@ save_data_dict = {
 }
 
 
-with program() as cr_calib:
+###################
+#   QUA Program   #
+###################
+
+with program() as PROGRAM:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(resonators)
     state = [declare(bool) for _ in range(len(resonators))]
     state_st = [declare_stream() for _ in range(len(resonators))]
@@ -135,7 +130,7 @@ with program() as cr_calib:
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
         with for_(*from_array(ph, phases)):
-            with for_(*from_array(t, ts_cycle)):
+            with for_(*from_array(t, ts_cycles)):
                 with for_(c, 0, c < 3, c + 1): # bases 
                     with for_(s, 0, s < 2, s + 1): # states
                         with if_(s == 1):
@@ -201,9 +196,9 @@ with program() as cr_calib:
     with stream_processing():
         n_st.save("iteration")
         for ind, rr in enumerate(resonators):
-            I_st[ind].buffer(2).buffer(3).buffer(len(ts_cycle)).buffer(len(phases)).average().save(f"I_{rr}")
-            Q_st[ind].buffer(2).buffer(3).buffer(len(ts_cycle)).buffer(len(phases)).average().save(f"Q_{rr}")
-            state_st[ind].boolean_to_int().buffer(2).buffer(3).buffer(len(ts_cycle)).buffer(len(phases)).average().save(f"state_{rr}") 
+            I_st[ind].buffer(2).buffer(3).buffer(len(ts_cycles)).buffer(len(phases)).average().save(f"I_{rr}")
+            Q_st[ind].buffer(2).buffer(3).buffer(len(ts_cycles)).buffer(len(phases)).average().save(f"Q_{rr}")
+            state_st[ind].boolean_to_int().buffer(2).buffer(3).buffer(len(ts_cycles)).buffer(len(phases)).average().save(f"state_{rr}") 
 
 
 if __name__ == "__main__":
@@ -220,7 +215,7 @@ if __name__ == "__main__":
     if simulate:
         # Simulates the QUA program for the specified duration
         simulation_config = SimulationConfig(duration=3_000)  # In clock cycles = 4ns
-        job = qmm.simulate(config, cr_calib, simulation_config)
+        job = qmm.simulate(config, PROGRAM, simulation_config)
         job.get_simulated_samples().con1.plot(analog_ports=['1', '2', '3', '4', '5', '6'])
         plt.show()
 
@@ -229,7 +224,7 @@ if __name__ == "__main__":
             # Open the quantum machine
             qm = qmm.open_qm(config)
             # Send the QUA program to the OPX, which compiles and executes it
-            job = qm.execute(cr_calib)
+            job = qm.execute(PROGRAM)
             # Prepare the figure for live plotting
             fig, axss = plt.subplots(3, 4, figsize=(12, 9), sharex=True, sharey=True)
             interrupt_on_close(fig, job)
@@ -248,7 +243,7 @@ if __name__ == "__main__":
                 for ind, rr in enumerate(resonators):
                     save_data_dict[f"I_{rr}"] = u.demod2volts(res[3*ind + 1], READOUT_LEN)
                     save_data_dict[f"Q_{rr}"] = u.demod2volts(res[3*ind + 2], READOUT_LEN)
-                    save_data_dict[f"state_{rr}"] = res[3*ind + 3]
+                    save_data_dict[rr+"_state"] = res[3*ind + 3]
                 iterations, _, _, state_c, _, _, state_t = res
 
                 # Progress bar
@@ -282,7 +277,7 @@ if __name__ == "__main__":
             data_handler = DataHandler(root_data_folder=save_dir)
             save_data_dict.update({"fig_live": fig})
             data_handler.additional_files = {script_name: script_name, **default_additional_files}
-            data_handler.save_data(data=save_data_dict, name="cr_drive_calib_ham_tomo_cancel_vs_phase")
+            data_handler.save_data(data=save_data_dict, name="cr_calib_ham_tomo_cancel_vs_phase")
 
         except Exception as e:
             print(f"An exception occurred: {e}")

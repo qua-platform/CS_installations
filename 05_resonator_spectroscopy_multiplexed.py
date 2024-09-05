@@ -18,8 +18,7 @@ Before proceeding to the next node:
 
 from qm.qua import *
 from qm import QuantumMachinesManager, SimulationConfig
-# from configuration_opxplus_with_octave import *
-from configuration_opxplus_without_octave import *
+from configuration_mw_fem import *
 from qualang_tools.results import fetching_tool
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
@@ -27,23 +26,32 @@ from macros import multiplexed_readout
 import math
 from qualang_tools.results.data_handler import DataHandler
 
-###################
-# The QUA program #
-###################
 
+##################
+#   Parameters   #
+##################
+
+# Qubits and resonators 
 rl = "rl1"
-# resonators = [key for key in RR_CONSTANTS.keys()]
 resonators = [key for key in RR_CONSTANTS.keys()]
 resonators_LO = RL_CONSTANTS[rl]["LO"]
 
+# Parameters Definition
 n_avg = 1_000  # The number of averages
 # The frequency sweep parameters (for both resonators)
 span = 2.0 * u.MHz  # the span around the resonant frequencies
 step = 125 * u.kHz
 dfs = np.arange(-span, span, step)
 
+# Readout Parameters
+weights = "rotated_" # ["", "rotated_", "opt_"]
+reset_method = "wait" # ["wait", "active"]
+readout_operation = "readout" # ["readout", "midcircuit_readout"]
+
+# Assertion
 assert len(dfs) <= 32, "check your frequencies"
 
+# Data to save
 save_data_dict = {
     "resonators": resonators,
     "resonators_LO": resonators_LO,
@@ -53,7 +61,11 @@ save_data_dict = {
 }
 
 
-with program() as multi_res_spec:
+###################
+#   QUA Program   #
+###################
+
+with program() as PROGRAM:
     n = declare(int)  # QUA variable for the averaging loop
     df = declare(int)  # QUA variable for the readout frequency detuning around the resonance
     # Here we define one 'I', 'Q', 'I_st' & 'Q_st' for each resonator via a python list
@@ -95,7 +107,7 @@ if __name__ == "__main__":
     if simulate:
         # Simulates the QUA program for the specified duration
         simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-        job = qmm.simulate(config, multi_res_spec, simulation_config)
+        job = qmm.simulate(config, PROGRAM, simulation_config)
         job.get_simulated_samples().con1.plot()
         plt.show(block=False)
 
@@ -104,7 +116,7 @@ if __name__ == "__main__":
             # Open a quantum machine to execute the QUA program
             qm = qmm.open_qm(config)
             # Execute the QUA program
-            job = qm.execute(multi_res_spec)
+            job = qm.execute(PROGRAM)
             # Tool to easily fetch results from the OPX (results_handle used in it)
             fetch_names = []
             for rr in resonators:

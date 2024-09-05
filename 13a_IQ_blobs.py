@@ -20,8 +20,7 @@ Next steps before going to the next node:
 
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
-# from configuration_opxplus_with_octave import *
-from configuration_opxplus_without_octave import *
+from configuration_mw_fem import *
 import matplotlib.pyplot as plt
 from qualang_tools.results import fetching_tool
 from macros import qua_declaration, multiplexed_readout, active_reset
@@ -30,32 +29,33 @@ import math
 from qualang_tools.results.data_handler import DataHandler
 from qualang_tools.analysis import two_state_discriminator
 
-###################
-# The QUA program #
-###################
+##################
+#   Parameters   #
+##################
 
-qubits = ["q2_xy", "q3_xy"]
-resonators = ["q2_rr", "q3_rr"]
-qubits_all = list(QUBIT_CONSTANTS.keys())
-resonators_all = [key for key in RR_CONSTANTS.keys()]
-remaining_resonators = list(set(resonators_all) - set(resonators))
-weights = "rotated_" # ["", "rotated_", "opt_"] 
-reset_method = "active" # can also be "active"
-readout_operation = "readout" # "readout" or "midcircuit_readout"
+# Qubits and resonators 
+qc = 2 # index of control qubit
+qt = 3 # index of target qubit
 
+# Parameters Definition
 n_runs = 1_000  # Number of runs
 
-assert len(qubits_all) == len(resonators_all), "qubits and resonators don't have the same length"
-assert len(qubits) == len(resonators), "qubits and resonators under study don't have the same length"
-assert all([qb.replace("_xy", "") == rr.replace("_rr", "") for qb, rr in zip(qubits, resonators)]), "qubits and resonators don't correspond"
-assert weights in ["", "rotated_", "opt_"], 'weight_type must be one of ["", "rotated_", "opt_"]'
-assert reset_method in ["wait", "active"], "Invalid reset_method, use either wait or active"
-assert readout_operation in ["readout", "midcircuit_readout"], "Invalid readout_operation, use either readout or midcircuit_readout"
+# Readout Parameters
+weights = "rotated_" # ["", "rotated_", "opt_"]
+reset_method = "active" #["wait", "active"]
+readout_operation = "readout" # ["readout", "midcircuit_readout"]
+
+# Assertion
 assert n_runs < 20_000, "check the number of shots"
 
+# Derived parameters
+qc_xy = f"q{qc}_xy"
+qt_xy = f"q{qt}_xy"
+qubits = [f"q{i}_xy" for i in [qc, qt]]
+resonators = [f"q{i}_rr" for i in [qc, qt]]
+
+# Data to save
 save_data_dict = {
-    "qubits_all": qubits_all,
-    "resonators_all": resonators_all,
     "qubits": qubits,
     "resonators": resonators,
     "shots": n_runs,
@@ -64,7 +64,11 @@ save_data_dict = {
 }
 
 
-with program() as iq_blobs:
+###################
+#   QUA Program   #
+###################
+
+with program() as PROGRAM:
     I_g, I_g_st, Q_g, Q_g_st, n, n_st = qua_declaration(resonators)
     I_e, I_e_st, Q_e, Q_e_st, _, _ = qua_declaration(resonators)
     state = [declare(bool) for _ in range(len(resonators))]
@@ -128,7 +132,7 @@ if __name__ == "__main__":
     if simulate:
         # Simulates the QUA program for the specified duration
         simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-        job = qmm.simulate(config, iq_blobs, simulation_config)
+        job = qmm.simulate(config, PROGRAM, simulation_config)
         job.get_simulated_samples().con1.plot()
         plt.show(block=False)
     else:
@@ -136,7 +140,7 @@ if __name__ == "__main__":
             # Open the quantum machine
             qm = qmm.open_qm(config)
             # Send the QUA program to the OPX, which compiles and executes it
-            job = qm.execute(iq_blobs)
+            job = qm.execute(PROGRAM)
 
             fetch_names = ["iteration"]
             results = fetching_tool(job, fetch_names, mode="live")

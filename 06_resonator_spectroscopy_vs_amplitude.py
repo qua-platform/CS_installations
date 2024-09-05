@@ -22,8 +22,7 @@ Before proceeding to the next node:
 
 from qm.qua import *
 from qm import QuantumMachinesManager, SimulationConfig
-# from configuration_opxplus_with_octave import *
-from configuration_opxplus_without_octave import *
+from configuration_mw_fem import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -33,32 +32,41 @@ import math
 from qualang_tools.results.data_handler import DataHandler
 
 
-###################
-# The QUA program #
-###################
+##################
+#   Parameters   #
+##################
 
+# Qubits and resonators 
 rl = "rl1"
-# resonators = [key for key in RR_CONSTANTS.keys()]
 resonators = [key for key in RR_CONSTANTS.keys()]
 resonators_LO = RL_CONSTANTS[rl]["LO"]
 
+# Parameters Definition
 n_avg = 10  # The number of averages
 # The frequency sweep around the resonators' frequency
 span = 2.0 * u.MHz
 step = 125 * u.kHz
 dfs = np.arange(-span, +span, step)
-
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
 a_min = 0.00
 a_max = 1.99
 da = 0.25
 amplitudes = np.arange(a_min, a_max + da / 2, da)  # The amplitude vector +da/2 to add a_max to the scan
 
+# Readout Parameters
+weights = "rotated_" # ["", "rotated_", "opt_"]
+reset_method = "wait" # ["wait", "active"]
+readout_operation = "readout" # ["readout", "midcircuit_readout"]
+
+# Assertion
+# assert len(qubits) == len(resonators), "qubits and resonators under study don't have the same length"
+# assert all([qb.replace("_xy", "") == rr.replace("_rr", "") for qb, rr in zip(qubits, resonators)]), "qubits and resonators don't correspond"
 assert len(dfs) <= 32, "check your frequencies"
 assert len(amplitudes) <= 40, "check you amps vals"
 for rr in resonators:
-    assert a_max * RR_CONSTANTS[rr]['amplitude'] <= 0.499, f"{rr} max amp scan exceeded 0.499"
+    assert a_max * RR_CONSTANTS[rr]["amp"] <= 0.499, f"{rr} max amp scan exceeded 0.499"
 
+# Data to save
 save_data_dict = {
     "resonators": resonators,
     "resonators_LO": resonators_LO,
@@ -69,7 +77,11 @@ save_data_dict = {
 }
 
 
-with program() as multi_res_spec_vs_amp:
+###################
+#   QUA Program   #
+###################
+
+with program() as PROGRAM:
     # QUA macro to declare the measurement variables and their corresponding streams for a given number of resonators
     I, I_st, Q, Q_st, n, n_st = qua_declaration(resonators)
     df = declare(int)  # QUA variable for sweeping the readout frequency detuning around the resonance
@@ -112,7 +124,7 @@ if __name__ == "__main__":
     if simulate:
         # Simulates the QUA program for the specified duration
         simulation_config = SimulationConfig(duration=1_000)  # In clock cycles = 4ns
-        job = qmm.simulate(config, multi_res_spec_vs_amp, simulation_config)
+        job = qmm.simulate(config, PROGRAM, simulation_config)
         job.get_simulated_samples().con1.plot()
         plt.show(block=False)
 
@@ -121,7 +133,7 @@ if __name__ == "__main__":
             # Open a quantum machine to execute the QUA program
             qm = qmm.open_qm(config)
             # Send the QUA program to the OPX, which compiles and executes it
-            job = qm.execute(multi_res_spec_vs_amp)
+            job = qm.execute(PROGRAM)
             fetch_names = ["iteration"]
             for rr in resonators:
                 fetch_names.append(f"I_{rr}")
@@ -158,8 +170,8 @@ if __name__ == "__main__":
                     # Plot
                     plt.subplot(num_rows, num_cols, ind + 1)
                     plt.cla()
-                    plt.pcolor(amplitudes * RR_CONSTANTS[rr]["amplitude"],(RR_CONSTANTS[rr]["IF"] + dfs) / u.MHz, R, cmap='magma')
-                    plt.axvline(x=RR_CONSTANTS[rr]["amplitude"])
+                    plt.pcolor(amplitudes * RR_CONSTANTS[rr]["amp"],(RR_CONSTANTS[rr]["IF"] + dfs) / u.MHz, R, cmap='magma')
+                    plt.axvline(x=RR_CONSTANTS[rr]["amp"])
                     plt.axhline(y=RR_CONSTANTS[rr]["IF"] / u.MHz, linestyle='--', color="k")
                     lo_val = resonators_LO / u.GHz
                     plt.title(f"{rr} - LO: {lo_val} GHz")

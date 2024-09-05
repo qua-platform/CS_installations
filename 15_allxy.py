@@ -5,8 +5,7 @@
 
 from qm.qua import *
 from qm import QuantumMachinesManager
-# from configuration_opxplus_with_octave import *
-from configuration_opxplus_without_octave import *
+from configuration_mw_fem import *
 import matplotlib.pyplot as plt
 from qm import SimulationConfig
 from qualang_tools.results import fetching_tool
@@ -16,26 +15,38 @@ from macros import qua_declaration, multiplexed_readout, active_reset
 from qualang_tools.results.data_handler import DataHandler
 import math
 
-##############################
-# Program-specific variables #
-##############################
+##################
+#   Parameters   #
+##################
 
-qubits = ["q2_xy", "q3_xy"]
-resonators = ["q2_rr", "q3_rr"]
-qubits_all = list(QUBIT_CONSTANTS.keys())
-resonators_all = [key for key in RR_CONSTANTS.keys()]
-remaining_resonators = list(set(resonators_all) - set(resonators))
-weights = "rotated_" # ["", "rotated_", "opt_"] 
-reset_method = "wait" # can also be "active"
+# Qubits and resonators 
+qc = 2 # index of control qubit
+qt = 3 # index of target qubit
 
+# Parameters Definition
 n_avg = 10
 
-assert len(qubits_all) == len(resonators_all), "qubits and resonators don't have the same length"
-assert len(qubits) == len(resonators), "qubits and resonators under study don't have the same length"
-assert all([qb.replace("_xy", "") == rr.replace("_rr", "") for qb, rr in zip(qubits, resonators)]), "qubits and resonators don't correspond"
-assert weights in ["", "rotated_", "opt_"], 'weight_type must be one of ["", "rotated_", "opt_"]'
-assert reset_method in ["wait", "active"], "Invalid reset_method, use either wait or active"
+# Readout Parameters
+weights = "rotated_" # ["", "rotated_", "opt_"]
+reset_method = "wait" # ["wait", "active"]
+readout_operation = "readout" # ["readout", "midcircuit_readout"]
+
+# Derived parameters
+qc_xy = f"q{qc}_xy"
+qt_xy = f"q{qt}_xy"
+qubits = [f"q{i}_xy" for i in [qc, qt]]
+resonators = [f"q{i}_rr" for i in [qc, qt]]
+
+# Assertion
 assert n_avg <= 10_000, "revise your number of shots"
+
+# Data to save
+save_data_dict = {
+    "qubits": qubits,
+    "resonators": resonators,
+    "n_avg": n_avg,
+    "config": config,
+}
 
 
 # All XY sequences. The sequence names must match corresponding operation in the config
@@ -83,19 +94,14 @@ def allXY(pulses, qb):
         wait(PI_LEN >> 2, qb)  # or wait if sequence is identity
 
 
-save_data_dict = {
-    "qubits_all": qubits_all,
-    "resonators_all": resonators_all,
-    "qubits": qubits,
-    "resonators": resonators,
-    "n_avg": n_avg,
-    "config": config,
-}
+##################
+#   Parameters   #
+##################
+###################
+#   QUA Program   #
+###################
 
-###################
-# The QUA program #
-###################
-with program() as ALL_XY:
+with program() as PROGRAM:
 
     I, I_st, Q, Q_st, n, n_st = qua_declaration(resonators)
     state = [declare(bool) for _ in range(len(resonators))]
@@ -140,7 +146,7 @@ if __name__ == "__main__":
     if simulate:
         # Simulates the QUA program for the specified duration
         simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-        job = qmm.simulate(config, ALL_XY, simulation_config)
+        job = qmm.simulate(config, PROGRAM, simulation_config)
         job.get_simulated_samples().con1.plot()
         plt.show(block=False)
     else:
@@ -149,7 +155,7 @@ if __name__ == "__main__":
             qm = qmm.open_qm(config)
             
             # Send the QUA program to the OPX, which compiles and executes it
-            job = qm.execute(ALL_XY)
+            job = qm.execute(PROGRAM)
             fetch_names = ["iteration"]
             for rr in resonators:
                 fetch_names.append(f"I_{rr}")
@@ -177,7 +183,7 @@ if __name__ == "__main__":
                     S = res[3*ind+1] + 1j * res[3*ind+2]
                     save_data_dict[f"I_{rr}"] = res[3*ind + 1]
                     save_data_dict[f"Q_{rr}"] = res[3*ind + 2]
-                    save_data_dict[f"state_{rr}"] = res[3*ind + 3]
+                    save_data_dict[rr+"_state"] = res[3*ind + 3]
 
                     # Plot
                     plt.subplot(num_rows, num_cols, ind + 1)

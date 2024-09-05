@@ -19,16 +19,15 @@ from qm.qua import *
 from qm import QuantumMachinesManager, SimulationConfig
 from qm import SimulationConfig
 
-# from configuration_opxplus_with_octave import *
-from configuration_opxplus_without_octave import *
+from configuration_mw_fem import *
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 from qualang_tools.results.data_handler import DataHandler
 
 
-###################
-# The QUA program #
-###################
+##################
+#   Parameters   #
+##################
 
 n_avg = 100  # The number of averages
 rl = "rl1"
@@ -40,7 +39,11 @@ save_data_dict = {
 }
 
 
-with program() as time_of_flight:
+###################
+#   QUA Program   #
+###################
+
+with program() as PROGRAM:
     n = declare(int)  # QUA variable for the averaging loop
     adc_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace
 
@@ -75,7 +78,7 @@ if __name__ == "__main__":
         # Simulates the QUA program for the specified duration
         simulation_config = SimulationConfig(duration=1_000)  # In clock cycles = 4ns
         # Simulate blocks python until the simulation is done
-        job = qmm.simulate(config, time_of_flight, simulation_config)
+        job = qmm.simulate(config, PROGRAM, simulation_config)
         # Plot the simulated samples
         job.get_simulated_samples().con1.plot()
 
@@ -84,7 +87,7 @@ if __name__ == "__main__":
             # Open a quantum machine to execute the QUA program
             qm = qmm.open_qm(config)
             # Send the QUA program to the OPX, which compiles and executes it
-            job = qm.execute(time_of_flight)
+            job = qm.execute(PROGRAM)
             # Creates a result handle to fetch data from the OPX
             res_handles = job.result_handles
             # Waits (blocks the Python console) until all results have been acquired

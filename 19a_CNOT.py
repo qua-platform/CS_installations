@@ -13,8 +13,7 @@ Reference: Sarah Sheldon, Easwar Magesan, Jerry M. Chow, and Jay M. Gambetta Phy
 
 from qm.qua import *
 from qm import QuantumMachinesManager
-# from configuration_opxplus_with_octave import *
-from configuration_opxplus_without_octave import *
+from configuration_mw_fem import *
 import matplotlib.pyplot as plt
 from qm import SimulationConfig
 from qualang_tools.loops import from_array
@@ -29,50 +28,43 @@ import matplotlib
 from macros import qua_declaration, multiplexed_readout
 
 
-##############################
-# Program-specific variables #
-##############################
+##################
+#   Parameters   #
+##################
 
+# Qubits and resonators 
 qc = 2 # index of control qubit
 qt = 3 # index of target qubit
 
+# Parameters Definition
+n_avg = 100
+cr_type = "direct+cancel+echo" # "direct+cancel", "direct+cancel+echo"
+cr_drive_amp = 1.0
+cr_drive_phase = 0.25
 cr_cancel_amp = 0.2 # ratio
 cr_cancel_phase = 0.5 # in units of 2pi
+ts_cycles = np.arange(4, 400, 4) # in clock cylcle = 4ns
 
+# Readout Parameters
+weights = "rotated_" # ["", "rotated_", "opt_"]
+reset_method = "wait" # ["wait", "active"]
+readout_operation = "readout" # ["readout", "midcircuit_readout"]
+
+# Derived parameters
 qc_xy = f"q{qc}_xy"
 qt_xy = f"q{qt}_xy"
 cr_drive = f"cr_drive_c{qc}t{qt}"
 cr_cancel = f"cr_cancel_c{qc}t{qt}"
-rrc = f"q{qc}_rr"
-rrt = f"q{qt}_rr"
-
 qubits = [f"q{i}_xy" for i in [qc, qt]]
 resonators = [f"q{i}_rr" for i in [qc, qt]]
-qubits_all = list(QUBIT_CONSTANTS.keys()) # [qc_xy, qt_xy]
-resonators_all = [key for key in RR_CONSTANTS.keys()]
-remaining_resonators = list(set(resonators_all) - set(resonators))
-weights = "rotated_" # ["", "rotated_", "opt_"] 
-reset_method = "wait" # can also be "active"
+ts_ns = 4 * ts_cycles # in clock cylcle = 4ns
 
-n_avg = 10
-
-ts_cycle = np.arange(8, 400, 4) # in clock cylcle = 4ns
-ts_ns = 4 * ts_cycle # in clock cylcle = 4ns
-amps = np.arange(0.05, 1.95, 0.05) # scaling factor for amplitude
-cr_drive_phase = 0.0
-cr_cancel_phase = 0.0
-
-assert len(qubits_all) == len(resonators_all), "qubits and resonators don't have the same length"
-assert len(qubits) == len(resonators), "qubits and resonators under study don't have the same length"
-assert all([qb.replace("_xy", "") == rr.replace("_rr", "") for qb, rr in zip(qubits, resonators)]), "qubits and resonators don't correspond"
-assert weights in ["", "rotated_", "opt_"], 'weight_type must be one of ["", "rotated_", "opt_"]'
-assert reset_method in ["wait", "active"], "Invalid reset_method, use either wait or active"
+# Assertion
 assert n_avg <= 10_000, "revise your number of shots"
-assert np.all(ts_cycle % 2 == 0) and (ts_cycle.min() >= 8), "ts_cycle should only have even numbers if play echoes"
+assert np.all(ts_cycles % 2 == 0) and (ts_cycles.min() >= 4), "ts_cycles should only have even numbers if play echoes"
 
+# Data to save
 save_data_dict = {
-    "qubits_all": qubits_all,
-    "resonators_all": resonators_all,
     "qubits": qubits,
     "resonators": resonators,
     "qc_xy": qc_xy,
@@ -82,13 +74,16 @@ save_data_dict = {
     "cr_cancel_phase": cr_cancel_phase,
     "cr_drive_phase": cr_drive_phase,
     "ts_ns": ts_ns,
-    "amps": amps,
     "n_avg": n_avg,
     "config": config,
 }
 
 
-with program() as cnot_calib:
+###################
+#   QUA Program   #
+###################
+
+with program() as PROGRAM:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(resonators)
     state = [declare(bool) for _ in range(len(resonators))]
     state_st = [declare_stream() for _ in range(len(resonators))]
@@ -167,7 +162,7 @@ if __name__ == "__main__":
     if simulate:
         # Simulates the QUA program for the specified duration
         simulation_config = SimulationConfig(duration=3_000)  # In clock cycles = 4ns
-        job = qmm.simulate(config, cnot_calib, simulation_config)
+        job = qmm.simulate(config, PROGRAM, simulation_config)
         job.get_simulated_samples().con1.plot(analog_ports=['1', '2', '3', '4', '5', '6'])
         plt.show()
 
@@ -176,7 +171,7 @@ if __name__ == "__main__":
             # Open the quantum machine
             qm = qmm.open_qm(config)
             # Send the QUA program to the OPX, which compiles and executes it
-            job = qm.execute(cnot_calib)
+            job = qm.execute(PROGRAM)
             # Prepare the figure for live plotting
             fig = plt.figure()
             interrupt_on_close(fig, job)
@@ -195,7 +190,7 @@ if __name__ == "__main__":
                 for ind, rr in enumerate(resonators):
                     save_data_dict[f"I_{rr}"] = res[3*ind + 1]
                     save_data_dict[f"Q_{rr}"] = res[3*ind + 2]
-                    save_data_dict[f"state_{rr}"] = res[3*ind + 3]
+                    save_data_dict[rr+"_state"] = res[3*ind + 3]
                 iterations, I1, Q1, state_c, I2, Q2, state_t = res
                 # Progress bar
                 progress_counter(iterations, n_avg, start_time=results.start_time)

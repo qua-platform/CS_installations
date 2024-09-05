@@ -30,32 +30,33 @@ import math
 from qualang_tools.results.data_handler import DataHandler
 from qualang_tools.analysis import two_state_discriminator
 
-###################
-# The QUA program #
-###################
+##################
+#   Parameters   #
+##################
 
-qubits = ["q2_xy", "q3_xy"]
-resonators = ["q2_rr", "q3_rr"]
-qubits_all = list(QUBIT_CONSTANTS.keys())
-resonators_all = [key for key in RR_CONSTANTS.keys()]
-remaining_resonators = list(set(resonators_all) - set(resonators))
-weights = "" # ["", "rotated_", "opt_"] 
-reset_method = "active" # can also be "active"
-readout_operation = "readout" # "readout" or "midcircuit_readout"
+# Qubits and resonators 
+qc = 2 # index of control qubit
+qt = 3 # index of target qubit
 
+# Parameters Definition
 n_runs = 1_000  # Number of runs
 
-assert len(qubits_all) == len(resonators_all), "qubits and resonators don't have the same length"
-assert len(qubits) == len(resonators), "qubits and resonators under study don't have the same length"
-assert all([qb.replace("_xy", "") == rr.replace("_rr", "") for qb, rr in zip(qubits, resonators)]), "qubits and resonators don't correspond"
-assert weights in ["", "rotated_", "opt_"], 'weight_type must be one of ["", "rotated_", "opt_"]'
-assert reset_method in ["wait", "active"], "Invalid reset_method, use either wait or active"
-assert readout_operation in ["readout", "midcircuit_readout"], "Invalid readout_operation, use either readout or midcircuit_readout"
+# Readout Parameters
+weights = "rotated_" # ["", "rotated_", "opt_"]
+reset_method = "active" #["wait", "active"]
+readout_operation = "readout" # ["readout", "midcircuit_readout"]
+
+# Derived parameters
+qc_xy = f"q{qc}_xy"
+qt_xy = f"q{qt}_xy"
+qubits = [f"q{i}_xy" for i in [qc, qt]]
+resonators = [f"q{i}_rr" for i in [qc, qt]]
+
+# Assertion
 assert n_runs < 20_000, "check the number of shots"
 
+# Data to save
 save_data_dict = {
-    "qubits_all": qubits_all,
-    "resonators_all": resonators_all,
     "qubits": qubits,
     "resonators": resonators,
     "shots": n_runs,
@@ -63,7 +64,12 @@ save_data_dict = {
     "readout_operation": readout_operation,
 }
 
-with program() as iq_blobs:
+
+###################
+#   QUA Program   #
+###################
+
+with program() as PROGRAM:
     # I_g, I_g_st, Q_g, Q_g_st, n, _ = qua_declaration(nb_of_qubits=2)
     # I_e, I_e_st, Q_e, Q_e_st, _, _ = qua_declaration(nb_of_qubits=2)
     # I_f, I_f_st, Q_f, Q_f_st, _, _ = qua_declaration(nb_of_qubits=2)
@@ -114,111 +120,112 @@ with program() as iq_blobs:
             I_f_st[i].save_all(f"I_f_q{i + 1}")
             Q_f_st[i].save_all(f"Q_f_q{i + 1}")
 
-#####################################
-#  Open Communication with the QOP  #
-#####################################
-qmm = QuantumMachinesManager(
-    host=qop_ip,
-    port=qop_port,
-    cluster_name=cluster_name,
-    octave=octave_config,
-)
 
-###########################
-# Run or Simulate Program #
-###########################
+if __name__ == "__main__":
+    #####################################
+    #  Open Communication with the QOP  #
+    #####################################
+    qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
-simulate = False
-save_data = True
+    ###########################
+    # Run or Simulate Program #
+    ###########################
 
-if simulate:
-    # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, iq_blobs, simulation_config)
-    job.get_simulated_samples().con1.plot()
+    simulate = False
 
-else:
-    # Open the quantum machine
-    qm = qmm.open_qm(config)
-    # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(iq_blobs)
-    # fetch data
-    results = fetching_tool(job, [
-        "I_g_q1", "Q_g_q1", "I_e_q1", "Q_e_q1", "I_f_q1", "Q_f_q1",
-        "I_g_q2", "Q_g_q2", "I_e_q2", "Q_e_q2", "I_f_q2", "Q_f_q2",
-        ]
-    )
-    I_g_q1, Q_g_q1, I_e_q1, Q_e_q1, I_f_q1, Q_f_q1, \
-        I_g_q2, Q_g_q2, I_e_q2, Q_e_q2, I_f_q2, Q_f_q2 = results.fetch_all()
-    
-    delta = 1e-5
-    I_g_q1 += 1 * delta
-    Q_g_q1 += 1 * delta
-    I_e_q1 += 0 * delta 
-    Q_e_q1 += 0 * delta 
-    I_f_q1 += -1 * delta 
-    Q_f_q1 += -1 * delta 
-    I_g_q2 += 1 * delta 
-    Q_g_q2 += 1 * delta 
-    I_e_q2 += 0 * delta 
-    Q_e_q2 += 0 * delta 
-    I_f_q2 += -1 * delta 
-    Q_f_q2 += -1 * delta 
-    
-    # Plot the IQ blobs, rotate them to get the separation along the 'I' quadrature, estimate a threshold between them
-    # for state discrimination and derive the fidelity matrix
-    fig1, IQ_g_mean_q1, IQ_e_mean_q1, IQ_f_mean_q1, fidelity_q1, *_ \
-        = gef_discriminator_mean_points(I_g_q1, Q_g_q1, I_e_q1, Q_e_q1, I_f_q1, Q_f_q1, suptitle="qubit1")
-    print(f"Overall fidelity of q1: {100 * fidelity_q1:3.1f}%")
+    if simulate:
+        # Simulates the QUA program for the specified duration
+        simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+        job = qmm.simulate(config, PROGRAM, simulation_config)
+        job.get_simulated_samples().con1.plot()
+        plt.show(block=False)
+    else:
+        try:
+            # Open the quantum machine
+            qm = qmm.open_qm(config)
+            # Send the QUA program to the OPX, which compiles and executes it
+            job = qm.execute(PROGRAM)
+            # fetch data
+            results = fetching_tool(job, [
+                "I_g_q1", "Q_g_q1", "I_e_q1", "Q_e_q1", "I_f_q1", "Q_f_q1",
+                "I_g_q2", "Q_g_q2", "I_e_q2", "Q_e_q2", "I_f_q2", "Q_f_q2",
+                ]
+            )
+            I_g_q1, Q_g_q1, I_e_q1, Q_e_q1, I_f_q1, Q_f_q1, \
+                I_g_q2, Q_g_q2, I_e_q2, Q_e_q2, I_f_q2, Q_f_q2 = results.fetch_all()
+            
+            delta = 1e-5
+            I_g_q1 += 1 * delta
+            Q_g_q1 += 1 * delta
+            I_e_q1 += 0 * delta 
+            Q_e_q1 += 0 * delta 
+            I_f_q1 += -1 * delta 
+            Q_f_q1 += -1 * delta 
+            I_g_q2 += 1 * delta 
+            Q_g_q2 += 1 * delta 
+            I_e_q2 += 0 * delta 
+            Q_e_q2 += 0 * delta 
+            I_f_q2 += -1 * delta 
+            Q_f_q2 += -1 * delta 
+            
+            # Plot the IQ blobs, rotate them to get the separation along the 'I' quadrature, estimate a threshold between them
+            # for state discrimination and derive the fidelity matrix
+            fig1, IQ_g_mean_q1, IQ_e_mean_q1, IQ_f_mean_q1, fidelity_q1, *_ \
+                = gef_discriminator_mean_points(I_g_q1, Q_g_q1, I_e_q1, Q_e_q1, I_f_q1, Q_f_q1, suptitle="qubit1")
+            print(f"Overall fidelity of q1: {100 * fidelity_q1:3.1f}%")
 
-    fig2, IQ_g_mean_q2, IQ_e_mean_q2, IQ_f_mean_q2, fidelity_q2, *_ \
-        = gef_discriminator_mean_points(I_g_q2, Q_g_q2, I_e_q2, Q_e_q2, I_f_q2, Q_f_q2, suptitle="qubit2")
-    print(f"Overall fidelity of q2: {100 * fidelity_q2:3.1f}%")
+            fig2, IQ_g_mean_q2, IQ_e_mean_q2, IQ_f_mean_q2, fidelity_q2, *_ \
+                = gef_discriminator_mean_points(I_g_q2, Q_g_q2, I_e_q2, Q_e_q2, I_f_q2, Q_f_q2, suptitle="qubit2")
+            print(f"Overall fidelity of q2: {100 * fidelity_q2:3.1f}%")
 
-    print(f"""
-    Update the configuration: (change the keys "q1", "q2" as needed)
+            print(f"""
+            Update the configuration: (change the keys "q1", "q2" as needed)
 
-    blob_mean = {{
-        "q1": {{
-            "g": {IQ_g_mean_q1},
-            "e": {IQ_e_mean_q1},
-            "f": {IQ_f_mean_q1},
-        }},
-        "q2": {{
-            "g": {IQ_g_mean_q2},
-            "e": {IQ_e_mean_q2},
-            "f": {IQ_f_mean_q2},
-        }},
-    }}
-    """)
-    plt.show()
+            blob_mean = {{
+                "q1": {{
+                    "g": {IQ_g_mean_q1},
+                    "e": {IQ_e_mean_q1},
+                    "f": {IQ_f_mean_q1},
+                }},
+                "q2": {{
+                    "g": {IQ_g_mean_q2},
+                    "e": {IQ_e_mean_q2},
+                    "f": {IQ_f_mean_q2},
+                }},
+            }}
+            """)
+            
+            # Arrange data to save
+            data = {
+                "fig1": fig1,
+                "fig2": fig2,
+                "I_g_q1":I_g_q1,
+                "Q_g_q1":Q_g_q1,
+                "I_e_q1":I_e_q1,
+                "Q_e_q1":Q_e_q1,
+                "I_f_q1":I_e_q1,
+                "Q_f_q1":Q_e_q1,
+                "I_g_q2":I_g_q2,
+                "Q_g_q2":Q_g_q2,
+                "I_e_q2":I_e_q2,
+                "Q_e_q2":Q_e_q2,
+                "I_f_q2":I_e_q2,
+                "Q_f_q2":Q_e_q2,
+            }
 
-    # Close the quantum machines at the end
-    qm.close()
+            # Save Data
+            script_name = Path(__file__).name
+            data_handler = DataHandler(root_data_folder=save_dir)
+            data_handler.create_data_folder(name=Path(__file__).stem)
+            data_handler.additional_files = {script_name: script_name, **default_additional_files}
+            data_handler.save_data(data=save_data_dict, name="iq_blobs_gef_example")
 
-    if save_data:
-        # Arrange data to save
-        data = {
-            "fig1": fig1,
-            "fig2": fig2,
-            "I_g_q1":I_g_q1,
-            "Q_g_q1":Q_g_q1,
-            "I_e_q1":I_e_q1,
-            "Q_e_q1":Q_e_q1,
-            "I_f_q1":I_e_q1,
-            "Q_f_q1":Q_e_q1,
-            "I_g_q2":I_g_q2,
-            "Q_g_q2":Q_g_q2,
-            "I_e_q2":I_e_q2,
-            "Q_e_q2":Q_e_q2,
-            "I_f_q2":I_e_q2,
-            "Q_f_q2":Q_e_q2,
-        }
-        # Save Data
-        script_name = Path(__file__).name
-        data_handler = DataHandler(root_data_folder=save_dir)
-        data_handler.create_data_folder(name=Path(__file__).stem)
-        data_handler.additional_files = {script_name: script_name, **default_additional_files}
-        data_folder = data_handler.save_data(data=data)
+        except Exception as e:
+            print(f"An exception occurred: {e}")
+
+        finally:
+            qm.close()
+            print("Experiment QM is now closed")
+            plt.show(block=True)
 
 # %%

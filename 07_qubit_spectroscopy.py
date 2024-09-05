@@ -27,8 +27,7 @@ Before proceeding to the next node:
 
 from qm.qua import *
 from qm import QuantumMachinesManager, SimulationConfig
-# from configuration_opxplus_with_octave import *
-from configuration_opxplus_without_octave import *
+from configuration_mw_fem import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -37,16 +36,16 @@ import matplotlib.pyplot as plt
 import math
 from qualang_tools.results.data_handler import DataHandler
 
-###################
-# The QUA program #
-###################
 
-qubits = ["q2_xy", "q3_xy"]
-resonators = ["q2_rr", "q3_rr"]
-qubits_all = list(QUBIT_CONSTANTS.keys())
-resonators_all = [key for key in RR_CONSTANTS.keys()]
-remaining_resonators = list(set(resonators_all) - set(resonators))
+##################
+#   Parameters   #
+##################
 
+# Qubits and resonators 
+qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
+resonators = [key for key in RR_CONSTANTS.keys()]
+
+# Parameters Definition
 n_avg = 1_000  # The number of averages
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
 # Qubit detuning sweep with respect to qubit_IF
@@ -55,16 +54,18 @@ freq_step = 125 * u.kHz
 dfs = np.arange(-span, +span, freq_step)
 scaling_factor = 1.0
 
-assert len(qubits_all) == len(resonators_all), "qubits and resonators don't have the same length"
-assert len(qubits) == len(resonators), "qubits and resonators under study don't have the same length"
-assert all([qb.replace("_xy", "") == rr.replace("_rr", "") for qb, rr in zip(qubits, resonators)]), "qubits and resonators don't correspond"
+# Readout Parameters
+weights = "rotated_" # ["", "rotated_", "opt_"]
+reset_method = "wait" # ["wait", "active"]
+readout_operation = "readout" # ["readout", "midcircuit_readout"]
+
+# Assertion
 assert len(dfs) <= 400, "check your frequencies"
 for qb in qubits:
-    assert scaling_factor * QUBIT_CONSTANTS[qb]['amplitude'] <= 0.499, f"{qb} scaling factor times amplitude exceeded 0.499"
+    assert scaling_factor * QUBIT_CONSTANTS[qb]["amp"] <= 0.499, f"{qb} scaling factor times amplitude exceeded 0.499"
 
+# Data to save
 save_data_dict = {
-    "qubits_all": qubits_all,
-    "resonators_all": resonators_all,
     "qubits": qubits,
     "resonators": resonators,
     "n_avg": n_avg,
@@ -74,7 +75,11 @@ save_data_dict = {
 }
 
 
-with program() as multi_qubit_spec:
+###################
+#   QUA Program   #
+###################
+
+with program() as PROGRAM:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(resonators)
     df = declare(int)  # QUA variable for the readout frequency
 
@@ -117,7 +122,7 @@ if __name__ == "__main__":
     if simulate:
         # Simulates the QUA program for the specified duration
         simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-        job = qmm.simulate(config, multi_qubit_spec, simulation_config)
+        job = qmm.simulate(config, PROGRAM, simulation_config)
         job.get_simulated_samples().con1.plot()
         plt.show(block=False)
     else:
@@ -125,7 +130,7 @@ if __name__ == "__main__":
             # Open a quantum machine to execute the QUA program
             qm = qmm.open_qm(config)
             # Send the QUA program to the OPX, which compiles and executes it
-            job = qm.execute(multi_qubit_spec)
+            job = qm.execute(PROGRAM)
             fetch_names = ["iteration"]
             for rr in resonators:
                 fetch_names.append(f"I_{rr}")

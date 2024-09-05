@@ -19,8 +19,7 @@ Next steps before going to the next node:
 from qm import QuantumMachinesManager
 from qm.qua import *
 from qm import SimulationConfig
-# from configuration_opxplus_with_octave import *
-from configuration_opxplus_without_octave import *
+from configuration_mw_fem import *
 import matplotlib.pyplot as plt
 from qualang_tools.loops import from_array
 from qualang_tools.results import fetching_tool, progress_counter
@@ -29,42 +28,45 @@ import math
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results.data_handler import DataHandler
 
-###################
-# The QUA program #
-###################
 
-qubits = ["q2_xy", "q3_xy"]
-resonators = ["q2_rr", "q3_rr"]
-qubits_all = list(QUBIT_CONSTANTS.keys())
-resonators_all = [key for key in RR_CONSTANTS.keys()]
-remaining_resonators = list(set(resonators_all) - set(resonators))
-weights = "rotated_" # ["", "rotated_", "opt_"] 
-reset_method = "wait" # can also be "active"
+##################
+#   Parameters   #
+##################
 
+# Qubits and resonators 
+qc = 2 # index of control qubit
+qt = 3 # index of target qubit
+
+# Parameters Definition
 n_avg = 100  # Number of runs
 # The frequency sweep around the resonators' frequency "resonator_IF_q"
 freq_span = 2e6
 freq_step = 0.1e6
 dfs = np.arange(-freq_span, freq_span, freq_step)
-
 a_max = 1.5
 a_min = 0.5
 a_step = 0.05
 amps = np.arange(a_min, a_max, a_step)
-
 iq_blobs_analysis_method = "snr" # "snr" "fidelity" or "overlap"
 
-assert len(qubits_all) == len(resonators_all), "qubits and resonators don't have the same length"
-assert len(qubits) == len(resonators), "qubits and resonators under study don't have the same length"
-assert all([qb.replace("_xy", "") == rr.replace("_rr", "") for qb, rr in zip(qubits, resonators)]), "qubits and resonators don't correspond"
-assert reset_method in ["wait", "active"], "Invalid reset_method, use either wait or active"
+# Readout Parameters
+weights = "rotated_" # ["", "rotated_", "opt_"]
+reset_method = "wait" # ["wait", "active"]
+readout_operation = "readout" # ["readout", "midcircuit_readout"]
+
+# Derived parameters
+qc_xy = f"q{qc}_xy"
+qt_xy = f"q{qt}_xy"
+qubits = [f"q{i}_xy" for i in [qc, qt]]
+resonators = [f"q{i}_rr" for i in [qc, qt]]
+
+# Assertion
 assert len(dfs)*len(amps) <= 38_000, "check your frequencies and amps"
 for rr in resonators:
-    assert a_max * RR_CONSTANTS[rr]['amplitude'], f"{rr} a_max times amplitude exceeded 0.499"
+    assert a_max * RR_CONSTANTS[rr]["amp"] < 0.5, f"{rr} a_max times amplitude exceeded 0.499"
 
+# Data to save
 save_data_dict = {
-    "qubits_all": qubits_all,
-    "resonators_all": resonators_all,
     "qubits": qubits,
     "resonators": resonators,
     "n_avg": n_avg,
@@ -74,7 +76,11 @@ save_data_dict = {
 }
 
 
-with program() as ro_opt_freq_amp:
+###################
+#   QUA Program   #
+###################
+
+with program() as PROGRAM:
 
     Ig, I_g_st, Qg, Q_g_st, n, n_st = qua_declaration(resonators)
     Ie, I_e_st, Qe, Q_e_st, _, _ = qua_declaration(resonators)
@@ -131,7 +137,7 @@ if __name__ == "__main__":
     if simulate:
         # Simulates the QUA program for the specified duration
         simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-        job = qmm.simulate(config, ro_opt_freq_amp, simulation_config)
+        job = qmm.simulate(config, PROGRAM, simulation_config)
         job.get_simulated_samples().con1.plot()
         plt.show(block=False)
     else:
@@ -139,7 +145,7 @@ if __name__ == "__main__":
             # Open the quantum machine
             qm = qmm.open_qm(config)
             # Send the QUA program to the OPX, which compiles and executes it
-            job = qm.execute(ro_opt_freq_amp)
+            job = qm.execute(PROGRAM)
             fetch_names = ["iteration"]
             for rr in resonators:
                 fetch_names.append(f"I_g_{rr}")
@@ -176,7 +182,7 @@ if __name__ == "__main__":
 
                     plt.subplot(num_rows, num_cols, ind + 1)
                     plt.cla()
-                    plt.pcolor(amps * RR_CONSTANTS[rr]['amplitude'], (RR_CONSTANTS[rr]["IF"] + dfs) / u.MHz, iq_blobs_result, cmap='magma')
+                    plt.pcolor(amps * RR_CONSTANTS[rr]["amp"], (RR_CONSTANTS[rr]["IF"] + dfs) / u.MHz, iq_blobs_result, cmap='magma')
                     plt.ylabel("df [MHz]")
                     plt.xlabel("Pulse amp [V]")
                     plt.title(f"Qb - {qb}")

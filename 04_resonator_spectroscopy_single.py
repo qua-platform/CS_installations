@@ -18,24 +18,24 @@ Before proceeding to the next node:
 
 from qm.qua import *
 from qm import QuantumMachinesManager, SimulationConfig
-# from configuration_opxplus_with_octave import *
-from configuration_opxplus_without_octave import *
+from configuration_mw_fem import *
 from qualang_tools.results import fetching_tool
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
 
-###################
-# The QUA program #
-###################
+
+##################
+#   Parameters   #
+##################
 
 rl = "rl1"
 resonator = "q2_rr"
 resonator_LO = RL_CONSTANTS[rl]["LO"]
 
 n_avg = 10  # The number of averages
-frequency_sweeps = {
+frequencies = {
     "q1_rr": np.arange(-315e6, -311e6, 0.1e6),
     "q2_rr": np.arange(-128e6, -124e6, 0.1e6),
     "q3_rr": np.arange(-116e6, -112e6, 0.1e6),
@@ -44,15 +44,10 @@ frequency_sweeps = {
     "q6_rr": np.arange(101e6, 105e6, 0.1e6),
     "q7_rr": np.arange(108e6, 112e6, 0.1e6),
     "q8_rr": np.arange(108e6, 112e6, 0.1e6),
-}
+}[resonator]
 
-if resonator in frequency_sweeps:
-    frequencies = frequency_sweeps[resonator]
-    print("Number of frequencies is", len(frequencies))
-    assert len(frequencies) <= 534, "check your frequencies"
-    # assert len(frequencies) <= 10_000, "check your frequencies"
-else:
-    print('no such resonator')
+print("Number of frequencies is", len(frequencies))
+assert len(frequencies) <= 534, "check your frequencies"
 
 save_data_dict = {
     "resonator": resonator,
@@ -63,7 +58,11 @@ save_data_dict = {
 }
 
 
-with program() as resonator_spec:
+###################
+#   QUA Program   #
+###################
+
+with program() as PROGRAM:
     n = declare(int)  # QUA variable for the averaging loop
     f = declare(int)  # QUA variable for the readout frequency --> Hz int 32 up to 2^32
     I = declare(fixed)  # QUA variable for the measured 'I' quadrature --> signed 4.28 [-8, 8)
@@ -112,7 +111,7 @@ if __name__ == "__main__":
         # Simulates the QUA program for the specified duration
         simulation_config = SimulationConfig(duration=1_000)  # In clock cycles = 4ns
         # Simulate blocks python until the simulation is done
-        job = qmm.simulate(config, resonator_spec, simulation_config)
+        job = qmm.simulate(config, PROGRAM, simulation_config)
         # Plot the simulated samples
         job.get_simulated_samples().con1.plot()
         plt.show(block=False)
@@ -121,7 +120,7 @@ if __name__ == "__main__":
             # Open a quantum machine to execute the QUA program
             qm = qmm.open_qm(config)
             # Send the QUA program to the OPX, which compiles and executes it
-            job = qm.execute(resonator_spec)
+            job = qm.execute(PROGRAM)
             # Get results from QUA program
             results = fetching_tool(job, data_list=["I", "Q"]) # this one already waits for all values
             # plotting

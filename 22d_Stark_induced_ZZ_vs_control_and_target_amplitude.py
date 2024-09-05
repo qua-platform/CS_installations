@@ -15,55 +15,52 @@ from qualang_tools.results import progress_counter
 from macros import qua_declaration, multiplexed_readout, active_reset
 from qualang_tools.results.data_handler import DataHandler
 
-###################
-# The QUA program #
-###################
 
+##################
+#   Parameters   #
+##################
+
+# Qubits and resonators 
 qc = 2 # index of control qubit
 qt = 3 # index of target qubit
+qubit_to_sweep_amp = qc
 
+# Parameters Definition
+n_avg = 10  # The number of averages
+t_max = 2_000
+t_min = 4
+t_step = 4
+ts_cycles = np.arange(t_min, t_max, t_step)  # Idle time sweep in clock cycles (Needs to be a list of integers)
+drive_phase = 0.25
+amps_c = np.arange(0.25, 1.2, 0.25) # scaling factor for amplitude
+amps_t = np.arange(0.25, 1.2, 0.25) # scaling factor for amplitude
+freq_detuning = -4 * u.MHz
+
+# Readout Parameters
+weights = "rotated_" # ["", "rotated_", "opt_"]
+reset_method = "wait" # ["wait", "active"]
+readout_operation = "readout" # ["readout", "midcircuit_readout"]
+
+# Derived parameters
 qc_xy = f"q{qc}_xy"
 qt_xy = f"q{qt}_xy"
 zz_control = f"zz_control_c{qc}t{qt}"
 zz_target = f"zz_target_c{qc}t{qt}"
-rrc = f"q{qc}_rr"
-rrt = f"q{qt}_rr"
+qubits = [f"q{i}_xy" for i in [qc, qt]]
+resonators = [f"q{i}_rr" for i in [qc, qt]]
+delta_phase = 4e-9 * freq_detuning * t_step
+ts_ns = 4 * ts_cycles # in clock cylcle = 4ns
 
 config["waveforms"][f"square_wf_{zz_control}"]["sample"] = 0.1
 config["waveforms"][f"square_wf_{zz_target}"]["sample"] = 0.1
 amp_actual_c = config["waveforms"][f"square_wf_{zz_control}"]["sample"]
 amp_actual_t = config["waveforms"][f"square_wf_{zz_target}"]["sample"]
 
-n_avg = 10  # The number of averages
-t_max = 2_000
-t_min = 4
-t_step = 4
-
-drive_phase = 0.25
-amps_c = np.arange(0.25, 1.2, 0.25) # scaling factor for amplitude
-amps_t = np.arange(0.25, 1.2, 0.25) # scaling factor for amplitude
-freq_detuning = -4 * u.MHz
-
-delta_phase = 4e-9 * freq_detuning * t_step
-ts_cycle = np.arange(t_min, t_max, t_step)  # Idle time sweep in clock cycles (Needs to be a list of integers)
-ts_ns = 4 * ts_cycle # in clock cylcle = 4ns
-
-qubits = [f"q{i}_xy" for i in [qc, qt]]
-resonators = [f"q{i}_rr" for i in [qc, qt]]
-qubits_all = list(QUBIT_CONSTANTS.keys())
-resonators_all = [key for key in RR_CONSTANTS.keys()]
-remaining_resonators = list(set(resonators_all) - set(resonators))
-weights = "" # ["", "rotated_", "opt_"] 
-reset_method = "wait" # can also be "active"
-
-assert len(qubits_all) == len(resonators_all), "qubits and resonators don't have the same length"
-assert len(qubits) == len(resonators), "qubits and resonators under study don't have the same length"
-assert all([qb.replace("_xy", "") == rr.replace("_rr", "") for qb, rr in zip(qubits, resonators)]), "qubits and resonators don't correspond"
-assert weights in ["", "rotated_", "opt_"], 'weight_type must be one of ["", "rotated_", "opt_"]'
-assert reset_method in ["wait", "active"], "Invalid reset_method, use either wait or active"
-assert len(resonators) == 2, "only control and target qubits & resonators"
+# Assertion
 assert n_avg <= 10_000, "revise your number of shots"
+assert np.all(ts_cycles % 2 == 0) and (ts_cycles.min() >= 4), "ts_cycles should only have even numbers if play echoes"
 
+# Data to save
 save_data_dict = {
     "qubits_all": qubits_all,
     "resonators_all": resonators_all,
@@ -80,6 +77,11 @@ save_data_dict = {
     "n_avg": n_avg,
     "config": config,
 }
+
+
+###################
+#   QUA Program   #
+###################
 
 with program() as prog:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(resonators)
@@ -102,7 +104,7 @@ with program() as prog:
                 reset_frame(zz_target)
                 frame_rotation_2pi(drive_phase, zz_target)
 
-                with for_(*from_array(t, ts_cycle)):
+                with for_(*from_array(t, ts_cycles)):
                     assign(phase, phase + delta_phase)
 
                     with for_(s, 0, s < 2, s + 1): # states 0:g or 1:e
@@ -138,8 +140,8 @@ with program() as prog:
     with stream_processing():
         n_st.save("iteration")
         for ind, rr in enumerate(resonators):
-            I_st[ind].buffer(2).buffer(len(ts_cycle)).buffer(len(amps_t)).buffer(len(amps_c)).average().save(f"I_{rr}")
-            Q_st[ind].buffer(2).buffer(len(ts_cycle)).buffer(len(amps_t)).buffer(len(amps_c)).average().save(f"Q_{rr}")
+            I_st[ind].buffer(2).buffer(len(ts_cycles)).buffer(len(amps_t)).buffer(len(amps_c)).average().save(f"I_{rr}")
+            Q_st[ind].buffer(2).buffer(len(ts_cycles)).buffer(len(amps_t)).buffer(len(amps_c)).average().save(f"Q_{rr}")
 
 
 if __name__ == "__main__":

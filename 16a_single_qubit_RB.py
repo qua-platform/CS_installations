@@ -6,8 +6,7 @@
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-# from configuration_opxplus_with_octave import *
-from configuration_opxplus_without_octave import *
+from configuration_mw_fem import *
 import matplotlib.pyplot as plt
 import numpy as np
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
@@ -17,18 +16,15 @@ from macros import multiplexed_readout, qua_declaration, active_reset
 import math
 from qualang_tools.results.data_handler import DataHandler
 
-##############################
-# Program-specific variables #
-##############################
+##################
+#   Parameters   #
+##################
 
-qubits = ["q2_xy", "q3_xy"]
-resonators = ["q2_rr", "q3_rr"]
-qubits_all = list(QUBIT_CONSTANTS.keys())
-resonators_all = [key for key in RR_CONSTANTS.keys()]
-remaining_resonators = list(set(resonators_all) - set(resonators))
-weights = "rotated_" # ["", "rotated_", "opt_"] 
-reset_method = "wait" # can also be "active"
+# Qubits and resonators 
+qc = 2 # index of control qubit
+qt = 3 # index of target qubit
 
+# Parameters Definition
 num_of_sequences = 10  # Number of random sequences
 n_avg = 3  # Number of averaging loops for each random sequence
 max_circuit_depth = 20  # Maximum circuit depth
@@ -37,11 +33,32 @@ seed = 345324  # Pseudo-random number generator seed
 # List of recovery gates from the lookup table
 inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
 
-assert len(qubits) == len(resonators), "qubits and resonators don't have the same length"
-assert all([qb.replace("_xy", "") == rr.replace("_rr", "") for qb, rr in zip(qubits, resonators)]), "qubits and resonators don't correspond"
-assert weights in ["", "rotated_", "opt_"], 'weight_type must be one of ["", "rotated_", "opt_"]'
-assert reset_method in ["wait", "active"], "Invalid reset_method, use either wait or active"
+# Readout Parameters
+weights = "rotated_" # ["", "rotated_", "opt_"]
+reset_method = "wait" # ["wait", "active"]
+readout_operation = "readout" # ["readout", "midcircuit_readout"]
+
+# Derived parameters
+qc_xy = f"q{qc}_xy"
+qt_xy = f"q{qt}_xy"
+qubits = [f"q{i}_xy" for i in [qc, qt]]
+resonators = [f"q{i}_rr" for i in [qc, qt]]
+
+# Assertion
 assert (max_circuit_depth / delta_clifford).is_integer(), "max_circuit_depth / delta_clifford must be an integer."
+
+# Data to save
+save_data_dict = {
+    "qubits": qubits,
+    "resonators": resonators,
+    "n_avg": n_avg,
+    "config": config,
+    "num_of_sequences": num_of_sequences,
+    "delta_clifford": delta_clifford,
+    "max_circuit_depth": max_circuit_depth,
+    "weights": weights,
+    "reset_method": reset_method,
+}
 
 
 ###################################
@@ -142,24 +159,12 @@ def play_sequence(sequence_list, depth, qb):
                 play("y90", qb)
                 play("-x90", qb)
 
-save_data_dict = {
-    "qubits_all": qubits_all,
-    "resonators_all": resonators_all,
-    "qubits": qubits,
-    "resonators": resonators,
-    "n_avg": n_avg,
-    "config": config,
-    "num_of_sequences": num_of_sequences,
-    "delta_clifford": delta_clifford,
-    "max_circuit_depth": max_circuit_depth,
-    "weights": weights,
-    "reset_method": reset_method,
-}
 
 ###################
-# The QUA program #
+#   QUA Program   #
 ###################
-with program() as rb:
+
+with program() as PROGRAM:
     depth = declare(int)  # QUA variable for the varying depth
     depth_target = declare(int)  # QUA variable for the current depth (changes in steps of delta_clifford)
     # QUA variable to store the last Clifford gate of the current sequence which is replaced by the recovery gate
@@ -249,7 +254,7 @@ if __name__ == "__main__":
     if simulate:
         # Simulates the QUA program for the specified duration
         simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-        job = qmm.simulate(config, rb, simulation_config)
+        job = qmm.simulate(config, PROGRAM, simulation_config)
         job.get_simulated_samples().con1.plot()
         plt.plot(block=False)
     else:
@@ -258,7 +263,8 @@ if __name__ == "__main__":
             qm = qmm.open_qm(config)
             
             # Send the QUA program to the OPX, which compiles and executes it
-            job = qm.execute(rb, flags=['not-strict-timing'])
+            job = qm.execute(PROGRAM, flags=['not-strict-timing'])
+
             fetch_names = ["iteration"]
             for rr in resonators:
                 fetch_names.append(f"I_{rr}")
@@ -304,9 +310,9 @@ if __name__ == "__main__":
                 plt.pause(0.1)
 
             for ind, rr in enumerate(resonators):
-                save_data_dict[f"I_{rr}"] = res[6*ind + 1]
-                save_data_dict[f"Q_{rr}"] = res[6*ind + 2]
-                save_data_dict[f"state_{rr}"] = res[6*ind + 3]
+                save_data_dict[rr+"_I"] = res[6*ind + 1]
+                save_data_dict[rr+"_Q"] = res[6*ind + 2]
+                save_data_dict[rr+"_state"] = res[6*ind + 3]
                 save_data_dict[rr+"_I_avg"] = res[6*ind + 4]
                 save_data_dict[rr+"_Q_avg"] = res[6*ind + 5]
                 save_data_dict[rr+"_state_avg"] = res[6*ind + 6]
