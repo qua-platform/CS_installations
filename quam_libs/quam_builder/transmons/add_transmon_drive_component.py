@@ -30,7 +30,8 @@ def add_transmon_drive_component(transmon: Transmon, wiring_path: str, ports: Di
         # MW-FEM single channel
         transmon.xy = MWChannel(
             opx_output=f"{wiring_path}/opx_output",
-            digital_outputs=digital_outputs
+            digital_outputs=digital_outputs,
+            intermediate_frequency=-200 * u.MHz
         )
 
     else:
