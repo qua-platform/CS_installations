@@ -28,11 +28,11 @@ from quam_libs.trackable_object import tracked_updates
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
     use_state_discrimination: bool = True
-    use_strict_timing: bool = True
-    num_random_sequences: int = 50  # Number of random sequences
+    use_strict_timing: bool = False
+    num_random_sequences: int = 200  # Number of random sequences
     num_averages: int = 20
     max_circuit_depth: int = 1000  # Maximum circuit depth
-    delta_clifford: int = 10
+    delta_clifford: int = 20
     seed: int = 345324
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
@@ -53,11 +53,16 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
 from qualang_tools.units import unit
 from quam_libs.components import QuAM, Transmon
-from quam_libs.macros import active_reset
+from quam_libs.macros import active_reset, qua_declaration
 
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import numpy as np
+
+import matplotlib
+from quam_libs.lib.plot_utils import QubitGrid, grid_iter
+from quam_libs.lib.save_utils import fetch_results_as_xarray
+from quam_libs.lib.fit import fit_decay_exp, decay_exp
 
 # matplotlib.use("TKAgg")
 
@@ -70,6 +75,7 @@ u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
 machine = QuAM.load()
 # Generate the OPX and Octave configurations
+
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
 # Open Communication with the QOP
@@ -203,29 +209,35 @@ def play_sequence(sequence_list, depth, qubit: Transmon):
                 qubit.xy.play("y90")
                 qubit.xy.play("-x90")
 
+average_gate_per_clifford = (
+    1 * 3 + 9 * 2 + 1 * 4 + 2 * 3 + 4 * 2 + 2 * 3)/24  # = 45/24 = 1.875
+
+
 
 ###################
 # The QUA program #
 ###################
-def get_rb_program(qubit: Transmon):
-    with program() as rb:
-        depth = declare(int)  # QUA variable for the varying depth
-        depth_target = declare(int)  # QUA variable for the current depth (changes in steps of delta_clifford)
-        # QUA variable to store the last Clifford gate of the current sequence which is replaced by the recovery gate
-        saved_gate = declare(int)
-        m = declare(int)  # QUA variable for the loop over random sequences
-        n = declare(int)  # QUA variable for the averaging loop
-        I = declare(fixed)  # QUA variable for the 'I' quadrature
-        Q = declare(fixed)  # QUA variable for the 'Q' quadrature
-        state = declare(bool)  # QUA variable for state discrimination
-        # The relevant streams
-        m_st = declare_stream()
-        if state_discrimination:
-            state_st = declare_stream()
-        else:
-            I_st = declare_stream()
-            Q_st = declare_stream()
+with program() as randomized_benchmarking:
+    depth = declare(int)  # QUA variable for the varying depth
+    depth_target = declare(int)  # QUA variable for the current depth (changes in steps of delta_clifford)
+    # QUA variable to store the last Clifford gate of the current sequence which is replaced by the recovery gate
+    saved_gate = declare(int)
+    m = declare(int)  # QUA variable for the loop over random sequences
+    # n = declare(int)  # QUA variable for the averaging loop
+    # I = declare(fixed)  # QUA variable for the 'I' quadrature
+    # Q = declare(fixed)  # QUA variable for the 'Q' quadrature
+    # state = declare(bool)  # QUA variable for state discrimination
 
+    I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
+    state = [declare(int) for _ in range(num_qubits)]
+      
+    # The relevant streams
+    m_st = declare_stream()
+    # state_st = declare_stream()
+    state_st = [declare_stream() for _ in range(num_qubits)]  
+
+
+    for i, qubit in enumerate(qubits):
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
@@ -249,6 +261,7 @@ def get_rb_program(qubit: Transmon):
                 # Only played the depth corresponding to target_depth
                 with if_((depth == 1) | (depth == depth_target)):
                     with for_(n, 0, n < n_avg, n + 1):
+                        align()
                         if reset_type == "active":
                             active_reset(machine, qubit.name)
                         else:
@@ -265,14 +278,10 @@ def get_rb_program(qubit: Transmon):
                         # Align the two elements to measure after playing the circuit.
                         align(qubit.xy.name, qubit.resonator.name)
                         # Make sure you updated the ge_threshold and angle if you want to use state discrimination
-                        qubit.resonator.measure("readout", qua_vars=(I, Q))
+                        qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                         # Make sure you updated the ge_threshold
-                        if state_discrimination:
-                            assign(state, I > qubit.resonator.operations["readout"].threshold)
-                            save(state, state_st)
-                        else:
-                            save(I, I_st)
-                            save(Q, Q_st)
+                        assign(state[i], Cast.to_int(I[i] > qubit.resonator.operations["readout"].threshold))
+                        save(state[i], state_st[i])
 
                     # Go to the next depth
                     assign(depth_target, depth_target + delta_clifford)
@@ -282,145 +291,109 @@ def get_rb_program(qubit: Transmon):
             # Save the counter for the progress bar
             save(m, m_st)
 
-        with stream_processing():
-            m_st.save("iteration")
-            if state_discrimination:
-                # saves a 2D array of depth and random pulse sequences in order to get error bars along the random sequences
-                state_st.boolean_to_int().buffer(n_avg).map(FUNCTIONS.average()).buffer(num_depths).buffer(
-                    num_of_sequences
-                ).save("state")
-                # returns a 1D array of averaged random pulse sequences vs depth of circuit for live plotting
-                state_st.boolean_to_int().buffer(n_avg).map(FUNCTIONS.average()).buffer(num_depths).average().save(
-                    "state_avg"
-                )
-            else:
-                I_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(num_depths).buffer(num_of_sequences).save("I")
-                Q_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(num_depths).buffer(num_of_sequences).save("Q")
-                I_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(num_depths).average().save("I_avg")
-                Q_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(num_depths).average().save("Q_avg")
-
-    return rb
-
+    with stream_processing():
+        m_st.save("iteration")
+        for i in range(num_qubits):
+            state_st[i].buffer(n_avg).map(FUNCTIONS.average()).buffer(num_depths).buffer(num_of_sequences).save(f"state{i + 1}")
 
 simulate = False
 
 if simulate:
     simulation_config = SimulationConfig(duration=100_000)  # in clock cycles
-    job = qmm.simulate(config, get_rb_program(qubits[0]), simulation_config)
+    job = qmm.simulate(config, randomized_benchmarking, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results["figure"] = plt.gcf()
 else:
     # Prepare data for saving
     node.results = {}
-    for qubit in qubits:
-        # Open the quantum machine
-        qm = qmm.open_qm(config)
-        # Calibrate the active qubits
-        # machine.calibrate_octave_ports(qm)
-        # Send the QUA program to the OPX, which compiles and executes it
-        rb_program = get_rb_program(qubit)
-        job = qm.execute(rb_program)
-        # Get results from QUA program
-        if state_discrimination:
-            results = fetching_tool(job, data_list=["state_avg", "iteration"], mode="live")
-        else:
-            results = fetching_tool(job, data_list=["I_avg", "Q_avg", "iteration"], mode="live")
-        # Live plotting
-        fig = plt.figure()
-        interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-        # data analysis
-        x = np.arange(0, max_circuit_depth + 0.1, delta_clifford)
-        x[0] = 1  # to set the first value of 'x' to be depth = 1 as in the experiment
+    # Open the quantum machine
+    qm = qmm.open_qm(config)
+    # Calibrate the active qubits
+    # machine.calibrate_octave_ports(qm)
+    # Send the QUA program to the OPX, which compiles and executes it
+    job = qm.execute(randomized_benchmarking)
+    
+    
+    for i in range(num_qubits):
+        print(f"Fetching results for qubit {qubits[i].name}")
+        data_list = ["iteration"] + sum([[f"state{i + 1}"] for i in range(num_qubits)], [])
+        results = fetching_tool(job, data_list, mode="live")
+    # Live plotting
+
         while results.is_processing():
-            # data analysis
-            if state_discrimination:
-                state_avg, iteration = results.fetch_all()
-                value_avg = state_avg
-            else:
-                I, Q, iteration = results.fetch_all()
-                value_avg = I
+        # Fetch results
+            fetched_data = results.fetch_all()
+            m = fetched_data[0]
 
-            # Progress bar
-            progress_counter(iteration, num_of_sequences, start_time=results.get_start_time())
-            # Plot averaged values
-            plt.cla()
-            plt.plot(x, value_avg, marker=".")
-            plt.xlabel("Number of Clifford gates")
-            plt.ylabel("Sequence Fidelity")
-            plt.title("Single qubit RB")
-            plt.pause(0.1)
+            progress_counter(m, num_of_sequences, start_time=results.start_time)
+    qm.close()   
 
-        # At the end of the program, fetch the non-averaged results to get the error-bars
-        if state_discrimination:
-            results = fetching_tool(job, data_list=["state"])
-            state = results.fetch_all()[0]
-            value_avg = np.mean(state, axis=0)
-            error_avg = np.std(state, axis=0)
-        else:
-            results = fetching_tool(job, data_list=["I", "Q"])
-            I, Q = results.fetch_all()
-            value_avg = np.mean(I, axis=0)
-            error_avg = np.std(I, axis=0)
-        # data analysis
-        pars, cov = curve_fit(
-            f=power_law,
-            xdata=x,
-            ydata=value_avg,
-            p0=[0.5, 0.5, 0.9],
-            bounds=(-np.inf, np.inf),
-            maxfev=2000,
-        )
-        stdevs = np.sqrt(np.diag(cov))
+# %%
+if not simulate:
+    depths = np.arange(0, max_circuit_depth + 0.1, delta_clifford)
+    depths[0] = 1
+    handles = job.result_handles
+    ds = fetch_results_as_xarray(handles, qubits, {"depths": depths, "sequence": np.arange(num_of_sequences)})
 
-        print("#########################")
-        print("### Fitted Parameters ###")
-        print("#########################")
-        print(
-            f"A = {pars[0]:.3} ({stdevs[0]:.1}), B = {pars[1]:.3} ({stdevs[1]:.1}), p = {pars[2]:.3} ({stdevs[2]:.1})"
-        )
-        print("Covariance Matrix")
-        print(cov)
+    node.results = {}
+    node.results['ds'] = ds
 
-        one_minus_p = 1 - pars[2]
-        r_c = one_minus_p * (1 - 1 / 2**1)
-        r_g = r_c / 1.875  # 1.875 is the average number of gates in clifford operation
-        r_c_std = stdevs[2] * (1 - 1 / 2**1)
-        r_g_std = r_c_std / 1.875
+# %%
+if not simulate:
+    import xarray as xr
+    da_state = 1 - ds['state'].mean(dim='sequence')
+    da_state: xr.DataArray
+    da_state.attrs = {'long_name': 'p(0)'}
+    da_state = da_state.assign_coords(depths=da_state.depths-1)
+    da_state = da_state.rename(depths='m')
+    da_state.m.attrs = {'long_name': 'no. of Cliffords'}
 
-        print("#########################")
-        print("### Useful Parameters ###")
-        print("#########################")
-        print(
-            f"Error rate: 1-p = {np.format_float_scientific(one_minus_p, precision=2)} ({stdevs[2]:.1})\n"
-            f"Clifford set infidelity: r_c = {np.format_float_scientific(r_c, precision=2)} ({r_c_std:.1})\n"
-            f"Gate infidelity: r_g = {np.format_float_scientific(r_g, precision=2)}  ({r_g_std:.1})"
-        )
-        # Plots
-        fig_analysis = plt.figure()
-        plt.errorbar(x, value_avg, yerr=error_avg, marker=".")
-        plt.plot(x, power_law(x, *pars), linestyle="--", linewidth=2)
-        plt.xlabel("Number of Clifford gates")
-        plt.ylabel("Sequence Fidelity")
-        plt.title(f"Single qubit RB for {qubit.name}")
+    # if params['plot']:
+    #     grid = da_state.plot(col='q', marker='o', figsize=(10, 5))
+    da_fit = fit_decay_exp(da_state, 'm')
 
-        plt.show()
-        # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
-        qm.close()
+    alpha = np.exp(da_fit.sel(fit_vals='decay'))
+    # EPC from here: https://qiskit.org/textbook/ch-quantum-hardware/randomized-benchmarking.html#Step-5:-Fit-the-resultsfor q in machine.active_qubits:
+    EPC = (1 - alpha) - (1 - alpha) / 2
+    EPG = EPC / average_gate_per_clifford
 
-        # Save data from the node
-        node.results[f"{qubit.name}_depth"] = x
-        node.results[f"{qubit.name}_fidelity"] = value_avg
-        node.results[f"{qubit.name}_error"] = error_avg
-        node.results[f"{qubit.name}_fit"] = power_law(x, *pars)
-        node.results[f"{qubit.name}_covariance_par"] = pars
-        node.results[f"{qubit.name}_error_rate"] = one_minus_p
-        node.results[f"{qubit.name}_clifford_set_infidelity"] = r_c
-        node.results[f"{qubit.name}_gate_infidelity"] = r_g
-        node.results[f"{qubit.name}_figure"] = fig
-        node.results[f"{qubit.name}_figure_analysis"] = fig_analysis
+    node.results['fit_results'] = {}
+    for q in qubits:
+        node.results['fit_results'][q.name] = {}
+        node.results['fit_results'][q.name]['EPC'] = EPC.sel(qubit=q.name).values
+        node.results['fit_results'][q.name]['EPG'] = EPG.sel(qubit=q.name).values
+        print(f'{q.name}: EPC={EPC.sel(qubit=q.name).values}')
+        print(f'{q.name}: EPG={EPG.sel(qubit=q.name).values}')
+    
+
+# %%    
+if not simulate:
+    grid_names = [f'{q.name}_0' for q in qubits]
+    grid = QubitGrid(ds, grid_names)
+    for ax, qubit in grid_iter(grid):
+        da_state_qubit = da_state.sel(qubit=qubit['qubit'])
+        da_state_std = ds['state'].std(dim='sequence').sel(qubit=qubit['qubit'])
+        ax.errorbar(da_state_qubit.m, da_state_qubit, yerr=da_state_std, fmt='.', capsize=2, elinewidth=0.5)
+        # ax.set_yticks([0, 0.5, 1])
+        ax.grid('all')
+        m = da_state.m.values
+        ax.set_title(qubit['qubit'], pad = 22)
+        ax.set_xlabel('Circuit depth')
+        fit_dict = {k: da_fit.sel(
+            **qubit).sel(fit_vals=k).values for k in da_fit.fit_vals.values}
+        ax.plot(m, decay_exp(m, **fit_dict), 'r--', label='fit')
+        ax.text(
+            0., 1.07, f'RB fidelity = {1 - EPG.sel(**qubit).values:.5f}', transform=ax.transAxes)
+    plt.tight_layout()
+    plt.show()
+    node.results['figure'] = grid.fig
+        
 
 
 # %%
-node.results['initial_parameters'] = node.parameters.model_dump()
-node.machine = machine
-node.save()
+if not simulate:
+    node.results['initial_parameters'] = node.parameters.model_dump()
+    node.machine = machine
+    node.save()
+
+# %%
