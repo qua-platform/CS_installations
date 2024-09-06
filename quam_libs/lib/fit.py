@@ -44,8 +44,8 @@ def fit_decay_exp(da, dim):
     def apply_fit(x, y, a, offset, decay):
         try:
             # fit = curve_fit(decay_exp, x, y, p0=[a, offset, decay], bounds=(0, [1, 1., -1]))[0]
-            fit = curve_fit(decay_exp, x, y, p0=[a, offset, decay])[0]
-            return fit
+            fit, residuals = curve_fit(decay_exp, x, y, p0=[a, offset, decay])
+            return np.array(fit.tolist() +  np.array(residuals).flatten().tolist())
             # return np.array([fit.values[k] for k in ["a", "offset", "decay"]])
         except RuntimeError as e:
             print(f'{a=}, {offset=}, {decay=}')
@@ -59,8 +59,10 @@ def fit_decay_exp(da, dim):
                              output_core_dims=[['fit_vals']],
                              vectorize=True,
                              )
-    return fit_res.assign_coords(fit_vals=('fit_vals', ['a', 'offset', 'decay']))
-
+    return fit_res.assign_coords(fit_vals=('fit_vals', ['a', 'offset', 'decay',
+                                                        'a_a', 'a_offset','a_decay',
+                                                        'offset_a', 'offset_offset','offset_decay',
+                                                        'decay_a', 'decay_offset','decay_decay']))
 
 def oscillation_decay_exp(t, a, f, phi, offset, decay):
     return a * np.exp(-t * decay) * np.cos(2 * np.pi * f * t + phi) + offset
@@ -73,6 +75,8 @@ def fit_oscillation_decay_exp(da, dim):
 
     def get_freq(dat):
         def f(d): return ca.guess.frequency(da[dim], d)
+        def f(d): return 0.0
+
         return np.apply_along_axis(f, -1, dat)
 
     def get_amp(dat):
@@ -89,9 +93,9 @@ def fit_oscillation_decay_exp(da, dim):
 
     def apply_fit(x, y, a, f, phi, offset, decay):
         try:
-            fit = curve_fit(oscillation_decay_exp, x, y, p0=[
-                            a, f, phi, offset, decay])[0]
-            return fit
+            fit, residuals = curve_fit(oscillation_decay_exp, x, y, p0=[
+                            a, f, phi, offset, decay])
+            return np.array(fit.tolist() +  np.array(residuals).flatten().tolist())
         except RuntimeError as e:
             print(f'{a=}, {f=}, {phi=}, {offset=}, {decay=}')
             plt.plot(x, oscillation_decay_exp(x, a, f, phi, offset, decay))
@@ -106,8 +110,12 @@ def fit_oscillation_decay_exp(da, dim):
                              output_core_dims=[['fit_vals']],
                              vectorize=True,
                              )
-    return fit_res.assign_coords(fit_vals=('fit_vals', ['a', 'f', 'phi', 'offset', 'decay']))
-
+    return fit_res.assign_coords(fit_vals=('fit_vals', ['a', 'f', 'phi', 'offset', 'decay',
+                'a_a', 'a_f', 'a_phi', 'a_offset', 'a_decay',
+                'f_a', 'f_f', 'f_phi', 'f_offset', 'f_decay',
+                'phi_a', 'phi_f', 'phi_phi', 'phi_offset', 'phi_decay',
+                'offset_a', 'offset_f', 'offset_phi', 'offset_offset', 'offset_decay',
+                'decay_a', 'decay_f', 'decay_phi', 'decay_offset', 'decay_decay']))
 
 def echo_decay_exp(t, a, offset, decay, decay_echo):
     return a * np.exp(-t * decay - (t * decay_echo)**2) + offset
