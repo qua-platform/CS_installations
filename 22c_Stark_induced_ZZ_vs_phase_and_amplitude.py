@@ -1,6 +1,36 @@
 # %%
 """
         STARK INDUCED ZZ VS PHASE AND AMPLITUDE
+The Stark-induced ZZ scripts are designed to measure the ZZ interaction between a control qubit
+and a target qubit under various parameters. The ZZ interaction is measured as the difference 
+in detuning caused by off-resonant drives at frequencies detuned from the target frequency.
+
+The pulse sequences are as follow:
+                                  ____  ______          ______
+                Control(fC): ____| pi || pi/2 |________| pi/2 |________________
+                                                ______                     
+   ZZ_Control (fT-detuning): __________________|  ZZ  |_____________________
+                                                ______
+    ZZ_Target (fT-detuning): __________________|  ZZ  |_____________________
+                                                                ______
+                Readout(fR): __________________________________|  RR  |________
+
+This script calibrates the phase and amplitude of the ZZ control or ZZ target, reproducing the Fig. 2(b) of the referenced paper.
+The pulse sequence follows a driven Ramsey type and is repeated with the control qubit in both the |0⟩ and |1⟩ states.
+The results are fitted to extract the qubit detuning, and the difference in detuning
+between the |0⟩ and |1⟩ states reveals the strength of the ZZ interaction.
+
+Prerequisites:
+    - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
+    - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy, rabi_chevron, power_rabi and updated the config.
+    - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
+
+Next steps before going to the next node:
+    - Pick an phase and update the config for
+        - ZZ_CONTROL_CONSTANTS["zz_control_c{qc}t{qt}"]["square_phase"]
+        - ZZ_TARGET_CONSTANTS["zz_target_c{qc}t{qt}"]["square_phase"]
+
+Reference: Bradley K. Mitchell, et al, Phys. Rev. Lett. 127, 200502 (2021)
 """
 
 from qm import QuantumMachinesManager, SimulationConfig
@@ -23,7 +53,7 @@ from qualang_tools.results.data_handler import DataHandler
 # Qubits and resonators 
 qc = 2 # index of control qubit
 qt = 3 # index of target qubit
-qubit_to_sweep_amp = qc
+qubit_to_sweep_amp = qc # qc or qt to sweep
 
 # Parameters Definition
 n_avg = 10  # The number of averages
@@ -49,14 +79,12 @@ qubits = [f"q{i}_xy" for i in [qc, qt]]
 resonators = [f"q{i}_rr" for i in [qc, qt]]
 delta_phase = 4e-9 * freq_detuning * t_step
 ts_ns = 4 * ts_cycles # in clock cylcle = 4ns
-
-config["waveforms"][f"square_wf_{zz_control}"]["sample"] = 0.1
-config["waveforms"][f"square_wf_{zz_target}"]["sample"] = 0.1
 amp_actual = config["waveforms"][f"square_wf_{zz_control}"]["sample"] if qubit_to_sweep_amp == qc else config["waveforms"][f"square_wf_{zz_target}"]["sample"]
 
 # Assertion
 assert n_avg <= 10_000, "revise your number of shots"
 assert np.all(ts_cycles % 2 == 0) and (ts_cycles.min() >= 4), "ts_cycles should only have even numbers if play echoes"
+assert qubit_to_sweep_amp in [qc, qt], "The qubit to sweep must either be qc or qt."
 
 # Data to save
 save_data_dict = {
