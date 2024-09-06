@@ -10,7 +10,7 @@ def create_digital_output_port(channel: AnyInstrumentChannel) -> (str, str):
     if channel.instrument_id == "opx+":
         reference += f"/con{channel.con}"
     elif channel.instrument_id in ["lf-fem", "mw-fem"]:
-        reference += f"/{channel.con}"
+        reference += f"/con{channel.con}"
         reference += f"/{channel.slot}"
     else:
         raise NotImplementedError(f"Unhandled digital channel on instrument {channel.instrument_id}")
