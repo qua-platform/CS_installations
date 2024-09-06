@@ -1,7 +1,6 @@
 # %%
 """
-                                 CR_calib_cancel_drive_amplitude
-
+        CR CALIB CANCEL DRIVE AMPLITUDE
 The CR_calib scripts are designed for calibrating cross-resonance (CR) gates involving a system
 with a control qubit and a target qubit. These scripts help estimate the parameters of a Hamiltonian,
 which is represented as:

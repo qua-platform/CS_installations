@@ -1,8 +1,7 @@
 # %%
 """
-                                 CR_calib_unit_hamiltonian_tomography
-
-    The CR_calib scripts are designed for calibrating cross-resonance (CR) gates involving a system
+        CR CALIB UNIT HAMILTONIAN TOMOGRAPHY
+The CR_calib scripts are designed for calibrating cross-resonance (CR) gates involving a system
 with a control qubit and a target qubit. These scripts help estimate the parameters of a Hamiltonian,
 which is represented as:
         H = I ⊗ (a_X X + a_Y Y + a_Z Z) + Z ⊗ (b_X X + b_Y Y + b_Z Z)

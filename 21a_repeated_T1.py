@@ -1,10 +1,9 @@
 # %%
 """
-        RAMSEY CHEVRON (IDLE TIME VS FREQUENCY)
-The program consists in playing a Ramsey sequence (x90 - idle_time - x90 - measurement) for different qubit intermediate
-frequencies and idle times.
-From the results, one can estimate the qubit frequency more precisely than by doing Rabi and also gets a rough estimate
-of the qubit coherence time.
+        REPEATED T1 MEASUREMENT
+The sequence consists in putting the qubit in the excited stated by playing the x180 pulse and measuring the resonator
+after a varying time. The qubit T1 is extracted by fitting the exponential decay of the measured quadratures.
+This process is repeated over a long time.
 
 Prerequisites:
     - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
@@ -12,7 +11,7 @@ Prerequisites:
     - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
 
 Next steps before going to the next node:
-    - Update the qubit frequency (qubit_IF_q) in the configuration.
+    - Update the qubit T1 (qubit_T1) in the configuration.
 """
 
 from qm import QuantumMachinesManager, SimulationConfig

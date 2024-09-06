@@ -1,6 +1,6 @@
 # %%
 """
-                                    Cross-Resonance Time Rabi
+        ECHO CROSS-RESONANCE TIME RABI
 The sequence consists two consecutive pulse sequences with the qubit's thermal decay in between.
 In the first sequence, we set the control qubit in |g> and play a rectangular cross-resonance pulse to
 the target qubit; the cross-resonance pulse has a variable duration. In the second sequence, we initialize the control

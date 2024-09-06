@@ -1,7 +1,6 @@
 # %%
 """
-                                 CR_calib_cr_drive_amplitude
-
+        CR CALIB CR DRIVE AMPLITUDE
 The CR_calib scripts are designed for calibrating cross-resonance (CR) gates involving a system
 with a control qubit and a target qubit. These scripts help estimate the parameters of a Hamiltonian,
 which is represented as:
@@ -33,7 +32,7 @@ Prerequisites:
 Next steps before going to the next node:
     - Pick an amplitude for cr_c1t2_square_positive_amp.
       In the end, we want to make the CR gate as short short as possible with highest fidelity.
-      Thus, we want to pick a large enough amplitude for the CR drive however without causing too much of AC Stark shift.
+      Thus, we want to pick a large enough amplitude for the ve however without causing too much of leakage.
 
 Reference: Sarah Sheldon, Easwar Magesan, Jerry M. Chow, and Jay M. Gambetta Phys. Rev. A 93, 060302(R) (2016)
 """
