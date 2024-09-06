@@ -123,8 +123,8 @@ with program() as qubit_spec:
         else:
             machine.apply_all_flux_to_zero()
             
-        for qubit in qubits:
-            wait(1000, qubit.z.name)
+        for qb in qubits:
+            wait(1000, qb.z.name)
         
         align()
                   
@@ -148,7 +148,7 @@ with program() as qubit_spec:
                 # readout the resonator
                 q.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                 # Wait for the qubit to decay to the ground state
-                qubit.resonator.wait(machine.thermalization_time * u.ns)
+                q.resonator.wait(machine.thermalization_time * u.ns)
                 # save data
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])

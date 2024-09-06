@@ -51,29 +51,40 @@ else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
 num_qubits = len(qubits)
 
-print('-'*50)
-print(qubits[0].xy.name)
-print('-'*50)
-
 with program() as prog:
 
-    qubits[0].xy.update_frequency(0)
-    qubits[1].xy.update_frequency(0)
-    
-    qubits[0].xy.play('x180')
-    align()
-    qubits[1].xy.play('x180')
-    # qubits[0].xy.play('x90')
-    # qubits[0].xy.play('-x90')
-    # qubits[0].xy.play('y180')
-    # qubits[0].xy.play('y90')
-    # qubits[0].xy.play('-y90')
+    qubits[2].xy.update_frequency(-100e6)
+    qubits[1].xy.update_frequency(-100e6)
+    qubits[0].xy.update_frequency(-100e6)
 
-job = qmm.simulate(config, prog, SimulationConfig(duration=1000))
-job.get_simulated_samples().con1.plot()
+    a = declare(fixed)
+
+    with infinite_loop_():
+
+        with for_(a, 0, a < 1.0, a +0.1):
+
+            qubits[2].xy.play('x180', amplitude_scale=a)
+            qubits[1].xy.play('x180', amplitude_scale=a)
+            wait(4)
+            align()
+            qubits[0].resonator.play('const')
+            align()
+            wait(4)
+        # for qubit in machine.active_qubits:
+        #     qubit.z.play('const')
+        #     qubit.z.wait(4)
+
+        # with for_(a, 0, a < 2.0, a+0.2):
+        # # for qubit in machine.active_qubits:
+        #     qubits[2].xy.play('x180', amplitude_scale=a)
+        #     qubits[2].xy.wait(4)
+
+
+# job = qmm.simulate(config, prog, SimulationConfig(duration=1000))
+# job.get_simulated_samples().con1.plot()
 
 qm = qmm.open_qm(config)
-
+job = qm.execute(prog)
 plt.show()
 
 

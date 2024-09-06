@@ -127,8 +127,8 @@ with program() as multi_res_spec_vs_flux:
         else:
             machine.apply_all_flux_to_zero()
 
-        for qubit in qubits:
-            wait(1000, qubit.z.name)    
+        for qb in qubits:
+            wait(1000, qb.z.name)    
 
         # resonator of the qubit
         rr = resonators[i]
