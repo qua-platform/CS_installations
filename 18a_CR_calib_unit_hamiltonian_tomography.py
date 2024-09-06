@@ -37,7 +37,8 @@ Reference: Sarah Sheldon, Easwar Magesan, Jerry M. Chow, and Jay M. Gambetta Phy
 
 from qm.qua import *
 from qm import QuantumMachinesManager
-from configuration_mw_fem import *
+# from configuration_opxplus_with_octave import *
+from configuration_opxplus_without_octave import *
 import matplotlib.pyplot as plt
 from qm import SimulationConfig
 from qualang_tools.loops import from_array

@@ -19,7 +19,8 @@ Before proceeding to the next node:
 from qm import QuantumMachinesManager
 from qm.qua import *
 from qm import SimulationConfig
-from configuration_mw_fem import *
+# from configuration_opxplus_with_octave import *
+from configuration_opxplus_without_octave import *
 import matplotlib.pyplot as plt
 from qualang_tools.loops import from_array
 from qualang_tools.results import fetching_tool, progress_counter

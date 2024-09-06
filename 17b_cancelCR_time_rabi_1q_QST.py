@@ -19,7 +19,8 @@ Reference: A. D. Corcoles et al., Phys. Rev. A 87, 030301 (2013)
 
 from qm.qua import *
 from qm import QuantumMachinesManager
-from configuration_mw_fem import *
+# from configuration_opxplus_with_octave import *
+from configuration_opxplus_without_octave import *
 import matplotlib.pyplot as plt
 from qm import SimulationConfig
 from qualang_tools.loops import from_array

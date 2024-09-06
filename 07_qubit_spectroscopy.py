@@ -27,7 +27,8 @@ Before proceeding to the next node:
 
 from qm.qua import *
 from qm import QuantumMachinesManager, SimulationConfig
-from configuration_mw_fem import *
+# from configuration_opxplus_with_octave import *
+from configuration_opxplus_without_octave import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
