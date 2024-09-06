@@ -348,7 +348,6 @@ def get_rb_interleaved_program(qubit: Transmon, variable_to_sweep: str, variable
                     Q_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(num_of_sequences).save("Q")
                     I_st.buffer(n_avg).map(FUNCTIONS.average()).average().save("I_avg")
                     Q_st.buffer(n_avg).map(FUNCTIONS.average()).average().save("Q_avg")
-
     return rb
 
 

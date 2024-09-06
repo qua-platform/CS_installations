@@ -24,11 +24,11 @@ from typing import Optional, Literal
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
     num_averages: int = 50
-    operation_x180_or_any_90: Literal['x180', 'x90', '-x90', 'y90', '-y90'] = "x180"
+    operation_x180_or_any_90: Literal['x180', 'x90', '-x90', 'y90', '-y90'] = "x90"
     min_amp_factor: float = 0.8
     max_amp_factor: float = 1.2
     amp_factor_step: float = 0.005
-    max_number_rabi_pulses_per_sweep: int = 30
+    max_number_rabi_pulses_per_sweep: int = 100
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
     simulate: bool = False
@@ -98,9 +98,9 @@ amps = np.arange(node.parameters.min_amp_factor,
 N_pi = node.parameters.max_number_rabi_pulses_per_sweep  # Maximum number of qubit pulses
 
 if operation == "x180":
-    N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[::2]
+    N_pi_vec = np.arange(1,N_pi,2).astype("int")
 elif operation in ["x90", "-x90", "y90", "-y90"]:
-    N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[::4]
+    N_pi_vec = np.arange(2,N_pi,4).astype("int")
 else:
     raise ValueError(f"Unrecognized operation {operation}.")
 

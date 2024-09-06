@@ -42,7 +42,7 @@ node = QualibrationNode(
 
 node.parameters = Parameters()
 
-
+import time
 from qm.qua import *
 from qm import SimulationConfig
 from qualang_tools.results import progress_counter, fetching_tool
@@ -58,7 +58,7 @@ import matplotlib
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 from quam_libs.lib.save_utils import fetch_results_as_xarray
 from quam_libs.lib.fit import fit_oscillation, oscillation
-
+import xarray as xr
 # matplotlib.use("TKAgg")
 
 
@@ -175,16 +175,19 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(drag_calibration)
     # Get results from QUA program
-    data_list = ["n"] + sum([[f"state{i + 1}"] for i in range(num_qubits)], [])
-    results = fetching_tool(job, data_list, mode="live")
-    # Live plotting
-    # fig = plt.figure()
-    # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-    while results.is_processing():
-        fetched_data = results.fetch_all()
-        n = fetched_data[0]
-        progress_counter(n, n_avg, start_time=results.start_time)
-
+    # data_list = ["n"] + sum([[f"state{i + 1}"] for i in range(num_qubits)], [])
+    # results = fetching_tool(job, data_list, mode="live")
+    # # Live plotting
+    # # fig = plt.figure()
+    # # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+    # while results.is_processing():
+    #     print(f"job.status = {job.status}")
+    #     fetched_data = results.fetch_all()
+    #     n = fetched_data[0]
+    #     progress_counter(n, n_avg, start_time=results.start_time)
+    while job.status == 'running':
+        print(f"job.status = {job.status}")
+        time.sleep(0.1)
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
 
@@ -205,17 +208,20 @@ if not simulate:
 
     node.results = {}
     node.results['ds'] = ds
+
 # %%
-ds.state.plot(col = 'qubit', hue = 'sequence', x = 'alpha')
-ds.amp[np.abs(ds.state.sel(sequence = 0) - ds.state.sel(sequence = 1)).argmin(dim = 'amp')]
+
 # %%
 if not simulate:
     fit_results = {}
+    state = ds.state
+    fitted = xr.polyval(state.amp,state.polyfit(dim = 'amp', deg = 1).polyfit_coefficients)
+    diffs = state.polyfit(dim = 'amp', deg = 1).polyfit_coefficients.diff(dim = 'sequence').drop('sequence')
+    intersection = -diffs.sel(degree = 0)/diffs.sel(degree = 1)
+    intersection_alpha = intersection * xr.DataArray([q.xy.operations[operation].alpha for q in qubits], dims=['qubit'], coords={'qubit': ds.qubit})
 
 
-    alphas = ds.amp[np.abs(ds.state.sel(sequence = 0) - ds.state.sel(sequence = 1)).argmin(dim = 'amp')]
-
-    fit_results = {qubit.name : {'alpha': float(alphas.sel(qubit=qubit.name).values*qubit.xy.operations[operation].alpha)} for qubit in qubits}
+    fit_results = {qubit.name : {'alpha': float(intersection_alpha.sel(qubit=qubit.name).values)} for qubit in qubits}
     for q in qubits:
         print(f"DRAG coeff for {q.name} is {fit_results[q.name]['alpha']}")
     node.results['fit_results'] = fit_results

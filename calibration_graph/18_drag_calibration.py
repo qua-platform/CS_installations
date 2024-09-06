@@ -158,6 +158,8 @@ with program() as drag_calibration:
                     assign(state[i], Cast.to_int(I[i] > qubit.resonator.operations["readout"].threshold))
                     save(state[i], state_stream[i])
 
+        align()
+
     with stream_processing():
         n_st.save("n")
         for i, qubit in enumerate(qubits):
