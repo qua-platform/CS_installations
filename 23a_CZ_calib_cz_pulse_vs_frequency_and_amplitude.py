@@ -1,6 +1,38 @@
 # %%
 """
-        CZ CALIBRATE VS FREQUENCY AND AMPLITUDE
+        CZ CALIB CZ PULSE VS FREQUENCY AND AMPLITUDE
+The CZ calibration scripts are designed to calibrate the CZ gate by adjusting the frequency and amplitude.
+Entanglement is measured as R = 0.5 * |r1 - r0|^2 , where r1 and r0 are the expectation values of the Bloch vectors.
+
+The pulse sequences are as follow:
+                                  ______ 
+                Control(fC): ____|  pi  |__________________________
+                                          ______                     
+   ZZ_control (fT-detuning): ____________|  ZZ  |__________________
+                                  ______  ______  _____
+    ZZ_target (fT-detuning): ____| pi/2 ||  ZZ  || QST |___________
+                                                         ______
+                Readout(fR): ___________________________|  RR  |___
+
+This script measures entanglement as a function of frequency and amplitude, replicating Fig. 3(b) of the referenced paper.
+The pulse sequence is repeated with the control qubit in both the |0⟩ and |1⟩ states.
+The optimal frequency and amplitude pair is selected where the entanglement measure R is maximized (close to 1).
+
+Prerequisites:
+    - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
+    - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy, rabi_chevron, power_rabi and updated the config.
+    - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
+
+Next steps before going to the next node:
+    - Pick a pair of frequency and amplitude that maximize R and update the config for
+        - ZZ_CONTROL_CONSTANTS["zz_control_c{qc}t{qt}"]["detuning"]
+        - ZZ_TARGET_CONSTANTS["zz_target_c{qc}t{qt}"]["detuning"]
+        - ZZ_CONTROL_CONSTANTS["zz_control_c{qc}t{qt}"]["square_amp"]
+        - ZZ_TARGET_CONSTANTS["zz_target_c{qc}t{qt}"]["square_amp"]
+      In the end, we want to make the CZ gate as short short as possible with highest fidelity.
+      Thus, we want to pick a large enough amplitude for the ve however without causing too much of leakage.
+
+Reference: Bradley K. Mitchell, et al, Phys. Rev. Lett. 127, 200502 (2021)
 """
 
 from qm import QuantumMachinesManager, SimulationConfig
@@ -38,7 +70,6 @@ df_min = -40e6
 df_step = 10e6
 dfs = np.arange(df_min, df_max, df_step)
 
-drive_phase = 0.25
 amps = np.arange(0.25, 1.2, 0.25) # scaling factor for amplitude
 freq_detuning = -4 * u.MHz
 
@@ -57,10 +88,9 @@ resonators = [f"q{i}_rr" for i in [qc, qt]]
 delta_phase = 4e-9 * freq_detuning * t_step
 ts_ns = 4 * ts_cycles # in clock cylcle = 4ns
 
-config["waveforms"][f"square_wf_{zz_control}"]["sample"] = 0.1
-config["waveforms"][f"square_wf_{zz_target}"]["sample"] = 0.1
 amp_actual_c = config["waveforms"][f"square_wf_{zz_control}"]["sample"]
 amp_actual_t = config["waveforms"][f"square_wf_{zz_target}"]["sample"]
+drive_relative_phase = ZZ_TARGET_CONSTANTS[f"zz_target_c{qc}t{qt}"]["square_relative_phase"]
 
 # Assertion
 assert n_avg <= 10_000, "revise your number of shots"
@@ -77,7 +107,7 @@ save_data_dict = {
     "ts_ns": ts_ns,
     "amps": amps,
     "dfs": dfs,
-    "drive_phase": drive_phase,
+    "drive_relative_phase": drive_relative_phase,
     "n_avg": n_avg,
     "config": config,
 }
@@ -104,7 +134,7 @@ with program() as prog:
 
         # Phase shift for zz target
         reset_frame(zz_target)
-        frame_rotation_2pi(drive_phase, zz_target)
+        frame_rotation_2pi(drive_relative_phase, zz_target)
 
         with for_(*from_array(df, dfs)):
             # Update IF
@@ -123,8 +153,8 @@ with program() as prog:
 
                         play('x90', qt_xy)
                         align(qt_xy, zz_control, zz_target)
-                        play("square", zz_control)
-                        play("square", zz_target)
+                        play("square" * amp(a), zz_control)
+                        play("square" * amp(a), zz_target)
                         align(qt_xy, zz_control, zz_target)
 
                         with switch_(c):

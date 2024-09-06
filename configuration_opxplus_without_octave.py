@@ -73,6 +73,13 @@ default_additional_files = {
 CONST_LEN = 1000
 CONST_AMP = 0.125
 
+QUBITS = [1, 2, 3, 4]
+QUBIT_PAIRS = [
+    [1, 2],
+    [2, 3],
+    [3, 4],
+]
+
 # PORT DELAYS
 delays = {
     "rl1": 0,
@@ -213,12 +220,6 @@ waveforms = generate_waveforms(qubit_rotation_keys)
 #              CROSS RESONANCE              #
 #############################################
 
-qubit_pairs = [
-    ["1", "2"], ["2", "1"],
-    ["2", "3"], ["3", "2"],
-    ["3", "4"], ["4", "3"],
-]
-
 CR_DRIVE_SQUARE_AMP = 0.2
 CR_DRIVE_SQUARE_LEN = 120
 CR_DRIVE_FLATTOP_AMP = 0.2
@@ -281,7 +282,7 @@ CR_DRIVE_CONSTANTS = {
         "delay": QUBIT_CONSTANTS[f"q{c}_xy"]["delay"],
         "thread_main": None,
         "thread_twin": None,
-    } for c, t in qubit_pairs}
+    } for pair in QUBIT_PAIRS for c, t in (pair, pair[::-1])}
 }
 # update after finidng the optimal parameters for amplitude and cr_square_len for each pair
 # CR_DRIVE_CONSTANTS["cr_drive_c1t2"].update({"square_positive_amp": CR_DRIVE_SQUARE_AMP, "square_positive_len": CR_DRIVE_SQUARE_LEN, "flattop_amp": CR_DRIVE_FLATTOP_AMP, "flattop_len": CR_DRIVE_FLATTOP_LEN})
@@ -335,7 +336,7 @@ CR_CANCEL_CONSTANTS = {
         "delay": QUBIT_CONSTANTS[f"q{t}_xy"]["delay"],
         "thread_main": None,
         "thread_twin": None,
-    } for c, t in qubit_pairs}
+    } for pair in QUBIT_PAIRS for c, t in (pair, pair[::-1])}
 }
 # update after finidng the optimal parameters for amplitude and cr_square_len for each pair
 # CR_CANCEL_CONSTANTS["cr_cancel_c1t2"].update({"square_positive_amp": CR_CANCEL_SQUARE_AMP, "square_positive_len": CR_CANCEL_SQUARE_LEN, "flattop_amp": CR_CANCEL_FLATTOP_AMP, "flattop_len": CR_CANCEL_FLATTOP_LEN})
@@ -353,7 +354,7 @@ CR_CANCEL_CONSTANTS = {
 #         "gaussian_fall_positive_amp": v["flattop_positive_amp"],
 #         "gaussian_fall_negative_amp": -v["flattop_positive_amp"],
 # })
-for c, t in qubit_pairs:
+for c, t in QUBIT_PAIRS:
     IF_cr_drive = CR_DRIVE_CONSTANTS[f"cr_drive_c{c}t{t}"]["IF"]
     IF_cr_cancel = CR_CANCEL_CONSTANTS[f"cr_cancel_c{c}t{t}"]["IF"]
     LO_cr_drive = CR_DRIVE_CONSTANTS[f"cr_drive_c{c}t{t}"]["LO"]
@@ -366,29 +367,28 @@ for c, t in qubit_pairs:
 #      STARK-INDUCED ZZ INTERACTION         #
 #############################################
 
-qubit_pairs = [
-    ["1", "2"], ["2", "1"],
-    ["2", "3"], ["3", "2"],
-    ["3", "4"], ["4", "3"],
-]
-
 ZZ_CONTROL_DETUNING = 0 * u.MHz
 ZZ_CONTROL_SQUARE_AMP = 0.2
 ZZ_CONTROL_SQUARE_LEN = 120
+ZZ_CONTROL_SQUARE_PHI_ZI = 0.0
 ZZ_CONTROL_FLATTOP_AMP = 0.2
 ZZ_CONTROL_FLATTOP_LEN = 100
+ZZ_CONTROL_FLATTOP_PHI_ZI = 0.0
 ZZ_CONTROL_GAUSSIAN_RISE_AMP = ZZ_CONTROL_FLATTOP_AMP
 ZZ_CONTROL_GAUSSIAN_RISE_LEN = 20
 ZZ_CONTROL_GAUSSIAN_RISE_PAD_LEN = ZZ_CONTROL_GAUSSIAN_RISE_LEN % 4
 ZZ_CONTROL_GAUSSIAN_FALL_AMP = ZZ_CONTROL_FLATTOP_AMP
 ZZ_CONTROL_GAUSSIAN_FALL_LEN = ZZ_CONTROL_GAUSSIAN_RISE_LEN
 ZZ_CONTROL_GAUSSIAN_FALL_PAD_LEN = ZZ_CONTROL_GAUSSIAN_FALL_LEN % 4
-
 ZZ_TARGET_DETUNING = ZZ_CONTROL_DETUNING
 ZZ_TARGET_SQUARE_AMP = ZZ_CONTROL_SQUARE_AMP
 ZZ_TARGET_SQUARE_LEN = ZZ_CONTROL_SQUARE_LEN
+ZZ_TARGET_SQUARE_RELATIVE_PHASE = 0.0
+ZZ_TARGET_SQUARE_PHI_IZ = 0.0
 ZZ_TARGET_FLATTOP_AMP = ZZ_CONTROL_FLATTOP_AMP
 ZZ_TARGET_FLATTOP_LEN = ZZ_CONTROL_FLATTOP_LEN
+ZZ_TARGET_FLATTOP_RELATIVE_PHASE = 0.0
+ZZ_TARGET_FLATTOP_PHI_IZ = 0.0
 ZZ_TARGET_GAUSSIAN_RISE_AMP = ZZ_CONTROL_FLATTOP_AMP
 ZZ_TARGET_GAUSSIAN_RISE_LEN = ZZ_CONTROL_GAUSSIAN_RISE_LEN
 ZZ_TARGET_GAUSSIAN_RISE_PAD_LEN = ZZ_CONTROL_GAUSSIAN_RISE_LEN % 4
@@ -409,8 +409,10 @@ ZZ_CONTROL_CONSTANTS = {
         # main
         "square_amp": ZZ_CONTROL_SQUARE_AMP,
         "square_len": ZZ_CONTROL_SQUARE_LEN,
+        "square_phi_ZI": ZZ_CONTROL_SQUARE_PHI_ZI, # in units of 2pi
         "flattop_amp": ZZ_CONTROL_FLATTOP_AMP,
         "flattop_len": ZZ_CONTROL_FLATTOP_LEN,
+        "flattop_phi_ZI": ZZ_CONTROL_FLATTOP_PHI_ZI, # in units of 2pi
         # twin
         "gaussian_rise_amp": ZZ_CONTROL_GAUSSIAN_RISE_AMP,
         "gaussian_rise_len": ZZ_CONTROL_GAUSSIAN_RISE_LEN,
@@ -428,7 +430,7 @@ ZZ_CONTROL_CONSTANTS = {
         "delay": QUBIT_CONSTANTS[f"q{c}_xy"]["delay"],
         "thread_main": None,
         "thread_twin": None,
-    } for c, t in qubit_pairs}
+    } for pair in QUBIT_PAIRS for c, t in (pair, pair[::-1])}
 }
 # # main
 # ZZ_CONTROL_CONSTANTS["zz_control_c1t2"].update({"detuning: ZZ_CONTROL_DETUNING, "square_amp": ZZ_CONTROL_SQUARE_AMP, "square_len": ZZ_CONTROL_SQUARE_LEN, "flattop_amp": ZZ_CONTROL_FLATTOP_AMP, "flattop_len": ZZ_CONTROL_FLATTOP_LEN})
@@ -437,6 +439,13 @@ ZZ_CONTROL_CONSTANTS = {
 # ZZ_CONTROL_CONSTANTS["zz_control_c3t2"].update({"detuning: ZZ_CONTROL_DETUNING, "square_amp": ZZ_CONTROL_SQUARE_AMP, "square_len": ZZ_CONTROL_SQUARE_LEN, "flattop_amp": ZZ_CONTROL_FLATTOP_AMP, "flattop_len": ZZ_CONTROL_FLATTOP_LEN})
 # ZZ_CONTROL_CONSTANTS["zz_control_c3t4"].update({"detuning: ZZ_CONTROL_DETUNING, "square_amp": ZZ_CONTROL_SQUARE_AMP, "square_len": ZZ_CONTROL_SQUARE_LEN, "flattop_amp": ZZ_CONTROL_FLATTOP_AMP, "flattop_len": ZZ_CONTROL_FLATTOP_LEN})
 # ZZ_CONTROL_CONSTANTS["zz_control_c4t3"].update({"detuning: ZZ_CONTROL_DETUNING, "square_amp": ZZ_CONTROL_SQUARE_AMP, "square_len": ZZ_CONTROL_SQUARE_LEN, "flattop_amp": ZZ_CONTROL_FLATTOP_AMP, "flattop_len": ZZ_CONTROL_FLATTOP_LEN})
+# # main (phase)
+# ZZ_CONTROL_CONSTANTS["zz_control_c1t2"].update({"square_phi_ZI": ZZ_CONTROL_SQUARE_PHI_IZ, "flattop_phi_ZI": ZZ_CONTROL_FLATTOP_PHI_ZI})
+# ZZ_CONTROL_CONSTANTS["zz_control_c2t1"].update({"square_phi_ZI": ZZ_CONTROL_SQUARE_PHI_IZ, "flattop_phi_ZI": ZZ_CONTROL_FLATTOP_PHI_ZI})
+# ZZ_CONTROL_CONSTANTS["zz_control_c2t3"].update({"square_phi_ZI": ZZ_CONTROL_SQUARE_PHI_IZ, "flattop_phi_ZI": ZZ_CONTROL_FLATTOP_PHI_ZI})
+# ZZ_CONTROL_CONSTANTS["zz_control_c3t2"].update({"square_phi_ZI": ZZ_CONTROL_SQUARE_PHI_IZ, "flattop_phi_ZI": ZZ_CONTROL_FLATTOP_PHI_ZI})
+# ZZ_CONTROL_CONSTANTS["zz_control_c3t4"].update({"square_phi_ZI": ZZ_CONTROL_SQUARE_PHI_IZ, "flattop_phi_ZI": ZZ_CONTROL_FLATTOP_PHI_ZI})
+# ZZ_CONTROL_CONSTANTS["zz_control_c4t3"].update({"square_phi_ZI": ZZ_CONTROL_SQUARE_PHI_IZ, "flattop_phi_ZI": ZZ_CONTROL_FLATTOP_PHI_ZI})
 # # twin
 # ZZ_CONTROL_CONSTANTS["zz_control_c1t2"].update({"detuning: ZZ_CONTROL_DETUNING, "gaussian_rise_amp": ZZ_CONTROL_GAUSSIAN_RISE_AMP, "gaussian_rise_len": ZZ_CONTROL_GAUSSIAN_RISE_LEN, "gaussian_fall_amp": ZZ_CONTROL_GAUSSIAN_FALL_AMP, "gaussian_fall_len": ZZ_CONTROL_GAUSSIAN_FALL_LEN})
 # ZZ_CONTROL_CONSTANTS["zz_control_c2t1"].update({"detuning: ZZ_CONTROL_DETUNING, "gaussian_rise_amp": ZZ_CONTROL_GAUSSIAN_RISE_AMP, "gaussian_rise_len": ZZ_CONTROL_GAUSSIAN_RISE_LEN, "gaussian_fall_amp": ZZ_CONTROL_GAUSSIAN_FALL_AMP, "gaussian_fall_len": ZZ_CONTROL_GAUSSIAN_FALL_LEN})
@@ -454,8 +463,12 @@ ZZ_TARGET_CONSTANTS = {
         # main
         "square_amp": ZZ_TARGET_SQUARE_AMP,
         "square_len": ZZ_TARGET_SQUARE_LEN,
+        "square_relative_phase": ZZ_TARGET_SQUARE_RELATIVE_PHASE, # in units of 2pi
+        "square_phi_IZ": ZZ_TARGET_SQUARE_PHI_IZ, # in units of 2pi
         "flattop_amp": ZZ_TARGET_FLATTOP_AMP,
         "flattop_len": ZZ_TARGET_FLATTOP_LEN,
+        "flattop_relative_phase": ZZ_TARGET_FLATTOP_RELATIVE_PHASE, # in units of 2pi
+        "flattop_phi_IZ": ZZ_TARGET_FLATTOP_PHI_IZ, # in units of 2pi
         # twin
         "gaussian_rise_amp": ZZ_TARGET_GAUSSIAN_RISE_AMP,
         "gaussian_rise_len": ZZ_TARGET_GAUSSIAN_RISE_LEN,
@@ -473,26 +486,33 @@ ZZ_TARGET_CONSTANTS = {
         "delay": QUBIT_CONSTANTS[f"q{t}_xy"]["delay"],
         "thread_main": None,
         "thread_twin": None,
-    } for c, t in qubit_pairs}
+    } for pair in QUBIT_PAIRS for c, t in (pair, pair[::-1])}
 }
 # # main
-# ZZ_TARGET_CONSTANTS["zz_target_c1t2"].update({"detuning: ZZ_TARGET_DETUNING, "square_amp": ZZ_TARGET_SQUARE_AMP, "square_len": ZZ_TARGET_SQUARE_LEN, "flattop_amp": ZZ_TARGET_FLATTOP_AMP, "flattop_len": ZZ_TARGET_FLATTOP_LEN})
-# ZZ_TARGET_CONSTANTS["zz_target_c2t1"].update({"detuning: ZZ_TARGET_DETUNING, "square_amp": ZZ_TARGET_SQUARE_AMP, "square_len": ZZ_TARGET_SQUARE_LEN, "flattop_amp": ZZ_TARGET_FLATTOP_AMP, "flattop_len": ZZ_TARGET_FLATTOP_LEN})
-# ZZ_TARGET_CONSTANTS["zz_target_c2t3"].update({"detuning: ZZ_TARGET_DETUNING, "square_amp": ZZ_TARGET_SQUARE_AMP, "square_len": ZZ_TARGET_SQUARE_LEN, "flattop_amp": ZZ_TARGET_FLATTOP_AMP, "flattop_len": ZZ_TARGET_FLATTOP_LEN})
-# ZZ_TARGET_CONSTANTS["zz_target_c3t2"].update({"detuning: ZZ_TARGET_DETUNING, "square_amp": ZZ_TARGET_SQUARE_AMP, "square_len": ZZ_TARGET_SQUARE_LEN, "flattop_amp": ZZ_TARGET_FLATTOP_AMP, "flattop_len": ZZ_TARGET_FLATTOP_LEN})
-# ZZ_TARGET_CONSTANTS["zz_target_c3t4"].update({"detuning: ZZ_TARGET_DETUNING, "square_amp": ZZ_TARGET_SQUARE_AMP, "square_len": ZZ_TARGET_SQUARE_LEN, "flattop_amp": ZZ_TARGET_FLATTOP_AMP, "flattop_len": ZZ_TARGET_FLATTOP_LEN})
-# ZZ_TARGET_CONSTANTS["zz_target_c4t3"].update({"detuning: ZZ_TARGET_DETUNING, "square_amp": ZZ_TARGET_SQUARE_AMP, "square_len": ZZ_TARGET_SQUARE_LEN, "flattop_amp": ZZ_TARGET_FLATTOP_AMP, "flattop_len": ZZ_TARGET_FLATTOP_LEN})
+# ZZ_TARGET_CONSTANTS["zz_target_c1t2"].update({"detuning": ZZ_TARGET_DETUNING, "square_amp": ZZ_TARGET_SQUARE_AMP, "square_len": ZZ_TARGET_SQUARE_LEN, "flattop_amp": ZZ_TARGET_FLATTOP_AMP, "flattop_len": ZZ_TARGET_FLATTOP_LEN})
+# ZZ_TARGET_CONSTANTS["zz_target_c2t1"].update({"detuning": ZZ_TARGET_DETUNING, "square_amp": ZZ_TARGET_SQUARE_AMP, "square_len": ZZ_TARGET_SQUARE_LEN, "flattop_amp": ZZ_TARGET_FLATTOP_AMP, "flattop_len": ZZ_TARGET_FLATTOP_LEN})
+# ZZ_TARGET_CONSTANTS["zz_target_c2t3"].update({"detuning": ZZ_TARGET_DETUNING, "square_amp": ZZ_TARGET_SQUARE_AMP, "square_len": ZZ_TARGET_SQUARE_LEN, "flattop_amp": ZZ_TARGET_FLATTOP_AMP, "flattop_len": ZZ_TARGET_FLATTOP_LEN})
+# ZZ_TARGET_CONSTANTS["zz_target_c3t2"].update({"detuning": ZZ_TARGET_DETUNING, "square_amp": ZZ_TARGET_SQUARE_AMP, "square_len": ZZ_TARGET_SQUARE_LEN, "flattop_amp": ZZ_TARGET_FLATTOP_AMP, "flattop_len": ZZ_TARGET_FLATTOP_LEN})
+# ZZ_TARGET_CONSTANTS["zz_target_c3t4"].update({"detuning": ZZ_TARGET_DETUNING, "square_amp": ZZ_TARGET_SQUARE_AMP, "square_len": ZZ_TARGET_SQUARE_LEN, "flattop_amp": ZZ_TARGET_FLATTOP_AMP, "flattop_len": ZZ_TARGET_FLATTOP_LEN})
+# ZZ_TARGET_CONSTANTS["zz_target_c4t3"].update({"detuning": ZZ_TARGET_DETUNING, "square_amp": ZZ_TARGET_SQUARE_AMP, "square_len": ZZ_TARGET_SQUARE_LEN, "flattop_amp": ZZ_TARGET_FLATTOP_AMP, "flattop_len": ZZ_TARGET_FLATTOP_LEN})
+# # main (phase)
+# ZZ_TARGET_CONSTANTS["zz_target_c1t2"].update({"square_relative_phase": ZZ_TARGET_SQUARE_RELATIVE_PHASE, "square_phi_IZ": ZZ_TARGET_SQUARE_PHI_IZ, "flattop_relative_phase": ZZ_TARGET_FLATTOP_RELATIVE_PHASE, "flattop_phi_IZ": ZZ_TARGET_FLATTOP_PHI_IZ})
+# ZZ_TARGET_CONSTANTS["zz_target_c2t1"].update({"square_relative_phase": ZZ_TARGET_SQUARE_RELATIVE_PHASE, "square_phi_IZ": ZZ_TARGET_SQUARE_PHI_IZ, "flattop_relative_phase": ZZ_TARGET_FLATTOP_RELATIVE_PHASE, "flattop_phi_IZ": ZZ_TARGET_FLATTOP_PHI_IZ})
+# ZZ_TARGET_CONSTANTS["zz_target_c2t3"].update({"square_relative_phase": ZZ_TARGET_SQUARE_RELATIVE_PHASE, "square_phi_IZ": ZZ_TARGET_SQUARE_PHI_IZ, "flattop_relative_phase": ZZ_TARGET_FLATTOP_RELATIVE_PHASE, "flattop_phi_IZ": ZZ_TARGET_FLATTOP_PHI_IZ})
+# ZZ_TARGET_CONSTANTS["zz_target_c3t2"].update({"square_relative_phase": ZZ_TARGET_SQUARE_RELATIVE_PHASE, "square_phi_IZ": ZZ_TARGET_SQUARE_PHI_IZ, "flattop_relative_phase": ZZ_TARGET_FLATTOP_RELATIVE_PHASE, "flattop_phi_IZ": ZZ_TARGET_FLATTOP_PHI_IZ})
+# ZZ_TARGET_CONSTANTS["zz_target_c3t4"].update({"square_relative_phase": ZZ_TARGET_SQUARE_RELATIVE_PHASE, "square_phi_IZ": ZZ_TARGET_SQUARE_PHI_IZ, "flattop_relative_phase": ZZ_TARGET_FLATTOP_RELATIVE_PHASE, "flattop_phi_IZ": ZZ_TARGET_FLATTOP_PHI_IZ})
+# ZZ_TARGET_CONSTANTS["zz_target_c4t3"].update({"square_relative_phase": ZZ_TARGET_SQUARE_RELATIVE_PHASE, "square_phi_IZ": ZZ_TARGET_SQUARE_PHI_IZ, "flattop_relative_phase": ZZ_TARGET_FLATTOP_RELATIVE_PHASE, "flattop_phi_IZ": ZZ_TARGET_FLATTOP_PHI_IZ})
 # # twin
-# ZZ_TARGET_CONSTANTS["zz_target_c1t2"].update({"detuning: ZZ_TARGET_DETUNING, "gaussian_rise_amp": ZZ_TARGET_GAUSSIAN_RISE_AMP, "gaussian_rise_len": ZZ_TARGET_GAUSSIAN_RISE_LEN, "gaussian_fall_amp": ZZ_TARGET_GAUSSIAN_FALL_AMP, "gaussian_fall_len": ZZ_TARGET_GAUSSIAN_FALL_LEN})
-# ZZ_TARGET_CONSTANTS["zz_target_c2t1"].update({"detuning: ZZ_TARGET_DETUNING, "gaussian_rise_amp": ZZ_TARGET_GAUSSIAN_RISE_AMP, "gaussian_rise_len": ZZ_TARGET_GAUSSIAN_RISE_LEN, "gaussian_fall_amp": ZZ_TARGET_GAUSSIAN_FALL_AMP, "gaussian_fall_len": ZZ_TARGET_GAUSSIAN_FALL_LEN})
-# ZZ_TARGET_CONSTANTS["zz_target_c2t3"].update({"detuning: ZZ_TARGET_DETUNING, "gaussian_rise_amp": ZZ_TARGET_GAUSSIAN_RISE_AMP, "gaussian_rise_len": ZZ_TARGET_GAUSSIAN_RISE_LEN, "gaussian_fall_amp": ZZ_TARGET_GAUSSIAN_FALL_AMP, "gaussian_fall_len": ZZ_TARGET_GAUSSIAN_FALL_LEN})
-# ZZ_TARGET_CONSTANTS["zz_target_c3t2"].update({"detuning: ZZ_TARGET_DETUNING, "gaussian_rise_amp": ZZ_TARGET_GAUSSIAN_RISE_AMP, "gaussian_rise_len": ZZ_TARGET_GAUSSIAN_RISE_LEN, "gaussian_fall_amp": ZZ_TARGET_GAUSSIAN_FALL_AMP, "gaussian_fall_len": ZZ_TARGET_GAUSSIAN_FALL_LEN})
-# ZZ_TARGET_CONSTANTS["zz_target_c3t4"].update({"detuning: ZZ_TARGET_DETUNING, "gaussian_rise_amp": ZZ_TARGET_GAUSSIAN_RISE_AMP, "gaussian_rise_len": ZZ_TARGET_GAUSSIAN_RISE_LEN, "gaussian_fall_amp": ZZ_TARGET_GAUSSIAN_FALL_AMP, "gaussian_fall_len": ZZ_TARGET_GAUSSIAN_FALL_LEN})
-# ZZ_TARGET_CONSTANTS["zz_target_c4t3"].update({"detuning: ZZ_TARGET_DETUNING, "gaussian_rise_amp": ZZ_TARGET_GAUSSIAN_RISE_AMP, "gaussian_rise_len": ZZ_TARGET_GAUSSIAN_RISE_LEN, "gaussian_fall_amp": ZZ_TARGET_GAUSSIAN_FALL_AMP, "gaussian_fall_len": ZZ_TARGET_GAUSSIAN_FALL_LEN})
+# ZZ_TARGET_CONSTANTS["zz_target_c1t2"].update({"detuning": ZZ_TARGET_DETUNING, "gaussian_rise_amp": ZZ_TARGET_GAUSSIAN_RISE_AMP, "gaussian_rise_len": ZZ_TARGET_GAUSSIAN_RISE_LEN, "gaussian_fall_amp": ZZ_TARGET_GAUSSIAN_FALL_AMP, "gaussian_fall_len": ZZ_TARGET_GAUSSIAN_FALL_LEN})
+# ZZ_TARGET_CONSTANTS["zz_target_c2t1"].update({"detuning": ZZ_TARGET_DETUNING, "gaussian_rise_amp": ZZ_TARGET_GAUSSIAN_RISE_AMP, "gaussian_rise_len": ZZ_TARGET_GAUSSIAN_RISE_LEN, "gaussian_fall_amp": ZZ_TARGET_GAUSSIAN_FALL_AMP, "gaussian_fall_len": ZZ_TARGET_GAUSSIAN_FALL_LEN})
+# ZZ_TARGET_CONSTANTS["zz_target_c2t3"].update({"detuning": ZZ_TARGET_DETUNING, "gaussian_rise_amp": ZZ_TARGET_GAUSSIAN_RISE_AMP, "gaussian_rise_len": ZZ_TARGET_GAUSSIAN_RISE_LEN, "gaussian_fall_amp": ZZ_TARGET_GAUSSIAN_FALL_AMP, "gaussian_fall_len": ZZ_TARGET_GAUSSIAN_FALL_LEN})
+# ZZ_TARGET_CONSTANTS["zz_target_c3t2"].update({"detuning": ZZ_TARGET_DETUNING, "gaussian_rise_amp": ZZ_TARGET_GAUSSIAN_RISE_AMP, "gaussian_rise_len": ZZ_TARGET_GAUSSIAN_RISE_LEN, "gaussian_fall_amp": ZZ_TARGET_GAUSSIAN_FALL_AMP, "gaussian_fall_len": ZZ_TARGET_GAUSSIAN_FALL_LEN})
+# ZZ_TARGET_CONSTANTS["zz_target_c3t4"].update({"detuning": ZZ_TARGET_DETUNING, "gaussian_rise_amp": ZZ_TARGET_GAUSSIAN_RISE_AMP, "gaussian_rise_len": ZZ_TARGET_GAUSSIAN_RISE_LEN, "gaussian_fall_amp": ZZ_TARGET_GAUSSIAN_FALL_AMP, "gaussian_fall_len": ZZ_TARGET_GAUSSIAN_FALL_LEN})
+# ZZ_TARGET_CONSTANTS["zz_target_c4t3"].update({"detuning": ZZ_TARGET_DETUNING, "gaussian_rise_amp": ZZ_TARGET_GAUSSIAN_RISE_AMP, "gaussian_rise_len": ZZ_TARGET_GAUSSIAN_RISE_LEN, "gaussian_fall_amp": ZZ_TARGET_GAUSSIAN_FALL_AMP, "gaussian_fall_len": ZZ_TARGET_GAUSSIAN_FALL_LEN})
 for zz, val in ZZ_TARGET_CONSTANTS.items():
     val["IF"] += val["detuning"]
 
-for c, t in qubit_pairs:
+for c, t in QUBIT_PAIRS:
     IF_zz_control = ZZ_CONTROL_CONSTANTS[f"zz_control_c{c}t{t}"]["IF"]
     IF_zz_target = ZZ_TARGET_CONSTANTS[f"zz_target_c{c}t{t}"]["IF"]
     LO_zz_control = ZZ_CONTROL_CONSTANTS[f"zz_control_c{c}t{t}"]["LO"]

@@ -1,6 +1,40 @@
 # %%
 """
-        CZ CALIBRATE VS LOCAL PHASE
+        CZ CALIB CZ PULSE VS LOCAL PHASE
+The CZ calibration scripts are designed to calibrate the CZ gate by compenstating the phases for ZI and IZ.
+CZ = exp(- i/2 * pi/2 * (- ZI - IZ + ZZ)) and CZ pulse = exp(- i/2 * (a * ZI + b * IZ + pi/2 * ZZ)) without phase compensations.
+By adding phases phi_ZI and phi_IZ to ZI and IZ, CZ <- exp(- i/2 * ((a + phi_ZI) * ZI + (b + phi_IZ) * IZ + pi/2 * ZZ)) 
+Namely, we want to compensate the phases such that it forms CZ.
+
+    a + phi_ZI = -pi/2
+    b + phi_IZ = -pi/2
+
+The pulse sequences are as follow:
+                                   _____                    ______
+                Control(fC): _____| y90 |__________________| -y90 |___________
+                                          ______  ________                    
+   ZZ_control (fT-detuning): ____________|  ZZ  || phi_ZI |___________________
+                                  ______  ______  ________ 
+    ZZ_target (fT-detuning): ____| x180 ||  ZZ  || phi_IZ |___________________
+                                                                     ______
+                Readout(fR): _______________________________________|  RR  |___
+
+This script measures entanglement as a function of phi_ZI (by flipping the role of qc and qz: phi_IZ), replicating Fig. S2(b) of the referenced paper.
+The pulse sequence is repeated with the control qubit in both the |0⟩ and |1⟩ states.
+The optimal phi_ZI and phi_IZ are selected where a + phi_ZI = -pi/2 and b + phi_IZ = -pi/2.
+
+Prerequisites:
+    - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
+    - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy, rabi_chevron, power_rabi and updated the config.
+    - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
+    - Having found the frequency, amplitudes and relative phase shift of zz_control and zz_target.
+
+Next steps before going to the next node:
+    - Pick phi_ZI and phi_IZ such that (a + phi_ZI) = -pi/2 and (b + phi_IZ) = -pi/2 and update the config for
+        - ZZ_CONTROL_CONSTANTS["zz_control_c{qc}t{qt}"]["square_phi_ZI"]
+        - ZZ_TARGET_CONSTANTS["zz_target_c{qc}t{qt}"]["square_phi_IZ"]
+
+Reference: Bradley K. Mitchell, et al, Phys. Rev. Lett. 127, 200502 (2021)
 """
 
 from qm import QuantumMachinesManager, SimulationConfig
@@ -38,7 +72,6 @@ df_min = -40e6
 df_step = 10e6
 dfs = np.arange(df_min, df_max, df_step)
 
-drive_phase = 0.25
 phases = np.arange(0, 2, 0.25)
 freq_detuning = -4 * u.MHz
 
@@ -56,14 +89,10 @@ qubits = [f"q{i}_xy" for i in [qc, qt]]
 resonators = [f"q{i}_rr" for i in [qc, qt]]
 delta_phase = 4e-9 * freq_detuning * t_step
 ts_ns = 4 * ts_cycles # in clock cylcle = 4ns
+drive_relative_phase = ZZ_TARGET_CONSTANTS[f"zz_target_c{qc}t{qt}"]["square_relative_phase"]
 
 ramsey_control = qc_xy if bool_measure_control else qt_xy
 ramsey_target = qt_xy if bool_measure_control else qc_xy
-
-config["waveforms"][f"square_wf_{zz_control}"]["sample"] = 0.1
-config["waveforms"][f"square_wf_{zz_target}"]["sample"] = 0.1
-amp_actual_c = config["waveforms"][f"square_wf_{zz_control}"]["sample"]
-amp_actual_t = config["waveforms"][f"square_wf_{zz_target}"]["sample"]
 
 # Assertion
 assert n_avg <= 10_000, "revise your number of shots"
@@ -80,7 +109,6 @@ save_data_dict = {
     "ts_ns": ts_ns,
     "phases": phases,
     "dfs": dfs,
-    "drive_phase": drive_phase,
     "n_avg": n_avg,
     "config": config,
 }
@@ -104,7 +132,7 @@ with program() as prog:
 
         # Phase shift for zz target
         reset_frame(zz_target)
-        frame_rotation_2pi(drive_phase, zz_target)
+        frame_rotation_2pi(drive_relative_phase, zz_target)
 
         with for_(*from_array(ph, phases)):
 
