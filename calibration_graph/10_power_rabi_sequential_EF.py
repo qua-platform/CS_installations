@@ -164,7 +164,7 @@ else:
     # Calibrate the active qubits
     # machine.calibrate_octave_ports(qm)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(power_rabi)
+    job = qm.execute(power_rabi, flags=['auto-element-thread'])
     # Get results from QUA program
     data_list = ["n"] + sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])
     results = fetching_tool(job, data_list, mode="live")
@@ -317,13 +317,12 @@ if not simulate:
     ef_operation_name = f'EF_{operation}'
     for q in qubits:
         if ef_operation_name not in q.xy.operations:
-            q.xy.operations[ef_operation_name] = pulses.DragPulse(
+            q.xy.operations[ef_operation_name] = pulses.DragCosinePulse(
                 amplitude=fit_results[q.name]['Pi_amplitude'],
-                sigma=q.xy.operations[operation].sigma,
                 alpha=q.xy.operations[operation].alpha,
                 anharmonicity=q.xy.operations[operation].anharmonicity,
                 length=q.xy.operations[operation].length,
-                axis_angle=0,
+                axis_angle=0,  # TODO: to check that the rotation does not overwrite y-pulses
                 digital_marker=q.xy.operations[operation].digital_marker,
             )
         else:
