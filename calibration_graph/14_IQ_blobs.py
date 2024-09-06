@@ -136,6 +136,8 @@ with program() as iq_blobs:
             align()
             save(I_e[i], I_e_st[i])
             save(Q_e[i], Q_e_st[i])
+
+        align()
             
 
     with stream_processing():

@@ -143,6 +143,8 @@ with program() as ro_freq_opt:
                 save(I_e[i], I_e_st[i])
                 save(Q_e[i], Q_e_st[i])
 
+        align()
+
     with stream_processing():
         n_st.save("n")
         for i in range(num_qubits):

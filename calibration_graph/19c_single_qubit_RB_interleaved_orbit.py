@@ -296,6 +296,8 @@ def get_rb_interleaved_program(qubit: Transmon):
             # Save the counter for the progress bar
             save(m, m_st)
 
+        align()
+
         with stream_processing():
             m_st.save("iteration")
             if state_discrimination:

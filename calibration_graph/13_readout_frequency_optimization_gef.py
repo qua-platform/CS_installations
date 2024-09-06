@@ -168,6 +168,8 @@ with program() as ro_freq_opt:
                 save(I_f[i], I_f_st[i])
                 save(Q_f[i], Q_f_st[i])
 
+        align()
+
                 
     with stream_processing():
         n_st.save("n")
