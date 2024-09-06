@@ -32,7 +32,6 @@ class Parameters(NodeParameters):
     flux_step : float = 0.001
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
-    reset_type: Literal['active', 'thermal'] = "active"
 
 node = QualibrationNode(
     name="08a_Ramsey_flux_cal",
@@ -49,7 +48,7 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array, get_equivalent_log_array
 from qualang_tools.units import unit
 from quam_libs.components import QuAM
-from quam_libs.macros import qua_declaration, multiplexed_readout, node_save, active_reset
+from quam_libs.macros import qua_declaration, multiplexed_readout, node_save, active_reset, readout_state
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -97,12 +96,12 @@ idle_times = np.arange(
 # Detuning converted into virtual Z-rotations to observe Ramsey oscillation and get the qubit frequency
 detuning = int(4e6 * node.parameters.frequency_detuning_in_mhz)
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
-dcs = np.arange(-node.parameters.flux_span / 2, node.parameters.flux_span / 2, step = node.parameters.flux_step)
-reset_type = node.parameters.reset_type
+dcs = np.arange(-node.parameters.flux_span / 2, node.parameters.flux_span / 2+0.001, step = node.parameters.flux_step)
 
 # %%
 with program() as ramsey:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
+    init_state = declare(int)
     state = [declare(int) for _ in range(num_qubits)]
     state_st = [declare_stream() for _ in range(num_qubits)]
     t = declare(int)  # QUA variable for the idle time
@@ -137,11 +136,8 @@ with program() as ramsey:
                     raise RuntimeError(f"unknown flux_point")                  
                 wait(100)  # Wait for the flux to settle
                 with for_(*from_array(t, idle_times)):
-                    if reset_type == "active":
-                        active_reset(machine, qubit.name)
-                    else:
-                        qubit.resonator.wait(machine.thermalization_time * u.ns)
-                        qubit.align()
+                    readout_state(qubit, init_state)
+                    qubit.align()
                     # Rotate the frame of the second x90 gate to implement a virtual Z-rotation
                     # 4*tau because tau was in clock cycles and 1e-9 because tau is ns
                     assign(phi, Cast.mul_fixed_by_int(detuning * 1e-9, 4 * t ))
@@ -156,12 +152,13 @@ with program() as ramsey:
                     # Align the elements to measure after playing the qubit pulse.
                     align()
                     # Measure the state of the resonators
-                    qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
-                    assign(state[i], Cast.to_int(I[i] > qubit.resonator.operations["readout"].threshold))
+                    readout_state(qubit, state[i])
+                    assign(state[i], init_state ^ state[i])
                     save(state[i], state_st[i])
                     
                     # Reset the frame of the qubits in order not to accumulate rotations
                     reset_frame(qubit.xy.name)
+                    qubit.align()
         
         align()
 
