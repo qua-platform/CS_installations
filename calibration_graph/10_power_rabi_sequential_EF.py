@@ -314,23 +314,23 @@ if not simulate:
 
 # %%
 if not simulate:
-    with node.record_state_updates():
-        for q in qubits:
-            # check if an EF operation exists
-            if f'EF_{operation}' in q.xy.operations:
+    ef_operation_name = f'EF_{operation}'
+    for q in qubits:
+        if ef_operation_name not in q.xy.operations:
+            q.xy.operations[ef_operation_name] = pulses.DragPulse(
+                amplitude=fit_results[q.name]['Pi_amplitude'],
+                sigma=q.xy.operations[operation].sigma,
+                alpha=q.xy.operations[operation].alpha,
+                anharmonicity=q.xy.operations[operation].anharmonicity,
+                length=q.xy.operations[operation].length,
+                axis_angle=0,
+                digital_marker=q.xy.operations[operation].digital_marker,
+            )
+        else:
+            with node.record_state_updates():
                 # set the new amplitude for the EF operation
-                q.xy.operations[f'EF_{operation}'].amplitude = fit_results[q.name]['Pi_amplitude']
-            else:
-                # create a new operation with the new amplitude based on "operation"
-                q.xy.operations[f'EF_{operation}'] = pulses.DragPulse(
-                    amplitude=fit_results[q.name]['Pi_amplitude'],
-                    sigma=q.xy.operations[operation].sigma,
-                    alpha=q.xy.operations[operation].alpha,
-                    anharmonicity=q.xy.operations[operation].anharmonicity,
-                    length=q.xy.operations[operation].length,
-                    axis_angle=0,
-                    digital_marker=q.xy.operations[operation].digital_marker,
-                )
+                q.xy.operations[ef_operation_name].amplitude = fit_results[q.name]['Pi_amplitude']
+
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
