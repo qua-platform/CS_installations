@@ -116,12 +116,12 @@ with program() as multi_res_spec_vs_flux:
     dc = declare(fixed)  # QUA variable for the flux bias
     df = declare(int)  # QUA variable for the readout frequency
 
-    for i, q in enumerate(qubits):
+    for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
-            q.z.to_independent_idle()
+            qubit.z.to_independent_idle()
         elif flux_point == "joint":
             machine.apply_all_flux_to_joint_idle()
         else:
@@ -138,7 +138,7 @@ with program() as multi_res_spec_vs_flux:
 
             with for_(*from_array(dc, dcs)):
                 # Flux sweeping by tuning the OPX dc offset associated with the flux_line element
-                q.z.set_dc_offset(dc)
+                qubit.z.set_dc_offset(dc)
                 wait(100)  # Wait for the flux to settle
 
                 with for_(*from_array(df, dfs)):

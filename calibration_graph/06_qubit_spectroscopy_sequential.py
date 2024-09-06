@@ -116,12 +116,12 @@ with program() as qubit_spec:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     df = declare(int)  # QUA variable for the qubit frequency
 
-    for i, q in enumerate(qubits):
+    for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
-            q.z.to_independent_idle()
+            qubit.z.to_independent_idle()
         elif flux_point == "joint":
             machine.apply_all_flux_to_joint_idle()
         else:
@@ -136,23 +136,23 @@ with program() as qubit_spec:
             save(n, n_st)
             with for_(*from_array(df, dfs)):
                 # Update the qubit frequency
-                update_frequency(q.xy.name, df + q.xy.intermediate_frequency)
+                qubit.xy.update_frequency(df + + qubit.xy.intermediate_frequency)
 
                 # Play the saturation pulse
-                q.xy.play(
+                qubit.xy.play(
                     operation,
                     amplitude_scale=operation_amp,
                     duration=operation_len,
                 )
-                align(q.xy.name, q.resonator.name)
+                align(qubit.xy.name, qubit.resonator.name)
 
                 # # QUA macro the readout the state of the active resonators (defined in macros.py)
                 # multiplexed_readout(qubits, I, I_st, Q, Q_st, sequential=False)
                 # readout the resonator
-                q.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
 
                 # Wait for the qubit to decay to the ground state
-                q.resonator.wait(machine.thermalization_time * u.ns)
+                qubit.resonator.wait(machine.thermalization_time * u.ns)
                 # save data
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])

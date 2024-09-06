@@ -112,12 +112,12 @@ with program() as multi_qubit_spec_vs_flux:
     df = declare(int)  # QUA variable for the qubit frequency
     dc = declare(fixed)  # QUA variable for the flux dc level
 
-    for i, q in enumerate(qubits):
+    for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
-            q.z.to_independent_idle()
+            qubit.z.to_independent_idle()
         elif flux_point == "joint":
             machine.apply_all_flux_to_joint_idle()
         else:
@@ -133,38 +133,38 @@ with program() as multi_qubit_spec_vs_flux:
 
             with for_(*from_array(df, dfs)):
                 # Update the qubit frequencies for all qubits
-                update_frequency(q.xy.name, df + q.xy.intermediate_frequency)
+                qubit.xy.update_frequency(df + qubit.xy.intermediate_frequency)
 
                 with for_(*from_array(dc, dcs)):
                     # Flux sweeping for a qubit
                     if flux_point == "independent":
-                        q.z.set_dc_offset(dc + q.z.independent_offset)
-                        wait(100, q.z.name)  # Wait for the flux to settle
+                        qubit.z.set_dc_offset(dc + qubit.z.independent_offset)
+                        wait(100, qubit.z.name)  # Wait for the flux to settle
                     elif flux_point == "joint":
-                        q.z.set_dc_offset(dc + q.z.joint_offset)
-                        wait(100, q.z.name)  # Wait for the flux to settle
+                        qubit.z.set_dc_offset(dc + qubit.z.joint_offset)
+                        wait(100, qubit.z.name)  # Wait for the flux to settle
                     else:
                         raise RuntimeError(f"unknown flux_point")                  
 
                     align()
 
                     # Apply saturation pulse to all qubits
-                    q.xy.play(
+                    qubit.xy.play(
                         operation,
                         amplitude_scale=operation_amp,
                         duration=operation_len,
                     )
-                    q.align()
+                    qubit.align()
 
                     # QUA macro to read the state of the active resonators
-                    q.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                    qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
 
                     # save data
                     save(I[i], I_st[i])
                     save(Q[i], Q_st[i])
 
                     # Wait for the qubits to decay to the ground state
-                    q.resonator.wait(cooldown_time * u.ns)
+                    qubit.resonator.wait(cooldown_time * u.ns)
 
         align(*([q.xy.name for q in qubits] + [q.resonator.name for q in qubits]))    
 
