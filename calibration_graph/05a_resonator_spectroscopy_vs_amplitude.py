@@ -125,10 +125,10 @@ with program() as multi_res_spec_vs_amp:
     # Bring the active qubits to the minimum frequency point
     machine.apply_all_flux_to_min()
 
-    for i, q in enumerate(qubits):
+    for i, qubit in enumerate(qubits):
 
         # resonator of this qubit
-        rr = q.resonator
+        rr = qubit.resonator
 
         with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
             save(n, n_st)
