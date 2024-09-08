@@ -19,6 +19,7 @@ qualang-tools = "*"
 xarray = "*"
 lmfit = "*"
 qiskit-experiments = "*"
+tqdm = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

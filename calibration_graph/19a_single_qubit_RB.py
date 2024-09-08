@@ -28,7 +28,7 @@ from quam_libs.trackable_object import tracked_updates
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
     use_state_discrimination: bool = True
-    use_strict_timing: bool = False
+    use_strict_timing: bool = True
     num_random_sequences: int = 200  # Number of random sequences
     num_averages: int = 20
     max_circuit_depth: int = 1000  # Maximum circuit depth

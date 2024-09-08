@@ -17,7 +17,7 @@ def fix_initial_value(x, da):
         return x
 
 
-def decay_exp(t, a, offset, decay):
+def decay_exp(t, a, offset, decay, **kwargs):
     return a * np.exp(t * decay) + offset
 
 

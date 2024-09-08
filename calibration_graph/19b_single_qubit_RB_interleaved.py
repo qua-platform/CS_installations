@@ -30,6 +30,7 @@ from quam_libs.trackable_object import tracked_updates
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
     use_state_discrimination: bool = True
+    use_strict_timing: bool = True
     interleaved_gate_index: int = 2
     num_random_sequences: int = 50  # Number of random sequences
     num_averages: int = 20
@@ -97,6 +98,7 @@ num_depths = max_circuit_depth // delta_clifford + 1
 seed = node.parameters.seed # Pseudo-random number generator seed
 # Flag to enable state discrimination if the readout has been calibrated (rotated blobs and threshold)
 state_discrimination = node.parameters.use_state_discrimination
+strict_timing = node.parameters.use_strict_timing
 # List of recovery gates from the lookup table
 inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
 # index of the gate to interleave from the play_sequence() function defined below
@@ -285,8 +287,11 @@ def get_rb_interleaved_program(qubit: Transmon):
                         # Align the two elements to play the sequence after qubit initialization
                         qubit.resonator.align(qubit.xy.name)
                         # The strict_timing ensures that the sequence will be played without gaps
-                        with strict_timing_():
-                            # Play the random sequence of desired depth
+                        if strict_timing:
+                            with strict_timing_():
+                                # Play the random sequence of desired depth
+                                play_sequence(sequence_list, depth, qubit)
+                        else:
                             play_sequence(sequence_list, depth, qubit)
                         # Align the two elements to measure after playing the circuit.
                         align(qubit.xy.name, qubit.resonator.name)
