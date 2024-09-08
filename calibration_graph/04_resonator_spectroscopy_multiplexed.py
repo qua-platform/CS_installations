@@ -170,7 +170,7 @@ else:
                 plt.suptitle("Multiplexed resonator spectroscopy")
                 plt.cla()
                 plt.plot(
-                    (rr.opx_output.upconverter_frequency + rr.intermediate_frequency) / u.MHz + dfs / u.MHz,
+                    (rr.upconverter_frequency + rr.intermediate_frequency) / u.MHz + dfs / u.MHz,
                     np.abs(s_data[-1]),
                     ".",
                 )
@@ -179,7 +179,7 @@ else:
                 plt.sca(axss[1, i])
                 plt.cla()
                 plt.plot(
-                    (rr.opx_output.upconverter_frequency + rr.intermediate_frequency) / u.MHz + dfs / u.MHz,
+                    (rr.upconverter_frequency + rr.intermediate_frequency) / u.MHz + dfs / u.MHz,
                     signal.detrend(np.unwrap(np.angle(s_data[-1]))),
                     ".",
                 )
@@ -201,7 +201,7 @@ ds = ds.assign({'phase': subtract_slope(
 
 def abs_freq(q):
     def foo(freq):
-        return freq + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
+        return freq + q.resonator.intermediate_frequency + q.resonator.upconverter_frequency
     return foo
 
 ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
@@ -215,7 +215,7 @@ fit_evals = {}
 fit_results = {}
 
 for index, q in enumerate(qubits):
-    frequency_LO_IF = q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
+    frequency_LO_IF = q.resonator.intermediate_frequency + q.resonator.upconverter_frequency
     fit, fit_eval = fit_resonator(ds.sel(qubit=q.name), frequency_LO_IF)
     fits[q.name] = fit
     fit_evals[q.name] = fit_eval
@@ -223,11 +223,11 @@ for index, q in enumerate(qubits):
                 1j * fit.params['Qe_imag'].value)
     Qi = 1 / (1/fit.params['Q'].value - 1/Qe)
     fit_results[q.name] = {}
-    fit_results[q.name]['resonator_freq'] = fit.params['omega_r'].value + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
+    fit_results[q.name]['resonator_freq'] = fit.params['omega_r'].value + q.resonator.intermediate_frequency + q.resonator.upconverter_frequency
     fit_results[q.name]['Quality_external'] = Qe
     fit_results[q.name]['Quality_internal'] = Qi
     print(
-        f"Resonator frequency for {q.name} is {(fit.params['omega_r'].value + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency)/1e9:.3f} GHz")
+        f"Resonator frequency for {q.name} is {(fit.params['omega_r'].value + q.resonator.intermediate_frequency + q.resonator.upconverter_frequency)/1e9:.3f} GHz")
     print(
         f"freq shift for {q.name} is {fit.params['omega_r'].value/1e6:.0f} MHz with respect to the IF")
     print(f"Qe for {q.name} is {Qe:,.0f}")
