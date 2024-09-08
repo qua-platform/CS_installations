@@ -78,7 +78,7 @@ else:
 tracked_qubits = []
 for q in qubits:
     with tracked_updates(q, auto_revert=False, dont_assign_to_none=True) as q:
-        q.xy.operations["x180"].alpha = -2.0
+        q.xy.operations["x180"].alpha = -1.0
         tracked_qubits.append(q)
 config = machine.generate_config()
 octave_config = machine.get_octave_config()

@@ -31,8 +31,6 @@ from qm.qua._expressions import QuaVariable
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal, List, Union
 
-from qualang_tools.loops import from_array
-
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
@@ -85,7 +83,6 @@ u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
 machine = QuAM.load()
 # Generate the OPX and Octave configurations
-config = machine.generate_config()
 octave_config = machine.get_octave_config()
 # Open Communication with the QOP
 qmm = machine.connect()
@@ -264,7 +261,7 @@ def set_orbit_var(qubit: Transmon, orbit_var: QuaVariable, variable_to_sweep: st
         pass
 
 
-def get_rb_interleaved_program(qubit: Transmon, variable_to_sweep: str, variable_sweep: List[Union[float, int]]):
+def get_rb_interleaved_program(qubit: Transmon):
     with program() as rb:
         depth = declare(int)  # QUA variable for the varying depth
         # QUA variable to store the last Clifford gate of the current sequence which is replaced by the recovery gate
@@ -291,50 +288,43 @@ def get_rb_interleaved_program(qubit: Transmon, variable_to_sweep: str, variable
             machine.apply_all_flux_to_zero()
         wait(1000)
 
-        if variable_to_sweep == "frequency":
-            orbit_var = declare(int)
-        else:
-            orbit_var = declare(fixed)
-
-        with for_(*from_array(orbit_var, variable_sweep)):
-            set_orbit_var(qubit, orbit_var, variable_to_sweep)
-            with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
-                # Generates the RB sequence with a gate interleaved after each Clifford
-                sequence_list, inv_gate_list = generate_sequence(interleaved_gate_index=interleaved_gate_index)
-                # Depth_target is used to always play the gates by pairs [(random_gate-interleaved_gate)^depth/2-inv_gate]
-                assign(depth, circuit_depth)
-                # Replacing the last gate in the sequence with the sequence's inverse gate
-                # The original gate is saved in 'saved_gate' and is being restored at the end
-                assign(saved_gate, sequence_list[depth])
-                assign(sequence_list[depth], inv_gate_list[depth - 1])
-                # Only played the depth corresponding to target_depth
-                with for_(n, 0, n < n_avg, n + 1):
-                    if reset_type == "active":
-                        active_reset(machine, qubit.name)
-                    else:
-                        wait(5*machine.thermalization_time * u.ns)
-                    # Align the two elements to play the sequence after qubit initialization
-                    qubit.resonator.align(qubit.xy.name)
-                    # The strict_timing ensures that the sequence will be played without gaps
-                    with strict_timing_():
-                        # Play the random sequence of desired depth
-                        play_sequence(sequence_list, depth, qubit)
-                    # Align the elements to measure after playing the circuit.
-                    align()
-                    # Make sure you updated the ge_threshold and angle if you want to use state discrimination
-                    qubit.resonator.measure("readout", qua_vars=(I, Q))
-                    # Make sure you updated the ge_threshold
-                    if state_discrimination:
-                        assign(state, I > qubit.resonator.operations["readout"].threshold)
-                        save(state, state_st)
-                    else:
-                        save(I, I_st)
-                        save(Q, Q_st)
-                # Reset the last gate of the sequence back to the original Clifford gate
-                # (that was replaced by the recovery gate at the beginning)
-                assign(sequence_list[depth], saved_gate)
-                # Save the counter for the progress bar
-                save(m, m_st)
+        with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
+            # Generates the RB sequence with a gate interleaved after each Clifford
+            sequence_list, inv_gate_list = generate_sequence(interleaved_gate_index=interleaved_gate_index)
+            # Depth_target is used to always play the gates by pairs [(random_gate-interleaved_gate)^depth/2-inv_gate]
+            assign(depth, circuit_depth)
+            # Replacing the last gate in the sequence with the sequence's inverse gate
+            # The original gate is saved in 'saved_gate' and is being restored at the end
+            assign(saved_gate, sequence_list[depth])
+            assign(sequence_list[depth], inv_gate_list[depth - 1])
+            # Only played the depth corresponding to target_depth
+            with for_(n, 0, n < n_avg, n + 1):
+                if reset_type == "active":
+                    active_reset(machine, qubit.name)
+                else:
+                    wait(5*machine.thermalization_time * u.ns)
+                # Align the two elements to play the sequence after qubit initialization
+                qubit.resonator.align(qubit.xy.name)
+                # The strict_timing ensures that the sequence will be played without gaps
+                with strict_timing_():
+                    # Play the random sequence of desired depth
+                    play_sequence(sequence_list, depth, qubit)
+                # Align the elements to measure after playing the circuit.
+                align()
+                # Make sure you updated the ge_threshold and angle if you want to use state discrimination
+                qubit.resonator.measure("readout", qua_vars=(I, Q))
+                # Make sure you updated the ge_threshold
+                if state_discrimination:
+                    assign(state, I > qubit.resonator.operations["readout"].threshold)
+                    save(state, state_st)
+                else:
+                    save(I, I_st)
+                    save(Q, Q_st)
+            # Reset the last gate of the sequence back to the original Clifford gate
+            # (that was replaced by the recovery gate at the beginning)
+            assign(sequence_list[depth], saved_gate)
+            # Save the counter for the progress bar
+            save(m, m_st)
 
             with stream_processing():
                 m_st.save("iteration")
@@ -355,12 +345,14 @@ simulate = False
 
 if simulate:
     simulation_config = SimulationConfig(duration=100_000)  # in clock cycles
+    config = machine.generate_config()
     job = qmm.simulate(config, get_rb_interleaved_program(qubits[0]), simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results["figure"] = plt.gcf()
 else:
     node.results = {}
     for qubit in qubits:
+        config = machine.generate_config()
         qm = qmm.open_qm(config)
         job = qm.execute(get_rb_interleaved_program(qubit))
         if state_discrimination:

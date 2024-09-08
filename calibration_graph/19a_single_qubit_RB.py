@@ -245,7 +245,7 @@ with program() as randomized_benchmarking:
         elif flux_point == "joint":
             machine.apply_all_flux_to_joint_idle()
         else:
-            machine.apply_all_flux_to_zero()
+            raise ValueError(f"Unrecognized flux point {flux_point}")
 
         for qubit in qubits:
             wait(1000, qubit.z.name)
