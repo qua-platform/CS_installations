@@ -206,7 +206,7 @@ else:
             # Plot
             plt.subplot(1, num_resonators, i + 1)
             plt.cla()
-            plt.title(f"{rr.name} - f_cent: {int(rr.upconverter_frequency / u.MHz)} MHz")
+            plt.title(f"{rr.name} - f_cent: {int(rr.opx_output.upconverter_frequency / u.MHz)} MHz")
             plt.xlabel("Readout amplitude [V]")
             plt.ylabel("Readout detuning [MHz]")
             plt.pcolor(amps * rr.operations["readout"].amplitude, dfs / u.MHz, A)
@@ -248,7 +248,7 @@ ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 
 def abs_freq(q):
     def foo(freq):
-        return freq + q.resonator.intermediate_frequency + q.resonator.upconverter_frequency
+        return freq + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
     return foo
 
 def abs_amp(q):

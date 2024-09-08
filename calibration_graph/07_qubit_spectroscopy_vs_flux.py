@@ -264,7 +264,7 @@ ds = fetch_results_as_xarray(handles, qubits, {"flux": dcs, "freq": dfs})
 ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 def abs_freq(q):
     def foo(freq):
-        return freq + q.xy.intermediate_frequency + q.xy.upconverter_frequency
+        return freq + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency
     return foo
 
 ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
@@ -295,7 +295,7 @@ for q in qubits:
         print(f'flux offset for qubit {q.name} is {offset*1e3 + flux_shift.sel(qubit = q.name).values*1e3:.0f} mV')
         print(f'a shift of  {flux_shift.sel(qubit = q.name).values*1e3:.0f} mV')
         print(
-            f"Drive frequency for {q.name} is {(freq_shift.sel(qubit = q.name).values + q.xy.intermediate_frequency + q.xy.upconverter_frequency)/1e9:.3f} GHz")
+            f"Drive frequency for {q.name} is {(freq_shift.sel(qubit = q.name).values + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency)/1e9:.3f} GHz")
         print(
             f"(shift of {freq_shift.sel(qubit = q.name).values/1e6:.0f} MHz)")
         print(
@@ -316,7 +316,7 @@ grid_names = [f'{q.name}_0' for q in qubits]
 grid = QubitGrid(ds, grid_names)
 
 for ax, qubit in grid_iter(grid):
-    freq_ref = machine.qubits[qubit['qubit']].xy.intermediate_frequency + machine.qubits[qubit['qubit']].xy.upconverter_frequency
+    freq_ref = machine.qubits[qubit['qubit']].xy.intermediate_frequency + machine.qubits[qubit['qubit']].xy.opx_output.upconverter_frequency
     ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].I.plot(ax=ax, add_colorbar=False,
                                                                             x='flux', y='freq_GHz', robust=True)
     ((fitted+  freq_ref)/1e9).loc[qubit].plot(ax = ax,linewidth = 0.5, ls = '--',color = 'r')
