@@ -133,8 +133,13 @@ with program() as ramsey:
                 elif flux_point == "joint":
                     qubit.z.set_dc_offset(dc + qubit.z.joint_offset)
                 else:
-                    raise RuntimeError(f"unknown flux_point")                  
-                wait(100)  # Wait for the flux to settle
+                    raise RuntimeError(f"unknown flux_point")  
+                                
+                for qb in qubits:
+                    wait(100, qb.z.name)
+                
+                align() 
+
                 with for_(*from_array(t, idle_times)):
                     readout_state(qubit, init_state)
                     qubit.align()
@@ -188,7 +193,7 @@ else:
     # Calibrate the active qubits
     # machine.calibrate_octave_ports(qm)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(ramsey)
+    job = qm.execute(ramsey, flags=['auto-element-thread'])
     # Get results from QUA program
     for i in range(num_qubits):
         print(f"Fetching results for qubit {qubits[i].name}")

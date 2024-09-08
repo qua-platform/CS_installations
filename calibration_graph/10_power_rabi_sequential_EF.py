@@ -316,6 +316,7 @@ ef_operation_name = f'EF_{operation}'
 for q in qubits:
     if ef_operation_name not in q.xy.operations:
         q.xy.operations[ef_operation_name] = pulses.DragCosinePulse(
+            # NOTE: this can lead to unwated behavior if the fits fails, because it can make the amplitude be larger than the permitted values
             amplitude=fit_results[q.name]['Pi_amplitude'],
             alpha=q.xy.operations[operation].alpha,
             anharmonicity=q.xy.operations[operation].anharmonicity,

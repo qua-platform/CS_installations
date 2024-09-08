@@ -169,7 +169,7 @@ else:
     # Calibrate the active qubits
     # machine.calibrate_octave_ports(qm)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(iq_blobs)
+    job = qm.execute(iq_blobs, flags=['auto-element-thread'])
 
     for i in range(num_qubits):
         print(f"Fetching results for qubit {qubits[i].name}")

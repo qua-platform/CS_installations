@@ -26,8 +26,8 @@ q1_res_ch = mw_fem_spec(1, 1, 1, 2)  # mw_fem_spec(1, 1, 1, 2)
 # Define which quantum elements are present in the system
 qubits = [1, 2, 3, 4, 5, 6]
 connectivity = Connectivity()
-connectivity.add_resonator_line(qubits=qubits, triggered=True, constraints=q1_res_ch)
-connectivity.add_qubit_drive_lines(qubits=qubits, triggered=True)
+connectivity.add_resonator_line(qubits=qubits, constraints=q1_res_ch)
+connectivity.add_qubit_drive_lines(qubits=qubits)
 connectivity.add_qubit_flux_lines(qubits=qubits)
 # connectivity.add_qubit_pair_flux_lines(qubit_pairs=[(1,2)])
 
