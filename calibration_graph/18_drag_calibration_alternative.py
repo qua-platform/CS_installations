@@ -167,6 +167,9 @@ if simulate:
     job = qmm.simulate(config, drag_calibration, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
+    node.machine = machine
+    node.save()
+    quit()
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -192,63 +195,58 @@ else:
     qm.close()
 
 # %%
-if not simulate:
-    handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"amp": amps, "sequence": [0,1]})
+handles = job.result_handles
+ds = fetch_results_as_xarray(handles, qubits, {"amp": amps, "sequence": [0,1]})
 
 # %%
-if not simulate:
-    def alpha(q):
-        def foo(amp):
-            return q.xy.operations[operation].alpha * amp
-        return foo
+def alpha(q):
+    def foo(amp):
+        return q.xy.operations[operation].alpha * amp
+    return foo
 
-    ds = ds.assign_coords({'alpha' : (['qubit','amp'],np.array([alpha(q)(amps) for q in qubits]))})
-    node.results = {}
+ds = ds.assign_coords({'alpha' : (['qubit','amp'],np.array([alpha(q)(amps) for q in qubits]))})
+node.results = {}
 
-    node.results = {}
-    node.results['ds'] = ds
+node.results = {}
+node.results['ds'] = ds
 
 # %%
 
 # %%
-if not simulate:
-    fit_results = {}
-    state = ds.state
-    fitted = xr.polyval(state.amp,state.polyfit(dim = 'amp', deg = 1).polyfit_coefficients)
-    diffs = state.polyfit(dim = 'amp', deg = 1).polyfit_coefficients.diff(dim = 'sequence').drop('sequence')
-    intersection = -diffs.sel(degree = 0)/diffs.sel(degree = 1)
-    intersection_alpha = intersection * xr.DataArray([q.xy.operations[operation].alpha for q in qubits], dims=['qubit'], coords={'qubit': ds.qubit})
+fit_results = {}
+state = ds.state
+fitted = xr.polyval(state.amp,state.polyfit(dim = 'amp', deg = 1).polyfit_coefficients)
+diffs = state.polyfit(dim = 'amp', deg = 1).polyfit_coefficients.diff(dim = 'sequence').drop('sequence')
+intersection = -diffs.sel(degree = 0)/diffs.sel(degree = 1)
+intersection_alpha = intersection * xr.DataArray([q.xy.operations[operation].alpha for q in qubits], dims=['qubit'], coords={'qubit': ds.qubit})
 
 
-    fit_results = {qubit.name : {'alpha': float(intersection_alpha.sel(qubit=qubit.name).values)} for qubit in qubits}
+fit_results = {qubit.name : {'alpha': float(intersection_alpha.sel(qubit=qubit.name).values)} for qubit in qubits}
+for q in qubits:
+    print(f"DRAG coeff for {q.name} is {fit_results[q.name]['alpha']}")
+node.results['fit_results'] = fit_results
+
+
+# %%
+grid_names = [f'{q.name}_0' for q in qubits]
+grid = QubitGrid(ds, grid_names)
+for ax, qubit in grid_iter(grid):
+    (ds.loc[qubit].state).plot(ax = ax, x = 'alpha', hue = 'sequence')
+    ax.axvline(fit_results[qubit['qubit']]['alpha'], color = 'r')
+    ax.set_ylabel('num. of pulses')
+    ax.set_xlabel('DRAG coeff')
+    ax.set_title(qubit['qubit'])
+grid.fig.suptitle('DRAG calibration')
+plt.tight_layout()
+plt.show()
+node.results['figure'] = grid.fig
+
+# %%
+for qubit in tracked_qubits:
+    qubit.revert_changes()
+with node.record_state_updates():
     for q in qubits:
-        print(f"DRAG coeff for {q.name} is {fit_results[q.name]['alpha']}")
-    node.results['fit_results'] = fit_results
-
-
-# %%
-if not simulate:
-    grid_names = [f'{q.name}_0' for q in qubits]
-    grid = QubitGrid(ds, grid_names)
-    for ax, qubit in grid_iter(grid):
-        (ds.loc[qubit].state).plot(ax = ax, x = 'alpha', hue = 'sequence')
-        ax.axvline(fit_results[qubit['qubit']]['alpha'], color = 'r')
-        ax.set_ylabel('num. of pulses')
-        ax.set_xlabel('DRAG coeff')
-        ax.set_title(qubit['qubit'])
-    grid.fig.suptitle('DRAG calibration')
-    plt.tight_layout()
-    plt.show()
-    node.results['figure'] = grid.fig
-
-# %%
-if not simulate:
-    for qubit in tracked_qubits:
-        qubit.revert_changes()
-    with node.record_state_updates():
-        for q in qubits:
-            q.xy.operations[operation].alpha = fit_results[q.name]['alpha']
+        q.xy.operations[operation].alpha = fit_results[q.name]['alpha']
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()

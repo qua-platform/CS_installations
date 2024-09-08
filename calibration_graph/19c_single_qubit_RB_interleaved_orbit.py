@@ -341,7 +341,7 @@ def get_rb_interleaved_program(qubit: Transmon):
     return rb
 
 
-simulate = False
+simulate = node.parameters.simulate
 
 if simulate:
     simulation_config = SimulationConfig(duration=100_000)  # in clock cycles

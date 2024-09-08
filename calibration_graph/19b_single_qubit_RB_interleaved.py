@@ -261,9 +261,9 @@ def get_rb_interleaved_program(qubit: Transmon):
 
         for qb in qubits:
             wait(1000, qb.z.name)
-        
+
         align()
-        
+
         with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
             # Generates the RB sequence with a gate interleaved after each Clifford
             sequence_list, inv_gate_list = generate_sequence(interleaved_gate_index=interleaved_gate_index)
@@ -330,7 +330,7 @@ def get_rb_interleaved_program(qubit: Transmon):
     return rb
 
 
-simulate = False
+simulate = node.parameters.simulate
 
 if simulate:
     simulation_config = SimulationConfig(duration=100_000)  # in clock cycles

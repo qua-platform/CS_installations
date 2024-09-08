@@ -21,9 +21,8 @@ Before proceeding to the next node:
 """
 import warnings
 
-from docutils.nodes import warning
+from typing import Literal, Optional
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
 
 
 class Parameters(NodeParameters):
@@ -175,6 +174,9 @@ if simulate:
     job = qmm.simulate(config, multi_res_spec_vs_flux, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
+    node.machine = machine
+    node.save()
+    quit()
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -230,103 +232,98 @@ else:
     qm.close()
 
 # %%
-if not simulate:
-    handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs, "flux": dcs})
-    # %%
-    ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
+handles = job.result_handles
+ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs, "flux": dcs})
+# %%
+ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 
-    def abs_freq(q):
-        def foo(freq):
-            return freq + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
-        return foo
+def abs_freq(q):
+    def foo(freq):
+        return freq + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
+    return foo
 
-    ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
+ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
 
-    ds.freq_full.attrs['long_name'] = 'Frequency'
-    ds.freq_full.attrs['units'] = 'GHz'
+ds.freq_full.attrs['long_name'] = 'Frequency'
+ds.freq_full.attrs['units'] = 'GHz'
 
-    node.results = {}
-    node.results['ds'] = ds
+node.results = {}
+node.results['ds'] = ds
 
 # %%
-if not simulate:
-    peak_freq = ds.IQ_abs.idxmin(dim='freq')
-    # fit to a cosine using the qiskit function
-    # a * np.cos(2 * np.pi * f * t + phi) + offset
-    fit_osc = fit_oscillation(peak_freq.dropna(dim='flux'), 'flux')
+peak_freq = ds.IQ_abs.idxmin(dim='freq')
+# fit to a cosine using the qiskit function
+# a * np.cos(2 * np.pi * f * t + phi) + offset
+fit_osc = fit_oscillation(peak_freq.dropna(dim='flux'), 'flux')
 
-    # making sure the phase is between -pi and pi
-    idle_offset = -fit_osc.sel(fit_vals='phi')
-    idle_offset = np.mod(idle_offset+np.pi, 2*np.pi) - np.pi
+# making sure the phase is between -pi and pi
+idle_offset = -fit_osc.sel(fit_vals='phi')
+idle_offset = np.mod(idle_offset+np.pi, 2*np.pi) - np.pi
 
-    # converting the phase phi from radians to voltage
-    idle_offset = idle_offset/fit_osc.sel(fit_vals='f')/2/np.pi
+# converting the phase phi from radians to voltage
+idle_offset = idle_offset/fit_osc.sel(fit_vals='f')/2/np.pi
 
-    # finding the location of the minimum frequency flux point
-    flux_min = idle_offset + ((idle_offset < 0  ) -0.5 )  /fit_osc.sel(fit_vals = 'f')
-    flux_min = flux_min * (np.abs(flux_min) < 0.5) + 0.5 * (flux_min > 0.5) - 0.5 * (flux_min < -0.5)
+# finding the location of the minimum frequency flux point
+flux_min = idle_offset + ((idle_offset < 0  ) -0.5 )  /fit_osc.sel(fit_vals = 'f')
+flux_min = flux_min * (np.abs(flux_min) < 0.5) + 0.5 * (flux_min > 0.5) - 0.5 * (flux_min < -0.5)
 
-    # finding the frequency as the sweet spot flux
-    rel_freq_shift = peak_freq.sel(flux=idle_offset, method='nearest')
-    abs_freq_shift = rel_freq_shift + \
-        np.array([q.resonator.opx_output.upconverter_frequency + q.resonator.intermediate_frequency for q in qubits])
-    q_IF = {}
+# finding the frequency as the sweet spot flux
+rel_freq_shift = peak_freq.sel(flux=idle_offset, method='nearest')
+abs_freq_shift = rel_freq_shift + \
+    np.array([q.resonator.opx_output.upconverter_frequency + q.resonator.intermediate_frequency for q in qubits])
+q_IF = {}
 
+for q in qubits:
+    q_IF[q.name] = q.resonator.intermediate_frequency
+
+    print(
+        f'DC offset for {q.name} is {idle_offset.sel(qubit = q.name).data*1e3:.0f} mV')
+    print(
+        f"Resonator frequency for {q.name} is {(rel_freq_shift.sel(qubit = q.name).values + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency)/1e9:.3f} GHz")
+    print(
+        f"(shift of {rel_freq_shift.sel(qubit = q.name).values/1e6:.0f} MHz)")
+    print()
+    #
+# %%
+grid_names = [f'{q.name}_0' for q in qubits]
+grid = QubitGrid(ds, grid_names)
+
+for ax, qubit in grid_iter(grid):
+    ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].IQ_abs.plot(ax=ax, add_colorbar=False,
+                                                                            x='flux', y='freq_GHz', robust=True)
+    ax.axvline(idle_offset.loc[qubit], linestyle = 'dashed', linewidth = 0.5, color = 'r')
+    ax.axvline(flux_min.loc[qubit],linestyle = 'dashed', linewidth = 0.5, color = 'orange')
+    ax.set_ylabel('Freq (GHz)')
+    ax.set_xlabel('Flux (V)')
+    ax.set_title(qubit['qubit'])
+grid.fig.suptitle('Resonator spectroscopy vs flux ')
+
+plt.tight_layout()
+plt.show()
+node.results["figure"] = grid.fig
+# %%
+fit_results = {}
+for q in qubits:
+    fit_results[q.name] = {}
+    fit_results[q.name]["resonator_frequency"] = rel_freq_shift.sel(qubit = q.name).values + q.resonator.opx_output.upconverter_frequency + q.resonator.intermediate_frequency
+    fit_results[q.name]['min_offset'] = float(flux_min.sel(qubit=q.name).data)
+    fit_results[q.name]['offset'] = float(idle_offset.sel(qubit=q.name).data)
+    fit_results[q.name]['dv_phi0'] = 1/fit_osc.sel(fit_vals='f', qubit=q.name).values
+node.results['fit_results'] = fit_results
+
+# %%
+with node.record_state_updates():
     for q in qubits:
-        q_IF[q.name] = q.resonator.intermediate_frequency
+        if not (np.isnan(float(idle_offset.sel(qubit=q.name).data))):
+            if flux_point == 'independent':
+                q.z.independent_offset = float(idle_offset.sel(qubit=q.name).data)
+            else:
+                q.z.joint_offset = float(idle_offset.sel(qubit=q.name).data)
+            # q.z.extras['dv_phi0'] = 1/fit_osc.sel(fit_vals='f', qubit=q.name).values
 
-        print(
-            f'DC offset for {q.name} is {idle_offset.sel(qubit = q.name).data*1e3:.0f} mV')
-        print(
-            f"Resonator frequency for {q.name} is {(rel_freq_shift.sel(qubit = q.name).values + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency)/1e9:.3f} GHz")
-        print(
-            f"(shift of {rel_freq_shift.sel(qubit = q.name).values/1e6:.0f} MHz)")
-        print()
-        #
-# %%
-if not simulate:
-    grid_names = [f'{q.name}_0' for q in qubits]
-    grid = QubitGrid(ds, grid_names)
-
-    for ax, qubit in grid_iter(grid):
-        ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].IQ_abs.plot(ax=ax, add_colorbar=False,
-                                                                                x='flux', y='freq_GHz', robust=True)
-        ax.axvline(idle_offset.loc[qubit], linestyle = 'dashed', linewidth = 0.5, color = 'r')
-        ax.axvline(flux_min.loc[qubit],linestyle = 'dashed', linewidth = 0.5, color = 'orange')
-        ax.set_ylabel('Freq (GHz)')
-        ax.set_xlabel('Flux (V)')
-        ax.set_title(qubit['qubit'])
-    grid.fig.suptitle('Resonator spectroscopy vs flux ')
-
-    plt.tight_layout()
-    plt.show()
-    node.results["figure"] = grid.fig
-# %%
-if not simulate:
-    fit_results = {}
-    for q in qubits:
-        fit_results[q.name] = {}
-        fit_results[q.name]["resonator_frequency"] = rel_freq_shift.sel(qubit = q.name).values + q.resonator.opx_output.upconverter_frequency + q.resonator.intermediate_frequency
-        fit_results[q.name]['min_offset'] = float(flux_min.sel(qubit=q.name).data)
-        fit_results[q.name]['offset'] = float(idle_offset.sel(qubit=q.name).data)
-        fit_results[q.name]['dv_phi0'] = 1/fit_osc.sel(fit_vals='f', qubit=q.name).values
-    node.results['fit_results'] = fit_results
-
-# %%
-if not simulate:
-    with node.record_state_updates():
-        for q in qubits:
-            if not (np.isnan(float(idle_offset.sel(qubit=q.name).data))):
-                if flux_point == 'independent':
-                    q.z.independent_offset = float(idle_offset.sel(qubit=q.name).data)
-                else:
-                    q.z.joint_offset = float(idle_offset.sel(qubit=q.name).data)
-                # q.z.extras['dv_phi0'] = 1/fit_osc.sel(fit_vals='f', qubit=q.name).values
-
-                if update_flux_min:
-                    q.z.min_offset = float(flux_min.sel(qubit=q.name).data)
-            q.resonator.intermediate_frequency += float(rel_freq_shift.sel(qubit=q.name).data)
+            if update_flux_min:
+                q.z.min_offset = float(flux_min.sel(qubit=q.name).data)
+        q.resonator.intermediate_frequency += float(rel_freq_shift.sel(qubit=q.name).data)
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()

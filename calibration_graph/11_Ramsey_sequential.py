@@ -168,6 +168,9 @@ if simulate:
     job = qmm.simulate(config, ramsey, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
+    node.machine = machine
+    node.save()
+    quit()
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config,keep_dc_offsets_when_closing=False)
@@ -193,59 +196,55 @@ else:
 
 
 # %%
-if not simulate:
-    handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"sign" : [-1,1], "time": idle_times})
-    ds = ds.assign_coords({'time' : (['time'], 4*idle_times)})
-    ds.time.attrs['long_name'] = 'idle_time'
-    ds.time.attrs['units'] = 'nS'
-    node.results = {}
-    node.results['ds'] = ds
+handles = job.result_handles
+ds = fetch_results_as_xarray(handles, qubits, {"sign" : [-1,1], "time": idle_times})
+ds = ds.assign_coords({'time' : (['time'], 4*idle_times)})
+ds.time.attrs['long_name'] = 'idle_time'
+ds.time.attrs['units'] = 'nS'
+node.results = {}
+node.results['ds'] = ds
 
 # %%
-if not simulate:
-    fit = fit_oscillation_decay_exp(ds.I, 'time')
-    fit_evals = oscillation_decay_exp(ds.time,fit.sel(fit_vals = 'a'),
-                                      fit.sel(fit_vals = 'f'),fit.sel(fit_vals = 'phi'),
-                                      fit.sel(fit_vals = 'offset'),fit.sel(fit_vals = 'decay'))
+fit = fit_oscillation_decay_exp(ds.I, 'time')
+fit_evals = oscillation_decay_exp(ds.time,fit.sel(fit_vals = 'a'),
+                                  fit.sel(fit_vals = 'f'),fit.sel(fit_vals = 'phi'),
+                                  fit.sel(fit_vals = 'offset'),fit.sel(fit_vals = 'decay'))
 
-    within_detuning = (1e9*fit.sel(fit_vals = 'f') < 2 * detuning).mean(dim = 'sign') == 1
-    positive_shift = fit.sel(fit_vals = 'f').sel(sign = 1) > fit.sel(fit_vals = 'f').sel(sign = -1)
-    freq_offset = within_detuning * (fit.sel(fit_vals = 'f')* fit.sign).mean(dim = 'sign') + ~within_detuning * positive_shift * (fit.sel(fit_vals = 'f')).mean(dim = 'sign') -~within_detuning * ~positive_shift * (fit.sel(fit_vals = 'f')).mean(dim = 'sign')
+within_detuning = (1e9*fit.sel(fit_vals = 'f') < 2 * detuning).mean(dim = 'sign') == 1
+positive_shift = fit.sel(fit_vals = 'f').sel(sign = 1) > fit.sel(fit_vals = 'f').sel(sign = -1)
+freq_offset = within_detuning * (fit.sel(fit_vals = 'f')* fit.sign).mean(dim = 'sign') + ~within_detuning * positive_shift * (fit.sel(fit_vals = 'f')).mean(dim = 'sign') -~within_detuning * ~positive_shift * (fit.sel(fit_vals = 'f')).mean(dim = 'sign')
 
-    # freq_offset = (fit.sel(fit_vals = 'f')* fit.sign).mean(dim = 'sign')
-    decay = 1e-9/fit.sel(fit_vals = 'decay').mean(dim = 'sign')
-    fit_results = {q.name : {'freq_offset' : 1e9*freq_offset.loc[q.name].values, 'decay' : decay.loc[q.name].values} for q in qubits}
-    node.results['fit_results'] = fit_results
+# freq_offset = (fit.sel(fit_vals = 'f')* fit.sign).mean(dim = 'sign')
+decay = 1e-9/fit.sel(fit_vals = 'decay').mean(dim = 'sign')
+fit_results = {q.name : {'freq_offset' : 1e9*freq_offset.loc[q.name].values, 'decay' : decay.loc[q.name].values} for q in qubits}
+node.results['fit_results'] = fit_results
+for q in qubits:
+    print(f"Frequency offset for qubit {q.name} : {(fit_results[q.name]['freq_offset']/1e6):.2f} MHz ")
+    print(f"T2* for qubit {q.name} : {1e6*fit_results[q.name]['decay']:.2f} us")
+
+# %%
+grid_names = [f'{q.name}_0' for q in qubits]
+grid = QubitGrid(ds, grid_names)
+for ax, qubit in grid_iter(grid):
+    (ds.sel(sign = 1).loc[qubit].I*1e3).plot(ax = ax, x = 'time',
+                                             c = 'C0', marker = '.', ms = 1.0, ls = '', label = "$\Delta$ = +")
+    ax.plot(ds.time, 1e3*fit_evals.loc[qubit].sel(sign = 1), c = 'C0', ls = '-', lw=0.5)
+    (ds.sel(sign = -1).loc[qubit].I*1e3).plot(ax = ax, x = 'time',
+                                             c = 'C1', marker = '.', ms = 1.0, ls = '', label = "$\Delta$ = -")
+    ax.plot(ds.time, 1e3*fit_evals.loc[qubit].sel(sign = -1), c = 'C1', ls = '-', lw=0.5)
+    ax.set_ylabel('Trans. amp. I [mV]')
+    ax.set_xlabel('Idle time [nS]')
+    ax.set_title(qubit['qubit'])
+    # ax.legend()
+grid.fig.suptitle('Ramsey : I vs. idle time')
+plt.tight_layout()
+plt.show()
+node.results['figure'] = grid.fig
+
+# %%
+with node.record_state_updates():
     for q in qubits:
-        print(f"Frequency offset for qubit {q.name} : {(fit_results[q.name]['freq_offset']/1e6):.2f} MHz ")
-        print(f"T2* for qubit {q.name} : {1e6*fit_results[q.name]['decay']:.2f} us")
-
-# %%
-if not simulate:
-    grid_names = [f'{q.name}_0' for q in qubits]
-    grid = QubitGrid(ds, grid_names)
-    for ax, qubit in grid_iter(grid):
-        (ds.sel(sign = 1).loc[qubit].I*1e3).plot(ax = ax, x = 'time',
-                                                 c = 'C0', marker = '.', ms = 1.0, ls = '', label = "$\Delta$ = +")
-        ax.plot(ds.time, 1e3*fit_evals.loc[qubit].sel(sign = 1), c = 'C0', ls = '-', lw=0.5)
-        (ds.sel(sign = -1).loc[qubit].I*1e3).plot(ax = ax, x = 'time',
-                                                 c = 'C1', marker = '.', ms = 1.0, ls = '', label = "$\Delta$ = -")
-        ax.plot(ds.time, 1e3*fit_evals.loc[qubit].sel(sign = -1), c = 'C1', ls = '-', lw=0.5)
-        ax.set_ylabel('Trans. amp. I [mV]')
-        ax.set_xlabel('Idle time [nS]')
-        ax.set_title(qubit['qubit'])
-        # ax.legend()
-    grid.fig.suptitle('Ramsey : I vs. idle time')
-    plt.tight_layout()
-    plt.show()
-    node.results['figure'] = grid.fig
-
-# %%
-if not simulate:
-    with node.record_state_updates():
-        for q in qubits:
-            q.xy.intermediate_frequency -= float(fit_results[q.name]['freq_offset'])
+        q.xy.intermediate_frequency -= float(fit_results[q.name]['freq_offset'])
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()

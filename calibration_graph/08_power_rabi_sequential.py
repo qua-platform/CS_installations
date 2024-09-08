@@ -157,6 +157,9 @@ if simulate:
     job = qmm.simulate(config, power_rabi, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
+    node.machine = machine
+    node.save()
+    quit()
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -179,85 +182,80 @@ else:
     qm.close()
 
 # %%
-if not simulate:
-    handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"amp": amps, "N": N_pi_vec})
+handles = job.result_handles
+ds = fetch_results_as_xarray(handles, qubits, {"amp": amps, "N": N_pi_vec})
 
 # %%
-if not simulate:
-    def abs_amp(q):
-        def foo(amp):
-            return q.xy.operations[operation].amplitude * amp
-        return foo
+def abs_amp(q):
+    def foo(amp):
+        return q.xy.operations[operation].amplitude * amp
+    return foo
 
-    ds = ds.assign_coords({'abs_amp' : (['qubit','amp'],np.array([abs_amp(q)(amps) for q in qubits]))})
-    node.results = {}
-    node.results['ds'] = ds
+ds = ds.assign_coords({'abs_amp' : (['qubit','amp'],np.array([abs_amp(q)(amps) for q in qubits]))})
+node.results = {}
+node.results['ds'] = ds
 
 # %%
-if not simulate:
-    fit_results = {}
+fit_results = {}
 
-    if N_pi == 1:
-        fit = fit_oscillation(ds.I, 'amp')
-        fit_evals = oscillation(ds.amp,fit.sel(fit_vals = 'a'),fit.sel(fit_vals = 'f'),fit.sel(fit_vals = 'phi'),fit.sel(fit_vals = 'offset'))
-        for q in qubits:
-            fit_results[q.name] = {}
-            f_fit = fit.loc[q.name].sel(fit_vals='f')
-            phi_fit = fit.loc[q.name].sel(fit_vals='phi')
-            phi_fit = phi_fit - np.pi * (phi_fit > np.pi/2)
-            factor = float(1.0 * (np.pi - phi_fit)/ (2* np.pi* f_fit))
-            new_pi_amp = q.xy.operations[operation].amplitude * factor
-            if new_pi_amp < 0.3:
-                print(f"amplitude for Pi pulse is modified by a factor of {factor:.2f}")
-                print(f"new amplitude is {1e3 * new_pi_amp:.2f} mV \n")
-                fit_results[q.name]['Pi_amplitude'] = new_pi_amp
-            else:
-                print(f"Fitted amplitude too high, new amplitude is 300 mV \n")
-                fit_results[q.name]['Pi_amplitude'] = 0.3
-        node.results['fit_results'] = fit_results# %%
-
-    elif N_pi > 1:
-        I_n=ds.I.mean(dim='N')
-        if N_pi_vec[0] % 2 == 0:
-            datamaxIndx = I_n.argmin(dim='amp')
+if N_pi == 1:
+    fit = fit_oscillation(ds.I, 'amp')
+    fit_evals = oscillation(ds.amp,fit.sel(fit_vals = 'a'),fit.sel(fit_vals = 'f'),fit.sel(fit_vals = 'phi'),fit.sel(fit_vals = 'offset'))
+    for q in qubits:
+        fit_results[q.name] = {}
+        f_fit = fit.loc[q.name].sel(fit_vals='f')
+        phi_fit = fit.loc[q.name].sel(fit_vals='phi')
+        phi_fit = phi_fit - np.pi * (phi_fit > np.pi/2)
+        factor = float(1.0 * (np.pi - phi_fit)/ (2* np.pi* f_fit))
+        new_pi_amp = q.xy.operations[operation].amplitude * factor
+        if new_pi_amp < 0.3:
+            print(f"amplitude for Pi pulse is modified by a factor of {factor:.2f}")
+            print(f"new amplitude is {1e3 * new_pi_amp:.2f} mV \n")
+            fit_results[q.name]['Pi_amplitude'] = new_pi_amp
         else:
-            datamaxIndx = I_n.argmax(dim='amp')
-        for q in qubits:
-            new_pi_amp = ds.abs_amp.sel(qubit = q.name)[datamaxIndx.sel(qubit = q.name)].data
-            fit_results[q.name] = {}
-            if new_pi_amp < 0.3:
-                fit_results[q.name]['Pi_amplitude'] = new_pi_amp
-                print(f"amplitude for Pi pulse is modified by a factor of {I_n.idxmax(dim='amp').sel(qubit = q.name):.2f}")
-                print(f"new amplitude is {1e3 * new_pi_amp:.2f} mV \n")
-            else:
-                print(f"Fitted amplitude too high, new amplitude is 300 mV \n")
-                fit_results[q.name]['Pi_amplitude'] = 0.3
+            print(f"Fitted amplitude too high, new amplitude is 300 mV \n")
+            fit_results[q.name]['Pi_amplitude'] = 0.3
+    node.results['fit_results'] = fit_results# %%
+
+elif N_pi > 1:
+    I_n=ds.I.mean(dim='N')
+    if N_pi_vec[0] % 2 == 0:
+        datamaxIndx = I_n.argmin(dim='amp')
+    else:
+        datamaxIndx = I_n.argmax(dim='amp')
+    for q in qubits:
+        new_pi_amp = ds.abs_amp.sel(qubit = q.name)[datamaxIndx.sel(qubit = q.name)].data
+        fit_results[q.name] = {}
+        if new_pi_amp < 0.3:
+            fit_results[q.name]['Pi_amplitude'] = new_pi_amp
+            print(f"amplitude for Pi pulse is modified by a factor of {I_n.idxmax(dim='amp').sel(qubit = q.name):.2f}")
+            print(f"new amplitude is {1e3 * new_pi_amp:.2f} mV \n")
+        else:
+            print(f"Fitted amplitude too high, new amplitude is 300 mV \n")
+            fit_results[q.name]['Pi_amplitude'] = 0.3
 # %%
-if not simulate:
-    grid_names = [f'{q.name}_0' for q in qubits]
-    grid = QubitGrid(ds, grid_names)
-    for ax, qubit in grid_iter(grid):
-        if N_pi == 1:
-            (ds.assign_coords(amp_mV  = ds.abs_amp *1e3).loc[qubit].I*1e3).plot(ax = ax, x = 'amp_mV')
-            ax.plot(ds.abs_amp.loc[qubit]*1e3, 1e3*fit_evals.loc[qubit][0])
-            ax.set_ylabel('Trans. amp. I [mV]')
-        elif N_pi > 1:
-            (ds.assign_coords(amp_mV  = ds.abs_amp *1e3).loc[qubit].I*1e3).plot(ax = ax, x = 'amp_mV', y = 'N')
-            ax.axvline(1e3*ds.abs_amp.loc[qubit][datamaxIndx.loc[qubit]], color = 'r')
-            ax.set_ylabel('num. of pulses')
-        ax.set_xlabel('Amplitude [mV]')
-        ax.set_title(qubit['qubit'])
-    grid.fig.suptitle('Rabi : I vs. amplitude')
-    plt.tight_layout()
-    plt.show()
-    node.results['figure'] = grid.fig
+grid_names = [f'{q.name}_0' for q in qubits]
+grid = QubitGrid(ds, grid_names)
+for ax, qubit in grid_iter(grid):
+    if N_pi == 1:
+        (ds.assign_coords(amp_mV  = ds.abs_amp *1e3).loc[qubit].I*1e3).plot(ax = ax, x = 'amp_mV')
+        ax.plot(ds.abs_amp.loc[qubit]*1e3, 1e3*fit_evals.loc[qubit][0])
+        ax.set_ylabel('Trans. amp. I [mV]')
+    elif N_pi > 1:
+        (ds.assign_coords(amp_mV  = ds.abs_amp *1e3).loc[qubit].I*1e3).plot(ax = ax, x = 'amp_mV', y = 'N')
+        ax.axvline(1e3*ds.abs_amp.loc[qubit][datamaxIndx.loc[qubit]], color = 'r')
+        ax.set_ylabel('num. of pulses')
+    ax.set_xlabel('Amplitude [mV]')
+    ax.set_title(qubit['qubit'])
+grid.fig.suptitle('Rabi : I vs. amplitude')
+plt.tight_layout()
+plt.show()
+node.results['figure'] = grid.fig
 
 # %%
-if not simulate:
-    with node.record_state_updates():
-        for q in qubits:
-            q.xy.operations[operation].amplitude = fit_results[q.name]['Pi_amplitude']
+with node.record_state_updates():
+    for q in qubits:
+        q.xy.operations[operation].amplitude = fit_results[q.name]['Pi_amplitude']
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()

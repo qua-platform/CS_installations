@@ -158,6 +158,9 @@ if simulate:
     job = qmm.simulate(config, power_rabi, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
+    node.machine = machine
+    node.save()
+    quit()
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -259,76 +262,71 @@ else:
     # node_save(machine, "power_rabi", data, additional_files=True)
 
 # %%
-if not simulate:
-    handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"amp": amps})
+handles = job.result_handles
+ds = fetch_results_as_xarray(handles, qubits, {"amp": amps})
 
 # %%
-if not simulate:
-    def abs_amp(q):
-        def foo(amp):
-            return q.xy.operations[operation].amplitude * amp
-        return foo
+def abs_amp(q):
+    def foo(amp):
+        return q.xy.operations[operation].amplitude * amp
+    return foo
 
-    ds = ds.assign_coords({'abs_amp' : (['qubit','amp'],np.array([abs_amp(q)(amps) for q in qubits]))})
-    ds = ds.assign({'IQ_abs' : np.sqrt(ds.I**2 + ds.Q**2)})
-    node.results = {}
-    node.results['ds'] = ds
-
-# %%
-if not simulate:
-    fit_results = {}
-
-    fit = fit_oscillation(ds.IQ_abs, 'amp')
-    fit_evals = oscillation(ds.amp,fit.sel(fit_vals = 'a'),fit.sel(fit_vals = 'f'),fit.sel(fit_vals = 'phi'),fit.sel(fit_vals = 'offset'))
-    for q in qubits:
-        fit_results[q.name] = {}
-        f_fit = fit.loc[q.name].sel(fit_vals='f')
-        phi_fit = fit.loc[q.name].sel(fit_vals='phi')
-        phi_fit = phi_fit - np.pi * (phi_fit > np.pi/2)
-        factor = float(1.0 * (np.pi - phi_fit)/ (2* np.pi* f_fit))
-        new_pi_amp = q.xy.operations[operation].amplitude * factor
-        if new_pi_amp < 0.3:
-            print(f"amplitude for E-F Pi pulse is modified by a factor of {factor:.2f} w.r.t the original pi pulse amplitude")
-            print(f"new amplitude is {1e3 * new_pi_amp:.2f} mV \n")
-            fit_results[q.name]['Pi_amplitude'] = new_pi_amp
-        else:
-            print(f"Fitted amplitude too high, new amplitude is 300 mV \n")
-            fit_results[q.name]['Pi_amplitude'] = 0.3
-    node.results['fit_results'] = fit_results
+ds = ds.assign_coords({'abs_amp' : (['qubit','amp'],np.array([abs_amp(q)(amps) for q in qubits]))})
+ds = ds.assign({'IQ_abs' : np.sqrt(ds.I**2 + ds.Q**2)})
+node.results = {}
+node.results['ds'] = ds
 
 # %%
-if not simulate:
-    grid_names = [f'{q.name}_0' for q in qubits]
-    grid = QubitGrid(ds, grid_names)
-    for ax, qubit in grid_iter(grid):
-        (ds.assign_coords(amp_mV  = ds.abs_amp *1e3).loc[qubit].IQ_abs*1e3).plot(ax = ax, x = 'amp_mV')
-        ax.plot(ds.abs_amp.loc[qubit]*1e3, 1e3*fit_evals.loc[qubit])
-        ax.set_ylabel('Trans. amp. I [mV]')
-        ax.set_xlabel('Amplitude [mV]')
-        ax.set_title(qubit['qubit'])
-    grid.fig.suptitle('Rabi : I vs. amplitude')
-    plt.tight_layout()
-    plt.show()
-    node.results['figure'] = grid.fig
+fit_results = {}
+
+fit = fit_oscillation(ds.IQ_abs, 'amp')
+fit_evals = oscillation(ds.amp,fit.sel(fit_vals = 'a'),fit.sel(fit_vals = 'f'),fit.sel(fit_vals = 'phi'),fit.sel(fit_vals = 'offset'))
+for q in qubits:
+    fit_results[q.name] = {}
+    f_fit = fit.loc[q.name].sel(fit_vals='f')
+    phi_fit = fit.loc[q.name].sel(fit_vals='phi')
+    phi_fit = phi_fit - np.pi * (phi_fit > np.pi/2)
+    factor = float(1.0 * (np.pi - phi_fit)/ (2* np.pi* f_fit))
+    new_pi_amp = q.xy.operations[operation].amplitude * factor
+    if new_pi_amp < 0.3:
+        print(f"amplitude for E-F Pi pulse is modified by a factor of {factor:.2f} w.r.t the original pi pulse amplitude")
+        print(f"new amplitude is {1e3 * new_pi_amp:.2f} mV \n")
+        fit_results[q.name]['Pi_amplitude'] = new_pi_amp
+    else:
+        print(f"Fitted amplitude too high, new amplitude is 300 mV \n")
+        fit_results[q.name]['Pi_amplitude'] = 0.3
+node.results['fit_results'] = fit_results
 
 # %%
-if not simulate:
-    ef_operation_name = f'EF_{operation}'
-    for q in qubits:
-        if ef_operation_name not in q.xy.operations:
-            q.xy.operations[ef_operation_name] = pulses.DragCosinePulse(
-                amplitude=fit_results[q.name]['Pi_amplitude'],
-                alpha=q.xy.operations[operation].alpha,
-                anharmonicity=q.xy.operations[operation].anharmonicity,
-                length=q.xy.operations[operation].length,
-                axis_angle=0,  # TODO: to check that the rotation does not overwrite y-pulses
-                digital_marker=q.xy.operations[operation].digital_marker,
-            )
-        else:
-            with node.record_state_updates():
-                # set the new amplitude for the EF operation
-                q.xy.operations[ef_operation_name].amplitude = fit_results[q.name]['Pi_amplitude']
+grid_names = [f'{q.name}_0' for q in qubits]
+grid = QubitGrid(ds, grid_names)
+for ax, qubit in grid_iter(grid):
+    (ds.assign_coords(amp_mV  = ds.abs_amp *1e3).loc[qubit].IQ_abs*1e3).plot(ax = ax, x = 'amp_mV')
+    ax.plot(ds.abs_amp.loc[qubit]*1e3, 1e3*fit_evals.loc[qubit])
+    ax.set_ylabel('Trans. amp. I [mV]')
+    ax.set_xlabel('Amplitude [mV]')
+    ax.set_title(qubit['qubit'])
+grid.fig.suptitle('Rabi : I vs. amplitude')
+plt.tight_layout()
+plt.show()
+node.results['figure'] = grid.fig
+
+# %%
+ef_operation_name = f'EF_{operation}'
+for q in qubits:
+    if ef_operation_name not in q.xy.operations:
+        q.xy.operations[ef_operation_name] = pulses.DragCosinePulse(
+            amplitude=fit_results[q.name]['Pi_amplitude'],
+            alpha=q.xy.operations[operation].alpha,
+            anharmonicity=q.xy.operations[operation].anharmonicity,
+            length=q.xy.operations[operation].length,
+            axis_angle=0,  # TODO: to check that the rotation does not overwrite y-pulses
+            digital_marker=q.xy.operations[operation].digital_marker,
+        )
+    else:
+        with node.record_state_updates():
+            # set the new amplitude for the EF operation
+            q.xy.operations[ef_operation_name].amplitude = fit_results[q.name]['Pi_amplitude']
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()

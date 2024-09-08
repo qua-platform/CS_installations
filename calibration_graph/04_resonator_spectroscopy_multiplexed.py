@@ -138,6 +138,9 @@ if simulate:
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
+    node.machine = machine
+    node.save()
+    quit()
 else:
     # Open a quantum machine to execute the QUA program
     qm = qmm.open_qm(config)
@@ -189,93 +192,89 @@ else:
     qm.close()
 
 # %%
-if not simulate:
-    handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs})
+handles = job.result_handles
+ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs})
 
-    ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
-    ds = ds.assign({'phase': subtract_slope(
-        apply_angle(ds.I + 1j * ds.Q, dim='freq'), dim='freq')})
+ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
+ds = ds.assign({'phase': subtract_slope(
+    apply_angle(ds.I + 1j * ds.Q, dim='freq'), dim='freq')})
 
-    def abs_freq(q):
-        def foo(freq):
-            return freq + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
-        return foo
+def abs_freq(q):
+    def foo(freq):
+        return freq + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
+    return foo
 
-    ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
+ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
 
-    node.results = {}
-    node.results['ds'] = ds
+node.results = {}
+node.results['ds'] = ds
 
 # %%
-if not simulate:
-    fits = {}
-    fit_evals = {}
-    fit_results = {}
+fits = {}
+fit_evals = {}
+fit_results = {}
 
+for index, q in enumerate(qubits):
+    frequency_LO_IF = q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
+    fit, fit_eval = fit_resonator(ds.sel(qubit=q.name), frequency_LO_IF)
+    fits[q.name] = fit
+    fit_evals[q.name] = fit_eval
+    Qe = np.abs(fit.params['Qe_real'].value +
+                1j * fit.params['Qe_imag'].value)
+    Qi = 1 / (1/fit.params['Q'].value - 1/Qe)
+    fit_results[q.name] = {}
+    fit_results[q.name]['resonator_freq'] = fit.params['omega_r'].value + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
+    fit_results[q.name]['Quality_external'] = Qe
+    fit_results[q.name]['Quality_internal'] = Qi
+    print(
+        f"Resonator frequency for {q.name} is {(fit.params['omega_r'].value + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency)/1e9:.3f} GHz")
+    print(
+        f"freq shift for {q.name} is {fit.params['omega_r'].value/1e6:.0f} MHz with respect to the IF")
+    print(f"Qe for {q.name} is {Qe:,.0f}")
+    print(f"Qi for {q.name} is {Qi:,.0f} \n")
+# %%
+grid_names = [f'{q.name}_0' for q in qubits]
+grid = QubitGrid(ds, grid_names)
+for ax, qubit in grid_iter(grid):
+    (ds.assign_coords(freq_MHz=ds.freq /
+        1e6).loc[qubit].IQ_abs*1e3).plot(ax=ax, x='freq_MHz')
+    ax.set_xlabel('Resonator detuning [MHz]')
+    ax.set_ylabel('Trans. amp. [mV]')
+    ax.set_title(qubit['qubit'])
+grid.fig.suptitle('Resonator spectroscopy (raw data)')
+plt.tight_layout()
+node.results["raw_amplitude"] = grid.fig
+
+grid = QubitGrid(ds, grid_names)
+for ax, qubit in grid_iter(grid):
+    (ds.assign_coords(freq_MHz=ds.freq /
+        1e6).loc[qubit].phase*1e3).plot(ax=ax, x='freq_MHz')
+    ax.set_xlabel('Resonator detuning [MHz]')
+    ax.set_ylabel('Trans. phase [rad]')
+    ax.set_title(qubit['qubit'])
+grid.fig.suptitle('Resonator spectroscopy (raw data)')
+plt.tight_layout()
+node.results["raw_phase"] = grid.fig
+
+grid = QubitGrid(ds, grid_names)
+for ax, qubit in grid_iter(grid):
+    (ds.assign_coords(freq_GHz=ds.freq_full /
+        1e9).loc[qubit].IQ_abs*1e3).plot(ax=ax, x='freq_GHz')
+    ax.plot(ds.assign_coords(freq_GHz=ds.freq_full /
+            1e9).loc[qubit].freq_GHz, 1e3*np.abs(fit_evals[qubit['qubit']]))
+    ax.set_xlabel('Resonator freq [GHz]')
+    ax.set_ylabel('Trans. amp. [mV]')
+    ax.set_title(qubit['qubit'])
+grid.fig.suptitle('Resonator spectroscopy (fit)')
+node.results["fitted_amp"] = grid.fig
+
+plt.tight_layout()
+plt.show()
+
+# %%
+with node.record_state_updates():
     for index, q in enumerate(qubits):
-        frequency_LO_IF = q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
-        fit, fit_eval = fit_resonator(ds.sel(qubit=q.name), frequency_LO_IF)
-        fits[q.name] = fit
-        fit_evals[q.name] = fit_eval
-        Qe = np.abs(fit.params['Qe_real'].value +
-                    1j * fit.params['Qe_imag'].value)
-        Qi = 1 / (1/fit.params['Q'].value - 1/Qe)
-        fit_results[q.name] = {}
-        fit_results[q.name]['resonator_freq'] = fit.params['omega_r'].value + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
-        fit_results[q.name]['Quality_external'] = Qe
-        fit_results[q.name]['Quality_internal'] = Qi
-        print(
-            f"Resonator frequency for {q.name} is {(fit.params['omega_r'].value + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency)/1e9:.3f} GHz")
-        print(
-            f"freq shift for {q.name} is {fit.params['omega_r'].value/1e6:.0f} MHz with respect to the IF")
-        print(f"Qe for {q.name} is {Qe:,.0f}")
-        print(f"Qi for {q.name} is {Qi:,.0f} \n")
-# %%
-if not simulate:
-    grid_names = [f'{q.name}_0' for q in qubits]
-    grid = QubitGrid(ds, grid_names)
-    for ax, qubit in grid_iter(grid):
-        (ds.assign_coords(freq_MHz=ds.freq /
-            1e6).loc[qubit].IQ_abs*1e3).plot(ax=ax, x='freq_MHz')
-        ax.set_xlabel('Resonator detuning [MHz]')
-        ax.set_ylabel('Trans. amp. [mV]')
-        ax.set_title(qubit['qubit'])
-    grid.fig.suptitle('Resonator spectroscopy (raw data)')
-    plt.tight_layout()
-    node.results["raw_amplitude"] = grid.fig
-
-    grid = QubitGrid(ds, grid_names)
-    for ax, qubit in grid_iter(grid):
-        (ds.assign_coords(freq_MHz=ds.freq /
-            1e6).loc[qubit].phase*1e3).plot(ax=ax, x='freq_MHz')
-        ax.set_xlabel('Resonator detuning [MHz]')
-        ax.set_ylabel('Trans. phase [rad]')
-        ax.set_title(qubit['qubit'])
-    grid.fig.suptitle('Resonator spectroscopy (raw data)')
-    plt.tight_layout()
-    node.results["raw_phase"] = grid.fig
-
-    grid = QubitGrid(ds, grid_names)
-    for ax, qubit in grid_iter(grid):
-        (ds.assign_coords(freq_GHz=ds.freq_full /
-            1e9).loc[qubit].IQ_abs*1e3).plot(ax=ax, x='freq_GHz')
-        ax.plot(ds.assign_coords(freq_GHz=ds.freq_full /
-                1e9).loc[qubit].freq_GHz, 1e3*np.abs(fit_evals[qubit['qubit']]))
-        ax.set_xlabel('Resonator freq [GHz]')
-        ax.set_ylabel('Trans. amp. [mV]')
-        ax.set_title(qubit['qubit'])
-    grid.fig.suptitle('Resonator spectroscopy (fit)')
-    node.results["fitted_amp"] = grid.fig
-
-    plt.tight_layout()
-    plt.show()
-
-# %%
-if not simulate:
-    with node.record_state_updates():
-        for index, q in enumerate(qubits):
-            q.resonator.intermediate_frequency += int(fits[q.name].params['omega_r'].value)
+        q.resonator.intermediate_frequency += int(fits[q.name].params['omega_r'].value)
 
 
 # %%

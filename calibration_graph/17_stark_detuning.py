@@ -180,6 +180,9 @@ if simulate:
     job = qmm.simulate(config, stark_detuning, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
+    node.machine = machine
+    node.save()
+    quit()
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -202,51 +205,47 @@ else:
     qm.close()
 
 # %%
-if not simulate:
-    handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs, "N": N_pi_vec})
+handles = job.result_handles
+ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs, "N": N_pi_vec})
 
-    node.results = {}
-    node.results['ds'] = ds
-
-# %%
-if not simulate:
-    fit_results = {}
-
-
-    state_n=ds.state.mean(dim='N')
-
-    datamaxIndx = state_n.argmin(dim='freq')
-    detunings = ds.freq[datamaxIndx]
-    fit_results = {qubit.name : {'detuning': float(detunings.sel(qubit=qubit.name).values)} for qubit in qubits}
-    for q in qubits:
-        print(f"Detuning for {q.name} is {fit_results[q.name]['detuning']} Hz")
-    node.results['fit_results'] = fit_results
+node.results = {}
+node.results['ds'] = ds
 
 # %%
-if not simulate:
-    grid_names = [f'{q.name}_0' for q in qubits]
-    grid = QubitGrid(ds, grid_names)
-    for ax, qubit in grid_iter(grid):
-        (ds.assign_coords(freq_MHz  = ds.freq *1e6).loc[qubit].state).plot(ax = ax, x = 'freq_MHz', y = 'N')
-        ax.axvline(1e6*fit_results[qubit['qubit']]['detuning'], color = 'r')
-        ax.set_ylabel('num. of pulses')
-        ax.set_xlabel('detuning [MHz]')
-        ax.set_title(qubit['qubit'])
-    grid.fig.suptitle('Stark detuning')
-    plt.tight_layout()
-    plt.show()
-    node.results['figure'] = grid.fig
+fit_results = {}
+
+
+state_n=ds.state.mean(dim='N')
+
+datamaxIndx = state_n.argmin(dim='freq')
+detunings = ds.freq[datamaxIndx]
+fit_results = {qubit.name : {'detuning': float(detunings.sel(qubit=qubit.name).values)} for qubit in qubits}
+for q in qubits:
+    print(f"Detuning for {q.name} is {fit_results[q.name]['detuning']} Hz")
+node.results['fit_results'] = fit_results
 
 # %%
-if not simulate:
-    all_operations = True
-    for qubit in tracked_qubits:
-        qubit.revert_changes()
-    with node.record_state_updates():
-        for qubit in qubits:
-            qubit.xy.operations[operation].detuning = float(fit_results[qubit.name]['detuning'])
-            qubit.xy.operations[operation].alpha = -1.0
+grid_names = [f'{q.name}_0' for q in qubits]
+grid = QubitGrid(ds, grid_names)
+for ax, qubit in grid_iter(grid):
+    (ds.assign_coords(freq_MHz  = ds.freq *1e6).loc[qubit].state).plot(ax = ax, x = 'freq_MHz', y = 'N')
+    ax.axvline(1e6*fit_results[qubit['qubit']]['detuning'], color = 'r')
+    ax.set_ylabel('num. of pulses')
+    ax.set_xlabel('detuning [MHz]')
+    ax.set_title(qubit['qubit'])
+grid.fig.suptitle('Stark detuning')
+plt.tight_layout()
+plt.show()
+node.results['figure'] = grid.fig
+
+# %%
+all_operations = True
+for qubit in tracked_qubits:
+    qubit.revert_changes()
+with node.record_state_updates():
+    for qubit in qubits:
+        qubit.xy.operations[operation].detuning = float(fit_results[qubit.name]['detuning'])
+        qubit.xy.operations[operation].alpha = -1.0
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()

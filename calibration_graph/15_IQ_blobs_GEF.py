@@ -187,6 +187,9 @@ if simulate:
     job = qmm.simulate(config, iq_blobs, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
+    node.machine = machine
+    node.save()
+    quit()
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -255,109 +258,104 @@ else:
     # node_save(machine, "iq_blobs", data, additional_files=True)
 
 # %%
-if not simulate:
-    handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"N": np.linspace(1, n_runs, n_runs)})
+handles = job.result_handles
+ds = fetch_results_as_xarray(handles, qubits, {"N": np.linspace(1, n_runs, n_runs)})
 
 
-    # Fix the structure of ds to avoid tuples
-    def extract_value(element):
-        if isinstance(element, tuple):
-            return element[0]
-        return element
-    ds = xr.apply_ufunc(
-        extract_value,
-        ds,
-        vectorize=True,  # This ensures the function is applied element-wise
-        dask='parallelized',  # This allows for parallel processing
-        output_dtypes=[float]  # Specify the output data type
-    )
+# Fix the structure of ds to avoid tuples
+def extract_value(element):
+    if isinstance(element, tuple):
+        return element[0]
+    return element
+ds = xr.apply_ufunc(
+    extract_value,
+    ds,
+    vectorize=True,  # This ensures the function is applied element-wise
+    dask='parallelized',  # This allows for parallel processing
+    output_dtypes=[float]  # Specify the output data type
+)
 
-    node.results = {}
-    node.results['ds'] = ds
-
-# %%
-if not simulate:
-    node.results["results"] = {}
-
-    plot_indvidual = False
-    for q in qubits:
-        I_g_cent, Q_g_cent = ds.I_g.sel(qubit=q.name).mean(dim="N"), ds.Q_g.sel(qubit=q.name).mean(dim="N")
-        I_e_cent, Q_e_cent = ds.I_e.sel(qubit=q.name).mean(dim="N"), ds.Q_e.sel(qubit=q.name).mean(dim="N")
-        I_f_cent, Q_f_cent = ds.I_f.sel(qubit=q.name).mean(dim="N"), ds.Q_f.sel(qubit=q.name).mean(dim="N")
-
-        node.results["results"][q.name] = {}
-        node.results["results"][q.name]["I_g_cent"] = float(I_g_cent)
-        node.results["results"][q.name]["Q_g_cent"] = float(Q_g_cent)
-        node.results["results"][q.name]["I_e_cent"] = float(I_e_cent)
-        node.results["results"][q.name]["Q_e_cent"] = float(Q_e_cent)
-        node.results["results"][q.name]["I_f_cent"] = float(I_f_cent)
-        node.results["results"][q.name]["Q_f_cent"] = float(Q_f_cent)
-        node.results["results"][q.name]["center_matrix"] = np.array([[I_g_cent, Q_g_cent], [I_e_cent, Q_e_cent], [I_f_cent, Q_f_cent]])
-
-        confusion = np.zeros((3,3))
-        for p, prep_state in enumerate(["g", "e", "f"]):
-            dist_g = np.sqrt((I_g_cent - ds[f"I_{prep_state}"].sel(qubit=q.name))**2 + (Q_g_cent - ds[f"Q_{prep_state}"].sel(qubit=q.name))**2)
-            dist_e = np.sqrt((I_e_cent - ds[f"I_{prep_state}"].sel(qubit=q.name))**2 + (Q_e_cent - ds[f"Q_{prep_state}"].sel(qubit=q.name))**2)
-            dist_f = np.sqrt((I_f_cent - ds[f"I_{prep_state}"].sel(qubit=q.name))**2 + (Q_f_cent - ds[f"Q_{prep_state}"].sel(qubit=q.name))**2)
-            dist = np.stack([dist_g, dist_e, dist_f], axis=0)
-            counts = np.argmin(dist,axis= 0)
-            confusion[p][0] = np.sum(counts == 0)/len(counts)
-            confusion[p][1] = np.sum(counts == 1)/len(counts)
-            confusion[p][2] = np.sum(counts == 2)/len(counts)
-        node.results["results"][q.name]["confusion_matrix"] = confusion
+node.results = {}
+node.results['ds'] = ds
 
 # %%
-if not simulate:
-    grid_names = [f'{q.name}_0' for q in qubits]
-    grid = QubitGrid(ds, grid_names)
-    for ax, qubit in grid_iter(grid):
+node.results["results"] = {}
 
-        qn = qubit['qubit']
-        ax.plot(1e3*ds.I_g.sel(qubit =qn) , 1e3* ds.Q_g.sel(qubit =qn) , ".", alpha=0.1, markersize=1)
-        ax.plot(1e3 * ds.I_e.sel(qubit =qn) , 1e3 * ds.Q_e.sel(qubit =qn) , ".", alpha=0.1, markersize=1)
-        ax.plot(1e3 * ds.I_f.sel(qubit =qn) , 1e3 * ds.Q_f.sel(qubit =qn) , ".", alpha=0.1, markersize=1)
-        ax.plot(1e3 * node.results["results"][qn]["I_g_cent"], 1e3 * node.results["results"][qn]["Q_g_cent"], "o", c='C0', ms=3,  mec='k', label="G")
-        ax.plot(1e3 * node.results["results"][qn]["I_e_cent"], 1e3 * node.results["results"][qn]["Q_e_cent"], "o", c='C1', ms=3,  mec='k', label="E")
-        ax.plot(1e3 * node.results["results"][qn]["I_f_cent"], 1e3 * node.results["results"][qn]["Q_f_cent"], "o", c='C2', ms=3,  mec='k', label="F")
-        ax.axis("equal")
-        ax.set_xlabel("I [mV]")
-        ax.set_ylabel("Q [mV]")
-        ax.set_title(qubit['qubit'])
+plot_indvidual = False
+for q in qubits:
+    I_g_cent, Q_g_cent = ds.I_g.sel(qubit=q.name).mean(dim="N"), ds.Q_g.sel(qubit=q.name).mean(dim="N")
+    I_e_cent, Q_e_cent = ds.I_e.sel(qubit=q.name).mean(dim="N"), ds.Q_e.sel(qubit=q.name).mean(dim="N")
+    I_f_cent, Q_f_cent = ds.I_f.sel(qubit=q.name).mean(dim="N"), ds.Q_f.sel(qubit=q.name).mean(dim="N")
 
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    grid.fig.suptitle('g.s. and e.s. discriminators (rotated)')
-    plt.tight_layout()
-    node.results['figure_IQ_blobs'] = grid.fig
+    node.results["results"][q.name] = {}
+    node.results["results"][q.name]["I_g_cent"] = float(I_g_cent)
+    node.results["results"][q.name]["Q_g_cent"] = float(Q_g_cent)
+    node.results["results"][q.name]["I_e_cent"] = float(I_e_cent)
+    node.results["results"][q.name]["Q_e_cent"] = float(Q_e_cent)
+    node.results["results"][q.name]["I_f_cent"] = float(I_f_cent)
+    node.results["results"][q.name]["Q_f_cent"] = float(Q_f_cent)
+    node.results["results"][q.name]["center_matrix"] = np.array([[I_g_cent, Q_g_cent], [I_e_cent, Q_e_cent], [I_f_cent, Q_f_cent]])
 
-
-    grid = QubitGrid(ds, grid_names)
-    for ax, qubit in grid_iter(grid):
-        confusion = node.results["results"][qubit['qubit']]["confusion_matrix"]
-        ax.imshow(confusion)
-        ax.set_xticks([0, 1, 2], labels=["|g>", "|e>", "|f>"])
-        ax.set_yticks([0, 1, 2], labels=["|g>", "|e>", "|f>"])
-        ax.set_ylabel("Prepared")
-        ax.set_xlabel("Measured")
-        for prep in range(3):
-            for meas in range(3):
-                color = "k" if prep == meas else "w"
-                ax.text(
-                    meas, prep, f"{100 * confusion[prep, meas]:.1f}%", ha="center", va="center", color=color)
-        ax.set_title(qubit['qubit'])
-
-    grid.fig.suptitle('g.s. and e.s. fidelities')
-    plt.tight_layout()
-    plt.show()
-    node.results['figure_fidelities'] = grid.fig
+    confusion = np.zeros((3,3))
+    for p, prep_state in enumerate(["g", "e", "f"]):
+        dist_g = np.sqrt((I_g_cent - ds[f"I_{prep_state}"].sel(qubit=q.name))**2 + (Q_g_cent - ds[f"Q_{prep_state}"].sel(qubit=q.name))**2)
+        dist_e = np.sqrt((I_e_cent - ds[f"I_{prep_state}"].sel(qubit=q.name))**2 + (Q_e_cent - ds[f"Q_{prep_state}"].sel(qubit=q.name))**2)
+        dist_f = np.sqrt((I_f_cent - ds[f"I_{prep_state}"].sel(qubit=q.name))**2 + (Q_f_cent - ds[f"Q_{prep_state}"].sel(qubit=q.name))**2)
+        dist = np.stack([dist_g, dist_e, dist_f], axis=0)
+        counts = np.argmin(dist,axis= 0)
+        confusion[p][0] = np.sum(counts == 0)/len(counts)
+        confusion[p][1] = np.sum(counts == 1)/len(counts)
+        confusion[p][2] = np.sum(counts == 2)/len(counts)
+    node.results["results"][q.name]["confusion_matrix"] = confusion
 
 # %%
-if not simulate:
-    # with node.record_state_updates():
-    # todo: fix list state updating in Qualibrate
-    for qubit in qubits:
-        qubit.resonator.gef_centers = node.results["results"][qubit.name]["center_matrix"].tolist()
-        qubit.resonator.gef_confusion_matrix = node.results["results"][qubit.name]["confusion_matrix"].tolist()
+grid_names = [f'{q.name}_0' for q in qubits]
+grid = QubitGrid(ds, grid_names)
+for ax, qubit in grid_iter(grid):
+
+    qn = qubit['qubit']
+    ax.plot(1e3*ds.I_g.sel(qubit =qn) , 1e3* ds.Q_g.sel(qubit =qn) , ".", alpha=0.1, markersize=1)
+    ax.plot(1e3 * ds.I_e.sel(qubit =qn) , 1e3 * ds.Q_e.sel(qubit =qn) , ".", alpha=0.1, markersize=1)
+    ax.plot(1e3 * ds.I_f.sel(qubit =qn) , 1e3 * ds.Q_f.sel(qubit =qn) , ".", alpha=0.1, markersize=1)
+    ax.plot(1e3 * node.results["results"][qn]["I_g_cent"], 1e3 * node.results["results"][qn]["Q_g_cent"], "o", c='C0', ms=3,  mec='k', label="G")
+    ax.plot(1e3 * node.results["results"][qn]["I_e_cent"], 1e3 * node.results["results"][qn]["Q_e_cent"], "o", c='C1', ms=3,  mec='k', label="E")
+    ax.plot(1e3 * node.results["results"][qn]["I_f_cent"], 1e3 * node.results["results"][qn]["Q_f_cent"], "o", c='C2', ms=3,  mec='k', label="F")
+    ax.axis("equal")
+    ax.set_xlabel("I [mV]")
+    ax.set_ylabel("Q [mV]")
+    ax.set_title(qubit['qubit'])
+
+ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+grid.fig.suptitle('g.s. and e.s. discriminators (rotated)')
+plt.tight_layout()
+node.results['figure_IQ_blobs'] = grid.fig
+
+
+grid = QubitGrid(ds, grid_names)
+for ax, qubit in grid_iter(grid):
+    confusion = node.results["results"][qubit['qubit']]["confusion_matrix"]
+    ax.imshow(confusion)
+    ax.set_xticks([0, 1, 2], labels=["|g>", "|e>", "|f>"])
+    ax.set_yticks([0, 1, 2], labels=["|g>", "|e>", "|f>"])
+    ax.set_ylabel("Prepared")
+    ax.set_xlabel("Measured")
+    for prep in range(3):
+        for meas in range(3):
+            color = "k" if prep == meas else "w"
+            ax.text(
+                meas, prep, f"{100 * confusion[prep, meas]:.1f}%", ha="center", va="center", color=color)
+    ax.set_title(qubit['qubit'])
+
+grid.fig.suptitle('g.s. and e.s. fidelities')
+plt.tight_layout()
+plt.show()
+node.results['figure_fidelities'] = grid.fig
+
+# %%
+# todo: fix list state updating in Qualibrate
+for qubit in qubits:
+    qubit.resonator.gef_centers = node.results["results"][qubit.name]["center_matrix"].tolist()
+    qubit.resonator.gef_confusion_matrix = node.results["results"][qubit.name]["confusion_matrix"].tolist()
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()

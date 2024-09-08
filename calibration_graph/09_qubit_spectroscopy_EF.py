@@ -173,6 +173,9 @@ if simulate:
     job = qmm.simulate(config, qubit_spec, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
+    node.machine = machine
+    node.save()
+    quit()
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -273,84 +276,79 @@ else:
     # node_save(machine, "qubit_spectroscopy", data, additional_files=True)
 
 # %%
-if not simulate:
-    handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs})
-    ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
+handles = job.result_handles
+ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs})
+ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 
 
 # %%
-if not simulate:
-    def abs_freq(q):
-        def foo(freq):
-            return freq + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency
-        return foo
-    ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
-    ds = ds.assign({'phase': np.arctan2(ds.Q,ds.I)})
+def abs_freq(q):
+    def foo(freq):
+        return freq + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency
+    return foo
+ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
+ds = ds.assign({'phase': np.arctan2(ds.Q,ds.I)})
 
-    ds.freq_full.attrs['long_name'] = 'Frequency'
-    ds.freq_full.attrs['units'] = 'GHz'
+ds.freq_full.attrs['long_name'] = 'Frequency'
+ds.freq_full.attrs['units'] = 'GHz'
 
-    node.results = {}
-    node.results['ds'] = ds
+node.results = {}
+node.results['ds'] = ds
 
 # %%
-if not simulate:
-    from quam_libs.lib.fit import peaks_dips
+from quam_libs.lib.fit import peaks_dips
 
-    # find the peak with minimal prominence as defined, if no such peak found, returns nan
-    result = peaks_dips(ds.IQ_abs,dim = 'freq',prominence_factor=5, remove_baseline=False)
+# find the peak with minimal prominence as defined, if no such peak found, returns nan
+result = peaks_dips(ds.IQ_abs,dim = 'freq',prominence_factor=5, remove_baseline=False)
 
-    # calculate the modifed anharmonicity
-    anharmonicities = dict([(q.name, q.anharmonicity - result.sel(qubit= q.name).position.values) for q in qubits])
+# calculate the modifed anharmonicity
+anharmonicities = dict([(q.name, q.anharmonicity - result.sel(qubit= q.name).position.values) for q in qubits])
 
-    fit_results = { }
+fit_results = { }
+for q in qubits:
+    fit_results[q.name] = {}
+    if not np.isnan(result.sel(qubit = q.name).position.values):
+        fit_results[q.name]['fit_successful'] = True
+        print(
+        f"Anharmonicity for {q.name} is {anharmonicities[q.name]/1e6:.3f} MHz")
+        fit_results[q.name]['anharmonicity'] = anharmonicities[q.name]
+        print(
+        f"(shift of {result.sel(qubit = q.name).position.values/1e6:.3f} MHz)")
+        print()
+    else:
+        fit_results[q.name]['fit_successful'] = False
+        print(f"Failed to find a peak for {q.name}")
+        print()
+
+node.results['fit_results'] = fit_results
+
+# %%
+grid_names = [f'{q.name}_0' for q in qubits]
+grid = QubitGrid(ds, grid_names)
+
+for ax, qubit in grid_iter(grid):
+    freq_ref = machine.qubits[qubit['qubit']].xy.intermediate_frequency + machine.qubits[qubit['qubit']].xy.opx_output.upconverter_frequency
+
+    (ds.assign_coords(freq_GHz  = ds.freq_full / 1e9).loc[qubit].IQ_abs*1e3).plot(ax = ax, x = 'freq_GHz')
+    # (result.base_line.assign_coords(freq_GHz  = ds.freq_full / 1e9).loc[qubit]*1e3).plot(ax = ax, x = 'freq_GHz')
+
+    ax.axvline((result.sel(qubit = qubit['qubit']).position.values + freq_ref)/1e9, color = 'r', linestyle = '--')
+    ax.set_xlabel('Qubit freq [GHz]')
+    ax.set_ylabel('Trans. amp. [mV]')
+    ax.set_title(qubit['qubit'])
+grid.fig.suptitle('Qubit spectroscopy (E-F)')
+
+plt.tight_layout()
+plt.show()
+node.results['figure'] = grid.fig
+
+
+# %%
+with node.record_state_updates():
     for q in qubits:
         fit_results[q.name] = {}
         if not np.isnan(result.sel(qubit = q.name).position.values):
-            fit_results[q.name]['fit_successful'] = True
-            print(
-            f"Anharmonicity for {q.name} is {anharmonicities[q.name]/1e6:.3f} MHz")
-            fit_results[q.name]['anharmonicity'] = anharmonicities[q.name]
-            print(
-            f"(shift of {result.sel(qubit = q.name).position.values/1e6:.3f} MHz)")
-            print()
-        else:
-            fit_results[q.name]['fit_successful'] = False
-            print(f"Failed to find a peak for {q.name}")
-            print()
-
-    node.results['fit_results'] = fit_results
-
-# %%
-if not simulate:
-    grid_names = [f'{q.name}_0' for q in qubits]
-    grid = QubitGrid(ds, grid_names)
-
-    for ax, qubit in grid_iter(grid):
-        freq_ref = machine.qubits[qubit['qubit']].xy.intermediate_frequency + machine.qubits[qubit['qubit']].xy.opx_output.upconverter_frequency
-
-        (ds.assign_coords(freq_GHz  = ds.freq_full / 1e9).loc[qubit].IQ_abs*1e3).plot(ax = ax, x = 'freq_GHz')
-        # (result.base_line.assign_coords(freq_GHz  = ds.freq_full / 1e9).loc[qubit]*1e3).plot(ax = ax, x = 'freq_GHz')
-
-        ax.axvline((result.sel(qubit = qubit['qubit']).position.values + freq_ref)/1e9, color = 'r', linestyle = '--')
-        ax.set_xlabel('Qubit freq [GHz]')
-        ax.set_ylabel('Trans. amp. [mV]')
-        ax.set_title(qubit['qubit'])
-    grid.fig.suptitle('Qubit spectroscopy (E-F)')
-
-    plt.tight_layout()
-    plt.show()
-    node.results['figure'] = grid.fig
-
-
-# %%
-if not simulate:
-    with node.record_state_updates():
-        for q in qubits:
-            fit_results[q.name] = {}
-            if not np.isnan(result.sel(qubit = q.name).position.values):
-                q.anharmonicity = int(anharmonicities[q.name])
+            q.anharmonicity = int(anharmonicities[q.name])
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()

@@ -165,6 +165,9 @@ if simulate:
     job = qmm.simulate(config, ro_freq_opt, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
+    node.machine = machine
+    node.save()
+    quit()
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -218,67 +221,62 @@ else:
     # node_save(machine, "readout_frequency_optimization", data, additional_files=True)
 
 # %%
-if not simulate:
-    handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs})
+handles = job.result_handles
+ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs})
 
 # %%
-if not simulate:
-    def abs_freq(q):
-        def foo(freq):
-            return freq + q.resonator.intermediate_frequency + q.resonator.LO_frequency
-        return foo
-    ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
-    ds.freq_full.attrs['long_name'] = 'Frequency'
-    ds.freq_full.attrs['units'] = 'GHz'
-    ds = ds.assign({'D' : np.sqrt((ds.I_g - ds.I_e)**2 + (ds.Q_g - ds.Q_e)**2),
-                    'IQ_abs_g' : np.sqrt(ds.I_g**2 + ds.Q_g**2),
-                    'IQ_abs_e' : np.sqrt(ds.I_e**2 + ds.Q_e**2)})
-    node.results = {}
-    node.results['ds'] = ds
+def abs_freq(q):
+    def foo(freq):
+        return freq + q.resonator.intermediate_frequency + q.resonator.LO_frequency
+    return foo
+ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
+ds.freq_full.attrs['long_name'] = 'Frequency'
+ds.freq_full.attrs['units'] = 'GHz'
+ds = ds.assign({'D' : np.sqrt((ds.I_g - ds.I_e)**2 + (ds.Q_g - ds.Q_e)**2),
+                'IQ_abs_g' : np.sqrt(ds.I_g**2 + ds.Q_g**2),
+                'IQ_abs_e' : np.sqrt(ds.I_e**2 + ds.Q_e**2)})
+node.results = {}
+node.results['ds'] = ds
 
 # %%
-if not simulate:
-    detuning = ds.D.rolling({"freq" : 5 }).mean("freq").idxmax('freq')
-    chi = (ds.IQ_abs_e.idxmin(dim = "freq") - ds.IQ_abs_g.idxmin(dim = "freq")) / 2
-    fit_results = {q.name : {'detuning' :detuning.loc[q.name].values, 'chi' : chi.loc[q.name].values} for q in qubits}
-    node.results['fit_results'] = fit_results
+detuning = ds.D.rolling({"freq" : 5 }).mean("freq").idxmax('freq')
+chi = (ds.IQ_abs_e.idxmin(dim = "freq") - ds.IQ_abs_g.idxmin(dim = "freq")) / 2
+fit_results = {q.name : {'detuning' :detuning.loc[q.name].values, 'chi' : chi.loc[q.name].values} for q in qubits}
+node.results['fit_results'] = fit_results
 
-    for q in qubits:
-        print(f"{q.name}: Shifting readout frequency by {fit_results[q.name]['detuning']/1e3:.0f} KHz")
-        print(f"{q.name}: Chi = {fit_results[q.name]['chi']:.2f} \n")
-    
-# %%
-if not simulate:
-    grid_names = [f'{q.name}_0' for q in qubits]
-    grid = QubitGrid(ds, grid_names)
-    for ax, qubit in grid_iter(grid):
-        (1e3*ds.assign_coords(freq_MHz=ds.freq / 1e6).D.loc[qubit]).plot(ax=ax, x = 'freq_MHz')
-        ax.axvline(fit_results[qubit['qubit']]['detuning']/1e6, color='red', linestyle='--')
-        ax.set_xlabel("Frequency [MHz]")
-        ax.set_ylabel("Distance between IQ blobs [m.v.]")
-    plt.tight_layout()
-    plt.show()
-    node.results['figure'] = grid.fig
-
-    grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
-    for ax, qubit in grid_iter(grid):
-        (1e3*ds.assign_coords(freq_MHz=ds.freq / 1e6).IQ_abs_g.loc[qubit]).plot(ax=ax, x = 'freq_MHz', label = "g.s")
-        (1e3*ds.assign_coords(freq_MHz=ds.freq / 1e6).IQ_abs_e.loc[qubit]).plot(ax=ax, x = 'freq_MHz', label = "e.s")
-        ax.axvline(fit_results[qubit['qubit']]['detuning']/1e6, color='red', linestyle='--')
-        ax.set_xlabel("Frequency [MHz]")
-        ax.set_ylabel("Resonator response [mV]")
-        ax.legend()
-    plt.tight_layout()
-    plt.show()
-    node.results['figure2'] = grid.fig
+for q in qubits:
+    print(f"{q.name}: Shifting readout frequency by {fit_results[q.name]['detuning']/1e3:.0f} KHz")
+    print(f"{q.name}: Chi = {fit_results[q.name]['chi']:.2f} \n")
 
 # %%
-if not simulate:
-    for q in qubits:
-        with node.record_state_updates():
-            q.resonator.intermediate_frequency += int(fit_results[q.name]['detuning'])
-            q.chi = float(fit_results[q.name]['chi'])
+grid_names = [f'{q.name}_0' for q in qubits]
+grid = QubitGrid(ds, grid_names)
+for ax, qubit in grid_iter(grid):
+    (1e3*ds.assign_coords(freq_MHz=ds.freq / 1e6).D.loc[qubit]).plot(ax=ax, x = 'freq_MHz')
+    ax.axvline(fit_results[qubit['qubit']]['detuning']/1e6, color='red', linestyle='--')
+    ax.set_xlabel("Frequency [MHz]")
+    ax.set_ylabel("Distance between IQ blobs [m.v.]")
+plt.tight_layout()
+plt.show()
+node.results['figure'] = grid.fig
+
+grid = QubitGrid(ds, [f'q-{i}_0' for i in range(num_qubits)])
+for ax, qubit in grid_iter(grid):
+    (1e3*ds.assign_coords(freq_MHz=ds.freq / 1e6).IQ_abs_g.loc[qubit]).plot(ax=ax, x = 'freq_MHz', label = "g.s")
+    (1e3*ds.assign_coords(freq_MHz=ds.freq / 1e6).IQ_abs_e.loc[qubit]).plot(ax=ax, x = 'freq_MHz', label = "e.s")
+    ax.axvline(fit_results[qubit['qubit']]['detuning']/1e6, color='red', linestyle='--')
+    ax.set_xlabel("Frequency [MHz]")
+    ax.set_ylabel("Resonator response [mV]")
+    ax.legend()
+plt.tight_layout()
+plt.show()
+node.results['figure2'] = grid.fig
+
+# %%
+for q in qubits:
+    with node.record_state_updates():
+        q.resonator.intermediate_frequency += int(fit_results[q.name]['detuning'])
+        q.chi = float(fit_results[q.name]['chi'])
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()

@@ -177,6 +177,9 @@ if simulate:
     job = qmm.simulate(config, drag_calibration, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
+    node.machine = machine
+    node.save()
+    quit()
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -199,62 +202,56 @@ else:
     qm.close()
 
 # %%
-if not simulate:
-    handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"amp": amps, "N": N_pi_vec})
+handles = job.result_handles
+ds = fetch_results_as_xarray(handles, qubits, {"amp": amps, "N": N_pi_vec})
 
 # %%
-if not simulate:
-    def alpha(q):
-        def foo(amp):
-            return q.xy.operations[operation].alpha * amp
-        return foo
+def alpha(q):
+    def foo(amp):
+        return q.xy.operations[operation].alpha * amp
+    return foo
 
-    ds = ds.assign_coords({'alpha' : (['qubit','amp'],np.array([alpha(q)(amps) for q in qubits]))})
-    node.results = {}
+ds = ds.assign_coords({'alpha' : (['qubit','amp'],np.array([alpha(q)(amps) for q in qubits]))})
+node.results = {}
 
-    node.results = {}
-    node.results['ds'] = ds
+node.results = {}
+node.results['ds'] = ds
 
 # %%
-if not simulate:
-    fit_results = {}
+fit_results = {}
 
-    state_n=ds.state.mean(dim='N')
+state_n=ds.state.mean(dim='N')
 
-    datamaxIndx = state_n.argmin(dim='amp')
-    alphas = ds.amp[datamaxIndx]
-    fit_results = {qubit.name : {'alpha': float(alphas.sel(qubit=qubit.name).values*qubit.xy.operations[operation].alpha)} for qubit in qubits}
+datamaxIndx = state_n.argmin(dim='amp')
+alphas = ds.amp[datamaxIndx]
+fit_results = {qubit.name : {'alpha': float(alphas.sel(qubit=qubit.name).values*qubit.xy.operations[operation].alpha)} for qubit in qubits}
+for q in qubits:
+    print(f"DRAG coeff for {q.name} is {fit_results[q.name]['alpha']}")
+node.results['fit_results'] = fit_results
+
+# %%
+ds.state.plot(col = 'qubit', x = 'alpha', y = 'N', col_wrap = 2)
+plt.show()
+
+# %%
+grid_names = [f'{q.name}_0' for q in qubits]
+grid = QubitGrid(ds, grid_names)
+for ax, qubit in grid_iter(grid):
+
+    (ds.loc[qubit].state).plot(ax = ax, x = 'alpha', y = 'N')
+    ax.axvline(fit_results[qubit['qubit']]['alpha'], color = 'r')
+    ax.set_ylabel('num. of pulses')
+    ax.set_xlabel('DRAG coeff')
+    ax.set_title(qubit['qubit'])
+grid.fig.suptitle('DRAG calibration')
+plt.tight_layout()
+plt.show()
+node.results['figure'] = grid.fig
+
+# %%
+with node.record_state_updates():
     for q in qubits:
-        print(f"DRAG coeff for {q.name} is {fit_results[q.name]['alpha']}")
-    node.results['fit_results'] = fit_results
-
-# %%
-if not simulate:
-    ds.state.plot(col = 'qubit', x = 'alpha', y = 'N', col_wrap = 2)
-    plt.show()
-
-# %%
-if not simulate:
-    grid_names = [f'{q.name}_0' for q in qubits]
-    grid = QubitGrid(ds, grid_names)
-    for ax, qubit in grid_iter(grid):
-
-        (ds.loc[qubit].state).plot(ax = ax, x = 'alpha', y = 'N')
-        ax.axvline(fit_results[qubit['qubit']]['alpha'], color = 'r')
-        ax.set_ylabel('num. of pulses')
-        ax.set_xlabel('DRAG coeff')
-        ax.set_title(qubit['qubit'])
-    grid.fig.suptitle('DRAG calibration')
-    plt.tight_layout()
-    plt.show()
-    node.results['figure'] = grid.fig
-
-# %%
-if not simulate:
-    with node.record_state_updates():
-        for q in qubits:
-            q.xy.operations[operation].alpha = fit_results[q.name]['alpha']
+        q.xy.operations[operation].alpha = fit_results[q.name]['alpha']
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()

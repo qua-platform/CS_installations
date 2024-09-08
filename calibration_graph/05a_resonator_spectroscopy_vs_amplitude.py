@@ -169,6 +169,9 @@ if simulate:
     job = qmm.simulate(config, multi_res_spec_vs_amp, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
+    node.machine = machine
+    node.save()
+    quit()
 else:
     # Open a quantum machine to execute the QUA program
     qm = qmm.open_qm(config)
@@ -237,84 +240,79 @@ else:
     # node_save(machine, "resonator_spectroscopy_vs_amplitude", data, additional_files=True)
 
 # %%
-if not simulate:
-    handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, { "amp": amps,"freq": dfs})
+handles = job.result_handles
+ds = fetch_results_as_xarray(handles, qubits, { "amp": amps,"freq": dfs})
 
 # %%
-if not simulate:
-    ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
+ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 
-    def abs_freq(q):
-        def foo(freq):
-            return freq + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
-        return foo
+def abs_freq(q):
+    def foo(freq):
+        return freq + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
+    return foo
 
-    def abs_amp(q):
-        def foo(amp):
-            return amp * q.resonator.operations['readout'].amplitude
-        return foo
+def abs_amp(q):
+    def foo(amp):
+        return amp * q.resonator.operations['readout'].amplitude
+    return foo
 
-    ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
-    ds = ds.assign_coords({'abs_amp' : (['qubit','amp'],np.array([abs_amp(q)(amps) for q in qubits]))})
+ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
+ds = ds.assign_coords({'abs_amp' : (['qubit','amp'],np.array([abs_amp(q)(amps) for q in qubits]))})
 
-    ds.freq_full.attrs['long_name'] = 'Frequency'
-    ds.freq_full.attrs['units'] = 'GHz'
-    ds.abs_amp.attrs['long_name'] = 'Amplitude'
-    ds.abs_amp.attrs['units'] = 'V'
-    ds = ds.assign({'IQ_abs_norm': ds['IQ_abs']/ds.IQ_abs.mean(dim=['freq'])})
+ds.freq_full.attrs['long_name'] = 'Frequency'
+ds.freq_full.attrs['units'] = 'GHz'
+ds.abs_amp.attrs['long_name'] = 'Amplitude'
+ds.abs_amp.attrs['units'] = 'V'
+ds = ds.assign({'IQ_abs_norm': ds['IQ_abs']/ds.IQ_abs.mean(dim=['freq'])})
 
-    node.results = {}
-    node.results['ds'] = ds
-
-# %%
-if not simulate:
-    res_min_vs_amp = [peaks_dips(ds.IQ_abs_norm.sel(
-        amp=amp), dim='freq', prominence_factor=5).position for amp in ds.amp]
-    res_min_vs_amp = xr.concat(res_min_vs_amp, 'amp')
-    res_freq_full = ds.freq_full.sel(freq=0, method='nearest') + res_min_vs_amp
-    res_low_power = res_min_vs_amp.sel(amp=slice(0.001,0.03)).mean(dim='amp')
-    res_hi_power = res_min_vs_amp.isel(amp=-1)
-
-    rr_pwr = xr.where(abs(res_min_vs_amp-res_low_power) < 0.15 *
-                      (abs(res_hi_power-res_low_power)), res_min_vs_amp.amp, 0).max(dim='amp')
-
-    RO_power_ratio = 0.3
-    rr_pwr = RO_power_ratio*rr_pwr
+node.results = {}
+node.results['ds'] = ds
 
 # %%
-if not simulate:
-    grid_names = [f'{q.name}_0' for q in qubits]
-    grid = QubitGrid(ds, grid_names)
+res_min_vs_amp = [peaks_dips(ds.IQ_abs_norm.sel(
+    amp=amp), dim='freq', prominence_factor=5).position for amp in ds.amp]
+res_min_vs_amp = xr.concat(res_min_vs_amp, 'amp')
+res_freq_full = ds.freq_full.sel(freq=0, method='nearest') + res_min_vs_amp
+res_low_power = res_min_vs_amp.sel(amp=slice(0.001,0.03)).mean(dim='amp')
+res_hi_power = res_min_vs_amp.isel(amp=-1)
 
-    for ax, qubit in grid_iter(grid):
-        ds.loc[qubit].IQ_abs_norm.plot(ax=ax, add_colorbar=False,
-                                        x='freq_full', y='abs_amp', robust=True,
-                                        yscale = 'log')
-        ax.plot(
-            res_freq_full.loc[qubit], ds.abs_amp.loc[qubit], color='orange', linewidth=0.5)
-        ax.axhline(y=abs_amp(machine.qubits[qubit['qubit']])(
-                rr_pwr.loc[qubit]).values, color='r', linestyle='--')
+rr_pwr = xr.where(abs(res_min_vs_amp-res_low_power) < 0.15 *
+                  (abs(res_hi_power-res_low_power)), res_min_vs_amp.amp, 0).max(dim='amp')
 
-    grid.fig.suptitle('Resonator spectroscopy VS. power at base')
-    plt.tight_layout()
-    plt.show()
-    node.results["figure"] = grid.fig
+RO_power_ratio = 0.3
+rr_pwr = RO_power_ratio*rr_pwr
 
-    RO_power_ratio = 0.3
-    rr_pwr = RO_power_ratio*rr_pwr
-    
 # %%
-if not simulate:
-    fit_results = {}
-    for q in qubits:
-        fit_results[q.name] = {}
-        if float(rr_pwr.sel(qubit=q.name)) > 0:
-            with node.record_state_updates():
-                q.resonator.operations["readout"].amplitude = 0.4*float(rr_pwr.sel(qubit=q.name))
-        q.resonator.intermediate_frequency+=int(res_low_power.sel(qubit=q.name).values)
-        fit_results[q.name]["RO_amplitude"]=float(rr_pwr.sel(qubit=q.name))
-    node.results['resonator_frequency'] = fit_results
+grid_names = [f'{q.name}_0' for q in qubits]
+grid = QubitGrid(ds, grid_names)
+
+for ax, qubit in grid_iter(grid):
+    ds.loc[qubit].IQ_abs_norm.plot(ax=ax, add_colorbar=False,
+                                    x='freq_full', y='abs_amp', robust=True,
+                                    yscale = 'log')
+    ax.plot(
+        res_freq_full.loc[qubit], ds.abs_amp.loc[qubit], color='orange', linewidth=0.5)
+    ax.axhline(y=abs_amp(machine.qubits[qubit['qubit']])(
+            rr_pwr.loc[qubit]).values, color='r', linestyle='--')
+
+grid.fig.suptitle('Resonator spectroscopy VS. power at base')
+plt.tight_layout()
+plt.show()
+node.results["figure"] = grid.fig
+
+RO_power_ratio = 0.3
+rr_pwr = RO_power_ratio*rr_pwr
+
+# %%
+fit_results = {}
+for q in qubits:
+    fit_results[q.name] = {}
+    if float(rr_pwr.sel(qubit=q.name)) > 0:
+        with node.record_state_updates():
+            q.resonator.operations["readout"].amplitude = 0.4*float(rr_pwr.sel(qubit=q.name))
+    q.resonator.intermediate_frequency+=int(res_low_power.sel(qubit=q.name).values)
+    fit_results[q.name]["RO_amplitude"]=float(rr_pwr.sel(qubit=q.name))
+node.results['resonator_frequency'] = fit_results
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()
