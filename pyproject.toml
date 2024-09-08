@@ -16,6 +16,9 @@ classifiers = [
 python = ">=3.8"
 quam = { git = "https://github.com/qua-platform/quam.git" }
 qualang-tools = "*"
+xarray = "*"
+lmfit = "*"
+qiskit-experiments = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
