@@ -247,8 +247,8 @@ with program() as randomized_benchmarking:
         else:
             raise ValueError(f"Unrecognized flux point {flux_point}")
 
-        for qubit in qubits:
-            wait(1000, qubit.z.name)
+        for qb in qubits:
+            wait(1000, qb.z.name)
         
         align()
 

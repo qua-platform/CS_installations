@@ -119,8 +119,8 @@ with program() as power_rabi:
         else:
             machine.apply_all_flux_to_zero()
 
-        for qubit in qubits:
-            wait(1000, qubit.z.name)
+        for qb in qubits:
+            wait(1000, qb.z.name)
         
         align()
 
@@ -163,7 +163,7 @@ else:
     # Calibrate the active qubits
     # machine.calibrate_octave_ports(qm)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(power_rabi)
+    job = qm.execute(power_rabi, flags=['auto-element-thread'])
     # Get results from QUA program
     data_list = ["n"] + sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])
     results = fetching_tool(job, data_list, mode="live")

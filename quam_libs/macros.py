@@ -105,6 +105,16 @@ def node_save(
     # Save QuAM to configuration directory / `state.json`
     quam.save(content_mapping={"wiring.json": {"wiring", "network"}})
 
+def readout_state(qubit , state, pulse_name : str = 'readout', threshold : float = None, save_qua_var : StreamType = None):
+    I = declare(fixed)
+    Q = declare(fixed)
+    if threshold is None:
+        threshold = qubit.resonator.operations[pulse_name].threshold
+    qubit.resonator.measure(pulse_name, qua_vars=(I, Q))
+    assign(state, Cast.to_int(I > threshold))
+    wait(qubit.resonator.depletion_time // 4, qubit.resonator.name)
+    
+    
 def active_reset(
     quam: QuAM,
     name: str,

@@ -116,19 +116,19 @@ with program() as multi_res_spec_vs_flux:
     dc = declare(fixed)  # QUA variable for the flux bias
     df = declare(int)  # QUA variable for the readout frequency
 
-    for i, q in enumerate(qubits):
+    for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
-            q.z.to_independent_idle()
+            qubit.z.to_independent_idle()
         elif flux_point == "joint":
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
 
-        for qubit in qubits:
-            wait(1000, qubit.z.name)    
+        for qb in qubits:
+            wait(1000, qb.z.name)    
 
         # resonator of the qubit
         rr = resonators[i]
@@ -138,7 +138,7 @@ with program() as multi_res_spec_vs_flux:
 
             with for_(*from_array(dc, dcs)):
                 # Flux sweeping by tuning the OPX dc offset associated with the flux_line element
-                q.z.set_dc_offset(dc)
+                qubit.z.set_dc_offset(dc)
                 wait(100)  # Wait for the flux to settle
 
                 with for_(*from_array(df, dfs)):
@@ -207,17 +207,17 @@ else:
             # Plot
             plt.subplot(1, num_resonators, i + 1)
             plt.cla()
-            plt.title(f"{rr.name} (LO: {rr.frequency_converter_up.LO_frequency / u.MHz} MHz)")
+            plt.title(f"{rr.name} (LO: {rr.opx_output.upconverter_frequency / u.MHz} MHz)")
             plt.xlabel("flux [V]")
             plt.ylabel(f"{rr.name} IF [MHz]")
             plt.pcolor(
                 dcs,
-                (rr.LO_frequency + rr.intermediate_frequency) / u.MHz + dfs / u.MHz,
+                (rr.opx_output.upconverter_frequency + rr.intermediate_frequency) / u.MHz + dfs / u.MHz,
                 A.T,
             )
             plt.plot(
                 qubit.z.min_offset,
-                (rr.LO_frequency + rr.intermediate_frequency) / u.MHz,
+                (rr.opx_output.upconverter_frequency + rr.intermediate_frequency) / u.MHz,
                 "r*",
             )
 
@@ -238,7 +238,7 @@ if not simulate:
 
     def abs_freq(q):
         def foo(freq):
-            return freq + q.resonator.intermediate_frequency + q.resonator.LO_frequency
+            return freq + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
         return foo
 
     ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
@@ -270,7 +270,7 @@ if not simulate:
     # finding the frequency as the sweet spot flux
     rel_freq_shift = peak_freq.sel(flux=idle_offset, method='nearest')
     abs_freq_shift = rel_freq_shift + \
-        np.array([q.resonator.LO_frequency + q.resonator.intermediate_frequency for q in qubits])
+        np.array([q.resonator.opx_output.upconverter_frequency + q.resonator.intermediate_frequency for q in qubits])
     q_IF = {}
 
     for q in qubits:
@@ -279,7 +279,7 @@ if not simulate:
         print(
             f'DC offset for {q.name} is {idle_offset.sel(qubit = q.name).data*1e3:.0f} mV')
         print(
-            f"Resonator frequency for {q.name} is {(rel_freq_shift.sel(qubit = q.name).values + q.resonator.intermediate_frequency + q.resonator.LO_frequency)/1e9:.3f} GHz")
+            f"Resonator frequency for {q.name} is {(rel_freq_shift.sel(qubit = q.name).values + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency)/1e9:.3f} GHz")
         print(
             f"(shift of {rel_freq_shift.sel(qubit = q.name).values/1e6:.0f} MHz)")
         print()
@@ -307,7 +307,7 @@ if not simulate:
     fit_results = {}
     for q in qubits:
         fit_results[q.name] = {}
-        fit_results[q.name]["resonator_frequency"] = rel_freq_shift.sel(qubit = q.name).values + q.resonator.LO_frequency + q.resonator.intermediate_frequency
+        fit_results[q.name]["resonator_frequency"] = rel_freq_shift.sel(qubit = q.name).values + q.resonator.opx_output.upconverter_frequency + q.resonator.intermediate_frequency
         fit_results[q.name]['min_offset'] = float(flux_min.sel(qubit=q.name).data)
         fit_results[q.name]['offset'] = float(idle_offset.sel(qubit=q.name).data)
         fit_results[q.name]['dv_phi0'] = 1/fit_osc.sel(fit_vals='f', qubit=q.name).values

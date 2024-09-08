@@ -123,8 +123,8 @@ with program() as qubit_spec:
         else:
             machine.apply_all_flux_to_zero()
             
-        for qubit in qubits:
-            wait(1000, qubit.z.name)
+        for qb in qubits:
+            wait(1000, qb.z.name)
         
         align()
                   
@@ -148,7 +148,7 @@ with program() as qubit_spec:
                 # readout the resonator
                 q.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                 # Wait for the qubit to decay to the ground state
-                qubit.resonator.wait(machine.thermalization_time * u.ns)
+                q.resonator.wait(machine.thermalization_time * u.ns)
                 # save data
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])
@@ -204,7 +204,7 @@ else:
         #     plt.subplot(2, num_qubits, i + 1)
         #     plt.cla()
         #     plt.plot(
-        #         (q.xy.LO_frequency + q.xy.intermediate_frequency + dfs) / u.MHz,
+        #         (q.xy.opx_output.upconverter_frequency + q.xy.intermediate_frequency + dfs) / u.MHz,
         #         np.abs(s),
         #     )
         #     plt.grid(True)
@@ -213,13 +213,13 @@ else:
         #     plt.subplot(2, num_qubits, num_qubits + i + 1)
         #     plt.cla()
         #     plt.plot(
-        #         (q.xy.LO_frequency + q.xy.intermediate_frequency + dfs) / u.MHz,
+        #         (q.xy.opx_output.upconverter_frequency + q.xy.intermediate_frequency + dfs) / u.MHz,
         #         np.unwrap(np.angle(s)),
         #     )
         #     plt.grid(True)
         #     plt.ylabel("Phase [rad]")
         #     plt.xlabel(f"{q.name} detuning [MHz]")
-        #     plt.plot((q.xy.LO_frequency + q.xy.intermediate_frequency) / u.MHz, 0.0, "r*")
+        #     plt.plot((q.xy.opx_output.upconverter_frequency + q.xy.intermediate_frequency) / u.MHz, 0.0, "r*")
 
         # plt.tight_layout()
         # plt.pause(0.1)
@@ -245,7 +245,7 @@ else:
     #         fit = Fit()
     #         plt.subplot(1, num_qubits, i + 1)
             # res = fit.reflection_resonator_spectroscopy(
-            #     (q.xy.LO_frequency + q.xy.intermediate_frequency + dfs) / u.MHz,
+            #     (q.xy.opx_output.upconverter_frequency + q.xy.intermediate_frequency + dfs) / u.MHz,
             #     -np.unwrap(np.angle(s_data[i])),
             #     plot=True,
             # )
@@ -283,7 +283,7 @@ if not simulate:
 if not simulate:
     def abs_freq(q):
         def foo(freq):
-            return freq + q.xy.intermediate_frequency + q.xy.LO_frequency
+            return freq + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency
         return foo
     ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
     ds = ds.assign({'phase': np.arctan2(ds.Q,ds.I)})
@@ -328,7 +328,7 @@ if not simulate:
     grid = QubitGrid(ds, grid_names)
 
     for ax, qubit in grid_iter(grid):
-        freq_ref = machine.qubits[qubit['qubit']].xy.intermediate_frequency + machine.qubits[qubit['qubit']].xy.LO_frequency
+        freq_ref = machine.qubits[qubit['qubit']].xy.intermediate_frequency + machine.qubits[qubit['qubit']].xy.opx_output.upconverter_frequency
 
         (ds.assign_coords(freq_GHz  = ds.freq_full / 1e9).loc[qubit].IQ_abs*1e3).plot(ax = ax, x = 'freq_GHz')
         # (result.base_line.assign_coords(freq_GHz  = ds.freq_full / 1e9).loc[qubit]*1e3).plot(ax = ax, x = 'freq_GHz')

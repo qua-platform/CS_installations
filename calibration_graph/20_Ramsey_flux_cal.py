@@ -28,7 +28,7 @@ class Parameters(NodeParameters):
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 2000
     wait_time_step_in_ns: int = 20
-    flux_span : float = 0.02
+    flux_span : float = 0.025
     flux_step : float = 0.001
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
@@ -119,8 +119,8 @@ with program() as ramsey:
         else:
             machine.apply_all_flux_to_zero()
 
-        for qubit in qubits:
-            wait(1000, qubit.z.name)
+        for qb in qubits:
+            wait(1000, qb.z.name)
         
         align()
 
@@ -294,6 +294,7 @@ if not simulate:
         node.results['fit_results'][q.name] = {}
         node.results['fit_results'][q.name]['flux_offset'] = flux_offset[q.name]
         node.results['fit_results'][q.name]['freq_offset'] = freq_offset[q.name]
+        node.results['fit_results'][q.name]['quad_term'] = a[q.name]
 # %%
 if not simulate:
     with node.record_state_updates():
@@ -302,7 +303,10 @@ if not simulate:
             if flux_point == 'independent':
                 qubit.z.independent_offset += flux_offset[qubit.name]
             elif flux_point == 'joint':
-                qubit.z.joint_offset += flux_offset[qubit.name]            
+                qubit.z.joint_offset += flux_offset[qubit.name] 
+            else:
+                raise RuntimeError(f"unknown flux_point")
+            qubit.freq_vs_flux_01_quad_term = float(a[qubit.name])
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine

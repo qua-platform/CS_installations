@@ -34,7 +34,7 @@ class Parameters(NodeParameters):
     qubits: Optional[str] = None
     num_averages: int = 50
     operation: str = "saturation"
-    operation_amplitude_factor: Optional[float] = 0.01
+    operation_amplitude_factor: Optional[float] = None
     operation_len: Optional[int] = None
     frequency_span_in_mhz: float = 20
     frequency_step_in_mhz: float = 0.25
@@ -116,19 +116,19 @@ with program() as qubit_spec:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     df = declare(int)  # QUA variable for the qubit frequency
 
-    for i, q in enumerate(qubits):
+    for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
-            q.z.to_independent_idle()
+            qubit.z.to_independent_idle()
         elif flux_point == "joint":
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
 
-        for qubit in qubits:
-            wait(1000, qubit.z.name) 
+        for qb in qubits:
+            wait(1000, qb.z.name) 
 
         align() 
 
@@ -136,23 +136,23 @@ with program() as qubit_spec:
             save(n, n_st)
             with for_(*from_array(df, dfs)):
                 # Update the qubit frequency
-                update_frequency(q.xy.name, df + q.xy.intermediate_frequency)
+                qubit.xy.update_frequency(df + + qubit.xy.intermediate_frequency)
 
                 # Play the saturation pulse
-                q.xy.play(
+                qubit.xy.play(
                     operation,
                     amplitude_scale=operation_amp,
                     duration=operation_len,
                 )
-                align(q.xy.name, q.resonator.name)
+                align(qubit.xy.name, qubit.resonator.name)
 
                 # # QUA macro the readout the state of the active resonators (defined in macros.py)
                 # multiplexed_readout(qubits, I, I_st, Q, Q_st, sequential=False)
                 # readout the resonator
-                q.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
 
                 # Wait for the qubit to decay to the ground state
-                q.resonator.wait(machine.thermalization_time * u.ns)
+                qubit.resonator.wait(machine.thermalization_time * u.ns)
                 # save data
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])
@@ -209,22 +209,22 @@ else:
             plt.subplot(2, num_qubits, i + 1)
             plt.cla()
             plt.plot(
-                (q.xy.LO_frequency + q.xy.intermediate_frequency + dfs) / u.MHz,
+                (q.xy.opx_output.upconverter_frequency + q.xy.intermediate_frequency + dfs) / u.MHz,
                 np.abs(s),
             )
             plt.grid(True)
             plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
-            plt.title(f"{q.name} (f_01: {q.xy.rf_frequency / u.MHz} MHz)")
+            plt.title(f"{q.name} (f_01: {q.xy.opx_output.upconverter_frequency + q.xy.intermediate_frequency / u.MHz} MHz)")
             plt.subplot(2, num_qubits, num_qubits + i + 1)
             plt.cla()
             plt.plot(
-                (q.xy.LO_frequency + q.xy.intermediate_frequency + dfs) / u.MHz,
+                (q.xy.opx_output.upconverter_frequency + q.xy.intermediate_frequency + dfs) / u.MHz,
                 np.unwrap(np.angle(s)),
             )
             plt.grid(True)
             plt.ylabel("Phase [rad]")
             plt.xlabel(f"{q.name} detuning [MHz]")
-            plt.plot((q.xy.LO_frequency + q.xy.intermediate_frequency) / u.MHz, 0.0, "r*")
+            plt.plot((q.xy.opx_output.upconverter_frequency + q.xy.intermediate_frequency) / u.MHz, 0.0, "r*")
 
         plt.tight_layout()
         plt.pause(0.1)
@@ -243,7 +243,7 @@ if not simulate:
     
     def abs_freq(q):
         def foo(freq):
-            return freq + q.xy.intermediate_frequency + q.xy.LO_frequency
+            return freq + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency
         return foo
     ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
     ds = ds.assign({'phase': np.arctan2(ds.Q,ds.I)})
@@ -262,7 +262,7 @@ if not simulate:
     shifts = np.abs((ds.IQ_abs-ds.IQ_abs.mean(dim = 'freq'))).idxmax(dim = 'freq')
 
     # approximate peak freqeuency
-    abs_freqs = dict([(q.name, shifts.sel(qubit = q.name).values + q.xy.intermediate_frequency + q.xy.LO_frequency) for q in qubits])
+    abs_freqs = dict([(q.name, shifts.sel(qubit = q.name).values + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency) for q in qubits])
 
     # the roration angle to align the meaningfull data with I axis
     angle =  np.arctan2(ds.sel(freq = shifts).Q - ds.Q.mean(dim = 'freq'), ds.sel(freq = shifts).I - ds.I.mean(dim = 'freq'))
@@ -274,7 +274,7 @@ if not simulate:
     result = peaks_dips(ds.I_rot,dim = 'freq',prominence_factor=5)
 
     # extract the qubit frequency
-    abs_freqs = dict([(q.name, result.sel(qubit= q.name).position.values + q.xy.intermediate_frequency + q.xy.LO_frequency) for q in qubits])
+    abs_freqs = dict([(q.name, result.sel(qubit= q.name).position.values + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency) for q in qubits])
 
     fit_results = {}
 
@@ -285,8 +285,8 @@ if not simulate:
             Pi_length = q.xy.operations["x180"].length
             used_amp = q.xy.operations["saturation"].amplitude * operation_amp
             print(
-            f"Drive frequency for {q.name} is {(result.sel(qubit = q.name).position.values + q.xy.intermediate_frequency + q.xy.LO_frequency)/1e9:.6f} GHz")
-            fit_results[q.name]['drive_freq'] = result.sel(qubit = q.name).position.values + q.xy.intermediate_frequency + q.xy.LO_frequency
+            f"Drive frequency for {q.name} is {(result.sel(qubit = q.name).position.values + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency)/1e9:.6f} GHz")
+            fit_results[q.name]['drive_freq'] = result.sel(qubit = q.name).position.values + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency
             print(
             f"(shift of {result.sel(qubit = q.name).position.values/1e6:.3f} MHz)")
             factor_cw = float(target_peak_width/result.sel(qubit = q.name).width.values)

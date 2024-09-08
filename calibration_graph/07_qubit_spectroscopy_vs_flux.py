@@ -112,19 +112,19 @@ with program() as multi_qubit_spec_vs_flux:
     df = declare(int)  # QUA variable for the qubit frequency
     dc = declare(fixed)  # QUA variable for the flux dc level
 
-    for i, q in enumerate(qubits):
+    for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
-            q.z.to_independent_idle()
+            qubit.z.to_independent_idle()
         elif flux_point == "joint":
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
 
-        for qubit in qubits:
-            wait(1000, qubit.z.name) 
+        for qb in qubits:
+            wait(1000, qb.z.name) 
 
         align() 
 
@@ -133,38 +133,38 @@ with program() as multi_qubit_spec_vs_flux:
 
             with for_(*from_array(df, dfs)):
                 # Update the qubit frequencies for all qubits
-                update_frequency(q.xy.name, df + q.xy.intermediate_frequency)
+                qubit.xy.update_frequency(df + qubit.xy.intermediate_frequency)
 
                 with for_(*from_array(dc, dcs)):
                     # Flux sweeping for a qubit
                     if flux_point == "independent":
-                        q.z.set_dc_offset(dc + q.z.independent_offset)
-                        wait(100, q.z.name)  # Wait for the flux to settle
+                        qubit.z.set_dc_offset(dc + qubit.z.independent_offset)
+                        wait(100, qubit.z.name)  # Wait for the flux to settle
                     elif flux_point == "joint":
-                        q.z.set_dc_offset(dc + q.z.joint_offset)
-                        wait(100, q.z.name)  # Wait for the flux to settle
+                        qubit.z.set_dc_offset(dc + qubit.z.joint_offset)
+                        wait(100, qubit.z.name)  # Wait for the flux to settle
                     else:
                         raise RuntimeError(f"unknown flux_point")                  
 
                     align()
 
                     # Apply saturation pulse to all qubits
-                    q.xy.play(
+                    qubit.xy.play(
                         operation,
                         amplitude_scale=operation_amp,
                         duration=operation_len,
                     )
-                    q.align()
+                    qubit.align()
 
                     # QUA macro to read the state of the active resonators
-                    q.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                    qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
 
                     # save data
                     save(I[i], I_st[i])
                     save(Q[i], Q_st[i])
 
                     # Wait for the qubits to decay to the ground state
-                    q.resonator.wait(cooldown_time * u.ns)
+                    qubit.resonator.wait(cooldown_time * u.ns)
 
         align(*([q.xy.name for q in qubits] + [q.resonator.name for q in qubits]))    
 
@@ -263,7 +263,7 @@ if not simulate:
     ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
     def abs_freq(q):
         def foo(freq):
-            return freq + q.xy.intermediate_frequency + q.xy.LO_frequency
+            return freq + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency
         return foo
 
     ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
@@ -295,7 +295,7 @@ if not simulate:
             print(f'flux offset for qubit {q.name} is {offset*1e3 + flux_shift.sel(qubit = q.name).values*1e3:.0f} mV')
             print(f'a shift of  {flux_shift.sel(qubit = q.name).values*1e3:.0f} mV')
             print(
-                f"Drive frequency for {q.name} is {(freq_shift.sel(qubit = q.name).values + q.xy.intermediate_frequency + q.xy.LO_frequency)/1e9:.3f} GHz")
+                f"Drive frequency for {q.name} is {(freq_shift.sel(qubit = q.name).values + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency)/1e9:.3f} GHz")
             print(
                 f"(shift of {freq_shift.sel(qubit = q.name).values/1e6:.0f} MHz)")
             print(
@@ -317,7 +317,7 @@ if not simulate:
     grid = QubitGrid(ds, grid_names)
 
     for ax, qubit in grid_iter(grid):
-        freq_ref = machine.qubits[qubit['qubit']].xy.intermediate_frequency + machine.qubits[qubit['qubit']].xy.LO_frequency
+        freq_ref = machine.qubits[qubit['qubit']].xy.intermediate_frequency + machine.qubits[qubit['qubit']].xy.opx_output.upconverter_frequency
         ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].I.plot(ax=ax, add_colorbar=False,
                                                                                 x='flux', y='freq_GHz', robust=True)
         ((fitted+  freq_ref)/1e9).loc[qubit].plot(ax = ax,linewidth = 0.5, ls = '--',color = 'r')
