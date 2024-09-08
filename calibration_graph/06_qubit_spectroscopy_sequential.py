@@ -212,22 +212,22 @@ else:
             plt.subplot(2, num_qubits, i + 1)
             plt.cla()
             plt.plot(
-                (q.xy.opx_output.upconverter_frequency + q.xy.intermediate_frequency + dfs) / u.MHz,
+                (q.xy.upconverter_frequency + q.xy.intermediate_frequency + dfs) / u.MHz,
                 np.abs(s),
             )
             plt.grid(True)
             plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
-            plt.title(f"{q.name} (f_01: {q.xy.opx_output.upconverter_frequency + q.xy.intermediate_frequency / u.MHz} MHz)")
+            plt.title(f"{q.name} (f_01: {q.xy.upconverter_frequency + q.xy.intermediate_frequency / u.MHz} MHz)")
             plt.subplot(2, num_qubits, num_qubits + i + 1)
             plt.cla()
             plt.plot(
-                (q.xy.opx_output.upconverter_frequency + q.xy.intermediate_frequency + dfs) / u.MHz,
+                (q.xy.upconverter_frequency + q.xy.intermediate_frequency + dfs) / u.MHz,
                 np.unwrap(np.angle(s)),
             )
             plt.grid(True)
             plt.ylabel("Phase [rad]")
             plt.xlabel(f"{q.name} detuning [MHz]")
-            plt.plot((q.xy.opx_output.upconverter_frequency + q.xy.intermediate_frequency) / u.MHz, 0.0, "r*")
+            plt.plot((q.xy.upconverter_frequency + q.xy.intermediate_frequency) / u.MHz, 0.0, "r*")
 
         plt.tight_layout()
         plt.pause(0.1)
@@ -244,7 +244,7 @@ ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 
 def abs_freq(q):
     def foo(freq):
-        return freq + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency
+        return freq + q.xy.intermediate_frequency + q.xy.upconverter_frequency
     return foo
 ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
 ds = ds.assign({'phase': np.arctan2(ds.Q,ds.I)})
@@ -262,7 +262,7 @@ from quam_libs.lib.fit import peaks_dips
 shifts = np.abs((ds.IQ_abs-ds.IQ_abs.mean(dim = 'freq'))).idxmax(dim = 'freq')
 
 # approximate peak freqeuency
-abs_freqs = dict([(q.name, shifts.sel(qubit = q.name).values + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency) for q in qubits])
+abs_freqs = dict([(q.name, shifts.sel(qubit = q.name).values + q.xy.intermediate_frequency + q.xy.upconverter_frequency) for q in qubits])
 
 # the roration angle to align the meaningfull data with I axis
 angle =  np.arctan2(ds.sel(freq = shifts).Q - ds.Q.mean(dim = 'freq'), ds.sel(freq = shifts).I - ds.I.mean(dim = 'freq'))
@@ -274,7 +274,7 @@ ds = ds.assign({'I_rot' :  np.real(ds.IQ_abs * np.exp(1j * (ds.phase - angle)  )
 result = peaks_dips(ds.I_rot,dim = 'freq',prominence_factor=5)
 
 # extract the qubit frequency
-abs_freqs = dict([(q.name, result.sel(qubit= q.name).position.values + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency) for q in qubits])
+abs_freqs = dict([(q.name, result.sel(qubit= q.name).position.values + q.xy.intermediate_frequency + q.xy.upconverter_frequency) for q in qubits])
 
 fit_results = {}
 
@@ -285,8 +285,8 @@ for q in qubits:
         Pi_length = q.xy.operations["x180"].length
         used_amp = q.xy.operations["saturation"].amplitude * operation_amp
         print(
-        f"Drive frequency for {q.name} is {(result.sel(qubit = q.name).position.values + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency)/1e9:.6f} GHz")
-        fit_results[q.name]['drive_freq'] = result.sel(qubit = q.name).position.values + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency
+        f"Drive frequency for {q.name} is {(result.sel(qubit = q.name).position.values + q.xy.intermediate_frequency + q.xy.upconverter_frequency)/1e9:.6f} GHz")
+        fit_results[q.name]['drive_freq'] = result.sel(qubit = q.name).position.values + q.xy.intermediate_frequency + q.xy.upconverter_frequency
         print(
         f"(shift of {result.sel(qubit = q.name).position.values/1e6:.3f} MHz)")
         factor_cw = float(target_peak_width/result.sel(qubit = q.name).width.values)
