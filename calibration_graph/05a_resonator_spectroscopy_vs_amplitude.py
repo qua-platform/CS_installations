@@ -310,7 +310,7 @@ for q in qubits:
     if float(rr_pwr.sel(qubit=q.name)) > 0:
         with node.record_state_updates():
             q.resonator.operations["readout"].amplitude = 0.4*float(rr_pwr.sel(qubit=q.name))
-    q.resonator.intermediate_frequency+=int(res_low_power.sel(qubit=q.name).values)
+            q.resonator.intermediate_frequency+=int(res_low_power.sel(qubit=q.name).values)
     fit_results[q.name]["RO_amplitude"]=float(rr_pwr.sel(qubit=q.name))
 node.results['resonator_frequency'] = fit_results
 
