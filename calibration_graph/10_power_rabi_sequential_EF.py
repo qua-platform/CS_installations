@@ -314,10 +314,14 @@ node.results['figure'] = grid.fig
 # %%
 ef_operation_name = f'EF_{operation}'
 for q in qubits:
+    if fit_results[q.name]['Pi_amplitude'] > 0.3:
+        EF_amp = 0.3
+    else:
+        EF_amp = fit_results[q.name]['Pi_amplitude']
     if ef_operation_name not in q.xy.operations:
         q.xy.operations[ef_operation_name] = pulses.DragCosinePulse(
             # NOTE: this can lead to unwated behavior if the fits fails, because it can make the amplitude be larger than the permitted values
-            amplitude=fit_results[q.name]['Pi_amplitude'],
+            amplitude=EF_amp,
             alpha=q.xy.operations[operation].alpha,
             anharmonicity=q.xy.operations[operation].anharmonicity,
             length=q.xy.operations[operation].length,
@@ -327,7 +331,7 @@ for q in qubits:
     else:
         with node.record_state_updates():
             # set the new amplitude for the EF operation
-            q.xy.operations[ef_operation_name].amplitude = fit_results[q.name]['Pi_amplitude']
+            q.xy.operations[ef_operation_name].amplitude = EF_amp
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()
