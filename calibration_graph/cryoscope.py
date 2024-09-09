@@ -31,17 +31,17 @@ from quam_libs.lib.cryoscope_tools import cryoscope_frequency, estimate_fir_coef
 
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = 'q1'
-    num_averages: int = 50000
+    qubits: Optional[str] = 'q4'
+    num_averages: int = 1000
     amplitude_factor: float = 0.5
-    cryoscope_len: int = 320
+    cryoscope_len: int = 160
     reset_type_active_or_thermal: Literal['active', 'thermal'] = 'active'
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
     reset_filters: bool = True
 
 node = QualibrationNode(
-    name="Cryoscope_trial",
+    name="12_Cryoscope",
     parameters_class=Parameters
 )
 
@@ -168,10 +168,10 @@ with program() as cryoscope:
 
                 align()
 
-                with switch_(idx):
-                    for i in range(16):
-                        with case_(i):
-                            baked_signals[i].run()
+                # with switch_(idx):
+                #     for i in range(16):
+                #         with case_(i):
+                #             baked_signals[i].run()
 
                 # Wait for the idle time set slightly above the maximum flux pulse duration to ensure that the 2nd x90
                 # pulse arrives after the longest flux pulse
@@ -336,36 +336,64 @@ if not simulate:
     plt.show()
 
 # %%
+if not simulate:
+        # extract the rising part of the data for analysis
+    threshold = flux_cryoscope_q.max().values*0.6 # Set the threshold value
+    rise_index = np.argmax(flux_cryoscope_q.values > threshold) + 1
+    drop_index =  len(flux_cryoscope_q) - 2
+    flux_cryoscope_tp = flux_cryoscope_q.sel(time=slice(rise_index,drop_index ))
+    flux_cryoscope_tp = flux_cryoscope_tp.assign_coords(
+        time=flux_cryoscope_tp.time - rise_index + 1)
+
+
+    f,axs = plt.subplots(2)
+    flux_cryoscope_q.plot(ax = axs[0])
+    axs[0].axvline(rise_index, color='r')
+    axs[0].axvline(drop_index, color='r')
+    flux_cryoscope_tp.plot(ax = axs[1])
+    plt.show()
 # %%
 if not simulate:
     # Fit two exponents
     # Filtering the data might improve the fit at the first few nS, play with range to achieve this
-    filtered_flux_cryoscope_q = savgol(flux_cryoscope_q, 'time', range = 41, order = 2)
-    da = filtered_flux_cryoscope_q
+    filtered_flux_cryoscope_q = savgol(flux_cryoscope_tp, 'time', range = 3, order = 2)
+    da = flux_cryoscope_tp
 
     first_vals = da.sel(time=slice(0, 1)).mean().values
-    final_vals = da.sel(time=slice(20, None)).mean().values
+    final_vals = da.sel(time=slice(50, None)).mean().values
 
-    fit, _  = curve_fit(expdecay, da.time[20:], da[20:],
-                p0=[ final_vals, 1 - first_vals/final_vals, 50])
-    fit2, _ = curve_fit(two_expdecay, da.time[4:], da[4:],
-                p0 = [fit[0], fit[1], 5, fit[1], fit[2]])
-
+    try:
+        p0 = [final_vals, -1+first_vals/final_vals, 50]
+        fit, _  = curve_fit(expdecay, da.time[5:], da[5:],
+                p0=p0)
+    except:
+        fit = p0
+        print('single exp fit failed')
+    try:
+        p0 = [fit[0], fit[1], 2, fit[1], fit[2]]
+        fit2, _ = curve_fit(two_expdecay, filtered_flux_cryoscope_q.time[4:], filtered_flux_cryoscope_q[4:],
+                p0 = p0)
+    except:
+        fit2 = p0
+        print('two exp fit failed')
+        
     if plot_process:
-        flux_cryoscope_q.plot(marker = '.')
-        plt.plot(filtered_flux_cryoscope_q.time, filtered_flux_cryoscope_q, label = 'filtered')
+        da.plot(marker = '.')
+        # plt.plot(filtered_flux_cryoscope_q.time, filtered_flux_cryoscope_q, label = 'filtered')
         plt.plot(da.time, expdecay(da.time, *fit), label = 'fit single exp')
-        plt.plot(da.time, two_expdecay(da.time, *fit2), label = 'fit two exp')
+        if fit2 is not None:
+            plt.plot(da.time, two_expdecay(da.time, *fit2), label = 'fit two exp')
         plt.legend()
         plt.show()
 
     # Print fit2 parameters nicely (two_expdecay function)
-    print("Fit2 parameters (two_expdecay function):")
-    print(f"s: {fit2[0]:.6f}")
-    print(f"a: {fit2[1]:.6f}")
-    print(f"t: {fit2[2]:.6f}")
-    print(f"a2: {fit2[3]:.6f}")
-    print(f"t2: {fit2[4]:.6f}")
+    if fit2 is not None:
+        print("Fit2 parameters (two_expdecay function):")
+        print(f"s: {fit2[0]:.6f}")
+        print(f"a: {fit2[1]:.6f}")
+        print(f"t: {fit2[2]:.6f}")
+        print(f"a2: {fit2[3]:.6f}")
+        print(f"t2: {fit2[4]:.6f}")
 
     # Print fit parameters nicely (expdecay function)
     print("\nFit parameters (expdecay function):")
@@ -419,18 +447,21 @@ if not simulate:
         f,ax = plt.subplots()
         ax.plot(flux_cryoscope_q.time,flux_cryoscope_q,label = 'data')
         ax.plot(flux_cryoscope_q.time,filtered_response_long,label = 'filtered long time')
+        ax.set_ylim([final_vals*0.95,final_vals*1.05])
         ax.legend()
         plt.show()
-
 
 # %%
 if not simulate:
     ####  FIR filter for the response
     flux_q = flux_cryoscope_q.copy()
     flux_q.values = filtered_response_long
-    final_vals = flux_q.sel(time=slice(100, None)).mean().values
+    flux_q_tp = flux_q.sel(time=slice(rise_index, drop_index))
+    flux_q_tp = flux_q_tp.assign_coords(
+        time=flux_q_tp.time - rise_index)
+    final_vals = flux_q_tp.sel(time=slice(100, None)).mean().values
     step = np.ones(len(flux_q)+100)*final_vals
-    fir_est = estimate_fir_coefficients(step[0:240], flux_q.values[0:200], 28)
+    fir_est = estimate_fir_coefficients(step, flux_q_tp.values, 28)
 
     FIR_new = fir_est
 
@@ -443,6 +474,9 @@ if not simulate:
         flux_cryoscope_q.plot(label =  'data')
         plt.plot(filtered_response_long, label = 'filtered long time')
         plt.plot(filtered_response_Full, label = 'filtered full, deconvolved')
+        plt.axhline(final_vals*1.001, color = 'k')
+        plt.axhline(final_vals*0.999, color = 'k')
+        plt.ylim([final_vals*0.95,final_vals*1.05])
         plt.legend()
         plt.show()
 
@@ -465,6 +499,9 @@ if not simulate:
         flux_cryoscope_q.plot(label =  'data')
         plt.plot(filtered_response_long, label = 'filtered long time')
         plt.plot(filtered_response_Full, label = 'filtered full, fitted')
+        plt.axhline(final_vals*1.001, color = 'k')
+        plt.axhline(final_vals*0.999, color = 'k')
+        plt.ylim([final_vals*0.95,final_vals*1.05])
         plt.legend()
         plt.show()
 
