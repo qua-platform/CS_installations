@@ -256,6 +256,8 @@ node.results['figure'] = grid.fig
 with node.record_state_updates():
     for q in qubits:
         q.xy.operations[operation].amplitude = fit_results[q.name]['Pi_amplitude']
+        if operation == "x180":
+            q.xy.operations["x90"].amplitude = fit_results[q.name]['Pi_amplitude']/2
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()
