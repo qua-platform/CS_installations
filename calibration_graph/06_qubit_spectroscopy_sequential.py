@@ -34,7 +34,7 @@ class Parameters(NodeParameters):
     qubits: Optional[str] = None
     num_averages: int = 50
     operation: str = "saturation"
-    operation_amplitude_factor: Optional[float] = None
+    operation_amplitude_factor: Optional[float] = 0.01
     operation_len: Optional[int] = None
     frequency_span_in_mhz: float = 20
     frequency_step_in_mhz: float = 0.25

@@ -20,7 +20,7 @@ from typing import Optional, Literal
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 10
+    num_averages: int = 50
     operation: str = "saturation"
     operation_amplitude_factor: Optional[float] = 0.01
     operation_len: Optional[int] = None
