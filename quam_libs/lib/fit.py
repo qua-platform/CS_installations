@@ -75,8 +75,6 @@ def fit_oscillation_decay_exp(da, dim):
 
     def get_freq(dat):
         def f(d): return ca.guess.frequency(da[dim], d)
-        def f(d): return 0.0
-
         return np.apply_along_axis(f, -1, dat)
 
     def get_amp(dat):
