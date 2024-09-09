@@ -140,7 +140,7 @@ simulate = node.parameters.simulate
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, ramsey, simulation_config)
+    job = qmm.simulate(config, find_optimal_freq_offset_and_idle_time, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
 else:
@@ -249,7 +249,7 @@ simulate = node.parameters.simulate
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, ramsey, simulation_config)
+    job = qmm.simulate(config, Ramsey_noise_spec, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
 else:
