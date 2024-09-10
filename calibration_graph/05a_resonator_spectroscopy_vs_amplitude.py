@@ -263,7 +263,7 @@ ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 
 def abs_freq(q):
     def foo(freq):
-        return freq + q.resonator.RF_frequency
+        return freq + q.resonator.opx_output.upconverter_frequency + q.resonator.intermediate_frequency
     return foo
 
 def abs_amp(q):
