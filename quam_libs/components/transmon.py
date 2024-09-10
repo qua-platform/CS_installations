@@ -46,6 +46,8 @@ class Transmon(QuamComponent):
     T2echo: int = 10_000
     thermalization_time_factor: int = 5
     sigma_time_factor: int = 5
+    phi0_current: float = 0.0
+    phi0_voltage: float = 0.0
     
     GEF_frequency_shift : int = 10
     chi : float = 0.0

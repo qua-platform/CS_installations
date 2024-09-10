@@ -35,7 +35,7 @@ class Parameters(NodeParameters):
     num_averages: int = 50
     operation: str = "saturation"
     operation_amplitude_factor: Optional[float] = 0.01
-    operation_len: Optional[int] = None
+    operation_len_in_ns: Optional[int] = None
     frequency_span_in_mhz: float = 20
     frequency_step_in_mhz: float = 0.25
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
@@ -95,7 +95,7 @@ num_qubits = len(qubits)
 operation = node.parameters.operation  # The qubit operation to play, can be switched to "x180" when the qubits are found.
 n_avg = node.parameters.num_averages  # The number of averages
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
-operation_len = node.parameters.operation_len  # can be None - will just be ignored
+operation_len = node.parameters.operation_len_in_ns  # can be None - will just be ignored
 if node.parameters.operation_amplitude_factor:
     # pre-factor to the value defined in the config - restricted to [-2; 2)
     operation_amp = node.parameters.operation_amplitude_factor
@@ -106,6 +106,8 @@ span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span//2, +span//2, step, dtype=np.int32)
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
+cooldown_time = max(q.resonator.depletion_time for q in qubits)
+
 
 target_peak_width = node.parameters.target_peak_width
 if target_peak_width is None:
@@ -152,7 +154,7 @@ with program() as qubit_spec:
                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
 
                 # Wait for the qubit to decay to the ground state
-                qubit.resonator.wait(machine.thermalization_time * u.ns)
+                qubit.resonator.wait(cooldown_time * u.ns)
                 # save data
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])
