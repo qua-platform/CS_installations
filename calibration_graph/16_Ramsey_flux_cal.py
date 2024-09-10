@@ -18,20 +18,22 @@ Next steps before going to the next node:
     - Save the current state by calling machine.save("quam")
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    target_names: str = 'qubits'
+    qubits: Optional[List[str]] = None
     num_averages: int = 100
     frequency_detuning_in_mhz: float = 4.0
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 2000
     wait_time_step_in_ns: int = 20
-    flux_span : float = 0.025
-    flux_step : float = 0.001
+    flux_span : float = 0.02
+    flux_step : float = 0.002
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
+    flux_mode_dc_or_pulsed: Literal['dc', 'pulsed'] = 'pulsed'
 
 node = QualibrationNode(
     name="08a_Ramsey_flux_cal",
@@ -78,7 +80,7 @@ qmm = machine.connect()
 if node.parameters.qubits is None:
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.split(', ')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
 # %%
 ###################
@@ -96,7 +98,7 @@ idle_times = np.arange(
 # Detuning converted into virtual Z-rotations to observe Ramsey oscillation and get the qubit frequency
 detuning = int(1e6 * node.parameters.frequency_detuning_in_mhz)
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
-dcs = np.arange(-node.parameters.flux_span / 2, node.parameters.flux_span / 2+0.001, step = node.parameters.flux_step)
+fluxes = np.arange(-node.parameters.flux_span / 2, node.parameters.flux_span / 2+0.001, step = node.parameters.flux_step)
 
 # %%
 with program() as ramsey:
@@ -106,7 +108,7 @@ with program() as ramsey:
     state_st = [declare_stream() for _ in range(num_qubits)]
     t = declare(int)  # QUA variable for the idle time
     phi = declare(fixed)  # QUA variable for dephasing the second pi/2 pulse (virtual Z-rotation)
-    dc = declare(fixed)  # QUA variable for the flux dc level
+    flux = declare(fixed)  # QUA variable for the flux dc level
 
     for i, qubit in enumerate(qubits):
 
@@ -126,14 +128,15 @@ with program() as ramsey:
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
-            with for_(*from_array(dc, dcs)):
-                # Flux sweeping for a qubit
-                if flux_point == "independent":
-                    qubit.z.set_dc_offset(dc + qubit.z.independent_offset)
-                elif flux_point == "joint":
-                    qubit.z.set_dc_offset(dc + qubit.z.joint_offset)
-                else:
-                    raise RuntimeError(f"unknown flux_point")  
+            with for_(*from_array(flux, fluxes)):
+                if node.parameters.flux_mode_dc_or_pulsed == 'dc':
+                    # Flux sweeping for a qubit
+                    if flux_point == "independent":
+                        qubit.z.set_dc_offset(flux + qubit.z.independent_offset)
+                    elif flux_point == "joint":
+                        qubit.z.set_dc_offset(flux + qubit.z.joint_offset)
+                    else:
+                        raise RuntimeError(f"unknown flux_point")  
                                 
                 for qb in qubits:
                     wait(100, qb.z.name)
@@ -148,10 +151,21 @@ with program() as ramsey:
                     assign(phi, Cast.mul_fixed_by_int(detuning * 1e-9, 4 * t ))
                     align()
                     # Strict_timing ensures that the sequence will be played without gaps
-                    with strict_timing_():
+                    if node.parameters.flux_mode_dc_or_pulsed == 'dc':  
+                        with strict_timing_():
+                            qubit.xy.play("x180", amplitude_scale = 0.5)
+                            qubit.xy.frame_rotation_2pi(phi)
+                            qubit.xy.wait(t)
+                            qubit.xy.play("x180", amplitude_scale = 0.5)
+                    else:
+                        # with strict_timing_():
                         qubit.xy.play("x180", amplitude_scale = 0.5)
+                        qubit.align()
+                        wait(20, qubit.z.name)
+                        qubit.z.play("const", amplitude_scale = flux / qubit.z.operations["const"].amplitude, duration=t)
+                        wait(20, qubit.z.name)
                         qubit.xy.frame_rotation_2pi(phi)
-                        qubit.xy.wait(t)
+                        qubit.align()
                         qubit.xy.play("x180", amplitude_scale = 0.5)
 
                     # Align the elements to measure after playing the qubit pulse.
@@ -170,7 +184,7 @@ with program() as ramsey:
     with stream_processing():
         n_st.save("n")
         for i in range(num_qubits):
-            state_st[i].buffer(len(idle_times)).buffer(len(dcs)).average().save(f"state{i + 1}")
+            state_st[i].buffer(len(idle_times)).buffer(len(fluxes)).average().save(f"state{i + 1}")
 
 
 ###########################
@@ -214,7 +228,7 @@ else:
 # %%
 # %%
 handles = job.result_handles
-ds = fetch_results_as_xarray(handles, qubits, {"idle_time": idle_times, "flux": dcs})
+ds = fetch_results_as_xarray(handles, qubits, {"idle_time": idle_times, "flux": fluxes})
 
 node.results = {}
 node.results['ds'] = ds
