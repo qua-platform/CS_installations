@@ -30,6 +30,7 @@ class Parameters(NodeParameters):
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.1
     simulate: bool = False
+    forced_flux_bias_v: float = None
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     ro_line_attenuation_dB: float = 0
     multiplexed: bool = True
@@ -98,13 +99,17 @@ n_avg = node.parameters.num_averages  # The number of averages
 # Uncomment this to override the initial readout amplitude for all resonators
 # for rr in resonators:
 #     rr.operations["readout"].amplitude = 0.25
-max_amp = 0.49
+# NOTE: 0.49 is for OPX+, 0.99 is for OPX1000
+max_amp = 0.99
 
 tracked_qubits = []
 for qubit in qubits:
     with tracked_updates(qubit, auto_revert=False, dont_assign_to_none=True) as qubit:
         qubit.resonator.operations["readout"].amplitude = max_amp
         tracked_qubits.append(qubit)
+        if node.parameters.forced_flux_bias_v is not None:
+            qubit.z.joint_offset = node.parameters.forced_flux_bias_v
+
 
 config = machine.generate_config()
 for tracked_qubit in tracked_qubits:
