@@ -23,7 +23,7 @@ class Parameters(NodeParameters):
     num_averages: int = 50
     operation: str = "saturation"
     operation_amplitude_factor: Optional[float] = 0.01
-    operation_len: Optional[int] = None
+    operation_len_in_ns: Optional[int] = None
     frequency_span_in_mhz: float = 20
     frequency_step_in_mhz: float = 0.25
     min_flux_offset_in_v: float = -0.01
@@ -88,7 +88,7 @@ operation = node.parameters.operation  # The qubit operation to play, can be swi
 n_avg = node.parameters.num_averages  # The number of averages
 cooldown_time = max(q.thermalization_time for q in qubits)
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
-operation_len = node.parameters.operation_len  # can be None - will just be ignored
+operation_len = node.parameters.operation_len_in_ns  # can be None - will just be ignored
 if node.parameters.operation_amplitude_factor:
     # pre-factor to the value defined in the config - restricted to [-2; 2)
     operation_amp = node.parameters.operation_amplitude_factor
