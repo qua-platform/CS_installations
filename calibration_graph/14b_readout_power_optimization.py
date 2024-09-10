@@ -33,6 +33,7 @@ class Parameters(NodeParameters):
     start_amp: float = 0.5
     end_amp: float = 1.99
     num_amps: int = 10
+    outliers_threshold: float = 0.98
 
 node = QualibrationNode(
     name="07b_readout_power_optimization",
@@ -326,11 +327,10 @@ fit_res = fit_res.assign_coords(result=['meas_fidelity', 'outliers'])
 plot_indvidual = False
 best_data = {}
 
-outliers_thr = 0.95
 best_amp = {}
 for q in machine.active_qubits:
     fit_res_q = fit_res.sel(qubit=q.name)
-    valid_amps = fit_res_q.amplitude[(fit_res_q.sel(result='outliers') >= outliers_thr)]
+    valid_amps = fit_res_q.amplitude[(fit_res_q.sel(result='outliers') >= node.parameters.outliers_threshold)]
     amps_fidelity = fit_res_q.sel(
         amplitude=valid_amps.values, result='meas_fidelity')
     best_amp[q.name] = float(amps_fidelity.readout_amp[amps_fidelity.argmax()])
