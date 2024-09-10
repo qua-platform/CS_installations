@@ -86,7 +86,7 @@ num_qubits = len(qubits)
 
 operation = node.parameters.operation  # The qubit operation to play, can be switched to "x180" when the qubits are found.
 n_avg = node.parameters.num_averages  # The number of averages
-cooldown_time = max(q.thermalization_time for q in qubits)
+cooldown_time = max(q.resonator.depletion_time for q in qubits)
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
 operation_len = node.parameters.operation_len_in_ns  # can be None - will just be ignored
 if node.parameters.operation_amplitude_factor:

@@ -106,6 +106,8 @@ span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span//2, +span//2, step, dtype=np.int32)
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
+cooldown_time = max(q.resonator.depletion_time for q in qubits)
+
 
 target_peak_width = node.parameters.target_peak_width
 if target_peak_width is None:
@@ -152,7 +154,7 @@ with program() as qubit_spec:
                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
 
                 # Wait for the qubit to decay to the ground state
-                qubit.resonator.wait(machine.thermalization_time * u.ns)
+                qubit.resonator.wait(cooldown_time * u.ns)
                 # save data
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])
