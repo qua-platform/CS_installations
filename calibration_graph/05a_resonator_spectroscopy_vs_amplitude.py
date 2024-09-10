@@ -30,7 +30,7 @@ class Parameters(NodeParameters):
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.1
     simulate: bool = False
-    forced_flux_bias_v: float = None
+    forced_flux_bias_v: Optional[float] = None
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     ro_line_attenuation_dB: float = 0
     multiplexed: bool = True
