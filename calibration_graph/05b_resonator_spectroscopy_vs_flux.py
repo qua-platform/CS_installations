@@ -35,6 +35,8 @@ class Parameters(NodeParameters):
     frequency_step_in_mhz: float = 0.05
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
+    line_impedance_in_ohm: float = 50
+    plot_current_mA : bool = True
 
 node = QualibrationNode(
     name="02c_Resonator_Spectroscopy_vs_Flux",
@@ -247,6 +249,10 @@ ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs
 ds.freq_full.attrs['long_name'] = 'Frequency'
 ds.freq_full.attrs['units'] = 'GHz'
 
+ds = ds.assign_coords({'current' : (['qubit','flux'], np.array([ds.flux.values * node.parameters.line_impedance_in_ohm for q in qubits]))})
+ds.current.attrs['long_name'] = 'Current'
+ds.current.attrs['units'] = 'A'
+
 node.results = {}
 node.results['ds'] = ds
 
@@ -293,6 +299,13 @@ for ax, qubit in grid_iter(grid):
                                                                             x='flux', y='freq_GHz', robust=True)
     ax.axvline(idle_offset.loc[qubit], linestyle = 'dashed', linewidth = 0.5, color = 'r')
     ax.axvline(flux_min.loc[qubit],linestyle = 'dashed', linewidth = 0.5, color = 'orange')
+    
+    if node.parameters.plot_current_mA:
+        ax2 = ax.secondary_xaxis('bottom', functions=(lambda x: 1e3*x / node.parameters.line_impedance_in_ohm, lambda x: 1e-3 * x * node.parameters.line_impedance_in_ohm))
+        ax2.set_xlabel('Current (mA)')
+        # Move the original x-axis (Flux) to the bottom
+        ax.xaxis.set_ticks_position('top')
+        ax.xaxis.set_label_position('top')
     ax.set_ylabel('Freq (GHz)')
     ax.set_xlabel('Flux (V)')
     ax.set_title(qubit['qubit'])
@@ -324,7 +337,8 @@ with node.record_state_updates():
             if update_flux_min:
                 q.z.min_offset = float(flux_min.sel(qubit=q.name).data)
         q.resonator.intermediate_frequency += float(rel_freq_shift.sel(qubit=q.name).data)
-
+        q.phi0_voltage = fit_results[q.name]['dv_phi0']
+        q.phi0_current = fit_results[q.name]['dv_phi0'] * node.parameters.line_impedance_in_ohm
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
