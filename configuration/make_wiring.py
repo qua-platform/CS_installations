@@ -15,8 +15,8 @@ path = r"C:\Users\KevinAVillegasRosale\OneDrive - QM Machines LTD\Documents\GitK
 instruments = Instruments()
 # instruments.add_opx_plus(controllers = [1])
 # instruments.add_octave(indices = 1)
-instruments.add_lf_fem(controller=1, slots=[3, 4, 5])
-instruments.add_mw_fem(controller=1, slots=[1, 2])
+instruments.add_lf_fem(controller=1, slots=[2])
+instruments.add_mw_fem(controller=1, slots=[1])
 
 
 # Define any custom/hardcoded channel addresses
