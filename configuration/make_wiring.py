@@ -6,10 +6,9 @@ from qualang_tools.wirer import Instruments, Connectivity, allocate_wiring, visu
 from quam_libs.quam_builder.machine import build_quam_wiring
 
 # Define static parameters
-host_ip = "172.16.33.116"  # "172.16.33.101"
-cluster_name = "Beta_8"  # "Cluster_81"
-path = r"C:\Users\KevinAVillegasRosale\OneDrive - QM Machines LTD\Documents\GitKraken\CS_installations\configuration\quam_state"
-
+host_ip = "192.168.1.105"  # "172.16.33.101"
+cluster_name = "Cluster_1"  # "Cluster_81"
+path = r"C:\Users\daveh\Documents\Cloned Repos\CS_installations\configuration\quam_state"
 
 # Define the available instrument setup
 instruments = Instruments()
@@ -17,7 +16,6 @@ instruments = Instruments()
 # instruments.add_octave(indices = 1)
 instruments.add_lf_fem(controller=1, slots=[2])
 instruments.add_mw_fem(controller=1, slots=[1])
-
 
 # Define any custom/hardcoded channel addresses
 q1_drive_ch = mw_fem_spec(1, 1, None, 1)

@@ -6,7 +6,7 @@ import json
 from quam_libs.components import QuAM
 from quam_libs.quam_builder.machine import save_machine
 
-path = r"C:\Users\KevinAVillegasRosale\OneDrive - QM Machines LTD\Documents\GitKraken\CS_installations\configuration\quam_state"
+path = r"C:\Users\daveh\Documents\Cloned Repos\CS_installations\configuration\quam_state"
 
 machine = QuAM.load(path)
 
@@ -47,12 +47,12 @@ for qb_flux in qubit_fluxes_dict.keys():
 qubits = machine.active_qubits
 
 qubits_dict = {
-    1: {"power_dbm": 7, "up_freq": 5000000000.0, "band": 2, "delay": 0},
-    2: {"power_dbm": 7, "up_freq": 5000000000.0, "band": 2, "delay": 0},
-    3: {"power_dbm": 7, "up_freq": 5000000000.0, "band": 1, "delay": 0},
-    4: {"power_dbm": 7, "up_freq": 5000000000.0, "band": 1, "delay": 0},
-    5: {"power_dbm": 7, "up_freq": 5000000000.0, "band": 1, "delay": 0},
-    6: {"power_dbm": 7, "up_freq": 5000000000.0, "band": 1, "delay": 0}
+    1: {"power_dbm": 1, "up_freq": 5700000000.0, "band": 2, "delay": 0},
+    2: {"power_dbm": 1, "up_freq": 5700000000.0, "band": 2, "delay": 0},
+    3: {"power_dbm": 1, "up_freq": 5700000000.0, "band": 2, "delay": 0},
+    4: {"power_dbm": 1, "up_freq": 5700000000.0, "band": 2, "delay": 0},
+    5: {"power_dbm": 1, "up_freq": 5700000000.0, "band": 2, "delay": 0},
+    6: {"power_dbm": 1, "up_freq": 5700000000.0, "band": 2, "delay": 0}
 }
 
 
@@ -73,48 +73,54 @@ for qb in qubits_dict.keys():
 
 resonators_dict = {
     1: {
-        "output_full_scale_power_dbm": 7,
+        "output_full_scale_power_dbm": 10,
         "output_upconverter_frequency": 6.2e9,
+        "intermediate_frequency": -260e6,
         "output_band": 2,
         "input_band": 2,
         "input_downconverter_frequency": 6.2e9,
         "delay": 0
     },
     2: {
-        "output_full_scale_power_dbm": 7,
+        "output_full_scale_power_dbm": 10,
         "output_upconverter_frequency": 6.2e9,
+        "intermediate_frequency": -170e6,
         "output_band": 2,
         "input_band": 2,
         "input_downconverter_frequency": 6.2e9,
         "delay": 0
     },
     3: {
-        "output_full_scale_power_dbm": 7,
+        "output_full_scale_power_dbm": 10,
         "output_upconverter_frequency": 6.2e9,
+        "intermediate_frequency": -80e6,
         "output_band": 2,
         "input_band": 2,
         "input_downconverter_frequency": 6.2e9,
         "delay": 0
     },
     4: {
-        "output_full_scale_power_dbm": 7,
+        "output_full_scale_power_dbm": 10,
         "output_upconverter_frequency": 6.2e9,
+        "intermediate_frequency": +20e6,
         "output_band": 2,
         "input_band": 2,
         "input_downconverter_frequency": 6.2e9,
         "delay": 0
     },
     5: {
-        "output_full_scale_power_dbm": 7,
+        "output_full_scale_power_dbm": 10,
         "output_upconverter_frequency": 6.2e9,
+        "intermediate_frequency": 110e6,
         "output_band": 2,
         "input_band": 2,
         "input_downconverter_frequency": 6.2e9,
         "delay": 0
     },
     6: {
-        "output_full_scale_power_dbm": 7,
+        "output_full_scale_power_dbm": 10,
         "output_upconverter_frequency": 6.2e9,
+        "intermediate_frequency": 220e6,
         "output_band": 2,
         "input_band": 2,
         "input_downconverter_frequency": 6.2e9,
@@ -130,6 +136,8 @@ for rr in resonators_to_change:
     opx_output_port_id = qubits[rr - 1].resonator.opx_output.port_id
     opx_input_fem_id = qubits[rr - 1].resonator.opx_input.fem_id
     opx_input_port_id = qubits[rr - 1].resonator.opx_input.port_id
+
+    machine.active_qubits[rr - 1].resonator.intermediate_frequency = resonators_dict[rr]["intermediate_frequency"]
 
     machine.ports.mw_outputs.con1[opx_output_fem_id][opx_output_port_id].full_scale_power_dbm = resonators_dict[rr]["output_full_scale_power_dbm"]
     machine.ports.mw_outputs.con1[opx_output_fem_id][opx_output_port_id].upconverter_frequency = resonators_dict[rr]["output_upconverter_frequency"]
