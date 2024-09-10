@@ -21,15 +21,18 @@ Before proceeding to the next node:
     - Save the current state by calling machine.save("quam")
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional
+from typing import Optional, Literal, List
 
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 10
+    num_averages: int = 100
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.1
     simulate: bool = False
+    flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
+    ro_line_attenuation_dB: float = 0
+    multiplexed: bool = True
 
 node = QualibrationNode(
     name="02b_Resonator_Spectroscopy_vs_Amplitude",
@@ -95,11 +98,12 @@ n_avg = node.parameters.num_averages  # The number of averages
 # Uncomment this to override the initial readout amplitude for all resonators
 # for rr in resonators:
 #     rr.operations["readout"].amplitude = 0.25
+max_amp = 0.49
 
 tracked_qubits = []
 for qubit in qubits:
     with tracked_updates(qubit, auto_revert=False, dont_assign_to_none=True) as qubit:
-        qubit.resonator.operations["readout"].amplitude = 0.4
+        qubit.resonator.operations["readout"].amplitude = max_amp
         tracked_qubits.append(qubit)
 
 config = machine.generate_config()
@@ -108,12 +112,13 @@ for tracked_qubit in tracked_qubits:
 
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
 # amps = np.arange(0.05, 1.00, 0.02)
-amps = np.logspace(-2, 0.0, 100)
+amps = np.geomspace(0.01, 1.0, 100)  # 100 points from 0.01 to 1.0, logarithmically spaced
+
 # The frequency sweep around the resonator resonance frequencies f_opt
 span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span//2, +span//2, step)
-
+flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 
 with program() as multi_res_spec_vs_amp:
     # Declare 'I' and 'Q' and the corresponding streams for the two resonators.
@@ -122,10 +127,16 @@ with program() as multi_res_spec_vs_amp:
     a = declare(fixed)  # QUA variable for the readout amplitude pre-factor
     df = declare(int)  # QUA variable for the readout frequency
 
-    # Bring the active qubits to the minimum frequency point
-    machine.apply_all_flux_to_min()
-
     for i, qubit in enumerate(qubits):
+
+        # Bring the active qubits to the minimum frequency point
+        if flux_point == "independent":
+            machine.apply_all_flux_to_min()
+            qubit.z.to_independent_idle()
+        elif flux_point == "joint":
+            machine.apply_all_flux_to_joint_idle()
+        else:
+            machine.apply_all_flux_to_zero()
 
         # resonator of this qubit
         rr = qubit.resonator
@@ -144,12 +155,11 @@ with program() as multi_res_spec_vs_amp:
 
                     # wait for the resonator to relax
                     rr.wait(machine.depletion_time * u.ns)
-                    wait(1000, rr.name)  # wait for the resonator to relax
                     # save data
                     save(I[i], I_st[i])
                     save(Q[i], Q_st[i])
-
-        align(*[rr.name for rr in resonators])
+        if not node.parameters.multiplexed:
+            align(*[rr.name for rr in resonators])
 
         with stream_processing():
             if not i:
@@ -248,21 +258,32 @@ ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 
 def abs_freq(q):
     def foo(freq):
-        return freq + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
+        return freq + q.resonator.RF_frequency
     return foo
 
 def abs_amp(q):
     def foo(amp):
-        return amp * q.resonator.operations['readout'].amplitude
+        return amp * max_amp
     return foo
 
 ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
 ds = ds.assign_coords({'abs_amp' : (['qubit','amp'],np.array([abs_amp(q)(amps) for q in qubits]))})
+# Convert absolute amplitude in volts to dBm
+def volts_to_dbm(voltage, impedance=50):
+    power_watts = (voltage ** 2) / impedance
+    power_dbm = 10 * np.log10(power_watts * 1000)
+    return power_dbm
+
+ds = ds.assign_coords({'power_dbm': (['qubit', 'amp'], np.array([volts_to_dbm(q)-node.parameters.ro_line_attenuation_dB for q in ds.abs_amp.values]))})
+ds.power_dbm.attrs['long_name'] = 'Power'
+ds.power_dbm.attrs['units'] = 'dBm'
 
 ds.freq_full.attrs['long_name'] = 'Frequency'
 ds.freq_full.attrs['units'] = 'GHz'
+
 ds.abs_amp.attrs['long_name'] = 'Amplitude'
 ds.abs_amp.attrs['units'] = 'V'
+
 ds = ds.assign({'IQ_abs_norm': ds['IQ_abs']/ds.IQ_abs.mean(dim=['freq'])})
 
 node.results = {}
@@ -287,21 +308,37 @@ grid_names = [f'{q.name}_0' for q in qubits]
 grid = QubitGrid(ds, grid_names)
 
 for ax, qubit in grid_iter(grid):
+    # Create a secondary y-axis for power in dBm
+    ax2 = ax.twinx()
+    
+    # Plot the data using the secondary y-axis
     ds.loc[qubit].IQ_abs_norm.plot(ax=ax, add_colorbar=False,
+                                   x='freq_full', y='power_dbm', robust=True)
+    
+    
+    ds.loc[qubit].IQ_abs_norm.plot(ax=ax2, add_colorbar=False,
                                     x='freq_full', y='abs_amp', robust=True,
                                     yscale = 'log')
-    ax.plot(
+
+
+    ax2.plot(
         res_freq_full.loc[qubit], ds.abs_amp.loc[qubit], color='orange', linewidth=0.5)
-    ax.axhline(y=abs_amp(machine.qubits[qubit['qubit']])(
+    ax2.axhline(y=abs_amp(machine.qubits[qubit['qubit']])(
             rr_pwr.loc[qubit]).values, color='r', linestyle='--')
+
+
+    # Set the y-axis label for the secondary axis
+    ax.set_ylabel('Power (dBm)')
+    
+    # Adjust the y-axis limits to match the primary axis
+    ax.set_ylim(volts_to_dbm(ds.abs_amp.loc[qubit].min().values), 
+                 volts_to_dbm(ds.abs_amp.loc[qubit].max().values))
 
 grid.fig.suptitle('Resonator spectroscopy VS. power at base')
 plt.tight_layout()
 plt.show()
 node.results["figure"] = grid.fig
 
-RO_power_ratio = 0.3
-rr_pwr = RO_power_ratio*rr_pwr
 
 # %%
 fit_results = {}
