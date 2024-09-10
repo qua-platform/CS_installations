@@ -30,6 +30,9 @@ class Parameters(NodeParameters):
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.1
     simulate: bool = False
+    forced_flux_bias_v: Optional[float] = None
+    max_power_dbm: float = 10
+    min_power_dbm: float = -20
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     ro_line_attenuation_dB: float = 0
     multiplexed: bool = True
@@ -98,21 +101,31 @@ n_avg = node.parameters.num_averages  # The number of averages
 # Uncomment this to override the initial readout amplitude for all resonators
 # for rr in resonators:
 #     rr.operations["readout"].amplitude = 0.25
-max_amp = 0.49
+# NOTE: 0.49 is for OPX+, 0.99 is for OPX1000
+max_amp = 0.99
 
 tracked_qubits = []
-for qubit in qubits:
+
+for i, qubit in enumerate(qubits):
     with tracked_updates(qubit, auto_revert=False, dont_assign_to_none=True) as qubit:
         qubit.resonator.operations["readout"].amplitude = max_amp
+        # NOTE: is machine being reverted at the end?
+        opx_output_fem_id = qubits[i+1].resonator.opx_output.fem_id
+        opx_output_port_id = qubits[i+1].resonator.opx_output.port_id
+        machine.ports.mw_outputs.con1[opx_output_fem_id][opx_output_port_id].full_scale_power_dbm = node.parameters.max_power_dbm
+        if node.parameters.forced_flux_bias_v is not None:
+            qubit.z.joint_offset = node.parameters.forced_flux_bias_v
         tracked_qubits.append(qubit)
 
 config = machine.generate_config()
-for tracked_qubit in tracked_qubits:
-    tracked_qubit.revert_changes()
 
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
 # amps = np.arange(0.05, 1.00, 0.02)
-amps = np.geomspace(0.01, 1.0, 100)  # 100 points from 0.01 to 1.0, logarithmically spaced
+
+amp_max = 10**(node.parameters.max_power_dbm / node.parameters.max_power_dbm)
+amp_min = 10**(node.parameters.min_power_dbm / node.parameters.max_power_dbm)
+
+amps = np.geomspace(amp_min, amp_max, 100)  # 100 points from 0.01 to 1.0, logarithmically spaced
 
 # The frequency sweep around the resonator resonance frequencies f_opt
 span = node.parameters.frequency_span_in_mhz * u.MHz
@@ -258,7 +271,7 @@ ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 
 def abs_freq(q):
     def foo(freq):
-        return freq + q.resonator.RF_frequency
+        return freq + q.resonator.opx_output.upconverter_frequency + q.resonator.intermediate_frequency
     return foo
 
 def abs_amp(q):
@@ -350,6 +363,11 @@ for q in qubits:
             q.resonator.intermediate_frequency+=int(res_low_power.sel(qubit=q.name).values)
     fit_results[q.name]["RO_amplitude"]=float(rr_pwr.sel(qubit=q.name))
 node.results['resonator_frequency'] = fit_results
+
+# %%
+
+for tracked_qubit in tracked_qubits:
+    tracked_qubit.revert_changes()
 
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()

@@ -4,7 +4,7 @@ from pathlib import Path
 from quam_libs.components import QuAM
 from quam_libs.quam_builder.machine import build_quam
 
-path = r"C:\Users\KevinAVillegasRosale\OneDrive - QM Machines LTD\Documents\GitKraken\CS_installations\configuration\quam_state"
+path = r"C:\Users\daveh\Documents\Cloned Repos\CS_installations\configuration\quam_state"
 
 machine = QuAM.load(path)
 
