@@ -22,7 +22,7 @@ from typing import Optional, Literal, List
 
 
 class Parameters(NodeParameters):
-    target_names: str = 'qubits'
+    targets_name: str = 'qubits'
     qubits: Optional[List[str]] = None
     num_averages: int = 100
     frequency_detuning_in_mhz: float = 4.0
@@ -269,7 +269,7 @@ flux= frequency.flux
 a = {}
 flux_offset = {}
 freq_offset = {}
-for q in machine.active_qubits:
+for q in qubits:
     a[q.name] = float(-1e6*fitvals.sel(qubit = q.name,degree = 2).polyfit_coefficients.values)
     flux_offset[q.name]  = float((-0.5*fitvals.sel(qubit =q.name,degree = 1).polyfit_coefficients/fitvals.sel(qubit = q.name,degree = 2).polyfit_coefficients).values)
     freq_offset[q.name]  = 1e6*float(fitvals.sel(qubit = q.name,degree = 0).polyfit_coefficients.values) - detuning
@@ -307,7 +307,7 @@ node.results['figure'] = grid.fig
 
 # %%
 node.results['fit_results'] = {}
-for q in machine.active_qubits:
+for q in qubits:
     node.results['fit_results'][q.name] = {}
     node.results['fit_results'][q.name]['flux_offset'] = flux_offset[q.name]
     node.results['fit_results'][q.name]['freq_offset'] = freq_offset[q.name]
@@ -324,6 +324,8 @@ with node.record_state_updates():
             raise RuntimeError(f"unknown flux_point")
         qubit.freq_vs_flux_01_quad_term = float(a[qubit.name])
 # %%
+
+node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()
