@@ -106,9 +106,13 @@ max_amp = 0.99
 
 tracked_qubits = []
 
-for qubit in qubits:
+for i, qubit in enumerate(qubits):
     with tracked_updates(qubit, auto_revert=False, dont_assign_to_none=True) as qubit:
         qubit.resonator.operations["readout"].amplitude = max_amp
+        # NOTE: is machine being reverted at the end?
+        opx_output_fem_id = qubits[i+1].resonator.opx_output.fem_id
+        opx_output_port_id = qubits[i+1].resonator.opx_output.port_id
+        machine.ports.mw_outputs.con1[opx_output_fem_id][opx_output_port_id].full_scale_power_dbm = node.parameters.max_power_dbm
         if node.parameters.forced_flux_bias_v is not None:
             qubit.z.joint_offset = node.parameters.forced_flux_bias_v
         tracked_qubits.append(qubit)
@@ -117,11 +121,9 @@ config = machine.generate_config()
 
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
 # amps = np.arange(0.05, 1.00, 0.02)
-opx_output_fem_id = qubits[1].resonator.opx_output.fem_id
-opx_output_port_id = qubits[1].resonator.opx_output.port_id
 
-amp_max = node.parameters.max_power_dbm / machine.ports.mw_outputs.con1[opx_output_fem_id][opx_output_port_id].full_scale_power_dbm
-amp_min = node.parameters.min_power_dbm / machine.ports.mw_outputs.con1[opx_output_fem_id][opx_output_port_id].full_scale_power_dbm
+amp_max = 10**(node.parameters.max_power_dbm / node.parameters.max_power_dbm)
+amp_min = 10**(node.parameters.min_power_dbm / node.parameters.max_power_dbm)
 
 amps = np.geomspace(amp_min, amp_max, 100)  # 100 points from 0.01 to 1.0, logarithmically spaced
 
