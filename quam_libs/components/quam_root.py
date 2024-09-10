@@ -19,12 +19,29 @@ from .transmon_pair import TransmonPair
 from qm.qua import align
 from qm import QuantumMachinesManager, QuantumMachine
 from qualang_tools.results.data_handler import DataHandler
+import toml
 
 from dataclasses import field
 from typing import List, Dict, ClassVar, Any, Optional, Sequence, Union
 
 
 __all__ = ["QuAM", "FEMQuAM", "OPXPlusQuAM"]
+
+
+def _get_quam_state_path() -> Optional[Path]:
+    if "QUAM_STATE_PATH" in os.environ:
+        return os.environ["QUAM_STATE_PATH"]
+
+    config_path = Path.home() / ".qualibrate" / "config.toml"
+    if not config_path.exists():
+        return None
+
+    config = toml.loads(config_path.read_text())
+
+    try:
+        return config["active_machine"]["path"]
+    except KeyError:
+        return None
 
 
 @quam_dataclass
@@ -46,16 +63,18 @@ class QuAM(QuamRoot):
 
     @classmethod
     def load(cls, *args, **kwargs) -> "QuAM":
-        if not args:
-            if "QUAM_STATE_PATH" in os.environ:
-                args = (os.environ["QUAM_STATE_PATH"],)
-            else:
-                raise ValueError(
-                    "No path argument provided to load the QuAM state. "
-                    "Please provide a path or set the 'QUAM_STATE_PATH' environment variable. "
-                    "See the README for instructions."
-                )
-        return super().load(*args, **kwargs)
+        if args:
+            return super().load(*args, **kwargs)
+
+        quam_state_path = _get_quam_state_path()
+        if quam_state_path is None:
+            raise ValueError(
+                "No path argument provided to load the QuAM state. "
+                "Please provide a path or set the 'QUAM_STATE_PATH' environment variable. "
+                "See the README for instructions."
+            )
+
+        return super().load(quam_state_path, **kwargs)
 
     def save(
         self,
@@ -64,8 +83,7 @@ class QuAM(QuamRoot):
         include_defaults: bool = False,
         ignore: Sequence[str] = None,
     ):
-        if path is None and "QUAM_STATE_PATH" in os.environ:
-            path = os.environ["QUAM_STATE_PATH"]
+        path = path or _get_quam_state_path()
 
         super().save(path, content_mapping, include_defaults, ignore)
 
@@ -113,7 +131,9 @@ class QuAM(QuamRoot):
             if q.z is not None:
                 q.z.to_joint_idle()
             else:
-                warnings.warn(f"Didn't find z-element on qubit {q.name}, didn't set to joint-idle")
+                warnings.warn(
+                    f"Didn't find z-element on qubit {q.name}, didn't set to joint-idle"
+                )
         align()
 
     def apply_all_flux_to_min(self) -> None:
@@ -123,7 +143,9 @@ class QuAM(QuamRoot):
             if q.z is not None:
                 q.z.to_min()
             else:
-                warnings.warn(f"Didn't find z-element on qubit {q.name}, didn't set to min")
+                warnings.warn(
+                    f"Didn't find z-element on qubit {q.name}, didn't set to min"
+                )
         align()
 
     def apply_all_flux_to_zero(self) -> None:
@@ -171,7 +193,9 @@ class QuAM(QuamRoot):
             try:
                 self.qubits[name].calibrate_octave(QM)
             except NoCalibrationElements:
-                print(f"No calibration elements found for {name}. Skipping calibration.")
+                print(
+                    f"No calibration elements found for {name}. Skipping calibration."
+                )
 
 
 @quam_dataclass

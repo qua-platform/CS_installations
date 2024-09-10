@@ -2,6 +2,7 @@ import inspect
 from pathlib import Path
 from typing import Optional, Union
 import warnings
+import numpy as np
 
 from qm.qua import *
 from quam_libs.components import QuAM
@@ -12,7 +13,7 @@ __all__ = [
     "apply_all_flux_to_idle",
     "qua_declaration",
     "multiplexed_readout",
-    "node_save",
+    "get_job_results",
 ]
 
 
@@ -49,11 +50,15 @@ def qua_declaration(num_qubits):
     return I, I_st, Q, Q_st, n, n_st
 
 
-def multiplexed_readout(qubits, I, I_st, Q, Q_st, sequential=False, amplitude=1.0, weights=""):
+def multiplexed_readout(
+    qubits, I, I_st, Q, Q_st, sequential=False, amplitude=1.0, weights=""
+):
     """Perform multiplexed readout on two resonators"""
 
     for ind, q in enumerate(qubits):
-        q.resonator.measure("readout", qua_vars=(I[ind], Q[ind]), amplitude_scale=amplitude)
+        q.resonator.measure(
+            "readout", qua_vars=(I[ind], Q[ind]), amplitude_scale=amplitude
+        )
 
         if I_st is not None:
             save(I[ind], I_st[ind])
@@ -64,48 +69,13 @@ def multiplexed_readout(qubits, I, I_st, Q, Q_st, sequential=False, amplitude=1.
             align(q.resonator.name, qubits[ind + 1].resonator.name)
 
 
-def node_save(
-    quam: QuAM,
-    name: str,
-    data: dict,
-    additional_files: Optional[Union[dict, bool]] = None,
+def readout_state(
+    qubit,
+    state,
+    pulse_name: str = "readout",
+    threshold: float = None,
+    save_qua_var: StreamType = None,
 ):
-    # Save results
-    if isinstance(additional_files, dict):
-        quam.data_handler.additional_files = additional_files
-    elif additional_files is True:
-        files = ["../calibration_db.json", "optimal_weights.npz"]
-
-        try:
-            files.append(inspect.currentframe().f_back.f_locals["__file__"])
-        except Exception:
-            warnings.warn("Could not find the script file path to save it in the data folder")
-
-        additional_files = {}
-        for file in files:
-            filepath = Path(file)
-            if not filepath.exists():
-                warnings.warn(f"File {file} does not exist, unable to save file")
-                continue
-            additional_files[str(filepath)] = filepath.name
-    else:
-        additional_files = {}
-    quam.data_handler.additional_files = additional_files
-    quam.data_handler.save_data(data=data, name=name)
-
-    # Save QuAM to the data folder
-    quam.save(
-        path=quam.data_handler.path / "state.json",
-    )
-    quam.save(
-        path=quam.data_handler.path / "quam_state",
-        content_mapping={"wiring.json": {"wiring", "network"}},
-    )
-
-    # Save QuAM to configuration directory / `state.json`
-    quam.save(content_mapping={"wiring.json": {"wiring", "network"}})
-
-def readout_state(qubit , state, pulse_name : str = 'readout', threshold : float = None, save_qua_var : StreamType = None):
     I = declare(fixed)
     Q = declare(fixed)
     if threshold is None:
@@ -113,15 +83,16 @@ def readout_state(qubit , state, pulse_name : str = 'readout', threshold : float
     qubit.resonator.measure(pulse_name, qua_vars=(I, Q))
     assign(state, Cast.to_int(I > threshold))
     wait(qubit.resonator.depletion_time // 4, qubit.resonator.name)
-    
-    
+
+
 def active_reset(
     quam: QuAM,
     name: str,
     save_qua_var: Optional[StreamType] = None,
     pi_pulse_name: str = "x180",
-    readout_pulse_name: str = "readout"):
-    
+    readout_pulse_name: str = "readout",
+):
+
     qubit = quam.qubits[name]
     pulse = qubit.resonator.operations[readout_pulse_name]
 
@@ -144,7 +115,17 @@ def active_reset(
         qubit.xy.play(pi_pulse_name, condition=state)
         qubit.align()
         assign(attempts, attempts + 1)
-    wait(500,qubit.xy.name)
-    qubit.align()    
+    wait(500, qubit.xy.name)
+    qubit.align()
     if save_qua_var is not None:
         save(attempts, save_qua_var)
+
+
+def get_job_results(job):
+    results = {}
+    for key, value in job.result_handles.items():
+        result = value.fetch_all()
+        if isinstance(result, np.int64):
+            result = int(result)
+        results[key] = result
+    return results
