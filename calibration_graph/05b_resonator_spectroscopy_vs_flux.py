@@ -341,11 +341,11 @@ node.results["figure"] = grid.fig
 fit_results = {}
 for q in qubits:
     fit_results[q.name] = {}
-    fit_results[q.name]["resonator_frequency"] = rel_freq_shift.sel(qubit = q.name).values + q.resonator.opx_output.upconverter_frequency + q.resonator.intermediate_frequency
+    fit_results[q.name]["resonator_frequency"] = rel_freq_shift.sel(qubit = q.name).values + q.resonator.RF_frequency
     fit_results[q.name]['min_offset'] = float(flux_min.sel(qubit=q.name).data)
     fit_results[q.name]['offset'] = float(idle_offset.sel(qubit=q.name).data)
     fit_results[q.name]['dv_phi0'] = 1/fit_osc.sel(fit_vals='f', qubit=q.name).values
-    fit_results[q.name]['m_pH'] = (1e12) * (2.068e-15) / ((1/fit_osc.sel(fit_vals='f', qubit=q.name).values) / node.parameters.line_impedance_in_ohm)
+    fit_results[q.name]['m_pH'] = (1e12) * (2.068e-15) / ((1/fit_osc.sel(fit_vals='f', qubit=q.name).values) / node.parameters.input_line_impedance_in_ohm * attenuation_factor)
 node.results['fit_results'] = fit_results
 
 # %%
@@ -362,7 +362,7 @@ with node.record_state_updates():
                 q.z.min_offset = float(flux_min.sel(qubit=q.name).data)
         q.resonator.intermediate_frequency += float(rel_freq_shift.sel(qubit=q.name).data)
         q.phi0_voltage = fit_results[q.name]['dv_phi0']
-        q.phi0_current = fit_results[q.name]['dv_phi0'] * node.parameters.line_impedance_in_ohm
+        q.phi0_current = fit_results[q.name]['dv_phi0'] * node.parameters.input_line_impedance_in_ohm * attenuation_factor
 # %%
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
