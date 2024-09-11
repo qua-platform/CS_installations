@@ -2,6 +2,7 @@ from quam.core import quam_dataclass
 from quam.components.channels import IQChannel, Pulse
 from quam import QuamComponent
 from .flux_line import FluxLine
+from .xy_line import XYLine
 from .readout_resonator import ReadoutResonator
 from qualang_tools.octave_tools import octave_calibration_tool
 from qm import QuantumMachine, logger
@@ -32,7 +33,7 @@ class Transmon(QuamComponent):
 
     id: Union[int, str]
 
-    xy: IQChannel = None
+    xy: XYLine = None
     z: FluxLine = None
     resonator: ReadoutResonator = None
 

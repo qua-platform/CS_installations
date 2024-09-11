@@ -20,20 +20,19 @@ Next steps before going to the next node:
     - Save the current state by calling machine.save("quam")
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    qubits: Optional[List[str]] = None
+    targets_name: str = "qubits"
     num_runs: int = 2000
-    reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
-    flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
+    flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     simulate: bool = False
 
-node = QualibrationNode(
-    name="07a_IQ_Blobs",
-    parameters_class=Parameters
-)
+
+node = QualibrationNode(name="07a_IQ_Blobs", parameters_class=Parameters)
 
 node.parameters = Parameters()
 
@@ -73,10 +72,10 @@ octave_config = machine.get_octave_config()
 qmm = machine.connect()
 
 # Get the relevant QuAM components
-if node.parameters.qubits is None or node.parameters.qubits == '':
+if node.parameters.qubits is None or node.parameters.qubits == "":
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
 # %%
 ###################
@@ -100,19 +99,19 @@ with program() as iq_blobs:
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
-            
+
         for qb in qubits:
             wait(1000, qb.z.name)
-        
+
         align()
-        
+
         with for_(n, 0, n < n_runs, n + 1):
             # ground iq blobs for all qubits
             save(n, n_st)
             if reset_type == "active":
                 active_reset(machine, qubit.name)
             elif reset_type == "thermal":
-                wait(5*machine.thermalization_time * u.ns)
+                wait(5 * machine.thermalization_time * u.ns)
             else:
                 raise ValueError(f"Unrecognized reset type {reset_type}.")
 
@@ -122,15 +121,15 @@ with program() as iq_blobs:
             # save data
             save(I_g[i], I_g_st[i])
             save(Q_g[i], Q_g_st[i])
-            
+
             if reset_type == "active":
                 active_reset(machine, qubit.name)
             elif reset_type == "thermal":
-                wait(5*machine.thermalization_time * u.ns)
+                wait(5 * machine.thermalization_time * u.ns)
             else:
                 raise ValueError(f"Unrecognized reset type {reset_type}.")
             align()
-            qubit.xy.play('x180')
+            qubit.xy.play("x180")
             align()
             qubit.resonator.measure("readout", qua_vars=(I_e[i], Q_e[i]))
             align()
@@ -138,7 +137,6 @@ with program() as iq_blobs:
             save(Q_e[i], Q_e_st[i])
 
         align()
-            
 
     with stream_processing():
         n_st.save("n")
@@ -169,11 +167,13 @@ else:
     # Calibrate the active qubits
     # machine.calibrate_octave_ports(qm)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(iq_blobs, flags=['auto-element-thread'])
+    job = qm.execute(iq_blobs, flags=["auto-element-thread"])
 
     for i in range(num_qubits):
         print(f"Fetching results for qubit {qubits[i].name}")
-        data_list = sum([[f"I_g{i + 1}", f"Q_g{i + 1}",f"I_e{i + 1}", f"Q_e{i + 1}"] ], ["n"])
+        data_list = sum(
+            [[f"I_g{i + 1}", f"Q_g{i + 1}", f"I_e{i + 1}", f"Q_e{i + 1}"]], ["n"]
+        )
         results = fetching_tool(job, data_list, mode="live")
         while results.is_processing():
             fetched_data = results.fetch_all()
@@ -240,16 +240,18 @@ def extract_value(element):
     if isinstance(element, tuple):
         return element[0]
     return element
+
+
 ds = xr.apply_ufunc(
     extract_value,
     ds,
     vectorize=True,  # This ensures the function is applied element-wise
-    dask='parallelized',  # This allows for parallel processing
-    output_dtypes=[float]  # Specify the output data type
+    dask="parallelized",  # This allows for parallel processing
+    output_dtypes=[float],  # Specify the output data type
 )
 
 node.results = {}
-node.results['ds'] = ds
+node.results["ds"] = ds
 
 # %%
 node.results["figs"] = {}
@@ -257,8 +259,17 @@ node.results["results"] = {}
 
 plot_indvidual = False
 for q in qubits:
-    angle, threshold, fidelity, gg, ge, eg, ee = two_state_discriminator(ds.I_g.sel(qubit = q.name), ds.Q_g.sel(qubit = q.name), ds.I_e.sel(qubit = q.name), ds.Q_e.sel(qubit = q.name), True, b_plot=plot_indvidual)
-    I_rot = ds.I_g.sel(qubit = q.name) * np.cos(angle) - ds.Q_g.sel(qubit = q.name) * np.sin(angle)
+    angle, threshold, fidelity, gg, ge, eg, ee = two_state_discriminator(
+        ds.I_g.sel(qubit=q.name),
+        ds.Q_g.sel(qubit=q.name),
+        ds.I_e.sel(qubit=q.name),
+        ds.Q_e.sel(qubit=q.name),
+        True,
+        b_plot=plot_indvidual,
+    )
+    I_rot = ds.I_g.sel(qubit=q.name) * np.cos(angle) - ds.Q_g.sel(
+        qubit=q.name
+    ) * np.sin(angle)
     hist = np.histogram(I_rot, bins=100)
     RUS_threshold = hist[1][1:][np.argmax(hist[0])]
     if plot_indvidual:
@@ -273,29 +284,71 @@ for q in qubits:
     node.results["results"][q.name]["rus_threshold"] = float(RUS_threshold)
 
 # %%
-grid_names = [f'{q.name}_0' for q in qubits]
+grid_names = [f"{q.name}_0" for q in qubits]
 grid = QubitGrid(ds, grid_names)
 for ax, qubit in grid_iter(grid):
     n_avg = n_runs // 2
-    qn = qubit['qubit']
-    ax.plot(1e3*(ds.I_g.sel(qubit =qn) * np.cos(node.results["results"][qn]["angle"]) - ds.Q_g.sel(qubit =qn) * np.sin(node.results["results"][qn]["angle"])), 1e3*(ds.I_g.sel(qubit =qn) * np.sin(node.results["results"][qn]["angle"]) + ds.Q_g.sel(qubit =qn) * np.cos(node.results["results"][qn]["angle"])), ".", alpha=0.1, label="Ground", markersize=1)
-    ax.plot(1e3 * (ds.I_e.sel(qubit =qn) * np.cos(node.results["results"][qn]["angle"]) - ds.Q_e.sel(qubit =qn) * np.sin(node.results["results"][qn]["angle"])), 1e3 * (ds.I_e.sel(qubit =qn) * np.sin(node.results["results"][qn]["angle"]) + ds.Q_e.sel(qubit =qn) * np.cos(node.results["results"][qn]["angle"])), ".", alpha=0.1, label="Excited", markersize=1)
-    ax.axvline(1e3 * node.results["results"][qn]["rus_threshold"], color="k", linestyle="--", lw = 0.5, label="RUS Threshold")
-    ax.axvline(1e3 * node.results["results"][qn]["threshold"], color="r", linestyle="--", lw = 0.5, label="Threshold")
+    qn = qubit["qubit"]
+    ax.plot(
+        1e3
+        * (
+            ds.I_g.sel(qubit=qn) * np.cos(node.results["results"][qn]["angle"])
+            - ds.Q_g.sel(qubit=qn) * np.sin(node.results["results"][qn]["angle"])
+        ),
+        1e3
+        * (
+            ds.I_g.sel(qubit=qn) * np.sin(node.results["results"][qn]["angle"])
+            + ds.Q_g.sel(qubit=qn) * np.cos(node.results["results"][qn]["angle"])
+        ),
+        ".",
+        alpha=0.1,
+        label="Ground",
+        markersize=1,
+    )
+    ax.plot(
+        1e3
+        * (
+            ds.I_e.sel(qubit=qn) * np.cos(node.results["results"][qn]["angle"])
+            - ds.Q_e.sel(qubit=qn) * np.sin(node.results["results"][qn]["angle"])
+        ),
+        1e3
+        * (
+            ds.I_e.sel(qubit=qn) * np.sin(node.results["results"][qn]["angle"])
+            + ds.Q_e.sel(qubit=qn) * np.cos(node.results["results"][qn]["angle"])
+        ),
+        ".",
+        alpha=0.1,
+        label="Excited",
+        markersize=1,
+    )
+    ax.axvline(
+        1e3 * node.results["results"][qn]["rus_threshold"],
+        color="k",
+        linestyle="--",
+        lw=0.5,
+        label="RUS Threshold",
+    )
+    ax.axvline(
+        1e3 * node.results["results"][qn]["threshold"],
+        color="r",
+        linestyle="--",
+        lw=0.5,
+        label="Threshold",
+    )
     ax.axis("equal")
     ax.set_xlabel("I [mV]")
     ax.set_ylabel("Q [mV]")
-    ax.set_title(qubit['qubit'])
+    ax.set_title(qubit["qubit"])
 
-ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-grid.fig.suptitle('g.s. and e.s. discriminators (rotated)')
+ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+grid.fig.suptitle("g.s. and e.s. discriminators (rotated)")
 plt.tight_layout()
-node.results['figure_IQ_blobs'] = grid.fig
+node.results["figure_IQ_blobs"] = grid.fig
 
 
 grid = QubitGrid(ds, grid_names)
 for ax, qubit in grid_iter(grid):
-    confusion = node.results["results"][qubit['qubit']]["confusion_matrix"]
+    confusion = node.results["results"][qubit["qubit"]]["confusion_matrix"]
     ax.imshow(confusion)
     ax.set_xticks([0, 1])
     ax.set_yticks([0, 1])
@@ -307,24 +360,31 @@ for ax, qubit in grid_iter(grid):
     ax.text(1, 0, f"{100 * confusion[0][1]:.1f}%", ha="center", va="center", color="w")
     ax.text(0, 1, f"{100 * confusion[1][0]:.1f}%", ha="center", va="center", color="w")
     ax.text(1, 1, f"{100 * confusion[1][1]:.1f}%", ha="center", va="center", color="k")
-    ax.set_title(qubit['qubit'])
+    ax.set_title(qubit["qubit"])
 
-grid.fig.suptitle('g.s. and e.s. fidelities')
+grid.fig.suptitle("g.s. and e.s. fidelities")
 plt.tight_layout()
 plt.show()
-node.results['figure_fidelities'] = grid.fig
+node.results["figure_fidelities"] = grid.fig
 
 # %%
 with node.record_state_updates():
     for qubit in qubits:
-        qubit.resonator.operations["readout"].integration_weights_angle -= float(node.results["results"][qubit.name]["angle"])
-        qubit.resonator.operations["readout"].threshold = float(node.results["results"][qubit.name]["threshold"])
+        qubit.resonator.operations["readout"].integration_weights_angle -= float(
+            node.results["results"][qubit.name]["angle"]
+        )
+        qubit.resonator.operations["readout"].threshold = float(
+            node.results["results"][qubit.name]["threshold"]
+        )
         # to add conf matrix  to the readout operation rather than the resonator
-        qubit.resonator.operations["readout"].rus_exit_threshold = float(node.results["results"][qubit.name]["rus_threshold"])
+        qubit.resonator.operations["readout"].rus_exit_threshold = float(
+            node.results["results"][qubit.name]["rus_threshold"]
+        )
         # qubit.resonator.confusion_matrix = data["results"][qubit.name]["confusion_matrix"]
 
 # %%
-node.results['initial_parameters'] = node.parameters.model_dump()
+node.results["initial_parameters"] = node.parameters.model_dump()
+node.outcomes = {q: "successful" for q in node.parameters.qubits}
 node.machine = machine
 node.save()
 # %%

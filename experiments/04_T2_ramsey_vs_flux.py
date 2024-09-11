@@ -18,25 +18,24 @@ Next steps before going to the next node:
     - Save the current state by calling machine.save("quam")
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    qubits: Optional[List[str]] = None
+    targets_name: str = "qubits"
     num_averages: int = 200
     frequency_detuning_in_mhz: float = 1.0
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 10000
     wait_time_step_in_ns: int = 100
-    flux_span : float = 0.05
-    flux_step : float = 0.002
-    flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
+    flux_span: float = 0.05
+    flux_step: float = 0.002
+    flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     simulate: bool = False
 
-node = QualibrationNode(
-    name="08a_Ramsey_flux_cal",
-    parameters_class=Parameters
-)
+
+node = QualibrationNode(name="08a_Ramsey_flux_cal", parameters_class=Parameters)
 
 node.parameters = Parameters()
 
@@ -48,7 +47,13 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array, get_equivalent_log_array
 from qualang_tools.units import unit
 from quam_libs.components import QuAM
-from quam_libs.macros import qua_declaration, multiplexed_readout, node_save, active_reset, readout_state
+from quam_libs.macros import (
+    qua_declaration,
+    multiplexed_readout,
+    node_save,
+    active_reset,
+    readout_state,
+)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -78,7 +83,7 @@ qmm = machine.connect()
 if node.parameters.qubits is None:
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.split(', ')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
 # %%
 ###################
@@ -96,7 +101,11 @@ idle_times = np.arange(
 # Detuning converted into virtual Z-rotations to observe Ramsey oscillation and get the qubit frequency
 detuning = int(1e6 * node.parameters.frequency_detuning_in_mhz)
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
-dcs = np.arange(-node.parameters.flux_span / 2, node.parameters.flux_span / 2+0.001, step = node.parameters.flux_step)
+dcs = np.arange(
+    -node.parameters.flux_span / 2,
+    node.parameters.flux_span / 2 + 0.001,
+    step=node.parameters.flux_step,
+)
 quads = {qubit.name: int(qubit.freq_vs_flux_01_quad_term * 1e-6) for qubit in qubits}
 # %%
 with program() as ramsey:
@@ -105,11 +114,15 @@ with program() as ramsey:
     state = [declare(int) for _ in range(num_qubits)]
     state_st = [declare_stream() for _ in range(num_qubits)]
     t = declare(int)  # QUA variable for the idle time
-    phi = declare(fixed)  # QUA variable for dephasing the second pi/2 pulse (virtual Z-rotation)
-    phi2 = declare(fixed)  # QUA variable for correcting the flux effect on the phase (virtual Z-rotation)
+    phi = declare(
+        fixed
+    )  # QUA variable for dephasing the second pi/2 pulse (virtual Z-rotation)
+    phi2 = declare(
+        fixed
+    )  # QUA variable for correcting the flux effect on the phase (virtual Z-rotation)
     freq = declare(int)
     dc = declare(fixed)  # QUA variable for the flux dc level
-    
+
     for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the minimum frequency point
@@ -123,7 +136,7 @@ with program() as ramsey:
 
         for qubit in qubits:
             wait(1000, qubit.z.name)
-        
+
         align()
 
         with for_(n, 0, n < n_avg, n + 1):
@@ -134,16 +147,16 @@ with program() as ramsey:
                     qubit.align()
                     # Rotate the frame of the second x90 gate to implement a virtual Z-rotation
                     # 4*tau because tau was in clock cycles and 1e-9 because tau is ns
-                    assign(phi, Cast.mul_fixed_by_int(detuning * 1e-9, 4 * t ))
-                    assign(freq, Cast.mul_int_by_fixed(quads[qubit.name],dc*dc ))
+                    assign(phi, Cast.mul_fixed_by_int(detuning * 1e-9, 4 * t))
+                    assign(freq, Cast.mul_int_by_fixed(quads[qubit.name], dc * dc))
                     assign(phi2, Cast.mul_fixed_by_int(1e-3, 4 * t * freq))
-                    assign(phi, phi2-phi)
+                    assign(phi, phi2 - phi)
                     align()
                     # Strict_timing ensures that the sequence will be played without gaps
-                                      
+
                     qubit.xy.play("x90")
                     qubit.xy.frame_rotation_2pi(phi)
-                    qubit.z.play("const", amplitude_scale = dc / 0.1, duration=t)
+                    qubit.z.play("const", amplitude_scale=dc / 0.1, duration=t)
                     wait(10, qubit.z.name)
                     qubit.align()
                     qubit.xy.play("x90")
@@ -154,17 +167,19 @@ with program() as ramsey:
                     readout_state(qubit, state[i])
                     assign(state[i], init_state ^ state[i])
                     save(state[i], state_st[i])
-                    
+
                     # Reset the frame of the qubits in order not to accumulate rotations
                     reset_frame(qubit.xy.name)
                     qubit.align()
-        
+
         align()
 
     with stream_processing():
         n_st.save("n")
         for i in range(num_qubits):
-            state_st[i].buffer(len(idle_times)).buffer(len(dcs)).average().save(f"state{i + 1}")
+            state_st[i].buffer(len(idle_times)).buffer(len(dcs)).average().save(
+                f"state{i + 1}"
+            )
 
 
 ###########################
@@ -180,7 +195,7 @@ if simulate:
     node.results = {"figure": plt.gcf()}
 else:
     # Open the quantum machine
-    qm = qmm.open_qm(config,keep_dc_offsets_when_closing=False)
+    qm = qmm.open_qm(config, keep_dc_offsets_when_closing=False)
     # Calibrate the active qubits
     # machine.calibrate_octave_ports(qm)
     # Send the QUA program to the OPX, which compiles and executes it
@@ -190,70 +205,70 @@ else:
         print(f"Fetching results for qubit {qubits[i].name}")
         data_list = ["n"] + sum([[f"state{i + 1}"] for i in range(num_qubits)], [])
         results = fetching_tool(job, data_list, mode="live")
-    # Live plotting
-    # fig, axes = plt.subplots(2, num_qubits, figsize=(4 * num_qubits, 8))
-    # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+        # Live plotting
+        # fig, axes = plt.subplots(2, num_qubits, figsize=(4 * num_qubits, 8))
+        # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
         while results.is_processing():
-        # Fetch results
+            # Fetch results
             fetched_data = results.fetch_all()
             n = fetched_data[0]
 
             progress_counter(n, n_avg, start_time=results.start_time)
-            
+
     qm.close()
 
 # %%
 # %%
 if not simulate:
     handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"idle_time": idle_times, "flux": dcs})
+    ds = fetch_results_as_xarray(
+        handles, qubits, {"idle_time": idle_times, "flux": dcs}
+    )
 
     node.results = {}
-    node.results['ds'] = ds
+    node.results["ds"] = ds
 # %%
 if not simulate:
-    ds = ds.assign_coords(idle_time=4*ds.idle_time/1e3)  # convert to usec
-    ds.flux.attrs = {'long_name': 'flux', 'units': 'V'}
-    ds.idle_time.attrs = {'long_name': 'idle time', 'units': 'usec'}
+    ds = ds.assign_coords(idle_time=4 * ds.idle_time / 1e3)  # convert to usec
+    ds.flux.attrs = {"long_name": "flux", "units": "V"}
+    ds.idle_time.attrs = {"long_name": "idle time", "units": "usec"}
 
-    
+
 # %%
 if not simulate:
-    fit_data = fit_oscillation_decay_exp(ds.state, 'idle_time')
-    fit_data.attrs = {'long_name' : 'time', 'units' : 'usec'}
-    fitted =  oscillation_decay_exp(ds.state.idle_time,
-                                                    fit_data.sel(
-                                                        fit_vals="a"),
-                                                    fit_data.sel(
-                                                        fit_vals="f"),
-                                                    fit_data.sel(
-                                                        fit_vals="phi"),
-                                                    fit_data.sel(
-                                                        fit_vals="offset"),
-                                                    fit_data.sel(fit_vals="decay"))
+    fit_data = fit_oscillation_decay_exp(ds.state, "idle_time")
+    fit_data.attrs = {"long_name": "time", "units": "usec"}
+    fitted = oscillation_decay_exp(
+        ds.state.idle_time,
+        fit_data.sel(fit_vals="a"),
+        fit_data.sel(fit_vals="f"),
+        fit_data.sel(fit_vals="phi"),
+        fit_data.sel(fit_vals="offset"),
+        fit_data.sel(fit_vals="decay"),
+    )
 
-    frequency = fit_data.sel(fit_vals = 'f')
-    frequency.attrs = {'long_name' : 'frequency', 'units' : 'MHz'}
+    frequency = fit_data.sel(fit_vals="f")
+    frequency.attrs = {"long_name": "frequency", "units": "MHz"}
 
-    decay = fit_data.sel(fit_vals = 'decay')
-    decay.attrs = {'long_name' : 'decay', 'units' : 'nSec'}
+    decay = fit_data.sel(fit_vals="decay")
+    decay.attrs = {"long_name": "decay", "units": "nSec"}
 
-    tau = 1/fit_data.sel(fit_vals='decay')
-    tau.attrs = {'long_name' : 'T2*', 'units' : 'uSec'}
+    tau = 1 / fit_data.sel(fit_vals="decay")
+    tau.attrs = {"long_name": "T2*", "units": "uSec"}
 
-    frequency = frequency.where(frequency>0,drop = True)
+    frequency = frequency.where(frequency > 0, drop=True)
 
-    decay = fit_data.sel(fit_vals = 'decay')
-    decay.attrs = {'long_name' : 'decay', 'units' : 'nSec'}
+    decay = fit_data.sel(fit_vals="decay")
+    decay.attrs = {"long_name": "decay", "units": "nSec"}
 
-    decay_res = fit_data.sel(fit_vals = 'decay_decay')
-    decay_res.attrs = {'long_name' : 'decay', 'units' : 'nSec'}
-    
-    tau = 1/fit_data.sel(fit_vals='decay')
-    tau.attrs = {'long_name' : 'T2*', 'units' : 'uSec'}
+    decay_res = fit_data.sel(fit_vals="decay_decay")
+    decay_res.attrs = {"long_name": "decay", "units": "nSec"}
 
-    tau_error = tau * (np.sqrt(decay_res)/decay)
-    tau_error.attrs = {'long_name' : 'T2* error', 'units' : 'uSec'}
+    tau = 1 / fit_data.sel(fit_vals="decay")
+    tau.attrs = {"long_name": "T2*", "units": "uSec"}
+
+    tau_error = tau * (np.sqrt(decay_res) / decay)
+    tau_error.attrs = {"long_name": "T2* error", "units": "uSec"}
 
     # fitvals = frequency.polyfit(dim = 'flux', deg = 2)
     # flux= frequency.flux
@@ -263,47 +278,53 @@ if not simulate:
     # for q in machine.active_qubits:
     #     a[q.name] = float(-1e6*fitvals.sel(qubit = q.name,degree = 2).polyfit_coefficients.values)
     #     flux_offset[q.name]  = float((-0.5*fitvals.sel(qubit =q.name,degree = 1).polyfit_coefficients/fitvals.sel(qubit = q.name,degree = 2).polyfit_coefficients).values)
-    #     freq_offset[q.name]  = 1e6*float(fitvals.sel(qubit = q.name,degree = 0).polyfit_coefficients.values) - detuning    
+    #     freq_offset[q.name]  = 1e6*float(fitvals.sel(qubit = q.name,degree = 0).polyfit_coefficients.values) - detuning
 
 # %%
 if not simulate:
-    grid_names = [f'{q.name}_0' for q in qubits]
+    grid_names = [f"{q.name}_0" for q in qubits]
     grid = QubitGrid(ds, grid_names)
     for ax, qubit in grid_iter(grid):
-        ds.sel(qubit = qubit['qubit']).state.plot(ax = ax)
-        ax.set_title(qubit['qubit'])
-        ax.set_xlabel('Idle_time (uS)')
-        ax.set_ylabel(' Flux (V)')
-    grid.fig.suptitle('Ramsey freq. Vs. flux')
+        ds.sel(qubit=qubit["qubit"]).state.plot(ax=ax)
+        ax.set_title(qubit["qubit"])
+        ax.set_xlabel("Idle_time (uS)")
+        ax.set_ylabel(" Flux (V)")
+    grid.fig.suptitle("Ramsey freq. Vs. flux")
     plt.tight_layout()
     plt.show()
-    node.results['figure_raw'] = grid.fig
+    node.results["figure_raw"] = grid.fig
 
-    grid_names = [f'{q.name}_0' for q in qubits]
+    grid_names = [f"{q.name}_0" for q in qubits]
     grid = QubitGrid(ds, grid_names)
     for ax, qubit in grid_iter(grid):
-        tau_data = tau.sel(qubit = qubit['qubit'])
+        tau_data = tau.sel(qubit=qubit["qubit"])
         flux_data = tau_data.flux
-        ax.errorbar(flux_data, tau_data, 
-                    yerr=tau_error.sel(qubit = qubit['qubit']), 
-                    fmt='o-', capsize=5)
-        ax.set_title(qubit['qubit'])
-        ax.set_ylabel('T1 (uS)')
-        ax.set_xlabel(' Flux (V)')
+        ax.errorbar(
+            flux_data,
+            tau_data,
+            yerr=tau_error.sel(qubit=qubit["qubit"]),
+            fmt="o-",
+            capsize=5,
+        )
+        ax.set_title(qubit["qubit"])
+        ax.set_ylabel("T1 (uS)")
+        ax.set_xlabel(" Flux (V)")
         ax.set_ylim(0, 40)
-    grid.fig.suptitle('T1. Vs. flux')
+    grid.fig.suptitle("T1. Vs. flux")
     plt.tight_layout()
     plt.show()
-    node.results['figure'] = grid.fig
+    node.results["figure"] = grid.fig
 
 # %%
-# node.results['initial_parameters'] = node.parameters.model_dump()
-# node.machine = machine
-# node.save()
+node.outcomes = {q: "successful" for q in node.parameters.qubits}
+node.results["initial_parameters"] = node.parameters.model_dump()
+node.machine = machine
+node.save()
 # # %%
 # %%
 from importlib import reload
 from quam_libs.lib import fit
+
 reload(fit)
 from quam_libs.lib.fit import oscillation_decay_exp, fit_oscillation_decay_exp
 

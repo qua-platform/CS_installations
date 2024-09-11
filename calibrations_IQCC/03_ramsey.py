@@ -13,18 +13,19 @@ from quam_libs.execute import execute_local, execute_IQCC
 
 class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
-    num_averages: int = 500
-    operation: str = "saturation"
-    operation_amplitude_factor: Optional[float] = 0.01
+    num_averages: int = 250
+    operation: str = "x90_DragCosine"
+
     operation_length: Optional[int] = None
-    frequency_span: float = 20e6
-    frequency_step: float = 0.25e6
-    execution_mode: str = "IQCC"
+
+    tau_min: float = 16
+    tau_max: float = 10000
+    tau_step: float = 20
 
 
-node = QualibrationNode(name="qubit_spectroscopy", parameters_class=Parameters)
+node = QualibrationNode(name="ramsey", parameters_class=Parameters)
 
-node.parameters = params = Parameters(qubits=["q0"])
+node.parameters = params = Parameters(qubits=["q1"])
 
 
 # %% Load QuAM and create program
@@ -38,33 +39,30 @@ machine = QuAM.load()
 # Get the relevant QuAM components
 qubit = machine.qubits[node.parameters.qubits[0]]
 
+# Generate the OPX and Octave configurations
+config = machine.generate_config()
+
 # Qubit detuning sweep with respect to their resonance frequencies
-frequency_shifts = np.arange(
-    -params.frequency_span // 2,
-    params.frequency_span // 2,
-    params.frequency_step,
-)
+tau_vals = np.arange(params.tau_min // 4, params.tau_max // 4, params.tau_step // 4)
 
 with program() as prog:
     n = declare(int)
+    n_st = declare_stream()
     I_st = declare_stream()
     Q_st = declare_stream()
-    df = declare(int)  # QUA variable for the qubit frequency
+    tau = declare(int)  # QUA variable for the qubit frequency
 
     machine.apply_all_flux_to_joint_idle()
 
     qubit.wait(1000)
     with for_(n, 0, n < params.num_averages, n + 1):
-        with for_(*from_array(df, frequency_shifts)):
-            # Update the qubit frequency
-            qubit.xy.update_frequency(df + qubit.xy.intermediate_frequency)
+        save(n, n_st)
+        with for_(*from_array(tau, tau_vals)):
+            with strict_timing_():
+                qubit.xy.play(params.operation)
+                qubit.xy.wait(tau)
+                qubit.xy.play(params.operation)
 
-            # Play the saturation pulse
-            qubit.xy.play(
-                params.operation,
-                amplitude_scale=params.operation_amplitude_factor,
-                duration=params.operation_length,
-            )
             qubit.align()
 
             I, Q = qubit.resonator.measure("readout")
@@ -79,22 +77,20 @@ with program() as prog:
     qubit.align()
 
     with stream_processing():
-        I_st.buffer(len(frequency_shifts)).average().save("I")
-        Q_st.buffer(len(frequency_shifts)).average().save("Q")
+        n_st.save("n")
+        I_st.buffer(len(tau_vals)).average().save("I")
+        Q_st.buffer(len(tau_vals)).average().save("Q")
 
-# %% Run program, either on IQCC or locally
-if params.execution_mode == "IQCC":
-    import os
+# %% Run on IQCC
+results = execute_IQCC(prog, machine, debug=True)
 
-    os.chdir("/Users/serwan/Repositories/CS_installations")
-    results = execute_IQCC(prog, machine, debug=False)
-else:
-    results = execute_local(prog, machine, close_other_machines=True)
+# %% Run Program
+results = execute_local(prog, machine)
 
 # %% Fetch results and plot
 fig, ax = plt.subplots()
-ax.plot(frequency_shifts, results["I"])
-ax.plot(frequency_shifts, results["Q"])
+ax.plot(tau_vals, results["I"])
+ax.plot(tau_vals, results["Q"])
 
 # %% Save results
 node.results = {**results, "fig": fig}

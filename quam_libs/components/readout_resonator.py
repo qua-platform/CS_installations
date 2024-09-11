@@ -1,5 +1,6 @@
 from quam.core import quam_dataclass
 from quam.components.channels import InOutIQChannel, InOutMWChannel
+from typing import List, Optional
 
 __all__ = ["ReadoutResonator", "ReadoutResonatorIQ", "ReadoutResonatorMW"]
 
@@ -19,18 +20,22 @@ class ReadoutResonatorBase:
     f_01: float = None
     f_12: float = None
     confusion_matrix: list = None
-    
-    gef_centers : list = None
-    gef_confusion_matrix : list = None
+
+    gef_centers: list = None
+    gef_confusion_matrix: list = None
 
 
 @quam_dataclass
 class ReadoutResonatorIQ(InOutIQChannel, ReadoutResonatorBase):
-    time_of_flight = 28  # smallest deviation from default (24ns) to work with Qualibrate
+    time_of_flight = (
+        28  # smallest deviation from default (24ns) to work with Qualibrate
+    )
+    mixer_calibration: Optional[List[float]] = None
 
     @property
     def upconverter_frequency(self):
         return self.LO_frequency
+
 
 @quam_dataclass
 class ReadoutResonatorMW(InOutMWChannel, ReadoutResonatorBase):
@@ -42,4 +47,3 @@ class ReadoutResonatorMW(InOutMWChannel, ReadoutResonatorBase):
 
 
 ReadoutResonator = ReadoutResonatorIQ
-

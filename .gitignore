@@ -4,3 +4,7 @@ __pycache__
 quam_state
 calibration_db.json
 qua_config.json
+jwt_create.py
+*token.txt
+*.whl
+tempCodeRunnerFile.py
