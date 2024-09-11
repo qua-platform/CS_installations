@@ -18,6 +18,7 @@ class FluxLine(SingleChannel):
     independent_offset: float = 0.0
     joint_offset: float = 0.0
     min_offset: float = 0.0
+    arbitrary_offset: float = 0.0
     
     quad_term: float = 0.0
 

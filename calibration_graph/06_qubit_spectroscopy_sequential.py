@@ -38,8 +38,10 @@ class Parameters(NodeParameters):
     operation_len_in_ns: Optional[int] = None
     frequency_span_in_mhz: float = 20
     frequency_step_in_mhz: float = 0.25
-    flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
+    flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "joint"
     target_peak_width: Optional[int] = None
+    arbitrary_flux_bias: float = 0.0
+    arbitrary_qubit_frequency: float = 0.0
     simulate: bool = False
 
 node = QualibrationNode(
@@ -105,7 +107,7 @@ else:
 span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span//2, +span//2, step, dtype=np.int32)
-flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
+flux_point = node.parameters.flux_point_joint_or_independent_or_arbitrary  # 'independent' or 'joint' or 'arbitrary'
 cooldown_time = max(q.resonator.depletion_time for q in qubits)
 
 
@@ -124,7 +126,7 @@ with program() as qubit_spec:
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
             qubit.z.to_independent_idle()
-        elif flux_point == "joint":
+        elif flux_point == "joint" or "arbitrary":
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
@@ -137,8 +139,16 @@ with program() as qubit_spec:
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_(*from_array(df, dfs)):
-                # Update the qubit frequency
-                qubit.xy.update_frequency(df + + qubit.xy.intermediate_frequency)
+
+                if flux_point == "arbitrary":
+                    qubit.z.set_dc_offset(node.parameters.arbitrary_flux_bias)
+                    qubit.xy.update_frequency(df + int(node.parameters.arbitrary_qubit_frequency - qubit.xy.opx_output.upconverter_frequency))
+                    wait(250)  # Wait for the flux to settle
+                else:
+                    # Update the qubit frequency
+                    qubit.xy.update_frequency(df + qubit.xy.intermediate_frequency)
+
+                qubit.align()
 
                 # Play the saturation pulse
                 qubit.xy.play(
@@ -146,11 +156,21 @@ with program() as qubit_spec:
                     amplitude_scale=operation_amp,
                     duration=operation_len,
                 )
-                align(qubit.xy.name, qubit.resonator.name)
+
+                qubit.xy.wait(250)
+
+                qubit.align()
+
+                if flux_point == "arbitrary":
+                    wait(250, qubit.z.name)  # Wait for the flux to settle
+                    qubit.z.set_dc_offset(qubit.z.joint_offset)
+                    wait(250, qubit.z.name)  # Wait for the flux to settle
+                    qubit.align()
 
                 # # QUA macro the readout the state of the active resonators (defined in macros.py)
                 # multiplexed_readout(qubits, I, I_st, Q, Q_st, sequential=False)
                 # readout the resonator
+                qubit.resonator.wait(250)
                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
 
                 # Wait for the qubit to decay to the ground state
@@ -246,8 +266,12 @@ ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 
 def abs_freq(q):
     def foo(freq):
-        return freq + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency
+        if flux_point == "arbitrary":
+            return freq + node.parameters.arbitrary_qubit_frequency
+        else:
+            return freq + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency
     return foo
+
 ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
 ds = ds.assign({'phase': np.arctan2(ds.Q,ds.I)})
 
@@ -264,7 +288,10 @@ from quam_libs.lib.fit import peaks_dips
 shifts = np.abs((ds.IQ_abs-ds.IQ_abs.mean(dim = 'freq'))).idxmax(dim = 'freq')
 
 # approximate peak freqeuency
-abs_freqs = dict([(q.name, shifts.sel(qubit = q.name).values + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency) for q in qubits])
+if flux_point == "arbitrary":
+    abs_freqs = dict([(q.name, shifts.sel(qubit = q.name).values + node.parameters.arbitrary_qubit_frequency) for q in qubits])
+else:
+    abs_freqs = dict([(q.name, shifts.sel(qubit = q.name).values + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency) for q in qubits])
 
 # the roration angle to align the meaningfull data with I axis
 angle =  np.arctan2(ds.sel(freq = shifts).Q - ds.Q.mean(dim = 'freq'), ds.sel(freq = shifts).I - ds.I.mean(dim = 'freq'))
@@ -276,7 +303,10 @@ ds = ds.assign({'I_rot' :  np.real(ds.IQ_abs * np.exp(1j * (ds.phase - angle)  )
 result = peaks_dips(ds.I_rot,dim = 'freq',prominence_factor=5)
 
 # extract the qubit frequency
-abs_freqs = dict([(q.name, result.sel(qubit= q.name).position.values + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency) for q in qubits])
+if flux_point == "arbitrary":
+    abs_freqs = dict([(q.name, result.sel(qubit= q.name).position.values + node.parameters.arbitrary_qubit_frequency) for q in qubits])
+else:
+    abs_freqs = dict([(q.name, result.sel(qubit= q.name).position.values + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency) for q in qubits])
 
 fit_results = {}
 
@@ -314,8 +344,8 @@ grid = QubitGrid(ds, grid_names)
 for ax, qubit in grid_iter(grid):
     (ds.assign_coords(freq_GHz  = ds.freq_full / 1e9).loc[qubit].I_rot*1e3).plot(ax = ax, x = 'freq_GHz')
     ax.plot([abs_freqs[qubit['qubit']]/1e9],[ds.loc[qubit].sel(
-        freq = result.sel(qubit = qubit['qubit']).position.values, method  = 'nearest').
-        I_rot*1e3],'.r')
+    freq = result.sel(qubit = qubit['qubit']).position.values, method  = 'nearest').
+    I_rot*1e3],'.r')
     (approx_peak.assign_coords(freq_GHz  = ds.freq_full / 1e9).loc[qubit]*1e3).plot(ax = ax, x = 'freq_GHz',
                                                                                     linewidth = 0.5, linestyle = '--')
     ax.set_xlabel('Qubit freq [GHz]')
@@ -334,7 +364,10 @@ with node.record_state_updates():
     for q in qubits:
         fit_results[q.name] = {}
         if not np.isnan(result.sel(qubit = q.name).position.values):
-            q.xy.intermediate_frequency += float(result.sel(qubit = q.name).position.values)
+            if flux_point == "arbitrary":
+                q.xy.intermediate_frequency = float(result.sel(qubit=q.name).position.values) + int(node.parameters.arbitrary_qubit_frequency - q.xy.opx_output.upconverter_frequency)
+            else:
+                q.xy.intermediate_frequency += float(result.sel(qubit = q.name).position.values)
 
             prev_angle = q.resonator.operations["readout"].integration_weights_angle
             if not  prev_angle:

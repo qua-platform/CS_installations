@@ -97,7 +97,8 @@ else:
 # Qubit detuning sweep with respect to their resonance frequencies
 span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
-dfs = np.arange(-span//2, +span//2, step, dtype=np.int32)
+# dfs = np.arange(-span//2, +span//2, step, dtype=np.int32)
+dfs = np.arange(-span//2, 10e6, step, dtype=np.int32)
 # Flux bias sweep
 dcs = np.linspace(node.parameters.min_flux_offset_in_v,
                   node.parameters.max_flux_offset_in_v,
@@ -139,10 +140,10 @@ with program() as multi_qubit_spec_vs_flux:
                     # Flux sweeping for a qubit
                     if flux_point == "independent":
                         qubit.z.set_dc_offset(dc + qubit.z.independent_offset)
-                        wait(100, qubit.z.name)  # Wait for the flux to settle
+                        wait(250, qubit.z.name)  # Wait for the flux to settle
                     elif flux_point == "joint":
                         qubit.z.set_dc_offset(dc + qubit.z.joint_offset)
-                        wait(100, qubit.z.name)  # Wait for the flux to settle
+                        wait(250, qubit.z.name)  # Wait for the flux to settle
                     else:
                         raise RuntimeError(f"unknown flux_point")                  
 
@@ -154,6 +155,21 @@ with program() as multi_qubit_spec_vs_flux:
                         amplitude_scale=operation_amp,
                         duration=operation_len,
                     )
+
+                    qubit.xy.wait(250)
+
+                    qubit.align()
+
+                    # Flux sweeping for a qubit
+                    if flux_point == "independent":
+                        qubit.z.set_dc_offset(qubit.z.independent_offset)
+                        wait(250, qubit.z.name)  # Wait for the flux to settle
+                    elif flux_point == "joint":
+                        qubit.z.set_dc_offset(qubit.z.joint_offset)
+                        wait(250, qubit.z.name)  # Wait for the flux to settle
+                    else:
+                        raise RuntimeError(f"unknown flux_point")
+
                     qubit.align()
 
                     # QUA macro to read the state of the active resonators
@@ -325,7 +341,7 @@ for ax, qubit in grid_iter(grid):
     ax.set_ylabel('Freq (GHz)')
     ax.set_xlabel('Flux (V)')
     ax.set_title(qubit['qubit'])
-grid.fig.suptitle('Resonator spectroscopy vs flux ')
+grid.fig.suptitle('Qubit spectroscopy vs flux ')
 
 plt.tight_layout()
 plt.show()

@@ -34,7 +34,7 @@ def add_default_transmon_pulses(transmon: Transmon):
             anharmonicity="#../x180_DragCosine/anharmonicity",
             length="#../x180_DragCosine/length",
             axis_angle=np.pi,
-            detuning="#../x190_DragCosine/detuning",
+            detuning="#../x180_DragCosine/detuning",
             digital_marker="ON",
         )
         transmon.xy.operations["y180_DragCosine"] = pulses.DragCosinePulse(
