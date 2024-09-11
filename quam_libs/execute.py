@@ -37,6 +37,7 @@ def execute_IQCC(program, machine, token=None, debug=False):
             raise ValueError(
                 "No token provided and no token file found at .IQCC_token or ~/.IQCC_token"
             )
+    token = token.strip()
 
     qc = IQCC_Cloud(token)
 
