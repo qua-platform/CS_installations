@@ -5,6 +5,6 @@ quam_state
 calibration_db.json
 qua_config.json
 jwt_create.py
-*token.txt
+*token
 *.whl
 tempCodeRunnerFile.py

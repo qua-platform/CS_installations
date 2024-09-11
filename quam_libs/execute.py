@@ -23,7 +23,7 @@ def execute_local(program, machine, close_other_machines=True):
 
 def execute_IQCC(program, machine, token=None, debug=False):
     if token is None:
-        for path in [Path(".IQCC_token.txt"), Path("~/.IQCC_token.txt")]:
+        for path in [Path(".IQCC_token"), Path("~/.IQCC_token")]:
             if not path.exists():
                 continue
 
@@ -31,7 +31,7 @@ def execute_IQCC(program, machine, token=None, debug=False):
             break
         else:
             raise ValueError(
-                "No token provided and no token file found at .IQCC_token.txt or ~/.IQCC_token.txt"
+                "No token provided and no token file found at .IQCC_token or ~/.IQCC_token"
             )
 
     qc = IQCC_Cloud(token)
