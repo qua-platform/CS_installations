@@ -35,7 +35,8 @@ class Parameters(NodeParameters):
     frequency_step_in_mhz: float = 0.05
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
-    line_impedance_in_ohm: float = 50
+    input_line_impedance_in_ohm: float = 50
+    line_attenuation_in_db: float = 0
     plot_current_mA : bool = True
 
 node = QualibrationNode(
@@ -249,7 +250,20 @@ ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs
 ds.freq_full.attrs['long_name'] = 'Frequency'
 ds.freq_full.attrs['units'] = 'GHz'
 
-ds = ds.assign_coords({'current' : (['qubit','flux'], np.array([ds.flux.values * node.parameters.line_impedance_in_ohm for q in qubits]))})
+ds = ds.assign_coords({'current' : (['qubit','flux'], np.array([ds.flux.values * node.parameters.input_line_impedance_in_ohm for q in qubits]))})
+
+# Calculate current after attenuation
+attenuation_factor = 10 ** (-node.parameters.line_attenuation_in_db / 20)
+attenuated_current = ds.current * attenuation_factor
+
+# Add attenuated current to dataset
+ds = ds.assign_coords({'attenuated_current': (['qubit', 'flux'], attenuated_current.values)})
+
+# Set attributes for the new coordinate
+ds.attenuated_current.attrs['long_name'] = 'Attenuated Current'
+ds.attenuated_current.attrs['units'] = 'A'
+
+
 ds.current.attrs['long_name'] = 'Current'
 ds.current.attrs['units'] = 'A'
 
@@ -295,20 +309,29 @@ grid_names = [f'{q.name}_0' for q in qubits]
 grid = QubitGrid(ds, grid_names)
 
 for ax, qubit in grid_iter(grid):
+    ax2 = ax.twiny()
+    
+    # Plot using the attenuated current x-axis
+    ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].IQ_abs.plot(ax=ax2, add_colorbar=False,
+                                                                         x='attenuated_current', y='freq_GHz', robust=True)
+    
+    # Move ax2 behind ax
+    ax2.set_zorder(ax.get_zorder() - 1)
+    ax.patch.set_visible(False)
+    
     ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].IQ_abs.plot(ax=ax, add_colorbar=False,
                                                                             x='flux', y='freq_GHz', robust=True)
-    ax.axvline(idle_offset.loc[qubit], linestyle = 'dashed', linewidth = 0.5, color = 'r')
-    ax.axvline(flux_min.loc[qubit],linestyle = 'dashed', linewidth = 0.5, color = 'orange')
     
-    if node.parameters.plot_current_mA:
-        ax2 = ax.secondary_xaxis('bottom', functions=(lambda x: 1e3*x / node.parameters.line_impedance_in_ohm, lambda x: 1e-3 * x * node.parameters.line_impedance_in_ohm))
-        ax2.set_xlabel('Current (mA)')
-        # Move the original x-axis (Flux) to the bottom
-        ax.xaxis.set_ticks_position('top')
-        ax.xaxis.set_label_position('top')
-    ax.set_ylabel('Freq (GHz)')
-    ax.set_xlabel('Flux (V)')
+    ax.axvline(idle_offset.loc[qubit], linestyle = 'dashed', linewidth = 2, color = 'r')
+    ax.axvline(flux_min.loc[qubit],linestyle = 'dashed', linewidth = 2, color = 'orange')
+
+
+    ax2.set_xlabel('Current (mA)')
+    ax2.set_ylabel('Freq (GHz)')
+    ax2.set_xlabel('Flux (V)')
     ax.set_title(qubit['qubit'])
+    ax2.set_title('')
+
 grid.fig.suptitle('Resonator spectroscopy vs flux ')
 
 plt.tight_layout()
