@@ -227,11 +227,11 @@ grid_names = [f'{q.name}_0' for q in qubits]
 grid = QubitGrid(ds, grid_names)
 for ax, qubit in grid_iter(grid):
     (ds.sel(sign = 1).loc[qubit].I*1e3).plot(ax = ax, x = 'time',
-                                             c = 'C0', marker = '.', ms = 1.0, ls = '', label = "$\Delta$ = +")
-    ax.plot(ds.time, 1e3*fit_evals.loc[qubit].sel(sign = 1), c = 'C0', ls = '-', lw=0.5)
+                                             c = 'C0', marker = '.', ms = 5.0, ls = '', label = "$\Delta$ = +")
+    ax.plot(ds.time, 1e3*fit_evals.loc[qubit].sel(sign = 1), c = 'C0', ls = '-', lw=1)
     (ds.sel(sign = -1).loc[qubit].I*1e3).plot(ax = ax, x = 'time',
-                                             c = 'C1', marker = '.', ms = 1.0, ls = '', label = "$\Delta$ = -")
-    ax.plot(ds.time, 1e3*fit_evals.loc[qubit].sel(sign = -1), c = 'C1', ls = '-', lw=0.5)
+                                             c = 'C1', marker = '.', ms = 5.0, ls = '', label = "$\Delta$ = -")
+    ax.plot(ds.time, 1e3*fit_evals.loc[qubit].sel(sign = -1), c = 'C1', ls = '-', lw=1)
     ax.set_ylabel('Trans. amp. I [mV]')
     ax.set_xlabel('Idle time [nS]')
     ax.set_title(qubit['qubit'])
