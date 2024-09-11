@@ -23,7 +23,11 @@ def execute_local(program, machine, close_other_machines=True):
 
 def execute_IQCC(program, machine, token=None, debug=False):
     if token is None:
-        for path in [Path(".IQCC_token"), Path("~/.IQCC_token")]:
+        for path in [
+            Path(".IQCC_token"),
+            Path("/home/.IQCC_token"),
+            Path("~/.IQCC_token"),
+        ]:
             if not path.exists():
                 continue
 
