@@ -13,7 +13,7 @@ class ReadoutResonatorBase:
         frequency_bare (int, float): the bare resonator frequency in Hz.
     """
 
-    depletion_time: int = 1000
+    depletion_time: int = 5000
     frequency_bare: float = None
 
     f_01: float = None
