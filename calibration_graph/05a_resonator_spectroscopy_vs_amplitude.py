@@ -216,7 +216,7 @@ else:
             # Plot
             plt.subplot(1, num_resonators, i + 1)
             plt.cla()
-            plt.title(f"{rr.name} - f_cent: {int(rr.opx_output.upconverter_frequency / u.MHz)} MHz")
+            plt.title(f"{rr.name} - f_cent: {int(rr.LO_frequency / u.MHz)} MHz")
             plt.xlabel("Readout amplitude [V]")
             plt.ylabel("Readout detuning [MHz]")
             plt.pcolor(amps * rr.operations["readout"].amplitude, dfs / u.MHz, A)
