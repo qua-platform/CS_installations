@@ -342,10 +342,7 @@ for ax, qubit in grid_iter(grid):
 
     # Set the y-axis label for the secondary axis
     ax.set_ylabel('Power (dBm)')
-    
-    # Adjust the y-axis limits to match the primary axis
-    ax.set_ylim(volts_to_dbm(ds.abs_amp.loc[qubit].min().values), 
-                 volts_to_dbm(ds.abs_amp.loc[qubit].max().values))
+
 
 grid.fig.suptitle('Resonator spectroscopy VS. power at base')
 plt.tight_layout()
