@@ -30,7 +30,7 @@ class Parameters(NodeParameters):
     frequency_step_in_mhz: float = 0.02
     max_number_pulses_per_sweep: int = 20
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
-    reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
+    reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
     simulate: bool = False
 
 node = QualibrationNode(
@@ -81,7 +81,7 @@ tracked_qubits = []
 for q in qubits:
     with tracked_updates(q, auto_revert=False) as q:
         q.xy.operations[operation].alpha = None
-        q.xy.operations[operation].alpha = -1.0
+        q.xy.operations[operation].alpha = 0
         q.xy.operations[operation].detuning = None
         q.xy.operations[operation].detuning = 0
         tracked_qubits.append(q)
@@ -148,8 +148,14 @@ with program() as stark_detuning:
                     # Update the qubit frequency
                     update_frequency(qubit.xy.name, df + qubit.xy.intermediate_frequency)
                     with for_(count, 0, count < npi, count + 1):
-                        qubit.xy.play(operation)
-                        qubit.xy.play(operation, amplitude_scale=-1.0)
+                        if operation == "x180":
+                            qubit.xy.play(operation)
+                            qubit.xy.play(operation, amplitude_scale=-1.0)
+                        elif operation == "x90":
+                            qubit.xy.play(operation)
+                            qubit.xy.play(operation)
+                            qubit.xy.play(operation, amplitude_scale=-1.0)
+                            qubit.xy.play(operation, amplitude_scale=-1.0)
                     update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
                     qubit.align()
                     # reset_phase(qubit.resonator.name)

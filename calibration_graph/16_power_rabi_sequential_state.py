@@ -30,7 +30,7 @@ class Parameters(NodeParameters):
     amp_factor_step: float = 0.005
     max_number_rabi_pulses_per_sweep: int = 100
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
-    reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
+    reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
     simulate: bool = False
 
 node = QualibrationNode(

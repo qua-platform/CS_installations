@@ -322,6 +322,7 @@ for q in qubits:
     fit_results[q.name]['min_offset'] = float(flux_min.sel(qubit=q.name).data)
     fit_results[q.name]['offset'] = float(idle_offset.sel(qubit=q.name).data)
     fit_results[q.name]['dv_phi0'] = 1/fit_osc.sel(fit_vals='f', qubit=q.name).values
+    fit_results[q.name]['m_pH'] = (1e12) * (2.068e-15) / ((1/fit_osc.sel(fit_vals='f', qubit=q.name).values) / node.parameters.line_impedance_in_ohm)
 node.results['fit_results'] = fit_results
 
 # %%

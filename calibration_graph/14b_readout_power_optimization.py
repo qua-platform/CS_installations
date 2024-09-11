@@ -24,8 +24,8 @@ from typing import Optional, Literal, List
 
 
 class Parameters(NodeParameters):
-    target_names: str = 'qubits'
-    qubits: Optional[List[str]] = None
+    # target_names: str = 'qubits'
+    qubits: Optional[str] = None
     num_runs: int = 2000
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
@@ -82,7 +82,7 @@ qmm = machine.connect()
 if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
 num_qubits = len(qubits)
 # %%
 ###################
@@ -281,22 +281,22 @@ node.results["results"] = {}
 node.results["figs"] = {}
 
 # %%    
-plot_raw = True
-if plot_raw:
-    fig, axes = plt.subplots(ncols=len(machine.active_qubits), nrows=len(ds.amplitude), sharex=False, sharey=False,
-                            squeeze=False, figsize=(5*num_qubits, 5*len(ds.amplitude)))
-    for amplitude, ax1 in zip(ds.amplitude, axes):
-        for q, ax2 in zip(list(machine.active_qubits), ax1):
-            ds_q = ds.sel(qubit=q.name, amplitude=amplitude)
-            ax2.plot(ds_q.I.sel(state=0), ds_q.Q.sel(state=0), ".", alpha=0.2, label="Ground", markersize=2)
-            ax2.plot(ds_q.I.sel(state=1), ds_q.Q.sel(state=1), ".", alpha=0.2, label="Excited", markersize=2)            
-            ax2.set_xlabel('I')
-            ax2.set_ylabel('Q')
-            ax2.set_title(f'{q.name}, {float(amplitude)}')
-            ax2.axis('equal')
-    plt.show()
-    node.results['figure_raw_data'] = fig
-# %%
+# plot_raw = True
+# if plot_raw:
+#     fig, axes = plt.subplots(ncols=len(machine.active_qubits), nrows=len(ds.amplitude), sharex=False, sharey=False,
+#                             squeeze=False, figsize=(5*num_qubits, 5*len(ds.amplitude)))
+#     for amplitude, ax1 in zip(ds.amplitude, axes):
+#         for q, ax2 in zip(list(machine.active_qubits), ax1):
+#             ds_q = ds.sel(qubit=q.name, amplitude=amplitude)
+#             ax2.plot(ds_q.I.sel(state=0), ds_q.Q.sel(state=0), ".", alpha=0.2, label="Ground", markersize=2)
+#             ax2.plot(ds_q.I.sel(state=1), ds_q.Q.sel(state=1), ".", alpha=0.2, label="Excited", markersize=2)
+#             ax2.set_xlabel('I')
+#             ax2.set_ylabel('Q')
+#             ax2.set_title(f'{q.name}, {float(amplitude)}')
+#             ax2.axis('equal')
+#     plt.show()
+#     node.results['figure_raw_data'] = fig
+# # %%
 
 def apply_fit_gmm(I, Q):
     I_mean = np.mean(I, axis=1)
@@ -328,7 +328,7 @@ plot_indvidual = False
 best_data = {}
 
 best_amp = {}
-for q in machine.active_qubits:
+for q in qubits:
     fit_res_q = fit_res.sel(qubit=q.name)
     valid_amps = fit_res_q.amplitude[(fit_res_q.sel(result='outliers') >= node.parameters.outliers_threshold)]
     amps_fidelity = fit_res_q.sel(

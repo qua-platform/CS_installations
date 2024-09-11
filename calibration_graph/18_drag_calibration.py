@@ -32,7 +32,7 @@ class Parameters(NodeParameters):
     amp_factor_step: float = 0.02
     max_number_pulses_per_sweep: int = 40
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
-    reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
+    reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
     simulate: bool = False
 
 node = QualibrationNode(
@@ -80,6 +80,7 @@ tracked_qubits = []
 for q in qubits:
     with tracked_updates(q, auto_revert=False, dont_assign_to_none=True) as q:
         q.xy.operations[operation].alpha = -1.0
+        tracked_qubits.append(q)
 
        
 # Generate the OPX and Octave configurations
@@ -151,8 +152,15 @@ with program() as drag_calibration:
                     qubit.align()
                     # Loop for error amplification (perform many qubit pulses)
                     with for_(count, 0, count < npi, count + 1):
-                        play(operation * amp(1, 0, 0, a), qubit.xy.name)
-                        play(operation * amp(-1, 0, 0, -a), qubit.xy.name)
+                        if operation == "x180":
+                            play(operation * amp(1, 0, 0, a), qubit.xy.name)
+                            play(operation * amp(-1, 0, 0, -a), qubit.xy.name)
+                        elif operation == "x90":
+                            play(operation * amp(1, 0, 0, a), qubit.xy.name)
+                            play(operation * amp(1, 0, 0, a), qubit.xy.name)
+                            play(operation * amp(-1, 0, 0, -a), qubit.xy.name)
+                            play(operation * amp(-1, 0, 0, -a), qubit.xy.name)
+
                     qubit.align()
                     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                     assign(state[i], Cast.to_int(I[i] > qubit.resonator.operations["readout"].threshold))
@@ -248,6 +256,9 @@ plt.tight_layout()
 plt.show()
 node.results['figure'] = grid.fig
 
+# %%
+for qubit in tracked_qubits:
+    qubit.revert_changes()
 # %%
 with node.record_state_updates():
     for q in qubits:

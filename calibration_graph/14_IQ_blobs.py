@@ -20,12 +20,11 @@ Next steps before going to the next node:
     - Save the current state by calling machine.save("quam")
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal, List
+from typing import Optional, Literal
 
 
 class Parameters(NodeParameters):
-    targets_name: str = 'qubits'
-    qubits: Optional[List[str]] = None
+    qubits: Optional[str] = None
     num_runs: int = 2000
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
@@ -77,7 +76,7 @@ qmm = machine.connect()
 if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
 num_qubits = len(qubits)
 # %%
 ###################

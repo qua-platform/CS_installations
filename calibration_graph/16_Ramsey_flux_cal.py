@@ -22,8 +22,7 @@ from typing import Optional, Literal, List
 
 
 class Parameters(NodeParameters):
-    targets_name: str = 'qubits'
-    qubits: Optional[List[str]] = None
+    qubits: Optional[str] = None
     num_averages: int = 100
     frequency_detuning_in_mhz: float = 4.0
     min_wait_time_in_ns: int = 16
@@ -77,11 +76,12 @@ octave_config = machine.get_octave_config()
 qmm = machine.connect()
 
 # Get the relevant QuAM components
-if node.parameters.qubits is None:
+if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
 num_qubits = len(qubits)
+
 # %%
 ###################
 # The QUA program #
