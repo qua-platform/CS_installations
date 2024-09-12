@@ -7,11 +7,11 @@ class Parameters(NodeParameters):
     qubits: Optional[str] = None
     num_averages: int = 100
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 40000
-    wait_time_step_in_ns: int = 200
-    flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
+    max_wait_time_in_ns: int = 100000
+    wait_time_step_in_ns: int = 600
+    flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "arbitrary"    
     simulate: bool = False
-    use_state_discrimination: bool = True
+    use_state_discrimination: bool = False
     reset_type: Literal['active', 'thermal'] = "thermal"
 
 node = QualibrationNode(
@@ -74,7 +74,13 @@ idle_times = np.arange(
     node.parameters.wait_time_step_in_ns // 4,
 )
 
-flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
+flux_point = node.parameters.flux_point_joint_or_independent_or_arbitrary  # 'independent' or 'joint'
+if flux_point == "arbitrary":
+    detunings = {q.name : q.arbitrary_intermediate_frequency for q in qubits}
+    arb_flux_bias_offset = {q.name: q.z.arbitrary_offset for q in qubits}
+else:
+    arb_flux_bias_offset = {q.name: 0.0 for q in qubits}
+    detunings = {q.name: 0.0 for q in qubits}
 
 with program() as t1:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
@@ -88,7 +94,7 @@ with program() as t1:
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
             q.z.to_independent_idle()
-        elif flux_point == "joint":
+        elif flux_point == "joint" or "arbitrary":
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
@@ -106,12 +112,14 @@ with program() as t1:
                 else:
                     q.resonator.wait(machine.thermalization_time * u.ns)
                     q.align()
+                
                     
                 q.xy.play("x180")
-
-                q.xy.wait(t)
-
-                # Align the elements to measure after playing the qubit pulse.
+                align()
+                q.z.wait(20)
+                q.z.play("const", amplitude_scale=arb_flux_bias_offset[q.name]/q.z.operations["const"].amplitude, duration=t)
+                q.z.wait(20)
+                
                 align()
 
                 # Measure the state of the resonators

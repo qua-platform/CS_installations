@@ -366,7 +366,7 @@ with node.record_state_updates():
         fit_results[q.name] = {}
         if not np.isnan(result.sel(qubit = q.name).position.values):
             if flux_point == "arbitrary":
-                q.arbitrary_intermediate_frequency = float(result.sel(qubit = q.name).position.values + detunings[q.name])
+                q.arbitrary_intermediate_frequency = float(result.sel(qubit = q.name).position.values + detunings[q.name] + q.xy.intermediate_frequency)
                 q.z.arbitrary_offset = arb_flux_bias_offset[q.name]
             else:
                 q.xy.intermediate_frequency += float(result.sel(qubit = q.name).position.values )       
