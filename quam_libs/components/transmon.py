@@ -40,6 +40,7 @@ class Transmon(QuamComponent):
     f_12: float = None
     anharmonicity: int = 150e6
     freq_vs_flux_01_quad_term : float = 0.0
+    arbitrary_intermediate_frequency : float = 0.0
 
     T1: int = 10_000
     T2ramsey: int = 10_000
