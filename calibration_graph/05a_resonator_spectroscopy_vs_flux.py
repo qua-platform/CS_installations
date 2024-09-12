@@ -40,7 +40,7 @@ class Parameters(NodeParameters):
     plot_current_mA : bool = True
 
 node = QualibrationNode(
-    name="02c_Resonator_Spectroscopy_vs_Flux",
+    name="02b_Resonator_Spectroscopy_vs_Flux",
     parameters_class=Parameters
 )
 
