@@ -36,7 +36,7 @@ class Parameters(NodeParameters):
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
     simulate: bool = False
-    multiplexed: bool = False
+    multiplexed: bool = True
 
 node = QualibrationNode(
     name="11a_Randomized_Benchmarking",
@@ -141,70 +141,70 @@ def play_sequence(sequence_list, depth, qubit: Transmon):
         with switch_(sequence_list[i], unsafe=True):
             with case_(0):
                 qubit.xy.wait(qubit.xy.operations["x180"].length // 4)
-            with case_(1):
+            with case_(1): # x180
                 qubit.xy.play("x180")
-            with case_(2):
+            with case_(2): # y180
                 qubit.xy.play("y180")
-            with case_(3):
+            with case_(3): # Z180
                 qubit.xy.play("y180")
                 qubit.xy.play("x180")
-            with case_(4):
+            with case_(4): #Z90 X180 Z-180
                 qubit.xy.play("x90")
                 qubit.xy.play("y90")
-            with case_(5):
+            with case_(5): #Z-90 Y-90 Z-90
                 qubit.xy.play("x90")
                 qubit.xy.play("-y90")
-            with case_(6):
+            with case_(6): #Z-90 X180 Z-180
                 qubit.xy.play("-x90")
                 qubit.xy.play("y90")
-            with case_(7):
+            with case_(7): #Z-90 Y90 Z-90
                 qubit.xy.play("-x90")
                 qubit.xy.play("-y90")
-            with case_(8):
+            with case_(8): # X90 Z90
                 qubit.xy.play("y90")
                 qubit.xy.play("x90")
-            with case_(9):
+            with case_(9): # X-90 Z-90
                 qubit.xy.play("y90")
                 qubit.xy.play("-x90")
-            with case_(10):
+            with case_(10): #z90 X90 Z90
                 qubit.xy.play("-y90")
                 qubit.xy.play("x90")
-            with case_(11):
+            with case_(11): #z90 X-90 Z90
                 qubit.xy.play("-y90")
                 qubit.xy.play("-x90")
-            with case_(12):
+            with case_(12): # x90
                 qubit.xy.play("x90")
-            with case_(13):
+            with case_(13): # -x90
                 qubit.xy.play("-x90")
-            with case_(14):
+            with case_(14): # y90
                 qubit.xy.play("y90")
-            with case_(15):
+            with case_(15): # -y90
                 qubit.xy.play("-y90")
-            with case_(16):
+            with case_(16): # Z90
                 qubit.xy.play("-x90")
                 qubit.xy.play("y90")
                 qubit.xy.play("x90")
-            with case_(17):
+            with case_(17): # -Z90
                 qubit.xy.play("-x90")
                 qubit.xy.play("-y90")
                 qubit.xy.play("x90")
-            with case_(18):
+            with case_(18): # Y-90 Z-90
                 qubit.xy.play("x180")
                 qubit.xy.play("y90")
-            with case_(19):
+            with case_(19):  # Y90 Z90
                 qubit.xy.play("x180")
                 qubit.xy.play("-y90")
-            with case_(20):
+            with case_(20): # Y90 Z-90
                 qubit.xy.play("y180")
                 qubit.xy.play("x90")
-            with case_(21):
+            with case_(21): # Y-90 Z90
                 qubit.xy.play("y180")
                 qubit.xy.play("-x90")
-            with case_(22):
+            with case_(22): # x90 Z-90
                 qubit.xy.play("x90")
                 qubit.xy.play("y90")
                 qubit.xy.play("x90")
-            with case_(23):
+            with case_(23): # -x90 Z90
                 qubit.xy.play("-x90")
                 qubit.xy.play("y90")
                 qubit.xy.play("-x90")
@@ -212,6 +212,10 @@ def play_sequence(sequence_list, depth, qubit: Transmon):
 average_gate_per_clifford = (
     1 * 3 + 9 * 2 + 1 * 4 + 2 * 3 + 4 * 2 + 2 * 3)/24  # = 45/24 = 1.875
 
+
+
+
+# %%
 
 
 ###################

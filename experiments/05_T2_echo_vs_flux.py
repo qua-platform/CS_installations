@@ -27,9 +27,9 @@ class Parameters(NodeParameters):
     frequency_detuning_in_mhz: float = 1.0
     min_wait_time_in_ns: int = 10
     max_wait_time_in_ns: int = 30000
-    wait_time_step_in_ns: int = 50
-    flux_span : float = 0.06
-    flux_step : float = 0.005
+    wait_time_step_in_ns: int = 100
+    flux_span : float = 0.05
+    flux_step : float = 0.001
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
     reset_type: Literal['active', 'thermal'] = "active"
@@ -96,9 +96,10 @@ idle_times = np.arange(
 idle_times = np.logspace(np.log10(node.parameters.min_wait_time_in_ns // 4),np.log10(node.parameters.max_wait_time_in_ns // 4),len(idle_times)).astype(np.int32)
 # Detuning converted into virtual Z-rotations to observe Ramsey oscillation and get the qubit frequency
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
-dcs = np.arange(-node.parameters.flux_span / 2, node.parameters.flux_span / 2+0.001, step = node.parameters.flux_step)
 reset_type = node.parameters.reset_type
-quads = {qubit.name: int(qubit.freq_vs_flux_01_quad_term * 1e-3) for qubit in qubits}
+dcs = np.arange(0.0, node.parameters.flux_span / 2+0.001, step = node.parameters.flux_step)
+quads = {qubit.name: int(qubit.freq_vs_flux_01_quad_term) for qubit in qubits}
+freqs = {qubit.name: (dcs**2 * qubit.freq_vs_flux_01_quad_term).astype(int) for qubit in qubits}
 
 # %%
 with program() as ramsey:
@@ -109,9 +110,11 @@ with program() as ramsey:
     phi = declare(fixed)  # QUA variable for dephasing the second pi/2 pulse (virtual Z-rotation)
     dc = declare(fixed)  # QUA variable for the flux dc level
     freq = declare(int)
+    flux_index = declare(int)
+    fluxes_qua = declare(fixed,value=dcs)
     debug_st = [declare_stream() for _ in range(num_qubits)]
     for i, qubit in enumerate(qubits):
-
+        freqs_qua = declare(int,value=freqs[qubit.name])
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
@@ -128,10 +131,10 @@ with program() as ramsey:
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
-            with for_(*from_array(dc, dcs)):
-                assign(freq, Cast.mul_int_by_fixed(quads[qubit.name],dc*dc ))
-                assign(freq,freq*1e3)
-                # with for_(*from_array(t, idle_times)):
+            with for_(flux_index, 0, flux_index < len(dcs), flux_index + 1):
+            # with for_(*from_array(dc, dcs)):
+                assign(dc, fluxes_qua[flux_index])
+                assign(freq, freqs_qua[flux_index])
                 with for_each_(t, idle_times):    
                     save(freq, debug_st[i])
                     if reset_type == "active":
@@ -140,29 +143,55 @@ with program() as ramsey:
                         qubit.resonator.wait(machine.thermalization_time * u.ns)
                         qubit.align()
                     qubit.align()
-                    
-                    
-                    # update_frequency(qubit.xy.name, freq + qubit.xy.intermediate_frequency)
+                    if flux_point == "independent":
+                        qubit.z.set_dc_offset(dc + qubit.z.independent_offset)
+                    elif flux_point == "joint":
+                        qubit.z.set_dc_offset(dc + qubit.z.joint_offset)  
+                    wait(100,qubit.z.name)
                     qubit.align()
+
+                    # update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency + freq)
+                    align()
+                    # Strict_timing ensures that the sequence will be played without gaps
+                    # qubit.z.play("const", amplitude_scale = dc / 0.1, duration=2*t+200)                  
                     qubit.xy.play("x90")
-                    qubit.align()
-                    wait(4, qubit.z.name)
-                    qubit.z.play("const", amplitude_scale = dc / 0.1, duration= t)
-                    wait(4, qubit.z.name)
-                    qubit.align()
+                    wait(t,qubit.xy.name)
                     qubit.xy.play("x180")
-                    qubit.align()
-                    wait(4, qubit.z.name)
-                    qubit.z.play("const", amplitude_scale = dc / 0.1, duration= t)
-                    wait(4, qubit.z.name)
-                    qubit.align()
+                    wait(t,qubit.xy.name)
                     qubit.xy.play("x90")
-                    # Align the elements to measure after playing the qubit pulse.
-                    
-                    wait(10, qubit.z.name)
-                    wait(10, qubit.xy.name)
-                    # update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
+                    # wait(10, qubit.z.name)
                     qubit.align()
+                    update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
+                    # Align the elements to measure after playing the qubit pulse.
+                    align()                    
+                    if flux_point == "independent":
+                        qubit.z.set_dc_offset(qubit.z.independent_offset)
+                    elif flux_point == "joint":
+                        qubit.z.set_dc_offset(qubit.z.joint_offset)  
+                    wait(100,qubit.z.name)
+                    qubit.align()
+                                        
+                    # # update_frequency(qubit.xy.name, freq + qubit.xy.intermediate_frequency)
+                    # qubit.align()
+                    # qubit.xy.play("x90")
+                    # qubit.align()
+                    # wait(50, qubit.z.name)
+                    # qubit.z.play("const", amplitude_scale = dc / 0.1, duration= t)
+                    # wait(50, qubit.z.name)
+                    # qubit.align()
+                    # qubit.xy.play("x180")
+                    # qubit.align()
+                    # wait(50, qubit.z.name)
+                    # qubit.z.play("const", amplitude_scale = dc / 0.1, duration= t)
+                    # wait(50, qubit.z.name)
+                    # qubit.align()
+                    # qubit.xy.play("x90")
+                    # # Align the elements to measure after playing the qubit pulse.
+                    
+                    # wait(10, qubit.z.name)
+                    # wait(10, qubit.xy.name)
+                    # # update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
+                    # qubit.align()
                     # Measure the state of the resonators
                     readout_state(qubit, state[i])
                     save(state[i], state_st[i])
@@ -304,11 +333,11 @@ if not simulate:
 # %%
           
 # %%
-# node.results['initial_parameters'] = node.parameters.model_dump()
-# node.machine = machine
-# node.save()
+node.results['initial_parameters'] = node.parameters.model_dump()
+node.machine = machine
+node.save()
 # %%
-flux_val = 0.03
+flux_val = 0.015
 for qubit in qubits:
     (1-ds).sel(qubit = qubit.name, flux = flux_val, method='nearest').state.plot()
     plt.plot(ds.idle_time, fitted.sel(qubit = qubit.name, flux = flux_val, method='nearest'))

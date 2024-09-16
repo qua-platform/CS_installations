@@ -284,7 +284,7 @@ ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 # %%
 def abs_freq(q):
     def foo(freq):
-        return freq + q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency
+        return freq + q.xy.RF_frequency - q.anharmonicity
     return foo
 ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
 ds = ds.assign({'phase': np.arctan2(ds.Q,ds.I)})
@@ -327,12 +327,12 @@ grid_names = [f'{q.name}_0' for q in qubits]
 grid = QubitGrid(ds, grid_names)
 
 for ax, qubit in grid_iter(grid):
-    freq_ref = machine.qubits[qubit['qubit']].xy.intermediate_frequency + machine.qubits[qubit['qubit']].xy.opx_output.upconverter_frequency
+    freq_ref = machine.qubits[qubit['qubit']].xy.RF_frequency
 
     (ds.assign_coords(freq_GHz  = ds.freq_full / 1e9).loc[qubit].IQ_abs*1e3).plot(ax = ax, x = 'freq_GHz')
     # (result.base_line.assign_coords(freq_GHz  = ds.freq_full / 1e9).loc[qubit]*1e3).plot(ax = ax, x = 'freq_GHz')
 
-    ax.axvline((result.sel(qubit = qubit['qubit']).position.values + freq_ref)/1e9, color = 'r', linestyle = '--')
+    ax.axvline((result.sel(qubit = qubit['qubit']).position.values + freq_ref - machine.qubits[qubit['qubit']].anharmonicity)/1e9, color = 'r', linestyle = '--')
     ax.set_xlabel('Qubit freq [GHz]')
     ax.set_ylabel('Trans. amp. [mV]')
     ax.set_title(qubit['qubit'])

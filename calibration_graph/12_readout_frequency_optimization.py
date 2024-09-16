@@ -227,7 +227,7 @@ ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs})
 # %%
 def abs_freq(q):
     def foo(freq):
-        return freq + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
+        return freq + q.resonator.RF_frequency
     return foo
 ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
 ds.freq_full.attrs['long_name'] = 'Frequency'

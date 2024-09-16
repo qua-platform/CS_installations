@@ -38,10 +38,10 @@ class Parameters(NodeParameters):
     operation_len_in_ns: Optional[int] = None
     frequency_span_in_mhz: float = 40
     frequency_step_in_mhz: float = 0.25
-    flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "arbitrary"
+    flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "joint"
     target_peak_width: Optional[int] = None
     arbitrary_flux_bias: Optional[float] = None
-    arbitrary_qubit_frequency_in_ghz: Optional[float] = 5.65
+    arbitrary_qubit_frequency_in_ghz: Optional[float] = 5.845
     simulate: bool = False
 
 node = QualibrationNode(
@@ -109,8 +109,8 @@ step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span//2, +span//2, step, dtype=np.int32)
 flux_point = node.parameters.flux_point_joint_or_independent_or_arbitrary  # 'independent' or 'joint' or 'arbitrary'
 cooldown_time = max(q.resonator.depletion_time for q in qubits)
-# qubit_freqs = {q.name: q.xy.RF_frequency for q in qubits} # for opx
-qubit_freqs = {q.name :  q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency for q in qubits} # for MW
+qubit_freqs = {q.name: q.xy.RF_frequency for q in qubits} # for opx
+# qubit_freqs = {q.name :  q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency for q in qubits} # for MW
 
 if flux_point == "arbitrary":
     if node.parameters.arbitrary_flux_bias is None and node.parameters.arbitrary_qubit_frequency_in_ghz is None:

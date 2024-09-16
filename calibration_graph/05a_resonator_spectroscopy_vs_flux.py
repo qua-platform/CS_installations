@@ -212,17 +212,17 @@ else:
             # Plot
             plt.subplot(1, num_resonators, i + 1)
             plt.cla()
-            plt.title(f"{rr.name} (LO: {rr.opx_output.upconverter_frequency / u.MHz} MHz)")
+            plt.title(f"{rr.name} (LO: {rr.RF_frequency / u.MHz} MHz)")
             plt.xlabel("flux [V]")
             plt.ylabel(f"{rr.name} IF [MHz]")
             plt.pcolor(
                 dcs,
-                (rr.opx_output.upconverter_frequency + rr.intermediate_frequency) / u.MHz + dfs / u.MHz,
+                (rr.RF_frequency + rr.intermediate_frequency) / u.MHz + dfs / u.MHz,
                 A.T,
             )
             plt.plot(
                 qubit.z.min_offset,
-                (rr.opx_output.upconverter_frequency + rr.intermediate_frequency) / u.MHz,
+                (rr.RF_frequency + rr.intermediate_frequency) / u.MHz,
                 "r*",
             )
 
@@ -242,7 +242,7 @@ ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 
 def abs_freq(q):
     def foo(freq):
-        return freq + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency
+        return freq + q.resonator.RF_frequency
     return foo
 
 ds = ds.assign_coords({'freq_full' : (['qubit','freq'],np.array([abs_freq(q)(dfs) for q in qubits]))})
@@ -290,7 +290,7 @@ flux_min = flux_min * (np.abs(flux_min) < 0.5) + 0.5 * (flux_min > 0.5) - 0.5 * 
 # finding the frequency as the sweet spot flux
 rel_freq_shift = peak_freq.sel(flux=idle_offset, method='nearest')
 abs_freq_shift = rel_freq_shift + \
-    np.array([q.resonator.opx_output.upconverter_frequency + q.resonator.intermediate_frequency for q in qubits])
+    np.array([q.resonator.RF_frequency for q in qubits])
 q_IF = {}
 
 for q in qubits:
@@ -299,7 +299,7 @@ for q in qubits:
     print(
         f'DC offset for {q.name} is {idle_offset.sel(qubit = q.name).data*1e3:.0f} mV')
     print(
-        f"Resonator frequency for {q.name} is {(rel_freq_shift.sel(qubit = q.name).values + q.resonator.intermediate_frequency + q.resonator.opx_output.upconverter_frequency)/1e9:.3f} GHz")
+        f"Resonator frequency for {q.name} is {(rel_freq_shift.sel(qubit = q.name).values + q.resonator.RF_frequency)/1e9:.3f} GHz")
     print(
         f"(shift of {rel_freq_shift.sel(qubit = q.name).values/1e6:.0f} MHz)")
     print()

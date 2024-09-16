@@ -34,7 +34,7 @@ class Parameters(NodeParameters):
     max_power_dbm: int = 10
     min_power_dbm: int = -20
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
-    ro_line_attenuation_dB: float = 0
+    ro_line_attenuation_dB: float = 30
     multiplexed: bool = True
 
 node = QualibrationNode(
@@ -102,7 +102,7 @@ n_avg = node.parameters.num_averages  # The number of averages
 # for rr in resonators:
 #     rr.operations["readout"].amplitude = 0.25
 # NOTE: 0.49 is for OPX+, 0.99 is for OPX1000
-max_amp = 0.99
+max_amp = 0.49
 
 tracked_qubits = []
 
@@ -226,7 +226,7 @@ else:
             # Plot
             plt.subplot(1, num_resonators, i + 1)
             plt.cla()
-            plt.title(f"{rr.name} - f_cent: {int(rr.opx_output.upconverter_frequency / u.MHz)} MHz")
+            plt.title(f"{rr.name} - f_cent: {int(rr.RF_frequency / u.MHz)} MHz")
             plt.xlabel("Readout amplitude [V]")
             plt.ylabel("Readout detuning [MHz]")
             plt.pcolor(amps * rr.operations["readout"].amplitude, dfs / u.MHz, A)
@@ -268,7 +268,7 @@ ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 
 def abs_freq(q):
     def foo(freq):
-        return freq + q.resonator.opx_output.upconverter_frequency + q.resonator.intermediate_frequency
+        return freq + q.resonator.RF_frequency
     return foo
 
 def abs_amp(q):
@@ -322,14 +322,14 @@ for ax, qubit in grid_iter(grid):
     ax2 = ax.twinx()
     
     # Plot the data using the secondary y-axis
-    ds.loc[qubit].IQ_abs_norm.plot(ax=ax, add_colorbar=False,
-                                   x='freq_full', y='power_dbm', robust=True)
-    
+
     
     ds.loc[qubit].IQ_abs_norm.plot(ax=ax2, add_colorbar=False,
                                     x='freq_full', y='abs_amp', robust=True,
                                     yscale = 'log')
-
+    ds.loc[qubit].IQ_abs_norm.plot(ax=ax, add_colorbar=False,
+                                   x='freq_full', y='power_dbm', robust=True)
+    
 
     ax2.plot(
         res_freq_full.loc[qubit], ds.abs_amp.loc[qubit], color='orange', linewidth=0.5)
