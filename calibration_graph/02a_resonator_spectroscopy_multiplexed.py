@@ -48,6 +48,7 @@ class Parameters(NodeParameters):
     simulate: bool = False
     timeout: int = 100
 
+
 node = QualibrationNode(name="02a_Resonator_Spectroscopy", parameters_class=Parameters)
 node.parameters = Parameters()
 
@@ -74,7 +75,7 @@ num_resonators = len(resonators)
 
 
 # %% {QUA_program}
-n_avg = node.parameters.num_averages  # The number of averages
+n_avg = node.parameters.num_averages
 # The frequency sweep around the resonator resonance frequency
 span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
@@ -149,17 +150,13 @@ else:
                 plt.sca(axss[0, i])
                 plt.suptitle("Multiplexed resonator spectroscopy")
                 plt.cla()
-                plt.plot(
-                    (rr.LO_frequency + rr.intermediate_frequency) / u.MHz + dfs / u.MHz,
-                    np.abs(s_data[-1]),
-                    ".",
-                )
+                plt.plot(rr.RF_frequency / u.MHz + dfs / u.MHz, np.abs(s_data[-1]), ".")
                 plt.title(f"{rr.name}")
                 plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
                 plt.sca(axss[1, i])
                 plt.cla()
                 plt.plot(
-                    (rr.LO_frequency + rr.intermediate_frequency) / u.MHz + dfs / u.MHz,
+                    rr.RF_frequency / u.MHz + dfs / u.MHz,
                     signal.detrend(np.unwrap(np.angle(s_data[-1]))),
                     ".",
                 )
@@ -177,13 +174,8 @@ else:
         {"phase": subtract_slope(apply_angle(ds.I + 1j * ds.Q, dim="freq"), dim="freq")}
     )
 
-    # def abs_freq(q):
-    #     def foo(freq):
-    #         return freq + q.resonator.intermediate_frequency + q.resonator.LO_frequency
-    #     return foo
-
     def abs_freq(q, freq):
-        return freq + q.resonator.intermediate_frequency + q.resonator.LO_frequency
+        return freq + q.resonator.RF_frequency
 
     ds = ds.assign_coords(
         {"freq_full": (["qubit", "freq"], np.array([abs_freq(q, dfs) for q in qubits]))}
