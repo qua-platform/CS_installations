@@ -41,6 +41,7 @@ class Parameters(NodeParameters):
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
     simulate: bool = False
+    timeout: int = 100
 
 node = QualibrationNode(
     name="11b_Randomized_Benchmarking_Interleaved",
@@ -346,7 +347,7 @@ if simulate:
 else:
     node.results = {}
     for qubit in qubits:
-        with qm_session(qmm, config, timeout=100) as qm:
+        with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
             job = qm.execute(get_rb_interleaved_program(qubit), flags=['auto-element-thread'])
             if state_discrimination:
                 results = fetching_tool(job, data_list=["state_avg", "iteration"], mode="live")

@@ -43,6 +43,7 @@ class Parameters(NodeParameters):
     arbitrary_flux_bias: Optional[float] = None
     arbitrary_qubit_frequency_in_ghz: Optional[float] = 5.845
     simulate: bool = False
+    timeout: int = 100
 
 node = QualibrationNode(
     name="03a_Qubit_Spectroscopy",
@@ -218,7 +219,7 @@ if simulate:
     node.save()
     quit()
 else:
-    with qm_session(qmm, config, timeout=100) as qm:
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(qubit_spec, flags=['auto-element-thread'])
         # Get results from QUA program
         data_list = ["n"] + sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])

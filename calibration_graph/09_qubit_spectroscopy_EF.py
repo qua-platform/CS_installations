@@ -40,6 +40,7 @@ class Parameters(NodeParameters):
     frequency_step_in_mhz: float = 0.25
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
+    timeout: int = 100
 
 node = QualibrationNode(
     name="04a_Qubit_Spectroscopy_E_to_F",
@@ -178,7 +179,7 @@ if simulate:
     node.save()
     quit()
 else:
-    with qm_session(qmm, config, timeout=100) as qm:
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(qubit_spec, flags=['auto-element-thread'])
         # Get results from QUA program
         data_list = ["n"] + sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])

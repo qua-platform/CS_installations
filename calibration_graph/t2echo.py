@@ -11,6 +11,7 @@ class Parameters(NodeParameters):
     wait_time_step_in_ns: int = 300
     flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "arbitrary"    
     simulate: bool = False
+    timeout: int = 100
     use_state_discrimination: bool = True
     reset_type: Literal['active', 'thermal'] = "thermal"
 
@@ -166,7 +167,7 @@ if simulate:
     node.save()
     quit()
 else:
-    with qm_session(qmm, config, timeout=100) as qm:
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(t1, flags=['auto-element-thread'])
         # Get results from QUA program
         for i in range(num_qubits):

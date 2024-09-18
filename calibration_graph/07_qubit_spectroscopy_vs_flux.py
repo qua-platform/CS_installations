@@ -31,6 +31,7 @@ class Parameters(NodeParameters):
     num_flux_points: int = 21
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
+    timeout: int = 100
 
 node = QualibrationNode(
     name="03b_Qubit_Spectroscopy_vs_Flux",
@@ -206,7 +207,7 @@ if simulate:
     node.save()
     quit()
 else:
-    with qm_session(qmm, config, timeout=100) as qm:
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(multi_qubit_spec_vs_flux, flags=['auto-element-thread'])
         # Get results from QUA program
         data_list = ["n"] + sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])

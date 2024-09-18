@@ -28,6 +28,7 @@ class Parameters(NodeParameters):
     frequency_step_in_mhz: float = 0.05
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
+    timeout: int = 100
 
 node = QualibrationNode(
     name="06b_Readout_Frequency_Optimization_G_to_E_to_F",
@@ -198,7 +199,7 @@ if simulate:
     node.save()
     quit()
 else:
-    with qm_session(qmm, config, timeout=100) as qm:
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(ro_freq_opt, flags=['auto-element-thread'])
         # Get results from QUA program
 

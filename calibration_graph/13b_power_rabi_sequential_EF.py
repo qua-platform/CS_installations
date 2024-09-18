@@ -30,6 +30,7 @@ class Parameters(NodeParameters):
     amp_factor_step: float = 0.005
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
+    timeout: int = 100
 
 node = QualibrationNode(
     name="06c_Power_Rabi_E_to_F",
@@ -163,7 +164,7 @@ if simulate:
     node.save()
     quit()
 else:
-    with qm_session(qmm, config, timeout=100) as qm:
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(power_rabi, flags=['auto-element-thread'])
         # Get results from QUA program
         data_list = ["n"] + sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])

@@ -39,6 +39,7 @@ class Parameters(NodeParameters):
     reset_type_active_or_thermal: Literal['active', 'thermal'] = 'active'
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
+    timeout: int = 100
     reset_filters: bool = True
 
 node = QualibrationNode(
@@ -289,7 +290,7 @@ if simulate:
     #     print(f"Subtracted value {i + 1}: {value}")
     # plt.show(block=False)
 else:
-    with qm_session(qmm, config, timeout=100) as qm:
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(cryoscope(qubit))
 
 # %%
