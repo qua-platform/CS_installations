@@ -58,7 +58,7 @@ from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 from quam_libs.lib.save_utils import fetch_results_as_xarray
 import xarray as xr
 
-# matplotlib.use("TKAgg")
+
 
 
 ###################################################

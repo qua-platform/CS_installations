@@ -68,7 +68,7 @@ from quam_libs.lib.fit import peaks_dips
 from quam_libs.lib.save_utils import fetch_results_as_xarray
 from quam_libs.trackable_object import tracked_updates
 
-# matplotlib.use("TKAgg")
+
 
 
 ###################################################

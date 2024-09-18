@@ -24,7 +24,7 @@ import xarray as xr
 from scipy.optimize import curve_fit, minimize
 from scipy.signal import deconvolve, lfilter, convolve
 
-# matplotlib.use("TKAgg")
+
 
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal
