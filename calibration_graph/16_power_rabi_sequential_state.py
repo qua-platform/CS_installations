@@ -18,20 +18,21 @@ Next steps before going to the next node:
     - Save the current state by calling machine.save("quam")
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
-
+from typing import Optional, Literal, List
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    targets_name: str = 'qubits'
+    qubits: Optional[List[str]] = None
     num_averages: int = 50
-    operation_x180_or_any_90: Literal['x180', 'x90', '-x90', 'y90', '-y90'] = "x90"
+    operation_x180_or_any_90: Literal['x180', 'x90', '-x90', 'y90', '-y90'] = "x180"
     min_amp_factor: float = 0.8
     max_amp_factor: float = 1.2
     amp_factor_step: float = 0.005
     max_number_rabi_pulses_per_sweep: int = 100
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
-    reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
+    reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
     simulate: bool = False
+    wait_for_other_users: bool = False
 
 node = QualibrationNode(
     name="08_Power_Rabi_State",
@@ -78,7 +79,7 @@ qmm = machine.connect()
 if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
 
 ###################
@@ -173,10 +174,24 @@ if simulate:
     node.save()
     quit()
 else:
-    with qm_session(qmm, config, timeout=100) as qm:
+    if node.parameters.wait_for_other_users:
+        with qm_session(qmm, config, timeout=100) as qm:
+            job = qm.execute(power_rabi, flags=['auto-element-thread'])
+            # Get results from QUA program
+            data_list = ["n"]
+            results = fetching_tool(job, data_list, mode="live")
+            # Live plotting
+            # fig = plt.figure()
+            # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+            while results.is_processing():
+                fetched_data = results.fetch_all()
+                n = fetched_data[0]
+                progress_counter(n, n_avg, start_time=results.start_time)
+    else:
+        qm = qmm.open_qm(config)
         job = qm.execute(power_rabi, flags=['auto-element-thread'])
         # Get results from QUA program
-        data_list = ["n"] + sum([[f"state{i + 1}"] for i in range(num_qubits)], [])
+        data_list = ["n"]
         results = fetching_tool(job, data_list, mode="live")
         # Live plotting
         # fig = plt.figure()
@@ -185,7 +200,6 @@ else:
             fetched_data = results.fetch_all()
             n = fetched_data[0]
             progress_counter(n, n_avg, start_time=results.start_time)
-
 # %%
 handles = job.result_handles
 ds = fetch_results_as_xarray(handles, qubits, {"amp": amps, "N": N_pi_vec})
@@ -260,6 +274,9 @@ with node.record_state_updates():
         q.xy.operations[operation].amplitude = fit_results[q.name]['Pi_amplitude']
 
 # %%
+node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()
+
+# %%

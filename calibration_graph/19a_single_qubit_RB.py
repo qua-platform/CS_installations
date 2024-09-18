@@ -20,12 +20,13 @@ Prerequisites:
     - Set the desired flux bias.
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
 from qualang_tools.multi_user import qm_session
 from quam_libs.trackable_object import tracked_updates
+from typing import Optional, Literal, List
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    targets_name: str = 'qubits'
+    qubits: Optional[List[str]] = None
     use_state_discrimination: bool = True
     use_strict_timing: bool = False
     num_random_sequences: int = 100  # Number of random sequences
@@ -37,6 +38,7 @@ class Parameters(NodeParameters):
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
     simulate: bool = False
     multiplexed: bool = True
+    wait_for_other_users: bool = False
 
 node = QualibrationNode(
     name="11a_Randomized_Benchmarking",
@@ -84,7 +86,7 @@ qmm = machine.connect()
 if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
 
 ##############################
@@ -323,21 +325,32 @@ if simulate:
 else:
     # Prepare data for saving
     node.results = {}
-    with qm_session(qmm, config, timeout=100) as qm:
-        job = qm.execute(randomized_benchmarking, flags=['auto-element-thread'])
-    
-    
+    if node.parameters.wait_for_other_users:
+        with qm_session(qmm, config, timeout=100) as qm:
+            job = qm.execute(randomized_benchmarking, flags=['auto-element-thread'])
+            for i in range(num_qubits):
+                print(f"Fetching results for qubit {qubits[i].name}")
+                data_list = ["iteration"]
+                results = fetching_tool(job, data_list, mode="live")
+                while results.is_processing():
+                # Fetch results
+                    fetched_data = results.fetch_all()
+                    m = fetched_data[0]
+                    progress_counter(m, num_of_sequences, start_time=results.start_time)
+    else:
+        qm = qmm.open_qm(config)
+        job = qm.execute(randomized_benchmarking)
+        # job = qmm.execute(randomized_benchmarking, flags=['auto-element-thread'])
         for i in range(num_qubits):
             print(f"Fetching results for qubit {qubits[i].name}")
             data_list = ["iteration"]
             results = fetching_tool(job, data_list, mode="live")
-        # Live plotting
-
             while results.is_processing():
             # Fetch results
                 fetched_data = results.fetch_all()
                 m = fetched_data[0]
                 progress_counter(m, num_of_sequences, start_time=results.start_time)
+        qm.close()
 
 # %%
 depths = np.arange(0, max_circuit_depth + 0.1, delta_clifford)
@@ -397,6 +410,7 @@ plt.show()
 node.results['figure'] = grid.fig
 
 # %%
+node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()

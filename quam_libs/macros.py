@@ -120,7 +120,8 @@ def active_reset(
     name: str,
     save_qua_var: Optional[StreamType] = None,
     pi_pulse_name: str = "x180",
-    readout_pulse_name: str = "readout"):
+    readout_pulse_name: str = "readout",
+    max_attempts: int = 15):
     
     qubit = quam.qubits[name]
     pulse = qubit.resonator.operations[readout_pulse_name]
@@ -136,7 +137,7 @@ def active_reset(
     wait(qubit.resonator.depletion_time // 4, qubit.resonator.name)
     qubit.xy.play(pi_pulse_name, condition=state)
     qubit.align()
-    with while_(I > pulse.rus_exit_threshold):
+    with while_((I > pulse.rus_exit_threshold)&(attempts < max_attempts)):
         qubit.align()
         qubit.resonator.measure("readout", qua_vars=(I, Q))
         assign(state, I > pulse.threshold)

@@ -20,9 +20,9 @@ Next steps before going to the next node:
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal, List
 
-
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    targets_name: str = 'qubits'
+    qubits: Optional[List[str]] = ['q1']
     num_averages: int = 100
     frequency_detuning_in_mhz: float = 4.0
     min_wait_time_in_ns: int = 16
@@ -80,7 +80,7 @@ qmm = machine.connect()
 if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
 
 # %%

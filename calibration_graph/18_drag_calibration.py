@@ -18,13 +18,12 @@ Next steps before going to the next node:
     - Save the current state by calling machine.save("quam")
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
-
 from quam_libs.trackable_object import tracked_updates
-
+from typing import Optional, Literal, List
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    targets_name: str = 'qubits'
+    qubits: Optional[List[str]] = None
     num_averages: int = 10
     operation: str = "x180"
     min_amp_factor: float = 0.0001
@@ -75,7 +74,7 @@ operation = node.parameters.operation  # The qubit operation to play
 if node.parameters.qubits is None:
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
 
 tracked_qubits = []
 for q in qubits:
@@ -259,6 +258,7 @@ with node.record_state_updates():
         q.xy.operations[operation].alpha = fit_results[q.name]['alpha']
 
 # %%
+node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()

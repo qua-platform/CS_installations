@@ -19,12 +19,13 @@ Next steps before going to the next node:
     - Update the g -> e threshold (ge_threshold) in the state.
     - Save the current state by calling machine.save("quam")
 """
-from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
 
+from qualibrate import QualibrationNode, NodeParameters
+from typing import Optional, Literal, List
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    targets_name: str = 'qubits'
+    qubits: Optional[List[str]] = None
     num_runs: int = 2000
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
@@ -77,7 +78,7 @@ qmm = machine.connect()
 if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
 # %%
 ###################

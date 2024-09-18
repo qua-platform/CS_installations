@@ -18,11 +18,11 @@ Next steps before going to the next node:
     - Save the current state by calling machine.save("quam")
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
-
+from typing import Optional, Literal, List
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    targets_name: str = 'qubits'
+    qubits: Optional[List[str]] = None
     num_averages: int = 40
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.05
@@ -74,7 +74,7 @@ qmm = machine.connect()
 if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
 for q in qubits:
     # check if an EF_x180 operation exists
@@ -278,6 +278,7 @@ for q in qubits:
         q.GEF_frequency_shift = int(fit_results[q.name]['GEF_detuning'])
 
 # %%
+node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()

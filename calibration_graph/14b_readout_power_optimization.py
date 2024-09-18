@@ -22,10 +22,9 @@ Next steps before going to the next node:
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal, List
 
-
 class Parameters(NodeParameters):
-    # target_names: str = 'qubits'
-    qubits: Optional[str] = None
+    targets_name: str = 'qubits'
+    qubits: Optional[List[str]] = None
     num_runs: int = 2000
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
@@ -83,7 +82,7 @@ qmm = machine.connect()
 if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
 # %%
 ###################
@@ -439,6 +438,7 @@ if not node.parameters.simulate:
             qubit.resonator.confusion_matrix = node.results["results"][qubit.name]["confusion_matrix"].tolist()
 
 # %%
+node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()

@@ -17,15 +17,17 @@ Before proceeding to the next node:
     - Save the current state by calling machine.save("quam")
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional
+from typing import Optional, List
 
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    targets_name: str = 'qubits'
+    qubits: Optional[List[str]] = None
     num_averages: int = 100
     frequency_span_in_mhz: float = 15.
     frequency_step_in_mhz: float = 0.1
     simulate: bool = False
+    wait_for_other_users: bool = False
 
 node = QualibrationNode(
     name="02a_Resonator_Spectroscopy",
@@ -78,7 +80,7 @@ qmm = machine.connect()
 if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
 resonators = [qubit.resonator for qubit in qubits]
 num_qubits = len(qubits)
 num_resonators = len(resonators)
@@ -144,8 +146,55 @@ if simulate:
     node.save()
     quit()
 else:
-    # Open a quantum machine to execute the QUA program
-    with qm_session(qmm, config, timeout=100) as qm:
+    if node.parameters.wait_for_other_users:
+        # Open a quantum machine to execute the QUA program
+        with qm_session(qmm, config, timeout=100) as qm:
+            job = qm.execute(multi_res_spec)
+            # Tool to easily fetch results from the OPX (results_handle used in it)
+            data_list = sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])
+            if live_plot:
+                results = fetching_tool(job, data_list, mode="live")
+                # Prepare the figures for live plotting
+                fig, axss = plt.subplots(2, num_qubits, figsize=(4 * num_qubits, 5))
+                if len(axss.shape) == 1:
+                    axss = np.expand_dims(axss, -1)
+                interrupt_on_close(fig, job)
+                # Live plotting
+                s_data = []
+                while results.is_processing():
+                    # Fetch results
+                    data = results.fetch_all()
+                    for i in range(num_qubits):
+                        I, Q = data[2 * i : 2 * i + 2]
+                        rr = resonators[i]
+                        # Data analysis
+                        s_data.append(u.demod2volts(I + 1j * Q, rr.operations["readout"].length))
+                        # Plot
+                        plt.sca(axss[0, i])
+                        plt.suptitle("Multiplexed resonator spectroscopy")
+                        plt.cla()
+                        plt.plot(
+                            (rr.LO_frequency + rr.intermediate_frequency) / u.MHz + dfs / u.MHz,
+                            np.abs(s_data[-1]),
+                            ".",
+                        )
+                        plt.title(f"{rr.name}")
+                        plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
+                        plt.sca(axss[1, i])
+                        plt.cla()
+                        plt.plot(
+                            (rr.LO_frequency + rr.intermediate_frequency) / u.MHz + dfs / u.MHz,
+                            signal.detrend(np.unwrap(np.angle(s_data[-1]))),
+                            ".",
+                        )
+                        plt.ylabel("Phase [rad]")
+                        plt.xlabel("Readout frequency [MHz]")
+                        plt.tight_layout()
+                        plt.pause(0.1)
+    else:
+        
+        # Open a quantum machine to execute the QUA program
+        qm = qmm.open_qm(config)
         job = qm.execute(multi_res_spec)
         # Tool to easily fetch results from the OPX (results_handle used in it)
         data_list = sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])
@@ -188,9 +237,8 @@ else:
                     plt.xlabel("Readout frequency [MHz]")
                     plt.tight_layout()
                     plt.pause(0.1)
-
-    # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
-    # qm.close()
+        # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
+        qm.close()
 
 # %%
 handles = job.result_handles
@@ -279,6 +327,7 @@ with node.record_state_updates():
 
 
 # %%
+node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()

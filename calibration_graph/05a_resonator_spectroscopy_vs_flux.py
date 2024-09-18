@@ -26,7 +26,8 @@ from qualibrate import QualibrationNode, NodeParameters
 
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    targets_name: str = 'qubits'
+    qubits: Optional[List[str]] = None
     num_averages: int = 10
     min_flux_offset_in_v: float = -0.5
     max_flux_offset_in_v: float = 0.5
@@ -87,7 +88,7 @@ qmm = machine.connect()
 if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
 if any([q.z is None for q in qubits]):
     warnings.warn("Found qubits without a flux line. Skipping")
 qubits = [q for q in qubits if q.z is not None]
@@ -358,6 +359,7 @@ with node.record_state_updates():
         q.phi0_voltage = fit_results[q.name]['dv_phi0']
         q.phi0_current = fit_results[q.name]['dv_phi0'] * node.parameters.input_line_impedance_in_ohm * attenuation_factor
 # %%
+node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()

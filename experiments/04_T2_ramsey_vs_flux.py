@@ -34,7 +34,7 @@ class Parameters(NodeParameters):
     simulate: bool = False
 
 node = QualibrationNode(
-    name="08a_T2_vs_flux",
+    name="decoherence_T2_vs_flux",
     parameters_class=Parameters
 )
 
