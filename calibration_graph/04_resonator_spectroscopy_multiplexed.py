@@ -27,6 +27,7 @@ class Parameters(NodeParameters):
     frequency_span_in_mhz: float = 15.
     frequency_step_in_mhz: float = 0.1
     simulate: bool = False
+    timeout: int = 100
     wait_for_other_users: bool = False
 
 node = QualibrationNode(
@@ -148,7 +149,7 @@ if simulate:
 else:
     if node.parameters.wait_for_other_users:
         # Open a quantum machine to execute the QUA program
-        with qm_session(qmm, config, timeout=100) as qm:
+        with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
             job = qm.execute(multi_res_spec)
             # Tool to easily fetch results from the OPX (results_handle used in it)
             data_list = sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])

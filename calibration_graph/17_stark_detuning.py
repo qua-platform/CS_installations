@@ -32,6 +32,7 @@ class Parameters(NodeParameters):
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
     simulate: bool = False
+    timeout: int = 100
 
 node = QualibrationNode(
     name="09_Stark_Detuning",
@@ -191,7 +192,7 @@ if simulate:
     node.save()
     quit()
 else:
-    with qm_session(qmm, config, timeout=100) as qm:
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(stark_detuning, flags=['auto-element-thread'])
         # Get results from QUA program
         data_list = ["n"] + sum([[f"state{i + 1}"] for i in range(num_qubits)], [])

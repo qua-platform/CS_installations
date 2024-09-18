@@ -29,6 +29,7 @@ class Parameters(NodeParameters):
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
+    timeout: int = 100
     start_amp: float = 0.5
     end_amp: float = 1.99
     num_amps: int = 10
@@ -173,7 +174,7 @@ if simulate:
     node.save()
     quit()
 else:
-    with qm_session(qmm, config, timeout=100) as qm:
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(iq_blobs, flags=['auto-element-thread'])
 
         for i in range(num_qubits):

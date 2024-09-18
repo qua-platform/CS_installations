@@ -61,6 +61,7 @@ class Parameters(NodeParameters):
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
     simulate: bool = False
+    timeout: int = 100
 
 node = QualibrationNode(
     name="11c_Randomized_Benchmarking_Interleaved_ORBIT",

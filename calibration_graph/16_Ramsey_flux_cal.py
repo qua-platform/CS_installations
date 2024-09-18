@@ -32,6 +32,7 @@ class Parameters(NodeParameters):
     flux_step : float = 0.002
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
+    timeout: int = 100
     flux_mode_dc_or_pulsed: Literal['dc', 'pulsed'] = 'pulsed'
 
 node = QualibrationNode(
@@ -203,7 +204,7 @@ if simulate:
     node.save()
     quit()
 else:
-    with qm_session(qmm, config, timeout=100) as qm:
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(ramsey, flags=['auto-element-thread'])
         # Get results from QUA program
         for i in range(num_qubits):

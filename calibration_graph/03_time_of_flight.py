@@ -26,6 +26,7 @@ class Parameters(NodeParameters):
     readout_amplitude_in_v: Optional[float] = None
     readout_length_in_ns: Optional[int] = None
     simulate: bool = False
+    timeout: int = 100
 
 node = QualibrationNode(
     name="01_Time_of_Flight",

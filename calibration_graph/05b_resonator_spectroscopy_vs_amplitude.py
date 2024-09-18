@@ -30,6 +30,7 @@ class Parameters(NodeParameters):
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.1
     simulate: bool = False
+    timeout: int = 100
     forced_flux_bias_v: Optional[float] = None
     max_power_dbm: int = 10
     min_power_dbm: int = -20
@@ -194,7 +195,7 @@ if simulate:
     node.save()
     quit()
 else:
-    with qm_session(qmm, config, timeout=100) as qm:
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(multi_res_spec_vs_amp)
         # Prepare the figures for live plotting
         fig = plt.figure()
