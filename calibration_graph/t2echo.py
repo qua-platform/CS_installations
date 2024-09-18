@@ -3,6 +3,7 @@ from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal
 
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
     num_averages: int = 100
@@ -44,9 +45,7 @@ from quam_libs.lib.fit import fit_decay_exp, decay_exp
 
 
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
 # Class containing tools to help handle units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
@@ -67,6 +66,7 @@ num_qubits = len(qubits)
 ###################
 # The QUA program #
 ###################
+# %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 
 # Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
@@ -152,12 +152,9 @@ with program() as t1:
                 I_st[i].buffer(len(idle_times)).average().save(f"I{i + 1}")
                 Q_st[i].buffer(len(idle_times)).average().save(f"Q{i + 1}")
 
-###########################
-# Run or Simulate Program #
-###########################
-simulate = node.parameters.simulate
 
-if simulate:
+# %% {Simulate_or_execute}
+if node.parameters.simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, t1, simulation_config)
@@ -165,7 +162,7 @@ if simulate:
     node.results = {"figure": plt.gcf()}
     node.machine = machine
     node.save()
-    quit()
+
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(t1, flags=['auto-element-thread'])
@@ -187,6 +184,7 @@ else:
 
 # %%
 if not simulate:
+    # %% {Data_fetching}
     handles = job.result_handles
     ds = fetch_results_as_xarray(handles, qubits, {"idle_time": idle_times})
 
@@ -220,8 +218,7 @@ if not simulate:
     tau_error = -tau * (np.sqrt(decay_res)/decay)
     tau_error.attrs = {'long_name' : 'T2* error', 'units' : 'uSec'}
 
-node.results = {}
-node.results['ds'] = ds
+node.results = {"ds": ds}
 # %%
 if not simulate:
     grid_names = [f'{q.name}_0' for q in qubits]

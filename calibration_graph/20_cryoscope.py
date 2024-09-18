@@ -31,6 +31,7 @@ from typing import Optional, Literal
 from quam_libs.lib.cryoscope_tools import cryoscope_frequency, estimate_fir_coefficients, two_expdecay, expdecay, savgol
 
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     qubits: Optional[str] = 'q4'
     num_averages: int = 1000
@@ -49,9 +50,8 @@ node = QualibrationNode(
 
 node.parameters = Parameters()
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
+# %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
@@ -105,6 +105,7 @@ def baked_waveform(waveform_amp, qubit):
 ###################
 # The QUA program #
 ###################
+# %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 
 cryoscope_len = node.parameters.cryoscope_len  # The length of the cryoscope in nanoseconds
@@ -254,9 +255,7 @@ with program() as cryoscope:
 
 
 # %%
-###########################
-# Run or Simulate Program #
-###########################
+
 simulate =  node.parameters.simulate
 
 if simulate:
@@ -297,6 +296,7 @@ else:
 
 # %%
 if not simulate:
+    # %% {Data_fetching}
     handles = job.result_handles
     ds = fetch_results_as_xarray(handles, [qubit], {"axis": ["x","y"], "time": cryoscope_time})
     plot_process = True

@@ -21,6 +21,7 @@ from qualibrate import QualibrationNode, NodeParameters
 from quam_libs.trackable_object import tracked_updates
 from typing import Optional, Literal, List
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     targets_name: str = 'qubits'
     qubits: Optional[List[str]] = None
@@ -62,9 +63,8 @@ from quam_libs.lib.fit import fit_oscillation, oscillation
 
 
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
+# %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
@@ -97,6 +97,7 @@ qmm = machine.connect()
 # The QUA program #
 ###################
 
+# %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 reset_type = node.parameters.reset_type_thermal_or_active  # "active" or "thermal"
@@ -177,12 +178,9 @@ with program() as stark_detuning:
             Q_stream = Q_st[i].buffer(len(dfs)).buffer(N_pi).average().save(f"Q{i + 1}")
 
 
-###########################
-# Run or Simulate Program #
-###########################
-simulate = node.parameters.simulate
 
-if simulate:
+# %% {Simulate_or_execute}
+if node.parameters.simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, stark_detuning, simulation_config)
@@ -190,7 +188,7 @@ if simulate:
     node.results = {"figure": plt.gcf()}
     node.machine = machine
     node.save()
-    quit()
+
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(stark_detuning, flags=['auto-element-thread'])
@@ -198,8 +196,7 @@ else:
         data_list = ["n"] + sum([[f"state{i + 1}"] for i in range(num_qubits)], [])
         results = fetching_tool(job, data_list, mode="live")
         # Live plotting
-        # fig = plt.figure()
-        # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+
         while results.is_processing():
             fetched_data = results.fetch_all()
             n = fetched_data[0]
@@ -209,8 +206,7 @@ else:
 handles = job.result_handles
 ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs, "N": N_pi_vec})
 
-node.results = {}
-node.results['ds'] = ds
+node.results = {"ds": ds}
 
 # %%
 fit_results = {}
@@ -248,7 +244,7 @@ with node.record_state_updates():
         qubit.xy.operations[operation].detuning = float(fit_results[qubit.name]['detuning'])
         qubit.xy.operations[operation].alpha = -1.0
 
-# %%
+# %% {Save_results}
 node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine

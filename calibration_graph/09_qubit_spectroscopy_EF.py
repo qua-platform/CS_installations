@@ -29,6 +29,7 @@ Before proceeding to the next node:
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal, List
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     targets_name: str = 'qubits'
     qubits: Optional[List[str]] = None
@@ -69,9 +70,8 @@ from quam_libs.lib.save_utils import fetch_results_as_xarray
 
 
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
+# %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
@@ -95,6 +95,7 @@ num_qubits = len(qubits)
 ###################
 
 operation = node.parameters.operation  # The qubit operation to play, can be switched to "x180" when the qubits are found.
+# %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
 operation_len = node.parameters.operation_len_in_ns  # can be None - will just be ignored
@@ -164,12 +165,9 @@ with program() as qubit_spec:
             Q_st[i].buffer(len(dfs)).average().save(f"Q{i + 1}")
 
 
-###########################
-# Run or Simulate Program #
-###########################
-simulate = node.parameters.simulate
 
-if simulate:
+# %% {Simulate_or_execute}
+if node.parameters.simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, qubit_spec, simulation_config)
@@ -177,7 +175,7 @@ if simulate:
     node.results = {"figure": plt.gcf()}
     node.machine = machine
     node.save()
-    quit()
+
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(qubit_spec, flags=['auto-element-thread'])
@@ -185,8 +183,7 @@ else:
         data_list = ["n"] + sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])
         results = fetching_tool(job, data_list, mode="live")
         # Live plotting
-        # fig = plt.figure()
-        # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+
         while results.is_processing():
             # Fetch results
             fetched_data = results.fetch_all()
@@ -287,8 +284,7 @@ ds = ds.assign({'phase': np.arctan2(ds.Q,ds.I)})
 ds.freq_full.attrs['long_name'] = 'Frequency'
 ds.freq_full.attrs['units'] = 'GHz'
 
-node.results = {}
-node.results['ds'] = ds
+node.results = {"ds": ds}
 
 # %%
 from quam_libs.lib.fit import peaks_dips
@@ -338,14 +334,14 @@ plt.show()
 node.results['figure'] = grid.fig
 
 
-# %%
+# %% {Update_state}
 with node.record_state_updates():
     for q in qubits:
         fit_results[q.name] = {}
         if not np.isnan(result.sel(qubit = q.name).position.values):
             q.anharmonicity = int(anharmonicities[q.name])
 
-# %%
+# %% {Save_results}
 node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine

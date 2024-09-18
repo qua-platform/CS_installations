@@ -20,6 +20,7 @@ Next steps before going to the next node:
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal, List
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     targets_name: str = 'qubits'
     qubits: Optional[List[str]] = None
@@ -62,9 +63,8 @@ from quam_libs.lib.fit import fit_oscillation, oscillation
 
 
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
+# %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
@@ -87,6 +87,7 @@ num_qubits = len(qubits)
 ###################
 
 operation = node.parameters.operation_x180_or_any_90  # The qubit operation to play, can be switched to "x180" when the qubits are found.
+# %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 reset_type = node.parameters.reset_type_thermal_or_active  # "active" or "thermal"
@@ -159,12 +160,9 @@ with program() as power_rabi:
             else:
                 raise ValueError(f"Unrecognized operation {operation}.")
 
-###########################
-# Run or Simulate Program #
-###########################
-simulate = node.parameters.simulate
 
-if simulate:
+# %% {Simulate_or_execute}
+if node.parameters.simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, power_rabi, simulation_config)
@@ -172,7 +170,7 @@ if simulate:
     node.results = {"figure": plt.gcf()}
     node.machine = machine
     node.save()
-    quit()
+
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(power_rabi, flags=['auto-element-thread'])
@@ -180,8 +178,7 @@ else:
         data_list = ["n"]
         results = fetching_tool(job, data_list, mode="live")
         # Live plotting
-        # fig = plt.figure()
-        # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+
         while results.is_processing():
             fetched_data = results.fetch_all()
             n = fetched_data[0]
@@ -197,8 +194,7 @@ def abs_amp(q):
     return foo
 
 ds = ds.assign_coords({'abs_amp' : (['qubit','amp'],np.array([abs_amp(q)(amps) for q in qubits]))})
-node.results = {}
-node.results['ds'] = ds
+node.results = {"ds": ds}
 
 # %%
 fit_results = {}
@@ -255,12 +251,12 @@ plt.tight_layout()
 plt.show()
 node.results['figure'] = grid.fig
 
-# %%
+# %% {Update_state}
 with node.record_state_updates():
     for q in qubits:
         q.xy.operations[operation].amplitude = fit_results[q.name]['Pi_amplitude']
 
-# %%
+# %% {Save_results}
 node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine

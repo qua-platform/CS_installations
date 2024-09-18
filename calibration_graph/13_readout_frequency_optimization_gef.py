@@ -20,6 +20,7 @@ Next steps before going to the next node:
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal, List
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     targets_name: str = 'qubits'
     qubits: Optional[List[str]] = None
@@ -58,9 +59,8 @@ from quam_libs.lib.save_utils import fetch_results_as_xarray
 
 
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
+# %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
@@ -87,6 +87,7 @@ for q in qubits:
 ###################
 # The QUA program #
 ###################
+# %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 # The frequency sweep around the resonator resonance frequency f_opt
 span = node.parameters.frequency_span_in_mhz * u.MHz
@@ -184,9 +185,7 @@ with program() as ro_freq_opt:
             Q_f_st[i].buffer(len(dfs)).average().save(f"Q_f{i + 1}")
             
 
-###########################
-# Run or Simulate Program #
-###########################
+
 simulate = False
 
 if simulate:
@@ -197,7 +196,7 @@ if simulate:
     node.results = {"figure": plt.gcf()}
     node.machine = machine
     node.save()
-    quit()
+
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(ro_freq_opt, flags=['auto-element-thread'])
@@ -234,8 +233,7 @@ ds = ds.assign({'Dge' : np.sqrt((ds.I_g - ds.I_e)**2 + (ds.Q_g - ds.Q_e)**2),
 ds['D'] = ds[['Dge', 'Def',
                            'Dgf']].to_array().min("variable")
 
-node.results = {}
-node.results['ds'] = ds
+node.results = {"ds": ds}
 
 # %%
 detuning = ds.D.rolling({"freq" : 5 }).mean("freq").idxmax('freq')
@@ -278,7 +276,7 @@ for q in qubits:
     with node.record_state_updates():
         q.GEF_frequency_shift = int(fit_results[q.name]['GEF_detuning'])
 
-# %%
+# %% {Save_results}
 node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine

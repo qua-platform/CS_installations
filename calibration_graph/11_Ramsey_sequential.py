@@ -20,6 +20,7 @@ Next steps before going to the next node:
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal, List
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     targets_name: str = 'qubits'
     qubits: Optional[List[str]] = None
@@ -62,9 +63,7 @@ from quam_libs.lib.fit import fit_oscillation_decay_exp, oscillation_decay_exp
 
 
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
 # Class containing tools to help handle units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
@@ -85,6 +84,7 @@ num_qubits = len(qubits)
 ###################
 # The QUA program #
 ###################
+# %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 
 # Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
@@ -184,12 +184,9 @@ with program() as ramsey:
                 Q_st[i].buffer(2).buffer(len(idle_times)).average().save(f"Q{i + 1}")
 
 
-###########################
-# Run or Simulate Program #
-###########################
-simulate = node.parameters.simulate
 
-if simulate:
+# %% {Simulate_or_execute}
+if node.parameters.simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, ramsey, simulation_config)
@@ -197,7 +194,7 @@ if simulate:
     node.results = {"figure": plt.gcf()}
     node.machine = machine
     node.save()
-    quit()
+
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(ramsey, flags=['auto-element-thread'])
@@ -222,8 +219,7 @@ ds = fetch_results_as_xarray(handles, qubits, {"sign" : [-1,1], "time": idle_tim
 ds = ds.assign_coords({'time' : (['time'], 4*idle_times)})
 ds.time.attrs['long_name'] = 'idle_time'
 ds.time.attrs['units'] = 'nS'
-node.results = {}
-node.results['ds'] = ds
+node.results = {"ds": ds}
 
 # %%
 
@@ -309,7 +305,7 @@ plt.tight_layout()
 plt.show()
 node.results['figure'] = grid.fig
 
-# %%
+# %% {Update_state}
 with node.record_state_updates():
     for q in qubits:
         if not node.parameters.flux_point_joint_or_independent_or_arbitrary == "arbitrary":
@@ -317,7 +313,7 @@ with node.record_state_updates():
         else:
             q.arbitrary_intermediate_frequency -= float(fit_results[q.name]['freq_offset'])
 
-# %%
+# %% {Save_results}
 node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine

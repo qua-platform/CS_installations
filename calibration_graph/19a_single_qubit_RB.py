@@ -24,6 +24,7 @@ from qualang_tools.multi_user import qm_session
 from quam_libs.trackable_object import tracked_updates
 from typing import Optional, Literal, List
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     targets_name: str = 'qubits'
     qubits: Optional[List[str]] = None
@@ -69,9 +70,8 @@ from quam_libs.lib.fit import fit_decay_exp, decay_exp
 
 
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
+# %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
@@ -93,6 +93,7 @@ num_qubits = len(qubits)
 # Program-specific variables #
 ##############################
 num_of_sequences = node.parameters.num_random_sequences  # Number of random sequences
+# %% {QUA_program}
 n_avg = node.parameters.num_averages  # Number of averaging loops for each random sequence
 max_circuit_depth = node.parameters.max_circuit_depth  # Maximum circuit depth
 if node.parameters.delta_clifford < 1:
@@ -312,16 +313,15 @@ with program() as randomized_benchmarking:
         for i in range(num_qubits):
             state_st[i].buffer(n_avg).map(FUNCTIONS.average()).buffer(num_depths).buffer(num_of_sequences).save(f"state{i + 1}")
 
-simulate = node.parameters.simulate
-
-if simulate:
+# %% {Simulate_or_execute}
+if node.parameters.simulate:
     simulation_config = SimulationConfig(duration=100_000)  # in clock cycles
     job = qmm.simulate(config, randomized_benchmarking, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results["figure"] = plt.gcf()
     node.machine = machine
     node.save()
-    quit()
+
 else:
     # Prepare data for saving
     node.results = {}
@@ -343,8 +343,7 @@ depths[0] = 1
 handles = job.result_handles
 ds = fetch_results_as_xarray(handles, qubits, {"depths": depths, "sequence": np.arange(num_of_sequences)})
 
-node.results = {}
-node.results['ds'] = ds
+node.results = {"ds": ds}
 
 # %%
 import xarray as xr
@@ -394,7 +393,7 @@ plt.tight_layout()
 plt.show()
 node.results['figure'] = grid.fig
 
-# %%
+# %% {Save_results}
 node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine

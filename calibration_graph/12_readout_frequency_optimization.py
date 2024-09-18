@@ -20,6 +20,7 @@ Next steps before going to the next node:
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal, List
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     targets_name: str = 'qubits'
     qubits: Optional[List[str]] = None
@@ -58,9 +59,8 @@ from quam_libs.lib.save_utils import fetch_results_as_xarray
 
 
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
+# %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
@@ -81,6 +81,7 @@ num_qubits = len(qubits)
 ###################
 # The QUA program #
 ###################
+# %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 # The frequency sweep around the resonator resonance frequency f_opt
 span = node.parameters.frequency_span_in_mhz * u.MHz
@@ -156,12 +157,9 @@ with program() as ro_freq_opt:
             Q_e_st[i].buffer(len(dfs)).average().save(f"Q_e{i + 1}")
             
 
-#######################
-# Simulate or execute #
-#######################
-simulate = node.parameters.simulate
 
-if simulate:
+# %% {Simulate_or_execute}
+if node.parameters.simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, ro_freq_opt, simulation_config)
@@ -169,7 +167,7 @@ if simulate:
     node.results = {"figure": plt.gcf()}
     node.machine = machine
     node.save()
-    quit()
+
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(ro_freq_opt, flags=['auto-element-thread'])
@@ -230,8 +228,7 @@ ds.freq_full.attrs['units'] = 'GHz'
 ds = ds.assign({'D' : np.sqrt((ds.I_g - ds.I_e)**2 + (ds.Q_g - ds.Q_e)**2),
                 'IQ_abs_g' : np.sqrt(ds.I_g**2 + ds.Q_g**2),
                 'IQ_abs_e' : np.sqrt(ds.I_e**2 + ds.Q_e**2)})
-node.results = {}
-node.results['ds'] = ds
+node.results = {"ds": ds}
 
 # %%
 detuning = ds.D.rolling({"freq" : 5 }).mean("freq").idxmax('freq')
@@ -273,7 +270,7 @@ for q in qubits:
         q.resonator.intermediate_frequency += int(fit_results[q.name]['detuning'])
         q.chi = float(fit_results[q.name]['chi'])
 
-# %%
+# %% {Save_results}
 node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine

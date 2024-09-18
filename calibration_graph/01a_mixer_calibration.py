@@ -10,6 +10,7 @@ from qualibrate import QualibrationNode, NodeParameters
 from quam_libs.components import QuAM
 
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
     calibrate_resonator: bool = True
@@ -22,9 +23,7 @@ node = QualibrationNode(
 
 node.parameters = Parameters()
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
 
 # Instantiate the QuAM class from the state file
 machine = QuAM.load()

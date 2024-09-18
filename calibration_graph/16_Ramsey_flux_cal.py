@@ -20,6 +20,7 @@ Next steps before going to the next node:
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal, List
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     targets_name: str = 'qubits'
     qubits: Optional[List[str]] = ['q1']
@@ -64,9 +65,7 @@ from quam_libs.lib.fit import fit_oscillation_decay_exp, oscillation_decay_exp
 # %%
 
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
 # Class containing tools to help handle units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
@@ -88,6 +87,7 @@ num_qubits = len(qubits)
 ###################
 # The QUA program #
 ###################
+# %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 
 # Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
@@ -189,12 +189,9 @@ with program() as ramsey:
             state_st[i].buffer(len(idle_times)).buffer(len(fluxes)).average().save(f"state{i + 1}")
 
 
-###########################
-# Run or Simulate Program #
-###########################
-simulate = node.parameters.simulate
 
-if simulate:
+# %% {Simulate_or_execute}
+if node.parameters.simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, ramsey, simulation_config)
@@ -202,7 +199,7 @@ if simulate:
     node.results = {"figure": plt.gcf()}
     node.machine = machine
     node.save()
-    quit()
+
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(ramsey, flags=['auto-element-thread'])
@@ -225,8 +222,7 @@ else:
 handles = job.result_handles
 ds = fetch_results_as_xarray(handles, qubits, {"idle_time": idle_times, "flux": fluxes})
 
-node.results = {}
-node.results['ds'] = ds
+node.results = {"ds": ds}
 # %%
 ds = ds.assign_coords(idle_time=4*ds.idle_time/1e3)  # convert to usec
 ds.flux.attrs = {'long_name': 'flux', 'units': 'V'}
@@ -307,7 +303,7 @@ for q in qubits:
     node.results['fit_results'][q.name]['flux_offset'] = flux_offset[q.name]
     node.results['fit_results'][q.name]['freq_offset'] = freq_offset[q.name]
     node.results['fit_results'][q.name]['quad_term'] = a[q.name]
-# %%
+# %% {Update_state}
 with node.record_state_updates():
     for qubit in qubits:
         qubit.xy.intermediate_frequency -= freq_offset[qubit.name]
@@ -318,8 +314,7 @@ with node.record_state_updates():
         else:
             raise RuntimeError(f"unknown flux_point")
         qubit.freq_vs_flux_01_quad_term = float(a[qubit.name])
-# %%
-
+# %% {Save_results}
 node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine

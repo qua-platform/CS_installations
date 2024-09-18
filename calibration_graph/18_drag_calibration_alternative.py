@@ -21,6 +21,7 @@ from qualibrate import QualibrationNode, NodeParameters
 from quam_libs.trackable_object import tracked_updates
 from typing import Optional, Literal, List
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     targets_name: str = 'qubits'
     qubits: Optional[List[str]] = None
@@ -63,9 +64,8 @@ import xarray as xr
 
 
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
+# %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
@@ -93,6 +93,7 @@ operation = node.parameters.operation  # The qubit operation to play
 # The QUA program #
 ###################
 
+# %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 reset_type = node.parameters.reset_type_thermal_or_active  # "active" or "thermal"
@@ -157,12 +158,9 @@ with program() as drag_calibration:
             state_stream[i].buffer(len(amps)).buffer(2).average().save(f"state{i + 1}")
 
 
-###########################
-# Run or Simulate Program #
-###########################
-simulate = node.parameters.simulate
 
-if simulate:
+# %% {Simulate_or_execute}
+if node.parameters.simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, drag_calibration, simulation_config)
@@ -170,7 +168,7 @@ if simulate:
     node.results = {"figure": plt.gcf()}
     node.machine = machine
     node.save()
-    quit()
+
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(drag_calibration, flags=['auto-element-thread'])
@@ -188,8 +186,7 @@ def alpha(q):
 ds = ds.assign_coords({'alpha' : (['qubit','amp'],np.array([alpha(q)(amps) for q in qubits]))})
 node.results = {}
 
-node.results = {}
-node.results['ds'] = ds
+node.results = {"ds": ds}
 
 # %%
 
@@ -230,7 +227,7 @@ with node.record_state_updates():
         q.xy.operations[operation].alpha = fit_results[q.name]['alpha']
 
 # %%
-node.outcomes = {q.name: "successful" for q in qubits}
+# %% {Save_results}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()

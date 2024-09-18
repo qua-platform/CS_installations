@@ -22,6 +22,7 @@ Next steps before going to the next node:
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal, List
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     targets_name: str = 'qubits'
     qubits: Optional[List[str]] = None
@@ -61,9 +62,8 @@ import xarray as xr
 
 
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
+# %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
@@ -178,9 +178,7 @@ with program() as iq_blobs:
             I_f_st[i].save_all(f"I_f{i + 1}")
             Q_f_st[i].save_all(f"Q_f{i + 1}")
 
-###########################
-# Run or Simulate Program #
-###########################
+
 simulate = False
 
 if simulate:
@@ -191,7 +189,7 @@ if simulate:
     node.results = {"figure": plt.gcf()}
     node.machine = machine
     node.save()
-    quit()
+
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(iq_blobs)
@@ -272,8 +270,7 @@ ds = xr.apply_ufunc(
     output_dtypes=[float]  # Specify the output data type
 )
 
-node.results = {}
-node.results['ds'] = ds
+node.results = {"ds": ds}
 
 # %%
 node.results["results"] = {}
@@ -354,7 +351,7 @@ for qubit in qubits:
     qubit.resonator.gef_centers = node.results["results"][qubit.name]["center_matrix"].tolist()
     qubit.resonator.gef_confusion_matrix = node.results["results"][qubit.name]["confusion_matrix"].tolist()
 
-# %%
+# %% {Save_results}
 node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine

@@ -22,6 +22,7 @@ Next steps before going to the next node:
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal, List
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     targets_name: str = 'qubits'
     qubits: Optional[List[str]] = None
@@ -66,9 +67,8 @@ import xarray as xr
 
 
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
+# %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
@@ -159,9 +159,7 @@ with program() as iq_blobs:
             Q_e_st[i].buffer(len(amps)).buffer(n_runs).save(f"Q_e{i + 1}")
 
 
-###########################
-# Run or Simulate Program #
-###########################
+
 simulate = False
 
 if simulate:
@@ -172,7 +170,7 @@ if simulate:
     node.results = {"figure": plt.gcf()}
     node.machine = machine
     node.save()
-    quit()
+
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(iq_blobs, flags=['auto-element-thread'])
@@ -237,6 +235,7 @@ else:
 
 # %%
 if not node.parameters.simulate:
+    # %% {Data_fetching}
     handles = job.result_handles
     ds = fetch_results_as_xarray(handles, qubits, {"amplitude": amps, "N": np.linspace(1, n_runs, n_runs)})
 
@@ -271,8 +270,7 @@ if not node.parameters.simulate:
     ds = ds_rearranged
 
 
-    node.results = {}
-    node.results['ds'] = ds
+    node.results = {"ds": ds}
 
     node.results["results"] = {}
     node.results["figs"] = {}
@@ -438,7 +436,7 @@ if not node.parameters.simulate:
             qubit.resonator.operations["readout"].amplitude = float(node.results["results"][qubit.name]["best_amp"])
             qubit.resonator.confusion_matrix = node.results["results"][qubit.name]["confusion_matrix"].tolist()
 
-# %%
+# %% {Save_results}
 node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine

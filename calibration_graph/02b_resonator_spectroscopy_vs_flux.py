@@ -20,6 +20,7 @@ Before proceeding to the next node:
     - Save the current state by calling machine.save("quam")
 """
 
+# %% {Imports}
 from qualibrate import QualibrationNode, NodeParameters
 from quam_libs.components import QuAM
 from quam_libs.macros import qua_declaration
@@ -27,7 +28,6 @@ from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 from quam_libs.lib.save_utils import fetch_results_as_xarray
 from quam_libs.lib.fit import fit_oscillation
 from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 from qualang_tools.multi_user import qm_session
 from qualang_tools.units import unit
@@ -226,6 +226,7 @@ else:
 
     node.results = {"ds": ds}
 
+
     # %% {Data_analysis}
     peak_freq = ds.IQ_abs.idxmin(dim="freq")
     # fit to a cosine using the qiskit function
@@ -282,6 +283,7 @@ else:
         print(f"(shift of {rel_freq_shift.sel(qubit = q.name).values/1e6:.0f} MHz)")
 
     node.results["fit_results"] = fit_results
+
 
     # %% {Plotting}
     grid_names = [f"{q.name}_0" for q in qubits]

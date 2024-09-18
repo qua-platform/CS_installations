@@ -18,6 +18,7 @@ from typing import Optional
 from qualibrate import QualibrationNode, NodeParameters
 from quam_libs.trackable_object import tracked_updates
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     qubit: str = "q1"
     num_averages: int = 100
@@ -44,9 +45,8 @@ import numpy as np
 from scipy.signal import savgol_filter
 
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
+# %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
@@ -97,9 +97,7 @@ with program() as raw_trace_prog:
         adc_st.input1().save("adc_single_run")
 
 
-#######################
-# Simulate or execute #
-#######################
+
 if node.parameters.simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns

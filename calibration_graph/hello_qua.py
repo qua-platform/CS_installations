@@ -9,9 +9,8 @@ from scipy.signal import savgol_filter
 from qualang_tools.units import unit
 from quam_libs.components import QuAM
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
+# %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file

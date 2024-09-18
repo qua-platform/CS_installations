@@ -23,6 +23,7 @@ Next steps before going to the next node:
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal, List
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     targets_name: str = 'qubits'
     qubits: Optional[List[str]] = None
@@ -43,28 +44,22 @@ node.parameters = Parameters()
 from qm.qua import *
 from qm import SimulationConfig
 from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
 from qualang_tools.multi_user import qm_session
 from qualang_tools.analysis.discriminator import two_state_discriminator
 from qualang_tools.units import unit
 from quam_libs.components import QuAM
-from quam_libs.macros import qua_declaration, multiplexed_readout, active_reset
+from quam_libs.macros import qua_declaration, active_reset
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-import matplotlib
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 from quam_libs.lib.save_utils import fetch_results_as_xarray
 import xarray as xr
 
 
 
-
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+# %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
@@ -152,9 +147,7 @@ with program() as iq_blobs:
             Q_e_st[i].save_all(f"Q_e{i + 1}")
 
 
-###########################
-# Run or Simulate Program #
-###########################
+
 simulate = False
 
 if simulate:
@@ -165,7 +158,7 @@ if simulate:
     node.results = {"figure": plt.gcf()}
     node.machine = machine
     node.save()
-    quit()
+
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(iq_blobs, flags=['auto-element-thread'])
@@ -246,8 +239,7 @@ ds = xr.apply_ufunc(
     output_dtypes=[float]  # Specify the output data type
 )
 
-node.results = {}
-node.results['ds'] = ds
+node.results = {"ds": ds}
 
 # %%
 node.results["figs"] = {}
@@ -312,7 +304,7 @@ plt.tight_layout()
 plt.show()
 node.results['figure_fidelities'] = grid.fig
 
-# %%
+# %% {Update_state}
 with node.record_state_updates():
     for qubit in qubits:
         qubit.resonator.operations["readout"].integration_weights_angle -= float(node.results["results"][qubit.name]["angle"])
@@ -321,7 +313,7 @@ with node.record_state_updates():
         qubit.resonator.operations["readout"].rus_exit_threshold = float(node.results["results"][qubit.name]["rus_threshold"])
         qubit.resonator.confusion_matrix = node.results["results"][qubit.name]["confusion_matrix"].tolist()
 
-# %%
+# %% {Save_results}
 node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine

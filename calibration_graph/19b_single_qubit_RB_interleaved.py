@@ -28,6 +28,7 @@ from qualang_tools.multi_user import qm_session
 from quam_libs.trackable_object import tracked_updates
 
 
+# %% {Node_parameters}
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
     use_state_discrimination: bool = True
@@ -65,9 +66,8 @@ from scipy.optimize import curve_fit
 import numpy as np
 
 
-###################################################
-#  Load QuAM and open Communication with the QOP  #
-###################################################
+
+# %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
@@ -88,6 +88,7 @@ num_qubits = len(qubits)
 # Program-specific variables #
 ##############################
 num_of_sequences = node.parameters.num_random_sequences  # Number of random sequences
+# %% {QUA_program}
 n_avg = node.parameters.num_averages  # Number of averaging loops for each random sequence
 max_circuit_depth = node.parameters.max_circuit_depth  # Maximum circuit depth
 if node.parameters.delta_clifford < 1:
@@ -337,9 +338,8 @@ def get_rb_interleaved_program(qubit: Transmon):
     return rb
 
 
-simulate = node.parameters.simulate
-
-if simulate:
+# %% {Simulate_or_execute}
+if node.parameters.simulate:
     simulation_config = SimulationConfig(duration=100_000)  # in clock cycles
     job = qmm.simulate(config, get_rb_interleaved_program(qubits[0]), simulation_config)
     job.get_simulated_samples().con1.plot()
