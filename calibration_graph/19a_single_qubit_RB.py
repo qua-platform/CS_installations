@@ -21,7 +21,7 @@ Prerequisites:
 """
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal
-
+from qualang_tools.multi_user import qm_session
 from quam_libs.trackable_object import tracked_updates
 
 class Parameters(NodeParameters):
@@ -323,26 +323,21 @@ if simulate:
 else:
     # Prepare data for saving
     node.results = {}
-    # Open the quantum machine
-    qm = qmm.open_qm(config)
-    # Calibrate the active qubits
-    # machine.calibrate_octave_ports(qm)
-    # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(randomized_benchmarking)
+    with qm_session(qmm, config, timeout=100) as qm:
+        job = qm.execute(randomized_benchmarking, flags=['auto-element-thread'])
     
     
-    for i in range(num_qubits):
-        print(f"Fetching results for qubit {qubits[i].name}")
-        data_list = ["iteration"] 
-        results = fetching_tool(job, data_list, mode="live")
-    # Live plotting
+        for i in range(num_qubits):
+            print(f"Fetching results for qubit {qubits[i].name}")
+            data_list = ["iteration"]
+            results = fetching_tool(job, data_list, mode="live")
+        # Live plotting
 
-        while results.is_processing():
-        # Fetch results
-            fetched_data = results.fetch_all()
-            m = fetched_data[0]
-            progress_counter(m, num_of_sequences, start_time=results.start_time)
-    qm.close()   
+            while results.is_processing():
+            # Fetch results
+                fetched_data = results.fetch_all()
+                m = fetched_data[0]
+                progress_counter(m, num_of_sequences, start_time=results.start_time)
 
 # %%
 depths = np.arange(0, max_circuit_depth + 0.1, delta_clifford)

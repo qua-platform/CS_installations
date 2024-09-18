@@ -52,6 +52,7 @@ from qm import SimulationConfig
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
+from qualang_tools.multi_user import qm_session
 from qualang_tools.units import unit
 from quam_libs.components import QuAM
 from quam_libs.macros import qua_declaration, multiplexed_readout, node_save
@@ -181,58 +182,51 @@ if simulate:
     node.save()
     quit()
 else:
-    # Open the quantum machine
-    qm = qmm.open_qm(config)
-    # Calibrate the active qubits
-    # machine.calibrate_octave_ports(qm)
-    # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(multi_res_spec_vs_flux)
-    # Get results from QUA program
-    data_list = ["n"] + sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_resonators)], [])
-    results = fetching_tool(job, data_list, mode="live")
-    # Live plotting
-    fig = plt.figure()
-    interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-    while results.is_processing():
-        # Fetch results
-        fetched_data = results.fetch_all()
-        n = fetched_data[0]
-        I = fetched_data[1::2]
-        Q = fetched_data[2::2]
+    with qm_session(qmm, config, timeout=100) as qm:
+        job = qm.execute(multi_res_spec_vs_flux)
+        # Get results from QUA program
+        data_list = ["n"] + sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_resonators)], [])
+        results = fetching_tool(job, data_list, mode="live")
+        # Live plotting
+        fig = plt.figure()
+        interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+        while results.is_processing():
+            # Fetch results
+            fetched_data = results.fetch_all()
+            n = fetched_data[0]
+            I = fetched_data[1::2]
+            Q = fetched_data[2::2]
 
-        # Progress bar
-        progress_counter(n, n_avg, start_time=results.start_time)
+            # Progress bar
+            progress_counter(n, n_avg, start_time=results.start_time)
 
-        plt.suptitle("Resonator spectroscopy vs flux")
-        A_data = []
-        for i, (qubit, rr) in enumerate(zip(qubits, resonators)):
-            s = u.demod2volts(I[i] + 1j * Q[i], rr.operations["readout"].length)
-            A = np.abs(s)
-            A_data.append(A)
-            # Plot
-            plt.subplot(1, num_resonators, i + 1)
-            plt.cla()
-            plt.title(f"{rr.name} (LO: {rr.RF_frequency / u.MHz} MHz)")
-            plt.xlabel("flux [V]")
-            plt.ylabel(f"{rr.name} IF [MHz]")
-            plt.pcolor(
-                dcs,
-                (rr.RF_frequency + rr.intermediate_frequency) / u.MHz + dfs / u.MHz,
-                A.T,
-            )
-            plt.plot(
-                qubit.z.min_offset,
-                (rr.RF_frequency + rr.intermediate_frequency) / u.MHz,
-                "r*",
-            )
+            plt.suptitle("Resonator spectroscopy vs flux")
+            A_data = []
+            for i, (qubit, rr) in enumerate(zip(qubits, resonators)):
+                s = u.demod2volts(I[i] + 1j * Q[i], rr.operations["readout"].length)
+                A = np.abs(s)
+                A_data.append(A)
+                # Plot
+                plt.subplot(1, num_resonators, i + 1)
+                plt.cla()
+                plt.title(f"{rr.name} (LO: {rr.RF_frequency / u.MHz} MHz)")
+                plt.xlabel("flux [V]")
+                plt.ylabel(f"{rr.name} IF [MHz]")
+                plt.pcolor(
+                    dcs,
+                    (rr.RF_frequency + rr.intermediate_frequency) / u.MHz + dfs / u.MHz,
+                    A.T,
+                )
+                plt.plot(
+                    qubit.z.min_offset,
+                    (rr.RF_frequency + rr.intermediate_frequency) / u.MHz,
+                    "r*",
+                )
 
-        plt.tight_layout()
-        plt.pause(0.1)
+            plt.tight_layout()
+            plt.pause(0.1)
 
-    plt.show()
-
-    # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat up
-    qm.close()
+        plt.show()
 
 # %%
 handles = job.result_handles

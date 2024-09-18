@@ -10,6 +10,7 @@ from scipy import signal
 import matplotlib.pyplot as plt
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.plot import interrupt_on_close
+from qualang_tools.multi_user import qm_session
 from quam_libs.macros import qua_declaration, multiplexed_readout, node_save, active_reset
 import numpy as np
 from qualang_tools.units import unit
@@ -288,26 +289,8 @@ if simulate:
     #     print(f"Subtracted value {i + 1}: {value}")
     # plt.show(block=False)
 else:
-    try:
-        # Open the quantum machine
-        qm = qmm.open_qm(config, close_other_machines=True)
-        print("Open QMs: ", qmm.list_open_quantum_machines())
-        # Send the QUA program to the OPX, which compiles and executes it
-        job = qm.execute(cryoscope)
-        
-        # print(f"Fetching results for qubit {qubits[i].name}")
-        # data_list = sum([[f"I{i + 1}", f"Q{i + 1}",f"state{i + 1}"] ], ["n"])
-        # results = fetching_tool(job, data_list, mode="live")
-        # while results.is_processing():
-        #     fetched_data = results.fetch_all()
-        #     n = fetched_data[0]
-        #     progress_counter(n, n_avg, start_time=results.start_time)
-        while not job.status == 'completed':
-            pass
-    finally:
-        qm.close()
-        print("Experiment QM is now closed")
-        # plt.show(block=True)
+    with qm_session(qmm, config, timeout=100) as qm:
+        job = qm.execute(cryoscope(qubit))
 
 # %%
 

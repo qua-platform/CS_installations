@@ -57,6 +57,7 @@ from qm import SimulationConfig
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
+from qualang_tools.multi_user import qm_session
 from qualang_tools.units import unit
 from quam_libs.components import QuAM
 from quam_libs.macros import qua_declaration
@@ -217,58 +218,51 @@ if simulate:
     node.save()
     quit()
 else:
-    # Open the quantum machine
-    qm = qmm.open_qm(config)
-    # Calibrate the active qubits
-    # machine.calibrate_octave_ports(qm)
-    # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(qubit_spec, flags=['auto-element-thread'])
-    # Get results from QUA program
-    data_list = ["n"] + sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])
-    results = fetching_tool(job, data_list, mode="live")
-    # Live plotting
-    fig = plt.figure()
-    interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-    while results.is_processing():
-        # Fetch results
-        fetched_data = results.fetch_all()
-        n = fetched_data[0]
-        I = fetched_data[1::2]
-        Q = fetched_data[2::2]
+    with qm_session(qmm, config, timeout=100) as qm:
+        job = qm.execute(qubit_spec, flags=['auto-element-thread'])
+        # Get results from QUA program
+        data_list = ["n"] + sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])
+        results = fetching_tool(job, data_list, mode="live")
+        # Live plotting
+        fig = plt.figure()
+        interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+        while results.is_processing():
+            # Fetch results
+            fetched_data = results.fetch_all()
+            n = fetched_data[0]
+            I = fetched_data[1::2]
+            Q = fetched_data[2::2]
 
-        # Progress bar
-        progress_counter(n, n_avg, start_time=results.start_time)
+            # Progress bar
+            progress_counter(n, n_avg, start_time=results.start_time)
 
-        plt.suptitle("Qubit spectroscopy")
-        s_data = []
-        for i, q in enumerate(qubits):
-            s = u.demod2volts(I[i] + 1j * Q[i], q.resonator.operations["readout"].length)
-            s_data.append(s)
-            plt.subplot(2, num_qubits, i + 1)
-            plt.cla()
-            plt.plot(
-                (q.xy.RF_frequency + dfs) / u.MHz,
-                np.abs(s),
-            )
-            plt.grid(True)
-            plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
-            plt.title(f"{q.name} (f_01: {q.xy.RF_frequency / u.MHz} MHz)")
-            plt.subplot(2, num_qubits, num_qubits + i + 1)
-            plt.cla()
-            plt.plot(
-                (q.xy.RF_frequency + dfs) / u.MHz,
-                np.unwrap(np.angle(s)),
-            )
-            plt.grid(True)
-            plt.ylabel("Phase [rad]")
-            plt.xlabel(f"{q.name} detuning [MHz]")
-            plt.plot((q.xy.RF_frequency) / u.MHz, 0.0, "r*")
+            plt.suptitle("Qubit spectroscopy")
+            s_data = []
+            for i, q in enumerate(qubits):
+                s = u.demod2volts(I[i] + 1j * Q[i], q.resonator.operations["readout"].length)
+                s_data.append(s)
+                plt.subplot(2, num_qubits, i + 1)
+                plt.cla()
+                plt.plot(
+                    (q.xy.RF_frequency + dfs) / u.MHz,
+                    np.abs(s),
+                )
+                plt.grid(True)
+                plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
+                plt.title(f"{q.name} (f_01: {q.xy.RF_frequency / u.MHz} MHz)")
+                plt.subplot(2, num_qubits, num_qubits + i + 1)
+                plt.cla()
+                plt.plot(
+                    (q.xy.RF_frequency + dfs) / u.MHz,
+                    np.unwrap(np.angle(s)),
+                )
+                plt.grid(True)
+                plt.ylabel("Phase [rad]")
+                plt.xlabel(f"{q.name} detuning [MHz]")
+                plt.plot((q.xy.RF_frequency) / u.MHz, 0.0, "r*")
 
-        plt.tight_layout()
-        plt.pause(0.1)
-
-    # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
-    qm.close()
+            plt.tight_layout()
+            plt.pause(0.1)
 
 # %%
 handles = job.result_handles

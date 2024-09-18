@@ -48,6 +48,7 @@ from qm import SimulationConfig
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
+from qualang_tools.multi_user import qm_session
 from qualang_tools.analysis.discriminator import two_state_discriminator
 from qualang_tools.units import unit
 from quam_libs.components import QuAM
@@ -173,21 +174,17 @@ if simulate:
     node.save()
     quit()
 else:
-    # Open the quantum machine
-    qm = qmm.open_qm(config)
-    # Calibrate the active qubits
-    # machine.calibrate_octave_ports(qm)
-    # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(iq_blobs, flags=['auto-element-thread'])
+    with qm_session(qmm, config, timeout=100) as qm:
+        job = qm.execute(iq_blobs, flags=['auto-element-thread'])
 
-    for i in range(num_qubits):
-        print(f"Fetching results for qubit {qubits[i].name}")
-        data_list = sum([[f"I_g{i + 1}", f"Q_g{i + 1}",f"I_e{i + 1}", f"Q_e{i + 1}"] ], ["n"])
-        results = fetching_tool(job, data_list, mode="live")
-        while results.is_processing():
-            fetched_data = results.fetch_all()
-            n = fetched_data[0]
-            progress_counter(n, n_runs, start_time=results.start_time)
+        for i in range(num_qubits):
+            print(f"Fetching results for qubit {qubits[i].name}")
+            data_list = sum([[f"I_g{i + 1}", f"Q_g{i + 1}",f"I_e{i + 1}", f"Q_e{i + 1}"] ], ["n"])
+            results = fetching_tool(job, data_list, mode="live")
+            while results.is_processing():
+                fetched_data = results.fetch_all()
+                n = fetched_data[0]
+                progress_counter(n, n_runs, start_time=results.start_time)
 
     # # Fetch data
     # data_list = sum(
@@ -235,7 +232,6 @@ else:
     #     qubit.resonator.operations["readout"].threshold = threshold
     #     qubit.resonator.operations["readout"].rus_exit_threshold = rus_threshold
     # plt.show()
-    qm.close()
 
     # node_save(machine, "iq_blobs", data, additional_files=True)
 

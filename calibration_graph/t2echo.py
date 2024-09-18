@@ -27,6 +27,7 @@ from qm import SimulationConfig
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array, get_equivalent_log_array
+from qualang_tools.multi_user import qm_session
 from qualang_tools.units import unit
 from quam_libs.components import QuAM
 from quam_libs.macros import qua_declaration, multiplexed_readout, node_save, active_reset, readout_state
@@ -165,28 +166,22 @@ if simulate:
     node.save()
     quit()
 else:
-    # Open the quantum machine
-    qm = qmm.open_qm(config,keep_dc_offsets_when_closing=False)
-    # Calibrate the active qubits
-    # machine.calibrate_octave_ports(qm)
-    # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(t1, flags=['auto-element-thread'])
-    # Get results from QUA program
-    for i in range(num_qubits):
-        print(f"Fetching results for qubit {qubits[i].name}")
-        data_list = ["n"]
-        results = fetching_tool(job, data_list, mode="live")
-    # Live plotting
-    # fig, axes = plt.subplots(2, num_qubits, figsize=(4 * num_qubits, 8))
-    # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-        while results.is_processing():
-        # Fetch results
-            fetched_data = results.fetch_all()
-            n = fetched_data[0]
+    with qm_session(qmm, config, timeout=100) as qm:
+        job = qm.execute(t1, flags=['auto-element-thread'])
+        # Get results from QUA program
+        for i in range(num_qubits):
+            print(f"Fetching results for qubit {qubits[i].name}")
+            data_list = ["n"]
+            results = fetching_tool(job, data_list, mode="live")
+        # Live plotting
+        # fig, axes = plt.subplots(2, num_qubits, figsize=(4 * num_qubits, 8))
+        # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+            while results.is_processing():
+            # Fetch results
+                fetched_data = results.fetch_all()
+                n = fetched_data[0]
 
-            progress_counter(n, n_avg, start_time=results.start_time)
-
-    qm.close()
+                progress_counter(n, n_avg, start_time=results.start_time)
 
 
 # %%
