@@ -33,7 +33,6 @@ class Parameters(NodeParameters):
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
     simulate: bool = False
     timeout: int = 100
-    wait_for_other_users: bool = False
 
 node = QualibrationNode(
     name="08_Power_Rabi_State",
@@ -175,21 +174,7 @@ if simulate:
     node.save()
     quit()
 else:
-    if node.parameters.wait_for_other_users:
-        with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-            job = qm.execute(power_rabi, flags=['auto-element-thread'])
-            # Get results from QUA program
-            data_list = ["n"]
-            results = fetching_tool(job, data_list, mode="live")
-            # Live plotting
-            # fig = plt.figure()
-            # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-            while results.is_processing():
-                fetched_data = results.fetch_all()
-                n = fetched_data[0]
-                progress_counter(n, n_avg, start_time=results.start_time)
-    else:
-        qm = qmm.open_qm(config)
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(power_rabi, flags=['auto-element-thread'])
         # Get results from QUA program
         data_list = ["n"]
@@ -201,6 +186,7 @@ else:
             fetched_data = results.fetch_all()
             n = fetched_data[0]
             progress_counter(n, n_avg, start_time=results.start_time)
+
 # %%
 handles = job.result_handles
 ds = fetch_results_as_xarray(handles, qubits, {"amp": amps, "N": N_pi_vec})

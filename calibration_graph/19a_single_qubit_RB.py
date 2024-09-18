@@ -39,7 +39,6 @@ class Parameters(NodeParameters):
     simulate: bool = False
     timeout: int = 100
     multiplexed: bool = True
-    wait_for_other_users: bool = False
 
 node = QualibrationNode(
     name="11a_Randomized_Benchmarking",
@@ -326,22 +325,8 @@ if simulate:
 else:
     # Prepare data for saving
     node.results = {}
-    if node.parameters.wait_for_other_users:
-        with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-            job = qm.execute(randomized_benchmarking, flags=['auto-element-thread'])
-            for i in range(num_qubits):
-                print(f"Fetching results for qubit {qubits[i].name}")
-                data_list = ["iteration"]
-                results = fetching_tool(job, data_list, mode="live")
-                while results.is_processing():
-                # Fetch results
-                    fetched_data = results.fetch_all()
-                    m = fetched_data[0]
-                    progress_counter(m, num_of_sequences, start_time=results.start_time)
-    else:
-        qm = qmm.open_qm(config)
-        job = qm.execute(randomized_benchmarking)
-        # job = qmm.execute(randomized_benchmarking, flags=['auto-element-thread'])
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+        job = qm.execute(randomized_benchmarking, flags=['auto-element-thread'])
         for i in range(num_qubits):
             print(f"Fetching results for qubit {qubits[i].name}")
             data_list = ["iteration"]
@@ -351,7 +336,6 @@ else:
                 fetched_data = results.fetch_all()
                 m = fetched_data[0]
                 progress_counter(m, num_of_sequences, start_time=results.start_time)
-        qm.close()
 
 # %%
 depths = np.arange(0, max_circuit_depth + 0.1, delta_clifford)

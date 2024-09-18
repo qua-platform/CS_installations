@@ -28,7 +28,6 @@ class Parameters(NodeParameters):
     frequency_step_in_mhz: float = 0.1
     simulate: bool = False
     timeout: int = 100
-    wait_for_other_users: bool = False
 
 node = QualibrationNode(
     name="02a_Resonator_Spectroscopy",
@@ -147,55 +146,8 @@ if simulate:
     node.save()
     quit()
 else:
-    if node.parameters.wait_for_other_users:
-        # Open a quantum machine to execute the QUA program
-        with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-            job = qm.execute(multi_res_spec)
-            # Tool to easily fetch results from the OPX (results_handle used in it)
-            data_list = sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])
-            if live_plot:
-                results = fetching_tool(job, data_list, mode="live")
-                # Prepare the figures for live plotting
-                fig, axss = plt.subplots(2, num_qubits, figsize=(4 * num_qubits, 5))
-                if len(axss.shape) == 1:
-                    axss = np.expand_dims(axss, -1)
-                interrupt_on_close(fig, job)
-                # Live plotting
-                s_data = []
-                while results.is_processing():
-                    # Fetch results
-                    data = results.fetch_all()
-                    for i in range(num_qubits):
-                        I, Q = data[2 * i : 2 * i + 2]
-                        rr = resonators[i]
-                        # Data analysis
-                        s_data.append(u.demod2volts(I + 1j * Q, rr.operations["readout"].length))
-                        # Plot
-                        plt.sca(axss[0, i])
-                        plt.suptitle("Multiplexed resonator spectroscopy")
-                        plt.cla()
-                        plt.plot(
-                            (rr.LO_frequency + rr.intermediate_frequency) / u.MHz + dfs / u.MHz,
-                            np.abs(s_data[-1]),
-                            ".",
-                        )
-                        plt.title(f"{rr.name}")
-                        plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
-                        plt.sca(axss[1, i])
-                        plt.cla()
-                        plt.plot(
-                            (rr.LO_frequency + rr.intermediate_frequency) / u.MHz + dfs / u.MHz,
-                            signal.detrend(np.unwrap(np.angle(s_data[-1]))),
-                            ".",
-                        )
-                        plt.ylabel("Phase [rad]")
-                        plt.xlabel("Readout frequency [MHz]")
-                        plt.tight_layout()
-                        plt.pause(0.1)
-    else:
-        
-        # Open a quantum machine to execute the QUA program
-        qm = qmm.open_qm(config)
+    # Open a quantum machine to execute the QUA program
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(multi_res_spec)
         # Tool to easily fetch results from the OPX (results_handle used in it)
         data_list = sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])
@@ -238,8 +190,6 @@ else:
                     plt.xlabel("Readout frequency [MHz]")
                     plt.tight_layout()
                     plt.pause(0.1)
-        # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
-        qm.close()
 
 # %%
 handles = job.result_handles
