@@ -243,31 +243,31 @@ def fit_resonator(s21_data: xr.Dataset,
                   frequency_LO_IF: float,
                   print_report: bool = False):
     """Fits the measured complex transmission as a function of frequency 
-    and fits it to a model consisting of a signle resonator, as described in 
+    and fits it to a model consisting of a single resonator, as described in
     arxiv:1108.3117.
 
-    The transmssion function is:
+    The transmission function is:
     S_{21} =(A + k  w)  (
         1 - ((Q/Qe) / (1 + 2 i Q  (w - omega_r)/(omega_0 + omega_r))))
 
-    See the output for a descirption of the model parameters.
+    See the output for a description of the model parameters.
 
     Args:
-        transmission (xarray.DataSet ): DataSet which golds the measured data,
+        s21_data (xarray.DataSet ): DataSet which golds the measured data,
                                         assumes that it has a DataAray labels 
                                         'IQ_abs' and 'phase' containing the 
                                         absolute value and the phase of the 
                                         signal. The only coordinate is 'freq',
                                         the frequency for which the signal is
                                         measured.
-        frequency_LO_IF (int): The frequency realtive to which the data was taken. 
-                                Should be the some of the LO and IF.
+        frequency_LO_IF (int): The frequency relative to which the data was taken.
+                                Should be the sum of the LO and IF.
         print_report (bool, optional): If set to True prints the lmfit report. 
                                         Defaults to False.
 
     Returns:
         fit [lmfit.ModelResult] : The resulting fit to the data using the two resonator model.
-                            The fitted parameters (accessd through the 'params' object' 
+                            The fitted parameters (accessed through the 'params' object'
                             are:
                             params['omega_r'] - resonator frequency
                             params['Qe_imag'] - imaginary part of the external quality 
@@ -278,7 +278,7 @@ def fit_resonator(s21_data: xr.Dataset,
                             params['A'] - empirical amplitude of the transmission
                             params['k']  - an empirical linear slope of the transmission
         fit_eval [np.array] : A complex numpy array of the fit function evaluated on in the 
-                            relevent range
+                            relevant range
     """
 
     resonator = _single_resonator()
