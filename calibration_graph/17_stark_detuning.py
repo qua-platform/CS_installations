@@ -31,7 +31,7 @@ class Parameters(NodeParameters):
     frequency_step_in_mhz: float = 0.02
     max_number_pulses_per_sweep: int = 20
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
-    reset_type_thermal_or_active: Literal['thermal', 'active'] = "thermal"
+    reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
     simulate: bool = False
     timeout: int = 100
 
@@ -225,8 +225,8 @@ node.results['fit_results'] = fit_results
 grid_names = [f'{q.name}_0' for q in qubits]
 grid = QubitGrid(ds, grid_names)
 for ax, qubit in grid_iter(grid):
-    (ds.assign_coords(freq_MHz  = ds.freq *1e6).loc[qubit].state).plot(ax = ax, x = 'freq_MHz', y = 'N')
-    ax.axvline(1e6*fit_results[qubit['qubit']]['detuning'], color = 'r')
+    (ds.assign_coords(freq_MHz  = ds.freq *1e-6).loc[qubit].state).plot(ax = ax, x = 'freq_MHz', y = 'N')
+    ax.axvline(1e-6*fit_results[qubit['qubit']]['detuning'], color = 'r')
     ax.set_ylabel('num. of pulses')
     ax.set_xlabel('detuning [MHz]')
     ax.set_title(qubit['qubit'])
@@ -249,3 +249,5 @@ node.outcomes = {q.name: "successful" for q in qubits}
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()
+
+# %%
