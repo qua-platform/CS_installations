@@ -26,7 +26,7 @@ class Parameters(NodeParameters):
     simulate: bool = False
 
 node = QualibrationNode(
-    name="03b_Qubit_Spectroscopy_vs_Flux",
+    name="99_1bit_SA_ramsey",
     parameters_class=Parameters
 )
 
@@ -185,10 +185,10 @@ if not simulate:
     grid_names = [f'{q.name}_0' for q in qubits]
     grid = QubitGrid(ds, grid_names)
     for ax, qubit in grid_iter(grid):
-        opt_freq[qubit['qubit']] = np.abs(ds.sel(qubit = qubit['qubit']).state.sel(idle_time=idle_time_to_run)-0.5).idxmin('freq')
+        opt_freq[qubit['qubit']] = np.abs(ds.sel(qubit = qubit['qubit']).state.sel(idle_time=idle_time_to_run)-0.45).idxmin('freq')
         ds.sel(qubit = qubit['qubit']).state.sel(idle_time=idle_time_to_run).plot(ax =ax)
-        ax.axhline(0.5, color='k')
-        ax.plot(opt_freq[qubit['qubit']], 0.5, 'o')
+        ax.axhline(0.45, color='k')
+        ax.plot(opt_freq[qubit['qubit']], 0.45, 'o')
         ax.set_title(qubit['qubit'])
         ax.set_xlabel('Frequency (Hz)')
         ax.set_ylabel('State')
@@ -197,7 +197,7 @@ if not simulate:
     plt.show()
     node.results['figure_raw'] = grid.fig
 # %%
-n_avg = 1_000_000
+n_avg = 2_000_000
 
 
 # %% create program for T2 spectoscopy
@@ -284,8 +284,7 @@ if not simulate:
     extracted_values = np.array([v[0] for v in ds.time_stamp.values.flatten()]).reshape(ds.time_stamp.values.shape)
     ds['time_stamp'] = xr.DataArray(extracted_values, dims=ds['time_stamp'].dims, coords=ds['time_stamp'].coords)
     ds['time_stamp'] = ds['time_stamp']*4
-    node.results = {}
-    node.results['ds'] = ds
+    node.results['ds_final'] = ds
 
 # %%
 if not simulate:
@@ -310,7 +309,7 @@ if not simulate:
         time_stamp_q = ds.time_stamp.sel(qubit = qubit.name).values
         
         f, Pxx_den = signal.welch(data_q-data_q.mean(),  1e9/np.mean(np.diff(time_stamp_q)), 
-                          nperseg=8192*4)
+                          nperseg=8192*8)
         dat_fft[qubit.name] = xr.Dataset({'Pxx_den': (['freq'], Pxx_den)}, coords={'freq': f}).Pxx_den
 
         # dat_fft[qubit.name] = xrft.power_spectrum(data_q, real_dim='n')
@@ -330,4 +329,9 @@ if not simulate:
     node.results['figure_fft'] = grid.fig
 
 
+# %%
+# %%
+node.results['initial_parameters'] = node.parameters.model_dump()
+node.machine = machine
+node.save()
 # %%

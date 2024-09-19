@@ -23,7 +23,7 @@ from typing import Optional, Literal, List
 # %% {Node_parameters}
 class Parameters(NodeParameters):
     targets_name: str = 'qubits'
-    qubits: Optional[List[str]] = ['q1']
+    qubits: Optional[List[str]] = None
     num_averages: int = 100
     frequency_detuning_in_mhz: float = 4.0
     min_wait_time_in_ns: int = 16
