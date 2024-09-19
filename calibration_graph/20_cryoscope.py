@@ -295,14 +295,14 @@ else:
 # %%
 
 # %%
-if not simulate:
+if not node.parameters.simulate:
     # %% {Data_fetching}
     handles = job.result_handles
     ds = fetch_results_as_xarray(handles, [qubit], {"axis": ["x","y"], "time": cryoscope_time})
     plot_process = True
 
 # %%
-if not simulate:
+if not node.parameters.simulate:
     if plot_process:
         ds.state.sel(qubit= qubits[0].name).plot(hue = 'axis')
         plt.show()
@@ -320,7 +320,7 @@ if not simulate:
     plt.show()
 
 # %%
-if not simulate:
+if not node.parameters.simulate:
         # extract the rising part of the data for analysis
     threshold = flux_cryoscope_q.max().values*0.6 # Set the threshold value
     rise_index = np.argmax(flux_cryoscope_q.values > threshold) + 1
@@ -337,7 +337,7 @@ if not simulate:
     flux_cryoscope_tp.plot(ax = axs[1])
     plt.show()
 # %%
-if not simulate:
+if not node.parameters.simulate:
     # Fit two exponents
     # Filtering the data might improve the fit at the first few nS, play with range to achieve this
     filtered_flux_cryoscope_q = savgol(flux_cryoscope_tp, 'time', range = 3, order = 2)
@@ -436,7 +436,7 @@ if not simulate:
         plt.show()
 
 # %%
-if not simulate:
+if not node.parameters.simulate:
     ####  FIR filter for the response
     flux_q = flux_cryoscope_q.copy()
     flux_q.values = filtered_response_long
@@ -466,7 +466,7 @@ if not simulate:
 
 
 # %%
-if not simulate:
+if not node.parameters.simulate:
     def find_diff(x, y, y0, plot = False):
         filterd_y  = lfilter(x,[1,0], y)
         diffs = np.sum(np.abs(filterd_y - y0))
@@ -490,7 +490,7 @@ if not simulate:
         plt.show()
 
 # %%
-if not simulate:
+if not node.parameters.simulate:
     # plotting the results
     fig,ax = plt.subplots()
     ax.plot(flux_cryoscope_q.time,flux_cryoscope_q,label = 'data')
@@ -503,7 +503,7 @@ if not simulate:
     node.results['figure'] = fig
 
 # %%
-if not simulate:
+if not node.parameters.simulate:
     node.results['fit_results'] = {}
     for q in qubits:
         node.results['fit_results'][q.name] = {}
@@ -513,7 +513,7 @@ if not simulate:
 
 # %%
 
-if not simulate:
+if not node.parameters.simulate:
     with node.record_state_updates():
         for qubit in qubits:
             qubit.z.filter_fir_taps = convolved_fir.tolist()

@@ -202,7 +202,7 @@ if node.parameters.simulate:
 
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(ramsey, flags=['auto-element-thread'])
+        job = qm.execute(ramsey)
         # Get results from QUA program
         for i in range(num_qubits):
             print(f"Fetching results for qubit {qubits[i].name}")

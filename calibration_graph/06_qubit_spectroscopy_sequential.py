@@ -214,7 +214,7 @@ if node.parameters.simulate:
 
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(qubit_spec, flags=['auto-element-thread'])
+        job = qm.execute(qubit_spec)
         # Get results from QUA program
         data_list = ["n"] + sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])
         results = fetching_tool(job, data_list, mode="live")

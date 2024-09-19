@@ -158,7 +158,7 @@ if node.parameters.simulate:
 
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(t1, flags=['auto-element-thread'])
+        job = qm.execute(t1)
         # Get results from QUA program
         for i in range(num_qubits):
             print(f"Fetching results for qubit {qubits[i].name}")
@@ -176,7 +176,7 @@ else:
 
 
 # %%
-if not simulate:
+if not node.parameters.simulate:
     # %% {Data_fetching}
     handles = job.result_handles
     ds = fetch_results_as_xarray(handles, qubits, {"idle_time": idle_times})
@@ -185,7 +185,7 @@ if not simulate:
     ds.idle_time.attrs = {'long_name': 'idle time', 'units': 'usec'}
 
 # %%
-if not simulate:
+if not node.parameters.simulate:
     if node.parameters.use_state_discrimination:
         fit_data = fit_decay_exp(ds.state, 'idle_time')
     else:
@@ -213,7 +213,7 @@ if not simulate:
 
 node.results = {"ds": ds}
 # %%
-if not simulate:
+if not node.parameters.simulate:
     grid_names = [f'{q.name}_0' for q in qubits]
     grid = QubitGrid(ds, grid_names)
     for ax, qubit in grid_iter(grid):

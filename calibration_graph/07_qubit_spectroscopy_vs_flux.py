@@ -206,7 +206,7 @@ if node.parameters.simulate:
 
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(multi_qubit_spec_vs_flux, flags=['auto-element-thread'])
+        job = qm.execute(multi_qubit_spec_vs_flux)
         # Get results from QUA program
         data_list = ["n"] + sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])
         results = fetching_tool(job, data_list, mode="live")
@@ -321,10 +321,9 @@ grid = QubitGrid(ds, grid_names)
 
 for ax, qubit in grid_iter(grid):
     freq_ref = machine.qubits[qubit['qubit']].xy.RF_frequency
-    ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].I.plot(ax=ax, add_colorbar=False,
-                                                                            x='flux', y='freq_GHz', robust=True)
+    ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].I.plot(ax=ax, add_colorbar=False, x='flux', y='freq_GHz', robust=True)
     ((fitted+  freq_ref)/1e9).loc[qubit].plot(ax = ax,linewidth = 0.5, ls = '--',color = 'r')
-    ax.plot(flux_shift.loc[qubit], ((freq_shift.loc[qubit]+   freq_ref)/1e9), 'r*')
+    ax.plot(flux_shift.loc[qubit], ((freq_shift.loc[qubit] + freq_ref)/1e9), 'r*')
     ((peaks.position.loc[qubit]+  freq_ref)/1e9).plot(ax = ax, ls = '', marker = '.', color = 'g', ms = 0.5)
     ax.set_ylabel('Freq (GHz)')
     ax.set_xlabel('Flux (V)')

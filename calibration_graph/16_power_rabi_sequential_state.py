@@ -173,7 +173,7 @@ if node.parameters.simulate:
 
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(power_rabi, flags=['auto-element-thread'])
+        job = qm.execute(power_rabi)
         # Get results from QUA program
         data_list = ["n"]
         results = fetching_tool(job, data_list, mode="live")

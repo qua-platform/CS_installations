@@ -197,7 +197,7 @@ if node.parameters.simulate:
 
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(ramsey, flags=['auto-element-thread'])
+        job = qm.execute(ramsey)
         # Get results from QUA program
         for i in range(num_qubits):
             print(f"Fetching results for qubit {qubits[i].name}")
@@ -223,7 +223,7 @@ node.results = {"ds": ds}
 
 # %%
 
-if not simulate:
+if not node.parameters.simulate:
     if node.parameters.use_state_discrimination:
         fit = fit_oscillation_decay_exp(ds.state, 'time')
     else:
@@ -297,7 +297,7 @@ for ax, qubit in grid_iter(grid):
         
     ax.set_xlabel('Idle time [nS]')
     ax.set_title(qubit['qubit'])
-    ax.text(0.1, 0.9, f'T2* = {1e6*fit_results[q.name]["decay"]:.1f} + {1e6*fit_results[q.name]["decay_error"]:.1f} usec', transform=ax.transAxes, fontsize=10,
+    ax.text(0.1, 0.9, f'T2* = {1e6*fit_results[qubit["qubit"]]["decay"]:.1f} + {1e6*fit_results[qubit["qubit"]]["decay_error"]:.1f} usec', transform=ax.transAxes, fontsize=10,
     verticalalignment='top', bbox=dict(facecolor='white', alpha=0.5))
     # ax.legend()
 grid.fig.suptitle('Ramsey : I vs. idle time')

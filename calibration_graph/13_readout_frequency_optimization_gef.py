@@ -199,7 +199,7 @@ if simulate:
 
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(ro_freq_opt, flags=['auto-element-thread'])
+        job = qm.execute(ro_freq_opt)
         # Get results from QUA program
 
         for i in range(num_qubits):

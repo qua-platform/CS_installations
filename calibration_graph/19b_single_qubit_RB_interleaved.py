@@ -348,7 +348,7 @@ else:
     node.results = {}
     for qubit in qubits:
         with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-            job = qm.execute(get_rb_interleaved_program(qubit), flags=['auto-element-thread'])
+            job = qm.execute(get_rb_interleaved_program(qubit))
             if state_discrimination:
                 results = fetching_tool(job, data_list=["state_avg", "iteration"], mode="live")
             else:

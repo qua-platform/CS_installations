@@ -326,7 +326,7 @@ else:
     # Prepare data for saving
     node.results = {}
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(randomized_benchmarking, flags=['auto-element-thread'])
+        job = qm.execute(randomized_benchmarking)
         for i in range(num_qubits):
             print(f"Fetching results for qubit {qubits[i].name}")
             data_list = ["iteration"]

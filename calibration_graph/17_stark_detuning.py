@@ -191,7 +191,7 @@ if node.parameters.simulate:
 
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(stark_detuning, flags=['auto-element-thread'])
+        job = qm.execute(stark_detuning)
         # Get results from QUA program
         data_list = ["n"] + sum([[f"state{i + 1}"] for i in range(num_qubits)], [])
         results = fetching_tool(job, data_list, mode="live")

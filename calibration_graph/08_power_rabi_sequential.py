@@ -26,10 +26,10 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     num_averages: int = 200
     operation: str = "x180"
-    min_amp_factor: float = 0.00001
-    max_amp_factor: float = 2.0
+    min_amp_factor: float = 1.0-0.2
+    max_amp_factor: float = 1.0+0.2
     amp_factor_step: float = 0.005
-    max_number_rabi_pulses_per_sweep: int = 1
+    max_number_rabi_pulses_per_sweep: int = 21
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
     timeout: int = 100
@@ -162,7 +162,7 @@ if node.parameters.simulate:
 
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(power_rabi, flags=['auto-element-thread'])
+        job = qm.execute(power_rabi)
         # Get results from QUA program
         data_list = ["n"] + sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])
         results = fetching_tool(job, data_list, mode="live")
@@ -182,7 +182,7 @@ def abs_amp(q):
         return q.xy.operations[operation].amplitude * amp
     return foo
 
-ds = ds.assign_coords({'abs_amp' : (['qubit','amp'],np.array([abs_amp(q)(amps) for q in qubits]))})
+ds = ds.assign_coords({'abs_amp' : (['qubit','amp'], np.array([abs_amp(q)(amps) for q in qubits]))})
 node.results = {"ds": ds}
 
 # %%
@@ -214,7 +214,7 @@ elif N_pi > 1:
     else:
         datamaxIndx = I_n.argmax(dim='amp')
     for q in qubits:
-        new_pi_amp = ds.abs_amp.sel(qubit = q.name)[datamaxIndx.sel(qubit = q.name)].data
+        new_pi_amp = float(ds.abs_amp.sel(qubit = q.name)[datamaxIndx.sel(qubit = q.name)].data)
         fit_results[q.name] = {}
         if new_pi_amp < 0.3:
             fit_results[q.name]['Pi_amplitude'] = new_pi_amp

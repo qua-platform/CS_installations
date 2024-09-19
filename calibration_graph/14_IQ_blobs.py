@@ -161,7 +161,7 @@ if simulate:
 
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(iq_blobs, flags=['auto-element-thread'])
+        job = qm.execute(iq_blobs)
 
         for i in range(num_qubits):
             print(f"Fetching results for qubit {qubits[i].name}")

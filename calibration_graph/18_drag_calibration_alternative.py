@@ -171,7 +171,7 @@ if node.parameters.simulate:
 
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(drag_calibration, flags=['auto-element-thread'])
+        job = qm.execute(drag_calibration)
 
 # %%
 handles = job.result_handles
