@@ -27,7 +27,7 @@ class Parameters(NodeParameters):
     num_averages: int = 100
     frequency_detuning_in_mhz: float = 1.0
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 4000
+    max_wait_time_in_ns: int = 30000
     wait_time_step_in_ns: int = 20
     flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "joint" 
     simulate: bool = False
@@ -94,6 +94,10 @@ idle_times = np.arange(
     node.parameters.wait_time_step_in_ns // 4,
 )
 
+idle_times = np.unique(np.geomspace(node.parameters.min_wait_time_in_ns, 
+                                    node.parameters.max_wait_time_in_ns, 
+                                    500) // 4).astype(int)
+
 # Detuning converted into virtual Z-rotations to observe Ramsey oscillation and get the qubit frequency
 detuning = int(1e6 * node.parameters.frequency_detuning_in_mhz)
 flux_point = node.parameters.flux_point_joint_or_independent_or_arbitrary  # 'independent' or 'joint'
@@ -131,7 +135,8 @@ with program() as ramsey:
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
-            with for_(*from_array(t, idle_times)):
+            with for_each_(t, idle_times):
+            #  with for_(*from_array(t, idle_times)):
                 with for_(*from_array(sign, [-1,1])):
                     # Rotate the frame of the second x90 gate to implement a virtual Z-rotation
                     # 4*tau because tau was in clock cycles and 1e-9 because tau is ns
