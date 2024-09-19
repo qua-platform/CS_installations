@@ -30,16 +30,16 @@ class Parameters(NodeParameters):
     use_strict_timing: bool = False
     num_random_sequences: int = 100  # Number of random sequences
     num_averages: int = 20
-    max_circuit_depth: int = 1000  # Maximum circuit depth
-    delta_clifford: int = 20
+    max_circuit_depth: int = 200  # Maximum circuit depth
+    delta_clifford: int = 4
     seed: int = 345324
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
     simulate: bool = False
-    multiplexed: bool = True
+    multiplexed: bool = False
 
 node = QualibrationNode(
-    name="11a_Randomized_Benchmarking_virtualZ",
+    name="11a_Randomized_Benchmarking_fluxZ",
     parameters_class=Parameters
 )
 
@@ -144,93 +144,228 @@ def play_sequence(sequence_list, depth, qubit: Transmon):
                 pass
             
             with case_(1): # x180
+                qubit.align()
                 qubit.xy.play("x180")
+                qubit.align()
                 
             with case_(2): # y180
+                qubit.align()
                 qubit.xy.play("y180")
+                qubit.align()
                 
             with case_(3): # Z180
-                qubit.xy.frame_rotation(np.pi)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("z180")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(np.pi)
                 
             with case_(4): #Z90 X180 Z-180
-                qubit.xy.frame_rotation(np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(np.pi/2)
                 qubit.xy.play("x180")
-                qubit.xy.frame_rotation(np.pi)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("z180")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(np.pi)
                 
             with case_(5): #Z-90 Y-90 Z-90
-                qubit.xy.frame_rotation(-np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("-z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(-np.pi/2)
                 qubit.xy.play("-y90")
-                qubit.xy.frame_rotation(-np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("-z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(-np.pi/2)
                 
             with case_(6): #Z-90 X180 Z-180
-                qubit.xy.frame_rotation(-np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("-z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(-np.pi/2)
                 qubit.xy.play("x180")
-                qubit.xy.frame_rotation(np.pi)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("z180")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(np.pi)
                 
             with case_(7): #Z-90 Y90 Z-90
-                qubit.xy.frame_rotation(-np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("-z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(-np.pi/2)
                 qubit.xy.play("y90")
-                qubit.xy.frame_rotation(-np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("-z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(-np.pi/2)
                 
             with case_(8): # X90 Z90
+                qubit.align()
                 qubit.xy.play("x90")
-                qubit.xy.frame_rotation(np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(np.pi/2)
                 
             with case_(9): # X-90 Z-90
+                qubit.align()
                 qubit.xy.play("-x90")
-                qubit.xy.frame_rotation(-np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("-z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(-np.pi/2)
                 
             with case_(10): #z90 X90 Z90
-                qubit.xy.frame_rotation(np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(np.pi/2)
                 qubit.xy.play("x90")
-                qubit.xy.frame_rotation(np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(np.pi/2)
                 
             with case_(11): #z90 X-90 Z90
-                qubit.xy.frame_rotation(np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(np.pi/2)
                 qubit.xy.play("-x90")
-                qubit.xy.frame_rotation(np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(np.pi/2)
                 
             with case_(12): # x90
+                qubit.align()
                 qubit.xy.play("x90")
+                qubit.align()
                 
             with case_(13): # -x90
+                qubit.align()
                 qubit.xy.play("-x90")
+                qubit.align()
                 
             with case_(14): # y90
+                qubit.align()
                 qubit.xy.play("y90")
+                qubit.align()
                 
             with case_(15): # -y90
+                qubit.align()
                 qubit.xy.play("-y90")
+                qubit.align()
                 
             with case_(16): # Z90
-                qubit.xy.frame_rotation(np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(np.pi/2)
                 
             with case_(17): # -Z90
-                qubit.xy.frame_rotation(-np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("-z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(-np.pi/2)
                 
             with case_(18): # Y-90 Z-90
+                qubit.align()
                 qubit.xy.play("-y90")
-                qubit.xy.frame_rotation(-np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("-z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(-np.pi/2)
                 
             with case_(19):  # Y90 Z90
+                qubit.align()
                 qubit.xy.play("y90")
-                qubit.xy.frame_rotation(np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(np.pi/2)
                 
             with case_(20): # Y90 Z-90
+                qubit.align()
                 qubit.xy.play("y90")
-                qubit.xy.frame_rotation(-np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("-z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(-np.pi/2)
                 
             with case_(21): # Y-90 Z90
+                qubit.align()
                 qubit.xy.play("-y90")
-                qubit.xy.frame_rotation(np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(np.pi/2)
                 
             with case_(22): # x90 Z-90
+                qubit.align()
                 qubit.xy.play("x90")
-                qubit.xy.frame_rotation(-np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("-z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(-np.pi/2)
                 
             with case_(23): # -x90 Z90
+                qubit.align()
                 qubit.xy.play("-x90")
-                qubit.xy.frame_rotation(np.pi/2)
+                qubit.align()
+                qubit.z.wait(10)
+                qubit.z.play("z90")
+                qubit.z.wait(10)
+                qubit.align()
+                # qubit.xy.frame_rotation(np.pi/2)
 
 average_gate_per_clifford = (
     20 * 1 + 4 * 0)/24  # = 20/24 = 0.833
