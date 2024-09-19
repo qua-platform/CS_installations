@@ -112,7 +112,8 @@ with program() as multi_res_spec_vs_flux:
     df = declare(int)  # QUA variable for the readout frequency
 
     for i, qubit in enumerate(qubits):
-
+        # resonator of the qubit
+        rr = resonators[i]
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
@@ -126,31 +127,23 @@ with program() as multi_res_spec_vs_flux:
             # Wait for the flux to settle
             wait(1000, qb.z.name)
 
-        # resonator of the qubit
-        rr = resonators[i]
-
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
-
             with for_(*from_array(dc, dcs)):
                 # Flux sweeping by tuning the OPX dc offset associated with the flux_line element
                 qubit.z.set_dc_offset(dc)
                 wait(100)  # Wait for the flux to settle
-
                 with for_(*from_array(df, dfs)):
                     # Update the resonator frequencies for resonator
                     update_frequency(rr.name, df + rr.intermediate_frequency)
-
                     # readout the resonator
                     rr.measure("readout", qua_vars=(I[i], Q[i]))
-
                     # wait for the resonator to relax
                     rr.wait(machine.depletion_time * u.ns)
-
                     # save data
                     save(I[i], I_st[i])
                     save(Q[i], Q_st[i])
-
+        # Measure sequentially
         align(*[rr.name for rr in resonators])
 
     with stream_processing():
@@ -181,65 +174,41 @@ else:
             # Progress bar
             progress_counter(n, n_avg, start_time=results.start_time)
 
-    # %% {Data_fetching}
-    handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs, "flux": dcs})
+    # %% {Data_fetching_and_dataset_creation}
+    # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
+    ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs, "flux": dcs})
+    # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2)
     ds = ds.assign({"IQ_abs": np.sqrt(ds["I"] ** 2 + ds["Q"] ** 2)})
-
-    def abs_freq(q, freq):
-        return freq + q.resonator.RF_frequency
-
-    ds = ds.assign_coords(
-        {"freq_full": (["qubit", "freq"], np.array([abs_freq(q, dfs) for q in qubits]))}
-    )
+    # Add the resonator RF frequency axis of each qubit to the dataset coordinates for plotting
+    RF_freq = np.array([dfs + q.resonator.RF_frequency for q in qubits])
+    ds = ds.assign_coords({"freq_full": (["qubit", "freq"], RF_freq)})
     ds.freq_full.attrs["long_name"] = "Frequency"
     ds.freq_full.attrs["units"] = "GHz"
-
-    ds = ds.assign_coords(
-        {
-            "current": (
-                ["qubit", "flux"],
-                np.array(
-                    [
-                        ds.flux.values * node.parameters.input_line_impedance_in_ohm
-                        for q in qubits
-                    ]
-                ),
-            )
-        }
-    )
-
-    # Calculate current after attenuation
-    attenuation_factor = 10 ** (-node.parameters.line_attenuation_in_db / 20)
-    attenuated_current = ds.current * attenuation_factor
-
-    # Add attenuated current to dataset
-    ds = ds.assign_coords(
-        {"attenuated_current": (["qubit", "flux"], attenuated_current.values)}
-    )
-
-    # Set attributes for the new coordinate
-    ds.attenuated_current.attrs["long_name"] = "Attenuated Current"
-    ds.attenuated_current.attrs["units"] = "A"
+    # Add the current axis of each qubit to the dataset coordinates for plotting
+    current = np.array([ds.flux.values / node.parameters.input_line_impedance_in_ohm for q in qubits])
+    ds = ds.assign_coords({"current": (["qubit", "flux"], current)})
     ds.current.attrs["long_name"] = "Current"
     ds.current.attrs["units"] = "A"
-
+    # Add attenuated current to dataset
+    attenuation_factor = 10 ** (-node.parameters.line_attenuation_in_db / 20)
+    attenuated_current = ds.current * attenuation_factor
+    ds = ds.assign_coords({"attenuated_current": (["qubit", "flux"], attenuated_current.values)})
+    ds.attenuated_current.attrs["long_name"] = "Attenuated Current"
+    ds.attenuated_current.attrs["units"] = "A"
+    # Add the dataset to the node
     node.results = {"ds": ds}
 
 
     # %% {Data_analysis}
+    # Find the minimum of each frequency line to follow the resonance vs flux
     peak_freq = ds.IQ_abs.idxmin(dim="freq")
-    # fit to a cosine using the qiskit function
-    # a * np.cos(2 * np.pi * f * t + phi) + offset
+    # Fit to a cosine using the qiskit function: a * np.cos(2 * np.pi * f * t + phi) + offset
     fit_osc = fit_oscillation(peak_freq.dropna(dim="flux"), "flux")
-
-    # making sure the phase is between -pi and pi
+    # Ensure that the phase is between -pi and pi
     idle_offset = -fit_osc.sel(fit_vals="phi")
     idle_offset = np.mod(idle_offset + np.pi, 2 * np.pi) - np.pi
-
     # converting the phase phi from radians to voltage
     idle_offset = idle_offset / fit_osc.sel(fit_vals="f") / 2 / np.pi
-
     # finding the location of the minimum frequency flux point
     flux_min = idle_offset + ((idle_offset < 0) - 0.5) / fit_osc.sel(fit_vals="f")
     flux_min = (
@@ -247,13 +216,9 @@ else:
         + 0.5 * (flux_min > 0.5)
         - 0.5 * (flux_min < -0.5)
     )
-
     # finding the frequency as the sweet spot flux
     rel_freq_shift = peak_freq.sel(flux=idle_offset, method="nearest")
-    abs_freq_shift = rel_freq_shift + np.array(
-        [q.resonator.RF_frequency for q in qubits]
-    )
-
+    # Save fitting results
     fit_results = {}
     for q in qubits:
         fit_results[q.name] = {}
@@ -274,13 +239,9 @@ else:
                 * attenuation_factor
             )
         )
-        print(
-            f"DC offset for {q.name} is {idle_offset.sel(qubit = q.name).data*1e3:.0f} mV"
-        )
-        print(
-            f"Resonator frequency for {q.name} is {(rel_freq_shift.sel(qubit = q.name).values + q.resonator.RF_frequency)/1e9:.3f} GHz"
-        )
-        print(f"(shift of {rel_freq_shift.sel(qubit = q.name).values/1e6:.0f} MHz)")
+        print(f"DC offset for {q.name} is {fit_results[q.name]['offset'] * 1e3:.0f} mV")
+        print(f"Resonator frequency for {q.name} is {fit_results[q.name]['resonator_frequency'] / 1e9:.3f} GHz")
+        print(f"(shift of {rel_freq_shift.sel(qubit = q.name).values / 1e6:.0f} MHz)")
 
     node.results["fit_results"] = fit_results
 
@@ -293,25 +254,24 @@ else:
         ax2 = ax.twiny()
         # Plot using the attenuated current x-axis
         ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].IQ_abs.plot(
-            ax=ax2,
-            add_colorbar=False,
-            x="attenuated_current",
-            y="freq_GHz",
-            robust=True,
+            ax=ax2, add_colorbar=False, x="attenuated_current", y="freq_GHz", robust=True,
         )
+        ax2.set_xlabel("Current (mA)")
+        ax2.set_ylabel("Freq (GHz)")
+        ax2.set_title("")
         # Move ax2 behind ax
         ax2.set_zorder(ax.get_zorder() - 1)
         ax.patch.set_visible(False)
+        # Plot using the flux x-axis
         ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].IQ_abs.plot(
             ax=ax, add_colorbar=False, x="flux", y="freq_GHz", robust=True
         )
         ax.axvline(idle_offset.loc[qubit], linestyle="dashed", linewidth=2, color="r")
         ax.axvline(flux_min.loc[qubit], linestyle="dashed", linewidth=2, color="orange")
+        # Location of the current resonator frequency
+        ax.plot(idle_offset.loc[qubit].values, machine.qubits[qubit["qubit"]].resonator.RF_frequency * 1e-9, 'r*', markersize=10)
         ax.set_title(qubit["qubit"])
-        ax2.set_xlabel("Current (mA)")
-        ax2.set_ylabel("Freq (GHz)")
-        ax2.set_xlabel("Flux (V)")
-        ax2.set_title("")
+        ax.set_xlabel("Flux (V)")
 
     grid.fig.suptitle("Resonator spectroscopy vs flux ")
     plt.tight_layout()
@@ -326,7 +286,6 @@ else:
                     q.z.independent_offset = float(idle_offset.sel(qubit=q.name).data)
                 else:
                     q.z.joint_offset = float(idle_offset.sel(qubit=q.name).data)
-                # q.z.extras['dv_phi0'] = 1/fit_osc.sel(fit_vals='f', qubit=q.name).values
 
                 if update_flux_min:
                     q.z.min_offset = float(flux_min.sel(qubit=q.name).data)
