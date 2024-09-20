@@ -277,6 +277,7 @@ else:
             fit_results[q.name]["quad_term"] = np.nan
     node.results["fit_results"] = fit_results
 
+
     # %% {Plotting}
     grid_names = [f"{q.name}_0" for q in qubits]
     grid = QubitGrid(ds, grid_names)
