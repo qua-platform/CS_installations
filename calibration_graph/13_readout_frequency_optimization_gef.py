@@ -84,9 +84,7 @@ for q in qubits:
     else:
         operation = "x180"
 
-###################
-# The QUA program #
-###################
+
 # %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 # The frequency sweep around the resonator resonance frequency f_opt

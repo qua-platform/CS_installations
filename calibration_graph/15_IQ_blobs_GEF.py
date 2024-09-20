@@ -93,9 +93,7 @@ for q in qubits:
     else:
         GEF_operation = "x180"
         
-###################
-# The QUA program #
-###################
+
 n_runs = node.parameters.num_runs  # Number of runs
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 reset_type = node.parameters.reset_type_thermal_or_active  # "active" or "thermal"

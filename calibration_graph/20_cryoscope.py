@@ -102,9 +102,7 @@ def baked_waveform(waveform_amp, qubit):
 
     return pulse_segments
 
-###################
-# The QUA program #
-###################
+
 # %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 

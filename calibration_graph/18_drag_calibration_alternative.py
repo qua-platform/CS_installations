@@ -89,9 +89,7 @@ qmm = machine.connect()
 num_qubits = len(qubits)
 operation = node.parameters.operation  # The qubit operation to play
 
-###################
-# The QUA program #
-###################
+
 
 # %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages

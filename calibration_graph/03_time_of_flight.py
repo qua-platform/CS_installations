@@ -74,9 +74,7 @@ qmm = machine.connect()
 # Get the relevant QuAM components
 resonator = machine.qubits[node.parameters.qubit].resonator  # The resonator element
 
-###################
-# The QUA program #
-###################
+
 
 with program() as raw_trace_prog:
     n = declare(int)  # QUA variable for the averaging loop

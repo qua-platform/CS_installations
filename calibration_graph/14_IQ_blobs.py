@@ -77,9 +77,7 @@ else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
 # %%
-###################
-# The QUA program #
-###################
+
 n_runs = node.parameters.num_runs  # Number of runs
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 reset_type = node.parameters.reset_type_thermal_or_active  # "active" or "thermal"

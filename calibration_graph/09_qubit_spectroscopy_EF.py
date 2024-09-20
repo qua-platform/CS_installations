@@ -37,14 +37,14 @@ class Parameters(NodeParameters):
     operation: str = "saturation"
     operation_amplitude_factor: Optional[float] =  None
     operation_len_in_ns: Optional[int] = None
-    frequency_span_in_mhz: float = 100
-    frequency_step_in_mhz: float = 0.25
+    frequency_span_in_mhz: float = 200
+    frequency_step_in_mhz: float = 0.5
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
     timeout: int = 100
 
 node = QualibrationNode(
-    name="04a_Qubit_Spectroscopy_E_to_F",
+    name="04b_Qubit_Spectroscopy_E_to_F",
     parameters_class=Parameters
 )
 
@@ -90,12 +90,10 @@ else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
 
-###################
-# The QUA program #
-###################
 
-operation = node.parameters.operation  # The qubit operation to play, can be switched to "x180" when the qubits are found.
+
 # %% {QUA_program}
+operation = node.parameters.operation  # The qubit operation to play
 n_avg = node.parameters.num_averages  # The number of averages
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
 operation_len = node.parameters.operation_len_in_ns  # can be None - will just be ignored

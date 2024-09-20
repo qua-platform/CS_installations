@@ -237,9 +237,7 @@ average_gate_per_clifford = (
 
 
 
-###################
-# The QUA program #
-###################
+
 with program() as randomized_benchmarking:
     depth = declare(int)  # QUA variable for the varying depth
     depth_target = declare(int)  # QUA variable for the current depth (changes in steps of delta_clifford)

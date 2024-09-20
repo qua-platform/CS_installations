@@ -102,9 +102,7 @@ for qubit in qubits:
     print(f"{qubit.name}: {qubit.xy.intermediate_frequency / 1e6:.3f} MHz")
 
 # %%
-###################
-# The QUA program #
-###################
+
 
 # %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages

@@ -82,9 +82,7 @@ else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
 
-###################
-# The QUA program #
-###################
+
 
 operation = node.parameters.operation_x180_or_any_90  # The qubit operation to play, can be switched to "x180" when the qubits are found.
 # %% {QUA_program}

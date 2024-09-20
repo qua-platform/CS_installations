@@ -63,9 +63,7 @@ else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
 num_qubits = len(qubits)
 
-###################
-# The QUA program #
-###################
+
 # %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 

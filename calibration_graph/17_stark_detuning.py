@@ -93,9 +93,7 @@ config = machine.generate_config()
 octave_config = machine.get_octave_config()
 # Open Communication with the QOP
 qmm = machine.connect()
-###################
-# The QUA program #
-###################
+
 
 # %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages

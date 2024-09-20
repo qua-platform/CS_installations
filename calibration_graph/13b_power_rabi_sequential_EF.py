@@ -87,12 +87,10 @@ for q in qubits:
     if not hasattr(q, 'GEF_frequency_shift'):
         q.GEF_frequency_shift = 0
 
-###################
-# The QUA program #
-###################
 
-operation = node.parameters.operation  # The qubit operation to play, can be switched to "x180" when the qubits are found.
+
 # %% {QUA_program}
+operation = node.parameters.operation  # The qubit operation to play
 n_avg = node.parameters.num_averages  # The number of averages
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 
