@@ -9,15 +9,14 @@ from typing import Optional, Literal
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
     num_averages: int = 200
-    operation: str = "x180"
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 10000
-    wait_time_step_in_ns: int = 100
+    max_wait_time_in_ns: int = 150000
+    wait_time_step_in_ns: int = 1000
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
 
 node = QualibrationNode(
-    name="MW_crosstalk",
+    name="Z_crosstalk_pulsed",
     parameters_class=Parameters
 )
 
@@ -68,33 +67,21 @@ else:
 num_qubits = len(qubits)
 
 
-        
+# %%
 ###################
 # The QUA program #
 ###################
 
-operation = node.parameters.operation  # The qubit operation to play, can be switched to "x180" when the qubits are found.
+operation = "z90"
 n_avg = node.parameters.num_averages  # The number of averages
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 
-# tracked_qubits = []
-# max_amp = 0.49
-# for i, qubit in enumerate(qubits):
-#     with tracked_updates(qubit, auto_revert=False, dont_assign_to_none=True) as qubit:
-#         qubit.xy.operations[operation].amplitude = max_amp
-#         qubit.xy.operations[operation].length = 80
-#         tracked_qubits.append(qubit)
-# config = machine.generate_config()
-# for tracked_qubit in tracked_qubits:
-#     tracked_qubit.revert_changes()
-
-# Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
 idle_times = np.arange(
     node.parameters.min_wait_time_in_ns // 4,
     node.parameters.max_wait_time_in_ns // 4,
     node.parameters.wait_time_step_in_ns // 4,
 )
-with program() as MW_crosstalk:
+with program() as cross_talk_sequential:
     n = declare(int)
     n_st = declare_stream()
     state = [declare(int) for _ in range(num_qubits * (num_qubits ))]
@@ -120,11 +107,16 @@ with program() as MW_crosstalk:
             with for_(n, 0, n < n_avg, n + 1):
                 save(n, n_st)            
                 with for_(*from_array(t, idle_times)):   
-                    qubit.resonator.wait(machine.thermalization_time * u.ns)
                     align()
-                    qubit2.xy.update_frequency(qubit.xy.intermediate_frequency)
-                    qubit2.xy.play(operation, duration = t)
-                    qubit2.xy.update_frequency(qubit2.xy.intermediate_frequency)
+                    qubit.resonator.wait(3*machine.thermalization_time * u.ns)
+                    qubit.align()
+                    qubit.xy.play("x90")
+                    align()
+                    qubit2.z.wait(10)
+                    qubit2.z.play(operation, duration = t)
+                    qubit2.z.wait(10)
+                    align()
+                    qubit.xy.play("x90")
                     align()
                     readout_state(qubit, state[i*num_qubits + j - 1])
                     save(state[i*num_qubits + j - 1], state_stream[i*num_qubits + j - 1])
@@ -138,6 +130,49 @@ with program() as MW_crosstalk:
             for j in range(num_qubits):
                 state_stream[i*num_qubits + j-1].buffer(len(idle_times)).average().save(f"state{j+1}_{i+1}")
 
+with program() as cross_talk_parallel:  # doesn't work	 - runs but doesn't give good results
+    n = declare(int)
+    n_st = declare_stream()
+    state = [declare(int) for _ in range(num_qubits * (num_qubits ))]
+    state_stream = [declare_stream() for _ in range(num_qubits * (num_qubits ))]
+    
+    t = declare(int)  
+
+    # for i, qubit in enumerate(qubits):
+
+    machine.apply_all_flux_to_joint_idle()
+    wait(1000)
+    align()
+    for j, qubit2 in enumerate(qubits):
+        with for_(n, 0, n < n_avg, n + 1):
+            save(n, n_st)            
+            with for_(*from_array(t, idle_times)):  
+                align() 
+                qubit2.resonator.wait(3*machine.thermalization_time * u.ns)
+                align()
+                for i, qubit in enumerate(qubits):
+                    qubit.xy.play("x90")
+                align()
+                qubit2.z.wait(10)
+                qubit2.z.play(operation, duration = t)
+                qubit2.z.wait(10)
+                align()
+                for i, qubit in enumerate(qubits):
+                    qubit.xy.play("x90")                 
+                    qubit.align()
+                    readout_state(qubit, state[i*num_qubits + j - 1])
+                    # align()
+                    save(state[i*num_qubits + j - 1], state_stream[i*num_qubits + j - 1])
+
+
+    with stream_processing():
+        n_st.save("n")
+        for i in range(num_qubits):
+            for j in range(num_qubits):
+                state_stream[i*num_qubits + j-1].buffer(len(idle_times)).average().save(f"state{j+1}_{i+1}")
+
+
+
 
 ###########################
 # Run or Simulate Program #
@@ -147,7 +182,7 @@ simulate = node.parameters.simulate
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, MW_crosstalk, simulation_config)
+    job = qmm.simulate(config, cross_talk_sequential, simulation_config)
     job.get_simulated_samples().con1.plot()
     node.results = {"figure": plt.gcf()}
     node.machine = machine
@@ -159,7 +194,7 @@ else:
     # Calibrate the active qubits
     # machine.calibrate_octave_ports(qm)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(MW_crosstalk, flags=['auto-element-thread'])
+    job = qm.execute(cross_talk_sequential, flags=['auto-element-thread'])
     # Get results from QUA program
     data_list = ["n"] 
     results = fetching_tool(job, data_list, mode="live")
@@ -273,7 +308,7 @@ for i in range(num_qubits):
         if i != j:
             # Get the length of the operation for the control qubit (i)
             control_qubit = qubits[i]
-            operation_length = control_qubit.xy.operations[operation].length
+            operation_length = control_qubit.z.operations[operation].length
             
             # Normalize the crosstalk value
             if operation_length > 0:
@@ -305,7 +340,7 @@ for i in range(num_qubits):
     for j in range(num_qubits):
         value = crosstalk_matrix[i, j]
         text_color = 'white' if value < min_off_diagonal + (max_off_diagonal - min_off_diagonal)/2 else 'black'
-        ax.text(j, i, f'{value:.2f}', ha='center', va='center', color=text_color)
+        ax.text(j, i, f'{value:.3f}', ha='center', va='center', color=text_color)
 
 # Set axis labels
 ax.set_xticks(np.arange(num_qubits))
