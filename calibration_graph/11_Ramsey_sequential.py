@@ -219,8 +219,8 @@ else:
                 progress_counter(n, n_avg, start_time=results.start_time)
 
 # %%
-handles = job.result_handles
-ds = fetch_results_as_xarray(handles, qubits, {"sign" : [-1,1], "time": idle_times})
+
+ds = fetch_results_as_xarray(job.result_handles, qubits, {"sign" : [-1,1], "time": idle_times})
 ds = ds.assign_coords({'time' : (['time'], 4*idle_times)})
 ds.time.attrs['long_name'] = 'idle_time'
 ds.time.attrs['units'] = 'nS'

@@ -340,8 +340,8 @@ else:
 # %%
 depths = np.arange(0, max_circuit_depth + 0.1, delta_clifford)
 depths[0] = 1
-handles = job.result_handles
-ds = fetch_results_as_xarray(handles, qubits, {"depths": depths, "sequence": np.arange(num_of_sequences)})
+
+ds = fetch_results_as_xarray(job.result_handles, qubits, {"depths": depths, "sequence": np.arange(num_of_sequences)})
 
 node.results = {"ds": ds}
 

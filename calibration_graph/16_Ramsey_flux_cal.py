@@ -219,8 +219,8 @@ else:
                 progress_counter(n, n_avg, start_time=results.start_time)
 
 # %%
-handles = job.result_handles
-ds = fetch_results_as_xarray(handles, qubits, {"idle_time": idle_times, "flux": fluxes})
+
+ds = fetch_results_as_xarray(job.result_handles, qubits, {"idle_time": idle_times, "flux": fluxes})
 
 node.results = {"ds": ds}
 # %%

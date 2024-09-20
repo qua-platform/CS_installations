@@ -176,7 +176,6 @@ else:
             progress_counter(n, n_avg, start_time=results.start_time)
 
     # %% {Data_fetching_and_dataset_creation}
-    # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs, "flux": dcs})
     # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2)
     ds = ds.assign({"IQ_abs": np.sqrt(ds["I"] ** 2 + ds["Q"] ** 2)})

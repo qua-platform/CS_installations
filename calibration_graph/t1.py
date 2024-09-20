@@ -178,8 +178,8 @@ else:
 # %%
 if not node.parameters.simulate:
     # %% {Data_fetching_and_dataset_creation}
-    handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"idle_time": idle_times})
+    
+    ds = fetch_results_as_xarray(job.result_handles, qubits, {"idle_time": idle_times})
 
     ds = ds.assign_coords(idle_time=4*ds.idle_time/1e3)  # convert to usec
     ds.idle_time.attrs = {'long_name': 'idle time', 'units': 'usec'}

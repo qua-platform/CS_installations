@@ -222,8 +222,8 @@ else:
     # node_save(machine, "iq_blobs", data, additional_files=True)
 
 # %%
-handles = job.result_handles
-ds = fetch_results_as_xarray(handles, qubits, {"N": np.linspace(1, n_runs, n_runs)})
+
+ds = fetch_results_as_xarray(job.result_handles, qubits, {"N": np.linspace(1, n_runs, n_runs)})
 
 
 # Fix the structure of ds to avoid tuples

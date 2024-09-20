@@ -52,9 +52,9 @@ class Parameters(NodeParameters):
     simulate: bool = False
     timeout: int = 100
     forced_flux_bias_v: Optional[float] = None
-    max_power_dbm: int = -10
-    min_power_dbm: int = -60
-    max_amp: float = 0.1
+    max_power_dbm: int = -15
+    min_power_dbm: int = -50
+    max_amp: float = 0.49
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     ro_line_attenuation_dB: float = 0
     multiplexed: bool = True

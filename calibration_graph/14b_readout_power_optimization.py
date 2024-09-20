@@ -236,8 +236,8 @@ else:
 # %%
 if not node.parameters.simulate:
     # %% {Data_fetching_and_dataset_creation}
-    handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"amplitude": amps, "N": np.linspace(1, n_runs, n_runs)})
+    
+    ds = fetch_results_as_xarray(job.result_handles, qubits, {"amplitude": amps, "N": np.linspace(1, n_runs, n_runs)})
 
     def abs_amp(q):
         def foo(amp):

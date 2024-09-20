@@ -213,8 +213,8 @@ else:
 
 
 # %%
-handles = job.result_handles
-ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs})
+
+ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs})
 
 # %%
 def abs_freq(q):

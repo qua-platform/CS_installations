@@ -289,8 +289,16 @@ else:
     ds = ds.assign({"IQ_abs": np.sqrt(ds["I"] ** 2 + ds["Q"] ** 2)})
     ds = ds.assign({"phase": np.arctan2(ds.Q, ds.I)})
     # Add the resonator RF frequency axis of each qubit to the dataset coordinates for plotting
-    RF_freq = np.array([dfs + q.resonator.RF_frequency for q in qubits])
-    ds = ds.assign_coords({"freq_full": (["qubit", "freq"], RF_freq)})
+    ds = ds.assign_coords(
+        {
+            "freq_full": (
+                ["qubit", "freq"],
+                np.array(
+                    [dfs + qubit_freqs[q.name] + detunings[q.name] for q in qubits]
+                ),
+            )
+        }
+    )
     ds.freq_full.attrs["long_name"] = "Frequency"
     ds.freq_full.attrs["units"] = "GHz"
     # Add the dataset to the node

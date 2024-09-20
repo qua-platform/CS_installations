@@ -268,8 +268,8 @@ else:
     # node_save(machine, "qubit_spectroscopy", data, additional_files=True)
 
 # %%
-handles = job.result_handles
-ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs})
+
+ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs})
 ds = ds.assign({'IQ_abs': np.sqrt(ds['I'] ** 2 + ds['Q'] ** 2)})
 
 

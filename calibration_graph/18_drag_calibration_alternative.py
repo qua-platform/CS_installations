@@ -174,8 +174,8 @@ else:
         job = qm.execute(drag_calibration)
 
 # %%
-handles = job.result_handles
-ds = fetch_results_as_xarray(handles, qubits, {"amp": amps, "sequence": [0,1]})
+
+ds = fetch_results_as_xarray(job.result_handles, qubits, {"amp": amps, "sequence": [0,1]})
 
 # %%
 def alpha(q):

@@ -166,8 +166,7 @@ else:
                 plt.pause(0.1)
 
     # %% {Data_fetching_and_dataset_creation}
-    handles = job.result_handles
-    ds = fetch_results_as_xarray(handles, qubits, {"freq": dfs})
+    ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs})
 
     ds = ds.assign({"IQ_abs": np.sqrt(ds["I"] ** 2 + ds["Q"] ** 2)})
     ds = ds.assign(

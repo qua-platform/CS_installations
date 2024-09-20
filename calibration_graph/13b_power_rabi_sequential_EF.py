@@ -254,8 +254,8 @@ else:
     # node_save(machine, "power_rabi", data, additional_files=True)
 
 # %%
-handles = job.result_handles
-ds = fetch_results_as_xarray(handles, qubits, {"amp": amps})
+
+ds = fetch_results_as_xarray(job.result_handles, qubits, {"amp": amps})
 
 # %%
 def abs_amp(q):
