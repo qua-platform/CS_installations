@@ -218,15 +218,15 @@ def fix_oscillation_phi_2pi(fit_data):
 
 
 def peaks_dips(da,dim, prominence_factor = 5, number = 1, remove_baseline = True) -> xr.Dataset:
-    """searches in a data array da along the dimention dim for the
+    """searches in a data array da along the dimension dim for the
     most prominent peak or dip, and returns a dict with its location,
     width and amplitude, along with a smooth base line from which the 
     peak emerges.
 
     Args:
-     da: xarray.Dataarray. 
+     da: xarray.DataArray.
      dim: the dimension on which the perform the fit
-     prominence_factor : how promiment must be the peak compared with noise as defined by the std.
+     prominence_factor : how prominent must be the peak compared with noise as defined by the std.
      number : Determines which peak the function returns. 1 is the most prominent peak, 2 is the second most prominent, etc.
      remove_baseline : if True, the function will remove the baseline from the data before finding the peak.
 

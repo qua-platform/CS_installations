@@ -56,10 +56,7 @@ class Parameters(NodeParameters):
     line_attenuation_in_db: float = 0
     plot_current_mA: bool = True
 
-
-node = QualibrationNode(
-    name="02b_Resonator_Spectroscopy_vs_Flux", parameters_class=Parameters
-)
+node = QualibrationNode(name="02b_Resonator_Spectroscopy_vs_Flux", parameters_class=Parameters)
 node.parameters = Parameters()
 
 
@@ -68,11 +65,6 @@ node.parameters = Parameters()
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
 machine = QuAM.load()
-# Generate the OPX and Octave configurations
-config = machine.generate_config()
-octave_config = machine.get_octave_config()
-# Open Communication with the QOP
-qmm = machine.connect()
 
 # Get the relevant QuAM components
 if node.parameters.qubits is None or node.parameters.qubits == "":
@@ -86,6 +78,12 @@ qubits = [q for q in qubits if q.z is not None]
 resonators = [qubit.resonator for qubit in qubits]
 num_qubits = len(qubits)
 num_resonators = len(resonators)
+
+# Generate the OPX and Octave configurations
+config = machine.generate_config()
+octave_config = machine.get_octave_config()
+# Open Communication with the QOP
+qmm = machine.connect()
 
 
 # %% {QUA_program}
