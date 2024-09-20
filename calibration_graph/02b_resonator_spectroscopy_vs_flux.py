@@ -56,7 +56,10 @@ class Parameters(NodeParameters):
     line_attenuation_in_db: float = 0
     plot_current_mA: bool = True
 
-node = QualibrationNode(name="02b_Resonator_Spectroscopy_vs_Flux", parameters_class=Parameters)
+
+node = QualibrationNode(
+    name="02b_Resonator_Spectroscopy_vs_Flux", parameters_class=Parameters
+)
 node.parameters = Parameters()
 
 
@@ -183,19 +186,22 @@ else:
     ds.freq_full.attrs["long_name"] = "Frequency"
     ds.freq_full.attrs["units"] = "GHz"
     # Add the current axis of each qubit to the dataset coordinates for plotting
-    current = np.array([ds.flux.values / node.parameters.input_line_impedance_in_ohm for q in qubits])
+    current = np.array(
+        [ds.flux.values / node.parameters.input_line_impedance_in_ohm for q in qubits]
+    )
     ds = ds.assign_coords({"current": (["qubit", "flux"], current)})
     ds.current.attrs["long_name"] = "Current"
     ds.current.attrs["units"] = "A"
     # Add attenuated current to dataset
     attenuation_factor = 10 ** (-node.parameters.line_attenuation_in_db / 20)
     attenuated_current = ds.current * attenuation_factor
-    ds = ds.assign_coords({"attenuated_current": (["qubit", "flux"], attenuated_current.values)})
+    ds = ds.assign_coords(
+        {"attenuated_current": (["qubit", "flux"], attenuated_current.values)}
+    )
     ds.attenuated_current.attrs["long_name"] = "Attenuated Current"
     ds.attenuated_current.attrs["units"] = "A"
     # Add the dataset to the node
     node.results = {"ds": ds}
-
 
     # %% {Data_analysis}
     # Find the minimum of each frequency line to follow the resonance vs flux
@@ -238,11 +244,12 @@ else:
             )
         )
         print(f"DC offset for {q.name} is {fit_results[q.name]['offset'] * 1e3:.0f} mV")
-        print(f"Resonator frequency for {q.name} is {fit_results[q.name]['resonator_frequency'] / 1e9:.3f} GHz")
+        print(
+            f"Resonator frequency for {q.name} is {fit_results[q.name]['resonator_frequency'] / 1e9:.3f} GHz"
+        )
         print(f"(shift of {rel_freq_shift.sel(qubit = q.name).values / 1e6:.0f} MHz)")
 
     node.results["fit_results"] = fit_results
-
 
     # %% {Plotting}
     grid_names = [f"{q.name}_0" for q in qubits]
@@ -252,7 +259,11 @@ else:
         ax2 = ax.twiny()
         # Plot using the attenuated current x-axis
         ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].IQ_abs.plot(
-            ax=ax2, add_colorbar=False, x="attenuated_current", y="freq_GHz", robust=True,
+            ax=ax2,
+            add_colorbar=False,
+            x="attenuated_current",
+            y="freq_GHz",
+            robust=True,
         )
         ax2.set_xlabel("Current (mA)")
         ax2.set_ylabel("Freq (GHz)")
@@ -267,7 +278,12 @@ else:
         ax.axvline(idle_offset.loc[qubit], linestyle="dashed", linewidth=2, color="r")
         ax.axvline(flux_min.loc[qubit], linestyle="dashed", linewidth=2, color="orange")
         # Location of the current resonator frequency
-        ax.plot(idle_offset.loc[qubit].values, machine.qubits[qubit["qubit"]].resonator.RF_frequency * 1e-9, 'r*', markersize=10)
+        ax.plot(
+            idle_offset.loc[qubit].values,
+            machine.qubits[qubit["qubit"]].resonator.RF_frequency * 1e-9,
+            "r*",
+            markersize=10,
+        )
         ax.set_title(qubit["qubit"])
         ax.set_xlabel("Flux (V)")
 
