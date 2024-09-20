@@ -174,6 +174,7 @@ with program() as qubit_spec:
             machine.apply_all_flux_to_zero()
             dc_offset = 0.0
 
+        # Wait for the flux bias to settle
         for qb in qubits:
             wait(1000, qb.z.name)
 

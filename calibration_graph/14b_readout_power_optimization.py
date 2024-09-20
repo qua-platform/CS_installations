@@ -107,7 +107,8 @@ with program() as iq_blobs:
             machine.apply_all_flux_to_joint_idle()
         else:
             machine.apply_all_flux_to_zero()
-            
+                    # Wait for the flux bias to settle
+        # Wait for the flux bias to settle
         for qb in qubits:
             wait(1000, qb.z.name)
         

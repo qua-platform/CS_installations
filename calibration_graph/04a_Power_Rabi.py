@@ -51,7 +51,6 @@ class Parameters(NodeParameters):
     simulate: bool = False
     timeout: int = 100
 
-
 node = QualibrationNode(name="04a_Power_Rabi", parameters_class=Parameters)
 node.parameters = Parameters()
 
@@ -105,6 +104,7 @@ with program() as power_rabi:
         else:
             machine.apply_all_flux_to_zero()
 
+        # Wait for the flux bias to settle
         for qb in qubits:
             wait(1000, qb.z.name)
 
@@ -151,7 +151,6 @@ else:
 
         # %% {Live_plot}
         results = fetching_tool(job, ["n"], mode="live")
-        # Live plotting
         while results.is_processing():
             fetched_data = results.fetch_all()
             n = fetched_data[0]
@@ -170,6 +169,7 @@ else:
             )
         }
     )
+    # Add the dataset to the node
     node.results = {"ds": ds}
 
     # %% {Data_analysis}
