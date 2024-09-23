@@ -44,7 +44,7 @@ import xarray as xr
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    targets_name: str = "qubits"
+
     qubits: Optional[List[str]] = None
     num_averages: int = 100
     frequency_span_in_mhz: float = 10
@@ -61,9 +61,9 @@ class Parameters(NodeParameters):
 
 
 node = QualibrationNode(
-    name="02c_Resonator_Spectroscopy_vs_Amplitude", parameters_class=Parameters
+    name="02c_Resonator_Spectroscopy_vs_Amplitude", parameters=Parameters()
 )
-node.parameters = Parameters()
+
 
 
 def set_output_power(

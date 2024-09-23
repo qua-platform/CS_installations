@@ -39,7 +39,7 @@ import numpy as np
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    targets_name: str = "qubits"
+
     qubits: Optional[List[str]] = None
     num_averages: int = 100
     frequency_detuning_in_mhz: float = 1.0
@@ -54,8 +54,8 @@ class Parameters(NodeParameters):
     use_state_discrimination: bool = False
 
 
-node = QualibrationNode(name="05_Ramsey", parameters_class=Parameters)
-node.parameters = Parameters()
+node = QualibrationNode(name="05_Ramsey", parameters=Parameters())
+
 
 # Class containing tools to help handle units and conversions.
 u = unit(coerce_to_integer=True)

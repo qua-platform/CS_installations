@@ -15,11 +15,11 @@ Before proceeding to the next node:
     - Save the current state by calling machine.save("quam")
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    qubits: Optional[List[str]] = None
     num_averages: int = 1000
     dc_offset: float = 0.015
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"

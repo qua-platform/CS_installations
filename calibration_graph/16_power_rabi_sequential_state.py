@@ -22,7 +22,7 @@ from typing import Optional, Literal, List
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    targets_name: str = 'qubits'
+
     qubits: Optional[List[str]] = None
     num_averages: int = 50
     operation_x180_or_any_90: Literal['x180', 'x90', '-x90', 'y90', '-y90'] = "x180"
@@ -37,10 +37,10 @@ class Parameters(NodeParameters):
 
 node = QualibrationNode(
     name="08_Power_Rabi_State",
-    parameters_class=Parameters
+    parameters=Parameters()
 )
 
-node.parameters = Parameters()
+
 
 
 from qm.qua import *

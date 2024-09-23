@@ -4,11 +4,11 @@
 
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = 'q2'
+    qubits: Optional[List[str]] = 'q2'
     iterations: int = 4
     max_attempts: int = 9
     num_runs: int = 400000

@@ -22,7 +22,7 @@ Prerequisites:
     - Set the desired flux bias.
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 from qualang_tools.multi_user import qm_session
 
 from quam_libs.trackable_object import tracked_updates
@@ -30,7 +30,7 @@ from quam_libs.trackable_object import tracked_updates
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    qubits: Optional[List[str]] = None
     use_state_discrimination: bool = True
     use_strict_timing: bool = True
     interleaved_gate_index: int = 2
@@ -46,10 +46,10 @@ class Parameters(NodeParameters):
 
 node = QualibrationNode(
     name="11b_Randomized_Benchmarking_Interleaved",
-    parameters_class=Parameters
+    parameters=Parameters()
 )
 
-node.parameters = Parameters()
+
 
 
 from qm.qua import *

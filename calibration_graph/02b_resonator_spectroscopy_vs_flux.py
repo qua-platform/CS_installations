@@ -41,7 +41,7 @@ import warnings
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    targets_name: str = "qubits"
+
     qubits: Optional[List[str]] = None
     num_averages: int = 10
     min_flux_offset_in_v: float = -0.5
@@ -58,9 +58,9 @@ class Parameters(NodeParameters):
 
 
 node = QualibrationNode(
-    name="02b_Resonator_Spectroscopy_vs_Flux", parameters_class=Parameters
+    name="02b_Resonator_Spectroscopy_vs_Flux", parameters=Parameters()
 )
-node.parameters = Parameters()
+
 
 
 # %% {Initialize_QuAM_and_QOP}

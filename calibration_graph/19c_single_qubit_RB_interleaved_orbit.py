@@ -42,7 +42,7 @@ from qm import logger
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    qubits: Optional[List[str]] = None
     use_state_discrimination: bool = True
     use_strict_timing: bool = False
     interleaved_gate_index: int = 2
@@ -66,10 +66,10 @@ class Parameters(NodeParameters):
 
 node = QualibrationNode(
     name="11c_Randomized_Benchmarking_Interleaved_ORBIT",
-    parameters_class=Parameters
+    parameters=Parameters()
 )
 
-node.parameters = Parameters()
+
 
 
 from qm.qua import *

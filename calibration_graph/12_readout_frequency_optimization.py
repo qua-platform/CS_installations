@@ -22,7 +22,7 @@ from typing import Optional, Literal, List
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    targets_name: str = 'qubits'
+
     qubits: Optional[List[str]] = None
     num_averages: int = 100
     frequency_span_in_mhz: float = 10
@@ -33,10 +33,10 @@ class Parameters(NodeParameters):
 
 node = QualibrationNode(
     name="06a_Readout_Frequency_Optimization",
-    parameters_class=Parameters
+    parameters=Parameters()
 )
 
-node.parameters = Parameters()
+
 
 
 from qm.qua import *

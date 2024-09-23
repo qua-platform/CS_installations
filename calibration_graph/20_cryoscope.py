@@ -27,13 +27,13 @@ from scipy.signal import deconvolve, lfilter, convolve
 
 
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 from quam_libs.lib.cryoscope_tools import cryoscope_frequency, estimate_fir_coefficients, two_expdecay, expdecay, savgol
 
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubits: Optional[str] = 'q4'
+    qubits: Optional[List[str]] = None    
     num_averages: int = 1000
     amplitude_factor: float = 0.5
     cryoscope_len: int = 160
@@ -45,10 +45,10 @@ class Parameters(NodeParameters):
 
 node = QualibrationNode(
     name="12_Cryoscope",
-    parameters_class=Parameters
+    parameters=Parameters()
 )
 
-node.parameters = Parameters()
+
 
 
 # %% {Initialize_QuAM_and_QOP}

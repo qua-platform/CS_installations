@@ -36,7 +36,7 @@ import numpy as np
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    targets_name: str = "qubits"
+
     qubits: Optional[List[str]] = None
     num_averages: int = 50
     operation: str = "saturation"
@@ -53,10 +53,10 @@ class Parameters(NodeParameters):
 
 
 node = QualibrationNode(
-    name="03b_Qubit_Spectroscopy_vs_Flux", parameters_class=Parameters
+    name="03b_Qubit_Spectroscopy_vs_Flux", parameters=Parameters()
 )
 
-node.parameters = Parameters()
+
 
 
 # %% {Initialize_QuAM_and_QOP}

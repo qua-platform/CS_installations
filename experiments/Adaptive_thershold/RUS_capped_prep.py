@@ -4,11 +4,11 @@
 
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = 'q2'
+    qubits: Optional[List[str]] = 'q2'
     num_runs: int = 400000
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False

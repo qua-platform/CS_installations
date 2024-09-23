@@ -18,10 +18,10 @@ class Parameters(NodeParameters):
 
 node = QualibrationNode(
     name="00_Mixer_Calibration",
-    parameters_class=Parameters
+    parameters=Parameters()
 )
 
-node.parameters = Parameters()
+
 
 
 

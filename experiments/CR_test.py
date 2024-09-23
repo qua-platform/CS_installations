@@ -3,11 +3,11 @@
 
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = 'q2, q3'
+    qubits: Optional[List[str]] = 'q2, q3'
     num_averages: int = 2000
     operation: str = "x180_Square"
     min_amp_factor: float = 0.

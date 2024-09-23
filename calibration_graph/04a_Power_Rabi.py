@@ -39,7 +39,7 @@ import numpy as np
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    targets_name: str = "qubits"
+
     qubits: Optional[List[str]] = None
     num_averages: int = 200
     operation: str = "x180"
@@ -51,8 +51,8 @@ class Parameters(NodeParameters):
     simulate: bool = False
     timeout: int = 100
 
-node = QualibrationNode(name="04a_Power_Rabi", parameters_class=Parameters)
-node.parameters = Parameters()
+node = QualibrationNode(name="04a_Power_Rabi", parameters=Parameters())
+
 
 
 # %% {Initialize_QuAM_and_QOP}

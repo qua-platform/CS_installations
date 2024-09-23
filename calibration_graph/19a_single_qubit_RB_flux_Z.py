@@ -20,12 +20,12 @@ Prerequisites:
     - Set the desired flux bias.
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 
 from quam_libs.trackable_object import tracked_updates
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    qubits: Optional[List[str]] = None
     use_state_discrimination: bool = True
     use_strict_timing: bool = False
     num_random_sequences: int = 100  # Number of random sequences
@@ -40,10 +40,10 @@ class Parameters(NodeParameters):
 
 node = QualibrationNode(
     name="11a_Randomized_Benchmarking_fluxZ",
-    parameters_class=Parameters
+    parameters=Parameters()
 )
 
-node.parameters = Parameters()
+
 
 
 from qm.qua import *

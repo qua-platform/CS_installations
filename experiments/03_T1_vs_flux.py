@@ -18,11 +18,11 @@ Next steps before going to the next node:
     - Save the current state by calling machine.save("quam")
 """
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 
 
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    qubits: Optional[List[str]] = None
     num_averages: int = 200
     frequency_detuning_in_mhz: float = 1.0
     min_wait_time_in_ns: int = 16

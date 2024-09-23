@@ -40,7 +40,7 @@ import numpy as np
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    targets_name: str = "qubits"
+
     qubits: Optional[List[str]] = None
     num_averages: int = 100
     frequency_span_in_mhz: float = 15.0
@@ -49,8 +49,8 @@ class Parameters(NodeParameters):
     timeout: int = 100
 
 
-node = QualibrationNode(name="02a_Resonator_Spectroscopy", parameters_class=Parameters)
-node.parameters = Parameters()
+node = QualibrationNode(name="02a_Resonator_Spectroscopy", parameters=Parameters())
+
 
 
 # %% {Initialize_QuAM_and_QOP}

@@ -1,11 +1,11 @@
 # %%
 from qualibrate import QualibrationNode, NodeParameters
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubits: Optional[str] = None
+    qubits: Optional[List[str]] = None
     num_averages: int = 100
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 100000
@@ -18,10 +18,10 @@ class Parameters(NodeParameters):
 
 node = QualibrationNode(
     name="t1_experiment",
-    parameters_class=Parameters
+    parameters=Parameters()
 )
 
-node.parameters = Parameters()
+
 
 
 from qm.qua import *

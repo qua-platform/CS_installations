@@ -31,10 +31,10 @@ class Parameters(NodeParameters):
 
 node = QualibrationNode(
     name="01_Time_of_Flight",
-    parameters_class=Parameters
+    parameters=Parameters()
 )
 
-node.parameters = Parameters()
+
 
 from qm.qua import *
 from qm import SimulationConfig
