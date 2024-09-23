@@ -23,11 +23,11 @@ from typing import Optional, Literal
 
 class Parameters(NodeParameters):
     qubits: Optional[str] = None
-    num_averages: int = 200
+    num_averages: int = 100
     frequency_detuning_in_mhz: float = 4.0
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 5000
-    wait_time_step_in_ns: int = 8
+    max_wait_time_in_ns: int = 4000
+    wait_time_step_in_ns: int = 4
     flux_span : float = 0.1
     flux_step : float = 0.002
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
@@ -52,7 +52,7 @@ from quam_libs.macros import qua_declaration, multiplexed_readout, node_save, ac
 
 import matplotlib.pyplot as plt
 import numpy as np
-
+import xarray as xr
 import matplotlib
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 from quam_libs.lib.save_utils import fetch_results_as_xarray
@@ -227,7 +227,24 @@ if not simulate:
     ds = ds.assign_coords(idle_time=4*ds.idle_time/1e3)  # convert to usec
     ds.flux.attrs = {'long_name': 'flux', 'units': 'V'}
     ds.idle_time.attrs = {'long_name': 'idle time', 'units': 'usec'}
+    
+    def detuning(q, flux):
+        return -1e-6 * q.freq_vs_flux_01_quad_term * flux**2
 
+    ds = ds.assign_coords(
+        {"detuning": (["qubit", "flux"], np.array([detuning(q, dcs) for q in qubits]))}
+    )
+    ds.detuning.attrs["long_name"] = "Detuning"
+    ds.detuning.attrs["units"] = "MHz"
+
+    def df_dphi(q, flux):
+        return -1e-9 * q.freq_vs_flux_01_quad_term * flux * q.phi0_voltage
+
+    ds = ds.assign_coords(
+        {"df_dphi": (["qubit", "flux"], np.array([df_dphi(q, dcs) for q in qubits]))}
+    )
+    ds.detuning.attrs["long_name"] = "df_dphi"
+    ds.detuning.attrs["units"] = "GHz/V"
     
 # %%
 if not simulate:
@@ -244,38 +261,71 @@ if not simulate:
                                                         fit_vals="offset"),
                                                     fit_data.sel(fit_vals="decay"))
 
-    frequency = fit_data.sel(fit_vals = 'f')
+    frequency = fit_data.sel(fit_vals = 'f',drop = True)
     frequency.attrs = {'long_name' : 'frequency', 'units' : 'MHz'}
 
-    decay = fit_data.sel(fit_vals = 'decay')
+    decay = fit_data.sel(fit_vals = 'decay',drop = True)
     decay.attrs = {'long_name' : 'decay', 'units' : 'nSec'}
 
-    tau = 1/fit_data.sel(fit_vals='decay')
-    tau.attrs = {'long_name' : 'T2*', 'units' : 'uSec'}
-
-    frequency = frequency.where(frequency>0,drop = True)
-
-    decay = fit_data.sel(fit_vals = 'decay')
-    decay.attrs = {'long_name' : 'decay', 'units' : 'nSec'}
-
-    decay_res = fit_data.sel(fit_vals = 'decay_decay')
-    decay_res.attrs = {'long_name' : 'decay', 'units' : 'nSec'}
+    decay_error = np.sqrt(fit_data.sel(fit_vals = 'decay_decay',drop = True))
+    decay_error.attrs = {'long_name' : 'decay', 'units' : 'nSec'}
     
-    tau = 1/fit_data.sel(fit_vals='decay')
+    tau = 1/fit_data.sel(fit_vals='decay',drop = True)
     tau.attrs = {'long_name' : 'T2*', 'units' : 'uSec'}
 
-    tau_error = tau * (np.sqrt(decay_res)/decay)
+    tau_error = tau * (decay_error/decay)
     tau_error.attrs = {'long_name' : 'T2* error', 'units' : 'uSec'}
 
-    # fitvals = frequency.polyfit(dim = 'flux', deg = 2)
-    # flux= frequency.flux
-    # a = {}
-    # flux_offset = {}
-    # freq_offset = {}
-    # for q in machine.active_qubits:
-    #     a[q.name] = float(-1e6*fitvals.sel(qubit = q.name,degree = 2).polyfit_coefficients.values)
-    #     flux_offset[q.name]  = float((-0.5*fitvals.sel(qubit =q.name,degree = 1).polyfit_coefficients/fitvals.sel(qubit = q.name,degree = 2).polyfit_coefficients).values)
-    #     freq_offset[q.name]  = 1e6*float(fitvals.sel(qubit = q.name,degree = 0).polyfit_coefficients.values) - detuning    
+    # Combine fitted data arrays into a dataset
+    fit_dataset = xr.Dataset({
+        'frequency': frequency,
+        'decay': decay,
+        'decay_error': decay_error,
+        'T2_star': tau,
+        'T2_star_error': tau_error
+    })
+    # Linear fit of decay vs df_dphi for all qubits using scipy's curve_fit
+    from scipy.optimize import curve_fit
+
+    def linear_model(x, m, b):
+        return m * x + b
+
+    slopes = []
+    intercepts = []
+    slope_errors = []
+    intercept_errors = []
+    all_residuals = []
+
+    for qubit in fit_dataset.qubit:
+        x = fit_dataset.df_dphi.sel(qubit=qubit).values
+        y = fit_dataset.decay.sel(qubit=qubit).values
+        y_err = fit_dataset.decay_error.sel(qubit=qubit).values
+
+        # Perform weighted curve fit
+        popt, pcov = curve_fit(linear_model, x, y, sigma=y_err, absolute_sigma=True)
+        slope, intercept = popt
+        slope_err, intercept_err = np.sqrt(np.diag(pcov))
+
+        # Calculate fitted y values and residuals
+        y_fit = linear_model(x, slope, intercept)
+        residuals = y - y_fit
+
+        slopes.append(slope)
+        intercepts.append(intercept)
+        slope_errors.append(slope_err)
+        intercept_errors.append(intercept_err)
+        all_residuals.append(residuals)
+
+    # Add linear fit results to fit_dataset
+    fit_dataset['decay_vs_df_dphi_slope'] = xr.DataArray(slopes, dims=['qubit'], attrs={'long_name': 'Slope of decay vs df/dphi', 'units': 'MHz/(GHz/V)'})
+    fit_dataset['decay_vs_df_dphi_slope_error'] = xr.DataArray(slope_errors, dims=['qubit'], attrs={'long_name': 'Error in slope of decay vs df/dphi', 'units': 'MHz/(GHz/V)'})
+    fit_dataset['decay_vs_df_dphi_intercept'] = xr.DataArray(intercepts, dims=['qubit'], attrs={'long_name': 'Intercept of decay vs df/dphi', 'units': 'MHz'})
+    fit_dataset['decay_vs_df_dphi_intercept_error'] = xr.DataArray(intercept_errors, dims=['qubit'], attrs={'long_name': 'Error in intercept of decay vs df/dphi', 'units': 'MHz'})
+    fit_dataset['decay_vs_df_dphi_residuals'] = xr.DataArray(all_residuals, dims=['qubit', 'flux'], attrs={'long_name': 'Residuals of decay vs df/dphi fit', 'units': 'MHz'})
+
+    # Add the fit dataset to the node results
+    node.results['fit_dataset'] = fit_dataset
+
 
 # %%
 if not simulate:
@@ -311,15 +361,31 @@ if not simulate:
     grid_names = [f'{q.name}_0' for q in qubits]
     grid = QubitGrid(ds, grid_names)
     for ax, qubit in grid_iter(grid):
-        tau_data = -decay.sel(qubit = qubit['qubit'])
+        tau_data = fit_dataset.decay.sel(qubit = qubit['qubit'])
         flux_data = tau_data.flux
-        ax.errorbar(flux_data, -tau_data, 
-                    yerr=0*tau_error.sel(qubit = qubit['qubit']), 
+        ax.errorbar(fit_dataset.df_dphi.sel(qubit = qubit['qubit']), fit_dataset.decay.sel(qubit = qubit['qubit']), 
+                    yerr=fit_dataset.decay_error.sel(qubit = qubit['qubit']), 
                     fmt='o-', capsize=5)
+        ax.plot(fit_dataset.df_dphi.sel(qubit = qubit['qubit']), fit_dataset.decay_vs_df_dphi_slope.sel(qubit = qubit['qubit']) * fit_dataset.df_dphi.sel(qubit = qubit['qubit']) + fit_dataset.decay_vs_df_dphi_intercept.sel(qubit = qubit['qubit']), 'r--')
+        ax.text(0.05, 0.95, f"$\kappa_R$: {1e3*fit_dataset.decay_vs_df_dphi_slope.sel(qubit = qubit['qubit']):.0f} $\pm$ {1e3*fit_dataset.decay_vs_df_dphi_slope_error.sel(qubit = qubit['qubit']):.0f} $\mu \phi_0$", transform=ax.transAxes, fontsize=10, verticalalignment='top')
         ax.set_title(qubit['qubit'])
-        ax.set_ylabel('Gamma (MHz)')
-        ax.set_xlabel(' Flux (V)')
-        # ax.set_ylim(0, 10)
+        ax.set_ylabel('$\Gamma_R$ (MHz)')
+        ax.set_xlabel("$df/d\phi$ (GHz/$\phi_0$)")
+        
+        # Add extra coordinates to the ax axis representing detuning
+        detuning_data = fit_dataset.detuning.sel(qubit=qubit['qubit'])
+        df_dphi_data = fit_dataset.df_dphi.sel(qubit=qubit['qubit'])
+        
+        def detuning_to_df_dphi(det):
+            return np.interp(det, detuning_data, df_dphi_data)
+        
+        def df_dphi_to_detuning(dfp):
+            return np.interp(dfp, df_dphi_data, detuning_data)
+        
+        ax2 = ax.secondary_xaxis('top', functions=(df_dphi_to_detuning, detuning_to_df_dphi))
+        ax2.set_xlabel("Detuning (MHz)")
+
+        # ax.set_ylim(0, 4)
     grid.fig.suptitle('T2*. Vs. flux')
     plt.tight_layout()
     plt.show()
