@@ -33,6 +33,7 @@ class Parameters(NodeParameters):
     reset_type_thermal_or_active: Literal['thermal', 'active'] = "active"
     simulate: bool = False
     timeout: int = 100
+    DRAG_setpoint: Optional[float] = None
 
 node = QualibrationNode(
     name="09_Stark_Detuning",
@@ -81,9 +82,8 @@ operation = node.parameters.operation  # The qubit operation to play
 tracked_qubits = []
 for q in qubits:
     with tracked_updates(q, auto_revert=False) as q:
-        q.xy.operations[operation].alpha = None
-        q.xy.operations[operation].alpha = 0
-        q.xy.operations[operation].detuning = None
+        if node.parameters.DRAG_setpoint is not None:
+            q.xy.operations[operation].alpha = node.parameters.DRAG_setpoint
         q.xy.operations[operation].detuning = 0
         tracked_qubits.append(q)
     
@@ -240,7 +240,8 @@ for qubit in tracked_qubits:
 with node.record_state_updates():
     for qubit in qubits:
         qubit.xy.operations[operation].detuning = float(fit_results[qubit.name]['detuning'])
-        qubit.xy.operations[operation].alpha = -1.0
+        if node.parameters.DRAG_setpoint is not None:
+            qubit.xy.operations[operation].alpha = node.parameters.DRAG_setpoint
 
 # %% {Save_results}
 node.outcomes = {q.name: "successful" for q in qubits}
