@@ -279,7 +279,7 @@ else:
         # Location of the current resonator frequency
         ax.plot(
             idle_offset.loc[qubit].values,
-            machine.qubits[qubit["qubit"]].resonator.RF_frequency * 1e-9,
+            (machine.qubits[qubit["qubit"]].resonator.RF_frequency + rel_freq_shift.sel(qubit = qubit["qubit"]).values) * 1e-9,
             "r*",
             markersize=10,
         )
@@ -317,3 +317,5 @@ else:
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine
     node.save()
+
+# %%
