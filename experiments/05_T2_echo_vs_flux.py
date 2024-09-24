@@ -26,10 +26,10 @@ class Parameters(NodeParameters):
     num_averages: int = 200
     frequency_detuning_in_mhz: float = 1.0
     min_wait_time_in_ns: int = 10
-    max_wait_time_in_ns: int = 30000
-    wait_time_step_in_ns: int = 100
-    flux_span : float = 0.05
-    flux_step : float = 0.001
+    max_wait_time_in_ns: int = 50000
+    wait_time_step_in_ns: int = 50
+    flux_span : float = 0.1
+    flux_step : float = 0.005
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
     reset_type: Literal['active', 'thermal'] = "active"
@@ -93,7 +93,7 @@ idle_times = np.arange(
     node.parameters.max_wait_time_in_ns // 4,
     node.parameters.wait_time_step_in_ns // 4,
 )
-idle_times = np.logspace(np.log10(node.parameters.min_wait_time_in_ns // 4),np.log10(node.parameters.max_wait_time_in_ns // 4),len(idle_times)).astype(np.int32)
+# idle_times = np.logspace(np.log10(node.parameters.min_wait_time_in_ns // 4),np.log10(node.parameters.max_wait_time_in_ns // 4),len(idle_times)).astype(np.int32)
 # Detuning converted into virtual Z-rotations to observe Ramsey oscillation and get the qubit frequency
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 reset_type = node.parameters.reset_type
@@ -143,56 +143,22 @@ with program() as ramsey:
                         qubit.resonator.wait(machine.thermalization_time * u.ns)
                         qubit.align()
                     qubit.align()
-                    if flux_point == "independent":
-                        qubit.z.set_dc_offset(dc + qubit.z.independent_offset)
-                    elif flux_point == "joint":
-                        qubit.z.set_dc_offset(dc + qubit.z.joint_offset)  
-                    wait(100,qubit.z.name)
-                    qubit.align()
-
-                    # update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency + freq)
-                    align()
-                    # Strict_timing ensures that the sequence will be played without gaps
-                    # qubit.z.play("const", amplitude_scale = dc / 0.1, duration=2*t+200)                  
-                    qubit.xy.play("x90")
-                    wait(t,qubit.xy.name)
-                    qubit.xy.play("x180")
-                    wait(t,qubit.xy.name)
-                    qubit.xy.play("x90")
-                    # wait(10, qubit.z.name)
-                    qubit.align()
-                    update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
-                    # Align the elements to measure after playing the qubit pulse.
-                    align()                    
-                    if flux_point == "independent":
-                        qubit.z.set_dc_offset(qubit.z.independent_offset)
-                    elif flux_point == "joint":
-                        qubit.z.set_dc_offset(qubit.z.joint_offset)  
-                    wait(100,qubit.z.name)
-                    qubit.align()
-                                        
-                    # # update_frequency(qubit.xy.name, freq + qubit.xy.intermediate_frequency)
-                    # qubit.align()
-                    # qubit.xy.play("x90")
-                    # qubit.align()
-                    # wait(50, qubit.z.name)
-                    # qubit.z.play("const", amplitude_scale = dc / 0.1, duration= t)
-                    # wait(50, qubit.z.name)
-                    # qubit.align()
-                    # qubit.xy.play("x180")
-                    # qubit.align()
-                    # wait(50, qubit.z.name)
-                    # qubit.z.play("const", amplitude_scale = dc / 0.1, duration= t)
-                    # wait(50, qubit.z.name)
-                    # qubit.align()
-                    # qubit.xy.play("x90")
-                    # # Align the elements to measure after playing the qubit pulse.
                     
-                    # wait(10, qubit.z.name)
-                    # wait(10, qubit.xy.name)
-                    # # update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
-                    # qubit.align()
-                    # Measure the state of the resonators
+                    qubit.xy.play("x90")
+                    qubit.align()
+                    qubit.z.wait(20)
+                    qubit.z.play("const", amplitude_scale=dc/qubit.z.operations["const"].amplitude, duration=t)
+                    qubit.z.wait(20)
+                    qubit.align()
+                    qubit.xy.play("x180")
+                    qubit.align()
+                    qubit.z.wait(20)
+                    qubit.z.play("const", amplitude_scale=dc/qubit.z.operations["const"].amplitude, duration=t)
+                    qubit.z.wait(20)
+                    qubit.align()
+                    qubit.xy.play("-x90")
+                    qubit.align()
+                    
                     readout_state(qubit, state[i])
                     save(state[i], state_st[i])
                     
@@ -259,7 +225,7 @@ if not simulate:
     
 # %%
 if not simulate:
-    fit_data = fit_decay_exp(1-ds.state, 'idle_time')
+    fit_data = fit_decay_exp(ds.state, 'idle_time')
     fit_data.attrs = {'long_name' : 'time', 'units' : 'usec'}
     fitted =  decay_exp(ds.state.idle_time,
                                                     fit_data.sel(
@@ -280,6 +246,35 @@ if not simulate:
 
     tau_error = -tau * (np.sqrt(decay_res)/decay)
     tau_error.attrs = {'long_name' : 'T2* error', 'units' : 'uSec'}
+
+
+# if not simulate:
+#     fit_data = fit_oscillation_decay_exp(ds.state, 'idle_time')
+#     fit_data.attrs = {'long_name' : 'time', 'units' : 'usec'}
+#     fitted =  oscillation_decay_exp(ds.state.idle_time,
+#                                                     fit_data.sel(
+#                                                         fit_vals="f"),
+#                                                     fit_data.sel(
+#                                                         fit_vals="phi"),                                    
+#                                                     fit_data.sel(
+#                                                         fit_vals="a"),
+#                                                     fit_data.sel(
+#                                                         fit_vals="offset"),
+#                                                     fit_data.sel(fit_vals="decay"))
+
+
+#     decay = fit_data.sel(fit_vals = 'decay')
+#     decay.attrs = {'long_name' : 'decay', 'units' : 'nSec'}
+
+#     decay_res = fit_data.sel(fit_vals = 'decay_decay')
+#     decay_res.attrs = {'long_name' : 'decay', 'units' : 'nSec'}
+    
+#     tau = -1/fit_data.sel(fit_vals='decay')
+#     tau.attrs = {'long_name' : 'T2*', 'units' : 'uSec'}
+
+#     tau_error = -tau * (np.sqrt(decay_res)/decay)
+#     tau_error.attrs = {'long_name' : 'T2* error', 'units' : 'uSec'}
+
 
 
 # %%
@@ -336,10 +331,4 @@ if not simulate:
 node.results['initial_parameters'] = node.parameters.model_dump()
 node.machine = machine
 node.save()
-# %%
-flux_val = 0.015
-for qubit in qubits:
-    (1-ds).sel(qubit = qubit.name, flux = flux_val, method='nearest').state.plot()
-    plt.plot(ds.idle_time, fitted.sel(qubit = qubit.name, flux = flux_val, method='nearest'))
-    plt.show()
 # %%

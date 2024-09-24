@@ -23,7 +23,7 @@ from typing import Optional, Literal, List
 
 class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
-    num_averages: int = 100
+    num_averages: int = 200
     frequency_detuning_in_mhz: float = 4.0
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 4000
@@ -35,10 +35,8 @@ class Parameters(NodeParameters):
 
 node = QualibrationNode(
     name="decoherence_T2_vs_flux",
-    parameters_class=Parameters
+    parameters=Parameters()
 )
-
-node.parameters = Parameters()
 
 
 from qm.qua import *
