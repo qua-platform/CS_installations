@@ -33,15 +33,15 @@ from quam_libs.lib.cryoscope_tools import cryoscope_frequency, estimate_fir_coef
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubits: Optional[List[str]] = None    
-    num_averages: int = 1000
+    qubits: Optional[List[str]] = ['q2']    
+    num_averages: int = 10000
     amplitude_factor: float = 0.5
-    cryoscope_len: int = 160
+    cryoscope_len: int = 240
     reset_type_active_or_thermal: Literal['active', 'thermal'] = 'active'
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
     timeout: int = 100
-    reset_filters: bool = True
+    reset_filters: bool = False
 
 node = QualibrationNode(
     name="12_Cryoscope",
@@ -61,7 +61,7 @@ machine = QuAM.load()
 if node.parameters.qubits is None:
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.split(', ')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
     
 if node.parameters.reset_filters:
     for qubit in qubits:
@@ -129,7 +129,9 @@ with program() as cryoscope:
     idx = declare(int)
     idx2 = declare(int)
     flag = declare(bool)
-
+    qubit = qubits[0]
+    i = 0
+    
     # Bring the active qubits to the minimum frequency point
     if flux_point == "independent":
         machine.apply_all_flux_to_min()
@@ -189,11 +191,9 @@ with program() as cryoscope:
                 # Measure resonator state after the sequence
                 align()
 
-                multiplexed_readout(qubits, I, I_st, Q, Q_st)
-
-                for i in range(num_qubits):
-                    assign(state[i], Cast.to_int(I[i] > qubit.resonator.operations["readout"].threshold))
-                    save(state[i], state_st[i])
+                qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                assign(state[i], Cast.to_int(I[i] > qubit.resonator.operations["readout"].threshold))
+                save(state[i], state_st[i])
 
         with for_(t, 4, t < cryoscope_len // 4, t + 4):
 
@@ -237,18 +237,15 @@ with program() as cryoscope:
 
                     # Measure resonator state after the sequence
                     align()
-                    multiplexed_readout(qubits, I, I_st, Q, Q_st)
+                    qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                    assign(state[i], Cast.to_int(I[i] > qubit.resonator.operations["readout"].threshold))
+                    save(state[i], state_st[i])
 
-                    for i in range(num_qubits):
-                        assign(state[i], Cast.to_int(I[i] > qubit.resonator.operations["readout"].threshold))
-                        save(state[i], state_st[i])
 
     with stream_processing():
         # for the progress counter
         n_st.save("iteration")
         for i, qubit in enumerate(qubits):
-            I_st[i].buffer(2).buffer(cryoscope_len).average().save(f"I{i + 1}")
-            Q_st[i].buffer(2).buffer(cryoscope_len).average().save(f"Q{i + 1}")
             state_st[i].buffer(2).buffer(cryoscope_len).average().save(f"state{i + 1}")
 
 
@@ -288,14 +285,23 @@ if simulate:
     # plt.show(block=False)
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(cryoscope(qubit))
+        job = qm.execute(cryoscope)
+        data_list = ["iteration"]
+        results = fetching_tool(job, data_list, mode="live")
+        # Live plotting
+
+        while results.is_processing():
+            fetched_data = results.fetch_all()
+            n = fetched_data[0]
+            progress_counter(n, n_avg, start_time=results.start_time)
+
 
 # %%
 
 # %%
-if not node.parameters.simulate:
-    # %% {Data_fetching_and_dataset_creation}
-    
+
+# %% {Data_fetching_and_dataset_creation}
+if not node.parameters.simulate:    
     ds = fetch_results_as_xarray(job.result_handles, [qubit], {"axis": ["x","y"], "time": cryoscope_time})
     plot_process = True
 
