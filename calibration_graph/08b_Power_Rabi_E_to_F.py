@@ -44,8 +44,8 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     num_averages: int = 200
     operation: str = "x180"
-    min_amp_factor: float = 0.8
-    max_amp_factor: float = 1.2
+    min_amp_factor: float = 0.0
+    max_amp_factor: float = 1.5
     amp_factor_step: float = 0.005
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     simulate: bool = False
