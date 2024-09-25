@@ -288,22 +288,22 @@ else:
     
     # Save fitting results
     fit_results = {
-        qubit.name: {
-            "freq_offset": 1e9 * freq_offset.loc[qubit.name].values,
-            "decay": decay.loc[qubit.name].values,
-            "decay_error": decay_error.loc[qubit.name].values,
+        q.name: {
+            "freq_offset": 1e9 * freq_offset.loc[q.name].values,
+            "decay": decay.loc[q.name].values,
+            "decay_error": decay_error.loc[q.name].values,
         }
         for q in qubits
     }
     node.results["fit_results"] = fit_results
     for q in qubits:
         print(
-            f"Frequency offset for qubit {qubit.name} : {(fit_results[qubit.name]['freq_offset']/1e6):.2f} MHz "
+            f"Frequency offset for qubit {q.name} : {(fit_results[q.name]['freq_offset']/1e6):.2f} MHz "
         )
-        print(f"T2* for qubit {qubit.name} : {1e6*fit_results[qubit.name]['decay']:.2f} us")
+        print(f"T2* for qubit {q.name} : {1e6*fit_results[q.name]['decay']:.2f} us")
 
     # %% {Plotting}
-    grid_names = [f"{qubit.name}_0" for q in qubits]
+    grid_names = [f"{q.name}_0" for q in qubits]
     grid = QubitGrid(ds, grid_names)
     for ax, qubit in grid_iter(grid):
         if node.parameters.use_state_discrimination:
@@ -351,14 +351,14 @@ else:
                 not node.parameters.flux_point_joint_or_independent_or_arbitrary
                 == "arbitrary"
             ):
-                qubit.xy.intermediate_frequency -= float(fit_results[qubit.name]["freq_offset"])
+                q.xy.intermediate_frequency -= float(fit_results[q.name]["freq_offset"])
             else:
-                qubit.arbitrary_intermediate_frequency -= float(
-                    fit_results[qubit.name]["freq_offset"]
+                q.arbitrary_intermediate_frequency -= float(
+                    fit_results[q.name]["freq_offset"]
                 )
 
     # %% {Save_results}
-    node.outcomes = {qubit.name: "successful" for q in qubits}
+    node.outcomes = {q.name: "successful" for q in qubits}
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine
     node.save()

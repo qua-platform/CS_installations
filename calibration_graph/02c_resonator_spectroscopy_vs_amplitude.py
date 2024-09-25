@@ -54,7 +54,7 @@ class Parameters(NodeParameters):
     forced_flux_bias_v: Optional[float] = None
     max_power_dbm: int = -15
     min_power_dbm: int = -50
-    max_amp: float = 0.49
+    max_amp: float = 0.4
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     ro_line_attenuation_dB: float = 0
     multiplexed: bool = True
