@@ -100,7 +100,7 @@ else:
 
 with program() as power_rabi:
     I, _, Q, _, n, n_st = qua_declaration(num_qubits=num_qubits)
-    state = [declare(int) for _ in range(num_qubits)]
+    state = [declare(bool) for _ in range(num_qubits)]
     state_stream = [declare_stream() for _ in range(num_qubits)]
     a = declare(fixed)  # QUA variable for the qubit drive amplitude pre-factor
     npi = declare(int)  # QUA variable for the number of qubit pulses
