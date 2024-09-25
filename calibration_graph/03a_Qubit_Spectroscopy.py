@@ -260,25 +260,25 @@ else:
 
             plt.suptitle("Qubit spectroscopy")
             s_data = []
-            for i, q in enumerate(qubits):
+            for i, qubit in enumerate(qubits):
                 s = u.demod2volts(
-                    I[i] + 1j * Q[i], q.resonator.operations["readout"].length
+                    I[i] + 1j * Q[i], qubit.resonator.operations["readout"].length
                 )
                 s_data.append(s)
                 plt.subplot(2, num_qubits, i + 1)
                 plt.cla()
-                plt.plot((q.xy.RF_frequency + dfs) / u.MHz, np.abs(s))
-                plt.plot(q.xy.RF_frequency / u.MHz, max(np.abs(s)), "r*")
+                plt.plot((qubit.xy.RF_frequency + dfs) / u.MHz, np.abs(s))
+                plt.plot(qubit.xy.RF_frequency / u.MHz, max(np.abs(s)), "r*")
                 plt.grid(True)
                 plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
-                plt.title(f"{q.name} (f_01: {q.xy.RF_frequency / u.MHz} MHz)")
+                plt.title(f"{qubit.name} (f_01: {qubit.xy.RF_frequency / u.MHz} MHz)")
                 plt.subplot(2, num_qubits, num_qubits + i + 1)
                 plt.cla()
-                plt.plot((q.xy.RF_frequency + dfs) / u.MHz, np.unwrap(np.angle(s)))
-                plt.plot(q.xy.RF_frequency / u.MHz, max(np.unwrap(np.angle(s))), "r*")
+                plt.plot((qubit.xy.RF_frequency + dfs) / u.MHz, np.unwrap(np.angle(s)))
+                plt.plot(qubit.xy.RF_frequency / u.MHz, max(np.unwrap(np.angle(s))), "r*")
                 plt.grid(True)
                 plt.ylabel("Phase [rad]")
-                plt.xlabel(f"{q.name} detuning [MHz]")
+                plt.xlabel(f"{qubit.name} detuning [MHz]")
 
             plt.tight_layout()
             plt.pause(0.1)
@@ -329,6 +329,7 @@ else:
             for q in qubits
         ]
     )
+    
     # Save fitting results
     fit_results = {}
     for q in qubits:

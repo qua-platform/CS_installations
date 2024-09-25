@@ -1,0 +1,14 @@
+{
+    "created_at": "2024-09-23T18:07:13+02:00",
+    "metadata": {
+        "name": "04a_Power_Rabi",
+        "data_path": "2024-09-23/#11_04a_Power_Rabi_180713"
+    },
+    "data": {
+        "quam": "./quam_state.json"
+    },
+    "id": 11,
+    "parents": [
+        10
+    ]
+}

@@ -1,0 +1,14 @@
+{
+    "ds": "./ds.h5",
+    "raw_amplitude": "./raw_amplitude.png",
+    "raw_phase": "./raw_phase.png",
+    "fitted_amp": "./fitted_amp.png",
+    "initial_parameters": {
+        "qubits": null,
+        "num_averages": 100,
+        "frequency_span_in_mhz": 15.0,
+        "frequency_step_in_mhz": 0.1,
+        "simulate": false,
+        "timeout": 100
+    }
+}

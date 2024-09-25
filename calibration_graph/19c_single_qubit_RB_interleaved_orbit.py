@@ -351,7 +351,7 @@ def get_rb_interleaved_program(qubit: Transmon, qubit_with_orbit_values: Transmo
                 if reset_type == "active":
                     active_reset(machine, qubit.name)
                 else:
-                    wait(5*machine.thermalization_time * u.ns)
+                    wait(qubit.thermalization_time * u.ns)
                 # Align the two elements to play the sequence after qubit initialization
                 qubit.resonator.align(qubit.xy.name)
                 # The strict_timing ensures that the sequence will be played without gaps

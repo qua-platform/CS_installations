@@ -97,7 +97,7 @@ dcs = np.linspace(
     node.parameters.max_flux_offset_in_v,
     node.parameters.num_flux_points,
 )
-# The frequency sweep around the resonator resonance frequency f_opt
+# The frequency sweep around the resonator resonance frequency 
 span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span / 2, +span / 2, step)
@@ -176,6 +176,7 @@ else:
             progress_counter(n, n_avg, start_time=results.start_time)
 
     # %% {Data_fetching_and_dataset_creation}
+    # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs, "flux": dcs})
     # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2)
     ds = ds.assign({"IQ_abs": np.sqrt(ds["I"] ** 2 + ds["Q"] ** 2)})
@@ -221,6 +222,7 @@ else:
     )
     # finding the frequency as the sweet spot flux
     rel_freq_shift = peak_freq.sel(flux=idle_offset, method="nearest")
+    
     # Save fitting results
     fit_results = {}
     for q in qubits:

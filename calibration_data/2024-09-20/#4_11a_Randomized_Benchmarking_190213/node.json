@@ -1,0 +1,14 @@
+{
+    "created_at": "2024-09-20T19:02:13+02:00",
+    "metadata": {
+        "name": "11a_Randomized_Benchmarking",
+        "data_path": "2024-09-20/#4_11a_Randomized_Benchmarking_190213"
+    },
+    "data": {
+        "quam": "./quam_state.json"
+    },
+    "id": 4,
+    "parents": [
+        3
+    ]
+}

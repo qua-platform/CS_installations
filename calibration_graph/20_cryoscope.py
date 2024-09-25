@@ -156,7 +156,7 @@ with program() as cryoscope:
                     for qubit in qubits:
                         active_reset(machine, qubit.name)
                 else:
-                    wait(5*machine.thermalization_time * u.ns)
+                    wait(qubit.thermalization_time * u.ns)
                 align()
                 
                 # Play first X/2
@@ -202,11 +202,12 @@ with program() as cryoscope:
                 # Alternate between X/2 and Y/2 pulses
                 # for tomo in ['x90', 'y90']:
                 with for_each_(flag, [True, False]):
+                    # Initialize the qubits
                     if reset_type == "active":
                         for qubit in qubits:
                             active_reset(machine, qubit.name)
                     else:
-                        wait(5*machine.thermalization_time * u.ns)
+                        wait(qubit.thermalization_time * u.ns)
                     align()
                     # Play first X/2
                     for qubit in qubits:
@@ -253,7 +254,7 @@ with program() as cryoscope:
 
 simulate =  node.parameters.simulate
 
-if simulate:
+if node.parameters.simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=50000)  # In clock cycles = 4ns
     job = qmm.simulate(config, cryoscope, simulation_config)
@@ -299,9 +300,9 @@ else:
 # %%
 
 # %%
-
-# %% {Data_fetching_and_dataset_creation}
-if not node.parameters.simulate:    
+if not node.parameters.simulate:
+    # %% {Data_fetching_and_dataset_creation}
+    # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(job.result_handles, [qubit], {"axis": ["x","y"], "time": cryoscope_time})
     plot_process = True
 

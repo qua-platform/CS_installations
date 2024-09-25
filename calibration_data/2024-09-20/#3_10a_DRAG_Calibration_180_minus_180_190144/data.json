@@ -1,0 +1,33 @@
+{
+    "ds": "./ds.h5",
+    "fit_results": {
+        "q1": {
+            "alpha": -0.5201
+        },
+        "q2": {
+            "alpha": -0.48009999999999997
+        },
+        "q3": {
+            "alpha": -0.5001
+        },
+        "q4": {
+            "alpha": -0.6201
+        }
+    },
+    "figure": "./figure.png",
+    "initial_parameters": {
+        "targets_name": "qubits",
+        "qubits": null,
+        "num_averages": 10,
+        "operation": "x180",
+        "min_amp_factor": 0.0001,
+        "max_amp_factor": 2.0,
+        "amp_factor_step": 0.02,
+        "max_number_pulses_per_sweep": 40,
+        "flux_point_joint_or_independent": "joint",
+        "reset_type_thermal_or_active": "thermal",
+        "simulate": false,
+        "timeout": 100,
+        "targets": null
+    }
+}

@@ -426,10 +426,11 @@ with program() as randomized_benchmarking:
                             qubit.align()
                         else:
                             align()
+                        # Initialize the qubits
                         if reset_type == "active":
                             active_reset(machine, qubit.name)
                         else:
-                            qubit.resonator.wait(machine.thermalization_time * u.ns)
+                            qubit.resonator.wait(qubit.thermalization_time * u.ns)
                         # Align the two elements to play the sequence after qubit initialization
                         align(qubit.xy.name, qubit.resonator.name)
                         reset_frame(qubit.xy.name)
@@ -465,7 +466,7 @@ with program() as randomized_benchmarking:
 
 simulate = node.parameters.simulate
 
-if simulate:
+if node.parameters.simulate:
     simulation_config = SimulationConfig(duration=100_000)  # in clock cycles
     job = qmm.simulate(config, randomized_benchmarking, simulation_config)
     job.get_simulated_samples().con1.plot()

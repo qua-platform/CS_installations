@@ -88,12 +88,12 @@ with program() as t1:
     if node.parameters.use_state_discrimination:
         state = [declare(int) for _ in range(num_qubits)]
         state_st = [declare_stream() for _ in range(num_qubits)]
-    for i, q in enumerate(qubits):
+    for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
-            q.z.to_independent_idle()
+            qubit.z.to_independent_idle()
         elif flux_point == "joint" or "arbitrary":
             machine.apply_all_flux_to_joint_idle()
         else:
@@ -109,33 +109,33 @@ with program() as t1:
             save(n, n_st)
             with for_(*from_array(t, idle_times)):
                 if node.parameters.reset_type == "active":
-                    active_reset(machine, q.name)
+                    active_reset(machine, qubit.name)
                 else:
-                    q.resonator.wait(machine.thermalization_time * u.ns)
-                    q.align()
+                    qubit.resonator.wait(qubit.thermalization_time * u.ns)
+                    qubit.align()
                 
                     
-                q.xy.play("x90")
-                q.align()
-                q.z.wait(20)
-                q.z.play("const", amplitude_scale=arb_flux_bias_offset[q.name]/q.z.operations["const"].amplitude, duration=t)
-                q.z.wait(20)
-                q.align()
-                q.xy.play("x180")
-                q.align()
-                q.z.wait(20)
-                q.z.play("const", amplitude_scale=arb_flux_bias_offset[q.name]/q.z.operations["const"].amplitude, duration=t)
-                q.z.wait(20)
-                q.align()
-                q.xy.play("-x90")
-                q.align()
+                qubit.xy.play("x90")
+                qubit.align()
+                qubit.z.wait(20)
+                qubit.z.play("const", amplitude_scale=arb_flux_bias_offset[qubit.name]/qubit.z.operations["const"].amplitude, duration=t)
+                qubit.z.wait(20)
+                qubit.align()
+                qubit.xy.play("x180")
+                qubit.align()
+                qubit.z.wait(20)
+                qubit.z.play("const", amplitude_scale=arb_flux_bias_offset[qubit.name]/qubit.z.operations["const"].amplitude, duration=t)
+                qubit.z.wait(20)
+                qubit.align()
+                qubit.xy.play("-x90")
+                qubit.align()
                 
                 # Measure the state of the resonators
                 if node.parameters.use_state_discrimination:
-                    readout_state(q, state[i])
+                    readout_state(qubit, state[i])
                     save(state[i], state_st[i])
                 else:
-                    q.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                    qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                     # save data
                     save(I[i], I_st[i])
                     save(Q[i], Q_st[i])
@@ -184,7 +184,7 @@ else:
 # %%
 if not node.parameters.simulate:
     # %% {Data_fetching_and_dataset_creation}
-    
+    # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(job.result_handles, qubits, {"idle_time": idle_times})
 
     ds = ds.assign_coords(idle_time=8*ds.idle_time/1e3)  # convert to usec

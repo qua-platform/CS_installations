@@ -1,0 +1,14 @@
+{
+    "created_at": "2024-09-23T17:58:33+02:00",
+    "metadata": {
+        "name": "02b_Resonator_Spectroscopy_vs_Flux",
+        "data_path": "2024-09-23/#6_02b_Resonator_Spectroscopy_vs_Flux_175833"
+    },
+    "data": {
+        "quam": "./quam_state.json"
+    },
+    "id": 6,
+    "parents": [
+        5
+    ]
+}

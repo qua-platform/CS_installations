@@ -13,6 +13,7 @@ __all__ = [
     "qua_declaration",
     "multiplexed_readout",
     "node_save",
+    "active_reset",
 ]
 
 

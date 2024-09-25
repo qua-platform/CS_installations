@@ -1,0 +1,12 @@
+{
+    "created_at": "2024-09-20T19:00:32+02:00",
+    "metadata": {
+        "name": "09_Stark_Detuning",
+        "data_path": "2024-09-20/#1_09_Stark_Detuning_190032"
+    },
+    "data": {
+        "quam": "./quam_state.json"
+    },
+    "id": 1,
+    "parents": []
+}

@@ -16,7 +16,7 @@ Prerequisites:
     - Specification of the expected resonator depletion time in the state.
 
 Before proceeding to the next node:
-    - Update the readout frequency, labeled as "f_res" and "f_opt", in the state.
+    - Update the readout frequency, labeled as "f_res" and "", in the state.
     - Adjust the readout amplitude, labeled as "readout_pulse_amp", in the state.
     - Save the current state by calling machine.save("quam")
 """
@@ -154,7 +154,7 @@ amps = np.geomspace(
     amp_min, amp_max, 100
 )  # 100 points from 0.01 to 1.0, logarithmically spaced
 
-# The frequency sweep around the resonator resonance frequencies f_opt
+# The frequency sweep around the resonator resonance frequencies 
 span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span // 2, +span // 2, step)
@@ -225,7 +225,6 @@ else:
 
         # %% {Live_plot}
         results = fetching_tool(job, ["n"], mode="live")
-        # Live plotting
         while results.is_processing():
             # Fetch results
             n = results.fetch_all()[0]
@@ -365,7 +364,7 @@ else:
         fit_results[q.name]["RO_frequency"] = q.resonator.RF_frequency
     node.results["resonator_frequency"] = fit_results
 
-    # revert the change done at the beginning of the node
+    # Revert the change done at the beginning of the node
     for tracked_qubit in tracked_qubits:
         tracked_qubit.revert_changes()
 

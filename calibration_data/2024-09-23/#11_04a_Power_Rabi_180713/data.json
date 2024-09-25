@@ -1,0 +1,16 @@
+{
+    "ds": "./ds.h5",
+    "figure": "./figure.png",
+    "initial_parameters": {
+        "qubits": null,
+        "num_averages": 200,
+        "operation": "x180",
+        "min_amp_factor": 0.8,
+        "max_amp_factor": 1.2,
+        "amp_factor_step": 0.005,
+        "max_number_rabi_pulses_per_sweep": 21,
+        "flux_point_joint_or_independent": "joint",
+        "simulate": false,
+        "timeout": 100
+    }
+}

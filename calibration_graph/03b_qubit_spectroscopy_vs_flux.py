@@ -180,7 +180,7 @@ with program() as multi_qubit_spec_vs_flux:
 
     with stream_processing():
         n_st.save("n")
-        for i, q in enumerate(qubits):
+        for i, qubit in enumerate(qubits):
             I_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"I{i + 1}")
             Q_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"Q{i + 1}")
 
@@ -208,6 +208,7 @@ else:
             progress_counter(n, n_avg, start_time=results.start_time)
 
     # %% {Data_fetching_and_dataset_creation}
+    # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(job.result_handles, qubits, {"flux": dcs, "freq": dfs})
     # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2)
     ds = ds.assign({"IQ_abs": np.sqrt(ds["I"] ** 2 + ds["Q"] ** 2)})
@@ -243,6 +244,7 @@ else:
         + coeff.sel(degree=1) * flux_shift
         + coeff.sel(degree=0)
     )
+    
     # Save fitting results
     fit_results = {}
     for q in qubits:
