@@ -19,7 +19,7 @@ Next steps before going to the next node:
     - Update the g -> e threshold (ge_threshold) in the state.
     - Save the current state by calling machine.save("quam")
 """
-
+# TODO: this script isn't working great, the readout amp found at the end isn't always correct maybe because of SNR...
 
 # %% {Imports}
 from qualibrate import QualibrationNode, NodeParameters
