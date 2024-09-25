@@ -138,12 +138,7 @@ with program() as power_rabi:
                         qubit.xy.play(operation, amplitude_scale=a)
                     align()
                     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
-                    assign(
-                        state[i],
-                        Cast.to_int(
-                            I[i] > qubit.resonator.operations["readout"].threshold
-                        ),
-                    )
+                    assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
                     save(state[i], state_stream[i])
 
         align()
@@ -152,11 +147,11 @@ with program() as power_rabi:
         n_st.save("n")
         for i, qubit in enumerate(qubits):
             if operation == "x180":
-                state_stream[i].buffer(len(amps)).buffer(
+                state_stream[i].boolean_to_int().buffer(len(amps)).buffer(
                     np.ceil(N_pi / 2)
                 ).average().save(f"state{i + 1}")
             elif operation in ["x90", "-x90", "y90", "-y90"]:
-                state_stream[i].buffer(len(amps)).buffer(
+                state_stream[i].boolean_to_int().buffer(len(amps)).buffer(
                     np.ceil(N_pi / 4)
                 ).average().save(f"state{i + 1}")
             else:
