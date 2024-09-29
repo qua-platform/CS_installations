@@ -83,6 +83,19 @@ octave_config = machine.get_octave_config()
 # Open Communication with the QOP
 qmm = machine.connect()
 
+if node.parameters.qubits is None or node.parameters.qubits == '':
+    qubits = machine.active_qubits
+else:
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
+num_qubits = len(qubits)
+# %%
+# Print intermediate frequencies of all qubits
+print("Intermediate frequencies of qubits:")
+for qubit in qubits:
+    print(f"{qubit.name}: {qubit.xy.intermediate_frequency / 1e6:.3f} MHz")
+
+# %%
+
 
 # %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages

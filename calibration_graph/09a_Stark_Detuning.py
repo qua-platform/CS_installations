@@ -49,7 +49,7 @@ class Parameters(NodeParameters):
     reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
     simulate: bool = False
     timeout: int = 100
-    DRAG_setpoint: Optional[float] = None
+    DRAG_setpoint: Optional[float] = -1.0
 
 
 node = QualibrationNode(name="09a_Stark_Detuning", parameters=Parameters())

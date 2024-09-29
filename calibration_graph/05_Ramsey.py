@@ -44,8 +44,8 @@ class Parameters(NodeParameters):
     num_averages: int = 100
     frequency_detuning_in_mhz: float = 1.0
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 30000
-    wait_time_step_in_ns: int = 20
+    max_wait_time_in_ns: int = 3000
+    wait_time_step_in_ns: int = 16
     flux_point_joint_or_independent_or_arbitrary: Literal[
         "joint", "independent", "arbitrary"
     ] = "joint"

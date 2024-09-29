@@ -1,6 +1,6 @@
 # %%
 """
-        RESONATOR SPECTROSCOPY VERSUS FLUX
+       PAIRWISE RESONATOR SPECTROSCOPY VERSUS FLUX 
 This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to
 extract the 'I' and 'Q' quadratures. This is done across various readout intermediate dfs and flux biases.
 The resonator frequency as a function of flux bias is then extracted and fitted so that the parameters can be stored in the configuration.
@@ -42,7 +42,7 @@ import warnings
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = None
+    qubit_pairs: Optional[List[str]] = None
     num_averages: int = 10
     min_flux_offset_in_v: float = -0.5
     max_flux_offset_in_v: float = 0.5
@@ -58,10 +58,8 @@ class Parameters(NodeParameters):
 
 
 node = QualibrationNode(
-    name="02b_Resonator_Spectroscopy_vs_Flux", parameters=Parameters()
+    name="60_pairwise_resonator_spectroscopy_vs_flux", parameters=Parameters()
 )
-
-
 
 # %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
@@ -70,17 +68,14 @@ u = unit(coerce_to_integer=True)
 machine = QuAM.load()
 
 # Get the relevant QuAM components
-if node.parameters.qubits is None or node.parameters.qubits == "":
-    qubits = machine.active_qubits
+if node.parameters.qubit_pairs is None or node.parameters.qubit_pairs == "":
+    qubit_pairs = machine.active_qubit_pairs
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits]
-if any([q.z is None for q in qubits]):
-    warnings.warn("Found qubits without a flux line. Skipping")
+    qubit_pairs = [machine.qubit_pairs[qp] for qp in node.parameters.qubit_pairs]
+# if any([qp.q1.z is None or qp.q2.z is None for qp in qubit_pairs]):
+#     warnings.warn("Found qubit pairs without a flux line. Skipping")
 
-qubits = [q for q in qubits if q.z is not None]
-resonators = [qubit.resonator for qubit in qubits]
-num_qubits = len(qubits)
-num_resonators = len(resonators)
+num_qubit_pairs = len(qubit_pairs)
 
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
@@ -103,30 +98,30 @@ step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span / 2, +span / 2, step)
 
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
-update_flux_min = True  # Update the min flux point
 
 with program() as multi_res_spec_vs_flux:
     # Declare 'I' and 'Q' and the corresponding streams for the two resonators.
     # For instance, here 'I' is a python list containing two QUA fixed variables.
-    I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
+    I1, I1_st, Q1, Q1_st, n, n_st = qua_declaration(num_qubits=num_qubit_pairs)
+    I2, I2_st, Q2, Q2_st = qua_declaration(num_qubits=num_qubit_pairs)
     dc = declare(fixed)  # QUA variable for the flux bias
     df = declare(int)  # QUA variable for the readout frequency
 
-    for i, qubit in enumerate(qubits):
-        # resonator of the qubit
-        rr = resonators[i]
+    for i, qp in enumerate(qubit_pairs):
+
+        qubit = qp.qubit_control
+
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
-            qubit.z.to_independent_idle()
+            qp.apply_mutual_flux_point()
         elif flux_point == "joint":
             machine.apply_all_flux_to_joint_idle()
+            qp.apply_mutual_flux_point()
         else:
             machine.apply_all_flux_to_zero()
 
-        for qb in qubits:
-            # Wait for the flux to settle
-            wait(1000, qb.z.name)
+        wait(1000)
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
@@ -136,22 +131,58 @@ with program() as multi_res_spec_vs_flux:
                 wait(100)  # Wait for the flux to settle
                 with for_(*from_array(df, dfs)):
                     # Update the resonator frequencies for resonator
-                    update_frequency(rr.name, df + rr.intermediate_frequency)
+                    update_frequency(qubit.resonator.name, df + qubit.resonator.intermediate_frequency)
                     # readout the resonator
-                    rr.measure("readout", qua_vars=(I[i], Q[i]))
+                    qubit.resonator.measure("readout", qua_vars=(I1[i], Q1[i]))
                     # wait for the resonator to relax
-                    rr.wait(machine.depletion_time * u.ns)
+                    qubit.wait(machine.depletion_time * u.ns)
                     # save data
-                    save(I[i], I_st[i])
-                    save(Q[i], Q_st[i])
+                    save(I1[i], I1_st[i])
+                    save(Q1[i], Q1_st[i])
         # Measure sequentially
-        align(*[rr.name for rr in resonators])
+        align()
+        
+        qubit = qp.qubit_target
+
+        # Bring the active qubits to the minimum frequency point
+        if flux_point == "independent":
+            machine.apply_all_flux_to_min()
+            qp.apply_mutual_flux_point()
+        elif flux_point == "joint":
+            machine.apply_all_flux_to_joint_idle()
+            qp.apply_mutual_flux_point()
+        else:
+            machine.apply_all_flux_to_zero()
+
+        wait(1000)
+
+        with for_(n, 0, n < n_avg, n + 1):
+            save(n, n_st)
+            with for_(*from_array(dc, dcs)):
+                # Flux sweeping by tuning the OPX dc offset associated with the flux_line element
+                qubit.z.set_dc_offset(dc)
+                wait(100)  # Wait for the flux to settle
+                with for_(*from_array(df, dfs)):
+                    # Update the resonator frequencies for resonator
+                    update_frequency(qubit.resonator.name, df + qubit.resonator.intermediate_frequency)
+                    # readout the resonator
+                    qubit.resonator.measure("readout", qua_vars=(I2[i], Q2[i]))
+                    # wait for the resonator to relax
+                    qubit.wait(machine.depletion_time * u.ns)
+                    # save data
+                    save(I2[i], I2_st[i])
+                    save(Q2[i], Q2_st[i])
+        # Measure sequentially
+        align()
+
 
     with stream_processing():
         n_st.save("n")
-        for i, rr in enumerate(resonators):
-            I_st[i].buffer(len(dfs)).buffer(len(dcs)).average().save(f"I{i + 1}")
-            Q_st[i].buffer(len(dfs)).buffer(len(dcs)).average().save(f"Q{i + 1}")
+        for i in range(num_qubit_pairs):
+            I1_st[i].buffer(len(dfs)).buffer(len(dcs)).average().save(f"I1{i + 1}")
+            Q1_st[i].buffer(len(dfs)).buffer(len(dcs)).average().save(f"Q1{i + 1}")
+            I2_st[i].buffer(len(dfs)).buffer(len(dcs)).average().save(f"I2{i + 1}")
+            Q2_st[i].buffer(len(dfs)).buffer(len(dcs)).average().save(f"Q2{i + 1}")
 
 
 # %% {Simulate_or_execute}
@@ -177,145 +208,103 @@ else:
 
     # %% {Data_fetching_and_dataset_creation}
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
-    ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs, "flux": dcs})
+    ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {"freq": dfs, "flux": dcs})
     # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2)
-    ds = ds.assign({"IQ_abs": np.sqrt(ds["I"] ** 2 + ds["Q"] ** 2)})
+    ds = ds.assign({"IQ_abs1": np.sqrt(ds["I1"] ** 2 + ds["Q1"] ** 2)})
+    ds = ds.assign({"IQ_abs2": np.sqrt(ds["I2"] ** 2 + ds["Q2"] ** 2)})
     # Add the resonator RF frequency axis of each qubit to the dataset coordinates for plotting
-    RF_freq = np.array([dfs + q.resonator.RF_frequency for q in qubits])
-    ds = ds.assign_coords({"freq_full": (["qubit", "freq"], RF_freq)})
-    ds.freq_full.attrs["long_name"] = "Frequency"
-    ds.freq_full.attrs["units"] = "GHz"
+    # RF_freq = np.array([dfs + q.resonator.RF_frequency for q in qubits])
+    
+    # ds = ds.assign_coords({"freq_full": (["qubit", "freq"], RF_freq)})
+    # ds.freq_full.attrs["long_name"] = "Frequency"
+    # ds.freq_full.attrs["units"] = "GHz"
     # Add the current axis of each qubit to the dataset coordinates for plotting
-    current = np.array(
-        [ds.flux.values / node.parameters.input_line_impedance_in_ohm for q in qubits]
-    )
-    ds = ds.assign_coords({"current": (["qubit", "flux"], current)})
-    ds.current.attrs["long_name"] = "Current"
-    ds.current.attrs["units"] = "A"
-    # Add attenuated current to dataset
-    attenuation_factor = 10 ** (-node.parameters.line_attenuation_in_db / 20)
-    attenuated_current = ds.current * attenuation_factor
-    ds = ds.assign_coords(
-        {"attenuated_current": (["qubit", "flux"], attenuated_current.values)}
-    )
-    ds.attenuated_current.attrs["long_name"] = "Attenuated Current"
-    ds.attenuated_current.attrs["units"] = "A"
+    # current = np.array(
+    #     [ds.flux.values / node.parameters.input_line_impedance_in_ohm for q in qubits]
+    # )
+    # ds = ds.assign_coords({"current": (["qubit", "flux"], current)})
+    # ds.current.attrs["long_name"] = "Current"
+    # ds.current.attrs["units"] = "A"
+    # # Add attenuated current to dataset
+    # attenuation_factor = 10 ** (-node.parameters.line_attenuation_in_db / 20)
+    # attenuated_current = ds.current * attenuation_factor
+    # ds = ds.assign_coords(
+    #     {"attenuated_current": (["qubit", "flux"], attenuated_current.values)}
+    # )
+    # ds.attenuated_current.attrs["long_name"] = "Attenuated Current"
+    # ds.attenuated_current.attrs["units"] = "A"
     # Add the dataset to the node
     node.results = {"ds": ds}
 
     # %% {Data_analysis}
     # Find the minimum of each frequency line to follow the resonance vs flux
-    peak_freq = ds.IQ_abs.idxmin(dim="freq")
+    peak_freq1  = ds.IQ_abs1.idxmin(dim="freq")
+    peak_freq2  = ds.IQ_abs2.idxmin(dim="freq")
     # Fit to a cosine using the qiskit function: a * np.cos(2 * np.pi * f * t + phi) + offset
-    fit_osc = fit_oscillation(peak_freq.dropna(dim="flux"), "flux")
+    fit_osc1 = fit_oscillation(peak_freq1.dropna(dim="flux"), "flux")
+    fit_osc2 = fit_oscillation(peak_freq2.dropna(dim="flux"), "flux")
     # Ensure that the phase is between -pi and pi
-    idle_offset = -fit_osc.sel(fit_vals="phi")
-    idle_offset = np.mod(idle_offset + np.pi, 2 * np.pi) - np.pi
+    idle_offset1 = -fit_osc1.sel(fit_vals="phi")
+    idle_offset1 = np.mod(idle_offset1 + np.pi, 2 * np.pi) - np.pi
+    idle_offset2 = -fit_osc2.sel(fit_vals="phi")
+    idle_offset2 = np.mod(idle_offset2 + np.pi, 2 * np.pi) - np.pi
     # converting the phase phi from radians to voltage
-    idle_offset = idle_offset / fit_osc.sel(fit_vals="f") / 2 / np.pi
-    # finding the location of the minimum frequency flux point
-    flux_min = idle_offset + ((idle_offset < 0) - 0.5) / fit_osc.sel(fit_vals="f")
-    flux_min = (
-        flux_min * (np.abs(flux_min) < 0.5)
-        + 0.5 * (flux_min > 0.5)
-        - 0.5 * (flux_min < -0.5)
-    )
-    # finding the frequency as the sweet spot flux
-    rel_freq_shift = peak_freq.sel(flux=idle_offset, method="nearest")
+    idle_offset1 = idle_offset1 / fit_osc1.sel(fit_vals="f") / 2 / np.pi
+    idle_offset2 = idle_offset2 / fit_osc2.sel(fit_vals="f") / 2 / np.pi
+
+    
     
     # Save fitting results
     fit_results = {}
-    for q in qubits:
-        fit_results[q.name] = {}
-        fit_results[q.name]["resonator_frequency"] = (
-            rel_freq_shift.sel(qubit=q.name).values + q.resonator.RF_frequency
+    for qp in qubit_pairs:
+        fit_results[qp.name] = {}
+        fit_results[qp.name]["mutual_flux_point"] = (
+            idle_offset1.sel(qubit=qp.id).values,
+            idle_offset2.sel(qubit=qp.id).values,
         )
-        fit_results[q.name]["min_offset"] = float(flux_min.sel(qubit=q.name).data)
-        fit_results[q.name]["offset"] = float(idle_offset.sel(qubit=q.name).data)
-        fit_results[q.name]["dv_phi0"] = (
-            1 / fit_osc.sel(fit_vals="f", qubit=q.name).values
-        )
-        fit_results[q.name]["m_pH"] = (
-            1e12
-            * 2.068e-15
-            / (
-                (1 / fit_osc.sel(fit_vals="f", qubit=q.name).values)
-                / node.parameters.input_line_impedance_in_ohm
-                * attenuation_factor
-            )
-        )
-        print(f"DC offset for {q.name} is {fit_results[q.name]['offset'] * 1e3:.0f} mV")
-        print(
-            f"Resonator frequency for {q.name} is {fit_results[q.name]['resonator_frequency'] / 1e9:.3f} GHz"
-        )
-        print(f"(shift of {rel_freq_shift.sel(qubit = q.name).values / 1e6:.0f} MHz)")
+        
 
     node.results["fit_results"] = fit_results
 
     # %% {Plotting}
-    grid_names = [f"{q.name}_0" for q in qubits]
+    grid_names = [f"{qp.name}_0" for qp in qubit_pairs]
     grid = QubitGrid(ds, grid_names)
 
     for ax, qubit in grid_iter(grid):
-        ax2 = ax.twiny()
-        # Plot using the attenuated current x-axis
-        ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].IQ_abs.plot(
-            ax=ax2,
-            add_colorbar=False,
-            x="attenuated_current",
-            y="freq_GHz",
-            robust=True,
-        )
-        ax2.set_xlabel("Current (A)")
-        ax2.set_ylabel("Freq (GHz)")
-        ax2.set_title("")
-        # Move ax2 behind ax
-        ax2.set_zorder(ax.get_zorder() - 1)
-        ax.patch.set_visible(False)
-        # Plot using the flux x-axis
-        ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].IQ_abs.plot(
-            ax=ax, add_colorbar=False, x="flux", y="freq_GHz", robust=True
-        )
-        ax.axvline(idle_offset.loc[qubit], linestyle="dashed", linewidth=2, color="r")
-        ax.axvline(flux_min.loc[qubit], linestyle="dashed", linewidth=2, color="orange")
+        ds.assign_coords(freq_MHz=ds.freq / 1e6).loc[qubit].IQ_abs.plot(
+            ax=ax, add_colorbar=False, x="flux", y="freq_MHz", robust=True
+        )        
+        ax.axvline(idle_offset1.loc[qubit], linestyle="dashed", linewidth=2, color="r")
         # Location of the current resonator frequency
-        ax.plot(
-            idle_offset.loc[qubit].values,
-            (machine.qubits[qubit["qubit"]].resonator.RF_frequency + rel_freq_shift.sel(qubit = qubit["qubit"]).values) * 1e-9,
-            "r*",
-            markersize=10,
-        )
         ax.set_title(qubit["qubit"])
         ax.set_xlabel("Flux (V)")
 
-    grid.fig.suptitle("Resonator spectroscopy vs flux ")
+    grid.fig.suptitle("Resonator spectroscopy vs flux for control")
     plt.tight_layout()
     plt.show()
-    node.results["figure"] = grid.fig
+    node.results["figure_control"] = grid.fig
+    
+    for ax, qubit in grid_iter(grid):
+        ds.assign_coords(freq_MHz=ds.freq / 1e6).loc[qubit].IQ_abs2.plot(
+            ax=ax, add_colorbar=False, x="flux", y="freq_MHz", robust=True
+        )        
+        ax.axvline(idle_offset2.loc[qubit], linestyle="dashed", linewidth=2, color="r")
+        # Location of the current resonator frequency
+        ax.set_title(qubit["qubit"])
+        ax.set_xlabel("Flux (V)")
+
+    grid.fig.suptitle("Resonator spectroscopy vs flux for target")
+    plt.tight_layout()
+    plt.show()
+    node.results["figure_target"] = grid.fig
 
     # %% {Update_state}
     with node.record_state_updates():
-        for q in qubits:
-            if not (np.isnan(float(idle_offset.sel(qubit=q.name).data))):
-                if flux_point == "independent":
-                    q.z.independent_offset = float(idle_offset.sel(qubit=q.name).data)
-                else:
-                    q.z.joint_offset = float(idle_offset.sel(qubit=q.name).data)
-
-                if update_flux_min:
-                    q.z.min_offset = float(flux_min.sel(qubit=q.name).data)
-            q.resonator.intermediate_frequency += float(
-                rel_freq_shift.sel(qubit=q.name).data
-            )
-            q.phi0_voltage = fit_results[q.name]["dv_phi0"]
-            q.phi0_current = (
-                fit_results[q.name]["dv_phi0"]
-                * node.parameters.input_line_impedance_in_ohm
-                * attenuation_factor
-            )
+        for qp in qubit_pairs:
+            qp.mutual_flux_point = fit_results[qp.name]["mutual_flux_point"].tolist()
 
     # %% {Save_results}
-    node.outcomes = {q.name: "successful" for q in qubits}
+    # node.outcomes = {q.name: "successful" for q in qubits}
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine
     node.save()
