@@ -4,11 +4,11 @@ from pathlib import Path
 from quam_libs.components import QuAM
 from quam_libs.quam_builder.machine import build_quam
 
-path = r"C:\\Users\\tomdv\\Documents\\QCC_QUAM\\CS_installations\\configuration\\quam_state"
+path = "quam_state"
 
 machine = QuAM.load(path)
 
-octave_settings = {"octave3": {"port": 11052} }  # externally configured: (11XXX where XXX are last three digits of oct ip)
+octave_settings = {"octave1": {"port": 11243},"octave2": {"port": 11240},"octave3": {"port": 11241}  }  # externally configured: (11XXX where XXX are last three digits of oct ip)
 # octave_settings = {"oct1": {"ip": "192.168.88.250"} }  # "internally" configured: use the local ip address of the Octave
 # octave_settings = {}
 
