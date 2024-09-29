@@ -231,7 +231,8 @@ else:
             # Progress bar
             progress_counter(n, n_avg, start_time=results.start_time)
 
-    # %% {Data_fetching_and_dataset_creation}
+# %% {Data_fetching_and_dataset_creation}
+if not node.parameters.simulate:
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(job.result_handles, qubits, {"amp": amps, "freq": dfs})
     # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2)
@@ -283,7 +284,8 @@ else:
     # Add the dataset to the node
     node.results = {"ds": ds}
 
-    # %% {Data_analysis}
+# %% {Data_analysis}
+if not node.parameters.simulate:
     # Follow the resonator line for each amplitude - This gives a ds with all qubits for each amplitude
     res_min_vs_amp = [
         peaks_dips(
@@ -308,7 +310,8 @@ else:
     RO_power_ratio = 0.3
     rr_pwr = RO_power_ratio * rr_pwr
 
-    # %% {Plotting}
+# %% {Plotting}
+if not node.parameters.simulate:
     grid_names = [f"{q.name}_0" for q in qubits]
     grid = QubitGrid(ds, grid_names)
 
@@ -347,7 +350,8 @@ else:
     plt.show()
     node.results["figure"] = grid.fig
 
-    # %% {Update_state}
+# %% {Update_state}
+if not node.parameters.simulate:
     # Save fitting results
     fit_results = {}
     for q in qubits:
@@ -368,8 +372,8 @@ else:
     for tracked_qubit in tracked_qubits:
         tracked_qubit.revert_changes()
 
-    # %% {Save_results}
-    node.outcomes = {q.name: "successful" for q in qubits}
-    node.results["initial_parameters"] = node.parameters.model_dump()
-    node.machine = machine
-    node.save()
+# %% {Save_results}
+node.outcomes = {q.name: "successful" for q in qubits}
+node.results["initial_parameters"] = node.parameters.model_dump()
+node.machine = machine
+node.save()

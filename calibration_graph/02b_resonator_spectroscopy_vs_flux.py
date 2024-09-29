@@ -266,7 +266,7 @@ else:
             y="freq_GHz",
             robust=True,
         )
-        ax2.set_xlabel("Current (mA)")
+        ax2.set_xlabel("Current (A)")
         ax2.set_ylabel("Freq (GHz)")
         ax2.set_title("")
         # Move ax2 behind ax
