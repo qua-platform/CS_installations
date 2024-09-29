@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional, Union, Tuple
+from typing import Dict, Any, Optional, Union, List, Tuple
 from dataclasses import field
 
 from quam.core import QuamComponent, quam_dataclass
@@ -15,7 +15,7 @@ class TransmonPair(QuamComponent):
     qubit_control: Transmon = None
     qubit_target: Transmon = None
     coupler: Optional[TunableCoupler] = None
-    mutual_flux_point: Tuple[float, float] = (0.0,0.0)
+    mutual_flux_point: List[float]
 
     extras: Dict[str, Any] = field(default_factory=dict)
 
