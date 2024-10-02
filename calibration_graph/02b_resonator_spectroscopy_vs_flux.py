@@ -47,9 +47,10 @@ class Parameters(NodeParameters):
     min_flux_offset_in_v: float = -0.5
     max_flux_offset_in_v: float = 0.5
     num_flux_points: int = 201
-    frequency_span_in_mhz: float = 10
-    frequency_step_in_mhz: float = 0.05
+    frequency_span_in_mhz: float = 30
+    frequency_step_in_mhz: float = 0.1
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
+    update_flux_min: bool = False
     simulate: bool = False
     timeout: int = 100
     input_line_impedance_in_ohm: float = 50
@@ -103,7 +104,7 @@ step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span / 2, +span / 2, step)
 
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
-update_flux_min = True  # Update the min flux point
+update_flux_min = node.parameters.update_flux_min  # Update the min flux point
 
 with program() as multi_res_spec_vs_flux:
     # Declare 'I' and 'Q' and the corresponding streams for the two resonators.
