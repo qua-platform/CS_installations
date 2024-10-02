@@ -108,15 +108,15 @@ flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or
 
 with program() as multi_qubit_spec_vs_flux:
     # Macro to declare I, Q, n and their respective streams for a given number of qubit (defined in macros.py)
-    I1, I1_st, Q1, Q1_st, n, n_st = qua_declaration(num_qubits=num_qubits)
-    I2, I2_st, Q2, Q2_st , _, _= qua_declaration(num_qubits=num_qubits)
+    I1, I1_st, Q1, Q1_st, n, n_st = qua_declaration(num_qubits=num_qubit_pairs)
+    I2, I2_st, Q2, Q2_st , _, _= qua_declaration(num_qubits=num_qubit_pairs)
     df = declare(int)  # QUA variable for the qubit frequency
     dc = declare(fixed)  # QUA variable for the flux dc level
 
     for i, qp in enumerate(qubit_pairs):
 
         qubit = qp.qubit_control
-        flux_point = qp.apply_mutual_flux_point[0]
+        mutual_flux_point = qp.mutual_flux_point[0]
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
@@ -138,7 +138,7 @@ with program() as multi_qubit_spec_vs_flux:
 
                 with for_(*from_array(dc, dcs)):
                     # Flux sweeping for a qubit
-                    qubit.z.set_dc_offset(dc + flux_point)
+                    qubit.z.set_dc_offset(dc + mutual_flux_point)
                     wait(250, qubit.z.name)  # Wait for the flux to settle
 
                     align()
@@ -154,7 +154,7 @@ with program() as multi_qubit_spec_vs_flux:
                     qubit.align()
 
                     # Flux sweeping for a qubit
-                    qubit.z.set_dc_offset(flux_point)
+                    qubit.z.set_dc_offset(mutual_flux_point)
                     qubit.align()
                     # QUA macro to read the state of the active resonators
                     qubit.resonator.measure("readout", qua_vars=(I1[i], Q1[i]))
@@ -167,7 +167,7 @@ with program() as multi_qubit_spec_vs_flux:
         align()
 
         qubit = qp.qubit_target
-        flux_point = qp.apply_mutual_flux_point[1]
+        mutual_flux_point = qp.mutual_flux_point[1]
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
@@ -189,7 +189,7 @@ with program() as multi_qubit_spec_vs_flux:
 
                 with for_(*from_array(dc, dcs)):
                     # Flux sweeping for a qubit
-                    qubit.z.set_dc_offset(dc + flux_point)
+                    qubit.z.set_dc_offset(dc + mutual_flux_point)
                     wait(250, qubit.z.name)  # Wait for the flux to settle
 
                     align()
@@ -205,7 +205,7 @@ with program() as multi_qubit_spec_vs_flux:
                     qubit.align()
 
                     # Flux sweeping for a qubit
-                    qubit.z.set_dc_offset(flux_point)
+                    qubit.z.set_dc_offset(mutual_flux_point)
                     qubit.align()
                     # QUA macro to read the state of the active resonators
                     qubit.resonator.measure("readout", qua_vars=(I2[i], Q2[i]))
@@ -220,10 +220,10 @@ with program() as multi_qubit_spec_vs_flux:
     with stream_processing():
         n_st.save("n")
         for i in range(num_qubit_pairs):
-            I1_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"Icontrol{i + 1}")
-            Q1_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"Qcontrol{i + 1}")
-            I2_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"Itarget{i + 1}")
-            Q2_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"Qtarget{i + 1}")
+            I1_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"I_control{i + 1}")
+            Q1_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"Q_control{i + 1}")
+            I2_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"I_target{i + 1}")
+            Q2_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"Q_target{i + 1}")
 
 
 # %% {Simulate_or_execute}
@@ -311,21 +311,21 @@ else:
             elif flux_point == "joint":
                 offset = qp.qubit_control.z.joint_offset
             print(
-                f"flux offset for qubit {q.name} is {offset*1e3 + flux_shift.sel(qubit = q.name).values*1e3:.0f} mV"
+                f"flux offset for qubit {qp.name} is {offset*1e3 + flux_shift.sel(qubit = qp.name).values*1e3:.0f} mV"
             )
-            print(f"(shift of  {flux_shift.sel(qubit = q.name).values*1e3:.0f} mV)")
+            print(f"(shift of  {flux_shift.sel(qubit = qp.name).values*1e3:.0f} mV)")
             print(
-                f"Drive frequency for {q.name} is {(freq_shift.sel(qubit = q.name).values + q.xy.RF_frequency)/1e9:.3f} GHz"
+                f"Drive frequency for {qp.name} is {(freq_shift.sel(qubit = q.name).values + q.xy.RF_frequency)/1e9:.3f} GHz"
             )
-            print(f"(shift of {freq_shift.sel(qubit = q.name).values/1e6:.0f} MHz)")
+            print(f"(shift of {freq_shift.sel(qubit = qp.name).values/1e6:.0f} MHz)")
             print(
-                f"quad term for qubit {q.name} is {float(coeff.sel(degree = 2, qubit = q.name)/1e9):.3e} GHz/V^2 \n"
+                f"quad term for qubit {qp.name} is {float(coeff.sel(degree = 2, qubit = qp.name)/1e9):.3e} GHz/V^2 \n"
             )
-            fit_results[q.name]["flux_shift"] = float(
-                flux_shift.sel(qubit=q.name).values
+            fit_results[qp.name]["flux_shift"] = float(
+                flux_shift.sel(qubit=qp.name).values
             )
             fit_results[q.name]["drive_freq"] = float(
-                freq_shift.sel(qubit=q.name).values
+                freq_shift.sel(qubit=qp.name).values
             )
             fit_results[q.name]["quad_term"] = float(coeff.sel(degree=2, qubit=q.name))
         else:
