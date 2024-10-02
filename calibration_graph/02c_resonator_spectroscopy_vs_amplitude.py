@@ -47,15 +47,15 @@ class Parameters(NodeParameters):
 
     qubits: Optional[List[str]] = None
     num_averages: int = 100
-    frequency_span_in_mhz: float = 10
+    frequency_span_in_mhz: float = 30
     frequency_step_in_mhz: float = 0.1
     simulate: bool = False
     timeout: int = 100
     forced_flux_bias_v: Optional[float] = None
-    max_power_dbm: int = -15
+    max_power_dbm: int = 2
     min_power_dbm: int = -50
     max_amp: float = 0.4
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
+    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
     ro_line_attenuation_dB: float = 0
     multiplexed: bool = True
 
@@ -157,7 +157,7 @@ amps = np.geomspace(
 # The frequency sweep around the resonator resonance frequencies 
 span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
-dfs = np.arange(-span // 2, +span // 2, step)
+dfs = np.arange(-span / 2, +span / 2, step)
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 
 with program() as multi_res_spec_vs_amp:
