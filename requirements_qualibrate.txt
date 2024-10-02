@@ -72,11 +72,6 @@ qiskit-ibm-experiment==0.4.8
 qm-octave==2.1.2
 qm-qua==1.2.1a2
 qualang-tools @ git+https://github.com/qua-platform/py-qua-tools.git@d6b617c0bdeb8dc89b3117ea28613772bcfd28c9
-qualibrate @ file:///C:/git/qua-libs/Quantum-Control-Applications-QuAM/Superconducting/qualibrate-0.1.0.tar.gz#sha256=ae3ac093bd686f5f71746950d89599085bfc0a51e11bb662ba6b51e531ada9b4
-qualibrate-app @ file:///C:/Users/TheoQM/AppData/Local/Temp/pip-req-build-nrxxzmqv/qualibrate-wheels/qualibrate_app-0.1.0-py3-none-any.whl#sha256=26873461488116e5995ff44d3b356fb2db83d6464cdb6740bbf342966f7d769a
-qualibrate-core @ file:///C:/Users/TheoQM/AppData/Local/Temp/pip-req-build-nrxxzmqv/qualibrate-wheels/qualibrate_core-0.1.0-py3-none-any.whl#sha256=0712f44ce6abf31f2ce6df82e64fb5a39e5822cf1e1811b1940a072459442eae
-qualibrate-runner @ file:///C:/Users/TheoQM/AppData/Local/Temp/pip-req-build-nrxxzmqv/qualibrate-wheels/qualibrate_runner-0.1.0-py3-none-any.whl#sha256=7f8445625a893b9eabf8bed98b83765074740a4d5119e7732d5a6f0350d9054d
-quam @ file:///C:/git/quam
 requests==2.32.3
 requests_ntlm==1.3.0
 rfc3986==1.5.0
