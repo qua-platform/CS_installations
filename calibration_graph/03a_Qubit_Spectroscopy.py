@@ -59,7 +59,7 @@ class Parameters(NodeParameters):
     frequency_step_in_mhz: float = 0.25
     flux_point_joint_or_independent_or_arbitrary: Literal[
         "joint", "independent", "arbitrary"
-    ] = "joint"
+    ] = "independent"
     target_peak_width: Optional[int] = None
     arbitrary_flux_bias: Optional[float] = None
     arbitrary_qubit_frequency_in_ghz: Optional[float] = 5.845

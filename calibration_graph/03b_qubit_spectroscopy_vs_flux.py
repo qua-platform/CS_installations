@@ -47,7 +47,7 @@ class Parameters(NodeParameters):
     min_flux_offset_in_v: float = -0.01
     max_flux_offset_in_v: float = 0.01
     num_flux_points: int = 21
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
+    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
     simulate: bool = False
     timeout: int = 100
 

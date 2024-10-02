@@ -41,7 +41,7 @@ class Parameters(NodeParameters):
     num_averages: int = 40
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.05
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
+    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
     simulate: bool = False
     timeout: int = 100
 
