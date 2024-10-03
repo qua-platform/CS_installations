@@ -309,17 +309,10 @@ else:
         for qp in qubit_pairs:
             qp.mutual_flux_point = fit_results[qp.name]["mutual_flux_point"]
 
-#     # %% {Save_results}
-#     # node.outcomes = {q.name: "successful" for q in qubits}
-#     node.results["initial_parameters"] = node.parameters.model_dump()
-#     node.machine = machine
-#     node.save()
+    # %% {Save_results}
+    # node.outcomes = {q.name: "successful" for q in qubits}
+    node.results["initial_parameters"] = node.parameters.model_dump()
+    node.machine = machine
+    node.save()
 
-# %%
-qubit_pair_names = [f"{qp.qubit_control.grid_location}-{qp.qubit_target.grid_location}" for qp in qubit_pairs]
-qp = qubit_pair_names[0]
-qp.split("-")
-
-# %%
-{f"i{i}" : i for i in range(4)}
 # %%
