@@ -8,16 +8,16 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     num_averages: int = 100
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 100000
-    wait_time_step_in_ns: int = 600
-    flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "independent"
+    max_wait_time_in_ns: int = 50000
+    wait_time_step_in_ns: int = 300
+    flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "arbitrary"    
     simulate: bool = False
     timeout: int = 100
-    use_state_discrimination: bool = False
+    use_state_discrimination: bool = True
     reset_type: Literal['active', 'thermal'] = "thermal"
 
 node = QualibrationNode(
-    name="t1_experiment",
+    name="17b_t2_echo",
     parameters=Parameters()
 )
 
@@ -115,14 +115,21 @@ with program() as t1:
                     qubit.align()
                 
                     
-                qubit.xy.play("x180")
-                align()
+                qubit.xy.play("x90")
+                qubit.align()
                 qubit.z.wait(20)
                 qubit.z.play("const", amplitude_scale=arb_flux_bias_offset[qubit.name]/qubit.z.operations["const"].amplitude, duration=t)
                 qubit.z.wait(20)
+                qubit.align()
+                qubit.xy.play("x180")
+                qubit.align()
+                qubit.z.wait(20)
+                qubit.z.play("const", amplitude_scale=arb_flux_bias_offset[qubit.name]/qubit.z.operations["const"].amplitude, duration=t)
+                qubit.z.wait(20)
+                qubit.align()
+                qubit.xy.play("-x90")
+                qubit.align()
                 
-                align()
-
                 # Measure the state of the resonators
                 if node.parameters.use_state_discrimination:
                     readout_state(qubit, state[i])
@@ -180,7 +187,7 @@ if not node.parameters.simulate:
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(job.result_handles, qubits, {"idle_time": idle_times})
 
-    ds = ds.assign_coords(idle_time=4*ds.idle_time/1e3)  # convert to usec
+    ds = ds.assign_coords(idle_time=8*ds.idle_time/1e3)  # convert to usec
     ds.idle_time.attrs = {'long_name': 'idle time', 'units': 'usec'}
 
 # %%
@@ -226,9 +233,9 @@ if not node.parameters.simulate:
         ax.plot(ds.idle_time, fitted.loc[qubit], 'r--')
         ax.set_title(qubit['qubit'])
         ax.set_xlabel('Idle_time (uS)')
-        ax.text(0.1, 0.9, f'T1 = {tau.sel(qubit = qubit["qubit"]).values:.1f} + {tau_error.sel(qubit = qubit["qubit"]).values:.1f} usec', transform=ax.transAxes, fontsize=10,
+        ax.text(0.1, 0.9, f'T2e = {tau.sel(qubit = qubit["qubit"]).values:.1f} + {tau_error.sel(qubit = qubit["qubit"]).values:.1f} usec', transform=ax.transAxes, fontsize=10,
         verticalalignment='top', bbox=dict(facecolor='white', alpha=0.5))
-    grid.fig.suptitle('T1')
+    grid.fig.suptitle('T2 echo')
     plt.tight_layout()
     plt.show()
     node.results['figure_raw'] = grid.fig
