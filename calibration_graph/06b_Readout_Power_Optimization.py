@@ -177,55 +177,6 @@ else:
                 n = fetched_data[0]
                 progress_counter(n, n_runs, start_time=results.start_time)
 
-    # # Fetch data
-    # data_list = sum(
-    #     [[f"I_g{i+1}", f"Q_g{i+1}", f"I_e{i+1}", f"Q_e{i+1}"] for i in range(num_qubits)],
-    #     [],
-    # )
-    # results = fetching_tool(job, data_list)
-    # fetched_data = results.fetch_all()
-    # I_g_data = fetched_data[1::2]
-    # Q_g_data = fetched_data[2::2]
-    # I_e_data = fetched_data[3::2]
-    # Q_e_data = fetched_data[4::2]
-    # # Prepare for save data
-    # data = {}
-    # # Plot the results
-    # figs = []
-    # for i, qubit in enumerate(qubits):
-    #     I_g = I_g_data[i]
-    #     Q_g = Q_g_data[i]
-    #     I_e = I_e_data[i]
-    #     Q_e = Q_e_data[i]
-
-    #     hist = np.histogram(I_g, bins=100)
-    #     rus_threshold = hist[1][1:][np.argmax(hist[0])]
-    #     angle, threshold, fidelity, gg, ge, eg, ee = two_state_discriminator(I_g, Q_g, I_e, Q_e, True, b_plot=True)
-
-    #     plt.suptitle(f"{qubit.name} - IQ Blobs")
-    #     plt.axvline(rus_threshold, color="k", linestyle="--", label="Threshold")
-    #     figs.append(plt.gcf())
-
-    #     data[f"{qubit.name}_I_g"] = I_g
-    #     data[f"{qubit.name}_Q_g"] = Q_g
-    #     data[f"{qubit.name}_I_e"] = I_e
-    #     data[f"{qubit.name}_Q_e"] = Q_e
-    #     data[f"{qubit.name}"] = {
-    #         "angle": angle,
-    #         "threshold": threshold,
-    #         "rus_exit_threshold": rus_threshold,
-    #         "fidelity": fidelity,
-    #         "confusion_matrix": [[gg, ge], [eg, ee]],
-    #     }
-    #     data[f"{qubit.name}_figure"] = figs[i]
-
-    #     qubit.resonator.operations["readout"].integration_weights_angle -= angle
-    #     qubit.resonator.operations["readout"].threshold = threshold
-    #     qubit.resonator.operations["readout"].rus_exit_threshold = rus_threshold
-    # plt.show()
-
-    # node_save(machine, "iq_blobs", data, additional_files=True)
-
 # %%
 if not node.parameters.simulate:
     # %% {Data_fetching_and_dataset_creation}
