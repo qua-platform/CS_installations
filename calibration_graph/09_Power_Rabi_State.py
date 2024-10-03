@@ -250,8 +250,7 @@ else:
         node.results["fit_results"] = fit_results
 
     # %% {Plotting}
-    grid_names = [f"{q.name}_0" for q in qubits]
-    grid = QubitGrid(ds, grid_names)
+grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         if N_pi == 1:
             ds.assign_coords(amp_mV=ds.abs_amp * 1e3).loc[qubit].state.plot(

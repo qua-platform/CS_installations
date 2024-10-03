@@ -305,8 +305,8 @@ node.results['ds'] = ds
 
 
 # Plot the original data and fitted curves for each qubit
-grid_names = [f'{q.name}_0' for q in qubits]
-grid = QubitGrid(ds, grid_names)
+
+grid = QubitGrid(ds, [q.grid_location for q in qubits])
 for ax, qubit in grid_iter(grid):
     ds.sel(qubit=qubit['qubit']).state.plot(ax=ax, x = 'detuning', marker='o', linestyle='', label='Data')
     ds.sel(qubit=qubit['qubit']).fitted.plot(ax=ax, x = 'detuning', label='Fitted')

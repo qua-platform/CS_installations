@@ -23,8 +23,8 @@ from quam_libs.components import QuAM
 from quam_libs.macros import qua_declaration
 from quam_libs.lib.fit_utils import fit_resonator
 from quam_libs.lib.qua_datasets import apply_angle, subtract_slope
-from quam_libs.lib.plot_utils import QubitGrid, grid_iter
-from quam_libs.lib.save_utils import fetch_results_as_xarray
+from quam_libs.lib.plot_utils import QubitGrid, grid_iter, grid_names
+from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -47,11 +47,10 @@ class Parameters(NodeParameters):
     frequency_step_in_mhz: float = 0.1
     simulate: bool = False
     timeout: int = 100
-
+    load_data_id: Optional[int] = None # 1688
 
 node = QualibrationNode(name="02a_Resonator_Spectroscopy", parameters=Parameters())
-
-
+assert not (node.parameters.simulate and node.parameters.load_data_id is not None), "If simulate is True, load_data_id must be None, and vice versa."
 
 # %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
@@ -62,7 +61,8 @@ machine = QuAM.load()
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
 # Open Communication with the QOP
-qmm = machine.connect()
+if node.parameters.load_data_id is None:
+    qmm = machine.connect()
 
 # Get the relevant QuAM components
 if node.parameters.qubits is None or node.parameters.qubits == "":
@@ -121,12 +121,13 @@ if node.parameters.simulate:
     node.results = {"figure": plt.gcf()}
     node.machine = machine
     node.save()
-else:
+    
+elif node.parameters.load_data_id is None:
     # Open a quantum machine to execute the QUA program
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(multi_res_spec)
-
-        # %% {Live_plot}
+        
+        # {Live_plot}
         # Tool to easily fetch results from the OPX (results_handle used in it)
         data_list = sum([[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], [])
         results = fetching_tool(job, data_list, mode="live")
@@ -164,10 +165,14 @@ else:
                 plt.xlabel("Readout frequency [MHz]")
                 plt.tight_layout()
                 plt.pause(0.1)
-
-    # %% {Data_fetching_and_dataset_creation}
+                
+# %% {Data_fetching_and_dataset_creation}
+if not node.parameters.simulate:
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
-    ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs})
+    if node.parameters.load_data_id is not None:
+        ds = load_dataset(node.parameters.load_data_id)
+    else:
+        ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs})
 
     ds = ds.assign({"IQ_abs": np.sqrt(ds["I"] ** 2 + ds["Q"] ** 2)})
     ds = ds.assign(
@@ -182,7 +187,9 @@ else:
     )
     node.results = {"ds": ds}
 
-    # %% {Data_analysis}
+# %% {Data_analysis}
+if node.parameters.simulate is False:
+
     fits = {}
     fit_evals = {}
     fit_results = {}
@@ -208,9 +215,9 @@ else:
         print(f"Qe for {q.name} is {Qe:,.0f}")
         print(f"Qi for {q.name} is {Qi:,.0f} \n")
 
-    # %% {Plotting}
-    grid_names = [f"{q.name}_0" for q in qubits]
-    grid = QubitGrid(ds, grid_names)
+# %% {Plotting}
+if node.parameters.simulate is False:
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         (ds.assign_coords(freq_MHz=ds.freq / 1e6).loc[qubit].IQ_abs * 1e3).plot(
             ax=ax, x="freq_MHz"
@@ -222,7 +229,7 @@ else:
     plt.tight_layout()
     node.results["raw_amplitude"] = grid.fig
 
-    grid = QubitGrid(ds, grid_names)
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         (ds.assign_coords(freq_MHz=ds.freq / 1e6).loc[qubit].phase * 1e3).plot(
             ax=ax, x="freq_MHz"
@@ -234,7 +241,7 @@ else:
     plt.tight_layout()
     node.results["raw_phase"] = grid.fig
 
-    grid = QubitGrid(ds, grid_names)
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         (ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].IQ_abs * 1e3).plot(
             ax=ax, x="freq_GHz"
@@ -252,15 +259,20 @@ else:
     plt.tight_layout()
     plt.show()
 
-    # %% {Update_state}
+# %% {Update_state}
+if node.parameters.load_data_id is None and node.parameters.simulate is False:
     with node.record_state_updates():
         for index, q in enumerate(qubits):
             q.resonator.intermediate_frequency += int(
                 fits[q.name].params["omega_r"].value
             )
 
-    # %% {Save_results}
+# %% {Save_results}
+if node.parameters.simulate is False:
     node.outcomes = {q.name: "successful" for q in qubits}
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine
     node.save()
+    print("Results saved")
+
+# %%

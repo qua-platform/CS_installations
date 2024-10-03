@@ -219,8 +219,7 @@ else:
         node.results["results"][q.name]["rus_threshold"] = float(RUS_threshold)
 
     # %% {Plotting}
-    grid_names = [f"{q.name}_0" for q in qubits]
-    grid = QubitGrid(ds, grid_names)
+grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         n_avg = n_runs // 2
         qn = qubit["qubit"]
@@ -281,7 +280,7 @@ else:
     plt.tight_layout()
     node.results["figure_IQ_blobs"] = grid.fig
 
-    grid = QubitGrid(ds, grid_names)
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         confusion = node.results["results"][qubit["qubit"]]["confusion_matrix"]
         ax.imshow(confusion)

@@ -225,8 +225,7 @@ else:
     # %% {Plotting}
     ds.state.plot(col="qubit", x="alpha", y="N", col_wrap=2)
     plt.show()
-    grid_names = [f"{q.name}_0" for q in qubits]
-    grid = QubitGrid(ds, grid_names)
+grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         ds.loc[qubit].state.plot(ax=ax, x="alpha", y="N")
         ax.axvline(fit_results[qubit["qubit"]]["alpha"], color="r")

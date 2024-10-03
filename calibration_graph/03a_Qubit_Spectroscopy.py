@@ -374,8 +374,7 @@ else:
     node.results["fit_results"] = fit_results
 
     # %% {Plotting}
-    grid_names = [f"{q.name}_0" for q in qubits]
-    grid = QubitGrid(ds, grid_names)
+grid = QubitGrid(ds, [q.grid_location for q in qubits])
     approx_peak = result.base_line + result.amplitude * (
         1 / (1 + ((ds.freq - result.position) / result.width) ** 2)
     )

@@ -1,3 +1,6 @@
+from qualibrate_app.config import get_config_path, get_settings
+import os
+from pathlib import Path
 import xarray as xr
 
 def extract_string(input_string):
@@ -37,3 +40,44 @@ def fetch_results_as_xarray(handles, qubits, measurement_axis):
     )
     
     return ds
+
+def get_storage_path():
+    settings = get_settings(get_config_path())
+    storage_location = settings.qualibrate.storage.location
+    return Path(storage_location)
+
+def find_folder(path,id):
+    for root, dirs, _ in os.walk(path):
+        for dir in dirs:
+            if f"#{id}" in dir:
+                return os.path.join(root, dir)
+    return None
+
+def load_dataset(serial_number):
+    """
+    Loads a dataset from a file based on the serial number.
+    
+    Args:
+        serial_number: The serial number to search for.
+        base_folder: The base directory to search in.
+    
+    Returns:
+        An xarray Dataset if found, None otherwise.
+    """
+    if type(serial_number) == int:
+        serial_number = str(serial_number)
+        
+    base_folder = find_folder(get_storage_path(),serial_number)
+    # Look for .nc files in the subfolder
+    nc_files = [f for f in os.listdir(base_folder) if f.endswith('.h5')]
+    
+    if nc_files:
+        # Assuming there's only one .nc file per folder
+        file_path = os.path.join(base_folder, nc_files[0])
+        
+        # Open the dataset
+        ds = xr.open_dataset(file_path)
+        return ds
+    else:
+        print(f"No .nc file found in folder: {base_folder}")
+        return None

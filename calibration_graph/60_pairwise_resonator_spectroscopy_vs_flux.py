@@ -268,7 +268,7 @@ else:
 
     # %% {Plotting}
     grid_names = [f"{qp.name.replace('_', '-')}_0" for qp in qubit_pairs]
-    grid = QubitGrid(ds, grid_names)
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         ds.assign_coords(freq_MHz=ds.freq / 1e6).loc[qubit].IQ_abs1.plot(
             ax=ax, add_colorbar=False, x="flux", y="freq_MHz", robust=True
@@ -284,7 +284,7 @@ else:
     node.results["figure_control"] = grid.fig
 
     grid_names = [f"{qp.name.replace('_', '-')}_0" for qp in qubit_pairs]
-    grid = QubitGrid(ds, grid_names)
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         ds.assign_coords(freq_MHz=ds.freq / 1e6).loc[qubit].IQ_abs2.plot(
             ax=ax, add_colorbar=False, x="flux", y="freq_MHz", robust=True

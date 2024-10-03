@@ -159,6 +159,7 @@ def grid_pair_names(machine) -> List[str]:
     Runs over active qubit pairs in a QUAM object and returns a list of the grid_name attribute of each qubit
     """
     return  [ qp.qubit_target.extras['grid_name']+':'+qp.qubit_control.extras['grid_name'] for qp in machine.active_qubit_pairs]
+
 class QubitPairGrid():
     """Creates a grid object where qubit pairs are placed on a grid. 
     The grid is builtb with references to the qubit pair names, 
@@ -262,10 +263,7 @@ def grid_names(machine) -> List[str]:
     """"
     Runs over active qubits in a QUAM object and returns a list of the grid_name attribute of each qubit
     """
-    return  [ q.extras['grid_name'] for q in machine.active_qubits]
-
-
-
+    return  [ f"q-{q.grid_location}" for q in machine.active_qubits]
 
 class QubitGrid():
     """Creates a grid object where qubits are placed on a grid. 
@@ -321,10 +319,10 @@ class QubitGrid():
             if type(grid_names) == str:
                 grid_names = [grid_names]
             grid_indices = [tuple(map(int, self._list_clean(
-                grid_name.split('_')))) for grid_name in grid_names]
+                grid_name.split(',')))) for grid_name in grid_names]
         else:
             grid_indices = [tuple(map(int, self._list_clean(
-                ds.qubit.values[q_index].split('_')))) for q_index in range(ds.qubit.size)]
+                ds.qubit.values[q_index].split(',')))) for q_index in range(ds.qubit.size)]
 
         if len(grid_indices) > 1:
             grid_name_mapping = dict(zip(grid_indices, ds.qubit.values))

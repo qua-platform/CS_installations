@@ -214,8 +214,7 @@ else:
     node.results["fit_results"] = fit_results
 
     # %% {Plotting}
-    grid_names = [f"{q.name}_0" for q in qubits]
-    grid = QubitGrid(ds, grid_names)
+grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         ds.assign_coords(freq_MHz=ds.freq * 1e-6).loc[qubit].state.plot(
             ax=ax, x="freq_MHz", y="N"

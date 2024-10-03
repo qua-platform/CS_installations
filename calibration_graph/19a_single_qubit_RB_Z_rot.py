@@ -400,8 +400,8 @@ for q in qubits:
 
 
 # %%    
-grid_names = [f'{q.name}_0' for q in qubits]
-grid = QubitGrid(ds, grid_names)
+
+grid = QubitGrid(ds, [q.grid_location for q in qubits])
 for ax, qubit in grid_iter(grid):
     da_state_qubit = da_state.sel(qubit=qubit['qubit'])
     da_state_std = ds['state'].std(dim='sequence').sel(qubit=qubit['qubit'])

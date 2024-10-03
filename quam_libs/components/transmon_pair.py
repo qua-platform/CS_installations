@@ -15,7 +15,6 @@ class TransmonPair(QuamComponent):
     qubit_control: Transmon = None
     qubit_target: Transmon = None
     coupler: Optional[TunableCoupler] = None
-    mutual_flux_point: List[float]
 
     extras: Dict[str, Any] = field(default_factory=dict)
 
@@ -24,6 +23,3 @@ class TransmonPair(QuamComponent):
         """The name of the transmon pair"""
         return self.id if isinstance(self.id, str) else f"q{self.id}"
     
-    def apply_mutual_flux_point(self):
-        self.qubit_control.z.set_dc_offset(self.mutual_flux_point[0])
-        self.qubit_target.z.set_dc_offset(self.mutual_flux_point[1])

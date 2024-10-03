@@ -5,7 +5,7 @@ from .flux_line import FluxLine
 from .readout_resonator import ReadoutResonator
 from qualang_tools.octave_tools import octave_calibration_tool
 from qm import QuantumMachine, logger
-from typing import Union
+from typing import Union, Optional
 from qm.qua import align
 
 
@@ -52,7 +52,7 @@ class Transmon(QuamComponent):
     
     GEF_frequency_shift : int = 10
     chi : float = 0.0
-    
+    grid_location : Optional[str] = None
 
     @property
     def inferred_f_12(self) -> float:

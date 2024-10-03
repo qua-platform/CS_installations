@@ -303,8 +303,7 @@ else:
         print(f"T2* for qubit {q.name} : {1e6*fit_results[q.name]['decay']:.2f} us")
 
     # %% {Plotting}
-    grid_names = [f"{q.name}_0" for q in qubits]
-    grid = QubitGrid(ds, grid_names)
+grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         if node.parameters.use_state_discrimination:
             ds.sel(sign=1).loc[qubit].state.plot(

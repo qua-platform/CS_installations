@@ -213,8 +213,7 @@ else:
         print(f"{q.name}: Chi = {fit_results[q.name]['chi']:.2f} \n")
 
     # %% {Plotting}
-    grid_names = [f"{q.name}_0" for q in qubits]
-    grid = QubitGrid(ds, grid_names)
+grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         (1e3 * ds.assign_coords(freq_MHz=ds.freq / 1e6).D.loc[qubit]).plot(
             ax=ax, x="freq_MHz"
