@@ -154,16 +154,16 @@ def plot_spectrum(signal: np.ndarray, t_s_usec: float, num_zero_pad: int = 0) ->
     fig.update_layout(xaxis_range=(0, f_s))
     return signal_fft, freq_ax, fig
 
-def grid_pair_names(machine) -> List[str]:
+def grid_pair_names(qubit_pairs) -> Tuple[List[str], List[str]]:
     """"
-    Runs over active qubit pairs in a QUAM object and returns a list of the grid_name attribute of each qubit
+    Runs over defined qubit pairs and returns a list of the grid_name attribute of each qubit, returns a list of the grid location and a list of the qubit pair names
     """
-    return  [ qp.qubit_target.extras['grid_name']+':'+qp.qubit_control.extras['grid_name'] for qp in machine.active_qubit_pairs]
+    return   [f"{qp.qubit_control.grid_location}-{qp.qubit_target.grid_location}" for qp in qubit_pairs], [qp.name for qp in qubit_pairs]
 
 class QubitPairGrid():
     """Creates a grid object where qubit pairs are placed on a grid. 
     The grid is builtb with references to the qubit pair names, 
-    which should of the form: 'q-i_j-q-n_m' where i,j and n,m are 
+    which should of the form: 'q-i,j-q-n,m' where i,j and n,m are 
     integeres describing the x and y coordinates of the qubits of 
     the pair on a qubit grid.
 
@@ -203,18 +203,14 @@ class QubitPairGrid():
         return re.sub("[^0-9]", "", input_string)
     
 
-    def __init__(self, ds : xr.DataArray, qubit_pair_names : list[str], size : int = 4):
-
-
-        if len(qubit_pair_names)>1:
-            qubit_indices = [tuple([tuple(map(int,self._list_clean(gp.split(':')[0].split('_')))),tuple(map(int,self._list_clean(gp.split(':')[1].split('_'))))]) for gp in qubit_pair_names]
+    def __init__(self, grid_names : list[str], qubit_pair_names : list[str], size : int = 4):
+        if len(grid_names)>1:
+            qubit_indices = [tuple([tuple(map(int,self._list_clean(gp.split('-')[0].split(',')))),tuple(map(int,self._list_clean(gp.split('-')[1].split(','))))]) for gp in grid_names]
         else:
-            qubit_indices = [tuple([tuple(map(int,self._list_clean(gp.split(':')[0].split('_')))),tuple(map(int,self._list_clean(gp.split(':')[1].split('_'))))]) for gp in qubit_pair_names]
-
-
-        col_diffs = [pair[1][0]-pair[0][0] for pair in qubit_indices]
-        row_diffs = [pair[1][1]-pair[0][1] for pair in qubit_indices]
-        coupler_indices = [[2*pair[0][0], 2*pair[0][1]]
+            qubit_indices = [tuple([tuple(map(int,self._list_clean(gp.split('-')[0].split(',')))),tuple(map(int,self._list_clean(gp.split('-')[1].split(','))))]) for gp in grid_names]
+        row_diffs = [pair[1][0]-pair[0][0] for pair in qubit_indices]
+        col_diffs = [pair[1][1]-pair[0][1] for pair in qubit_indices]
+        coupler_indices = [[2*pair[0][1], 2*pair[0][0]]
                            for pair in qubit_indices]
         for k, (col_diff, row_diff) in enumerate(zip(col_diffs, row_diffs)):
             coupler_indices[k][0] += col_diff
@@ -246,18 +242,17 @@ class QubitPairGrid():
             for col, ax in enumerate(axis_row):
                 grid_row = max(grid_row_idxs) - row
                 grid_col = col + min_grid_col
-
                 if (grid_row, grid_col) in coupler_indices:
 
                     axes.append(ax)
                     qubit_names.append(
-                        ds.qubitp.values[coupler_indices.index((grid_row, grid_col))])
+                        qubit_pair_names[coupler_indices.index((grid_row, grid_col))])
                 else:
                     ax.axis('off')
         self.fig = figure
         self.all_axes = all_axes
         self.axes = [axes]
-        self.name_dicts = [[{ds.qubitp.name: value} for value in qubit_names]]
+        self.name_dicts = [[{"qubit": qubit_pair_name} for qubit_pair_name in qubit_names]]
 
 def grid_names(machine) -> List[str]:
     """"
@@ -269,7 +264,7 @@ class QubitGrid():
     """Creates a grid object where qubits are placed on a grid. 
     Accepts a dataset whose dimension 'qubit is used as the dimension on which the grid is built.
     It also accepts a parameter "grid_names" that specifies the positon of each wubit on a grid. If none
-    it assumes that qubit names are of the form: 'q-i_j' where i,j are integeres describing the x and y coordinates of the grid.
+    it assumes that qubit names are of the form: 'q-i,j' where i,j are integeres describing the x and y coordinates of the grid.
 
     Iteration of the resuting grid can be done using 'grid_iter' defined in lib.qua_datasets
 

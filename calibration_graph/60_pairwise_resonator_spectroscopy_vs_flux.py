@@ -114,10 +114,10 @@ with program() as multi_res_spec_vs_flux:
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
-            qp.apply_mutual_flux_point()
+            # qp.apply_mutual_flux_point()
         elif flux_point == "joint":
             machine.apply_all_flux_to_joint_idle()
-            qp.apply_mutual_flux_point()
+            # qp.apply_mutual_flux_point()
         else:
             machine.apply_all_flux_to_zero()
 
@@ -147,10 +147,10 @@ with program() as multi_res_spec_vs_flux:
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
-            qp.apply_mutual_flux_point()
+            # qp.apply_mutual_flux_point()
         elif flux_point == "joint":
             machine.apply_all_flux_to_joint_idle()
-            qp.apply_mutual_flux_point()
+            # qp.apply_mutual_flux_point()
         else:
             machine.apply_all_flux_to_zero()
 
@@ -267,8 +267,14 @@ else:
     node.results["fit_results"] = fit_results
 
     # %% {Plotting}
-    grid_names = [f"{qp.name.replace('_', '-')}_0" for qp in qubit_pairs]
-    grid = QubitGrid(ds, [q.grid_location for q in qubits])
+    # Reload the plot_utils module to ensure we have the latest version
+    import importlib
+    import quam_libs.lib.plot_utils
+    importlib.reload(quam_libs.lib.plot_utils)
+    from quam_libs.lib.plot_utils import QubitPairGrid, grid_iter, grid_pair_names
+    
+    grid_names, qubit_pair_names = grid_pair_names(qubit_pairs)
+    grid = QubitPairGrid(grid_names, qubit_pair_names)
     for ax, qubit in grid_iter(grid):
         ds.assign_coords(freq_MHz=ds.freq / 1e6).loc[qubit].IQ_abs1.plot(
             ax=ax, add_colorbar=False, x="flux", y="freq_MHz", robust=True
@@ -283,8 +289,8 @@ else:
     plt.show()
     node.results["figure_control"] = grid.fig
 
-    grid_names = [f"{qp.name.replace('_', '-')}_0" for qp in qubit_pairs]
-    grid = QubitGrid(ds, [q.grid_location for q in qubits])
+    grid_names, qubit_pair_names = grid_pair_names(qubit_pairs)
+    grid = QubitPairGrid(grid_names, qubit_pair_names)
     for ax, qubit in grid_iter(grid):
         ds.assign_coords(freq_MHz=ds.freq / 1e6).loc[qubit].IQ_abs2.plot(
             ax=ax, add_colorbar=False, x="flux", y="freq_MHz", robust=True
@@ -303,10 +309,17 @@ else:
         for qp in qubit_pairs:
             qp.mutual_flux_point = fit_results[qp.name]["mutual_flux_point"]
 
-    # %% {Save_results}
-    # node.outcomes = {q.name: "successful" for q in qubits}
-    node.results["initial_parameters"] = node.parameters.model_dump()
-    node.machine = machine
-    node.save()
+#     # %% {Save_results}
+#     # node.outcomes = {q.name: "successful" for q in qubits}
+#     node.results["initial_parameters"] = node.parameters.model_dump()
+#     node.machine = machine
+#     node.save()
 
+# %%
+qubit_pair_names = [f"{qp.qubit_control.grid_location}-{qp.qubit_target.grid_location}" for qp in qubit_pairs]
+qp = qubit_pair_names[0]
+qp.split("-")
+
+# %%
+{f"i{i}" : i for i in range(4)}
 # %%
