@@ -31,7 +31,7 @@ class Parameters(NodeParameters):
     reset_type: Literal['active', 'thermal'] = "active"
 
 node = QualibrationNode(
-    name="20_Zgate_calibration",
+    name="21_Zgate_calibration",
     parameters_class=Parameters
 )
 
