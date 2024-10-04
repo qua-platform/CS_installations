@@ -68,8 +68,8 @@ def IQ_imbalance(g, phi):
 ######################
 # Network parameters #
 ######################
-qop_ip = "127.0.0.1"  # Write the QM router IP address
-cluster_name = "my_cluster"  # Write your cluster_name if version >= QOP220
+qop_ip = "172.16.33.101"  # Write the QM router IP address
+cluster_name = "Cluster_83"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 # Path to save data
@@ -348,8 +348,8 @@ level_readout = [0.12, -0.12]
 
 # Duration of each step in ns
 duration_init = 100
-duration_manip = 100
-duration_readout = readout_len + 100
+duration_manip = 16
+duration_readout = readout_len + 16
 duration_compensation_pulse = 1 * u.us
 
 # Step parameters
@@ -522,9 +522,17 @@ config = {
             "operations": {
                 "readout": "readout_pulse",
             },
+            "intermediate_frequency": 777,
             "outputs": {
                 "out1": ("con1", 1),
                 "out2": ("con1", 2),
+            },            
+            "digitalInputs": {
+                "trigger": {
+                    "port": ("con1", 1),
+                    "delay": 0,
+                    "buffer": 0,
+                }
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
