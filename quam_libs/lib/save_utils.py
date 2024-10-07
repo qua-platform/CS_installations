@@ -1,4 +1,5 @@
 from qualibrate_app.config import get_config_path, get_settings
+from quam_libs.components import QuAM
 import os
 from pathlib import Path
 import xarray as xr
@@ -77,7 +78,12 @@ def load_dataset(serial_number):
         
         # Open the dataset
         ds = xr.open_dataset(file_path)
-        return ds
+        try:
+            machine = QuAM.load(base_folder)
+        except Exception as e:
+            print(f"Error loading machine: {e}")
+            machine = None
+        return ds, machine
     else:
         print(f"No .nc file found in folder: {base_folder}")
         return None
