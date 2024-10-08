@@ -201,7 +201,7 @@ with program() as CPhase_Oscillations:
                     if node.parameters.reset_type == "active":
                         for qubit in [qp.qubit_control, qp.qubit_target]:
                             # TODO: use GEF reset
-                            active_reset(machine, qubit.name)
+                            active_reset(qubit)
                             qubit.align()
                     else:
                         wait(qp.qubit_control.thermalization_time * u.ns)
@@ -235,7 +235,7 @@ with program() as CPhase_Oscillations:
                         if node.parameters.reset_type == "active":
                             for qubit in [qp.qubit_control, qp.qubit_target]:
                                 # TODO: use GEF reset
-                                active_reset(machine, qubit.name)
+                                active_reset(qubit)
                                 qubit.align()
                         else:
                             wait(qubit.thermalization_time * u.ns)

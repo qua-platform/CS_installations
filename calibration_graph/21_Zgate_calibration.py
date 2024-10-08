@@ -172,7 +172,7 @@ with program() as ramsey:
             save(n, n_st)
             with for_each_(flux, fluxes):
                 if reset_type == "active":
-                    active_reset(machine, qubit.name)
+                    active_reset(qubit)
                 else:
                     qubit.resonator.wait(machine.thermalization_time * u.ns)
                     qubit.align()
