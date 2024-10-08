@@ -38,12 +38,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import warnings
 from qualang_tools.bakery import baking
-
+from quam_libs.lib.fit import fit_oscillation_decay_exp, oscillation_decay_exp
+from quam_libs.lib.plot_utils import QubitPairGrid, grid_iter, grid_pair_names
+from scipy.optimize import curve_fit
+from quam_libs.components.gates.two_qubit_gates import CZGate
+from quam_libs.lib.pulses import FluxPulse
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubit_pairs: Optional[List[str]] = None
+    qubit_pairs: Optional[List[str]] = ['q2-q4']
     num_averages: int = 10
     max_time_in_ns: int = 160
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
@@ -55,7 +59,7 @@ class Parameters(NodeParameters):
     amp_step_coarse : float = 0.1
     amp_range_fine : float = 0.04
     amp_step_fine : float = 0.002
-    load_data_id: Optional[int] = None  
+    load_data_id: Optional[int] = None #92415  
 
 node = QualibrationNode(
     name="30_02_11_oscillations", parameters=Parameters()
@@ -82,7 +86,8 @@ num_qubit_pairs = len(qubit_pairs)
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
 # Open Communication with the QOP
-qmm = machine.connect()
+if node.parameters.load_data_id is None:
+    qmm = machine.connect()
 # %%
 
 ####################
@@ -104,6 +109,36 @@ def baked_waveform(waveform_amp, qubit):
         
     return pulse_segments
 
+def rabi_chevron_model(ft, J, f0, a, offset,tau):
+    f,t = ft
+    J = J
+    w = f
+    w0 = f0
+    g = offset+a * np.sin(2*np.pi*np.sqrt(J**2 + (w-w0)**2) * t)**2*np.exp(-tau*np.abs((w-w0))) 
+    return g.ravel()
+
+def fit_rabi_chevron(ds_qp, init_length, init_detuning):
+    da_target = ds_qp.state_target
+    exp_data = da_target.values
+    detuning = da_target.detuning
+    time = da_target.time*1e-9
+    t,f  = np.meshgrid(time,detuning)
+    initial_guess = (1e9/init_length/2,
+            init_detuning,
+            -1,
+            1.0,
+            100e-9)
+    fdata = np.vstack((f.ravel(),t.ravel()))
+    tdata = exp_data.ravel()
+    popt, pcov = curve_fit(rabi_chevron_model, fdata, tdata, p0=initial_guess)
+    J = popt[0]
+    f0 = popt[1]
+    a = popt[2]
+    offset = popt[3]
+    tau = popt[4]
+
+    return J, f0, a, offset, tau
+
 # %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 
@@ -111,7 +146,7 @@ flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or
 
 # define the amplitudes for the flux pulses
 pulse_amplitudes = {}
-if node.parameters.method == "coarse":
+if node.parameters.method == "coarse": # TODO: change to coarse
     for qp in qubit_pairs:
         detuning = qp.qubit_control.xy.RF_frequency - qp.qubit_target.xy.RF_frequency - qp.qubit_target.anharmonicity
         pulse_amplitudes[qp.name] = float(np.sqrt(-detuning/qp.qubit_control.freq_vs_flux_01_quad_term))
@@ -122,7 +157,7 @@ else:
 baked_signals = {qp.name : baked_waveform(pulse_amplitudes[qp.name], qp.qubit_control) for qp in qubit_pairs}
 
 # Loop parameters
-if node.parameters.method == "coarse":
+if node.parameters.method == "coarse": # TODO: change to coarse
     amplitudes = np.arange(1-node.parameters.amp_range_coarse, 1+node.parameters.amp_range_coarse, node.parameters.amp_step_coarse)
 else:
     amplitudes = np.arange(1-node.parameters.amp_range_fine, node.parameters.amp_range_fine, node.parameters.amp_step_fine)
@@ -163,7 +198,7 @@ with program() as CPhase_Oscillations:
                             active_reset(machine, qubit.name)
                             qubit.align()
                     else:
-                        wait(qubit.thermalization_time * u.ns)
+                        wait(qp.qubit_control.thermalization_time * u.ns)
                     # set both qubits to the excited state
                     for state,qubit in zip([state_control, state_target], [qp.qubit_control, qp.qubit_target]):
                         qubit.xy.play("x180")
@@ -255,87 +290,163 @@ if not node.parameters.simulate:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
         ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {"amp": amplitudes, "time": times_ns})
     else:
-        ds = load_dataset(node.parameters.load_data_id)
+        ds, _ = load_dataset(node.parameters.load_data_id)
+
+        ds = ds.rename({'res1': 'state_control'})
+        ds = ds.rename({'res0': 'state_target'})
+        ds = ds.rename({'cz_amp': 'amp', 'cz_time': 'time'})
+        pulse_amplitudes = {'q2-q4' : 0.064}
+        ds = ds.assign_coords({'qp' : ['q2-q4']})
+        
     node.results = {"ds": ds}
 
 # %% {Data_analysis}
 if not node.parameters.simulate:
-    # Find the minimum of each frequency line to follow the resonance vs flux
-    peak_freq1  = ds.IQ_abs1.idxmin(dim="freq")
-    peak_freq2  = ds.IQ_abs2.idxmin(dim="freq")
-    # Fit to a cosine using the qiskit function: a * np.cos(2 * np.pi * f * t + phi) + offset
-    fit_osc1 = fit_oscillation(peak_freq1.dropna(dim="flux"), "flux")
-    fit_osc2 = fit_oscillation(peak_freq2.dropna(dim="flux"), "flux")
-    # Ensure that the phase is between -pi and pi
-    idle_offset1 = -fit_osc1.sel(fit_vals="phi")
-    idle_offset1 = np.mod(idle_offset1 + np.pi, 2 * np.pi) - np.pi
-    idle_offset2 = -fit_osc2.sel(fit_vals="phi")
-    idle_offset2 = np.mod(idle_offset2 + np.pi, 2 * np.pi) - np.pi
-    # converting the phase phi from radians to voltage
-    idle_offset1 = idle_offset1 / fit_osc1.sel(fit_vals="f") / 2 / np.pi
-    idle_offset2 = idle_offset2 / fit_osc2.sel(fit_vals="f") / 2 / np.pi
+    def abs_amp(qp, amp):
+        return amp * pulse_amplitudes[qp.name]
 
+    def detuning(qp, amp):
+        return -(amp * pulse_amplitudes[qp.name])**2 * qp.qubit_control.freq_vs_flux_01_quad_term
     
+    ds = ds.assign_coords(
+        {"amp_full": (["qp", "amp"], np.array([abs_amp(qp, ds.amp) for qp in qubit_pairs]))}
+    )
+    ds = ds.assign_coords(
+        {"detuning": (["qp", "amp"], np.array([detuning(qp, ds.amp) for qp in qubit_pairs]))}
+    )
+# %%
+if not node.parameters.simulate:
+    amplitudes = {}
+    lengths = {}
+    zero_paddings = {}
+    fitted_ds = {}
+    detunings = {}
+    Js = {}
     
-    # Save fitting results
-    fit_results = {}
     for qp in qubit_pairs:
-        fit_results[qp.name] = {}
-        fit_results[qp.name]["mutual_flux_point"] = [
-            float(idle_offset1.sel(qubit=qp.id).values),
-            float(idle_offset2.sel(qubit=qp.id).values),
-        ]
-        
+        print(qp.name)
+        ds_qp = ds.sel(qp=qp.name)
 
-    node.results["fit_results"] = fit_results
+        amp_guess = ds_qp.state_target.max("time")-ds_qp.state_target.min("time")
+        flux_amp_idx = int(amp_guess.argmax())
+        flux_amp = float(ds_qp.amp_full[flux_amp_idx])
+        fit_data = fit_oscillation_decay_exp(
+            ds_qp.state_control.isel(amp=flux_amp_idx), "time")
+        flux_time = int(1/fit_data.sel(fit_vals='f'))
 
-    # %% {Plotting}
-    # Reload the plot_utils module to ensure we have the latest version
-    import importlib
-    import quam_libs.lib.plot_utils
-    importlib.reload(quam_libs.lib.plot_utils)
-    from quam_libs.lib.plot_utils import QubitPairGrid, grid_iter, grid_pair_names
-    
+        print(f"parameters for {qp.name}: amp={flux_amp}, time={flux_time}")
+        amplitudes[qp.name] =  flux_amp
+        detunings[qp.name] = -flux_amp ** 2 * qp.qubit_control.freq_vs_flux_01_quad_term
+        lengths[qp.name] = flux_time-flux_time%4+4
+        zero_paddings[qp.name]=lengths[qp.name]-flux_time
+        fitted_ds[qp.name]  = ds_qp.assign({'fitted': oscillation_decay_exp(ds_qp.time,
+                                                                fit_data.sel(
+                                                                    fit_vals="a"),
+                                                                fit_data.sel(
+                                                                    fit_vals="f"),
+                                                                fit_data.sel(
+                                                                    fit_vals="phi"),
+                                                                fit_data.sel(
+                                                                    fit_vals="offset"),
+                                                                fit_data.sel(fit_vals="decay"))})
+        # if node.parameters.method == "fine":
+        if True:
+            t = ds.time*1e-9
+            f = ds.sel(qp = qp.name).detuning
+            t,f = np.meshgrid(t,f)
+            J, f0, a, offset, tau = fit_rabi_chevron(ds_qp, lengths[qp.name], detunings[qp.name])
+            data_fitted = rabi_chevron_model((f,t), J, f0, a, offset, tau).reshape(len(ds.amp), len(ds.time))
+            Js[qp.name] = J
+            detunings[qp.name] = f0
+            amplitudes[qp.name] = np.sqrt(-detunings[qp.name]/qp.qubit_control.freq_vs_flux_01_quad_term)
+            flux_time = int(1/(2*J)*1e9)
+            lengths[qp.name] = flux_time-flux_time%4+4
+            zero_paddings[qp.name]=lengths[qp.name]-flux_time     
+# %%
+if not node.parameters.simulate:
     grid_names, qubit_pair_names = grid_pair_names(qubit_pairs)
     grid = QubitPairGrid(grid_names, qubit_pair_names)
-    for ax, qubit in grid_iter(grid):
-        ds.assign_coords(freq_MHz=ds.freq / 1e6).loc[qubit].IQ_abs1.plot(
-            ax=ax, add_colorbar=False, x="flux", y="freq_MHz", robust=True
-        )
-        ax.axvline(idle_offset1.loc[qubit], linestyle="dashed", linewidth=2, color="r")
-        # Location of the current resonator frequency
-        ax.set_title(qubit["qubit"])
-        ax.set_xlabel("Flux (V)")
+    for ax, qubit_pair in grid_iter(grid):
+        plot = ds.to_array().sel(qp=qubit_pair['qubit']).sel(
+            variable='state_control').assign_coords(detuning_MHz = 1e-6*ds.detuning.sel(qp = qp.name)).plot(ax = ax, x= 'time', y= 'detuning_MHz', add_colorbar=False)
+        plt.colorbar(plot, ax=ax, orientation='horizontal', pad=0.2, aspect=30, label='Amplitude')
+        ax.plot([lengths[qubit_pair['qubit']]-zero_paddings[qubit_pair['qubit']]],[1e-6*detunings[qubit_pair['qubit']]],marker= '.', color = 'red')
+        ax.axhline(y=1e-6*detunings[qubit_pair['qubit']], color='k', linestyle='--', lw = 0.5)
+        ax.axvline(x=lengths[qubit_pair['qubit']]-zero_paddings[qubit_pair['qubit']], color='k', linestyle='--', lw = 0.5)
+        ax.set_title(qubit_pair["qubit"])
+        ax.set_ylabel('Detuning [MHz]')
+        ax.set_xlabel('time [nS]')
+        f_eff = np.sqrt(Js[qubit_pair['qubit']]**2 + (ds.detuning.sel(qp=qubit_pair['qubit'])-detunings[qubit_pair['qubit']])**2)
+        for n in range(10):
+            ax.plot(n*0.5/f_eff*1e9,1e-6*ds.detuning.sel(qp = qubit_pair['qubit']), color = 'red', lw = 0.3)
 
-    grid.fig.suptitle("Resonator spectroscopy vs flux for control")
-    plt.tight_layout()
+        ax2 = ax.twinx()
+        detuning_range = ds.detuning.sel(qp=qubit_pair['qubit'])
+        amp_full_range = np.sqrt(-detuning_range / qp.qubit_control.freq_vs_flux_01_quad_term)
+        ax2.set_ylim(amp_full_range.min(), amp_full_range.max())
+        ax2.set_ylabel('Flux amplitude [V]')
+        ax.set_ylabel('Detuning [MHz]')
+        ax.set_ylim(detuning_range.min() * 1e-6, detuning_range.max() * 1e-6)
+        ax2.yaxis.set_label_position('right')
+        ax2.yaxis.tick_right()
+        
+    plt.suptitle('control qubit state')
     plt.show()
     node.results["figure_control"] = grid.fig
-
+    
     grid_names, qubit_pair_names = grid_pair_names(qubit_pairs)
     grid = QubitPairGrid(grid_names, qubit_pair_names)
-    for ax, qubit in grid_iter(grid):
-        ds.assign_coords(freq_MHz=ds.freq / 1e6).loc[qubit].IQ_abs2.plot(
-            ax=ax, add_colorbar=False, x="flux", y="freq_MHz", robust=True
-        )        
-        ax.axvline(idle_offset2.loc[qubit], linestyle="dashed", linewidth=2, color="r")
-        # Location of the current resonator frequency
-        ax.set_title(qubit["qubit"])
-        ax.set_xlabel("Flux (V)")
+    for ax, qubit_pair in grid_iter(grid):
+        plot = ds.to_array().sel(qp=qubit_pair['qubit']).sel(
+            variable='state_target').assign_coords(detuning_MHz = 1e-6*ds.detuning.sel(qp = qp.name)).plot(ax = ax, x= 'time', y= 'detuning_MHz', add_colorbar=False)
+        plt.colorbar(plot, ax=ax, orientation='horizontal', pad=0.2, aspect=30, label='Amplitude')
+        ax.plot([lengths[qubit_pair['qubit']]-zero_paddings[qubit_pair['qubit']]],[1e-6*detunings[qubit_pair['qubit']]],marker= '.', color = 'red')
+        ax.axhline(y=1e-6*detunings[qubit_pair['qubit']], color='k', linestyle='--', lw = 0.5)
+        ax.axvline(x=lengths[qubit_pair['qubit']]-zero_paddings[qubit_pair['qubit']], color='k', linestyle='--', lw = 0.5)
+        ax.set_title(qubit_pair["qubit"])
+        ax.set_ylabel('Detuning [MHz]')
+        ax.set_xlabel('time [nS]')
+        f_eff = np.sqrt(Js[qubit_pair['qubit']]**2 + (ds.detuning.sel(qp=qubit_pair['qubit'])-detunings[qubit_pair['qubit']])**2)
+        for n in range(10):
+            ax.plot(n*0.5/f_eff*1e9,1e-6*ds.detuning.sel(qp = qubit_pair['qubit']), color = 'red', lw = 0.3)
 
-    grid.fig.suptitle("Resonator spectroscopy vs flux for target")
-    plt.tight_layout()
+        ax2 = ax.twinx()
+        detuning_range = ds.detuning.sel(qp=qubit_pair['qubit'])
+        amp_full_range = np.sqrt(-detuning_range / qp.qubit_control.freq_vs_flux_01_quad_term)
+        ax2.set_ylim(amp_full_range.min(), amp_full_range.max())
+        ax2.set_ylabel('Flux amplitude [V]')
+        ax.set_ylabel('Detuning [MHz]')
+        ax.set_ylim(detuning_range.min() * 1e-6, detuning_range.max() * 1e-6)
+        ax2.yaxis.set_label_position('right')
+        ax2.yaxis.tick_right()
+    plt.suptitle('target qubit state')
     plt.show()
     node.results["figure_target"] = grid.fig
-    # %% {Update_state}
-    with node.record_state_updates():
-        for qp in qubit_pairs:
-            qp.mutual_flux_point = fit_results[qp.name]["mutual_flux_point"]
 
-    # %% {Save_results}
-    # node.outcomes = {q.name: "successful" for q in qubits}
+# %%
+
+# %% {Update_state}
+if not node.parameters.simulate:
+    if node.parameters.load_data_id is None:
+        with node.record_state_updates():
+            for qp in qubit_pairs:
+                if "Cz_unipolar" in qp.gates:
+                    qp.gates['Cz_unipolar'].flux_pulse_control.amplitude = amplitudes[qp.name]
+                    qp.gates['Cz_unipolar'].flux_pulse_control.length = lengths[qp.name]
+                    qp.gates['Cz_unipolar'].flux_pulse_control.zero_padding = zero_paddings[qp.name]
+                    qp.gates['Cz'] = f"#./Cz_unipolar"
+                else:
+                    qp.gates['Cz_unipolar'] = CZGate(flux_pulse_control = FluxPulse(length=lengths[qp.name], amplitude=amplitudes[qp.name], zero_padding=zero_paddings[qp.name], id = 'flux_pulse_control_' + qp.qubit_target.name))
+                    qp.gates['Cz'] = f"#./Cz_unipolar"
+                
+                qp.J2 = Js[qp.name]
+                qp.detuning = detunings[qp.name]
+                
+# %% {Save_results}
+if not node.parameters.simulate:
+    node.outcomes = {qp.name: "successful" for qp in qubit_pairs}
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine
     node.save()
-
+        
 # %%

@@ -4,7 +4,7 @@ from dataclasses import field
 from quam.core import QuamComponent, quam_dataclass
 from .transmon import Transmon
 from .tunable_coupler import TunableCoupler
-
+from .gates.two_qubit_gates import TwoQubitGate
 
 __all__ = ["TransmonPair"]
 
@@ -15,6 +15,9 @@ class TransmonPair(QuamComponent):
     qubit_control: Transmon = None
     qubit_target: Transmon = None
     coupler: Optional[TunableCoupler] = None
+    gates: Dict[str, TwoQubitGate] = field(default_factory=dict)
+    J2: float = 0
+    detuning: float = 0
 
     extras: Dict[str, Any] = field(default_factory=dict)
 
