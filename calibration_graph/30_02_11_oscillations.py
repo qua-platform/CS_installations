@@ -29,7 +29,7 @@ Outcomes:
 # %% {Imports}
 from qualibrate import QualibrationNode, NodeParameters
 from quam_libs.components import QuAM
-from quam_libs.macros import active_reset, readout_state
+from quam_libs.macros import active_reset, readout_state, readout_state_gef, active_reset_gef
 from quam_libs.lib.plot_utils import QubitPairGrid, grid_iter, grid_pair_names
 from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset
 from quam_libs.lib.fit import fit_oscillation
@@ -199,17 +199,16 @@ with program() as CPhase_Oscillations:
                 with for_(idx, 0, idx<16, idx+1):
                     # reset                    
                     if node.parameters.reset_type == "active":
-                        for qubit in [qp.qubit_control, qp.qubit_target]:
-                            # TODO: use GEF reset
-                            active_reset(qubit)
-                            qubit.align()
+                        active_reset_gef(qp.qubit_control)
+                        active_reset(qp.qubit_target)
+                        qp.align()
                     else:
                         wait(qp.qubit_control.thermalization_time * u.ns)
                     # set both qubits to the excited state
                     for state,qubit in zip([state_control, state_target], [qp.qubit_control, qp.qubit_target]):
                         qubit.xy.play("x180")
                         qubit.xy.wait(5)
-                        qubit.align()
+                    qp.align()
 
                     # play the flux pulse
                     with switch_(idx):
@@ -220,7 +219,7 @@ with program() as CPhase_Oscillations:
                     # wait for the flux pulse to end and some extra time
                     for qubit in [qp.qubit_control, qp.qubit_target]:
                         qubit.xy.wait(node.parameters.max_time_in_ns // 4 + 10)
-                        qubit.align()
+                    qp.align()
                     
                     # measure both qubits
                     for qubit, state, state_st in zip([qp.qubit_control, qp.qubit_target], [state_control, state_target], [state_st_control, state_st_target]):
@@ -233,17 +232,16 @@ with program() as CPhase_Oscillations:
                     with for_(idx, 0, idx<16, idx+1):
                         # reset                    
                         if node.parameters.reset_type == "active":
-                            for qubit in [qp.qubit_control, qp.qubit_target]:
-                                # TODO: use GEF reset
-                                active_reset(qubit)
-                                qubit.align()
+                            active_reset_gef(qp.qubit_control)
+                            active_reset(qp.qubit_target)
+                            qp.align()
                         else:
-                            wait(qubit.thermalization_time * u.ns)
+                            wait(qp.qubit_control.thermalization_time * u.ns)
                         # set both qubits to the excited state
                         for state,qubit in zip([state_control, state_target], [qp.qubit_control, qp.qubit_target]):
                             qubit.xy.play("x180")
                             qubit.xy.wait(5)
-                            qubit.align()
+                        qp.align()
 
                         # play the flux pulse
                         with switch_(idx):
@@ -255,13 +253,14 @@ with program() as CPhase_Oscillations:
                         # wait for the flux pulse to end and some extra time
                         for qubit in [qp.qubit_control, qp.qubit_target]:
                             qubit.xy.wait(node.parameters.max_time_in_ns // 4 + 10)
-                            qubit.align()          
+                        qp.align()         
                                    
                         # measure both qubits
-                        for qubit, state, state_st in zip([qp.qubit_control, qp.qubit_target], [state_control, state_target], [state_st_control, state_st_target]):
-                            readout_state(qubit, state[i]) # TODO: readout gef
-                            # save data
-                            save(state[i], state_st[i])   
+                        readout_state_gef(qp.qubit_control, state_control[i])
+                        readout_state(qp.qubit_target, state_target[i])
+                        save(state_control[i], state_st_control[i])
+                        save(state_target[i], state_st_target[i])
+
         align()
         
     with stream_processing():

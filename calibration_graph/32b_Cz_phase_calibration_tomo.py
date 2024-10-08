@@ -65,14 +65,13 @@ class Parameters(NodeParameters):
     timeout: int = 100
     amp_range : float = 0.3
     amp_step : float = 0.1
-    num_frames: int = 10
-    load_data_id: Optional[int] = None # 92417 
+    load_data_id: Optional[int] = None
     plot_raw : bool = False
     measure_leak : bool = False
 
 
 node = QualibrationNode(
-    name="32a_Cz_phase_calibration_frame", parameters=Parameters()
+    name="32b_Cz_phase_calibration_tomo", parameters=Parameters()
 )
 assert not (node.parameters.simulate and node.parameters.load_data_id is not None), "If simulate is True, load_data_id must be None, and vice versa."
 
@@ -115,11 +114,10 @@ flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or
 
 # Loop parameters
 amplitudes = np.arange(1-node.parameters.amp_range, 1+node.parameters.amp_range, node.parameters.amp_step)
-frames = np.arange(0, 2*np.pi, 2*np.pi/node.parameters.num_frames)
 
 with program() as CPhase_Oscillations:
     amp = declare(fixed)   
-    frame = declare(fixed)
+    tomo_axis = declare(int)
     control_initial = declare(int)
     n = declare(int)
     n_st = declare_stream()
@@ -142,7 +140,7 @@ with program() as CPhase_Oscillations:
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)         
             with for_(*from_array(amp, amplitudes)):
-                with for_(*from_array(frame, frames)):
+                with for_(*from_array(tomo_axis, [0,1])):
                     with for_(*from_array(control_initial, [0,1])):
                         # reset
                         if node.parameters.reset_type == "active":
@@ -152,8 +150,6 @@ with program() as CPhase_Oscillations:
                         else:
                             wait(qp.qubit_control.thermalization_time * u.ns)
                         qp.align()
-                        reset_frame(qp.qubit_target.xy.name)
-                        reset_frame(qp.qubit_control.xy.name)                   
                         # setting both qubits ot the initial state
                         qp.qubit_control.xy.play("x180", condition=control_initial==1)
                         qp.qubit_target.xy.play("x90")
@@ -162,11 +158,11 @@ with program() as CPhase_Oscillations:
                         #play the CZ gate
                         qp.gates['Cz'].execute(amplitude_scale = amp)
                         
-                        #rotate the frame
-                        frame_rotation_2pi(frame, qp.qubit_target.xy.name)
-                        
-                        # return the target qubit before measurement
-                        qp.qubit_target.xy.play("x90")                        
+                        # measure the traget qubit on the x or y axis
+                        with if_(tomo_axis == 0, unsafe = False):
+                            qp.qubit_target.xy.play("x90")    
+                        with else_(unsafe = False):
+                            qp.qubit_target.xy.play("y90")
                             
                         # measure both qubits
                         if node.parameters.measure_leak:
@@ -181,8 +177,8 @@ with program() as CPhase_Oscillations:
     with stream_processing():
         n_st.save("n")
         for i in range(num_qubit_pairs):
-            state_st_control[i].buffer(len(amplitudes)).buffer(len(frames)).buffer(2).save(f"state_control{i + 1}")
-            state_st_target[i].buffer(len(amplitudes)).buffer(len(frames)).buffer(2).save(f"state_target{i + 1}")
+            state_st_control[i].buffer(len(amplitudes)).buffer(2).buffer(2).average().save(f"state_control{i + 1}")
+            state_st_target[i].buffer(len(amplitudes)).buffer(2).buffer(2).average().save(f"state_target{i + 1}")
 
 # %% {Simulate_or_execute}
 if node.parameters.simulate:
@@ -208,15 +204,12 @@ elif node.parameters.load_data_id is None:
 if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
-        ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {"amp": amplitudes, "frame": frames, "control_axis": [0,1]})
+        ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {"amp": amplitudes, "tomo_axis": ["x", "y"], "control_axis": [0,1]})
     else:
-        ds, _ = load_dataset(node.parameters.load_data_id)
-
-        ds = ds.rename({'state1': 'state_control'})
-        ds = ds.rename({'state0': 'state_target'})
-        ds = ds.rename({'cz_amp': 'amp', 'cz_frame': 'frame', 'xax': 'control_axis'})
-        ds = ds.assign_coords({'qp' : ['q2-q4']})
-        
+        ds, loaded_machine = load_dataset(node.parameters.load_data_id)
+        if loaded_machine is not None:
+            machine = loaded_machine
+            
     node.results = {"ds": ds}
 
 # %% {Data_analysis}
