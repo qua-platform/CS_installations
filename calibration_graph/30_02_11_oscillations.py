@@ -1,23 +1,29 @@
 # %%
 """
-       PAIRWISE RESONATOR SPECTROSCOPY VERSUS FLUX 
-This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to
-extract the 'I' and 'Q' quadratures. This is done across various readout intermediate dfs and flux biases.
-The resonator frequency as a function of flux bias is then extracted and fitted so that the parameters can be stored in the configuration.
+Unipolar CPhase Gate Calibration
 
-This information can then be used to adjust the readout frequency for the maximum and minimum frequency points.
+This sequence measures the time and detuning required for a unipolar CPhase gate. The process involves:
+
+1. Preparing both qubits in their excited states.
+2. Applying a flux pulse with varying amplitude and duration.
+3. Measuring the resulting state populations as a function of these parameters.
+4. Fitting the results to a Ramsey-Chevron pattern.
+
+From this pattern, we extract:
+- The coupling strength (J2) between the qubits.
+- The optimal gate parameters (amplitude and duration) for the CPhase gate.
+
+The Ramsey-Chevron pattern emerges due to the interplay between the qubit-qubit coupling and the flux-induced detuning, allowing us to precisely calibrate the CPhase gate.
 
 Prerequisites:
-    - Calibration of the time of flight, offsets, and gains (referenced as "time_of_flight").
-    - Calibration of the IQ mixer connected to the readout line (be it an external mixer or an Octave port).
-    - Identification of the resonator's resonance frequency (referred to as "resonator_spectroscopy").
-    - Configuration of the readout pulse amplitude and duration.
-    - Specification of the expected resonator depletion time in the state.
+- Calibrated single-qubit gates for both qubits in the pair.
+- Calibrated readout for both qubits.
+- Initial estimate of the flux pulse amplitude range.
 
-Before proceeding to the next node:
-    - Adjust the flux bias to the minimum frequency point, labeled as "max_frequency_point", in the state.
-    - Adjust the flux bias to the minimum frequency point, labeled as "min_frequency_point", in the state.
-    - Save the current state by calling machine.save("quam")
+Outcomes:
+- Extracted J2 coupling strength.
+- Optimal flux pulse amplitude and duration for the CPhase gate.
+- Fitted Ramsey-Chevron pattern for visualization and verification.
 """
 
 # %% {Imports}
@@ -146,7 +152,7 @@ flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or
 
 # define the amplitudes for the flux pulses
 pulse_amplitudes = {}
-if node.parameters.method == "coarse": # TODO: change to coarse
+if node.parameters.method == "coarse":
     for qp in qubit_pairs:
         detuning = qp.qubit_control.xy.RF_frequency - qp.qubit_target.xy.RF_frequency - qp.qubit_target.anharmonicity
         pulse_amplitudes[qp.name] = float(np.sqrt(-detuning/qp.qubit_control.freq_vs_flux_01_quad_term))
@@ -157,10 +163,10 @@ else:
 baked_signals = {qp.name : baked_waveform(pulse_amplitudes[qp.name], qp.qubit_control) for qp in qubit_pairs}
 
 # Loop parameters
-if node.parameters.method == "coarse": # TODO: change to coarse
+if node.parameters.method == "coarse":
     amplitudes = np.arange(1-node.parameters.amp_range_coarse, 1+node.parameters.amp_range_coarse, node.parameters.amp_step_coarse)
 else:
-    amplitudes = np.arange(1-node.parameters.amp_range_fine, node.parameters.amp_range_fine, node.parameters.amp_step_fine)
+    amplitudes = np.arange(1-node.parameters.amp_range_fine, 1+node.parameters.amp_range_fine, node.parameters.amp_step_fine)
 times_ns = np.arange(1, node.parameters.max_time_in_ns)
 
 with program() as CPhase_Oscillations:
@@ -290,13 +296,15 @@ if not node.parameters.simulate:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
         ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {"amp": amplitudes, "time": times_ns})
     else:
-        ds, _ = load_dataset(node.parameters.load_data_id)
-
-        ds = ds.rename({'res1': 'state_control'})
-        ds = ds.rename({'res0': 'state_target'})
-        ds = ds.rename({'cz_amp': 'amp', 'cz_time': 'time'})
-        pulse_amplitudes = {'q2-q4' : 0.064}
-        ds = ds.assign_coords({'qp' : ['q2-q4']})
+        ds, loaded_machine = load_dataset(node.parameters.load_data_id)
+        if loaded_machine is not None:
+            machine = loaded_machine
+            
+        # ds = ds.rename({'res1': 'state_control'})
+        # ds = ds.rename({'res0': 'state_target'})
+        # ds = ds.rename({'cz_amp': 'amp', 'cz_time': 'time'})
+        # pulse_amplitudes = {'q2-q4' : 0.064}
+        # ds = ds.assign_coords({'qp' : ['q2-q4']})
         
     node.results = {"ds": ds}
 

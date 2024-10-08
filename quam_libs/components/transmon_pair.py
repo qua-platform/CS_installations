@@ -5,6 +5,7 @@ from quam.core import QuamComponent, quam_dataclass
 from .transmon import Transmon
 from .tunable_coupler import TunableCoupler
 from .gates.two_qubit_gates import TwoQubitGate
+from qm.qua import align
 
 __all__ = ["TransmonPair"]
 
@@ -26,3 +27,11 @@ class TransmonPair(QuamComponent):
         """The name of the transmon pair"""
         return self.id if isinstance(self.id, str) else f"q{self.id}"
     
+    def align(self):
+        if self.coupler:
+            align(self.qubit_control.xy.name, self.qubit_control.z.name, self.qubit_control.resonator.name, self.qubit_target.xy.name, 
+                  self.qubit_target.z.name, self.qubit_target.resonator.name, self.coupler.name)
+        else:
+            align(self.qubit_control.xy.name, self.qubit_control.z.name, self.qubit_control.resonator.name, self.qubit_target.xy.name, 
+                  self.qubit_target.z.name, self.qubit_target.resonator.name)
+            

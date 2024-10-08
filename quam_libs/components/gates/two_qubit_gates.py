@@ -74,7 +74,7 @@ class CZGate(TwoQubitGate):
         return f"{self.gate_label}{str_ref.DELIMITER}{pulse_label}"
 
     def execute(self, amplitude_scale=None):        
-        self.qubit_control.align(self.qubit_target)
+        self.transmon_pair.align()
         
         # self.qubit_control.xy.wait(self.pre_wait)
         # self.qubit_target.xy.wait(self.pre_wait)
@@ -85,12 +85,12 @@ class CZGate(TwoQubitGate):
             amplitude_scale=amplitude_scale,
         )
         
-        self.qubit_control.align(self.qubit_target)
+        self.transmon_pair.align()
         frame_rotation_2pi(self.phase_shift_control, self.qubit_control.xy.name)
         frame_rotation_2pi(self.phase_shift_target, self.qubit_target.xy.name)
-        self.qubit_control.xy.play("x", amplitude_scale=0.0, duration=4)
-        self.qubit_target.xy.play("x", amplitude_scale=0.0, duration=4)
-        self.qubit_control.align(self.qubit_target)
+        self.qubit_control.xy.play("x180", amplitude_scale=0.0, duration=4)
+        self.qubit_target.xy.play("x180", amplitude_scale=0.0, duration=4)
+        self.transmon_pair.align()
 
     @property
     def config_settings(self):
@@ -129,9 +129,9 @@ class CZWithCompensationGate(CZGate):
         qubits = [self.qubit_control, self.qubit_target, *compensation_qubits]
         extra_compensation_qubits = [q for q in compensation_qubits if q not in [self.qubit_control, self.qubit_target]]
         
-        self.qubit_control.align(self.qubit_target)
         for qubit in extra_compensation_qubits:
             qubit.align(self.qubit_control)
+        self.transmon_pair.align()
                  
         pulse_duration = self.flux_pulse_control.length // 4 + 10
         
@@ -140,11 +140,14 @@ class CZWithCompensationGate(CZGate):
             # Assume amplitude is 100 mV by default
             qubit.z.play(f"const_100mV", duration=pulse_duration, amplitude_scale=compensation["shift"] / 0.1)
             frame_rotation_2pi(compensation["phase"], qubit.xy.name)
-            qubit.xy.play("x", amplitude_scale=0.0, duration=4)
+            qubit.xy.play("x180", amplitude_scale=0.0, duration=4)
         self.qubit_control.z.wait(20)
         
         super().execute(*args, **kwargs)
 
+        for qubit in extra_compensation_qubits:
+            qubit.align(self.qubit_control)
+        self.transmon_pair.align()
 
 @quam_dataclass
 class CNotGate_CT(TwoQubitGate):
