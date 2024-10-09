@@ -2,6 +2,7 @@ from quam.core import quam_dataclass
 from quam.components.channels import InOutIQChannel, InOutMWChannel
 from qualang_tools.units import unit
 import numpy as np
+from typing import Dict, Any, Optional, Union, List, Tuple
 
 __all__ = ["ReadoutResonator", "ReadoutResonatorIQ", "ReadoutResonatorMW"]
 
@@ -20,10 +21,10 @@ class ReadoutResonatorBase:
 
     f_01: float = None
     f_12: float = None
-    confusion_matrix: list = None
+    confusion_matrix: Optional[List[List[float]]] = None
     
-    gef_centers : list = None
-    gef_confusion_matrix : list = None
+    gef_centers : Optional[List[List[float]]] = None
+    gef_confusion_matrix : Optional[List[List[float]]] = None
 
 
 @quam_dataclass

@@ -19,7 +19,7 @@ class TransmonPair(QuamComponent):
     gates: Dict[str, TwoQubitGate] = field(default_factory=dict)
     J2: float = 0
     detuning: float = 0
-
+    confusion: Optional[List[List[float]]] = None
     extras: Dict[str, Any] = field(default_factory=dict)
 
     @property
