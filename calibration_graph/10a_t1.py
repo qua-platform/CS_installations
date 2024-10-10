@@ -8,20 +8,18 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     num_averages: int = 100
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 50000
-    wait_time_step_in_ns: int = 300
-    flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "arbitrary"    
+    max_wait_time_in_ns: int = 100000
+    wait_time_step_in_ns: int = 600
+    flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "independent"
     simulate: bool = False
     timeout: int = 100
-    use_state_discrimination: bool = True
+    use_state_discrimination: bool = False
     reset_type: Literal['active', 'thermal'] = "thermal"
 
 node = QualibrationNode(
-    name="17b_t2_echo",
+    name="10a_t1_experiment",
     parameters=Parameters()
 )
-
-
 
 
 from qm.qua import *
@@ -115,21 +113,14 @@ with program() as t1:
                     qubit.align()
                 
                     
-                qubit.xy.play("x90")
-                qubit.align()
-                qubit.z.wait(20)
-                qubit.z.play("const", amplitude_scale=arb_flux_bias_offset[qubit.name]/qubit.z.operations["const"].amplitude, duration=t)
-                qubit.z.wait(20)
-                qubit.align()
                 qubit.xy.play("x180")
-                qubit.align()
+                align()
                 qubit.z.wait(20)
                 qubit.z.play("const", amplitude_scale=arb_flux_bias_offset[qubit.name]/qubit.z.operations["const"].amplitude, duration=t)
                 qubit.z.wait(20)
-                qubit.align()
-                qubit.xy.play("-x90")
-                qubit.align()
                 
+                align()
+
                 # Measure the state of the resonators
                 if node.parameters.use_state_discrimination:
                     readout_state(qubit, state[i])
@@ -170,9 +161,7 @@ else:
             print(f"Fetching results for qubit {qubits[i].name}")
             data_list = ["n"]
             results = fetching_tool(job, data_list, mode="live")
-        # Live plotting
-        # fig, axes = plt.subplots(2, num_qubits, figsize=(4 * num_qubits, 8))
-        # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+
             while results.is_processing():
             # Fetch results
                 fetched_data = results.fetch_all()
@@ -182,15 +171,15 @@ else:
 
 
 # %%
+# %% {Data_fetching_and_dataset_creation}
 if not node.parameters.simulate:
-    # %% {Data_fetching_and_dataset_creation}
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(job.result_handles, qubits, {"idle_time": idle_times})
 
-    ds = ds.assign_coords(idle_time=8*ds.idle_time/1e3)  # convert to usec
+    ds = ds.assign_coords(idle_time=4*ds.idle_time/1e3)  # convert to usec
     ds.idle_time.attrs = {'long_name': 'idle time', 'units': 'usec'}
 
-# %%
+# %% {Data_analysis}
 if not node.parameters.simulate:
     if node.parameters.use_state_discrimination:
         fit_data = fit_decay_exp(ds.state, 'idle_time')
@@ -217,8 +206,9 @@ if not node.parameters.simulate:
     tau_error = -tau * (np.sqrt(decay_res)/decay)
     tau_error.attrs = {'long_name' : 'T2* error', 'units' : 'uSec'}
 
-node.results = {"ds": ds}
-# %%
+    node.results = {"ds": ds}
+
+# %% {Plotting}
 if not node.parameters.simulate:
     
     grid = QubitGrid(ds, [q.grid_location for q in qubits])
@@ -233,15 +223,17 @@ if not node.parameters.simulate:
         ax.plot(ds.idle_time, fitted.loc[qubit], 'r--')
         ax.set_title(qubit['qubit'])
         ax.set_xlabel('Idle_time (uS)')
-        ax.text(0.1, 0.9, f'T2e = {tau.sel(qubit = qubit["qubit"]).values:.1f} + {tau_error.sel(qubit = qubit["qubit"]).values:.1f} usec', transform=ax.transAxes, fontsize=10,
+        ax.text(0.1, 0.9, f'T1 = {tau.sel(qubit = qubit["qubit"]).values:.1f} + {tau_error.sel(qubit = qubit["qubit"]).values:.1f} usec', transform=ax.transAxes, fontsize=10,
         verticalalignment='top', bbox=dict(facecolor='white', alpha=0.5))
-    grid.fig.suptitle('T2 echo')
+    grid.fig.suptitle('T1')
     plt.tight_layout()
     plt.show()
     node.results['figure_raw'] = grid.fig
 
 # %%
-node.results['initial_parameters'] = node.parameters.model_dump()
-node.machine = machine
-node.save()
+# %% {Save_results}
+if not node.parameters.simulate:    
+    node.results['initial_parameters'] = node.parameters.model_dump()
+    node.machine = machine
+    node.save()
 # %%

@@ -59,10 +59,10 @@ class Parameters(NodeParameters):
     frequency_step_in_mhz: float = 0.25
     flux_point_joint_or_independent_or_arbitrary: Literal[
         "joint", "independent", "arbitrary"
-    ] = "independent"
+    ] = "joint"
     target_peak_width: Optional[int] = None
     arbitrary_flux_bias: Optional[float] = None
-    arbitrary_qubit_frequency_in_ghz: Optional[float] = 5.845
+    arbitrary_qubit_frequency_in_ghz: Optional[float] = None
     simulate: bool = False
     timeout: int = 100
 
@@ -305,7 +305,8 @@ else:
     # Add the dataset to the node
     node.results = {"ds": ds}
 
-    # %% {Data_analysis}
+# %% {Data_analysis}
+if not node.parameters.simulate:
     # search for frequency for which the amplitude the farthest from the mean to indicate the approximate location of the peak
     shifts = np.abs((ds.IQ_abs - ds.IQ_abs.mean(dim="freq"))).idxmax(dim="freq")
     # Find the rotation angle to align the separation along the 'I' axis
@@ -373,8 +374,9 @@ else:
             print()
     node.results["fit_results"] = fit_results
 
-    # %% {Plotting}
-grid = QubitGrid(ds, [q.grid_location for q in qubits])
+# %% {Plotting}
+if not node.parameters.simulate:
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     approx_peak = result.base_line + result.amplitude * (
         1 / (1 + ((ds.freq - result.position) / result.width) ** 2)
     )
@@ -404,7 +406,9 @@ grid = QubitGrid(ds, [q.grid_location for q in qubits])
     plt.show()
     node.results["figure"] = grid.fig
 
-    # %% {Update_state}
+# %% {Update_state}
+if not node.parameters.simulate:
+
     with node.record_state_updates():
         for q in qubits:
             if not np.isnan(result.sel(qubit=q.name).position.values):
@@ -453,8 +457,12 @@ grid = QubitGrid(ds, [q.grid_location for q in qubits])
                         q.xy.operations["x180"].amplitude = 0.3
     node.results["ds"] = ds
 
-    # %% {Save_results}
+# %% {Save_results}
+if not node.parameters.simulate:
+
     node.outcomes = {q.name: "successful" for q in qubits}
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine
     node.save()
+
+# %%

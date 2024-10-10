@@ -47,7 +47,7 @@ class Parameters(NodeParameters):
     min_flux_offset_in_v: float = -0.5
     max_flux_offset_in_v: float = 0.5
     num_flux_points: int = 201
-    frequency_span_in_mhz: float = 30
+    frequency_span_in_mhz: float = 15
     frequency_step_in_mhz: float = 0.1
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     update_flux_min: bool = False
@@ -167,8 +167,6 @@ if node.parameters.simulate:
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(multi_res_spec_vs_flux)
-
-        # %% {Live_plot}
         results = fetching_tool(job, ["n"], mode="live")
         while results.is_processing():
             # Fetch results
@@ -176,7 +174,8 @@ else:
             # Progress bar
             progress_counter(n, n_avg, start_time=results.start_time)
 
-    # %% {Data_fetching_and_dataset_creation}
+# %% {Data_fetching_and_dataset_creation}
+if not node.parameters.simulate:
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs, "flux": dcs})
     # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2)
@@ -204,7 +203,8 @@ else:
     # Add the dataset to the node
     node.results = {"ds": ds}
 
-    # %% {Data_analysis}
+# %% {Data_analysis}
+if not node.parameters.simulate:
     # Find the minimum of each frequency line to follow the resonance vs flux
     peak_freq = ds.IQ_abs.idxmin(dim="freq")
     # Fit to a cosine using the qiskit function: a * np.cos(2 * np.pi * f * t + phi) + offset
@@ -253,7 +253,8 @@ else:
 
     node.results["fit_results"] = fit_results
 
-    # %% {Plotting}
+# %% {Plotting}
+if not node.parameters.simulate:
     grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         ax2 = ax.twiny()
@@ -292,7 +293,8 @@ else:
     plt.show()
     node.results["figure"] = grid.fig
 
-    # %% {Update_state}
+# %% {Update_state}
+if not node.parameters.simulate:
     with node.record_state_updates():
         for q in qubits:
             if not (np.isnan(float(idle_offset.sel(qubit=q.name).data))):
@@ -313,7 +315,8 @@ else:
                 * attenuation_factor
             )
 
-    # %% {Save_results}
+# %% {Save_results}
+if not node.parameters.simulate:
     node.outcomes = {q.name: "successful" for q in qubits}
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine

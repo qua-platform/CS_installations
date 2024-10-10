@@ -154,15 +154,15 @@ if node.parameters.simulate:
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(iq_blobs)
-
-        # %% {Live_plot}
         for i in range(num_qubits):
             results = fetching_tool(job, ["n"], mode="live")
             while results.is_processing():
                 n = results.fetch_all()[0]
                 progress_counter(n, n_runs, start_time=results.start_time)
 
-    # %% {Data_fetching_and_dataset_creation}
+# %% {Data_fetching_and_dataset_creation}
+if not node.parameters.simulate:
+
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(
         job.result_handles, qubits, {"N": np.linspace(1, n_runs, n_runs)}
@@ -182,7 +182,9 @@ else:
         output_dtypes=[float],  # Specify the output data type
     )
 
-    # %% {Data_analysis}
+# %% {Data_analysis}    
+if not node.parameters.simulate:
+
     node.results = {"ds": ds, "figs": {}, "results": {}}
     plot_individual = False
     for q in qubits:
@@ -218,8 +220,9 @@ else:
         )
         node.results["results"][q.name]["rus_threshold"] = float(RUS_threshold)
 
-    # %% {Plotting}
-grid = QubitGrid(ds, [q.grid_location for q in qubits])
+# %% {Plotting}
+if not node.parameters.simulate:
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         n_avg = n_runs // 2
         qn = qubit["qubit"]
@@ -309,7 +312,8 @@ grid = QubitGrid(ds, [q.grid_location for q in qubits])
     plt.show()
     node.results["figure_fidelity"] = grid.fig
 
-    # %% {Update_state}
+# %% {Update_state}
+if not node.parameters.simulate:
     with node.record_state_updates():
         for qubit in qubits:
             qubit.resonator.operations["readout"].integration_weights_angle -= float(
@@ -326,7 +330,8 @@ grid = QubitGrid(ds, [q.grid_location for q in qubits])
                 "confusion_matrix"
             ].tolist()
 
-    # %% {Save_results}
+# %% {Save_results}
+if not node.parameters.simulate:
     node.outcomes = {q.name: "successful" for q in qubits}
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine

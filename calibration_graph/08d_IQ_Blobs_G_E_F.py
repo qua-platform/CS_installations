@@ -36,7 +36,8 @@ from typing import Literal, Optional, List
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-
+from sklearn.mixture import GaussianMixture
+from scipy.optimize import curve_fit
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
@@ -80,6 +81,26 @@ for q in qubits:
     else:
         GEF_operation = "x180"
 
+
+### Helper functions
+def find_biggest_gaussian(da):
+    # Define Gaussian function
+    def gaussian(x, amp, mu, sigma):
+        return amp * np.exp(-(x - mu)**2 / (2 * sigma**2))
+
+    # Get histogram data
+    hist, bin_edges = np.histogram(da, bins=100)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+    # Fit multiple Gaussians
+    initial_guess = [(hist.max(), bin_centers[hist.argmax()], (bin_centers[-1] - bin_centers[0]) / 4)]
+    popt, _ = curve_fit(gaussian, bin_centers, hist, p0=initial_guess)
+
+
+    # Find the biggest Gaussian
+    biggest_gaussian = {'amp': popt[0], 'mu': popt[1], 'sigma': popt[2]}
+    
+    return biggest_gaussian['mu']
 
 # %% {QUA_program}
 n_runs = node.parameters.num_runs  # Number of runs
@@ -184,14 +205,13 @@ if node.parameters.simulate:
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(iq_blobs)
-
-        # %% {Live_plot}
         results = fetching_tool(job, ["n"], mode="live")
         while results.is_processing():
             n = results.fetch_all()[0]
             progress_counter(n, n_runs, start_time=results.start_time)
 
-    # %% {Data_fetching_and_dataset_creation}
+# %% {Data_fetching_and_dataset_creation}
+if not node.parameters.simulate:
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(
         job.result_handles, qubits, {"N": np.linspace(1, n_runs, n_runs)}
@@ -212,27 +232,22 @@ else:
     )
 
     node.results = {"ds": ds, "results": {}}
-    plot_individual = False
+    
+# %%
+if  not node.parameters.simulate:
     for q in qubits:
-        # TODO: maybe generalize it to N-state discrimination?
-        # Get the center of each blob
-        I_g_cent, Q_g_cent = ds.I_g.sel(qubit=q.name).mean(dim="N"), ds.Q_g.sel(
-            qubit=q.name
-        ).mean(dim="N")
-        I_e_cent, Q_e_cent = ds.I_e.sel(qubit=q.name).mean(dim="N"), ds.Q_e.sel(
-            qubit=q.name
-        ).mean(dim="N")
-        I_f_cent, Q_f_cent = ds.I_f.sel(qubit=q.name).mean(dim="N"), ds.Q_f.sel(
-            qubit=q.name
-        ).mean(dim="N")
-
         node.results["results"][q.name] = {}
-        node.results["results"][q.name]["I_g_cent"] = float(I_g_cent)
-        node.results["results"][q.name]["Q_g_cent"] = float(Q_g_cent)
-        node.results["results"][q.name]["I_e_cent"] = float(I_e_cent)
-        node.results["results"][q.name]["Q_e_cent"] = float(Q_e_cent)
-        node.results["results"][q.name]["I_f_cent"] = float(I_f_cent)
-        node.results["results"][q.name]["Q_f_cent"] = float(Q_f_cent)
+        ds_q = ds.sel(qubit=q.name)
+        I_g_cent, Q_g_cent = find_biggest_gaussian(ds_q.I_g), find_biggest_gaussian(ds_q.Q_g)
+        I_e_cent, Q_e_cent = find_biggest_gaussian(ds_q.I_e), find_biggest_gaussian(ds_q.Q_e)
+        I_f_cent, Q_f_cent = find_biggest_gaussian(ds_q.I_f), find_biggest_gaussian(ds_q.Q_f)
+        node.results["results"][q.name]["I_g_cent"] = I_g_cent
+        node.results["results"][q.name]["Q_g_cent"] = Q_g_cent
+        node.results["results"][q.name]["I_e_cent"] = I_e_cent
+        node.results["results"][q.name]["Q_e_cent"] = Q_e_cent
+        node.results["results"][q.name]["I_f_cent"] = I_f_cent
+        node.results["results"][q.name]["Q_f_cent"] = Q_f_cent
+
         node.results["results"][q.name]["center_matrix"] = np.array(
             [[I_g_cent, Q_g_cent], [I_e_cent, Q_e_cent], [I_f_cent, Q_f_cent]]
         )
@@ -258,8 +273,9 @@ else:
             confusion[p][2] = np.sum(counts == 2) / len(counts)
         node.results["results"][q.name]["confusion_matrix"] = confusion
 
-    # %% {Plotting}
-grid = QubitGrid(ds, [q.grid_location for q in qubits])
+# %% {Plotting}
+if not node.parameters.simulate:
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     # TODO: maybe wrap it up in a function plot_IQ_blobs?
     for ax, qubit in grid_iter(grid):
         qn = qubit["qubit"]
@@ -320,7 +336,8 @@ grid = QubitGrid(ds, [q.grid_location for q in qubits])
     grid.fig.suptitle("g.s. and e.s. discriminators (rotated)")
     plt.tight_layout()
     node.results["figure_IQ_blobs"] = grid.fig
-
+    plt.show()
+    
     grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         confusion = node.results["results"][qubit["qubit"]]["confusion_matrix"]
@@ -346,19 +363,32 @@ grid = QubitGrid(ds, [q.grid_location for q in qubits])
     plt.tight_layout()
     plt.show()
     node.results["figure_fidelity"] = grid.fig
+    plt.show()
 
-    # %% {Update_state}
+# %% {Update_state}
+if not node.parameters.simulate:
     # todo: fix list state updating in Qualibrate
     for qubit in qubits:
-        qubit.resonator.gef_centers = node.results["results"][qubit.name][
-            "center_matrix"
-        ].tolist()
-        qubit.resonator.gef_confusion_matrix = node.results["results"][qubit.name][
-            "confusion_matrix"
-        ].tolist()
+        with node.record_state_updates():
+            qubit.resonator.gef_centers = node.results["results"][qubit.name][
+                "center_matrix"
+            ].tolist()
+            qubit.resonator.gef_confusion_matrix = node.results["results"][qubit.name][
+                "confusion_matrix"
+            ].tolist()
 
-    # %% {Save_results}
+# %% {Save_results}
+if not node.parameters.simulate:
     node.outcomes = {q.name: "successful" for q in qubits}
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine
     node.save()
+    
+# %%
+
+# %%
+
+
+
+
+# %%

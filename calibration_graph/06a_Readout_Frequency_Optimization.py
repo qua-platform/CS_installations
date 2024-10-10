@@ -161,14 +161,13 @@ if node.parameters.simulate:
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(ro_freq_opt)
-
-        # %% {Live_plot}
         results = fetching_tool(job, ["n"], mode="live")
         while results.is_processing():
             n = results.fetch_all()[0]
             progress_counter(n, n_avg, start_time=results.start_time)
 
-    # %% {Data_fetching_and_dataset_creation}
+# %% {Data_fetching_and_dataset_creation}
+if not node.parameters.simulate:
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs})
     # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2) for |g> and |e> as well as the distance between the two blobs D
@@ -193,7 +192,8 @@ else:
     # Add the dataset to the node
     node.results = {"ds": ds}
 
-    # %% {Data_analysis}
+# %% {Data_analysis}
+if not node.parameters.simulate:
     # Get the readout detuning as the index of the maximum of the cumulative average of D
     detuning = ds.D.rolling({"freq": 5}).mean("freq").idxmax("freq")
     # Get the dispersive shift as the distance between the resonator frequency when the qubit is in |g> and |e>
@@ -212,8 +212,9 @@ else:
         )
         print(f"{q.name}: Chi = {fit_results[q.name]['chi']:.2f} \n")
 
-    # %% {Plotting}
-grid = QubitGrid(ds, [q.grid_location for q in qubits])
+# %% {Plotting}
+if not node.parameters.simulate:
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         (1e3 * ds.assign_coords(freq_MHz=ds.freq / 1e6).D.loc[qubit]).plot(
             ax=ax, x="freq_MHz"
@@ -227,7 +228,7 @@ grid = QubitGrid(ds, [q.grid_location for q in qubits])
     plt.show()
     node.results["figure"] = grid.fig
 
-    grid = QubitGrid(ds, [f"q-{i}_0" for i in range(num_qubits)])
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         (1e3 * ds.assign_coords(freq_MHz=ds.freq / 1e6).IQ_abs_g.loc[qubit]).plot(
             ax=ax, x="freq_MHz", label="g.s"
@@ -245,14 +246,18 @@ grid = QubitGrid(ds, [q.grid_location for q in qubits])
     plt.show()
     node.results["figure2"] = grid.fig
 
-    # %% {Update_state}
+# %% {Update_state}
+if not node.parameters.simulate:
     for q in qubits:
         with node.record_state_updates():
             q.resonator.intermediate_frequency += int(fit_results[q.name]["detuning"])
             q.chi = float(fit_results[q.name]["chi"])
 
-    # %% {Save_results}
+# %% {Save_results}
+if not node.parameters.simulate:
     node.outcomes = {q.name: "successful" for q in qubits}
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine
     node.save()
+
+# %%

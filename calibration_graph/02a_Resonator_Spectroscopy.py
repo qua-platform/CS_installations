@@ -43,7 +43,7 @@ class Parameters(NodeParameters):
 
     qubits: Optional[List[str]] = None
     num_averages: int = 100
-    frequency_span_in_mhz: float = 15.0
+    frequency_span_in_mhz: float = 30.0
     frequency_step_in_mhz: float = 0.1
     simulate: bool = False
     timeout: int = 100
@@ -56,6 +56,7 @@ assert not (node.parameters.simulate and node.parameters.load_data_id is not Non
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
+# path = r"C:\\Users\\tomdv\\Documents\\QCC_QUAM\\qw_statestore_QCC\\quam_state"
 machine = QuAM.load()
 # Generate the OPX and Octave configurations
 config = machine.generate_config()

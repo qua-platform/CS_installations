@@ -163,13 +163,13 @@ else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(drag_calibration)
 
-        # %% {Live_plot}
         results = fetching_tool(job, ["n"], mode="live")
         while results.is_processing():
             n = results.fetch_all()[0]
             progress_counter(n, n_avg, start_time=results.start_time)
 
-    # %% {Data_fetching_and_dataset_creation}
+# %% {Data_fetching_and_dataset_creation}
+if not node.parameters.simulate:
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(
         job.result_handles, qubits, {"amp": amps, "sequence": [0, 1]}
@@ -181,7 +181,8 @@ else:
     # Add the dataset to the node
     node.results = {"ds": ds}
 
-    # %% {Data_analysis}
+# %% {Data_analysis}
+if not node.parameters.simulate:
     # Perform a linear fit of the qubit state vs DRAG coefficient scaling factor
     state = ds.state
     fitted = xr.polyval(state.amp, state.polyfit(dim="amp", deg=1).polyfit_coefficients)
@@ -208,8 +209,9 @@ else:
     node.results["fit_results"] = fit_results
 
 
-    # %% {Plotting}
-grid = QubitGrid(ds, [q.grid_location for q in qubits])
+# %% {Plotting}
+if not node.parameters.simulate:
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         ds.loc[qubit].state.plot(ax=ax, x="alpha", hue="sequence")
         ax.axvline(fit_results[qubit["qubit"]]["alpha"], color="r")
@@ -221,7 +223,8 @@ grid = QubitGrid(ds, [q.grid_location for q in qubits])
     plt.show()
     node.results["figure"] = grid.fig
 
-    # %% {Update_state}
+# %% {Update_state}
+if not node.parameters.simulate:
     # Revert the change done at the beginning of the node
     for qubit in tracked_qubits:
         qubit.revert_changes()
@@ -230,7 +233,8 @@ grid = QubitGrid(ds, [q.grid_location for q in qubits])
         for q in qubits:
             q.xy.operations[operation].alpha = fit_results[q.name]["alpha"]
 
-    # %% {Save_results}
+# %% {Save_results}
+if not node.parameters.simulate:
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine
     node.save()

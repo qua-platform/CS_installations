@@ -36,7 +36,7 @@ from qm.qua import *
 from typing import Literal, Optional, List
 import matplotlib.pyplot as plt
 import numpy as np
-
+import xarray as xr
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
@@ -356,88 +356,92 @@ else:
                 m = fetched_data[0]
                 progress_counter(m, num_of_sequences, start_time=results.start_time)
 
-# %%
-depths = np.arange(0, max_circuit_depth + 0.1, delta_clifford)
-depths[0] = 1
+# %% {Data_fetching_and_dataset_creation}
+if not node.parameters.simulate:
+    depths = np.arange(0, max_circuit_depth + 0.1, delta_clifford)
+    depths[0] = 1
 
-ds = fetch_results_as_xarray(
-    job.result_handles,
-    qubits,
-    {"depths": depths, "sequence": np.arange(num_of_sequences)},
-)
-
-node.results = {"ds": ds}
-
-# %%
-import xarray as xr
-
-da_state = 1 - ds["state"].mean(dim="sequence")
-da_state: xr.DataArray
-da_state.attrs = {"long_name": "p(0)"}
-da_state = da_state.assign_coords(depths=da_state.depths - 1)
-da_state = da_state.rename(depths="m")
-da_state.m.attrs = {"long_name": "no. of Cliffords"}
-
-# if params['plot']:
-#     grid = da_state.plot(col='q', marker='o', figsize=(10, 5))
-da_fit = fit_decay_exp(da_state, "m")
-
-alpha = np.exp(da_fit.sel(fit_vals="decay"))
-# EPC from here: https://qiskit.org/textbook/ch-quantum-hardware/randomized-benchmarking.html#Step-5:-Fit-the-results
-# for q in machine.active_qubits:
-average_gate_per_clifford = (
-    1 * 3 + 9 * 2 + 1 * 4 + 2 * 3 + 4 * 2 + 2 * 3
-) / 24  # = 45/24 = 1.875
-
-EPC = (1 - alpha) - (1 - alpha) / 2
-EPG = EPC / average_gate_per_clifford
-
-node.results["fit_results"] = {}
-for q in qubits:
-    node.results["fit_results"][q.name] = {}
-    node.results["fit_results"][q.name]["EPC"] = EPC.sel(qubit=q.name).values
-    node.results["fit_results"][q.name]["EPG"] = EPG.sel(qubit=q.name).values
-    print(f"{q.name}: EPC={EPC.sel(qubit=q.name).values}")
-    print(f"{q.name}: EPG={EPG.sel(qubit=q.name).values}")
-
-
-# %%
-grid_names = [f"{q.name}_0" for q in qubits]
-grid = QubitGrid(ds, [q.grid_location for q in qubits])
-for ax, qubit in grid_iter(grid):
-    da_state_qubit = da_state.sel(qubit=qubit["qubit"])
-    da_state_std = ds["state"].std(dim="sequence").sel(qubit=qubit["qubit"])
-    ax.errorbar(
-        da_state_qubit.m,
-        da_state_qubit,
-        yerr=da_state_std,
-        fmt=".",
-        capsize=2,
-        elinewidth=0.5,
+    ds = fetch_results_as_xarray(
+        job.result_handles,
+        qubits,
+        {"depths": depths, "sequence": np.arange(num_of_sequences)},
     )
-    # ax.set_yticks([0, 0.5, 1])
-    ax.grid("all")
-    m = da_state.m.values
-    ax.set_title(qubit["qubit"], pad=22)
-    ax.set_xlabel("Circuit depth")
-    fit_dict = {
-        k: da_fit.sel(**qubit).sel(fit_vals=k).values for k in da_fit.fit_vals.values
-    }
-    ax.plot(m, decay_exp(m, **fit_dict), "r--", label="fit")
-    ax.text(
-        0.0,
-        1.07,
-        f"RB fidelity = {1 - EPG.sel(**qubit).values:.5f}",
-        transform=ax.transAxes,
-    )
-plt.tight_layout()
-plt.show()
-node.results["figure"] = grid.fig
+
+    node.results = {"ds": ds}
+
+
+# %% {Data_analysis}
+if not node.parameters.simulate:
+        
+    da_state = 1 - ds["state"].mean(dim="sequence")
+    da_state: xr.DataArray
+    da_state.attrs = {"long_name": "p(0)"}
+    da_state = da_state.assign_coords(depths=da_state.depths - 1)
+    da_state = da_state.rename(depths="m")
+    da_state.m.attrs = {"long_name": "no. of Cliffords"}
+
+    # if params['plot']:
+    #     grid = da_state.plot(col='q', marker='o', figsize=(10, 5))
+    da_fit = fit_decay_exp(da_state, "m")
+
+    alpha = np.exp(da_fit.sel(fit_vals="decay"))
+    # EPC from here: https://qiskit.org/textbook/ch-quantum-hardware/randomized-benchmarking.html#Step-5:-Fit-the-results
+    # for q in machine.active_qubits:
+    average_gate_per_clifford = (
+        1 * 3 + 9 * 2 + 1 * 4 + 2 * 3 + 4 * 2 + 2 * 3
+    ) / 24  # = 45/24 = 1.875
+
+    EPC = (1 - alpha) - (1 - alpha) / 2
+    EPG = EPC / average_gate_per_clifford
+
+    node.results["fit_results"] = {}
+    for q in qubits:
+        node.results["fit_results"][q.name] = {}
+        node.results["fit_results"][q.name]["EPC"] = EPC.sel(qubit=q.name).values
+        node.results["fit_results"][q.name]["EPG"] = EPG.sel(qubit=q.name).values
+        print(f"{q.name}: EPC={EPC.sel(qubit=q.name).values}")
+        print(f"{q.name}: EPG={EPG.sel(qubit=q.name).values}")
+
+
+# %% {Plotting}
+if not node.parameters.simulate:
+    grid_names = [f"{q.name}_0" for q in qubits]
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
+    for ax, qubit in grid_iter(grid):
+        da_state_qubit = da_state.sel(qubit=qubit["qubit"])
+        da_state_std = ds["state"].std(dim="sequence").sel(qubit=qubit["qubit"])
+        ax.errorbar(
+            da_state_qubit.m,
+            da_state_qubit,
+            yerr=da_state_std,
+            fmt=".",
+            capsize=2,
+            elinewidth=0.5,
+        )
+        # ax.set_yticks([0, 0.5, 1])
+        ax.grid("all")
+        m = da_state.m.values
+        ax.set_title(qubit["qubit"], pad=22)
+        ax.set_xlabel("Circuit depth")
+        fit_dict = {
+            k: da_fit.sel(**qubit).sel(fit_vals=k).values for k in da_fit.fit_vals.values
+        }
+        ax.plot(m, decay_exp(m, **fit_dict), "r--", label="fit")
+        ax.text(
+            0.0,
+            1.07,
+            f"RB fidelity = {1 - EPG.sel(**qubit).values:.5f}",
+            transform=ax.transAxes,
+        )
+    plt.tight_layout()
+    plt.show()
+    node.results["figure"] = grid.fig
 
 # %% {Save_results}
-node.outcomes = {q.name: "successful" for q in qubits}
-node.results["initial_parameters"] = node.parameters.model_dump()
-node.machine = machine
-node.save()
+if not node.parameters.simulate:
+    node.outcomes = {q.name: "successful" for q in qubits}
+    node.results["initial_parameters"] = node.parameters.model_dump()
+    node.machine = machine
+    node.save()
 
 # %%

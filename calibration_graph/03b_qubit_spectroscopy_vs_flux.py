@@ -47,7 +47,7 @@ class Parameters(NodeParameters):
     min_flux_offset_in_v: float = -0.01
     max_flux_offset_in_v: float = 0.01
     num_flux_points: int = 21
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
+    flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     simulate: bool = False
     timeout: int = 100
 
@@ -198,8 +198,6 @@ if node.parameters.simulate:
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(multi_qubit_spec_vs_flux)
-
-        # %% {Live_plot}
         results = fetching_tool(job, ["n"], mode="live")
         while results.is_processing():
             # Fetch results
@@ -207,7 +205,8 @@ else:
             # Progress bar
             progress_counter(n, n_avg, start_time=results.start_time)
 
-    # %% {Data_fetching_and_dataset_creation}
+# %% {Data_fetching_and_dataset_creation}
+if not node.parameters.simulate:
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(job.result_handles, qubits, {"flux": dcs, "freq": dfs})
     # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2)
@@ -226,7 +225,9 @@ else:
     # Add the dataset to the node
     node.results = {"ds": ds}
 
-    # %% {Data_analysis}
+# %% {Data_analysis}
+if not node.parameters.simulate:
+
     # Find the resonance dips for each flux point
     peaks = peaks_dips(ds.I, dim="freq", prominence_factor=7)
     # Fit the result with a parabola
@@ -280,8 +281,9 @@ else:
     node.results["fit_results"] = fit_results
 
 
-    # %% {Plotting}
-grid = QubitGrid(ds, [q.grid_location for q in qubits])
+# %% {Plotting}
+if not node.parameters.simulate:
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
 
     for ax, qubit in grid_iter(grid):
         freq_ref = machine.qubits[qubit["qubit"]].xy.RF_frequency
@@ -304,7 +306,8 @@ grid = QubitGrid(ds, [q.grid_location for q in qubits])
     plt.show()
     node.results["figure"] = grid.fig
 
-    # %% {Update_state}
+# %% {Update_state}
+if not node.parameters.simulate:
     with node.record_state_updates():
         for q in qubits:
             if not np.isnan(flux_shift.sel(qubit=q.name).values):
@@ -318,8 +321,12 @@ grid = QubitGrid(ds, [q.grid_location for q in qubits])
     ds = ds.drop_vars("freq_full")
     node.results["ds"] = ds
 
-    # %% {Save_results}
+# %% {Save_results}
+if not node.parameters.simulate:
+
     node.outcomes = {q.name: "successful" for q in qubits}
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine
     node.save()
+
+# %%
