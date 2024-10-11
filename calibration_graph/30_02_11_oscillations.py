@@ -65,7 +65,7 @@ class Parameters(NodeParameters):
     amp_step_coarse : float = 0.1
     amp_range_fine : float = 0.04
     amp_step_fine : float = 0.002
-    load_data_id: Optional[int] = None #92415  
+    load_data_id: Optional[int] = 92415  
 
 node = QualibrationNode(
     name="30_02_11_oscillations", parameters=Parameters()
@@ -299,11 +299,11 @@ if not node.parameters.simulate:
         if loaded_machine is not None:
             machine = loaded_machine
             
-        # ds = ds.rename({'res1': 'state_control'})
-        # ds = ds.rename({'res0': 'state_target'})
-        # ds = ds.rename({'cz_amp': 'amp', 'cz_time': 'time'})
-        # pulse_amplitudes = {'q2-q4' : 0.064}
-        # ds = ds.assign_coords({'qp' : ['q2-q4']})
+        ds = ds.rename({'res1': 'state_control'})
+        ds = ds.rename({'res0': 'state_target'})
+        ds = ds.rename({'cz_amp': 'amp', 'cz_time': 'time'})
+        pulse_amplitudes = {'q2-q4' : 0.064}
+        ds = ds.assign_coords({'qp' : ['q2-q4']})
         
     node.results = {"ds": ds}
 

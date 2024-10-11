@@ -47,17 +47,17 @@ class Parameters(NodeParameters):
 
     qubits: Optional[List[str]] = None
     num_averages: int = 100
-    frequency_span_in_mhz: float = 30
+    frequency_span_in_mhz: float = 15
     frequency_step_in_mhz: float = 0.1
     simulate: bool = False
     timeout: int = 100
     forced_flux_bias_v: Optional[float] = None
-    max_power_dbm: int = 2
+    max_power_dbm: int = -20
     min_power_dbm: int = -50
-    max_amp: float = 0.4
+    max_amp: float = 0.1
     flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
     ro_line_attenuation_dB: float = 0
-    multiplexed: bool = True
+    multiplexed: bool = False
 
 
 node = QualibrationNode(
@@ -126,12 +126,12 @@ for i, qubit in enumerate(qubits):
         # TODO: I can't call function of the trackable object
         # qubit.resonator.set_output_power("readout", power_dBm=node.parameters.max_power_dbm, amplitude=qubit.resonator.operations["readout"].amplitude)
         # TODO: the two below are not reverted at the end of the node...
-        set_output_power(
-            qubit.resonator,
-            "readout",
-            power_dBm=node.parameters.max_power_dbm,
-            amplitude=node.parameters.max_amp,
-        )
+        # set_output_power(
+        #     qubit.resonator,
+        #     "readout",
+        #     power_dBm=node.parameters.max_power_dbm,
+        #     amplitude=node.parameters.max_amp,
+        # )
         # qubit.resonator.frequency_converter_up.gain = min(10, max(-20, int(node.parameters.max_power_dbm - u.volts2dBm(node.parameters.max_amp))))
         # qubit.resonator.operations["readout"].full_scale_power_dbm = node.parameters.max_power_dbm
         if node.parameters.forced_flux_bias_v is not None:
@@ -298,7 +298,7 @@ if not node.parameters.simulate:
     # Get the full resonance frequencies for all amplitudes
     res_freq_full = ds.freq_full.sel(freq=0, method="nearest") + res_min_vs_amp
     # Get the resonance frequency at high and low readout powers
-    res_low_power = res_min_vs_amp.sel(amp=slice(0.001, 0.03)).mean(dim="amp")
+    res_low_power = res_min_vs_amp.sel(amp=slice(0.001, 0.05)).mean(dim="amp")
     res_hi_power = res_min_vs_amp.isel(amp=-1)
     # Find the maximum readout amplitude for which the resonance frequency is close to the low power resonance
     rr_pwr = xr.where(
@@ -307,13 +307,12 @@ if not node.parameters.simulate:
         0,
     ).max(dim="amp")
     # Take 30% of it for being sure to be far from the punch out (?)
-    RO_power_ratio = 0.3
+    RO_power_ratio = 0.45
     rr_pwr = RO_power_ratio * rr_pwr
 
 # %% {Plotting}
 if not node.parameters.simulate:
-grid = QubitGrid(ds, [q.grid_location for q in qubits])
-
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         # Create a secondary y-axis for power in dBm
         ax2 = ax.twinx()
@@ -372,7 +371,10 @@ if not node.parameters.simulate:
         tracked_qubit.revert_changes()
 
 # %% {Save_results}
-node.outcomes = {q.name: "successful" for q in qubits}
-node.results["initial_parameters"] = node.parameters.model_dump()
-node.machine = machine
-node.save()
+if not node.parameters.simulate:
+    node.outcomes = {q.name: "successful" for q in qubits}
+    node.results["initial_parameters"] = node.parameters.model_dump()
+    node.machine = machine
+    node.save()
+
+# %%

@@ -48,6 +48,7 @@ class Parameters(NodeParameters):
     simulate: bool = False
     timeout: int = 100
     load_data_id: Optional[int] = None # 1688
+    multiplexed: bool = False
 
 node = QualibrationNode(name="02a_Resonator_Spectroscopy", parameters=Parameters())
 assert not (node.parameters.simulate and node.parameters.load_data_id is not None), "If simulate is True, load_data_id must be None, and vice versa."
@@ -92,8 +93,8 @@ with program() as multi_res_spec:
     machine.apply_all_flux_to_min()
 
     with for_(n, 0, n < n_avg, n + 1):
-        with for_(*from_array(df, dfs)):
-            for i, rr in enumerate(resonators):
+        for i, rr in enumerate(resonators):
+            with for_(*from_array(df, dfs)):
                 # Update the resonator frequencies for all resonators
                 update_frequency(rr.name, df + rr.intermediate_frequency)
                 # Measure the resonator
@@ -103,6 +104,8 @@ with program() as multi_res_spec:
                 # save data
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])
+            if not node.parameters.multiplexed:
+                align()
 
     with stream_processing():
         for i in range(num_qubits):

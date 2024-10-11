@@ -43,10 +43,10 @@ import warnings
 class Parameters(NodeParameters):
 
     qubit_pairs: Optional[List[str]] = None
-    num_averages: int = 10
-    min_flux_offset_in_v: float = -0.5
-    max_flux_offset_in_v: float = 0.5
-    num_flux_points: int = 201
+    num_averages: int = 20
+    min_flux_offset_in_v: float = -0.15
+    max_flux_offset_in_v: float = 0.15
+    num_flux_points: int = 81
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.05
     flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
@@ -268,9 +268,7 @@ else:
 
     # %% {Plotting}
     # Reload the plot_utils module to ensure we have the latest version
-    import importlib
-    import quam_libs.lib.plot_utils
-    importlib.reload(quam_libs.lib.plot_utils)
+
     from quam_libs.lib.plot_utils import QubitPairGrid, grid_iter, grid_pair_names
     
     grid_names, qubit_pair_names = grid_pair_names(qubit_pairs)

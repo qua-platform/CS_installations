@@ -217,7 +217,7 @@ with program() as qubit_spec:
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])
 
-        align(*([q.xy.name for q in qubits] + [q.resonator.name for q in qubits]))
+        align()
 
     with stream_processing():
         n_st.save("n")
