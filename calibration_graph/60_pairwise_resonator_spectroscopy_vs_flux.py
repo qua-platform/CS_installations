@@ -37,6 +37,7 @@ from typing import Literal, Optional, List
 import matplotlib.pyplot as plt
 import numpy as np
 import warnings
+from quam_libs.lib.plot_utils import QubitPairGrid, grid_iter, grid_pair_names
 
 
 # %% {Node_parameters}
@@ -49,7 +50,7 @@ class Parameters(NodeParameters):
     num_flux_points: int = 81
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.05
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
+    flux_point_joint_or_independent_or_pairwise: Literal["joint", "independent", "pairwise"] = "pairwise"
     simulate: bool = False
     timeout: int = 100
     input_line_impedance_in_ohm: float = 50
@@ -97,7 +98,7 @@ span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span / 2, +span / 2, step)
 
-flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
+flux_point = node.parameters.flux_point_joint_or_independent_or_pairwise  # 'independent' or 'joint' or 'pairwise'
 
 with program() as multi_res_spec_vs_flux:
     # Declare 'I' and 'Q' and the corresponding streams for the two resonators.
@@ -110,17 +111,7 @@ with program() as multi_res_spec_vs_flux:
     for i, qp in enumerate(qubit_pairs):
 
         qubit = qp.qubit_control
-
-        # Bring the active qubits to the minimum frequency point
-        if flux_point == "independent":
-            machine.apply_all_flux_to_min()
-            # qp.apply_mutual_flux_point()
-        elif flux_point == "joint":
-            machine.apply_all_flux_to_joint_idle()
-            # qp.apply_mutual_flux_point()
-        else:
-            machine.apply_all_flux_to_zero()
-
+        machine.set_all_fluxes(flux_point, qp)
         wait(1000)
 
         with for_(n, 0, n < n_avg, n + 1):
@@ -143,17 +134,7 @@ with program() as multi_res_spec_vs_flux:
         align()
         
         qubit = qp.qubit_target
-
-        # Bring the active qubits to the minimum frequency point
-        if flux_point == "independent":
-            machine.apply_all_flux_to_min()
-            # qp.apply_mutual_flux_point()
-        elif flux_point == "joint":
-            machine.apply_all_flux_to_joint_idle()
-            # qp.apply_mutual_flux_point()
-        else:
-            machine.apply_all_flux_to_zero()
-
+        machine.set_all_fluxes(flux_point, qp)
         wait(1000)
 
         with for_(n, 0, n < n_avg, n + 1):
@@ -197,8 +178,6 @@ if node.parameters.simulate:
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(multi_res_spec_vs_flux)
-
-        # %% {Live_plot}
         results = fetching_tool(job, ["n"], mode="live")
         while results.is_processing():
             # Fetch results
@@ -206,18 +185,33 @@ else:
             # Progress bar
             progress_counter(n, n_avg, start_time=results.start_time)
 
-    # %% {Data_fetching_and_dataset_creation}
+# %% {Data_fetching_and_dataset_creation}
+if not node.parameters.simulate:
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {"freq": dfs, "flux": dcs})
     # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2)
-    ds = ds.assign({"IQ_abs1": np.sqrt(ds["Icontrol"] ** 2 + ds["Qcontrol"] ** 2)})
-    ds = ds.assign({"IQ_abs2": np.sqrt(ds["Itarget"] ** 2 + ds["Qtarget"] ** 2)})
+    ds_control = ds[["Icontrol", "Qcontrol"]]
+    ds_target = ds[["Itarget", "Qtarget"]]
+
+    ds_control = ds_control.assign({"IQ_abs": np.sqrt(ds_control["Icontrol"] ** 2 + ds_control["Qcontrol"] ** 2)})
+    ds_target = ds_target.assign({"IQ_abs": np.sqrt(ds_target["Itarget"] ** 2 + ds_target["Qtarget"] ** 2)})
+
+ 
+ # %%
+if not node.parameters.simulate:   
     # Add the resonator RF frequency axis of each qubit to the dataset coordinates for plotting
-    # RF_freq = np.array([dfs + q.resonator.RF_frequency for q in qubits])
+    RF_freq_control = np.array([dfs + qp.qubit_control.resonator.RF_frequency for qp in qubit_pairs])
+    RF_freq_target = np.array([dfs + qp.qubit_target.resonator.RF_frequency for qp in qubit_pairs])
     
-    # ds = ds.assign_coords({"freq_full": (["qubit", "freq"], RF_freq)})
-    # ds.freq_full.attrs["long_name"] = "Frequency"
-    # ds.freq_full.attrs["units"] = "GHz"
+    ds_control = ds_control.assign_coords({"freq_full": (["qubit", "freq"], RF_freq_control)})
+    ds_control.freq_full.attrs["long_name"] = "Frequency"
+    ds_control.freq_full.attrs["units"] = "GHz"
+    
+    ds_target = ds_target.assign_coords({"freq_full": (["qubit", "freq"], RF_freq_target)})
+    ds_target.freq_full.attrs["long_name"] = "Frequency"
+    ds_target.freq_full.attrs["units"] = "GHz"
+    
+    
     # Add the current axis of each qubit to the dataset coordinates for plotting
     # current = np.array(
     #     [ds.flux.values / node.parameters.input_line_impedance_in_ohm for q in qubits]
@@ -236,48 +230,47 @@ else:
     # Add the dataset to the node
     node.results = {"ds": ds}
 
-    # %% {Data_analysis}
+# %% {Data_analysis}
+if not node.parameters.simulate:
     # Find the minimum of each frequency line to follow the resonance vs flux
-    peak_freq1  = ds.IQ_abs1.idxmin(dim="freq")
-    peak_freq2  = ds.IQ_abs2.idxmin(dim="freq")
+    peak_freq_control  = ds_control.IQ_abs.idxmin(dim="freq")
+    peak_freq_target  = ds_target.IQ_abs.idxmin(dim="freq")
     # Fit to a cosine using the qiskit function: a * np.cos(2 * np.pi * f * t + phi) + offset
-    fit_osc1 = fit_oscillation(peak_freq1.dropna(dim="flux"), "flux")
-    fit_osc2 = fit_oscillation(peak_freq2.dropna(dim="flux"), "flux")
+    fit_osc_control = fit_oscillation(peak_freq_control.dropna(dim="flux"), "flux")
+    fit_osc_target = fit_oscillation(peak_freq_target.dropna(dim="flux"), "flux")
     # Ensure that the phase is between -pi and pi
-    idle_offset1 = -fit_osc1.sel(fit_vals="phi")
-    idle_offset1 = np.mod(idle_offset1 + np.pi, 2 * np.pi) - np.pi
-    idle_offset2 = -fit_osc2.sel(fit_vals="phi")
-    idle_offset2 = np.mod(idle_offset2 + np.pi, 2 * np.pi) - np.pi
+    idle_offset_control = -fit_osc_control.sel(fit_vals="phi")
+    idle_offset_control = np.mod(idle_offset_control + np.pi, 2 * np.pi) - np.pi
+    idle_offset_target = -fit_osc_target.sel(fit_vals="phi")
+    idle_offset_target = np.mod(idle_offset_target + np.pi, 2 * np.pi) - np.pi
     # converting the phase phi from radians to voltage
-    idle_offset1 = idle_offset1 / fit_osc1.sel(fit_vals="f") / 2 / np.pi
-    idle_offset2 = idle_offset2 / fit_osc2.sel(fit_vals="f") / 2 / np.pi
-
-    
+    idle_offset_control = idle_offset_control / fit_osc_control.sel(fit_vals="f") / 2 / np.pi
+    idle_offset_target = idle_offset_target / fit_osc_target.sel(fit_vals="f") / 2 / np.pi
     
     # Save fitting results
     fit_results = {}
     for qp in qubit_pairs:
         fit_results[qp.name] = {}
         fit_results[qp.name]["mutual_flux_point"] = [
-            float(idle_offset1.sel(qubit=qp.id).values),
-            float(idle_offset2.sel(qubit=qp.id).values),
+            float(idle_offset_control.sel(qubit=qp.id).values),
+            float(idle_offset_target.sel(qubit=qp.id).values),
         ]
         
 
     node.results["fit_results"] = fit_results
 
-    # %% {Plotting}
+# %% {Plotting}
+if not node.parameters.simulate:
     # Reload the plot_utils module to ensure we have the latest version
 
-    from quam_libs.lib.plot_utils import QubitPairGrid, grid_iter, grid_pair_names
     
     grid_names, qubit_pair_names = grid_pair_names(qubit_pairs)
     grid = QubitPairGrid(grid_names, qubit_pair_names)
     for ax, qubit in grid_iter(grid):
-        ds.assign_coords(freq_MHz=ds.freq / 1e6).loc[qubit].IQ_abs1.plot(
-            ax=ax, add_colorbar=False, x="flux", y="freq_MHz", robust=True
+        ds_control.assign_coords(freq_GHz=ds_control.freq_full / 1e9).loc[qubit].IQ_abs.plot(
+            ax=ax, add_colorbar=False, x="flux", y="freq_GHz", robust=True
         )
-        ax.axvline(idle_offset1.loc[qubit], linestyle="dashed", linewidth=2, color="r")
+        ax.axvline(idle_offset_control.loc[qubit], linestyle="dashed", linewidth=2, color="r")
         # Location of the current resonator frequency
         ax.set_title(qubit["qubit"])
         ax.set_xlabel("Flux (V)")
@@ -290,10 +283,10 @@ else:
     grid_names, qubit_pair_names = grid_pair_names(qubit_pairs)
     grid = QubitPairGrid(grid_names, qubit_pair_names)
     for ax, qubit in grid_iter(grid):
-        ds.assign_coords(freq_MHz=ds.freq / 1e6).loc[qubit].IQ_abs2.plot(
-            ax=ax, add_colorbar=False, x="flux", y="freq_MHz", robust=True
+        ds_target.assign_coords(freq_GHz=ds_target.freq_full / 1e9).loc[qubit].IQ_abs.plot(
+            ax=ax, add_colorbar=False, x="flux", y="freq_GHz", robust=True
         )        
-        ax.axvline(idle_offset2.loc[qubit], linestyle="dashed", linewidth=2, color="r")
+        ax.axvline(idle_offset_target.loc[qubit], linestyle="dashed", linewidth=2, color="r")
         # Location of the current resonator frequency
         ax.set_title(qubit["qubit"])
         ax.set_xlabel("Flux (V)")
@@ -302,13 +295,15 @@ else:
     plt.tight_layout()
     plt.show()
     node.results["figure_target"] = grid.fig
-    # %% {Update_state}
+# %% {Update_state}
+if not node.parameters.simulate:
     with node.record_state_updates():
         for qp in qubit_pairs:
-            qp.mutual_flux_point = fit_results[qp.name]["mutual_flux_point"]
+            qp.mutual_flux_bias = fit_results[qp.name]["mutual_flux_point"]
 
-    # %% {Save_results}
-    # node.outcomes = {q.name: "successful" for q in qubits}
+# %% {Save_results}
+if not node.parameters.simulate:
+    node.outcomes = {qp.name: "successful" for qp in qubit_pairs}
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine
     node.save()

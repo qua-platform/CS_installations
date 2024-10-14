@@ -5,7 +5,7 @@ import warnings
 
 from qm.qua import *
 from quam_libs.components import QuAM
-from quam_libs.components import Transmon
+from quam_libs.components import Transmon, TransmonPair
 
 __all__ = [
     "apply_all_flux_to_min",
@@ -16,19 +16,6 @@ __all__ = [
     "active_reset",
 ]
 
-
-def apply_all_flux_to_min(quam: "QuAM"):
-    align()
-    for q in quam.active_qubits:
-        q.z.to_min()
-    align()
-
-
-def apply_all_flux_to_idle(quam: "QuAM"):
-    align()
-    for q in quam.active_qubits:
-        q.z.to_joint_idle()
-    align()
 
 
 def qua_declaration(num_qubits):

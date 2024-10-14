@@ -103,7 +103,8 @@ class QuAM(QuamRoot):
         """Apply the offsets that bring all the active qubit pairs to a decoupled point."""
         align()
         for qp in self.active_qubit_pairs:
-            qp.coupler.to_decouple_idle()
+            if qp.coupler is not None:
+                qp.coupler.to_decouple_idle()
         align()
 
     def apply_all_flux_to_joint_idle(self) -> None:
@@ -138,6 +139,32 @@ class QuAM(QuamRoot):
         for q in self.active_qubits:
             q.z.to_zero()
         align()
+        
+        
+    def set_all_fluxes(self, flux_point : str, target : Union[Transmon, TransmonPair]):
+        if flux_point == "independent":
+            assert isinstance(target, Transmon), "Independent flux point is only supported for individual transmons"
+        elif flux_point == "pairwise":
+            assert isinstance(target, TransmonPair), "Pairwise flux point is only supported for transmon pairs"
+        
+        if flux_point == "joint":
+            self.apply_all_flux_to_min()
+            if isinstance(target, TransmonPair):
+                target_bias =target.mutual_flux_bias
+            else:
+                target_bias = target.z.joint_offset
+        else:
+            self.apply_all_flux_to_zero()
+        
+        if flux_point == "independent":
+            target.z.to_independent_idle()
+            target_bias = target.z.independent_offset
+            
+        elif flux_point == "pairwise":
+            target.to_mutual_idle()
+            target_bias = target.mutual_flux_bias
+        
+        return target_bias        
 
     def connect(self) -> QuantumMachinesManager:
         """Open a Quantum Machine Manager with the credentials ("host" and "cluster_name") as defined in the network file.

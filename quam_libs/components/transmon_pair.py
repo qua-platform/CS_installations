@@ -20,6 +20,7 @@ class TransmonPair(QuamComponent):
     J2: float = 0
     detuning: float = 0
     confusion: Optional[List[List[float]]] = None
+    mutual_flux_bias: List[float] = field(default_factory=lambda: [0, 0])
     extras: Dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -34,4 +35,9 @@ class TransmonPair(QuamComponent):
         else:
             align(self.qubit_control.xy.name, self.qubit_control.z.name, self.qubit_control.resonator.name, self.qubit_target.xy.name, 
                   self.qubit_target.z.name, self.qubit_target.resonator.name)
+            
+    def to_mutual_idle(self):
+        """Set the flux bias to the mutual idle offset"""
+        self.qubit_control.z.set_dc_offset(self.mutual_flux_bias[0])
+        self.qubit_target.z.set_dc_offset(self.mutual_flux_bias[1])
             
