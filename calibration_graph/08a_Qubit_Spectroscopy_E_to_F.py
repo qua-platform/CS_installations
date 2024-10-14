@@ -52,7 +52,7 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     num_averages: int = 200
     operation: str = "saturation"
-    operation_amplitude_factor: Optional[float] = 0.1
+    operation_amplitude_factor: Optional[float] = 1
     operation_len_in_ns: Optional[int] = None
     frequency_span_in_mhz: float = 500
     frequency_step_in_mhz: float = 1

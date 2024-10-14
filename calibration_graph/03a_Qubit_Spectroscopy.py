@@ -53,14 +53,14 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     num_averages: int = 500
     operation: str = "saturation"
-    operation_amplitude_factor: Optional[float] = 0.01
+    operation_amplitude_factor: Optional[float] = 0.1
     operation_len_in_ns: Optional[int] = None
     frequency_span_in_mhz: float = 40
     frequency_step_in_mhz: float = 0.25
     flux_point_joint_or_independent_or_arbitrary: Literal[
         "joint", "independent", "arbitrary"
     ] = "joint"
-    target_peak_width: Optional[int] = None
+    target_peak_width: Optional[int] = 2e6
     arbitrary_flux_bias: Optional[float] = None
     arbitrary_qubit_frequency_in_ghz: Optional[float] = None
     simulate: bool = False
