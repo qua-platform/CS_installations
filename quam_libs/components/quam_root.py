@@ -131,6 +131,7 @@ class QuAM(QuamRoot):
                 self.qubits[q].z.to_min()
             else:
                 warnings.warn(f"Didn't find z-element on qubit {q}, didn't set to min")
+        self.apply_all_couplers_to_min()
         align()
 
     def apply_all_flux_to_zero(self) -> None:
@@ -154,7 +155,7 @@ class QuAM(QuamRoot):
             else:
                 target_bias = target.z.joint_offset
         else:
-            self.apply_all_flux_to_zero()
+            self.apply_all_flux_to_min()
         
         if flux_point == "independent":
             target.z.to_independent_idle()

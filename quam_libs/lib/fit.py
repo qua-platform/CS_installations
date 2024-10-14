@@ -8,7 +8,7 @@ from lmfit import Model, Parameter, Parameters
 from scipy.signal import find_peaks, peak_widths
 import scipy.sparse as sparse
 from scipy.sparse.linalg import spsolve
-
+from scipy.fft import fft
 
 def fix_initial_value(x, da):
     if len(da.dims) == 1:
@@ -292,3 +292,25 @@ def peaks_dips(da,dim, prominence_factor = 5, number = 1, remove_baseline = True
     peak_amp = da.max(dim = dim)-da.min(dim = dim)-std
 
     return xr.merge([peak_position.rename('position'),peak_width.rename('width'),peak_amp.rename('amplitude'),base_line.rename('base_line')])
+
+def extract_dominant_frequencies(da, dim = 'idle_time'):
+    def extract_dominant_frequency(signal, sample_rate):
+        fft_result = fft(signal)
+        frequencies = np.fft.fftfreq(len(signal), 1/sample_rate)
+        positive_freq_idx = np.where(frequencies > 0)
+        dominant_idx = np.argmax(np.abs(fft_result[positive_freq_idx]))
+        return frequencies[positive_freq_idx][dominant_idx]
+
+    def extract_dominant_frequency_wrapper(signal):
+        sample_rate = 1 / (da.coords[dim][1].values - da.coords[dim][0].values)  # Assuming uniform sampling
+        return extract_dominant_frequency(signal, sample_rate)
+
+    dominant_frequencies = xr.apply_ufunc(
+        extract_dominant_frequency_wrapper,
+        da,
+        input_core_dims=[[dim]],
+        output_core_dims=[[]],
+        vectorize=True
+    )
+
+    return dominant_frequencies
