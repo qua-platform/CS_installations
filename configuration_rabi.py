@@ -522,7 +522,7 @@ config = {
             "operations": {
                 "readout": "readout_pulse",
             },
-            "intermediate_frequency": 777,
+            "intermediate_frequency": 1.3e6,
             "outputs": {
                 "out1": ("con1", 1),
                 "out2": ("con1", 2),

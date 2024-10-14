@@ -33,12 +33,12 @@ with program() as Rabi_prog:
 
         align()
 
-        with for_(n, 0, n < 10, n+1):
+        with for_(n, 0, n < 100, n+1):
 
             play('step'*amp(1), 'P1')
             play('step'*amp(1), 'P2')
 
-        with for_(n, 0, n < 10, n+1):
+        with for_(n, 0, n < 100, n+1):
 
             play('step'*amp(0), 'P1')
             play('step'*amp(0), 'P2')
