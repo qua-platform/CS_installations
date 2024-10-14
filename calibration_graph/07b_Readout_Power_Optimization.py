@@ -115,7 +115,7 @@ with program() as iq_blobs:
                 if reset_type == "active":
                     active_reset(qubit)
                 elif reset_type == "thermal":
-                    wait(qubit.thermalization_time * u.ns)
+                    wait(5*qubit.thermalization_time * u.ns)
                 else:
                     raise ValueError(f"Unrecognized reset type {reset_type}.")
 
@@ -129,7 +129,7 @@ with program() as iq_blobs:
                 if reset_type == "active":
                     active_reset(qubit)
                 elif reset_type == "thermal":
-                    wait(qubit.thermalization_time * u.ns)
+                    wait(5*qubit.thermalization_time * u.ns)
                 else:
                     raise ValueError(f"Unrecognized reset type {reset_type}.")
                 align()
@@ -150,9 +150,6 @@ with program() as iq_blobs:
             Q_g_st[i].buffer(len(amps)).buffer(n_runs).save(f"Q_g{i + 1}")
             I_e_st[i].buffer(len(amps)).buffer(n_runs).save(f"I_e{i + 1}")
             Q_e_st[i].buffer(len(amps)).buffer(n_runs).save(f"Q_e{i + 1}")
-
-
-
 
 
 if node.parameters.simulate:
@@ -177,9 +174,9 @@ else:
                 n = fetched_data[0]
                 progress_counter(n, n_runs, start_time=results.start_time)
 
-# %%
+# %% {Data_fetching_and_dataset_creation}
+    
 if not node.parameters.simulate:
-    # %% {Data_fetching_and_dataset_creation}
     
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(job.result_handles, qubits, {"amplitude": amps, "N": np.linspace(1, n_runs, n_runs)})

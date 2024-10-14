@@ -104,12 +104,13 @@ with program() as iq_blobs:
             if reset_type == "active":
                 active_reset(qubit)
             elif reset_type == "thermal":
-                wait(qubit.thermalization_time * u.ns)
+                wait(5*qubit.thermalization_time * u.ns)
             else:
                 raise ValueError(f"Unrecognized reset type {reset_type}.")
 
             qubit.align()
             qubit.resonator.measure("readout", qua_vars=(I_g[i], Q_g[i]))
+            qubit.resonator.wait(qubit.resonator.depletion_time // 4)
             # save data
             save(I_g[i], I_g_st[i])
             save(Q_g[i], Q_g_st[i])
@@ -119,13 +120,14 @@ with program() as iq_blobs:
             if reset_type == "active":
                 active_reset(qubit)
             elif reset_type == "thermal":
-                wait(qubit.thermalization_time * u.ns)
+                wait(5*qubit.thermalization_time * u.ns)
             else:
                 raise ValueError(f"Unrecognized reset type {reset_type}.")
-            qubit.align()
+            align()
             qubit.xy.play("x180")
-            qubit.align()
+            align()
             qubit.resonator.measure("readout", qua_vars=(I_e[i], Q_e[i]))
+            qubit.resonator.wait(qubit.resonator.depletion_time // 4)
             # save data
             save(I_e[i], I_e_st[i])
             save(Q_e[i], Q_e_st[i])
