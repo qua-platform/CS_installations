@@ -55,7 +55,7 @@ class Parameters(NodeParameters):
     outliers_threshold: float = 0.98
 
 node = QualibrationNode(
-    name="07b_Readout_Power_Optimization",
+    name="07b_QND_Power_Optimization",
     parameters=Parameters()
 )
 
@@ -239,8 +239,8 @@ if not node.parameters.simulate:
                 ds_q = ds.sel(qubit=q.name, amplitude=amplitude)
                 ax2.plot(ds_q.I_a.sel(state=0), ds_q.Q_a.sel(state=0), ".", alpha=0.2, label="Ground", markersize=2)
                 ax2.plot(ds_q.I_a.sel(state=1), ds_q.Q_a.sel(state=1), ".", alpha=0.2, label="Excited", markersize=2)
-                ax2.plot(ds_q.I_b.sel(state=0), 2e-3+ds_q.Q_b.sel(state=0), ".", alpha=0.2, label="Ground", markersize=2)
-                ax2.plot(ds_q.I_b.sel(state=1), 2e-3+ds_q.Q_b.sel(state=1), ".", alpha=0.2, label="Excited", markersize=2)
+                # ax2.plot(ds_q.I_b.sel(state=0), 5e-3+ds_q.Q_b.sel(state=0), ".", alpha=0.2, label="Ground", markersize=2)
+                # ax2.plot(ds_q.I_b.sel(state=1), 5e-3+ds_q.Q_b.sel(state=1), ".", alpha=0.2, label="Excited", markersize=2)
                 ax2.set_xlabel('I')
                 ax2.set_ylabel('Q')
                 ax2.set_title(f'{q.name}, {float(amplitude)}')
@@ -318,7 +318,7 @@ if not node.parameters.simulate:
     Outliers = fit_res.sel(result = "outliers").mean(dim = "order")
     QND_fidelity = (state00 + state11) / (state00 + state01 + state10 + state11)
     Fidelity = (discriminator_res.sel(result = "gg", order = "a") + discriminator_res.sel(result = "ee", order = "a"))/2
-    Valid_Fidelity = Fidelity * ((Outliers > 0.98) & (QND_fidelity > 0.98))
+    Valid_Fidelity = Fidelity * ((Outliers > node.parameters.outliers_threshold) & (QND_fidelity > node.parameters.outliers_threshold))
     best_amp = ds.amplitude[Valid_Fidelity.argmax(dim = 'amplitude')]
     
     best_readout_amp = {qubit.name : float(best_amp.sel(qubit = qubit.name).values * qubit.resonator.operations["readout"].amplitude) for qubit in qubits}
@@ -405,7 +405,7 @@ if not node.parameters.simulate:
 if not node.parameters.simulate:
     with node.record_state_updates():
         for qubit in qubits:
-            qubit.resonator.operations["readout_QND"] = SquareReadoutPulse(length = q.resonator.operations["readout"].length, amplitude = 0.1, digital_marker = "ON")
+            qubit.resonator.operations["readout_QND"] = SquareReadoutPulse(length = qubit.resonator.operations["readout"].length, amplitude = 0.1, digital_marker = "ON")
             qubit.resonator.operations["readout_QND"].integration_weights_angle -= float(node.results["results"][qubit.name]["angle"])
             qubit.resonator.operations["readout_QND"].threshold = float(node.results["results"][qubit.name]["threshold"])
             qubit.resonator.operations["readout_QND"].rus_exit_threshold = float(node.results["results"][qubit.name]["rus_threshold"])
