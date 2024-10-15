@@ -144,7 +144,7 @@ with program() as ramsey:
                 align() 
 
                 with for_(*from_array(t, idle_times)):
-                    readout_state(qubit, init_state)
+                    readout_state(qubit, init_state, pulse_name = "readout_QND")
                     qubit.align()
                     # Rotate the frame of the second x90 gate to implement a virtual Z-rotation
                     # 4*tau because tau was in clock cycles and 1e-9 because tau is ns
