@@ -121,7 +121,7 @@ with program() as ramsey:
             save(n, n_st)
             with for_(*from_array(flux, fluxes)):
                 with for_(*from_array(t, idle_times)):
-                    readout_state(qubit, init_state)
+                    readout_state(qubit, init_state, pulse_name = "readout_QND")
                     # Rotate the frame of the second x90 gate to implement a virtual Z-rotation
                     # 4*tau because tau was in clock cycles and 1e-9 because tau is ns
                     assign(phi, Cast.mul_fixed_by_int(detuning * 1e-9, 4 * t ))

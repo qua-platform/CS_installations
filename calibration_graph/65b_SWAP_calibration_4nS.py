@@ -57,6 +57,7 @@ from quam_libs.lib.pulses import FluxPulse
 from scipy.fft import fft
 import xarray as xr
 from quam_libs.components.gates.two_qubit_gates import SWAP_Coupler_Gate
+from quam_libs.lib.fit import oscillation_decay_exp, fit_oscillation_decay_exp
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
@@ -64,20 +65,19 @@ class Parameters(NodeParameters):
     qubit_pairs: Optional[List[str]] = ["q1-q2"]
     num_averages: int = 100
     flux_point_joint_or_independent_or_pairwise: Literal["joint", "independent", "pairwise"] = "pairwise"
-    reset_type: Literal['active', 'thermal'] = "thermal"
+    reset_type: Literal['active', 'thermal'] = "active"
     simulate: bool = False
     timeout: int = 100
     load_data_id: Optional[int] = None
-    control_amp_range : float = 0.3
+    control_amp_range : float = 0.4
     control_amp_step : float = 0.02
     idle_time_min : int = 16
-    idle_time_max : int = 200
+    idle_time_max : int = 250
     idle_time_step : int = 4
     use_state_discrimination: bool = True
     
-
 node = QualibrationNode(
-    name="64_coupler_interaction_strength_calibration", parameters=Parameters()
+    name="65b_SWAP_calibration_4nS", parameters=Parameters()
 )
 assert not (node.parameters.simulate and node.parameters.load_data_id is not None), "If simulate is True, load_data_id must be None, and vice versa."
 
@@ -109,6 +109,35 @@ if node.parameters.load_data_id is None:
 # Helper functions #
 ####################
 
+def rabi_chevron_model(ft, J, f0, a, offset,tau):
+    f,t = ft
+    J = J
+    w = f
+    w0 = f0
+    g = offset+a * np.sin(2*np.pi*np.sqrt(J**2 + (w-w0)**2) * t)**2*np.exp(-tau*np.abs((w-w0))) 
+    return g.ravel()
+
+def fit_rabi_chevron(ds_qp, init_length, init_detuning):
+    da_target = ds_qp.state_target
+    exp_data = da_target.values
+    detuning = da_target.detuning
+    time = da_target.idle_time*4*1e-9
+    t,f  = np.meshgrid(time,detuning)
+    initial_guess = (1e9/init_length/2,
+            init_detuning,
+            -1,
+            1.0,
+            100e-9)
+    fdata = np.vstack((f.ravel(),t.ravel()))
+    tdata = exp_data.ravel()
+    popt, pcov = curve_fit(rabi_chevron_model, fdata, tdata, p0=initial_guess)
+    J = popt[0]
+    f0 = popt[1]
+    a = popt[2]
+    offset = popt[3]
+    tau = popt[4]
+
+    return J, f0, a, offset, tau
 
 # %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
@@ -223,7 +252,7 @@ elif node.parameters.load_data_id is None:
 if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
-        ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {  "time": idle_times, "amp": control_amps})
+        ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {  "idle_time": idle_times, "amp": control_amps})
     else:
         ds, machine = load_dataset(node.parameters.load_data_id)
         
@@ -231,53 +260,13 @@ if not node.parameters.simulate:
 
 # %%
 if not node.parameters.simulate:
-    # ds = ds.assign_coords(idle_time = ds.idle_time * 4)
-    ds = ds.assign_coords({"time": ds.idle_time})
-
+    ds = ds.assign_coords(idle_time = ds.idle_time * 4)
     ds = ds.assign({"res_sum" : ds.state_control - ds.state_target})
     amp_full = np.array([control_amps * qp.gates["SWAP_Coupler"].flux_pulse_control.amplitude for qp in qubit_pairs])
     ds = ds.assign_coords({"amp_full": (["qubit", "amp"], amp_full)})    
     detunings = np.array([-(control_amps * qp.gates["SWAP_Coupler"].flux_pulse_control.amplitude)**2 * qp.qubit_control.freq_vs_flux_01_quad_term for qp in qubit_pairs])
     ds = ds.assign_coords({"detuning": (["qubit", "amp"], detunings)})
-    
-    ds.state_control.plot(x = "time", y = "amp_full")
-    plt.show()
-    ds.state_target.plot(x = "time", y = "amp_full")
-    plt.show()
 # %%
-from quam_libs.lib.fit import oscillation_decay_exp, fit_oscillation_decay_exp
-
-def rabi_chevron_model(ft, J, f0, a, offset,tau):
-    f,t = ft
-    J = J
-    w = f
-    w0 = f0
-    g = offset+a * np.sin(2*np.pi*np.sqrt(J**2 + (w-w0)**2) * t)**2*np.exp(-tau*np.abs((w-w0))) 
-    return g.ravel()
-
-def fit_rabi_chevron(ds_qp, init_length, init_detuning):
-    da_target = ds_qp.state_target
-    exp_data = da_target.values
-    detuning = da_target.detuning
-    time = da_target.time*1e-9
-    t,f  = np.meshgrid(time,detuning)
-    initial_guess = (1e9/init_length/2,
-            init_detuning,
-            -1,
-            1.0,
-            100e-9)
-    fdata = np.vstack((f.ravel(),t.ravel()))
-    tdata = exp_data.ravel()
-    popt, pcov = curve_fit(rabi_chevron_model, fdata, tdata, p0=initial_guess)
-    J = popt[0]
-    f0 = popt[1]
-    a = popt[2]
-    offset = popt[3]
-    tau = popt[4]
-
-    return J, f0, a, offset, tau
-
-
 if not node.parameters.simulate:
     amplitudes = {}
     lengths = {}
@@ -285,6 +274,7 @@ if not node.parameters.simulate:
     fitted_ds = {}
     detunings = {}
     Js = {}
+    RC_success = {}
     
     for qp in qubit_pairs:
         print(qp.name)
@@ -297,11 +287,9 @@ if not node.parameters.simulate:
             ds_qp.state_control.isel(amp=flux_amp_idx), "idle_time")
         flux_time = int(1/fit_data.sel(fit_vals='f'))
 
-        print(f"parameters for {qp.name}: amp={flux_amp}, time={flux_time}")
         amplitudes[qp.name] =  flux_amp
         detunings[qp.name] = -flux_amp ** 2 * qp.qubit_control.freq_vs_flux_01_quad_term
-        lengths[qp.name] = flux_time-flux_time%4+4
-        zero_paddings[qp.name]=lengths[qp.name]-flux_time
+        lengths[qp.name] = flux_time
         fitted_ds[qp.name]  = ds_qp.assign({'fitted': oscillation_decay_exp(ds_qp.idle_time,
                                                                 fit_data.sel(
                                                                     fit_vals="a"),
@@ -312,8 +300,7 @@ if not node.parameters.simulate:
                                                                 fit_data.sel(
                                                                     fit_vals="offset"),
                                                                 fit_data.sel(fit_vals="decay"))})
-        # if node.parameters.method == "fine":
-        if True:
+        try:
             t = ds.idle_time*1e-9
             f = ds.sel(qubit=qp.name).detuning
             t,f = np.meshgrid(t,f)
@@ -323,33 +310,29 @@ if not node.parameters.simulate:
             detunings[qp.name] = f0
             amplitudes[qp.name] = np.sqrt(-detunings[qp.name]/qp.qubit_control.freq_vs_flux_01_quad_term)
             flux_time = int(1/(2*J)*1e9)
-            lengths[qp.name] = flux_time-flux_time%4+4
-            zero_paddings[qp.name]=lengths[qp.name]-flux_time 
-# %%
-plt.figure(figsize=(10, 6))
-mesh = plt.pcolormesh(t, f, data_fitted)
-plt.colorbar(mesh, label='Amplitude')
-plt.xlabel('Time (s)')
-plt.ylabel('Frequency (Hz)')
-plt.title('Rabi Chevron Model Fit')
-plt.show()
+            lengths[qp.name] = flux_time
+            RC_success[qp.name] = True
+        except:
+            print(f"Rabi-Chevron fit for {qp.name} failed")
+            RC_success[qp.name] = False
 # %% {Plotting}
 if not node.parameters.simulate:
     grid_names, qubit_pair_names = grid_pair_names(qubit_pairs)
     grid = QubitPairGrid(grid_names, qubit_pair_names)
     for ax, qubit_pair in grid_iter(grid):
         plot = ds.to_array().sel(qubit=qubit_pair['qubit']).sel(
-            variable='state_control').assign_coords(detuning_MHz = 1e-6*ds.detuning.sel(qubit = qp.name)).plot(ax = ax, x= 'time', y= 'detuning_MHz', add_colorbar=False)
+            variable='state_control').assign_coords(detuning_MHz = 1e-6*ds.detuning.sel(qubit = qp.name)).plot(ax = ax, x= 'idle_time', y= 'detuning_MHz', add_colorbar=False)
         plt.colorbar(plot, ax=ax, orientation='horizontal', pad=0.2, aspect=30, label='Amplitude')
         # ax.plot([lengths[qubit_pair['qubit']]-zero_paddings[qubit_pair['qubit']]],[1e-6*detunings[qubit_pair['qubit']]],marker= '.', color = 'red')
         ax.axhline(y=1e-6*detunings[qubit_pair['qubit']], color='k', linestyle='--', lw = 0.5)
-        ax.axvline(x=lengths[qubit_pair['qubit']]-zero_paddings[qubit_pair['qubit']], color='k', linestyle='--', lw = 0.5)
+        ax.axvline(x=lengths[qubit_pair['qubit']], color='k', linestyle='--', lw = 0.5)
         ax.set_title(qubit_pair["qubit"])
         ax.set_ylabel('Detuning [MHz]')
         ax.set_xlabel('time [nS]')
-        f_eff = np.sqrt(Js[qubit_pair['qubit']]**2 + (ds.detuning.sel(qubit=qubit_pair['qubit'])-detunings[qubit_pair['qubit']])**2)
-        for n in range(10):
-            ax.plot(n*0.5/f_eff*1e9,1e-6*ds.detuning.sel(qubit = qubit_pair['qubit']), color = 'red', lw = 0.3)
+        if RC_success[qubit_pair['qubit']]:
+            f_eff = np.sqrt(Js[qubit_pair['qubit']]**2 + (ds.detuning.sel(qubit=qubit_pair['qubit'])-detunings[qubit_pair['qubit']])**2)
+            for n in range(10):
+                ax.plot(n*0.5/f_eff*1e9,1e-6*ds.detuning.sel(qubit = qubit_pair['qubit']), color = 'red', lw = 0.3)
 
         ax2 = ax.twinx()
         detuning_range = ds.detuning.sel(qubit=qubit_pair['qubit'])
@@ -369,17 +352,18 @@ if not node.parameters.simulate:
     grid = QubitPairGrid(grid_names, qubit_pair_names)
     for ax, qubit_pair in grid_iter(grid):
         plot = ds.to_array().sel(qubit =qubit_pair['qubit']).sel(
-            variable='state_target').assign_coords(detuning_MHz = 1e-6*ds.detuning.sel(qubit = qp.name)).plot(ax = ax, x= 'time', y= 'detuning_MHz', add_colorbar=False)
+            variable='state_target').assign_coords(detuning_MHz = 1e-6*ds.detuning.sel(qubit = qp.name)).plot(ax = ax, x= 'idle_time', y= 'detuning_MHz', add_colorbar=False)
         plt.colorbar(plot, ax=ax, orientation='horizontal', pad=0.2, aspect=30, label='Amplitude')
         # ax.plot([lengths[qubit_pair['qubit']]-zero_paddings[qubit_pair['qubit']]],[1e-6*detunings[qubit_pair['qubit']]],marker= '.', color = 'red')
         ax.axhline(y=1e-6*detunings[qubit_pair['qubit']], color='k', linestyle='--', lw = 0.5)
-        ax.axvline(x=lengths[qubit_pair['qubit']]-zero_paddings[qubit_pair['qubit']], color='k', linestyle='--', lw = 0.5)
+        ax.axvline(x=lengths[qubit_pair['qubit']], color='k', linestyle='--', lw = 0.5)
         ax.set_title(qubit_pair["qubit"])
         ax.set_ylabel('Detuning [MHz]')
         ax.set_xlabel('time [nS]')
-        f_eff = np.sqrt(Js[qubit_pair['qubit']]**2 + (ds.detuning.sel(qubit =qubit_pair['qubit'])-detunings[qubit_pair['qubit']])**2)
-        for n in range(10):
-            ax.plot(n*0.5/f_eff*1e9,1e-6*ds.detuning.sel(qubit = qubit_pair['qubit']), color = 'red', lw = 0.3)
+        if RC_success[qubit_pair['qubit']]:
+            f_eff = np.sqrt(Js[qubit_pair['qubit']]**2 + (ds.detuning.sel(qubit =qubit_pair['qubit'])-detunings[qubit_pair['qubit']])**2)
+            for n in range(10):
+                ax.plot(n*0.5/f_eff*1e9,1e-6*ds.detuning.sel(qubit = qubit_pair['qubit']), color = 'red', lw = 0.3)
 
         ax2 = ax.twinx()
         detuning_range = ds.detuning.sel(qubit =qubit_pair['qubit'])
@@ -399,16 +383,14 @@ if not node.parameters.simulate:
 if not node.parameters.simulate:
     with node.record_state_updates():
         for qp in qubit_pairs:
-            gate_time_ns = int(1/ (2 * interaction_max.sel(qubit = qp.name).values)) 
-            
+            gate_time_ns = int(lengths[qp.name] / 2)
             gate_time_including_zeros = gate_time_ns - gate_time_ns % 4 + 4
             zero_padding = gate_time_including_zeros - gate_time_ns
-            coupler_flux_pulse_amp = float(coupler_flux_pulse.sel(qubit = qp.name).values)
-            qubit_flux_pulse_amp = qp.detuning
+            flux_pulse_amp = amplitudes[qp.name]            
+            qp.gates['SWAP_Coupler'].flux_pulse_control.amplitude = flux_pulse_amp
+            qp.gates['SWAP_Coupler'].flux_pulse_control.zero_padding = zero_padding
+            qp.gates['SWAP_Coupler'].flux_pulse_control.length = gate_time_including_zeros
             
-            qp.coupler.decouple_offset = float(coupler_flux_min.sel(qubit = qp.name).values)
-            qp.gates['SWAP_Coupler'] = SWAP_Coupler_Gate(flux_pulse_control = FluxPulse(length = gate_time_including_zeros, amplitude = qubit_flux_pulse_amp, zero_padding = zero_padding, id = 'flux_pulse_control_' + qp.qubit_target.name), 
-                                                         coupler_pulse_control = FluxPulse(length = gate_time_including_zeros, amplitude = coupler_flux_pulse_amp, zero_padding = zero_padding, id = 'coupler_pulse_control_' + qp.qubit_target.name))
 # %% {Save_results}
 if not node.parameters.simulate:    
     node.outcomes = {q.name: "successful" for q in qubit_pairs}

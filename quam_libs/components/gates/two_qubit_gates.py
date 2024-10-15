@@ -181,8 +181,11 @@ class SWAP_Coupler_Gate(TwoQubitGate):
 
     flux_pulse_control: Pulse
     coupler_pulse_control: Pulse
-    
-    pre_wait: int = 4
+
+    phase_shift_control: float = 0.0
+    phase_shift_target: float = 0.0    
+    pre_wait: int = 10
+    post_wait: int = 20
 
     @property
     def gate_label(self) -> str:
@@ -209,7 +212,7 @@ class SWAP_Coupler_Gate(TwoQubitGate):
 
         return f"{self.gate_label}{str_ref.DELIMITER}{pulse_label}"
 
-    def execute(self, amplitude_scale=None):        
+    def execute(self, amplitude_scale=None, coupler_pulse_scale=None):        
         self.transmon_pair.align()
         
         # self.qubit_control.xy.wait(self.pre_wait)
@@ -223,11 +226,12 @@ class SWAP_Coupler_Gate(TwoQubitGate):
         self.coupler.play(
             self.coupler_pulse_control_label,
             validate=False,
-            amplitude_scale=amplitude_scale,
+            amplitude_scale=coupler_pulse_scale,
         )
         
         self.transmon_pair.align()
-
+        self.qubit_control.xy.wait(self.post_wait)
+        self.transmon_pair.align()
 
     @property
     def config_settings(self):

@@ -61,7 +61,7 @@ class Parameters(NodeParameters):
     qubit_pairs: Optional[List[str]] = ["q1-q2"]
     num_averages: int = 200
     flux_point_joint_or_independent_or_pairwise: Literal["joint", "independent", "pairwise"] = "pairwise"
-    reset_type: Literal['active', 'thermal'] = "thermal"
+    reset_type: Literal['active', 'thermal'] = "active"
     simulate: bool = False
     timeout: int = 100
     load_data_id: Optional[int] = None
