@@ -48,7 +48,7 @@ class Parameters(NodeParameters):
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     simulate: bool = False
     timeout: int = 100
-
+    operation_name: str = "readout" # or "readout_QND"
 
 node = QualibrationNode(name="07_IQ_Blobs", parameters=Parameters())
 
@@ -76,27 +76,15 @@ num_qubits = len(qubits)
 n_runs = node.parameters.num_runs  # Number of runs
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 reset_type = node.parameters.reset_type_thermal_or_active  # "active" or "thermal"
-
+operation_name = node.parameters.operation_name
 with program() as iq_blobs:
     I_g, I_g_st, Q_g, Q_g_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     I_e, I_e_st, Q_e, Q_e_st, _, _ = qua_declaration(num_qubits=num_qubits)
 
     for i, qubit in enumerate(qubits):
 
-        # Bring the active qubits to the minimum frequency point
-        if flux_point == "independent":
-            machine.apply_all_flux_to_min()
-            qubit.z.to_independent_idle()
-        elif flux_point == "joint":
-            machine.apply_all_flux_to_joint_idle()
-        else:
-            machine.apply_all_flux_to_zero()
-
-        # Wait for the flux bias to settle
-        for qb in qubits:
-            wait(1000, qb.z.name)
-
-        align()
+        machine.set_all_fluxes(flux_point, qubit)
+        wait(1000)
 
         with for_(n, 0, n < n_runs, n + 1):
             # ground iq blobs for all qubits
@@ -109,7 +97,7 @@ with program() as iq_blobs:
                 raise ValueError(f"Unrecognized reset type {reset_type}.")
 
             qubit.align()
-            qubit.resonator.measure("readout", qua_vars=(I_g[i], Q_g[i]))
+            qubit.resonator.measure(operation_name, qua_vars=(I_g[i], Q_g[i]))
             qubit.resonator.wait(qubit.resonator.depletion_time // 4)
             # save data
             save(I_g[i], I_g_st[i])
@@ -126,7 +114,7 @@ with program() as iq_blobs:
             align()
             qubit.xy.play("x180")
             align()
-            qubit.resonator.measure("readout", qua_vars=(I_e[i], Q_e[i]))
+            qubit.resonator.measure(operation_name, qua_vars=(I_e[i], Q_e[i]))
             qubit.resonator.wait(qubit.resonator.depletion_time // 4)
             # save data
             save(I_e[i], I_e_st[i])
@@ -318,19 +306,19 @@ if not node.parameters.simulate:
 if not node.parameters.simulate:
     with node.record_state_updates():
         for qubit in qubits:
-            qubit.resonator.operations["readout"].integration_weights_angle -= float(
+            qubit.resonator.operations[operation_name].integration_weights_angle -= float(
                 node.results["results"][qubit.name]["angle"]
             )
-            qubit.resonator.operations["readout"].threshold = float(
+            qubit.resonator.operations[operation_name].threshold = float(
                 node.results["results"][qubit.name]["threshold"]
             )
             # to add conf matrix  to the readout operation rather than the resonator
-            qubit.resonator.operations["readout"].rus_exit_threshold = float(
+            qubit.resonator.operations[operation_name].rus_exit_threshold = float(
                 node.results["results"][qubit.name]["rus_threshold"]
             )
-            qubit.resonator.confusion_matrix = node.results["results"][qubit.name][
-                "confusion_matrix"
-            ].tolist()
+            if operation_name == "readout":
+                qubit.resonator.confusion_matrix = node.results["results"][qubit.name][
+                    "confusion_matrix"].tolist()
 
 # %% {Save_results}
 if not node.parameters.simulate:
