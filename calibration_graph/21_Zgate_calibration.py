@@ -32,10 +32,8 @@ class Parameters(NodeParameters):
 
 node = QualibrationNode(
     name="21_Zgate_calibration",
-    parameters_class=Parameters
+    parameters=Parameters()
 )
-
-node.parameters = Parameters()
 
 
 from qm.qua import *
@@ -55,6 +53,7 @@ from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 from quam_libs.lib.save_utils import fetch_results_as_xarray
 from scipy.optimize import curve_fit
 import xarray as xr
+import qiskit_experiments.curve_analysis as ca
 
 def cosine_func(x, A, f, phi, offset):
     return A * np.cos(2 * np.pi * f * x + phi) + offset
@@ -238,7 +237,6 @@ else:
     qm.close()
 
 # %%
-# %%
 if not simulate:
     handles = job.result_handles
     ds = fetch_results_as_xarray(handles, qubits, {"flux": fluxes,})
@@ -258,97 +256,105 @@ if not simulate:
 
     node.results['ds'] = ds
 # %%
-fit_data = {}
-fitted = []
+import qiskit_experiments.curve_analysis as ca
 
-for qubit in qubits:
-    x = ds.sel(qubit = qubit.name).detuning
-    y = ds.sel(qubit = qubit.name).state
+if not simulate:
+    fit_data = {}
+    fitted = []
 
-    # Initial guess for parameters
-    A_guess = (y.max() - y.min()) / 2
-    f_guess = 1 / (x.max() - x.min())  # Guess frequency based on range of x
-    offset_guess = y.mean()
-    
-    try:
-        popt, _ = curve_fit(cosine_func, x, y, p0=[A_guess, f_guess, 0, offset_guess])
-        A_fit, f_fit, phi_fit, offset_fit = popt
+    for qubit in qubits:
+        x = ds.sel(qubit = qubit.name).detuning
+        y = ds.sel(qubit = qubit.name).state
+        # Initial guess for parameters
+        A_guess = (y.max() - y.min()) / 2
+        f_guess = ca.guess.frequency(x,y)
+        offset_guess = y.mean()
         
-        # Verify that A_fit is positive
-        if A_fit < 0:
-            A_fit = -A_fit
-            phi_fit += np.pi  # Adjust phase by pi to maintain the same curve shape
-        
-        Z_id, _ = find_maximum_cosine(A_fit, f_fit, phi_fit, x.min().values, x.max().values)
-        Z_90 = Z_id + 1/(4*f_fit)
-        Z_180 = Z_id + 1/(2*f_fit)
-        Z_270 = Z_id + 3/(4*f_fit)
-
-        
-        fit_data[qubit.name] = {'A': A_fit, 'f': f_fit, 'phi': phi_fit, 'offset': offset_fit,
-                                'Z_id': Z_id, 'Z_90': Z_90, 'Z_180': Z_180, 'Z_270': Z_270}
-        fitted.append(cosine_func(x, *popt))
-        
-    except RuntimeError:
-        print(f"Curve fit failed for {qubit.name}")
+        try:
+            popt, _ = curve_fit(cosine_func, x, y, p0=[A_guess, f_guess, 0, offset_guess])
+            A_fit, f_fit, phi_fit, offset_fit = popt
+            
+            # Verify that A_fit is positive
+            if A_fit < 0:
+                A_fit = -A_fit
+                phi_fit += np.pi  # Adjust phase by pi to maintain the same curve shape
+            
+            Z_id, _ = find_maximum_cosine(A_fit, f_fit, phi_fit, x.min().values, x.max().values)
+            Z_90 = Z_id + 1/(4*f_fit)
+            Z_180 = Z_id + 1/(2*f_fit)
+            Z_270 = Z_id + 3/(4*f_fit)           
+            fit_data[qubit.name] = {'A': A_fit, 'f': f_fit, 'phi': phi_fit, 'offset': offset_fit,
+                                    'Z_id': Z_id, 'Z_90': Z_90, 'Z_180': Z_180, 'Z_270': Z_270}
+            fitted.append(cosine_func(x, *popt))
+            
+        except RuntimeError:
+            print(f"Curve fit failed for {qubit.name}")
 # %%
-# Concatenate the fitted DataArrays along the 'qubit' dimension
-fitted_da = xr.concat(fitted, dim='qubit')
+if not simulate:
+    # Concatenate the fitted DataArrays along the 'qubit' dimension
+    fitted_da = xr.concat(fitted, dim='qubit')
 
-# Assign qubit names as coordinates
-fitted_da = fitted_da.assign_coords(qubit=[q.name for q in qubits])
+    # Assign qubit names as coordinates
+    fitted_da = fitted_da.assign_coords(qubit=[q.name for q in qubits])
 
-# Add the fitted DataArray to the dataset
-ds['fitted'] = fitted_da
-node.results['ds'] = ds
+    # Add the fitted DataArray to the dataset
+    ds['fitted'] = fitted_da
+    node.results['ds'] = ds
 # %%
+if not simulate:
 
+    # Plot the original data and fitted curves for each qubit
 
-# Plot the original data and fitted curves for each qubit
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
+    for ax, qubit in grid_iter(grid):
+        ds.sel(qubit=qubit['qubit']).state.plot(ax=ax, x = 'detuning', marker='o', linestyle='', label='Data')
+        ds.sel(qubit=qubit['qubit']).fitted.plot(ax=ax, x = 'detuning', label='Fitted')
+        ax.axvline(x = fit_data[qubit['qubit']]['Z_id'], color = 'k', linestyle = '--')
+        # ax.axvline(x = fit_data[qubit['qubit']]['Z_90'], color = 'k', linestyle = '--')
+        # ax.axvline(x = fit_data[qubit['qubit']]['Z_180'], color = 'k', linestyle = '--')
+        # ax.axvline(x = fit_data[qubit['qubit']]['Z_270'], color = 'k', linestyle = '--')
+        
+        # Create a second x-axis for flux
+        ax2 = ax.twiny()
+        
+        # Calculate flux values
+        flux_values = 1e3*np.sqrt(-1e6 * ds.sel(qubit=qubit['qubit']).detuning / machine.qubits[qubit['qubit']].freq_vs_flux_01_quad_term)
+        
+        # Set the limits for the second x-axis
+        ax2.set_xlim(flux_values.min(), flux_values.max())
+        
+        # Set the label for the second x-axis
+        ax2.set_xlabel('Flux (mV)')
+        
+        # Adjust the position of the second x-axis to the top
+        ax2.xaxis.set_ticks_position('top')
+        ax2.xaxis.set_label_position('top')
 
-grid = QubitGrid(ds, [q.grid_location for q in qubits])
-for ax, qubit in grid_iter(grid):
-    ds.sel(qubit=qubit['qubit']).state.plot(ax=ax, x = 'detuning', marker='o', linestyle='', label='Data')
-    ds.sel(qubit=qubit['qubit']).fitted.plot(ax=ax, x = 'detuning', label='Fitted')
-    ax.axvline(x = fit_data[qubit['qubit']]['Z_id'], color = 'k', linestyle = '--')
-    # Create a second x-axis for flux
-    ax2 = ax.twiny()
-    
-    # Calculate flux values
-    flux_values = 1e3*np.sqrt(-1e6 * ds.sel(qubit=qubit['qubit']).detuning / machine.qubits[qubit['qubit']].freq_vs_flux_01_quad_term)
-    
-    # Set the limits for the second x-axis
-    ax2.set_xlim(flux_values.min(), flux_values.max())
-    
-    # Set the label for the second x-axis
-    ax2.set_xlabel('Flux (mV)')
-    
-    # Adjust the position of the second x-axis to the top
-    ax2.xaxis.set_ticks_position('top')
-    ax2.xaxis.set_label_position('top')
-
-    ax.set_title(qubit['qubit'])
-    ax.set_xlabel('Detuning (MHz)')
-    ax.set_ylabel('State')
-    # ax.legend()
-grid.fig.suptitle('Ramsey: Data and Fitted Curves')
-plt.tight_layout()
-plt.show()
-node.results['figure_fitted'] = grid.fig
+        ax.set_title(qubit['qubit'])
+        ax.set_xlabel('Detuning (MHz)')
+        ax.set_ylabel('State')
+        # ax.legend()
+    grid.fig.suptitle('Ramsey: Data and Fitted Curves')
+    plt.tight_layout()
+    plt.show()
+    node.results['figure_fitted'] = grid.fig
 
 # %%
-for qubit in qubits:
-    qubit.z.operations['z0'] = SquarePulse(length=operation_time, amplitude=np.sqrt(-1e6*fit_data[qubit.name]['Z_id']/qubit.freq_vs_flux_01_quad_term))
-    qubit.z.operations['z90'] = SquarePulse(length=operation_time, amplitude=np.sqrt(-1e6*fit_data[qubit.name]['Z_90']/qubit.freq_vs_flux_01_quad_term))
-    qubit.z.operations['z180'] = SquarePulse(length=operation_time, amplitude=np.sqrt(-1e6*fit_data[qubit.name]['Z_180']/qubit.freq_vs_flux_01_quad_term))
-    qubit.z.operations['-z90'] = SquarePulse(length=operation_time, amplitude=np.sqrt(-1e6*fit_data[qubit.name]['Z_270']/qubit.freq_vs_flux_01_quad_term))
+if not simulate:
+    with node.record_state_updates():
+        for qubit in qubits:
+            qubit.z.operations['z0'] = SquarePulse(length=operation_time, amplitude=np.sqrt(-1e6*fit_data[qubit.name]['Z_id']/qubit.freq_vs_flux_01_quad_term))
+            qubit.z.operations['z90'] = SquarePulse(length=operation_time, amplitude=np.sqrt(-1e6*fit_data[qubit.name]['Z_90']/qubit.freq_vs_flux_01_quad_term))
+            qubit.z.operations['z180'] = SquarePulse(length=operation_time, amplitude=np.sqrt(-1e6*fit_data[qubit.name]['Z_180']/qubit.freq_vs_flux_01_quad_term))
+            qubit.z.operations['-z90'] = SquarePulse(length=operation_time, amplitude=np.sqrt(-1e6*fit_data[qubit.name]['Z_270']/qubit.freq_vs_flux_01_quad_term))
 
 # # %%
           
 # %%
-node.results['initial_parameters'] = node.parameters.model_dump()
-node.machine = machine
-node.save()
+if not simulate:
+    node.results['initial_parameters'] = node.parameters.model_dump()
+    node.machine = machine
+    node.save()
 # %%
 
 # %%
