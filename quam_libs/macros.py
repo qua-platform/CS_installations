@@ -161,7 +161,10 @@ def active_reset(
     readout_pulse_name: str = "readout_QND",
     max_attempts: int = 15):
     
-    pulse = qubit.resonator.operations[readout_pulse_name]
+    if readout_pulse_name in qubit.resonator.operations:
+        pulse = qubit.resonator.operations[readout_pulse_name]
+    else:
+        pulse = qubit.resonator.operations['readout']
 
     I = declare(fixed)
     Q = declare(fixed)
