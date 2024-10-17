@@ -329,7 +329,9 @@ if not node.parameters.simulate:
         ax.set_xlabel("Amplitude [mV]")
         ax.set_title(qubit["qubit"])
     grid.fig.suptitle("SWAP amplitude calibration, target")
-        
+    plt.tight_layout()
+    plt.show()
+    node.results["figure_target"] = grid.fig        
 
 
 

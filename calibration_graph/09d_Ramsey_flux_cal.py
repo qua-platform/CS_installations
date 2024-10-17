@@ -171,7 +171,7 @@ with program() as ramsey:
                     # Align the elements to measure after playing the qubit pulse.
                     align()
                     # Measure the state of the resonators
-                    readout_state(qubit, state[i])
+                    readout_state(qubit, state[i], pulse_name = "readout_QND")
                     assign(state[i], init_state ^ state[i])
                     save(state[i], state_st[i])
                     

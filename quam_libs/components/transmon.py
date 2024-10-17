@@ -5,8 +5,9 @@ from .flux_line import FluxLine
 from .readout_resonator import ReadoutResonator
 from qualang_tools.octave_tools import octave_calibration_tool
 from qm import QuantumMachine, logger
-from typing import Union, Optional
+from typing import Dict, Any, Optional, Union, List, Tuple
 from qm.qua import align
+from dataclasses import field
 
 
 __all__ = ["Transmon"]
@@ -53,6 +54,7 @@ class Transmon(QuamComponent):
     GEF_frequency_shift : int = 10
     chi : float = 0.0
     grid_location : Optional[str] = None
+    extras: Dict[str, Any] = field(default_factory=dict)
 
     @property
     def inferred_f_12(self) -> float:

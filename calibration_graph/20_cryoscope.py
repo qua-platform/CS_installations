@@ -33,8 +33,8 @@ from quam_libs.lib.cryoscope_tools import cryoscope_frequency, estimate_fir_coef
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubits: Optional[List[str]] = ['q2']    
-    num_averages: int = 10000
+    qubits: Optional[List[str]] = ['q1']    
+    num_averages: int = 2000
     amplitude_factor: float = 0.5
     cryoscope_len: int = 240
     reset_type_active_or_thermal: Literal['active', 'thermal'] = 'active'
@@ -66,8 +66,10 @@ else:
 if node.parameters.reset_filters:
     for qubit in qubits:
         qubit.z.filter_fir_taps = [1,0]
-    qubit.z.filter_iir_taps = [0]
-
+        qubit.z.filter_iir_taps = [0.0]
+for qubit in qubits:
+    qubit.z.opx_output.feedforward_filter = list(qubit.z.filter_fir_taps)
+    qubit.z.opx_output.feedback_filter = list(qubit.z.filter_iir_taps)
             
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
@@ -299,9 +301,9 @@ else:
 
 # %%
 
-# %%
+# %% {Data_fetching_and_dataset_creation}
 if not node.parameters.simulate:
-    # %% {Data_fetching_and_dataset_creation}
+    
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(job.result_handles, [qubit], {"axis": ["x","y"], "time": cryoscope_time})
     plot_process = True
@@ -430,6 +432,7 @@ if not node.parameters.simulate:
 
     long_FIR = convolve(fir2,fir1, mode='full')/2
     long_IIR = convolve([1,-iir2[0]],[1,-iir1[0]], mode='full')/2
+
     filtered_response_long = lfilter(long_FIR,long_IIR, flux_cryoscope_q)
 
     if plot_process:
