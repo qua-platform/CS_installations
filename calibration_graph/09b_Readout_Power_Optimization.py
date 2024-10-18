@@ -12,7 +12,6 @@ The resulting IQ blobs are displayed, and the data is processed to determine:
 Prerequisites:
     - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
     - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy, rabi_chevron, power_rabi and updated the state.
-    - Set the desired flux bias
 
 Next steps before going to the next node:
     - Update the rotation angle (rotation_angle) in the state.
@@ -45,7 +44,6 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     num_runs: int = 2000
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     simulate: bool = False
     timeout: int = 100
     start_amp: float = 0.5
@@ -79,7 +77,6 @@ num_qubits = len(qubits)
 # %%
 
 n_runs = node.parameters.num_runs  # Number of runs
-flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 reset_type = node.parameters.reset_type_thermal_or_active  # "active" or "thermal"
 amps = np.linspace(
     node.parameters.start_amp, node.parameters.end_amp, node.parameters.num_amps
@@ -91,21 +88,6 @@ with program() as iq_blobs:
     a = declare(fixed)
 
     for i, qubit in enumerate(qubits):
-        # Bring the active qubits to the minimum frequency point
-        if flux_point == "independent":
-            machine.apply_all_flux_to_min()
-            qubit.z.to_independent_idle()
-        elif flux_point == "joint":
-            machine.apply_all_flux_to_joint_idle()
-        else:
-            machine.apply_all_flux_to_zero()
-            # Wait for the flux bias to settle
-        # Wait for the flux bias to settle
-        for qb in qubits:
-            wait(1000, qb.z.name)
-
-        align()
-
         with for_(n, 0, n < n_runs, n + 1):
             # ground iq blobs for all qubits
             save(n, n_st)
@@ -163,19 +145,20 @@ if node.parameters.simulate:
     node.save()
 
 else:
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(iq_blobs)
+    qm = qmm.open_qm(config, close_other_machines=True)
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    job = qm.execute(iq_blobs)
 
-        for i in range(num_qubits):
-            print(f"Fetching results for qubit {qubits[i].name}")
-            data_list = sum(
-                [[f"I_g{i + 1}", f"Q_g{i + 1}", f"I_e{i + 1}", f"Q_e{i + 1}"]], ["n"]
-            )
-            results = fetching_tool(job, data_list, mode="live")
-            while results.is_processing():
-                fetched_data = results.fetch_all()
-                n = fetched_data[0]
-                progress_counter(n, n_runs, start_time=results.start_time)
+    for i in range(num_qubits):
+        print(f"Fetching results for qubit {qubits[i].name}")
+        data_list = sum(
+            [[f"I_g{i + 1}", f"Q_g{i + 1}", f"I_e{i + 1}", f"Q_e{i + 1}"]], ["n"]
+        )
+        results = fetching_tool(job, data_list, mode="live")
+        while results.is_processing():
+            fetched_data = results.fetch_all()
+            n = fetched_data[0]
+            progress_counter(n, n_runs, start_time=results.start_time)
 
     # # Fetch data
     # data_list = sum(
@@ -226,9 +209,8 @@ else:
 
     # node_save(machine, "iq_blobs", data, additional_files=True)
 
-# %%
+# %% {Data_fetching_and_dataset_creation}
 if not node.parameters.simulate:
-    # %% {Data_fetching_and_dataset_creation}
 
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(
@@ -409,7 +391,7 @@ if not node.parameters.simulate:
     grid_names = [f"{q.name}_0" for q in qubits]
     grid = QubitGrid(ds, grid_names)
     for ax, qubit in grid_iter(grid):
-        fit_res.loc[qubit].plot(ax=ax, x="readout_amp", hue="result", add_legend=False)
+        fit_res.sel(qubit="q1").plot(ax=ax, x="readout_amp", hue="result", add_legend=False)
         ax.axvline(best_amp[qubit["qubit"]], color="k", linestyle="dashed")
         ax.set_xlabel("Relative power")
         ax.set_ylabel("Fidelity / outliers")

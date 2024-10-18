@@ -18,7 +18,6 @@ duration, frequency) before performing the next calibration steps.
 Prerequisites:
     - Identification of the resonator's resonance frequency when coupled to the qubit in question (referred to as "resonator_spectroscopy").
     - Calibration of the IQ mixer connected to the qubit drive line (whether it's an external mixer or an Octave port).
-    - Set the flux bias to the minimum frequency point, labeled as "max_frequency_point", in the state.
     - Configuration of the saturation pulse amplitude and duration to transition the qubit into a mixed state.
     - Specification of the expected qubit T1 in the state.
 
@@ -56,11 +55,7 @@ class Parameters(NodeParameters):
     operation_len_in_ns: Optional[int] = None
     frequency_span_in_mhz: float = 40
     frequency_step_in_mhz: float = 0.25
-    flux_point_joint_or_independent_or_arbitrary: Literal[
-        "joint", "independent", "arbitrary"
-    ] = "independent"
     target_peak_width: Optional[int] = None
-    arbitrary_flux_bias: Optional[float] = None
     arbitrary_qubit_frequency_in_ghz: Optional[float] = 5.845
     simulate: bool = False
     timeout: int = 100
@@ -104,49 +99,8 @@ else:
 span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span // 2, +span // 2, step, dtype=np.int32)
-flux_point = (
-    node.parameters.flux_point_joint_or_independent_or_arbitrary
-)  # 'independent' or 'joint' or 'arbitrary'
 qubit_freqs = {q.name: q.xy.RF_frequency for q in qubits}  # for opx
 # qubit_freqs = {q.name :  q.xy.intermediate_frequency + q.xy.opx_output.upconverter_frequency for q in qubits} # for MW
-
-# Set the qubit frequency for a given flux point
-if flux_point == "arbitrary":
-    if (
-        node.parameters.arbitrary_flux_bias is None
-        and node.parameters.arbitrary_qubit_frequency_in_ghz is None
-    ):
-        raise ValueError(
-            "arbitrary_flux_bias or arbitrary_qubit_frequency must be provided when flux_point is 'arbitrary'"
-        )
-    elif (
-        node.parameters.arbitrary_flux_bias is not None
-        and node.parameters.arbitrary_qubit_frequency_in_ghz is not None
-    ):
-        raise ValueError(
-            "provide either arbitrary_flux_bias or arbitrary_qubit_frequency, not both when flux_point is 'arbitrary'"
-        )
-    elif node.parameters.arbitrary_flux_bias is not None:
-        arb_flux_bias_offset = {
-            q.name: node.parameters.arbitrary_flux_bias for q in qubits
-        }
-        detunings = {
-            q.name: q.freq_vs_flux_01_quad_term * arb_flux_bias_offset[q.name] ** 2
-            for q in qubits
-        }
-    else:
-        detunings = {
-            q.name: 1e9 * node.parameters.arbitrary_qubit_frequency_in_ghz
-            - qubit_freqs[q.name]
-            for q in qubits
-        }
-        arb_flux_bias_offset = {
-            q.name: np.sqrt(detunings[q.name] / q.freq_vs_flux_01_quad_term)
-            for q in qubits
-        }
-else:
-    arb_flux_bias_offset = {q.name: 0.0 for q in qubits}
-    detunings = {q.name: 0.0 for q in qubits}
 
 
 target_peak_width = node.parameters.target_peak_width
@@ -159,30 +113,12 @@ with program() as qubit_spec:
     df = declare(int)  # QUA variable for the qubit frequency
 
     for i, qubit in enumerate(qubits):
-        # Bring the active qubits to the minimum frequency point
-        if flux_point == "independent":
-            machine.apply_all_flux_to_min()
-            qubit.z.to_independent_idle()
-            dc_offset = qubit.z.independent_offset
-        elif flux_point == "joint" or "arbitrary":
-            machine.apply_all_flux_to_joint_idle()
-            dc_offset = qubit.z.joint_offset
-        else:
-            machine.apply_all_flux_to_zero()
-            dc_offset = 0.0
 
-        # Wait for the flux bias to settle
-        for qb in qubits:
-            wait(1000, qb.z.name)
-
-        align()
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_(*from_array(df, dfs)):
-                # Bring the qubit to the desired point
-                qubit.z.set_dc_offset(dc_offset + arb_flux_bias_offset[qubit.name])
                 qubit.xy.update_frequency(
-                    df + qubit.xy.intermediate_frequency + detunings[qubit.name]
+                    df + qubit.xy.intermediate_frequency
                 )
                 wait(250)
                 qubit.align()
@@ -195,12 +131,6 @@ with program() as qubit_spec:
                 )
                 # TODO: why?
                 qubit.xy.wait(250)
-                qubit.align()
-
-                # Bring back the flux for readout
-                wait(250, qubit.z.name)
-                qubit.z.set_dc_offset(dc_offset)
-                wait(250, qubit.z.name)
                 qubit.align()
 
                 # # QUA macro the readout the state of the active resonators (defined in macros.py)
@@ -234,6 +164,7 @@ if node.parameters.simulate:
     node.save()
 
 else:
+    # qm = qmm.open_qm(config, close_other_machines=True)
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(qubit_spec)
         # Get results from QUA program
@@ -294,7 +225,7 @@ else:
             "freq_full": (
                 ["qubit", "freq"],
                 np.array(
-                    [dfs + qubit_freqs[q.name] + detunings[q.name] for q in qubits]
+                    [dfs + qubit_freqs[q.name] for q in qubits]
                 ),
             )
         }
@@ -322,8 +253,7 @@ else:
             (
                 q.name,
                 result.sel(qubit=q.name).position.values
-                + qubit_freqs[q.name]
-                + detunings[q.name],
+                + qubit_freqs[q.name],
             )
             for q in qubits
         ]
@@ -408,49 +338,33 @@ else:
     with node.record_state_updates():
         for q in qubits:
             if not np.isnan(result.sel(qubit=q.name).position.values):
-                if flux_point == "arbitrary":
-                    q.arbitrary_intermediate_frequency = float(
-                        result.sel(qubit=q.name).position.values
-                        + detunings[q.name]
-                        + q.xy.intermediate_frequency
-                    )
-                    q.z.arbitrary_offset = arb_flux_bias_offset[q.name]
-                else:
-                    q.xy.intermediate_frequency += float(
-                        result.sel(qubit=q.name).position.values
-                    )
-                if not flux_point == "arbitrary":
-                    prev_angle = q.resonator.operations[
-                        "readout"
-                    ].integration_weights_angle
-                    if not prev_angle:
-                        prev_angle = 0.0
-                    q.resonator.operations["readout"].integration_weights_angle = (
-                        prev_angle + angle.sel(qubit=q.name).values
-                    ) % (2 * np.pi)
-                    Pi_length = q.xy.operations["x180"].length
-                    used_amp = q.xy.operations["saturation"].amplitude * operation_amp
-                    factor_cw = float(
-                        target_peak_width / result.sel(qubit=q.name).width.values
-                    )
-                    factor_pi = np.pi / (
-                        result.sel(qubit=q.name).width.values * Pi_length * 1e-9
-                    )
-                    if (
-                        factor_cw * used_amp / operation_amp < 0.5
-                    ):  # TODO: 1 for OPX1000 MW
-                        q.xy.operations["saturation"].amplitude = (
-                            factor_cw * used_amp / operation_amp
-                        )
-                    else:
-                        q.xy.operations[
-                            "saturation"
-                        ].amplitude = 0.5  # TODO: 1 for OPX1000 MW
+                # intermediate frequency
+                q.xy.intermediate_frequency += float(result.sel(qubit=q.name).position.values)
+                
+                # angle for integration weights
+                prev_angle = q.resonator.operations["readout"].integration_weights_angle
+                if not prev_angle:
+                    prev_angle = 0.0
+                q.resonator.operations["readout"].integration_weights_angle = (prev_angle + angle.sel(qubit=q.name).values) % (2 * np.pi)
 
-                    if factor_pi * used_amp < 0.3:  # TODO: 1 for OPX1000 MW
-                        q.xy.operations["x180"].amplitude = factor_pi * used_amp
-                    elif factor_pi * used_amp >= 0.3:  # TODO: 1 for OPX1000 MW
-                        q.xy.operations["x180"].amplitude = 0.3
+                # pi len
+                Pi_length = q.xy.operations["x180"].length
+
+                # amplitude                
+                used_amp = q.xy.operations["saturation"].amplitude * operation_amp
+                factor_cw = float(target_peak_width / result.sel(qubit=q.name).width.values)
+                factor_pi = np.pi / (result.sel(qubit=q.name).width.values * Pi_length * 1e-9)
+                
+                if factor_cw * used_amp / operation_amp < 1.0:  # TODO: 1 for OPX1000 MW
+                    q.xy.operations["saturation"].amplitude = factor_cw * used_amp / operation_amp
+                else:
+                    q.xy.operations["saturation"].amplitude = 1.0  # TODO: 1 for OPX1000 MW
+
+                if factor_pi * used_amp < 1.0:  # TODO: 1 for OPX1000 MW
+                    q.xy.operations["x180"].amplitude = factor_pi * used_amp
+                elif factor_pi * used_amp >= 1.0:  # TODO: 1 for OPX1000 MW
+                    q.xy.operations["x180"].amplitude = 1.0
+
     node.results["ds"] = ds
 
     # %% {Save_results}
@@ -458,3 +372,5 @@ else:
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine
     node.save()
+
+# %%

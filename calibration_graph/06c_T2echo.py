@@ -10,9 +10,6 @@ class Parameters(NodeParameters):
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 50000
     wait_time_step_in_ns: int = 300
-    flux_point_joint_or_independent_or_arbitrary: Literal[
-        "joint", "independent", "arbitrary"
-    ] = "arbitrary"
     simulate: bool = False
     timeout: int = 100
     use_state_discrimination: bool = True
@@ -77,37 +74,14 @@ idle_times = np.arange(
     node.parameters.wait_time_step_in_ns // 4,
 )
 
-flux_point = (
-    node.parameters.flux_point_joint_or_independent_or_arbitrary
-)  # 'independent' or 'joint'
-if flux_point == "arbitrary":
-    detunings = {q.name: q.arbitrary_intermediate_frequency for q in qubits}
-    arb_flux_bias_offset = {q.name: q.z.arbitrary_offset for q in qubits}
-else:
-    arb_flux_bias_offset = {q.name: 0.0 for q in qubits}
-    detunings = {q.name: 0.0 for q in qubits}
-
 with program() as t1:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     t = declare(int)  # QUA variable for the idle time
     if node.parameters.use_state_discrimination:
         state = [declare(int) for _ in range(num_qubits)]
         state_st = [declare_stream() for _ in range(num_qubits)]
+
     for i, qubit in enumerate(qubits):
-        # Bring the active qubits to the minimum frequency point
-        if flux_point == "independent":
-            machine.apply_all_flux_to_min()
-            qubit.z.to_independent_idle()
-        elif flux_point == "joint" or "arbitrary":
-            machine.apply_all_flux_to_joint_idle()
-        else:
-            machine.apply_all_flux_to_zero()
-
-        # Wait for the flux bias to settle
-        for qb in qubits:
-            wait(1000, qb.z.name)
-
-        align()
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
@@ -119,27 +93,9 @@ with program() as t1:
                     qubit.align()
 
                 qubit.xy.play("x90")
-                qubit.align()
-                qubit.z.wait(20)
-                qubit.z.play(
-                    "const",
-                    amplitude_scale=arb_flux_bias_offset[qubit.name]
-                    / qubit.z.operations["const"].amplitude,
-                    duration=t,
-                )
-                qubit.z.wait(20)
-                qubit.align()
+                qubit.xy.wait(t)
                 qubit.xy.play("x180")
-                qubit.align()
-                qubit.z.wait(20)
-                qubit.z.play(
-                    "const",
-                    amplitude_scale=arb_flux_bias_offset[qubit.name]
-                    / qubit.z.operations["const"].amplitude,
-                    duration=t,
-                )
-                qubit.z.wait(20)
-                qubit.align()
+                qubit.xy.wait(t)
                 qubit.xy.play("-x90")
                 qubit.align()
 
@@ -176,6 +132,7 @@ if node.parameters.simulate:
     node.save()
 
 else:
+    # qm = qmm.open_qm(config, close_other_machines=True)
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(t1)
         # Get results from QUA program

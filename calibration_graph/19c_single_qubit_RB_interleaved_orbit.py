@@ -29,7 +29,6 @@ Prerequisites:
     - Qubit pi pulse (x180) has been calibrated through qubit spectroscopy, rabi_chevron, power_rabi, and state updates.
     - Qubit frequency has been precisely calibrated (ramsey).
     - (optional) Readout has been calibrated (readout frequency, amplitude, duration optimization, IQ blobs) for improved SNR.
-    - Desired flux bias has been set.
 """
 import copy
 import logging
@@ -59,7 +58,6 @@ class Parameters(NodeParameters):
     max_drag_coefficient_factor: float = 1.2
     drag_coefficient_factor_step: float = 0.099  # 0.02
 
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
     simulate: bool = False
     timeout: int = 100
@@ -137,7 +135,6 @@ n_avg = (
     node.parameters.num_averages
 )  # Number of averaging loops for each random sequence
 circuit_depth = node.parameters.circuit_depth  # Maximum circuit depth
-flux_point = node.parameters.flux_point_joint_or_independent
 reset_type = node.parameters.reset_type_thermal_or_active
 seed = node.parameters.seed  # Pseudo-random number generator seed
 # Flag to enable state discrimination if the readout has been calibrated (rotated blobs and threshold)
@@ -349,14 +346,6 @@ def get_rb_interleaved_program(qubit: Transmon, qubit_with_orbit_values: Transmo
         if state_discrimination:
             state_st = declare_stream()
 
-        # Bring the active qubits to the minimum frequency point
-        if flux_point == "independent":
-            machine.apply_all_flux_to_min()
-            qubit.z.to_independent_idle()
-        elif flux_point == "joint":
-            machine.apply_all_flux_to_joint_idle()
-        else:
-            machine.apply_all_flux_to_zero()
         wait(1000)
 
         with for_(
@@ -514,7 +503,7 @@ else:
 
                 node.results[orbit_variable][j] = value_avg
 
-            # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
+            # Close the quantum machines at the end
             qm.close()
 
 # %%

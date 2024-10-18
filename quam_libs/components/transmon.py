@@ -142,4 +142,4 @@ class Transmon(QuamComponent):
             raise ValueError("Qubit pair not found: qubit_control={self.name}, " "qubit_target={other.name}")
         
     def align(self):
-        align(self.xy.name, self.z.name, self.resonator.name)
+        align(self.xy.name, self.resonator.name)

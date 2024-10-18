@@ -10,9 +10,6 @@ class Parameters(NodeParameters):
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 100000
     wait_time_step_in_ns: int = 600
-    flux_point_joint_or_independent_or_arbitrary: Literal[
-        "joint", "independent", "arbitrary"
-    ] = "independent"
     simulate: bool = False
     timeout: int = 100
     use_state_discrimination: bool = False
@@ -77,15 +74,6 @@ idle_times = np.arange(
     node.parameters.wait_time_step_in_ns // 4,
 )
 
-flux_point = (
-    node.parameters.flux_point_joint_or_independent_or_arbitrary
-)  # 'independent' or 'joint'
-if flux_point == "arbitrary":
-    detunings = {q.name: q.arbitrary_intermediate_frequency for q in qubits}
-    arb_flux_bias_offset = {q.name: q.z.arbitrary_offset for q in qubits}
-else:
-    arb_flux_bias_offset = {q.name: 0.0 for q in qubits}
-    detunings = {q.name: 0.0 for q in qubits}
 
 with program() as t1:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
@@ -94,20 +82,7 @@ with program() as t1:
         state = [declare(int) for _ in range(num_qubits)]
         state_st = [declare_stream() for _ in range(num_qubits)]
     for i, qubit in enumerate(qubits):
-        # Bring the active qubits to the minimum frequency point
-        if flux_point == "independent":
-            machine.apply_all_flux_to_min()
-            qubit.z.to_independent_idle()
-        elif flux_point == "joint" or "arbitrary":
-            machine.apply_all_flux_to_joint_idle()
-        else:
-            machine.apply_all_flux_to_zero()
 
-        # Wait for the flux bias to settle
-        for qb in qubits:
-            wait(1000, qb.z.name)
-
-        align()
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
@@ -119,15 +94,7 @@ with program() as t1:
                     qubit.align()
 
                 qubit.xy.play("x180")
-                align()
-                qubit.z.wait(20)
-                qubit.z.play(
-                    "const",
-                    amplitude_scale=arb_flux_bias_offset[qubit.name]
-                    / qubit.z.operations["const"].amplitude,
-                    duration=t,
-                )
-                qubit.z.wait(20)
+                qubit.xy.wait(t)
 
                 align()
 
@@ -164,22 +131,23 @@ if node.parameters.simulate:
     node.save()
 
 else:
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(t1)
-        # Get results from QUA program
-        for i in range(num_qubits):
-            print(f"Fetching results for qubit {qubits[i].name}")
-            data_list = ["n"]
-            results = fetching_tool(job, data_list, mode="live")
-            # Live plotting
-            # fig, axes = plt.subplots(2, num_qubits, figsize=(4 * num_qubits, 8))
-            # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-            while results.is_processing():
-                # Fetch results
-                fetched_data = results.fetch_all()
-                n = fetched_data[0]
+    qm = qmm.open_qm(config, close_other_machines=True)
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    job = qm.execute(t1)
+    # Get results from QUA program
+    for i in range(num_qubits):
+        print(f"Fetching results for qubit {qubits[i].name}")
+        data_list = ["n"]
+        results = fetching_tool(job, data_list, mode="live")
+        # Live plotting
+        # fig, axes = plt.subplots(2, num_qubits, figsize=(4 * num_qubits, 8))
+        # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+        while results.is_processing():
+            # Fetch results
+            fetched_data = results.fetch_all()
+            n = fetched_data[0]
 
-                progress_counter(n, n_avg, start_time=results.start_time)
+            progress_counter(n, n_avg, start_time=results.start_time)
 
 
 # %%

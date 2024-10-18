@@ -52,10 +52,6 @@ for i, q in enumerate(machine.qubits):
     machine.qubits[q].xy.opx_output.band = get_band(xy_LO[i])
     machine.qubits[q].xy.intermediate_frequency = xy_if[i]
 
-    # Update flux channels
-    machine.qubits[q].z.opx_output.output_mode = "amplified"
-    machine.qubits[q].z.opx_output.upsampling_mode = "pulse"
-
     ## Update pulses
     # readout
     machine.qubits[q].resonator.operations["readout"].length = 2.5 * u.us
