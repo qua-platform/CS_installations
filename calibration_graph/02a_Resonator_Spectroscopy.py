@@ -85,9 +85,6 @@ with program() as multi_res_spec:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     df = declare(int)  # QUA variable for the readout frequency
 
-    # Bring the active qubits to the minimum frequency point
-    machine.apply_all_flux_to_min()
-
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
             for i, rr in enumerate(resonators):
@@ -121,6 +118,7 @@ if node.parameters.simulate:
     node.save()
 else:
     # Open a quantum machine to execute the QUA program
+    # qm = qmm.open_qm(config, close_other_machines=True)
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(multi_res_spec)
 

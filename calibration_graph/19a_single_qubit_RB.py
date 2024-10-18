@@ -339,6 +339,7 @@ if node.parameters.simulate:
 else:
     # Prepare data for saving
     node.results = {}
+    # qm = qmm.open_qm(config, close_other_machines=True)
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(randomized_benchmarking)
         for i in range(num_qubits):

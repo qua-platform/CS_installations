@@ -349,14 +349,6 @@ def get_rb_interleaved_program(qubit: Transmon, qubit_with_orbit_values: Transmo
         if state_discrimination:
             state_st = declare_stream()
 
-        # Bring the active qubits to the minimum frequency point
-        if flux_point == "independent":
-            machine.apply_all_flux_to_min()
-            qubit.z.to_independent_idle()
-        elif flux_point == "joint":
-            machine.apply_all_flux_to_joint_idle()
-        else:
-            machine.apply_all_flux_to_zero()
         wait(1000)
 
         with for_(

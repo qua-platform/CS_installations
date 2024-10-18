@@ -258,20 +258,6 @@ def get_rb_interleaved_program(qubit: Transmon):
         if state_discrimination:
             state_st = declare_stream()
 
-        # Bring the active qubits to the minimum frequency point
-        if flux_point == "independent":
-            machine.apply_all_flux_to_min()
-            qubit.z.to_independent_idle()
-        elif flux_point == "joint":
-            machine.apply_all_flux_to_joint_idle()
-        else:
-            machine.apply_all_flux_to_zero()
-
-        # Wait for the flux bias to settle
-        for qb in qubits:
-            wait(1000, qb.z.name)
-
-        align()
 
         with for_(
             m, 0, m < num_of_sequences, m + 1
@@ -367,7 +353,8 @@ if node.parameters.simulate:
 else:
     node.results = {}
     for qubit in qubits:
-        with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+        # qm = qmm.open_qm(config, close_other_machines=True)
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
             job = qm.execute(get_rb_interleaved_program(qubit))
             if state_discrimination:
                 results = fetching_tool(
