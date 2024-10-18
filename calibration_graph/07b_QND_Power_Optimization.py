@@ -116,6 +116,8 @@ with program() as iq_blobs:
                 # save data
                 save(I_g_a[i], I_g_a_st[i])
                 save(Q_g_a[i], Q_g_a_st[i])
+                qubit.resonator.play("readout",amplitude_scale=a)
+                qubit.resonator.wait(qubit.resonator.depletion_time // 2)
                 qubit.resonator.measure("readout", qua_vars=(I_g_b[i], Q_g_b[i]), amplitude_scale=a)
                 qubit.resonator.wait(qubit.resonator.depletion_time // 4)
                 qubit.align()

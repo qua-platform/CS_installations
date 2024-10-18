@@ -50,6 +50,7 @@ class Parameters(NodeParameters):
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     simulate: bool = False
     timeout: int = 100
+    duration: int = 60
 
 
 node = QualibrationNode(name="08b_Power_Rabi_E_to_F", parameters=Parameters())
@@ -129,7 +130,7 @@ with program() as power_rabi:
                 update_frequency(
                     qubit.xy.name, qubit.xy.intermediate_frequency - qubit.anharmonicity
                 )
-                qubit.xy.play(operation, amplitude_scale=a)
+                qubit.xy.play(operation, amplitude_scale=a, duration = node.parameters.duration)
                 align()
                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                 save(I[i], I_st[i])
@@ -245,15 +246,14 @@ if not node.parameters.simulate:
                     amplitude=fit_results[q.name]["Pi_amplitude"],
                     alpha=q.xy.operations[operation].alpha,
                     anharmonicity=q.xy.operations[operation].anharmonicity,
-                    length=q.xy.operations[operation].length,
+                    length=node.parameters.duration,
                     axis_angle=0,  # TODO: to check that the rotation does not overwrite y-pulses
                     digital_marker=q.xy.operations[operation].digital_marker,
                 )
             else:
                 # set the new amplitude for the EF operation
-                q.xy.operations[ef_operation_name].amplitude = fit_results[q.name][
-                    "Pi_amplitude"
-                ]
+                q.xy.operations[ef_operation_name].amplitude = fit_results[q.name]["Pi_amplitude"]
+                q.xy.operations[ef_operation_name].length = node.parameters.duration
 
 # %% {Save_results}
 if not node.parameters.simulate:
@@ -261,3 +261,5 @@ if not node.parameters.simulate:
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine
     node.save()
+
+# %%

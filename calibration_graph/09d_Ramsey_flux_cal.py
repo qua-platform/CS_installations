@@ -40,9 +40,6 @@ node = QualibrationNode(
     parameters=Parameters()
 )
 
-
-
-
 from qm.qua import *
 from qm import SimulationConfig
 from qualang_tools.results import progress_counter, fetching_tool
@@ -99,6 +96,8 @@ detuning = int(1e6 * node.parameters.frequency_detuning_in_mhz)
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 fluxes = np.arange(-node.parameters.flux_span / 2, node.parameters.flux_span / 2+0.001, step = node.parameters.flux_step)
 
+
+
 # %%
 with program() as ramsey:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
@@ -110,7 +109,10 @@ with program() as ramsey:
     flux = declare(fixed)  # QUA variable for the flux dc level
 
     for i, qubit in enumerate(qubits):
-
+        if "readout_QND" in qubit.resonator.operations:
+            readout_pulse_name = "readout_QND"
+        else:
+            readout_pulse_name = "readout"
         # Bring the active qubits to the minimum frequency point
         if flux_point == "independent":
             machine.apply_all_flux_to_min()
@@ -144,7 +146,7 @@ with program() as ramsey:
                 align() 
 
                 with for_(*from_array(t, idle_times)):
-                    readout_state(qubit, init_state, pulse_name = "readout_QND")
+                    readout_state(qubit, init_state, pulse_name = readout_pulse_name)
                     qubit.align()
                     # Rotate the frame of the second x90 gate to implement a virtual Z-rotation
                     # 4*tau because tau was in clock cycles and 1e-9 because tau is ns
@@ -171,7 +173,7 @@ with program() as ramsey:
                     # Align the elements to measure after playing the qubit pulse.
                     align()
                     # Measure the state of the resonators
-                    readout_state(qubit, state[i], pulse_name = "readout_QND")
+                    readout_state(qubit, state[i], pulse_name = readout_pulse_name)
                     assign(state[i], init_state ^ state[i])
                     save(state[i], state_st[i])
                     

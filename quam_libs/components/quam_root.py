@@ -121,6 +121,7 @@ class QuAM(QuamRoot):
                     self.qubits[q].z.to_min()
                 else:
                     warnings.warn(f"Didn't find z-element on qubit {q}, didn't set to min")
+        self.apply_all_couplers_to_min()
         align()
 
     def apply_all_flux_to_min(self) -> None:
