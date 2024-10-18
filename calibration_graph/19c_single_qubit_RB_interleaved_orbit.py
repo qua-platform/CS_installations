@@ -59,7 +59,6 @@ class Parameters(NodeParameters):
     max_drag_coefficient_factor: float = 1.2
     drag_coefficient_factor_step: float = 0.099  # 0.02
 
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
     simulate: bool = False
     timeout: int = 100
@@ -349,14 +348,6 @@ def get_rb_interleaved_program(qubit: Transmon, qubit_with_orbit_values: Transmo
         if state_discrimination:
             state_st = declare_stream()
 
-        # Bring the active qubits to the minimum frequency point
-        if flux_point == "independent":
-            machine.apply_all_flux_to_min()
-            qubit.z.to_independent_idle()
-        elif flux_point == "joint":
-            machine.apply_all_flux_to_joint_idle()
-        else:
-            machine.apply_all_flux_to_zero()
         wait(1000)
 
         with for_(

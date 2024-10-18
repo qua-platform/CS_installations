@@ -11,7 +11,6 @@ optimal choice.
 Prerequisites:
     - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
     - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy, rabi_chevron, power_rabi and updated the state.
-    - Set the desired flux bias
 
 Next steps before going to the next node:
     - Update the readout frequency  in the state.
@@ -40,7 +39,6 @@ class Parameters(NodeParameters):
     num_averages: int = 100
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.1
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     simulate: bool = False
     timeout: int = 100
 
@@ -75,7 +73,6 @@ n_avg = node.parameters.num_averages  # The number of averages
 span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span / 2, +span / 2, step)
-flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 
 with program() as ro_freq_opt:
     n = declare(int)
@@ -91,20 +88,6 @@ with program() as ro_freq_opt:
     n_st = declare_stream()
 
     for i, qubit in enumerate(qubits):
-        # Bring the active qubits to the minimum frequency point
-        if flux_point == "independent":
-            machine.apply_all_flux_to_min()
-            qubit.z.to_independent_idle()
-        elif flux_point == "joint":
-            machine.apply_all_flux_to_joint_idle()
-        else:
-            machine.apply_all_flux_to_zero()
-
-        # Wait for the flux bias to settle
-        for qb in qubits:
-            wait(1000, qb.z.name)
-
-        align()
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
@@ -157,6 +140,7 @@ if node.parameters.simulate:
     node.save()
 
 else:
+    # qm = qmm.open_qm(config, close_other_machines=True)
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(ro_freq_opt)
 

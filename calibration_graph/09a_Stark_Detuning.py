@@ -11,7 +11,6 @@ Prerequisites:
     - Having calibrated the IQ mixer connected to the qubit drive line (external mixer or Octave port)
     - Having found the rough qubit frequency and pi pulse duration (rabi_chevron_duration or time_rabi).
     - Set the qubit frequency, desired pi pulse duration and rough pi pulse amplitude in the state.
-    - Set the desired flux bias
 
 Next steps before going to the next node:
     - Update the qubit pulse amplitude (pi_amp) in the state.
@@ -45,7 +44,6 @@ class Parameters(NodeParameters):
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.02
     max_number_pulses_per_sweep: int = 20
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
     simulate: bool = False
     timeout: int = 100
@@ -88,7 +86,6 @@ qmm = machine.connect()
 
 # %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
-flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 reset_type = node.parameters.reset_type_thermal_or_active  # "active" or "thermal"
 # Pulse frequency sweep
 span = node.parameters.frequency_span_in_mhz * u.MHz
@@ -107,20 +104,6 @@ with program() as stark_detuning:
     count = declare(int)  # QUA variable for counting the qubit pulses
 
     for i, qubit in enumerate(qubits):
-        # Bring the active qubits to the minimum frequency point
-        if flux_point == "independent":
-            machine.apply_all_flux_to_min()
-            qubit.z.to_independent_idle()
-        elif flux_point == "joint":
-            machine.apply_all_flux_to_joint_idle()
-        else:
-            machine.apply_all_flux_to_zero()
-
-        # Wait for the flux bias to settle
-        for qb in qubits:
-            wait(1000, qb.z.name)
-
-        align()
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
@@ -180,6 +163,7 @@ if node.parameters.simulate:
     node.save()
 
 else:
+    # qm = qmm.open_qm(config, close_other_machines=True)
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(stark_detuning)
 

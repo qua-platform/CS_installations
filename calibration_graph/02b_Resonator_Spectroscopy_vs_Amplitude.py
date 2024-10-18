@@ -50,17 +50,15 @@ class Parameters(NodeParameters):
     frequency_step_in_mhz: float = 0.1
     simulate: bool = False
     timeout: int = 100
-    forced_flux_bias_v: Optional[float] = None
     max_power_dbm: int = 2
     min_power_dbm: int = -50
     max_amp: float = 0.4
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
     ro_line_attenuation_dB: float = 0
     multiplexed: bool = True
 
 
 node = QualibrationNode(
-    name="02c_Resonator_Spectroscopy_vs_Amplitude", parameters=Parameters()
+    name="02b_Resonator_Spectroscopy_vs_Amplitude", parameters=Parameters()
 )
 
 
@@ -132,8 +130,6 @@ for i, qubit in enumerate(qubits):
         )
         # qubit.resonator.frequency_converter_up.gain = min(10, max(-20, int(node.parameters.max_power_dbm - u.volts2dBm(node.parameters.max_amp))))
         # qubit.resonator.operations["readout"].full_scale_power_dbm = node.parameters.max_power_dbm
-        if node.parameters.forced_flux_bias_v is not None:
-            qubit.z.joint_offset = node.parameters.forced_flux_bias_v
         tracked_qubits.append(qubit)
 
 # Generate the OPX and Octave configurations
@@ -156,7 +152,6 @@ amps = np.geomspace(
 span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span / 2, +span / 2, step)
-flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 
 with program() as multi_res_spec_vs_amp:
     # Declare 'I' and 'Q' and the corresponding streams for the two resonators.
@@ -166,15 +161,6 @@ with program() as multi_res_spec_vs_amp:
     df = declare(int)  # QUA variable for the readout frequency
 
     for i, qubit in enumerate(qubits):
-        # Bring the active qubits to the minimum frequency point
-        if flux_point == "independent":
-            machine.apply_all_flux_to_min()
-            qubit.z.to_independent_idle()
-        elif flux_point == "joint":
-            machine.apply_all_flux_to_joint_idle()
-        else:
-            machine.apply_all_flux_to_zero()
-
         # resonator of this qubit
         rr = qubit.resonator
 
@@ -217,6 +203,7 @@ if node.parameters.simulate:
     node.save()
 
 else:
+    # qm = qmm.open_qm(config, close_other_machines=True)
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(multi_res_spec_vs_amp)
 

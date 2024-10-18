@@ -1,0 +1,36 @@
+[qualibrate]
+config_version = 1
+project = "init_project"
+log_folder = "/home/hiro/.qualibrate/logs"
+
+[qualibrate.storage]
+type = "local_storage"
+location = "/home/hiro/.qualibrate/user_storage/init_project"
+
+[qualibrate_composite.app]
+spawn = true
+
+[qualibrate_composite.runner]
+spawn = true
+address = "http://localhost:8001/execution/"
+timeout = 1.0
+
+[qualibrate_app]
+config_version = 1
+static_site_files = "/mnt/c/Users/hiroyukii/Documents/Codes/test-qualibrate/CS_installations/qm/lib/python3.11/site-packages/qualibrate_static"
+metadata_out_path = "data_path"
+
+[qualibrate_app.timeline_db]
+address = "http://localhost:8000/"
+timeout = 1.0
+
+[qualibrate_app.runner]
+address = "http://localhost:8001/execution/"
+timeout = 1.0
+
+[qualibrate_runner]
+calibration_library_resolver = "qualibrate.qualibration_library.QualibrationLibrary"
+calibration_library_folder = "/mnt/c/Users/hiroyukii/Documents/Codes/test-qualibrate/CS_installations/calibration_graph"
+
+[active_machine]
+path = "/mnt/c/Users/hiroyukii/Documents/Codes/test-qualibrate/CS_installations/configuration/quam_state"

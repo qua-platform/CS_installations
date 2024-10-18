@@ -55,7 +55,7 @@ with program() as prog:
 # job = qmm.simulate(config, prog, SimulationConfig(duration=1000))
 # job.get_simulated_samples().con1.plot()
 
-qm = qmm.open_qm(config)
+qm = qmm.open_qm(config, close_other_machines=True)
 job = qm.execute(prog)
 plt.show()
 

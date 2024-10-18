@@ -48,7 +48,6 @@ class Parameters(NodeParameters):
     max_circuit_depth: int = 1000  # Maximum circuit depth
     delta_clifford: int = 20
     seed: int = 345324
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
     timeout: int = 100
@@ -339,6 +338,7 @@ if node.parameters.simulate:
 else:
     # Prepare data for saving
     node.results = {}
+    # qm = qmm.open_qm(config, close_other_machines=True)
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(randomized_benchmarking)
         for i in range(num_qubits):
