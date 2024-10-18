@@ -18,6 +18,11 @@ Prerequisites:
     - Having the qubit frequency perfectly calibrated (ramsey).
     - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
     - Set the desired flux bias.
+    
+possible refs: https://pure.tudelft.nl/ws/portalfiles/portal/120089818/Dissertation_Xiao_Xue_final.pdf#page=75 \ https://journals.aps.org/prx/abstract/10.1103/PhysRevX.9.021011
+
+
+    
 """
 from qualibrate import QualibrationNode, NodeParameters
 from typing import Optional, Literal, List

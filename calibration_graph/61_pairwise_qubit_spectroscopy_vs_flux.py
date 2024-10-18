@@ -114,7 +114,11 @@ with program() as multi_qubit_spec_vs_flux:
     dc = declare(fixed)  # QUA variable for the flux dc level
 
     for i, qp in enumerate(qubit_pairs):
-
+        if "readout_QND" in qubit.resonator.operations:
+            readout_pulse_name = "readout_QND"
+        else:
+            readout_pulse_name = "readout"
+            
         qubit = qp.qubit_control
         mutual_flux_point = machine.set_all_fluxes(flux_point, qp)
         wait(1000)
@@ -147,7 +151,7 @@ with program() as multi_qubit_spec_vs_flux:
                     qubit.z.set_dc_offset(mutual_flux_point[0])
                     qubit.align()
                     # QUA macro to read the state of the active resonators
-                    qubit.resonator.measure("readout", qua_vars=(I1[i], Q1[i]))
+                    qubit.resonator.measure("readout", qua_vars=(I1[i], Q1[i]), pulse_name = readout_pulse_name)
                     # save data
                     save(I1[i], I1_st[i])
                     save(Q1[i], Q1_st[i])
@@ -188,7 +192,7 @@ with program() as multi_qubit_spec_vs_flux:
                     qubit.z.set_dc_offset(mutual_flux_point[1])
                     qubit.align()
                     # QUA macro to read the state of the active resonators
-                    qubit.resonator.measure("readout", qua_vars=(I2[i], Q2[i]))
+                    qubit.resonator.measure("readout", qua_vars=(I2[i], Q2[i]), pulse_name = readout_pulse_name)
                     # save data
                     save(I2[i], I2_st[i])
                     save(Q2[i], Q2_st[i])
