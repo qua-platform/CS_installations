@@ -7,6 +7,7 @@ from qualang_tools.octave_tools import octave_calibration_tool
 from qm import QuantumMachine, logger
 from typing import Union
 from qm.qua import align
+import numpy as np
 
 
 __all__ = ["Transmon"]
@@ -40,6 +41,7 @@ class Transmon(QuamComponent):
     f_12: float = None
     anharmonicity: int = 150e6
     freq_vs_flux_01_quad_term : float = 0.0
+    arbitrary_intermediate_frequency : float = 0.0
 
     T1: int = 10_000
     T2ramsey: int = 10_000
@@ -51,7 +53,13 @@ class Transmon(QuamComponent):
     
     GEF_frequency_shift : int = 10
     chi : float = 0.0
-    
+
+    def get_output_power(self, operation, Z=50) -> float:
+        power = self.xy.opx_output.full_scale_power_dbm
+        amplitude = self.xy.operations[operation].amplitude
+        x_mw = 10 ** (power / 10)
+        x_v = amplitude * np.sqrt(2 * Z * x_mw / 1000)
+        return 10 * np.log10(((x_v / np.sqrt(2)) ** 2 * 1000) / Z)
 
     @property
     def inferred_f_12(self) -> float:
@@ -134,4 +142,4 @@ class Transmon(QuamComponent):
             raise ValueError("Qubit pair not found: qubit_control={self.name}, " "qubit_target={other.name}")
         
     def align(self):
-        align(self.xy.name, self.z.name, self.resonator.name)
+        align(self.xy.name, self.resonator.name)

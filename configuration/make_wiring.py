@@ -7,7 +7,7 @@ from quam_libs.quam_builder.machine import build_quam_wiring
 
 # # Define static parameters
 # host_ip = "172.16.33.107"  # "172.16.33.101"
-# cluster_name = "Beta_8"  # "Cluster_81"
+# cluster_name = "Beta_8"  # "Cluster
 # path = "/workspaces/CS_installations/configuration/quam_state"
 
 # Define static parameters

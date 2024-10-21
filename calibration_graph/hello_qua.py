@@ -1,11 +1,9 @@
-#%%
+# %%
 from qm.qua import *
-from qm import SimulationConfig
 from qualang_tools.units import unit
 from quam_libs.components import QuAM
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.signal import savgol_filter
 from qualang_tools.units import unit
 from quam_libs.components import QuAM
 
@@ -15,30 +13,32 @@ from quam_libs.components import QuAM
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-path = "/workspaces/CS_installations/configuration/quam_state"
-machine = QuAM.load(path)
+# path = "../configuration/quam_state"
+machine = QuAM.load()
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
-octave_config = machine.get_octave_config()
+# octave_config = machine.get_octave_config()
 # Open Communication with the QOP
 qmm = machine.connect()
+calibrate_octave = True
 
 qubits = machine.active_qubits
 
 with program() as prog:
-
-    qubits[0].xy.update_frequency(-50e6)
+    qubits[0].xy.update_frequency(-100e6)
     qubits[1].xy.update_frequency(-100e6)
-    qubits[0].resonator.play('const')
-    qubits[1].resonator.play('const')
+
+    qubits[0].xy.play("x180")
+    qubits[1].xy.play('x180')
+    align()
+    qubits[0].resonator.play("readout")
 
 
-# job = qmm.simulate(config, prog, SimulationConfig(duration=1000))
-# job.get_simulated_samples().con1.plot()
-
-qm = qmm.open_qm(config)
+qm = qmm.open_qm(config, close_other_machines=True)
+if calibrate_octave:
+    machine.calibrate_octave_ports(qm)
 job = qm.execute(prog)
-# plt.show()
+plt.show()
 
 
 # %%

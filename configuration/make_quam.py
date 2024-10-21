@@ -1,10 +1,9 @@
 # %%
 from pathlib import Path
-
 from quam_libs.components import QuAM
 from quam_libs.quam_builder.machine import build_quam
 
-path = "/workspaces/CS_installations/configuration/quam_state"
+path = "./quam_state"
 
 machine = QuAM.load(path)
 
@@ -14,5 +13,7 @@ octave_settings = {"octave1": {"port": 11232} }  # externally configured: (11XXX
 
 # Make the QuAM object and save it
 quam = build_quam(machine, quam_state_path=path, octaves_settings=octave_settings)
+machine.network["data_folder"] = Path(path).resolve().parent.parent.as_posix()
+
 
 # %%
