@@ -40,13 +40,13 @@ import xarray as xr
 # %% {Node_parameters}
 class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
-    num_averages: int = 1000
+    num_averages: int = 10
     operation: str = "x180"
     min_amp_factor: float = 0.0001
     max_amp_factor: float = 2.0
-    amp_factor_step: float = 0.05
-    max_number_pulses_per_sweep: int = 1
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
+    amp_factor_step: float = 0.1
+    max_number_pulses_per_sweep: int = 40
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
     timeout: int = 100
 
@@ -59,7 +59,7 @@ node = QualibrationNode(name="09c_DRAG_Calibration_180_90", parameters=Parameter
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
 machine = QuAM.load()
-# Generate the OPX and Octave configurations
+operation = node.parameters.operation  # The qubit operation to play
 if node.parameters.qubits is None or node.parameters.qubits == "":
     qubits = machine.active_qubits
 else:
@@ -70,7 +70,7 @@ num_qubits = len(qubits)
 tracked_qubits = []
 for q in qubits:
     with tracked_updates(q, auto_revert=False, dont_assign_to_none=True) as q:
-        q.xy.operations["x180"].alpha = -1.0
+        q.xy.operations[operation].alpha = -1.0
         tracked_qubits.append(q)
 
 config = machine.generate_config()
@@ -78,11 +78,24 @@ octave_config = machine.get_octave_config()
 # Open Communication with the QOP
 qmm = machine.connect()
 
+if node.parameters.qubits is None or node.parameters.qubits == "":
+    qubits = machine.active_qubits
+else:
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
+num_qubits = len(qubits)
+# %%
+# Print intermediate frequencies of all qubits
+print("Intermediate frequencies of qubits:")
+for qubit in qubits:
+    print(f"{qubit.name}: {qubit.xy.intermediate_frequency / 1e6:.3f} MHz")
+
+# %%
+
+
 
 # %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 reset_type = node.parameters.reset_type_thermal_or_active  # "active" or "thermal"
-operation = node.parameters.operation  # The qubit operation to play
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
 amps = np.arange(
     node.parameters.min_amp_factor,
@@ -145,15 +158,15 @@ if node.parameters.simulate:
     node.save()
 
 else:
-    # qm = qmm.open_qm(config, close_other_machines=True)
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(drag_calibration)
+    qm = qmm.open_qm(config, close_other_machines=True)
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    job = qm.execute(drag_calibration)
 
-        # %% {Live_plot}
-        results = fetching_tool(job, ["n"], mode="live")
-        while results.is_processing():
-            n = results.fetch_all()[0]
-            progress_counter(n, n_avg, start_time=results.start_time)
+    # %% {Live_plot}
+    results = fetching_tool(job, ["n"], mode="live")
+    while results.is_processing():
+        n = results.fetch_all()[0]
+        progress_counter(n, n_avg, start_time=results.start_time)
 
     # %% {Data_fetching_and_dataset_creation}
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)

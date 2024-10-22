@@ -318,18 +318,18 @@ if node.parameters.simulate:
 else:
     # Prepare data for saving
     node.results = {}
-    # qm = qmm.open_qm(config, close_other_machines=True)
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(randomized_benchmarking)
-        for i in range(num_qubits):
-            print(f"Fetching results for qubit {qubits[i].name}")
-            data_list = ["iteration"]
-            results = fetching_tool(job, data_list, mode="live")
-            while results.is_processing():
-                # Fetch results
-                fetched_data = results.fetch_all()
-                m = fetched_data[0]
-                progress_counter(m, num_of_sequences, start_time=results.start_time)
+    qm = qmm.open_qm(config, close_other_machines=True)
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    job = qm.execute(randomized_benchmarking, flags=['not-strict-timing'])
+    for i in range(num_qubits):
+        print(f"Fetching results for qubit {qubits[i].name}")
+        data_list = ["iteration"]
+        results = fetching_tool(job, data_list, mode="live")
+        while results.is_processing():
+            # Fetch results
+            fetched_data = results.fetch_all()
+            m = fetched_data[0]
+            progress_counter(m, num_of_sequences, start_time=results.start_time)
 
 # %%
 depths = np.arange(0, max_circuit_depth + 0.1, delta_clifford)

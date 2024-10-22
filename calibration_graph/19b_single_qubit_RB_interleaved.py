@@ -44,6 +44,9 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     use_state_discrimination: bool = True
     use_strict_timing: bool = True
+    # Correspondence table:
+    #  0: identity |  1: x180 |  2: y180
+    # 12: x90      | 13: -x90 | 14: y90 | 15: -y90 |
     interleaved_gate_index: int = 2
     num_random_sequences: int = 50  # Number of random sequences
     num_averages: int = 20
@@ -352,7 +355,7 @@ else:
     for qubit in qubits:
         qm = qmm.open_qm(config, close_other_machines=True)
         # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(get_rb_interleaved_program(qubit))
+        job = qm.execute(get_rb_interleaved_program(qubit), flags=['not-strict-timing'])
         if state_discrimination:
             results = fetching_tool(
                 job, data_list=["state_avg", "iteration"], mode="live"
