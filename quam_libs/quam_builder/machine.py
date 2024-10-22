@@ -16,7 +16,7 @@ from quam_libs.quam_builder.wiring.create_wiring import create_wiring
 
 
 def build_quam(machine: QuAM, quam_state_path: Union[Path, str], octaves_settings: Dict = {}) -> QuAM:
-    add_octaves(machine, octaves_settings, Path(quam_state_path).parent)
+    add_octaves(machine, octaves_settings, quam_state_path)
     add_ports(machine)
     add_transmons(machine)
     add_pulses(machine)
@@ -128,8 +128,9 @@ def add_octaves(machine: QuAM, octaves_settings: Dict, quam_state_path: Union[Pa
     machine.network["octave_ips"] = octave_ips
     machine.network["octave_ports"] = octave_ports
 
-    if isinstance(quam_state_path, Path):
-        quam_state_path = str(quam_state_path.parent.resolve())
+    if isinstance(quam_state_path, str):
+        quam_state_path = Path(quam_state_path)
+    quam_state_path = str(quam_state_path.parent.resolve())
     for i, octave_name in enumerate(octaves_settings):
         octave = Octave(
             name=octave_name,
