@@ -30,14 +30,14 @@ class TransmonPair(QuamComponent):
     
     def align(self):
         if self.coupler:
-            align(self.qubit_control.xy.name, self.qubit_control.z.name, self.qubit_control.resonator.name, self.qubit_target.xy.name, 
+            align(self.qubit_control.xy.name, self.qubit_control.z.name, self.qubit_control.resonator.name, self.qubit_target.xy.name,
                   self.qubit_target.z.name, self.qubit_target.resonator.name, self.coupler.name)
         else:
-            align(self.qubit_control.xy.name, self.qubit_control.z.name, self.qubit_control.resonator.name, self.qubit_target.xy.name, 
+            align(self.qubit_control.xy.name, self.qubit_control.z.name, self.qubit_control.resonator.name, self.qubit_target.xy.name,
                   self.qubit_target.z.name, self.qubit_target.resonator.name)
-            
+
     def to_mutual_idle(self):
         """Set the flux bias to the mutual idle offset"""
         self.qubit_control.z.set_dc_offset(self.mutual_flux_bias[0])
         self.qubit_target.z.set_dc_offset(self.mutual_flux_bias[1])
-            
+

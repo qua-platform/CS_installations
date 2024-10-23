@@ -58,10 +58,10 @@ from quam_libs.lib.pulses import FluxPulse
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubit_pairs: Optional[List[str]] = ["q1-q2"]
+    qubit_pairs: Optional[List[str]] = ["q1_q2"]
     num_averages: int = 200
-    flux_point_joint_or_independent_or_pairwise: Literal["joint", "independent", "pairwise"] = "pairwise"
-    reset_type: Literal['active', 'thermal'] = "active"
+    flux_point_joint_or_independent_or_pairwise: Literal["joint", "independent", "pairwise"] = "joint"
+    reset_type: Literal['active', 'thermal'] = "thermal"
     simulate: bool = False
     timeout: int = 100
     load_data_id: Optional[int] = None
@@ -163,8 +163,8 @@ with program() as CPhase_Oscillations:
                     # qp.qubit_target.xy.play("x180")
                                     
                     align()
-                    qp.qubit_control.z.play("const", amplitude_scale = flux_qubit / 0.1, duration = 10)
-                    qp.coupler.play("const", amplitude_scale = flux_coupler / 0.1, duration = 10)
+                    qp.qubit_control.z.play("const", amplitude_scale = flux_qubit / qp.qubit_control.z.operations["const"].amplitude, duration = 10)
+                    qp.coupler.play("const", amplitude_scale = flux_coupler / qp.coupler.operations["const"].amplitude, duration = 10)
                     align()
                     wait(20)
                     # readout

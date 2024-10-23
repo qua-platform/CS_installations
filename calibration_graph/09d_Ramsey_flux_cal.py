@@ -33,7 +33,7 @@ class Parameters(NodeParameters):
     flux_point_joint_or_independent: Literal['joint', 'independent'] = "joint"
     simulate: bool = False
     timeout: int = 100
-    flux_mode_dc_or_pulsed: Literal['dc', 'pulsed'] = 'pulsed'
+    flux_mode_dc_or_pulsed: Literal['dc', 'pulsed'] = 'dc'
 
 node = QualibrationNode(
     name="09d_Ramsey_flux_cal",
@@ -144,7 +144,7 @@ with program() as ramsey:
                 align() 
 
                 with for_(*from_array(t, idle_times)):
-                    readout_state(qubit, init_state, pulse_name = "readout_QND")
+                    readout_state(qubit, init_state, pulse_name = "readout")
                     qubit.align()
                     # Rotate the frame of the second x90 gate to implement a virtual Z-rotation
                     # 4*tau because tau was in clock cycles and 1e-9 because tau is ns
@@ -171,7 +171,7 @@ with program() as ramsey:
                     # Align the elements to measure after playing the qubit pulse.
                     align()
                     # Measure the state of the resonators
-                    readout_state(qubit, state[i], pulse_name = "readout_QND")
+                    readout_state(qubit, state[i], pulse_name = "readout")
                     assign(state[i], init_state ^ state[i])
                     save(state[i], state_st[i])
                     

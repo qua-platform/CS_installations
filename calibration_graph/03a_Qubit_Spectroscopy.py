@@ -60,7 +60,7 @@ class Parameters(NodeParameters):
     flux_point_joint_or_independent_or_arbitrary: Literal[
         "joint", "independent", "arbitrary"
     ] = "joint"
-    target_peak_width: Optional[int] = 2e6
+    target_peak_width: Optional[float] = 2e6
     arbitrary_flux_bias: Optional[float] = None
     arbitrary_qubit_frequency_in_ghz: Optional[float] = None
     simulate: bool = False
@@ -239,49 +239,14 @@ if node.parameters.simulate:
 else:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(qubit_spec)
-        # Get results from QUA program
-        data_list = ["n"] + sum(
-            [[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_qubits)], []
-        )
-        results = fetching_tool(job, data_list, mode="live")
 
-        # Live plotting
-        fig = plt.figure()
-        interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+        # %% {Live_plot}
+        results = fetching_tool(job, ["n"], mode="live")
         while results.is_processing():
             # Fetch results
-            fetched_data = results.fetch_all()
-            n = fetched_data[0]
-            I = fetched_data[1::2]
-            Q = fetched_data[2::2]
-
+            n = results.fetch_all()[0]
             # Progress bar
             progress_counter(n, n_avg, start_time=results.start_time)
-
-            plt.suptitle("Qubit spectroscopy")
-            s_data = []
-            for i, qubit in enumerate(qubits):
-                s = u.demod2volts(
-                    I[i] + 1j * Q[i], qubit.resonator.operations["readout"].length
-                )
-                s_data.append(s)
-                plt.subplot(2, num_qubits, i + 1)
-                plt.cla()
-                plt.plot((qubit.xy.RF_frequency + dfs) / u.MHz, np.abs(s))
-                plt.plot(qubit.xy.RF_frequency / u.MHz, max(np.abs(s)), "r*")
-                plt.grid(True)
-                plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
-                plt.title(f"{qubit.name} (f_01: {qubit.xy.RF_frequency / u.MHz} MHz)")
-                plt.subplot(2, num_qubits, num_qubits + i + 1)
-                plt.cla()
-                plt.plot((qubit.xy.RF_frequency + dfs) / u.MHz, np.unwrap(np.angle(s)))
-                plt.plot(qubit.xy.RF_frequency / u.MHz, max(np.unwrap(np.angle(s))), "r*")
-                plt.grid(True)
-                plt.ylabel("Phase [rad]")
-                plt.xlabel(f"{qubit.name} detuning [MHz]")
-
-            plt.tight_layout()
-            plt.pause(0.1)
 
     # %% {Data_fetching_and_dataset_creation}
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)

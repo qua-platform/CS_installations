@@ -42,11 +42,11 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     num_averages: int = 20
     operation: str = "x180"
-    frequency_span_in_mhz: float = 10
+    frequency_span_in_mhz: float = 20
     frequency_step_in_mhz: float = 0.02
     max_number_pulses_per_sweep: int = 20
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
     timeout: int = 100
     DRAG_setpoint: Optional[float] = -1.0
