@@ -19,7 +19,6 @@ class FluxLine(SingleChannel):
     joint_offset: float = 0.0
     min_offset: float = 0.0
     arbitrary_offset: float = 0.0
-    quad_term: float = 0.0
 
     def to_independent_idle(self):
         """Set the flux bias to the independent offset"""
@@ -34,5 +33,5 @@ class FluxLine(SingleChannel):
         self.set_dc_offset(self.min_offset)
 
     def to_zero(self):
-        """Set the flux bias to the min offset"""
+        """Set the flux bias to 0.0 V"""
         self.set_dc_offset(0.0)
