@@ -52,7 +52,7 @@ qpu.channels["qubit_xy"] = IQChannel(
     opx_output_I=("con1", 3),
     opx_output_Q=("con1", 4),
     frequency_converter_up=octave.RF_outputs[2].get_reference(),
-    intermediate_frequency=50e6
+    intermediate_frequency=50e6,
 )
 octave.RF_outputs[2].channel = qpu.channels["qubit_xy"].get_reference()
 octave.RF_outputs[2].LO_frequency = 4 * u.GHz
