@@ -42,10 +42,9 @@ frequencies = np.arange(
 
 depletion_time = 5 * u.us
 
-print(qpu.octaves["octave1"].get_octave_config())
+resonator = qpu.channels["resonator"]
 
 with program() as resonator_spec:
-    resonator = qpu.channels["resonator"]
 
     n = declare(int)  # QUA variable for the averaging loop
     f = declare(int)  # QUA variable for the readout frequency

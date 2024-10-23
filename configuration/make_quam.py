@@ -70,6 +70,12 @@ pi_pulse = pulses.GaussianPulse(length=20, amplitude=0.1, sigma=8)
 
 qpu.channels["qubit_xy"].operations["x180"] = pi_pulse
 
+# Add square pulse
+
+square = pulses.SquarePulse(length=20, amplitude=0.1)
+
+qpu.channels["qubit_xy"].operations["square"] = square
+
 # Add saturation pulse
 
 saturation_pulse = pulses.SquarePulse(length=5_000, amplitude=0.01)
