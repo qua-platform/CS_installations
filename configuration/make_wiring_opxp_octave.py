@@ -4,8 +4,8 @@ from qualang_tools.wirer import Instruments, Connectivity, allocate_wiring, visu
 from quam_libs.quam_builder.machine import build_quam_wiring
 
 # Define static parameters
-host_ip = "127.0.0.1"  # QOP IP address
-cluster_name = "Cluster_1"  # Name of the cluster
+host_ip = "172.16.33.101"  # QOP IP address
+cluster_name = "Cluster_81"  # Name of the cluster
 # Desired location of wiring.json and state.json
 # The folder must not contain other json files.
 path = "./quam_state"

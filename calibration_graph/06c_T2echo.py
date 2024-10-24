@@ -16,7 +16,7 @@ class Parameters(NodeParameters):
     reset_type: Literal["active", "thermal"] = "thermal"
 
 
-node = QualibrationNode(name="t2_echo", parameters=Parameters())
+node = QualibrationNode(name="06c_T2echo", parameters=Parameters())
 
 
 from qm.qua import *

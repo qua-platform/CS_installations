@@ -50,7 +50,7 @@ class Parameters(NodeParameters):
     use_state_discrimination: bool = False
 
 
-node = QualibrationNode(name="05_Ramsey", parameters=Parameters())
+node = QualibrationNode(name="06a_Ramsey", parameters=Parameters())
 
 
 # Class containing tools to help handle units and conversions.

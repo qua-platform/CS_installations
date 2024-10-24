@@ -43,9 +43,7 @@ class Parameters(NodeParameters):
     timeout: int = 100
 
 
-node = QualibrationNode(
-    name="06a_Readout_Frequency_Optimization", parameters=Parameters()
-)
+node = QualibrationNode(name="09a_Readout_Frequency_Optimization", parameters=Parameters())
 
 
 # %% {Initialize_QuAM_and_QOP}

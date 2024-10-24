@@ -58,9 +58,7 @@ class Parameters(NodeParameters):
     timeout: int = 100
 
 
-node = QualibrationNode(
-    name="11b_Randomized_Benchmarking_Interleaved", parameters=Parameters()
-)
+node = QualibrationNode(name="19b_Randomized_Benchmarking_Interleaved", parameters=Parameters())
 
 
 # %% {Initialize_QuAM_and_QOP}

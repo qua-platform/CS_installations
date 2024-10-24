@@ -50,7 +50,7 @@ class Parameters(NodeParameters):
     DRAG_setpoint: Optional[float] = -1.0
 
 
-node = QualibrationNode(name="09a_Stark_Detuning", parameters=Parameters())
+node = QualibrationNode(name="11a_Stark_Detuning", parameters=Parameters())
 
 
 # %% {Initialize_QuAM_and_QOP}

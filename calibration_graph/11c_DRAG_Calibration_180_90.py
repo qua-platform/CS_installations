@@ -51,7 +51,7 @@ class Parameters(NodeParameters):
     timeout: int = 100
 
 
-node = QualibrationNode(name="09c_DRAG_Calibration_180_90", parameters=Parameters())
+node = QualibrationNode(name="11c_DRAG_Calibration_180_90", parameters=Parameters())
 
 
 # %% {Initialize_QuAM_and_QOP}

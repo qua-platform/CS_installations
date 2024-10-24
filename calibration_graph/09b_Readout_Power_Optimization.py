@@ -52,7 +52,7 @@ class Parameters(NodeParameters):
     outliers_threshold: float = 0.98
 
 
-node = QualibrationNode(name="06b_Readout_Power_Optimization", parameters=Parameters())
+node = QualibrationNode(name="09b_Readout_Power_Optimization", parameters=Parameters())
 
 from sklearn.mixture import GaussianMixture
 

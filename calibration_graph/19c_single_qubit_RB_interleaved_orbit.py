@@ -30,6 +30,8 @@ Prerequisites:
     - Qubit frequency has been precisely calibrated (ramsey).
     - (optional) Readout has been calibrated (readout frequency, amplitude, duration optimization, IQ blobs) for improved SNR.
 """
+
+
 import copy
 import logging
 
@@ -63,9 +65,7 @@ class Parameters(NodeParameters):
     timeout: int = 100
 
 
-node = QualibrationNode(
-    name="11c_Randomized_Benchmarking_Interleaved_ORBIT", parameters=Parameters()
-)
+node = QualibrationNode(name="19c_Randomized_Benchmarking_Interleaved_ORBIT", parameters=Parameters())
 
 
 from qm.qua import *
