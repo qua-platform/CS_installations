@@ -12,25 +12,26 @@ Before proceeding to the next node, take the following steps:
       mixer_qubit_g & mixer_qubit_g or mixer_resonator_g & mixer_resonator_g.
 """
 
+from configuration.make_quam import qpu
 from qm import QuantumMachinesManager
 from qm.qua import *
-from configuration import *
 
 ###################
 # The QUA program #
 ###################
-element = "resonator"
+
+resonator = qpu.channels["resonator"]
 
 with program() as cw_output:
     with infinite_loop_():
         # It is best to calibrate LO leakage first and without any power played (cf. note below)
-        play("cw" * amp(0), element)
+        resonator.play("readout", amplitude_scale=0)
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
-qm = qmm.open_qm(config)
+qmm = QuantumMachinesManager(host="172.16.33.101", cluster_name="Cluster_81")
+qm = qmm.open_qm(qpu.generate_config())
 
 job = qm.execute(cw_output)
 
