@@ -1,7 +1,9 @@
 from dataclasses import field
 from typing import Dict
 
+import numpy as np
 from qualang_tools.units import unit
+from scipy import cluster
 
 from quam.components import (
     BasicQuAM,
@@ -14,15 +16,20 @@ from quam.components import (
     pulses,
 )
 
+# Config variables
+
+qop_ip = "172.16.33.101"
+cluster_name = "Cluster_81"
+
 u = unit(coerce_to_integer=True)
 
 octave = Octave(
-    name="octave1",
+    name="oct1",
     ip="172.16.33.101",
     port=11232,
 )
 
-qpu = BasicQuAM(octaves={"octave1": octave})
+qpu = BasicQuAM(octaves={"oct1": octave})
 
 # Add Octave to the qpu
 
@@ -45,6 +52,7 @@ octave.RF_inputs[1].channel = qpu.channels["resonator"].get_reference()
 octave.RF_outputs[1].LO_frequency = 6 * u.GHz
 octave.RF_inputs[1].LO_frequency = 6 * u.GHz
 
+depletion_time = 10 * u.us
 
 # Add Qubit xy drive channel
 
@@ -81,3 +89,6 @@ qpu.channels["qubit_xy"].operations["square"] = square
 saturation_pulse = pulses.SquarePulse(length=5_000, amplitude=0.01)
 
 qpu.channels["qubit_xy"].operations["saturation"] = saturation_pulse
+
+
+config = qpu.generate_config()

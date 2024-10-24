@@ -18,15 +18,18 @@ Before proceeding to the next node:
     - Update the readout frequencies, labeled as "resonator_IF" and "resonator_LO", in the configuration.
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from configuration_with_octave import *
-from qualang_tools.results import progress_counter, wait_until_job_is_paused
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
+import numpy as np
+from configuration.make_quam import *
+from qm import QuantumMachinesManager
+from qm.qua import *
+from qualang_tools.loops import from_array
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import progress_counter, wait_until_job_is_paused
+from qualang_tools.units import unit
 from scipy.signal import detrend
 
+u = unit(coerce_to_integer=True)
 
 ###################
 # The QUA program #
@@ -37,9 +40,11 @@ n_avg = 100  # The number of averages
 f_min = 21 * u.MHz
 f_max = 271 * u.MHz
 df = 500 * u.kHz
-IFs = np.arange(f_min, f_max + 0.1, df)  # The intermediate frequency vector (+ 0.1 to add f_max to IFs)
+IFs = np.arange(
+    f_min, f_max + 0.1, df
+)  # The intermediate frequency vector (+ 0.1 to add f_max to IFs)
 # This is to make sure that the center IF is the one used in the config for the correction parameters to be updated.
-config["elements"]["resonator"]["intermediate_frequency"] = IFs[len(IFs) // 2]
+qpu.channels["resonator"].intermediate_frequency = IFs[len(IFs) // 2]
 
 # The LO frequency sweep parameters
 f_min_lo = 4.0e9
@@ -48,8 +53,11 @@ df_lo = f_max - f_min
 LOs = np.arange(f_min_lo, f_max_lo + 0.1, df_lo)
 frequency = np.array(np.concatenate([IFs + LOs[i] for i in range(len(LOs))]))
 
+resonator = qpu.channels["resonator"]
+
 with program() as resonator_spec:
     n = declare(int)  # QUA variable for the averaging loop
+    k = declare(int)  #TODO: remove
     i = declare(int)  # QUA variable for the LO frequency sweep
     f = declare(int)  # QUA variable for the resonator IF
     I = declare(fixed)  # QUA variable for the measured 'I' quadrature
@@ -63,17 +71,12 @@ with program() as resonator_spec:
         with for_(n, 0, n < n_avg, n + 1):
             with for_(*from_array(f, IFs)):
                 # Update the frequency of the digital oscillator linked to the resonator element
-                update_frequency("resonator", f)
+                resonator.update_frequency(f)
                 # Measure the state of the resonator
-                measure(
-                    "readout",
-                    "resonator",
-                    None,
-                    dual_demod.full("cos", "out1", "sin", "out2", I),
-                    dual_demod.full("minus_sin", "out1", "cos", "out2", Q),
-                )
+                with for_(k, 0, k < 1000, k + 1):
+                    resonator.measure("readout", qua_vars=(I, Q))
                 # Wait for the resonator to deplete
-                wait(depletion_time * u.ns, "resonator")
+                resonator.wait(depletion_time)
                 # Save the 'I' & 'Q' quadratures to their respective streams
                 save(I, I_st)
                 save(Q, Q_st)
@@ -90,7 +93,10 @@ with program() as resonator_spec:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip,
+    cluster_name=cluster_name,
+)
 
 
 ###############
@@ -100,7 +106,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 qm = qmm.open_qm(config)
 
 # Calibrate the element for each LO frequency of the sweep and the central intermediate frequency
-calibrate = True
+calibrate = False
 if calibrate:
     for lo in LOs:
         print(f"Calibrate (LO, IF) = ({lo/u.MHz}, {IFs[len(IFs) // 2]/u.MHz}) MHz")
@@ -116,6 +122,8 @@ Q_tot = []
 # Live plotting
 fig = plt.figure()
 interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+
+readout_len = qpu.channels["resonator"].operations["readout"].length
 
 for i, LO in enumerate(LOs):  # Loop over the LO frequencies
     # Set the frequency of the LO source

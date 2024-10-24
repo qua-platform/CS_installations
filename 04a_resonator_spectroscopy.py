@@ -15,16 +15,18 @@ Before proceeding to the next node:
     - Update the readout frequency, labeled as "resonator_IF", in the configuration.
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
+import numpy as np
+from configuration.make_quam import qpu
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.loops import from_array
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import fetching_tool, progress_counter
+from qualang_tools.units import unit
 from scipy import signal
 
+u = unit(coerce_to_integer=True)
 
 ###################
 # The QUA program #
@@ -34,9 +36,16 @@ n_avg = 1000  # The number of averages
 f_min = 30 * u.MHz
 f_max = 70 * u.MHz
 df = 100 * u.kHz
-frequencies = np.arange(f_min, f_max + 0.1, df)  # The frequency vector (+ 0.1 to add f_max to frequencies)
+frequencies = np.arange(
+    f_min, f_max + 0.1, df
+)  # The frequency vector (+ 0.1 to add f_max to frequencies)
+
+depletion_time = 5 * u.us
+
+resonator = qpu.channels["resonator"]
 
 with program() as resonator_spec:
+
     n = declare(int)  # QUA variable for the averaging loop
     f = declare(int)  # QUA variable for the readout frequency
     I = declare(fixed)  # QUA variable for the measured 'I' quadrature
@@ -46,19 +55,15 @@ with program() as resonator_spec:
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
-        with for_(*from_array(f, frequencies)):  # QUA for_ loop for sweeping the frequency
+        with for_(
+            *from_array(f, frequencies)
+        ):  # QUA for_ loop for sweeping the frequency
             # Update the frequency of the digital oscillator linked to the resonator element
-            update_frequency("resonator", f)
+            resonator.update_frequency(f)
             # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
-            measure(
-                "readout",
-                "resonator",
-                None,
-                dual_demod.full("cos", "sin", I),
-                dual_demod.full("minus_sin", "cos", Q),
-            )
+            resonator.measure("readout", qua_vars=(I, Q))
             # Wait for the resonator to deplete
-            wait(depletion_time * u.ns, "resonator")
+            resonator.wait(depletion_time * u.ns)
             # Save the 'I' & 'Q' quadratures to their respective streams
             save(I, I_st)
             save(Q, Q_st)
@@ -74,7 +79,11 @@ with program() as resonator_spec:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host="172.16.33.101",       #TODO: could this not be hardcoded?
+    cluster_name="Cluster_81",
+    octave=qpu.octaves["octave1"].get_octave_config(),
+)
 
 #######################
 # Simulate or execute #
@@ -85,13 +94,14 @@ if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
-    job = qmm.simulate(config, resonator_spec, simulation_config)
+    job = qmm.simulate(qpu.generate_config(), resonator_spec, simulation_config)
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
+    plt.show()
 
 else:
     # Open the quantum machine
-    qm = qmm.open_qm(config)
+    qm = qmm.open_qm(qpu.generate_config())
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(resonator_spec)
     # Get results from QUA program
@@ -103,12 +113,13 @@ else:
         # Fetch results
         I, Q, iteration = results.fetch_all()
         # Convert results into Volts
-        S = u.demod2volts(I + 1j * Q, readout_len)
+        S = u.demod2volts(I + 1j * Q, qpu.channels["resonator"].operations["readout"].length)
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
+        resonator_LO = qpu.channels["resonator"].LO_frequency
         plt.suptitle(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
         ax1 = plt.subplot(211)
         plt.cla()
@@ -127,10 +138,14 @@ else:
 
         fit = Fit()
         plt.figure()
-        res_spec_fit = fit.reflection_resonator_spectroscopy(frequencies / u.MHz, R, plot=True)
+        res_spec_fit = fit.reflection_resonator_spectroscopy(
+            frequencies / u.MHz, R, plot=True
+        )
         plt.title(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
         plt.xlabel("Intermediate frequency [MHz]")
         plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
-        print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit['f'][0]:.6f} MHz")
+        print(
+            f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit['f'][0]:.6f} MHz"
+        )
     except (Exception,):
         pass

@@ -22,7 +22,7 @@ Before proceeding to the next node:
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from configuration import *
+from configuration.make_quam import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -43,6 +43,8 @@ a_min = 0.001
 a_max = 1.99
 amplitudes = np.geomspace(a_min, a_max, 20)
 
+resonator = qpu.channels["resonator"]
+resonator_IF = resonator.intermediate_frequency
 with program() as resonator_spec_2D:
     n = declare(int)  # QUA variable for the averaging loop
     df = declare(int)  # QUA variable for the readout frequency
@@ -56,19 +58,13 @@ with program() as resonator_spec_2D:
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the frequency
             # Update the frequency of the digital oscillator linked to the resonator element
-            update_frequency("resonator", df + resonator_IF)
+            resonator.update_frequency(df + resonator_IF)
             with for_each_(a, amplitudes):
                 # Measure the resonator (send a readout pulse whose amplitude is rescaled by the pre-factor 'a' [-2, 2)
                 # and demodulate the signals to get the 'I' & 'Q' quadratures)
-                measure(
-                    "readout" * amp(a),
-                    "resonator",
-                    None,
-                    dual_demod.full("cos", "sin", I),
-                    dual_demod.full("minus_sin", "cos", Q),
-                )
+                resonator.measure("readout", amplitude_scale=a, qua_vars=(I, Q))
                 # Wait for the resonator to deplete
-                wait(depletion_time * u.ns, "resonator")
+                resonator.wait(depletion_time)
                 # Save the 'I' & 'Q' quadratures to their respective streams
                 save(I, I_st)
                 save(Q, Q_st)
@@ -85,7 +81,7 @@ with program() as resonator_spec_2D:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
 #######################
 # Simulate or execute #
@@ -108,6 +104,9 @@ else:
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  #  Interrupts the job when closing the figure
+    readout_len = resonator.operations["readout"].length  # Length of the readout pulse
+    resonator_LO = resonator.LO_frequency
+    readout_amp = resonator.operations["readout"].amplitude
     while results.is_processing():
         # Fetch results
         I, Q, iteration = results.fetch_all()
@@ -139,3 +138,4 @@ else:
         plt.xlim(amplitudes[0] * readout_amp, amplitudes[-1] * readout_amp)
         plt.pause(0.1)
         plt.tight_layout()
+        plt.show()

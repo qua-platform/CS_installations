@@ -24,10 +24,11 @@ Before proceeding to the next node:
     - Update the qubit frequency, labeled as "qubit_IF", in the configuration.
 """
 
+import re
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from configuration import *
+from configuration.make_quam import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -47,7 +48,8 @@ span = 10 * u.MHz
 df = 100 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)
 
-
+resonator = qpu.channels["resonator"]
+qubit = qpu.channels["qubit_xy"]
 with program() as qubit_spec:
     n = declare(int)  # QUA variable for the averaging loop
     df = declare(int)  # QUA variable for the qubit frequency
@@ -60,22 +62,16 @@ with program() as qubit_spec:
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
             # Update the frequency of the digital oscillator linked to the qubit element
-            update_frequency("qubit", df + center)
+            qubit.update_frequency(df + center)
             # Play the saturation pulse to put the qubit in a mixed state - Can adjust the amplitude on the fly [-2; 2)
-            play("saturation" * amp(saturation_amp), "qubit", duration=saturation_len * u.ns)
+            qubit.play("saturation", amplitude_scale=saturation_amp)
             # Align the two elements to measure after playing the qubit pulse.
             # One can also measure the resonator while driving the qubit by commenting the 'align'
-            align("qubit", "resonator")
+            align()
             # Measure the state of the resonator
-            measure(
-                "readout",
-                "resonator",
-                None,
-                dual_demod.full("cos", "sin", I),
-                dual_demod.full("minus_sin", "cos", Q),
-            )
+            resonator.measure("readout", qua_vars=(I, Q))
             # Wait for the qubit to decay to the ground state
-            wait(thermalization_time * u.ns, "resonator")
+            resonator.wait(depletion_time)
             # Save the 'I' & 'Q' quadratures to their respective streams
             save(I, I_st)
             save(Q, Q_st)
@@ -91,18 +87,19 @@ with program() as qubit_spec:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, qubit_spec, simulation_config)
     job.get_simulated_samples().con1.plot()
+    plt.show()
 
 else:
     # Open the quantum machine
