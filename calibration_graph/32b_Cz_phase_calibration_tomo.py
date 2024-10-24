@@ -1,5 +1,8 @@
 # %%
 """
+
+This is node is not finalized yet, it suffers from a very strong dependence on the R/O fidelity and is not recommended to be used.
+
 Calibration of the Controlled-Phase (CPhase) of the CZ Gate
 
 This sequence calibrates the CPhase of the CZ gate by scanning the pulse amplitude and measuring the resulting phase of the target qubit. The calibration compares two scenarios:
@@ -53,21 +56,21 @@ from quam_libs.lib.plot_utils import QubitPairGrid, grid_iter, grid_pair_names
 from scipy.optimize import curve_fit
 from quam_libs.components.gates.two_qubit_gates import CZGate
 from quam_libs.lib.pulses import FluxPulse
-
+from quam_libs.lib.qua_datasets import apply_angle
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
     qubit_pairs: Optional[List[str]] = ['q2-q4']
-    num_averages: int = 10
+    num_averages: int = 1000
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
-    reset_type: Literal['active', 'thermal'] = "thermal"
+    reset_type: Literal['active', 'thermal'] = "active"
     simulate: bool = False
     timeout: int = 100
-    amp_range : float = 0.3
-    amp_step : float = 0.1
+    amp_range : float = 0.03
+    amp_step : float = 0.001
     load_data_id: Optional[int] = None
     plot_raw : bool = False
-    measure_leak : bool = False
+    measure_leak : bool = True
 
 
 node = QualibrationNode(
@@ -145,6 +148,7 @@ with program() as CPhase_Oscillations:
                         # reset
                         if node.parameters.reset_type == "active":
                             active_reset_gef(qp.qubit_control)
+                            qp.align()
                             active_reset(qp.qubit_target)
                             qp.align()
                         else:
@@ -161,7 +165,7 @@ with program() as CPhase_Oscillations:
                         # measure the traget qubit on the x or y axis
                         with if_(tomo_axis == 0, unsafe = False):
                             qp.qubit_target.xy.play("x90")    
-                        with else_(unsafe = False):
+                        with else_():
                             qp.qubit_target.xy.play("y90")
                             
                         # measure both qubits
@@ -177,8 +181,8 @@ with program() as CPhase_Oscillations:
     with stream_processing():
         n_st.save("n")
         for i in range(num_qubit_pairs):
-            state_st_control[i].buffer(len(amplitudes)).buffer(2).buffer(2).average().save(f"state_control{i + 1}")
-            state_st_target[i].buffer(len(amplitudes)).buffer(2).buffer(2).average().save(f"state_target{i + 1}")
+            state_st_control[i].buffer(2).buffer(2).buffer(len(amplitudes)).buffer(n_avg).average().save(f"state_control{i + 1}")
+            state_st_target[i].buffer(2).buffer(2).buffer(len(amplitudes)).buffer(n_avg).average().save(f"state_target{i + 1}")
 
 # %% {Simulate_or_execute}
 if node.parameters.simulate:
@@ -204,7 +208,7 @@ elif node.parameters.load_data_id is None:
 if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
-        ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {"amp": amplitudes, "tomo_axis": ["x", "y"], "control_axis": [0,1]})
+        ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {"control_axis": [0,1], "tomo_axis": ["x", "y"], "amp": amplitudes,"N": np.linspace(1, n_avg, n_avg)})
     else:
         ds, loaded_machine = load_dataset(node.parameters.load_data_id)
         if loaded_machine is not None:
@@ -221,11 +225,54 @@ if not node.parameters.simulate:
         return -(amp * qp.gates['Cz'].flux_pulse_control.amplitude)**2 * qp.qubit_control.freq_vs_flux_01_quad_term
     
     ds = ds.assign_coords(
-        {"amp_full": (["qp", "amp"], np.array([abs_amp(qp, ds.amp) for qp in qubit_pairs]))}
+        {"amp_full": (["qubit", "amp"], np.array([abs_amp(qp, ds.amp) for qp in qubit_pairs]))}
     )
     ds = ds.assign_coords(
-        {"detuning": (["qp", "amp"], np.array([detuning(qp, ds.amp) for qp in qubit_pairs]))}
+        {"detuning": (["qubit", "amp"], np.array([detuning(qp, ds.amp) for qp in qubit_pairs]))}
     )
+    
+    ds = ds.assign({"angle": apply_angle(ds.mean(dim = "N").state_target.sel(tomo_axis='x') + 1j * ds.mean(dim = "N").state_target.sel(tomo_axis='y'), "amp").diff(dim = "control_axis").isel(control_axis=0, drop=True)})
+
+# %%
+x = ds.mean(dim = "N").state_target.sel(tomo_axis='x').sel(control_axis = 1)
+y = ds.mean(dim = "N").state_target.sel(tomo_axis='y').sel(control_axis = 1)
+fig, ax = plt.subplots(figsize=(8, 8))
+scatter = ax.scatter(x, y, c=ds.amp, cmap='viridis')
+ax.set_aspect('equal')
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_title('State Vector in XY Plane')
+cbar = plt.colorbar(scatter)
+cbar.set_label('Amplitude')
+# Add a marker for the value at amp = 1
+amp_1_index = np.abs(ds.amp - 1).argmin()
+x_amp_1 = x.isel(amp=amp_1_index)
+y_amp_1 = y.isel(amp=amp_1_index)
+ax.plot(x_amp_1, y_amp_1, 'ro', markersize=10, label='amp = 1')
+
+# Add legend
+ax.legend()
+
+# Annotate the amp = 1 point
+ax.annotate(f'amp = 1', (x_amp_1, y_amp_1), xytext=(5, 5), 
+            textcoords='offset points', ha='left', va='bottom',
+            bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
+            arrowprops=dict(arrowstyle = '->', connectionstyle='arc3,rad=0'))
+
+plt.show()
+
+# %%
+ds.angle.plot()
+plt.grid()
+plt.show()
+
+# %%
+all_counts = (ds.state_control < 3).sum(dim = 'N').sel(control_axis = 1).sum(dim = 'tomo_axis')
+leak_counts = (ds.state_control == 2).sum(dim = 'N').sel(control_axis = 1).sum(dim = 'tomo_axis')
+leaks = leak_counts / all_counts 
+leaks.plot()  
+
+   
 # %% Analysis
 if not node.parameters.simulate:
 

@@ -59,13 +59,12 @@ from quam_libs.lib.pulses import FluxPulse
 class Parameters(NodeParameters):
 
     qubit_pairs: Optional[List[str]] = ['q2-q4']
-    num_averages: int = 10
+    num_shots: int = 2000
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     reset_type: Literal['active', 'thermal'] = "thermal"
     simulate: bool = False
     timeout: int = 100
-    num_frames: int = 10
-    load_data_id: Optional[int] = 92420
+    load_data_id: Optional[int] = None
     plot_raw : bool = False
     measure_leak : bool = False
 
@@ -105,12 +104,9 @@ if node.parameters.load_data_id is None:
 
 
 # %% {QUA_program}
-n_avg = node.parameters.num_averages  # The number of averages
+n_shots = node.parameters.num_shots  # The number of averages
 
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
-
-# Loop parameters
-frames = np.arange(0, 2*np.pi, 2*np.pi/node.parameters.num_frames)
 
 with program() as CPhase_Oscillations:
     control_initial = declare(int)
@@ -135,7 +131,7 @@ with program() as CPhase_Oscillations:
             machine.apply_all_flux_to_zero()
         wait(1000)
 
-        with for_(n, 0, n < n_avg, n + 1):
+        with for_(n, 0, n < n_shots, n + 1):
             save(n, n_st)         
             with for_(*from_array(control_initial, [0,1])):
                 with for_(*from_array(target_initial, [0,1])):
@@ -145,7 +141,7 @@ with program() as CPhase_Oscillations:
                             active_reset(qp.qubit_target)
                             qp.align()
                     else:
-                        wait(qp.qubit_control.thermalization_time * u.ns)
+                        wait(5*qp.qubit_control.thermalization_time * u.ns)
                     qp.align()
                     
                     # setting both qubits ot the initial state
@@ -167,9 +163,9 @@ with program() as CPhase_Oscillations:
     with stream_processing():
         n_st.save("n")
         for i in range(num_qubit_pairs):
-            state_st_control[i].buffer(2).save(f"state_control{i + 1}")
-            state_st_target[i].buffer(2).save(f"state_target{i + 1}")
-            state_st[i].buffer(2).save(f"state{i + 1}")
+            state_st_control[i].buffer(2).buffer(2).buffer(n_shots).save(f"state_control{i + 1}")
+            state_st_target[i].buffer(2).buffer(2).buffer(n_shots).save(f"state_target{i + 1}")
+            state_st[i].buffer(2).buffer(2).buffer(n_shots).save(f"state{i + 1}")
 
 # %% {Simulate_or_execute}
 if node.parameters.simulate:
@@ -189,16 +185,15 @@ elif node.parameters.load_data_id is None:
             # Fetch results
             n = results.fetch_all()[0]
             # Progress bar
-            progress_counter(n, n_avg, start_time=results.start_time)
+            progress_counter(n, n_shots, start_time=results.start_time)
 
 # %% {Data_fetching_and_dataset_creation}
 if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
-        ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {"frame": frames})
+        ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {"init_state_target": [0,1], "init_state_control": [0,1], "N": np.linspace(1, n_shots, n_shots)})
     else:
-        ds, _ = load_dataset(node.parameters.load_data_id)
-        ds = ds.assign_coords({'qp' : ['q2-q4']})
+        ds, machine = load_dataset(node.parameters.load_data_id)
         
     node.results = {"ds": ds}
     
@@ -213,9 +208,9 @@ if not node.parameters.simulate:
             row = []
             for q1 in [0,1]:
                 for q0 in [0,1]:
-                    row.append((ds.sel(qp = qp.name).state.sel(init_state_target = q0,init_state_control = q1) == state).sum().values)
+                    row.append((ds.sel(qubit = qp.name).state.sel(init_state_target = q0,init_state_control = q1) == state).sum().values)
             conf.append(row)
-        confusions[qp.name] = np.array(conf)/node.parameters.num_averages/5000
+        confusions[qp.name] = np.array(conf)/node.parameters.num_shots
 
 # %%
 if not node.parameters.simulate:
@@ -251,3 +246,4 @@ if not node.parameters.simulate:
     node.machine = machine
     node.save()
         
+# %%

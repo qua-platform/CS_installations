@@ -58,24 +58,17 @@ from quam_libs.lib.pulses import FluxPulse
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubit_pairs: Optional[List[str]] = ["q1-q2"]
-    num_averages: int = 500
+    qubit_pairs: Optional[List[str]] = ['q2-q4']
+    num_shots: int = 2000
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     reset_type: Literal['active', 'thermal'] = "thermal"
     simulate: bool = False
     timeout: int = 100
     load_data_id: Optional[int] = None
-    coupler_flux_min : float = -0.03
-    coupler_flux_max : float = 0.03
-    coupler_flux_step : float = 0.01
-    min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 1000
-    wait_time_step_in_ns: int = 4    
-    use_state_discrimination: bool = False
-    
+
 
 node = QualibrationNode(
-    name="40_coupler_zeropoint_calibration", parameters=Parameters()
+    name="40a_Bell_state_Zbasis", parameters=Parameters()
 )
 assert not (node.parameters.simulate and node.parameters.load_data_id is not None), "If simulate is True, load_data_id must be None, and vice versa."
 
@@ -90,8 +83,6 @@ if node.parameters.qubit_pairs is None or node.parameters.qubit_pairs == "":
     qubit_pairs = machine.active_qubit_pairs
 else:
     qubit_pairs = [machine.qubit_pairs[qp] for qp in node.parameters.qubit_pairs]
-# if any([qp.q1.z is None or qp.q2.z is None for qp in qubit_pairs]):
-#     warnings.warn("Found qubit pairs without a flux line. Skipping")
 
 num_qubit_pairs = len(qubit_pairs)
 
@@ -109,35 +100,19 @@ if node.parameters.load_data_id is None:
 
 
 # %% {QUA_program}
-n_avg = node.parameters.num_averages  # The number of averages
+n_shots = node.parameters.num_shots  # The number of averages
 
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
-times = np.arange(node.parameters.min_wait_time_in_ns, node.parameters.max_wait_time_in_ns, node.parameters.wait_time_step_in_ns) //4
-# Loop parameters
-fluxes = np.arange(node.parameters.coupler_flux_min, node.parameters.coupler_flux_max, node.parameters.coupler_flux_step)
 
 with program() as CPhase_Oscillations:
     n = declare(int)
-    flux = declare(float)
-    time = declare(int)
     n_st = declare_stream()
-    if node.parameters.use_state_discrimination:
-        state_control = [declare(int) for _ in range(num_qubit_pairs)]
-        state_target = [declare(int) for _ in range(num_qubit_pairs)]
-        state = [declare(int) for _ in range(num_qubit_pairs)]
-        state_st_control = [declare_stream() for _ in range(num_qubit_pairs)]
-        state_st_target = [declare_stream() for _ in range(num_qubit_pairs)]
-        state_st = [declare_stream() for _ in range(num_qubit_pairs)]
-    else:
-        I_control = [declare(float) for _ in range(num_qubit_pairs)]
-        Q_control = [declare(float) for _ in range(num_qubit_pairs)]
-        I_target = [declare(float) for _ in range(num_qubit_pairs)]
-        Q_target = [declare(float) for _ in range(num_qubit_pairs)]
-        I_st_control = [declare_stream() for _ in range(num_qubit_pairs)]
-        Q_st_control = [declare_stream() for _ in range(num_qubit_pairs)]
-        I_st_target = [declare_stream() for _ in range(num_qubit_pairs)]
-        Q_st_target = [declare_stream() for _ in range(num_qubit_pairs)]
-    
+    state_control = [declare(int) for _ in range(num_qubit_pairs)]
+    state_target = [declare(int) for _ in range(num_qubit_pairs)]
+    state = [declare(int) for _ in range(num_qubit_pairs)]
+    state_st_control = [declare_stream() for _ in range(num_qubit_pairs)]
+    state_st_target = [declare_stream() for _ in range(num_qubit_pairs)]
+    state_st = [declare_stream() for _ in range(num_qubit_pairs)]
     
     for i, qp in enumerate(qubit_pairs):
         # Bring the active qubits to the minimum frequency point
@@ -150,59 +125,41 @@ with program() as CPhase_Oscillations:
             machine.apply_all_flux_to_zero()
         wait(1000)
 
-        with for_(n, 0, n < n_avg, n + 1):
+        with for_(n, 0, n < n_shots, n + 1):
             save(n, n_st)         
-            with for_(*from_array(flux, fluxes)):
-                qp.coupler.set_dc_offset(flux)
-                wait(250, qp.coupler.name)
-                with for_(*from_array(time, times)):
-                    # reset
-                    if node.parameters.reset_type == "active":
-                            active_reset(qp.qubit_control)
-                            active_reset(qp.qubit_target)
-                            qp.align()
-                    else:
-                        wait(qp.qubit_control.thermalization_time * u.ns)
-                        wait(qp.qubit_target.thermalization_time * u.ns)
-                    align()
-                    
-                    # setting both qubits ot the initial state
-                    qp.qubit_control.xy.play("x180")
-                    
-                                    
-                    align()
-                    qp.qubit_control.xy.wait(time)
-                    qp.qubit_target.xy.wait(time)
-                    align()
-                    # readout
-                    if node.parameters.use_state_discrimination:
-                        readout_state(qp.qubit_control, state_control[i])
-                        readout_state(qp.qubit_target, state_target[i])
-                        assign(state[i], state_control[i]*2 + state_target[i])
-                        save(state_control[i], state_st_control[i])
-                        save(state_target[i], state_st_target[i])
-                        save(state[i], state_st[i])
-                    else:
-                        qp.qubit_control.resonator.measure("readout", qua_vars=(I_control[i], Q_control[i]))
-                        qp.qubit_target.resonator.measure("readout", qua_vars=(I_target[i], Q_target[i]))
-                        save(I_control[i], I_st_control[i])
-                        save(Q_control[i], Q_st_control[i])
-                        save(I_target[i], I_st_target[i])
-                        save(Q_target[i], Q_st_target[i])
+            # reset
+            if node.parameters.reset_type == "active":
+                    active_reset(qp.qubit_control)
+                    active_reset(qp.qubit_target)
+                    qp.align()
+            else:
+                wait(5*qp.qubit_control.thermalization_time * u.ns)
+            qp.align()
+            # Bell state
+            qp.qubit_control.xy.play("y90")
+            qp.qubit_target.xy.play("y90")
+            qp.gates['Cz'].execute()
+            qp.qubit_control.xy.play("-y90")
+            qp.align()
+            # readout
+            # qp.qubit_control.xy.play("x90")
+            # qp.qubit_target.xy.play("x90")
+            qp.align()            
+            
+            readout_state(qp.qubit_control, state_control[i])
+            readout_state(qp.qubit_target, state_target[i])
+            assign(state[i], state_control[i]*2 + state_target[i])
+            save(state_control[i], state_st_control[i])
+            save(state_target[i], state_st_target[i])
+            save(state[i], state_st[i])
         align()
         
     with stream_processing():
         n_st.save("n")
         for i in range(num_qubit_pairs):
-            if node.parameters.use_state_discrimination:
-                state_st_control[i].buffer(2).save(f"state_control{i + 1}")
-                state_st_target[i].buffer(2).save(f"state_target{i + 1}")
-                state_st[i].buffer(2).save(f"state{i + 1}")
-            else:
-                I_st_control[i].buffer(len(times)).buffer(len(fluxes)).average().save(f"I_control{i + 1}")
-                Q_st_control[i].buffer(len(times)).buffer(len(fluxes)).average().save(f"Q_control{i + 1}")
-                I_st_target[i].buffer(len(times)).buffer(len(fluxes)).average().save(f"I_target{i + 1}")
-                Q_st_target[i].buffer(len(times)).buffer(len(fluxes)).average().save(f"Q_target{i + 1}")
+            state_st_control[i].buffer(n_shots).save(f"state_control{i + 1}")
+            state_st_target[i].buffer(n_shots).save(f"state_target{i + 1}")
+            state_st[i].buffer(n_shots).save(f"state{i + 1}")
 
 # %% {Simulate_or_execute}
 if node.parameters.simulate:
@@ -222,26 +179,59 @@ elif node.parameters.load_data_id is None:
             # Fetch results
             n = results.fetch_all()[0]
             # Progress bar
-            progress_counter(n, n_avg, start_time=results.start_time)
+            progress_counter(n, n_shots, start_time=results.start_time)
 
 # %% {Data_fetching_and_dataset_creation}
 if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
-        ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {  "time": times, "flux": fluxes})
+        ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {"N": np.linspace(1, n_shots, n_shots)})
     else:
         ds, machine = load_dataset(node.parameters.load_data_id)
         
     node.results = {"ds": ds}
-  
+    
 # %%
-for i, qp in enumerate(qubit_pairs):
-    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
-    ds.I_control.sel(qubit = qp.name).plot(ax=axes[0], cmap='viridis')
-    ds.I_target.sel(qubit = qp.name).plot(ax=axes[1], cmap='viridis')
-    axes[0].set_title(f'I Control for {qp.name}')
-    axes[1].set_title(f'I Target for {qp.name}')
+if not node.parameters.simulate:
+    states = [0,1,2,3]
+
+    results = {}
+    corrected_results = {}
+    for qp in qubit_pairs:
+        results[qp.name] = []
+        for state in states:
+            results[qp.name].append((ds.sel(qubit = qp.name).state == state).sum().values)
+        results[qp.name] = np.array(results[qp.name])/node.parameters.num_shots
+        
+        conf_mat = qp.confusion
+        corrected_results[qp.name] = np.linalg.inv(conf_mat) @ results[qp.name]
+        print(f"{qp.name}: {corrected_results[qp.name]}")
+
+# %%
+if not node.parameters.simulate:
+    grid_names, qubit_pair_names = grid_pair_names(qubit_pairs)
+    grid = QubitPairGrid(grid_names, qubit_pair_names)
+    for ax, qubit_pair in grid_iter(grid):
+        print(qubit_pair['qubit'])
+        corrected_res = corrected_results[qubit_pair['qubit']]
+        ax.bar(['00', '01', '10', '11'], corrected_res, color='skyblue', edgecolor='navy')
+        ax.set_ylim(0, 1)
+        for i, v in enumerate(corrected_res):
+            ax.text(i, v, f'{v:.2f}', ha='center', va='bottom')
+        ax.set_ylabel('Probability')
+        ax.set_xlabel('State')
+        ax.set_title(qubit_pair['qubit'])
     plt.show()
+    node.results["figure"] = grid.fig
+# %%
 
+# %% {Update_state}
 
+# %% {Save_results}
+if not node.parameters.simulate:
+    node.outcomes = {qp.name: "successful" for qp in qubit_pairs}
+    node.results["initial_parameters"] = node.parameters.model_dump()
+    node.machine = machine
+    node.save()
+        
 # %%

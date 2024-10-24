@@ -58,13 +58,13 @@ from quam_libs.lib.pulses import FluxPulse
 class Parameters(NodeParameters):
 
     qubit_pairs: Optional[List[str]] = ['q2-q4']
-    num_averages: int = 10
+    num_averages: int = 1000
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
-    reset_type: Literal['active', 'thermal'] = "thermal"
+    reset_type: Literal['active', 'thermal'] = "active"
     simulate: bool = False
     timeout: int = 100
-    num_frames: int = 10
-    load_data_id: Optional[int] = 92419
+    num_frames: int = 21
+    load_data_id: Optional[int] = None
     plot_raw : bool = False
     measure_leak : bool = False
 
@@ -109,7 +109,7 @@ n_avg = node.parameters.num_averages  # The number of averages
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 
 # Loop parameters
-frames = np.arange(0, 2*np.pi, 2*np.pi/node.parameters.num_frames)
+frames = np.arange(0, 1, 1/node.parameters.num_frames+0.01)
 
 with program() as CPhase_Oscillations:
     amp = declare(fixed)   
@@ -140,6 +140,7 @@ with program() as CPhase_Oscillations:
                     # reset
                     if node.parameters.reset_type == "active":
                             active_reset(qp.qubit_control)
+                            qp.align()
                             active_reset(qp.qubit_target)
                             qp.align()
                     else:
@@ -147,10 +148,10 @@ with program() as CPhase_Oscillations:
                     qp.align()
                     # setting both qubits ot the initial state
                     qubit.xy.play("x90")
-                    qubit.align()
+                    qp.align()
 
                     #play the CZ gate
-                    qp.gates['Cz'].execute(amplitude_scale = amp)
+                    qp.gates['Cz'].execute()
                     
                     #rotate the frame
                     frame_rotation_2pi(frame, qubit.xy.name)
@@ -158,7 +159,7 @@ with program() as CPhase_Oscillations:
                     # return the target qubit before measurement
                     qubit.xy.play("x90")              
                     
-                    qubit.align()
+                    qp.align()
                     readout_state(qubit, state_q)
                     save(state_q, state_st)
                     qp.align()
@@ -168,8 +169,8 @@ with program() as CPhase_Oscillations:
     with stream_processing():
         n_st.save("n")
         for i in range(num_qubit_pairs):
-            state_st_control[i].buffer(len(frames)).buffer(2).average().save(f"state_control{i + 1}")
-            state_st_target[i].buffer(len(frames)).buffer(2).average().save(f"state_target{i + 1}")
+            state_st_control[i].buffer(len(frames)).average().save(f"state_control{i + 1}")
+            state_st_target[i].buffer(len(frames)).average().save(f"state_target{i + 1}")
 
 # %% {Simulate_or_execute}
 if node.parameters.simulate:
@@ -197,11 +198,11 @@ if not node.parameters.simulate:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
         ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {"frame": frames})
     else:
-        ds, _ = load_dataset(node.parameters.load_data_id)
-        # ds = ds.rename({'cz_frame': 'frame'})
-        ds = ds.assign_coords({'qp' : ['q2-q4']})
+        ds, machine = load_dataset(node.parameters.load_data_id)
+
         
     node.results = {"ds": ds}
+    
 
 # %% Analysis
 if not node.parameters.simulate:
@@ -224,12 +225,12 @@ if not node.parameters.simulate:
 phases_target = {}
 phases_control = {}
 for qp in qubit_pairs:
-    phase_target = float(fix_oscillation_phi_2pi(fit_data_target.sel(qp=qp.name))) % 1
-    phase_control = float(fix_oscillation_phi_2pi(fit_data_control.sel(qp=qp.name))) % 1
-    A_control = float(fit_data_control.sel(qp=qp.name, fit_vals="a"))
-    A_target = float(fit_data_target.sel(qp=qp.name, fit_vals="a"))
-    offset_control = float(fit_data_control.sel(qp=qp.name, fit_vals="offset"))
-    offset_target = float(fit_data_target.sel(qp=qp.name, fit_vals="offset"))
+    phase_target = float(fix_oscillation_phi_2pi(fit_data_target.sel(qubit=qp.name))) % 1
+    phase_control = float(fix_oscillation_phi_2pi(fit_data_control.sel(qubit=qp.name))) % 1
+    A_control = float(fit_data_control.sel(qubit=qp.name, fit_vals="a"))
+    A_target = float(fit_data_target.sel(qubit=qp.name, fit_vals="a"))
+    offset_control = float(fit_data_control.sel(qubit=qp.name, fit_vals="offset"))
+    offset_target = float(fit_data_target.sel(qubit=qp.name, fit_vals="offset"))
     
     phases_target[qp.name] = phase_target
     phases_control[qp.name] = phase_control
@@ -241,11 +242,11 @@ if not node.parameters.simulate:
     grid_names, qubit_pair_names = grid_pair_names(qubit_pairs)
     grid = QubitPairGrid(grid_names, qubit_pair_names)
     for ax, qubit_pair in grid_iter(grid):
-        # ds.to_array().sel(qp = qubit_pair['qubit']).plot.line(ax =ax, hue="variable", ylim=[0, 1])
-        ds.state_target.sel(qp = qubit_pair['qubit']).plot(ax =ax, marker = '.', lw = 0, label = 'data target',color = 'C0')
-        ds.fitted_target.sel(qp = qubit_pair['qubit']).plot(ax =ax, lw = 0.5, label = 'fit target',color = 'C0')
-        ds.state_control.sel(qp = qubit_pair['qubit']).plot(ax =ax, marker = '.', lw = 0, label = 'data control',color = 'C1')
-        ds.fitted_control.sel(qp = qubit_pair['qubit']).plot(ax =ax, lw = 0.5, label = 'fit control',color = 'C1')
+        # ds.to_array().sel(qubit= qubit_pair['qubit']).plot.line(ax =ax, hue="variable", ylim=[0, 1])
+        ds.state_target.sel(qubit= qubit_pair['qubit']).plot(ax =ax, marker = '.', lw = 0, label = 'data target',color = 'C0')
+        ds.fitted_target.sel(qubit= qubit_pair['qubit']).plot(ax =ax, lw = 0.5, label = 'fit target',color = 'C0')
+        ds.state_control.sel(qubit= qubit_pair['qubit']).plot(ax =ax, marker = '.', lw = 0, label = 'data control',color = 'C1')
+        ds.fitted_control.sel(qubit= qubit_pair['qubit']).plot(ax =ax, lw = 0.5, label = 'fit control',color = 'C1')
         ax.set_title(qubit_pair['qubit'])
         ax.axvline(x = 1-phases_target[qubit_pair['qubit']], color = 'C0', linestyle = '--')
         ax.axvline(x = 1-phases_control[qubit_pair['qubit']], color = 'C1', linestyle = '--')
@@ -258,12 +259,12 @@ if not node.parameters.simulate:
 
 # %%
 for qp in qubit_pairs:
-    phase_target = float(fix_oscillation_phi_2pi(fit_data_target.sel(qp=qp.name))) % 1
-    phase_control = float(fix_oscillation_phi_2pi(fit_data_control.sel(qp=qp.name))) % 1
-    A_control = float(fit_data_control.sel(qp=qp.name, fit_vals="a"))
-    A_target = float(fit_data_target.sel(qp=qp.name, fit_vals="a"))
-    offset_control = float(fit_data_control.sel(qp=qp.name, fit_vals="offset"))
-    offset_target = float(fit_data_target.sel(qp=qp.name, fit_vals="offset"))
+    phase_target = float(fix_oscillation_phi_2pi(fit_data_target.sel(qubit=qp.name))) % 1
+    phase_control = float(fix_oscillation_phi_2pi(fit_data_control.sel(qubit=qp.name))) % 1
+    A_control = float(fit_data_control.sel(qubit=qp.name, fit_vals="a"))
+    A_target = float(fit_data_target.sel(qubit=qp.name, fit_vals="a"))
+    offset_control = float(fit_data_control.sel(qubit=qp.name, fit_vals="offset"))
+    offset_target = float(fit_data_target.sel(qubit=qp.name, fit_vals="offset"))
     
     # qp.gates['Cz'].phase_shift_control -= (phase_control / params['cz_num'])
     # qp.gates['Cz'].phase_shift_control = qp.gates['Cz'].phase_shift_control  % (1.0)

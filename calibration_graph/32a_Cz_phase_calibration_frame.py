@@ -58,17 +58,17 @@ from quam_libs.lib.pulses import FluxPulse
 class Parameters(NodeParameters):
 
     qubit_pairs: Optional[List[str]] = ['q2-q4']
-    num_averages: int = 10
+    num_averages: int = 1000
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
-    reset_type: Literal['active', 'thermal'] = "thermal"
+    reset_type: Literal['active', 'thermal'] = "active"
     simulate: bool = False
     timeout: int = 100
-    amp_range : float = 0.3
-    amp_step : float = 0.1
+    amp_range : float = 0.01
+    amp_step : float = 0.001
     num_frames: int = 10
     load_data_id: Optional[int] = None # 92417 
     plot_raw : bool = False
-    measure_leak : bool = False
+    measure_leak : bool = True
 
 
 node = QualibrationNode(
@@ -115,7 +115,7 @@ flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or
 
 # Loop parameters
 amplitudes = np.arange(1-node.parameters.amp_range, 1+node.parameters.amp_range, node.parameters.amp_step)
-frames = np.arange(0, 2*np.pi, 2*np.pi/node.parameters.num_frames)
+frames = np.arange(0, 1, 1/node.parameters.num_frames)
 
 with program() as CPhase_Oscillations:
     amp = declare(fixed)   
@@ -147,6 +147,7 @@ with program() as CPhase_Oscillations:
                         # reset
                         if node.parameters.reset_type == "active":
                             active_reset_gef(qp.qubit_control)
+                            qp.align()
                             active_reset(qp.qubit_target)
                             qp.align()
                         else:
@@ -181,8 +182,8 @@ with program() as CPhase_Oscillations:
     with stream_processing():
         n_st.save("n")
         for i in range(num_qubit_pairs):
-            state_st_control[i].buffer(len(amplitudes)).buffer(len(frames)).buffer(2).save(f"state_control{i + 1}")
-            state_st_target[i].buffer(len(amplitudes)).buffer(len(frames)).buffer(2).save(f"state_target{i + 1}")
+            state_st_control[i].buffer(2).buffer(len(frames)).buffer(len(amplitudes)).buffer(n_avg).save(f"state_control{i + 1}")
+            state_st_target[i].buffer(2).buffer(len(frames)).buffer(len(amplitudes)).buffer(n_avg).save(f"state_target{i + 1}")
 
 # %% {Simulate_or_execute}
 if node.parameters.simulate:
@@ -208,14 +209,10 @@ elif node.parameters.load_data_id is None:
 if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
-        ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {"amp": amplitudes, "frame": frames, "control_axis": [0,1]})
+        ds = fetch_results_as_xarray(job.result_handles, qubit_pairs, {"control_axis": [0,1], "frame": frames, "amp": amplitudes, "N": np.linspace(1, n_avg, n_avg)})
     else:
-        ds, _ = load_dataset(node.parameters.load_data_id)
+        ds, machine = load_dataset(node.parameters.load_data_id)
 
-        ds = ds.rename({'state1': 'state_control'})
-        ds = ds.rename({'state0': 'state_target'})
-        ds = ds.rename({'cz_amp': 'amp', 'cz_frame': 'frame', 'xax': 'control_axis'})
-        ds = ds.assign_coords({'qp' : ['q2-q4']})
         
     node.results = {"ds": ds}
 
@@ -228,10 +225,10 @@ if not node.parameters.simulate:
         return -(amp * qp.gates['Cz'].flux_pulse_control.amplitude)**2 * qp.qubit_control.freq_vs_flux_01_quad_term
     
     ds = ds.assign_coords(
-        {"amp_full": (["qp", "amp"], np.array([abs_amp(qp, ds.amp) for qp in qubit_pairs]))}
+        {"amp_full": (["qubit", "amp"], np.array([abs_amp(qp, ds.amp) for qp in qubit_pairs]))}
     )
     ds = ds.assign_coords(
-        {"detuning": (["qp", "amp"], np.array([detuning(qp, ds.amp) for qp in qubit_pairs]))}
+        {"detuning": (["qubit", "amp"], np.array([detuning(qp, ds.amp) for qp in qubit_pairs]))}
     )
 # %% Analysis
 if not node.parameters.simulate:
@@ -241,8 +238,8 @@ if not node.parameters.simulate:
     leaks = {}
     fitted = {}
     for qp in qubit_pairs:
-        ds_qp = ds.sel(qp=qp.name)
-        fit_data = fit_oscillation(ds_qp.state_target.mean(dim = 'avg'), "frame")
+        ds_qp = ds.sel(qubit=qp.name)
+        fit_data = fit_oscillation(ds_qp.state_target.mean(dim = 'N'), "frame")
         
         ds_qp = ds_qp.assign({'fitted': oscillation(ds_qp.frame,
                                                     fit_data.sel(fit_vals="a"),
@@ -252,7 +249,7 @@ if not node.parameters.simulate:
                                                     fit_data.sel(fit_vals="offset"))})
         if node.parameters.plot_raw:
             plt.figure()
-            ds_qp.mean(dim = 'avg').to_array()\
+            ds_qp.mean(dim = 'N').to_array()\
                 .sel(variable=["state_target", "fitted"])\
                 .stack(control_axis_fit=("control_axis", "variable"))\
                 .plot.line(x='frame', col='amp', col_wrap=4)
@@ -274,8 +271,8 @@ if not node.parameters.simulate:
         print(f"parameters for {qp.name}: amp={optimal_amps[qp.name]}")
         
         if node.parameters.measure_leak:
-            all_counts = (ds_qp.state_control < 3).sum(dim = 'avg').sel(control_axis = 1).sum(dim = 'frame')
-            leak_counts = (ds_qp.state_control == 2).sum(dim = 'avg').sel(control_axis = 1).sum(dim = 'frame')
+            all_counts = (ds_qp.state_control < 3).sum(dim = 'N').sel(control_axis = 1).sum(dim = 'frame')
+            leak_counts = (ds_qp.state_control == 2).sum(dim = 'N').sel(control_axis = 1).sum(dim = 'frame')
             leaks[qp.name] = leak_counts / all_counts  
 
 # %%
