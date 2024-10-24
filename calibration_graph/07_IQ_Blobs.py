@@ -44,7 +44,7 @@ class Parameters(NodeParameters):
 
     qubits: Optional[List[str]] = None
     num_runs: int = 2000
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     simulate: bool = False
     timeout: int = 100
@@ -58,11 +58,7 @@ node = QualibrationNode(name="07_IQ_Blobs", parameters=Parameters())
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
 machine = QuAM.load()
-# Generate the OPX and Octave configurations
-config = machine.generate_config()
-octave_config = machine.get_octave_config()
-# Open Communication with the QOP
-qmm = machine.connect()
+
 
 # Get the relevant QuAM components
 if node.parameters.qubits is None or node.parameters.qubits == "":
@@ -70,6 +66,14 @@ if node.parameters.qubits is None or node.parameters.qubits == "":
 else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
+
+# Generate the OPX and Octave configurations
+config = machine.generate_config()
+octave_config = machine.get_octave_config()
+# Open Communication with the QOP
+qmm = machine.connect()
+
+
 
 
 # %% {QUA_program}
@@ -98,7 +102,7 @@ with program() as iq_blobs:
 
             qubit.align()
             qubit.resonator.measure(operation_name, qua_vars=(I_g[i], Q_g[i]))
-            qubit.resonator.wait(qubit.resonator.depletion_time // 4)
+            qubit.resonator.wait(qubit.resonator.depletion_time // 1)
             # save data
             save(I_g[i], I_g_st[i])
             save(Q_g[i], Q_g_st[i])
@@ -115,7 +119,7 @@ with program() as iq_blobs:
             qubit.xy.play("x180")
             align()
             qubit.resonator.measure(operation_name, qua_vars=(I_e[i], Q_e[i]))
-            qubit.resonator.wait(qubit.resonator.depletion_time // 4)
+            qubit.resonator.wait(qubit.resonator.depletion_time // 1)
             # save data
             save(I_e[i], I_e_st[i])
             save(Q_e[i], Q_e_st[i])
@@ -326,3 +330,5 @@ if not node.parameters.simulate:
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine
     node.save()
+
+# %%
