@@ -1,4 +1,16 @@
 {
+    "network": {
+        "host": "172.16.33.101",
+        "port": 9510,
+        "cluster_name": "Cluster_81",
+        "octave_ips": [
+            "172.16.33.101"
+        ],
+        "octave_ports": [
+            11232
+        ],
+        "data_folder": "/workspaces/CS_installations"
+    },
     "wiring": {
         "qubits": {
             "q1": {
@@ -32,17 +44,5 @@
                 }
             }
         }
-    },
-    "network": {
-        "host": "172.16.33.101",
-        "port": 9510,
-        "cluster_name": "Cluster_81",
-        "octave_ips": [
-            "172.16.33.101"
-        ],
-        "octave_ports": [
-            11232
-        ],
-        "data_folder": "/workspaces/CS_installations"
     }
 }

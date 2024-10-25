@@ -161,6 +161,27 @@
                         "amplitude": 0.25,
                         "axis_angle": 0,
                         "__class__": "quam.components.pulses.SquarePulse"
+                    },
+                    "new_arb": {
+                        "waveform_I": [
+                            0.15,
+                            0.3,
+                            0.3,
+                            0.2,
+                            0.4,
+                            0.1,
+                            0.15,
+                            0.05,
+                            0.0,
+                            0.4,
+                            0.35,
+                            0.4,
+                            0.25,
+                            0.45,
+                            0.3,
+                            0.2
+                        ],
+                        "__class__": "quam.components.pulses.WaveformPulse"
                     }
                 },
                 "intermediate_frequency": -200000000,
@@ -347,6 +368,10 @@
         }
     },
     "active_qubit_names": [
+        "q1",
+        "q2",
+        "q1",
+        "q2",
         "q1",
         "q2",
         "q1",
