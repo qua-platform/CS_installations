@@ -79,7 +79,7 @@ config = {
             },
             "intermediate_frequency": readout_AOM_IF,
             "operations": {
-                "cw": "const_pulse",
+                "readout": "readout_pulse",
             },
         },
         "AOM": {
@@ -181,93 +181,10 @@ config = {
         },
     },
     "pulses": {
-        "const_pulse": {
+        "readout_pulse": {
             "operation": "control",
             "length": mw_len_NV,
             "waveforms": {"single": "cw_wf"},
-        },
-        "+const_pulse": {
-            "operation": "control",
-            "length": B_RF_len,
-            "waveforms": {"single": "+cw_wf"},
-        },
-        "-const_pulse": {
-            "operation": "control",
-            "length": B_RF_len,
-            "waveforms": {"single": "-cw_wf"},
-        },
-        "const_pulse_IQ": {
-            "operation": "control",
-            "length": mw_len_NV,
-            "waveforms": {"I": "cw_wf", "Q": "zero_wf"},
-        },
-        "x90_pulse": {
-            "operation": "control",
-            "length": pi_half_len_NV,
-            "waveforms": {"I": "pi_half_wf", "Q": "zero_wf"},
-        },
-        "x180_pulse": {
-            "operation": "control",
-            "length": pi_len_NV,
-            "waveforms": {"I": "pi_wf", "Q": "zero_wf"},
-        },
-        "-x180_pulse": {
-            "operation": "control",
-            "length": pi_len_NV,
-            "waveforms": {"I": "minus_pi_wf", "Q": "zero_wf"},
-        },
-        "-x90_pulse": {
-            "operation": "control",
-            "length": pi_half_len_NV,
-            "waveforms": {"I": "minus_pi_half_wf", "Q": "zero_wf"},
-        },
-        "y90_pulse": {
-            "operation": "control",
-            "length": pi_half_len_NV,
-            "waveforms": {"I": "zero_wf", "Q": "pi_half_wf"},
-        },
-        "y180_pulse": {
-            "operation": "control",
-            "length": pi_len_NV,
-            "waveforms": {"I": "zero_wf", "Q": "pi_wf"},
-        },
-        "-y180_pulse": {
-            "operation": "control",
-            "length": pi_len_NV,
-            "waveforms": {"I": "zero_wf", "Q": "minus_pi_wf"},
-        },
-        "-y90_pulse": {
-            "operation": "control",
-            "length": pi_half_len_NV,
-            "waveforms": {"I": "zero_wf", "Q": "minus_pi_half_wf"},
-        },
-        "laser_ON": {
-            "operation": "control",
-            "length": initialization_len,
-            "digital_marker": "ON",
-        },
-        "laser_ON_A": {
-            "operation": "control",
-            "waveforms": {"single": "zero_wf"},
-            "length": initialization_len,
-            "digital_marker": "ON",
-        },
-        "switch_ON": {
-            "operation": "control",
-            "length": excited_state_init,
-            "digital_marker": "ON",
-        },
-        "readout_pulse": {
-            "operation": "measurement",
-            "length": meas_len,
-            "digital_marker": "ON",
-            # "waveforms": {"single": "zero_wf"},
-        },
-        "long_readout_pulse": {
-            "operation": "measurement",
-            "length": long_meas_len,
-            "digital_marker": "ON",
-            # "waveforms": {"single": "zero_wf"},
         },
     },
     "waveforms": {
