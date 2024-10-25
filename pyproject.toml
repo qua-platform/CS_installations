@@ -13,9 +13,9 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.8"
-quam = "*"
-qualang-tools = { git = "https://github.com/qua-platform/py-qua-tools.git@feature/auto_wiring"}
+python = ">=3.9.0,<3.12"
+quam = { git = "https://github.com/qua-platform/quam.git", branch = "feat/arbitrary-waveform-pulse" }
+qualang-tools = "*"
 xarray = "*"
 lmfit = "*"
 qiskit-experiments = "*"
@@ -23,6 +23,7 @@ tqdm = "*"
 qualibrate = "*"
 qm-qua = "1.2.1a2"
 cirq = "*"
+ipykernel = "^6.29.5"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
