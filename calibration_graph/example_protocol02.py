@@ -1,9 +1,8 @@
 # %%
 """
-Example protocol
+Example protocol: adding an arbitrary waveform
 
-•	Apply an X gate to qubit q1.
-•	Apply an X gate to qubit q2.
+•	Add a new arbitrary waveform to q1 and play it.
 •	Measure q1 and q2 simultaneously, using multiplexing readout.
 
 """
@@ -13,7 +12,6 @@ from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 from qualang_tools.units import unit
-from quam_libs.components import QuAM
 from quam_libs.components import QuAM
 from quam_libs.macros import *
 import numpy as np
@@ -45,29 +43,23 @@ q2 = machine.qubits["q2"]
 
 n_avg = 100
 
-##########################
-# not working
-##########################
-import os
-from quam.core import quam_dataclass
-from quam.components import pulses
-from quam_libs.quam_builder.machine import save_machine
 
-new_arb_wf = [
+#######################################
+# Adding arbitrary waveforms on the fly
+#######################################
+from quam.components.pulses import WaveformPulse
+
+new_arb_wf_I = [
     0.15, 0.30, 0.30, 0.20,
     0.40, 0.10, 0.15, 0.05,
     0.00, 0.40, 0.35, 0.40,
-    0.25, 0.45, 0.30, 0.20
+    0.25, 0.45, 0.30, 0.20,
 ]
 
-@quam_dataclass
-class NewArbitaryPulse(pulses.Pulse):
-    def waveform_function(self):
-        return new_arb_wf
-
-q1.xy.operations["new_arb"] = NewArbitaryPulse(length=len(new_arb_wf))
-save_machine(machine, os.environ["QUAM_STATE_PATH"])
-##########################
+assert len(new_arb_wf_I) >= 16 & len(new_arb_wf_I) % 4 == 0, "Pulse length must be greater than or equal to 16 and a multiple of 4"
+q1.xy.operations["new_arb"] = WaveformPulse(waveform_I=new_arb_wf_I)
+config = machine.generate_config()
+#######################################
 
 
 with program() as prog:
@@ -77,7 +69,7 @@ with program() as prog:
 
     with for_(n, 0, n < n_avg, n + 1):
         # Apply an X gate to qubit q1.
-        play(q1.xy.name, "new_arb")
+        q1.xy.play("new_arb")
         # Align all the elements
         align()
         
@@ -108,10 +100,6 @@ if simulate:
     job = qmm.simulate(config, prog, simulation_config)
     job.get_simulated_samples().con1.plot()
 else:
-    from qm import generate_qua_script
-    sourceFile = open('debug.py', 'w')
-    print(generate_qua_script(prog, config), file=sourceFile)
-    sourceFile.close()
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Calibrate the active qubits
@@ -120,7 +108,7 @@ else:
     job = qm.execute(prog)
     # Get results from QUA program
     data_list = ["n"] + sum(
-        [[f"I{i + 1}", f"Q{i + 1}", f"state{i + 1}"] for i in range(num_resonators)], []
+        [[f"I{i + 1}", f"Q{i + 1}"] for i in range(num_resonators)], []
     )
     results = fetching_tool(job, data_list, mode="live")
     # Live plotting
@@ -130,9 +118,8 @@ else:
         # Fetch results
         fetched_data = results.fetch_all()
         n = fetched_data[0]
-        I = fetched_data[1::3]
-        Q = fetched_data[2::3]
-        s = fetched_data[3::3]
+        I = fetched_data[1::2]
+        Q = fetched_data[2::2]
 
         # Progress bar
         progress_counter(n, n_avg, start_time=results.start_time)
@@ -144,9 +131,8 @@ else:
     data = {}
     fetched_data = results.fetch_all()
     for i, (qubit, rr) in enumerate(zip(qubits, resonators)):
-        data[f"I_{rr.name}"] = fetched_data[3 * i + 1]
-        data[f"Q_{rr.name}"] = fetched_data[3 * i + 2]
-        data[f"state_{rr.name}"] = fetched_data[3 * i + 3]
+        data[f"I_{rr.name}"] = fetched_data[2 * i + 1]
+        data[f"Q_{rr.name}"] = fetched_data[2 * i + 2]
     node_save(machine, "example_protocol", data, additional_files=True)
 
 
