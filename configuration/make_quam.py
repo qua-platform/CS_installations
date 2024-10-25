@@ -45,7 +45,7 @@ qpu.channels["resonator"] = InOutIQChannel(
     opx_input_Q=("con1", 2),
     frequency_converter_up=octave.RF_outputs[1].get_reference(),
     frequency_converter_down=octave.RF_inputs[1].get_reference(),
-    intermediate_frequency=100e6,
+    intermediate_frequency=50e6,
 )
 octave.RF_outputs[1].channel = qpu.channels["resonator"].get_reference()
 octave.RF_inputs[1].channel = qpu.channels["resonator"].get_reference()
@@ -89,6 +89,3 @@ qpu.channels["qubit_xy"].operations["square"] = square
 saturation_pulse = pulses.SquarePulse(length=5_000, amplitude=0.01)
 
 qpu.channels["qubit_xy"].operations["saturation"] = saturation_pulse
-
-
-config = qpu.generate_config()

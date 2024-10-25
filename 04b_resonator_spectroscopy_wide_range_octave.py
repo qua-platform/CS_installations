@@ -96,6 +96,7 @@ with program() as resonator_spec:
 qmm = QuantumMachinesManager(
     host=qop_ip,
     cluster_name=cluster_name,
+    octave=qpu.octaves["oct1"].get_octave_config(),
 )
 
 
@@ -103,7 +104,7 @@ qmm = QuantumMachinesManager(
 # Run Program #
 ###############
 # Open the quantum machine
-qm = qmm.open_qm(config)
+qm = qmm.open_qm(qpu.generate_config())
 
 # Calibrate the element for each LO frequency of the sweep and the central intermediate frequency
 calibrate = False
