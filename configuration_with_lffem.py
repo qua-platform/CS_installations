@@ -1,7 +1,8 @@
 import numpy as np
+from pathlib import Path
 from scipy.signal.windows import gaussian
-from qm.qua import *
 from qualang_tools.units import unit
+from qm.qua import *
 
 
 def gauss(amplitude, mu, sigma, length):
@@ -17,16 +18,39 @@ def IQ_imbalance(g, phi):
     return [float(N * x) for x in [(1 - g) * c, (1 + g) * s, (1 - g) * s, (1 + g) * c]]
 
 
+######################
+# Network parameters #
+######################
+host_ip = "172.16.33.107" # "192.168.88.252"  # Write the QM router IP address
+cluster_name = "Beta_8" # 'beta6'  # Write your cluster_name if version >= QOP220
+qop_port = None  # Write the QOP port if version < QOP220
+qop_ip = host_ip
+
+
+# Path to save data
+save_dir = Path().absolute() / "data"
+
+
+#####################
+# OPX configuration #
+#####################
+# Set octave_config to None if no octave are present
+octave_config = None
+octave = "octave1"
+con = "con1"
+fem = 3  # This should be the index of the LF-FEM module, e.g., 1
+
 ################
 # CONFIGURATION:
 ################
-opx_ip = "192.168.1.3"
-opx_port = 10254
-octave_ip = "192.168.1.3"
-octave_port = 11050
-con = "con1"
-octave = "octave1"
-cluster_name = "Cluster_1"
+
+# opx_ip = "192.168.1.3"
+# opx_port = 10254
+# octave_ip = "192.168.1.3"
+# octave_port = 11050
+# con = "con1"
+# octave = "octave1"
+# cluster_name = "Cluster_1"
 sampling_rate = int(1e9)  # or, int(2e9)
 u = unit(coerce_to_integer=True)
 
@@ -187,6 +211,18 @@ config = {
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "mw",
                         },
+                        7: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "mw",
+                        },
+                        8: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "mw",
+                        },
                     },
                     "digital_outputs": {
                         1: {},
@@ -197,8 +233,6 @@ config = {
                         6: {},
                         7: {},
                         8: {},
-                        9: {},
-                        10: {},
                     },
                     "analog_inputs": {
                         # I from down-conversion
@@ -217,13 +251,13 @@ config = {
 
         ##############   #1 IQ mixed input element  ####################
         "qe1": {
-            # "mixInputs": { # "mixers" key is not needed when using the octave at qm-qua > 1.1.5
-            #     "I": (con, 9),
-            #     "Q": (con, 10),
-            #     "lo_frequency": LO,
-            #     "mixer": f"octave_{octave}_1",  # a fixed name, do not change.
-            # },
-            "RF_inputs": {"port": (octave, 1)},  # octave RF output port1
+            "mixInputs": { # "mixers" key is not needed when using the octave at qm-qua > 1.1.5
+                "I": (con, fem, 5),
+                "Q": (con, fem, 6),
+                "lo_frequency": LO,
+                "mixer": f"octave_{octave}_1",  # a fixed name, do not change.
+            },
+            # "RF_inputs": {"port": (octave, 1)},  # octave RF output port1
             "intermediate_frequency": IF,
             "operations": {
                 "CW": "CW_IQ",
@@ -243,26 +277,26 @@ config = {
             },
             "digitalInputs": {
                 "switch": {
-                    "port": (con, 1),
+                    "port": (con, fem, 1),
                     "delay": 87,
                     "buffer": 87,
                 },
             },
             "outputs": {
-                "out1": (con, 1),
-                "out2": (con, 2),
+                "out1": (con, fem, 1),
+                "out2": (con, fem, 2),
             },
             "time_of_flight": 24,
             "smearing": 0,
         },
         "qe2": {
-            # "mixInputs": {
-            #     "I": (con, 3),
-            #     "Q": (con, 4),
-            #     "lo_frequency": LO2,
-            #     "mixer": f"octave_{octave}_2",  # a fixed name, do not change.
-            # },
-            "RF_inputs": {"port": (octave, 2)},  # octave RF output port2
+            "mixInputs": {
+                "I": (con, fem, 3),
+                "Q": (con, fem, 4),
+                "lo_frequency": LO2,
+                "mixer": f"octave_{octave}_2",  # a fixed name, do not change.
+            },
+            # "RF_inputs": {"port": (octave, 2)},  # octave RF output port2
             "intermediate_frequency": IF2,
             "operations": {
                 "CW": "CW_IQ",
@@ -273,26 +307,26 @@ config = {
             },
             "digitalInputs": {
                 "switch": {
-                    "port": (con, 3),
+                    "port": (con, fem, 3),
                     "delay": 87,
                     "buffer": 87,
                 },
             },
             "outputs": {
-                "out1": (con, 1),
-                "out2": (con, 2),
+                "out1": (con, fem, 1),
+                "out2": (con, fem, 2),
             },
             "time_of_flight": 24,
             "smearing": 0,
         },
         "clifford_gate": {
             "mixInputs": {
-                "I": ("con1", 1),
-                "Q": ("con1", 2),
+                "I": (con, fem, 1),
+                "Q": (con, fem, 2),
                 "lo_frequency": LO,
                 "mixer": f"octave_{octave}_1",  # a fixed name, do not change.
             },
-            "outputs": {"output1": (con, 1)},
+            "outputs": {"output1": (con, fem, 1)},
             "intermediate_frequency": IF,
             "operations": {
                 "X/2": "half_pi_pulse1",
@@ -304,14 +338,14 @@ config = {
             },
             "digitalInputs": {
                 "switch": {
-                    "port": (con, 1),
+                    "port": (con, fem, 1),
                     "delay": 87,
                     "buffer": 87,
                 },
             },
             "outputs": {
-                "out1": (con, 1),
-                "out2": (con, 2),
+                "out1": (con, fem, 1),
+                "out2": (con, fem, 2),
             },
             "time_of_flight": 24,
             "smearing": 0,
@@ -319,7 +353,7 @@ config = {
         ###############   #2 single input element   ########################
         "simple_element": {
             "singleInput": {
-                "port": ("con1", 1),
+                "port": (con, fem, 1),
             },
             "intermediate_frequency": 0e6,
             "hold_offset": {"duration": 100},
@@ -333,12 +367,12 @@ config = {
         },
         "gateL": {
             "singleInput": {
-                "port": ("con1", 1),
+                "port": (con, fem, 1),
             },
             "hold_offset": {"duration": 100},
             "digitalInputs": {
                 "input_switch": {
-                    "port": ("con1", 1),
+                    "port": (con, fem, 1),
                     "delay": 120,
                     "buffer": 20,
                 }
@@ -357,12 +391,12 @@ config = {
         },
         "gateR": {
             "singleInput": {
-                "port": ("con1", 2),
+                "port": (con, fem, 2),
             },
             "hold_offset": {"duration": 100},
             "digitalInputs": {
                 "input_switch": {
-                    "port": ("con1", 2),
+                    "port": (con, fem, 2),
                     "delay": 144,
                     "buffer": 20,
                 }
@@ -379,12 +413,12 @@ config = {
         },
         "gateM": {
             "singleInput": {
-                "port": ("con1", 10),
+                "port": (con, fem, 8), # 10 -> 8
             },
             "hold_offset": {"duration": 100},
             "digitalInputs": {
                 "input_switch": {
-                    "port": ("con1", 10),
+                    "port": (con, fem, 8), # 10 -> 8
                     "delay": 144,
                     "buffer": 20,
                 }
@@ -399,12 +433,12 @@ config = {
         },
         "Trigger5": {
             "singleInput": {
-                "port": ("con1", 5),
+                "port": (con, fem, 5),
             },
             "hold_offset": {"duration": 16},
             "digitalInputs": {
                 "input_switch": {
-                    "port": ("con1", 5),
+                    "port": (con, fem, 5),
                     "delay": 144,
                     "buffer": 20,
                 }
@@ -418,12 +452,12 @@ config = {
         },
         "Trigger6": {
             "singleInput": {
-                "port": ("con1", 6),
+                "port": (con, fem, 6),
             },
             "hold_offset": {"duration": 16},
             "digitalInputs": {
                 "input_switch": {
-                    "port": ("con1", 6),
+                    "port": (con, fem, 6),
                     "delay": 144,
                     "buffer": 20,
                 }
@@ -437,7 +471,7 @@ config = {
         },
         "lockin": {
             "singleInput": {
-                "port": ("con1", 9),
+                "port": (con, fem, 7), # 9 -> 7
             },
             # 'mixInputs': {
             #     'I': ('con1', 1),
@@ -454,7 +488,7 @@ config = {
                 "zeropulse": "zeroPulse",
             },
             "hold_offset": {"duration": 1},
-            "outputs": {"out1": ("con1", 1)},
+            "outputs": {"out1": (con, fem, 1)},
             "time_of_flight": 200,
             "smearing": 0,
             "outputPulseParameters": {
@@ -466,7 +500,7 @@ config = {
         },
         "lockin2": {
             "singleInput": {
-                "port": ("con1", 10),
+                "port": (con, fem, 8), # 10 -> 8
             },
             "intermediate_frequency": lockin_freq,
             "operations": {
@@ -476,7 +510,7 @@ config = {
                 "readout_calibration": "readout_pulse_calibration",
             },
             "hold_offset": {"duration": 1},
-            "outputs": {"out1": ("con1", 2)},
+            "outputs": {"out1": (con, fem, 2)},
             "time_of_flight": 200,
             "smearing": 0,
             "outputPulseParameters": {
@@ -487,59 +521,59 @@ config = {
             },
         },
     },
-    "octaves": {
-        octave: {
-            "RF_outputs": {  # octave's up converters
-                1: {
-                    "LO_frequency": LO,
-                    "LO_source": "internal",  # can be external or internal. internal is the default
-                    "output_mode": "triggered",  # can be: "always_on" / "always_off"/ "triggered" / "triggered_reversed". "always_off" is the default
-                    "gain": octave_gain,  # can be in the range [-20 : 0.5 : 20]dB
-                },
-                2: {
-                    "LO_frequency": LO2,
-                    "LO_source": "internal",
-                    "output_mode": "triggered",
-                    "gain": octave_gain2,
-                },
-                3: {
-                    "LO_frequency": LO,
-                    "LO_source": "internal",  # can be external or internal. internal is the default
-                    "output_mode": "triggered",  # can be: "always_on" / "always_off"/ "triggered" / "triggered_reversed". "always_off" is the default
-                    "gain": octave_gain,  # can be in the range [-20 : 0.5 : 20]dB
-                },
-                4: {
-                    "LO_frequency": LO2,
-                    "LO_source": "internal",
-                    "output_mode": "triggered",
-                    "gain": octave_gain2,
-                },
-                5: {
-                    "LO_frequency": LO,
-                    "LO_source": "internal",
-                    "output_mode": "triggered",
-                    "gain": octave_gain,
-                },
-            },
-            "RF_inputs": {  # octave's down converters
-                1: {
-                    "RF_source": "RF_in",
-                    "LO_frequency": LO,
-                    "LO_source": "internal",  # internal is the default
-                    "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". direct is default
-                    "IF_mode_Q": "direct",
-                },
-                2: {
-                    "RF_source": "RF_in",
-                    "LO_frequency": LO2,
-                    "LO_source": "internal",  # external is the default
-                    "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". direct is default
-                    "IF_mode_Q": "direct",
-                },
-            },
-            "connectivity": con,
-        }
-    },
+    # "octaves": {
+    #     octave: {
+    #         "RF_outputs": {  # octave's up converters
+    #             1: {
+    #                 "LO_frequency": LO,
+    #                 "LO_source": "internal",  # can be external or internal. internal is the default
+    #                 "output_mode": "triggered",  # can be: "always_on" / "always_off"/ "triggered" / "triggered_reversed". "always_off" is the default
+    #                 "gain": octave_gain,  # can be in the range [-20 : 0.5 : 20]dB
+    #             },
+    #             2: {
+    #                 "LO_frequency": LO2,
+    #                 "LO_source": "internal",
+    #                 "output_mode": "triggered",
+    #                 "gain": octave_gain2,
+    #             },
+    #             3: {
+    #                 "LO_frequency": LO,
+    #                 "LO_source": "internal",  # can be external or internal. internal is the default
+    #                 "output_mode": "triggered",  # can be: "always_on" / "always_off"/ "triggered" / "triggered_reversed". "always_off" is the default
+    #                 "gain": octave_gain,  # can be in the range [-20 : 0.5 : 20]dB
+    #             },
+    #             4: {
+    #                 "LO_frequency": LO2,
+    #                 "LO_source": "internal",
+    #                 "output_mode": "triggered",
+    #                 "gain": octave_gain2,
+    #             },
+    #             5: {
+    #                 "LO_frequency": LO,
+    #                 "LO_source": "internal",
+    #                 "output_mode": "triggered",
+    #                 "gain": octave_gain,
+    #             },
+    #         },
+    #         "RF_inputs": {  # octave's down converters
+    #             1: {
+    #                 "RF_source": "RF_in",
+    #                 "LO_frequency": LO,
+    #                 "LO_source": "internal",  # internal is the default
+    #                 "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". direct is default
+    #                 "IF_mode_Q": "direct",
+    #             },
+    #             2: {
+    #                 "RF_source": "RF_in",
+    #                 "LO_frequency": LO2,
+    #                 "LO_source": "internal",  # external is the default
+    #                 "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". direct is default
+    #                 "IF_mode_Q": "direct",
+    #             },
+    #         },
+    #         "connectivity": con,
+    #     }
+    # },
     "pulses": {
         ############ For AC Control###############
         "constPulse": {
