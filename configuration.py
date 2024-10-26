@@ -126,10 +126,7 @@ config = {
             },
         },
         "control_eom": {
-            "SingleInput": {
-                "port": ("con1", 1),  # TODO: assign the right port
-                "delay": control_eom_delay,
-            },
+            "RF_inputs": {"port": ("octave1", 2)},
             "intermediate_frequency": control_EOM_IF,
             "operations": {
                 "control": "cw_control_eom",
@@ -154,6 +151,18 @@ config = {
                 "marker": {
                     "port": ("con1", 1),  # TODO: what is this?
                     "delay": pulsed_laser_aom_delay,
+                },
+            },
+        },
+    },
+    "octaves": {
+        "octave1": {
+            "RF_outputs": {
+                1: {
+                    "LO_frequency": control_EOM_LO,
+                    "LO_source": "internal",  # can be external or internal. internal is the default
+                    "output_mode": "triggered",  # can be: "always_on" / "always_off"/ "triggered" / "triggered_reversed". "always_off" is the default
+                    "gain": 0,  # can be in the range [-20 : 0.5 : 20]dB
                 },
             },
         },
