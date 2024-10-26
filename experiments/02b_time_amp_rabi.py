@@ -8,7 +8,7 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = ["q1"]
     num_averages: int = 50
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 10000
+    max_wait_time_in_ns: int = 500
     num_time_steps: int = 500
     flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "joint"    
     simulate: bool = False
@@ -16,10 +16,12 @@ class Parameters(NodeParameters):
     use_state_discrimination: bool = True
     reset_type: Literal['active', 'thermal'] = "thermal"
     drive_pulse_name: str = "x180_Square"
-    drive_amp_scale: float = 0.001
-
+    min_amp_factor: float = 0.001
+    max_amp_factor: float = 1.0
+    amp_factor_step: float = 0.01
+    
 node = QualibrationNode(
-    name="02_time_rabi",
+    name="02b_time_amp_rabi",
     parameters=Parameters()
 )
 
@@ -71,6 +73,12 @@ idle_times = np.unique(
     // 4
 ).astype(int)
 
+amps = np.arange(
+    node.parameters.min_amp_factor,
+    node.parameters.max_amp_factor,
+    node.parameters.amp_factor_step,
+)
+
 flux_point = node.parameters.flux_point_joint_or_independent_or_arbitrary  # 'independent' or 'joint'
 if flux_point == "arbitrary":
     detunings = {q.name : q.arbitrary_intermediate_frequency for q in qubits}
@@ -82,6 +90,8 @@ else:
 with program() as t1:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     t = declare(int)  # QUA variable for the idle time
+    a = declare(fixed)  # QUA variable for the qubit drive amplitude pre-factor
+
     if node.parameters.use_state_discrimination:
         state = [declare(int) for _ in range(num_qubits)]
         state_st = [declare_stream() for _ in range(num_qubits)]
@@ -105,24 +115,25 @@ with program() as t1:
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_each_(t, idle_times):
-                if node.parameters.reset_type == "active":
-                    active_reset(qubit)
-                else:
-                    qubit.resonator.wait(qubit.thermalization_time * u.ns)
+                with for_(*from_array(a, amps)):
+                    if node.parameters.reset_type == "active":
+                        active_reset(qubit)
+                    else:
+                        qubit.resonator.wait(qubit.thermalization_time * u.ns)
+                        qubit.align()
+                    qubit.xy.play(node.parameters.drive_pulse_name, amplitude_scale=a, duration = t)
                     qubit.align()
-                qubit.xy.play(node.parameters.drive_pulse_name, amplitude_scale=node.parameters.drive_amp_scale, duration = t)
-                qubit.align()
 
-                
-                # Measure the state of the resonators
-                if node.parameters.use_state_discrimination:
-                    readout_state(qubit, state[i])
-                    save(state[i], state_st[i])
-                else:
-                    qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
-                    # save data
-                    save(I[i], I_st[i])
-                    save(Q[i], Q_st[i])
+                    
+                    # Measure the state of the resonators
+                    if node.parameters.use_state_discrimination:
+                        readout_state(qubit, state[i])
+                        save(state[i], state_st[i])
+                    else:
+                        qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                        # save data
+                        save(I[i], I_st[i])
+                        save(Q[i], Q_st[i])
 
         align()
 
@@ -130,10 +141,10 @@ with program() as t1:
         n_st.save("n")
         for i in range(num_qubits):
             if node.parameters.use_state_discrimination:
-                state_st[i].buffer(len(idle_times)).average().save(f"state{i + 1}")
+                state_st[i].buffer(len(amps)).buffer(len(idle_times)).average().save(f"state{i + 1}")
             else:
-                I_st[i].buffer(len(idle_times)).average().save(f"I{i + 1}")
-                Q_st[i].buffer(len(idle_times)).average().save(f"Q{i + 1}")
+                I_st[i].buffer(len(amps)).buffer(len(idle_times)).average().save(f"I{i + 1}")
+                Q_st[i].buffer(len(amps)).buffer(len(idle_times)).average().save(f"Q{i + 1}")
 
 
 # %% {Simulate_or_execute}
@@ -166,7 +177,7 @@ else:
 # %% {Data_fetching_and_dataset_creation}
 if not node.parameters.simulate:
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
-    ds = fetch_results_as_xarray(job.result_handles, qubits, {"idle_time": idle_times})
+    ds = fetch_results_as_xarray(job.result_handles, qubits, {"amp": amps, "idle_time": idle_times})
 
     ds = ds.assign_coords(idle_time=4*ds.idle_time/1e3)  # convert to usec
     ds.idle_time.attrs = {'long_name': 'idle time', 'units': 'usec'}

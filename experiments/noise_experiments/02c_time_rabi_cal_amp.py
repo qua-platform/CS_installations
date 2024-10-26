@@ -8,7 +8,7 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = ["q1"]
     num_averages: int = 50
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 10000
+    max_wait_time_in_ns: int = 500
     num_time_steps: int = 500
     flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "joint"    
     simulate: bool = False
@@ -16,10 +16,11 @@ class Parameters(NodeParameters):
     use_state_discrimination: bool = True
     reset_type: Literal['active', 'thermal'] = "thermal"
     drive_pulse_name: str = "x180_Square"
-    drive_amp_scale: float = 0.001
+    drive_amp_scale: float = 0.2
+    target_freq_in_Mhz: float = 50
 
 node = QualibrationNode(
-    name="02_time_rabi",
+    name="02c_time_rabi_cal_amp",
     parameters=Parameters()
 )
 
@@ -190,10 +191,12 @@ if not node.parameters.simulate:
 # Save fitting results
     for q in qubits:
         fit_results[q.name] = {}
-        f_fit = fit_data.loc[q.name].sel(fit_vals="f")
-        phi_fit = fit_data.loc[q.name].sel(fit_vals="phi")
-        phi_fit = phi_fit - np.pi * (phi_fit > np.pi / 2)
+        fit_results[q.name]["f_fit"] = fit_data.loc[q.name].sel(fit_vals="f").values
+        fit_results[q.name]["phi_fit"] = fit_data.loc[q.name].sel(fit_vals="phi").values
+        fit_results[q.name]["phi_fit"] = fit_results[q.name]["phi_fit"] - np.pi * (fit_results[q.name]["phi_fit"] > np.pi / 2)
+        fit_results[q.name]["amp_fit"] = node.parameters.drive_amp_scale * node.parameters.target_freq_in_Mhz / fit_results[q.name]['f_fit']
     node.results["fit_results"] = fit_results
+    print(f"found frequency of {fit_results[q.name]['f_fit']:.2f} MHz for qubit {q.name} with scale {node.parameters.drive_amp_scale}, to reach {node.parameters.target_freq_in_Mhz:.2f} MHz, multiply amplitude by {fit_results[q.name]['amp_fit']:.2f}")
 
 # %% {Plotting}
 if not node.parameters.simulate:
@@ -213,5 +216,18 @@ if not node.parameters.simulate:
     plt.tight_layout()
     plt.show()
     node.results["figure"] = grid.fig
+
+# %%
+if not node.parameters.simulate:
+    with node.record_state_updates():
+        for q in qubits:
+            q.xy.operations[node.parameters.drive_pulse_name].amplitude *= fit_results[q.name]["amp_fit"]
+
+# %% {Save_results}
+if not node.parameters.simulate:
+    node.outcomes = {q.name: "successful" for q in qubits}
+    node.results["initial_parameters"] = node.parameters.model_dump()
+    node.machine = machine
+    node.save()
 
 # %%

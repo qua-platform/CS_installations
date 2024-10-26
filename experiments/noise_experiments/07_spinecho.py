@@ -6,22 +6,24 @@ from typing import Optional, Literal, List
 # %% {Node_parameters}
 class Parameters(NodeParameters):
     qubits: Optional[List[str]] = ["q1"]
-    num_averages: int = 50
+    num_averages: int = 600
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 10000
-    num_time_steps: int = 500
+    max_wait_time_in_ns: int = 200000
+    num_time_steps: int = 200
     flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "joint"    
     simulate: bool = False
     timeout: int = 100
     use_state_discrimination: bool = True
     reset_type: Literal['active', 'thermal'] = "thermal"
     drive_pulse_name: str = "x180_Square"
-    drive_amp_scale: float = 0.001
 
 node = QualibrationNode(
-    name="02_time_rabi",
+    name="07_spinecho",
     parameters=Parameters()
 )
+
+scale = 1/1000
+
 
 from qm.qua import *
 from qm import SimulationConfig
@@ -39,7 +41,10 @@ import numpy as np
 import matplotlib
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 from quam_libs.lib.save_utils import fetch_results_as_xarray
-from quam_libs.lib.fit import fit_oscillation, oscillation
+from quam_libs.lib.fit import fit_decay_exp, decay_exp
+
+
+
 
 
 # Class containing tools to help handle units and conversions.
@@ -70,6 +75,7 @@ idle_times = np.unique(
     )
     // 4
 ).astype(int)
+
 
 flux_point = node.parameters.flux_point_joint_or_independent_or_arbitrary  # 'independent' or 'joint'
 if flux_point == "arbitrary":
@@ -110,9 +116,18 @@ with program() as t1:
                 else:
                     qubit.resonator.wait(qubit.thermalization_time * u.ns)
                     qubit.align()
-                qubit.xy.play(node.parameters.drive_pulse_name, amplitude_scale=node.parameters.drive_amp_scale, duration = t)
+                
+                    
+                qubit.xy.play("-y90")
                 qubit.align()
-
+                # qubit.z.wait(20)
+                # qubit.z.play("const", amplitude_scale=arb_flux_bias_offset[qubit.name]/qubit.z.operations["const"].amplitude, duration=t)
+                # qubit.z.wait(20)
+                
+                qubit.xy.play(node.parameters.drive_pulse_name, amplitude_scale=scale, duration = t)
+                qubit.align()
+                qubit.xy.play("-y90")
+                qubit.align()
                 
                 # Measure the state of the resonators
                 if node.parameters.use_state_discrimination:
@@ -172,31 +187,37 @@ if not node.parameters.simulate:
     ds.idle_time.attrs = {'long_name': 'idle time', 'units': 'usec'}
 
 # %% {Data_analysis}
-if not node.parameters.simulate:
-    fit_results = {}
-    if node.parameters.use_state_discrimination:
-        fit_data = fit_oscillation(ds.state, 'idle_time')
-    else:
-        fit_data = fit_oscillation(ds.I, 'idle_time')    
-    # Fit the power Rabi oscillations
-    fit_evals = oscillation(
-        ds.idle_time,
-        fit_data.sel(fit_vals="a"),
-        fit_data.sel(fit_vals="f"),
-        fit_data.sel(fit_vals="phi"),
-        fit_data.sel(fit_vals="offset"),
-    )
-    
-# Save fitting results
-    for q in qubits:
-        fit_results[q.name] = {}
-        f_fit = fit_data.loc[q.name].sel(fit_vals="f")
-        phi_fit = fit_data.loc[q.name].sel(fit_vals="phi")
-        phi_fit = phi_fit - np.pi * (phi_fit > np.pi / 2)
-    node.results["fit_results"] = fit_results
 
+if not node.parameters.simulate:
+    if node.parameters.use_state_discrimination:
+        fit_data = fit_decay_exp(ds.state, 'idle_time')
+    else:
+        fit_data = fit_decay_exp(ds.I, 'idle_time')
+    fit_data.attrs = {'long_name' : 'time', 'units' : 'usec'}
+    fitted =  decay_exp(ds.idle_time,
+                                                    fit_data.sel(
+                                                        fit_vals="a"),
+                                                    fit_data.sel(
+                                                        fit_vals="offset"),
+                                                    fit_data.sel(fit_vals="decay"))
+
+
+    decay = fit_data.sel(fit_vals = 'decay')
+    decay.attrs = {'long_name' : 'decay', 'units' : 'nSec'}
+
+    decay_res = fit_data.sel(fit_vals = 'decay_decay')
+    decay_res.attrs = {'long_name' : 'decay', 'units' : 'nSec'}
+    
+    tau = -1/fit_data.sel(fit_vals='decay')
+    tau.attrs = {'long_name' : 'T2*', 'units' : 'uSec'}
+
+    tau_error = -tau * (np.sqrt(decay_res)/decay)
+    tau_error.attrs = {'long_name' : 'T2* error', 'units' : 'uSec'}
+
+    node.results = {"ds": ds}
 # %% {Plotting}
 if not node.parameters.simulate:
+    
     grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         if node.parameters.use_state_discrimination:
@@ -206,12 +227,21 @@ if not node.parameters.simulate:
         else:
             ds.sel(qubit = qubit['qubit']).I.plot(ax = ax)
             ax.set_ylabel('I (V)')
-        ax.plot(ds.idle_time, fit_evals.loc[qubit])
-        ax.set_xlabel("Idle time [usec]")
-        ax.set_title(qubit["qubit"])
-    grid.fig.suptitle("Rabi : I vs. amplitude")
+        ax.plot(ds.idle_time, fitted.loc[qubit], 'r--')
+        ax.set_title(qubit['qubit'])
+        ax.set_xlabel('Idle_time (uS)')
+        ax.text(0.1, 0.9, f'T2e = {tau.sel(qubit = qubit["qubit"]).values:.1f} + {tau_error.sel(qubit = qubit["qubit"]).values:.1f} usec', transform=ax.transAxes, fontsize=10,
+        verticalalignment='top', bbox=dict(facecolor='white', alpha=0.5))
+    grid.fig.suptitle('T2 echo')
     plt.tight_layout()
     plt.show()
-    node.results["figure"] = grid.fig
+    node.results['figure_raw'] = grid.fig
+
+# %% {Save_results}
+if not node.parameters.simulate:
+    node.results['initial_parameters'] = node.parameters.model_dump()
+    node.machine = machine
+    node.save()
+# %%
 
 # %%
