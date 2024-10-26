@@ -10,10 +10,10 @@ class Parameters(NodeParameters):
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 100000
     wait_time_step_in_ns: int = 600
-    flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "independent"
+    flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "joint"
     simulate: bool = False
     timeout: int = 100
-    use_state_discrimination: bool = False
+    use_state_discrimination: bool = True
     reset_type: Literal['active', 'thermal'] = "thermal"
 
 node = QualibrationNode(
@@ -58,7 +58,7 @@ qmm = machine.connect()
 if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
 
 
@@ -109,7 +109,7 @@ with program() as t1:
                 if node.parameters.reset_type == "active":
                     active_reset(qubit)
                 else:
-                    qubit.resonator.wait(qubit.thermalization_time * u.ns)
+                    qubit.resonator.wait(3*qubit.thermalization_time * u.ns)
                     qubit.align()
                 
                     
@@ -231,9 +231,18 @@ if not node.parameters.simulate:
     node.results['figure_raw'] = grid.fig
 
 # %%
+if not node.parameters.simulate:
+    with node.record_state_updates():
+        for q in qubits:
+            q.T1 = int(1e3 * tau.sel(qubit = q.name).values.tolist())
+
+
 # %% {Save_results}
 if not node.parameters.simulate:    
     node.results['initial_parameters'] = node.parameters.model_dump()
     node.machine = machine
     node.save()
+# %%
+
+
 # %%
