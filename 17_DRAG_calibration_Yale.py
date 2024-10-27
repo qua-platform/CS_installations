@@ -27,7 +27,10 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 from macros import readout_macro
 import matplotlib.pyplot as plt
+import matplotlib
+import time
 
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
@@ -110,6 +113,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -131,6 +135,8 @@ else:
     while results.is_processing():
         # Fetch results
         I1, I2, Q1, Q2, state1, state2, iteration = results.fetch_all()
+        # Get elapsed time
+        elapsed_time = time.time() - results.get_start_time()
         # Convert the results into Volts
         I1, Q1 = u.demod2volts(I1, readout_len), u.demod2volts(Q1, readout_len)
         I2, Q2 = u.demod2volts(I2, readout_len), u.demod2volts(Q2, readout_len)
@@ -159,3 +165,25 @@ else:
         plt.legend()
         plt.tight_layout()
         plt.pause(0.1)
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        save_data_dict["elapsed_time"] =  np.array([elapsed_time])
+        save_data_dict["I"] = I
+        save_data_dict["Q"] = Q
+        save_data_dict["state"] = state
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.save_data(data=save_data_dict, name="DRAG_calibration_yale")
+       
+    plt.show()
+    qm.close()
+
+# %%

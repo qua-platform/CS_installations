@@ -14,7 +14,10 @@ from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from configuration_with_mw_fem import *
 import matplotlib.pyplot as plt
+import matplotlib
+import time
 
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
@@ -48,6 +51,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -85,5 +89,8 @@ else:
     plt.xlabel("Time [ns]")
     plt.legend()
     plt.tight_layout()
+
+    plt.show()
+    qm.close()
 
 # %%

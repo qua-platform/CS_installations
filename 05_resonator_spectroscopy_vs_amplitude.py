@@ -29,7 +29,10 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from scipy import signal
+import matplotlib
+import time
 
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
@@ -92,6 +95,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Simulate or execute #
 #######################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -112,6 +116,8 @@ else:
     while results.is_processing():
         # Fetch results
         I, Q, iteration = results.fetch_all()
+        # Get elapsed time
+        elapsed_time = time.time() - results.get_start_time()
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Convert results into Volts and normalize
@@ -140,5 +146,24 @@ else:
         plt.xlim(amplitudes[0] * readout_amp, amplitudes[-1] * readout_amp)
         plt.pause(0.1)
         plt.tight_layout()
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        save_data_dict["elapsed_time"] =  np.array([elapsed_time])
+        save_data_dict["I"] = I
+        save_data_dict["Q"] = Q
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.save_data(data=save_data_dict, name="resonator_spectroscopy_vs_amplitude")
+       
+    plt.show()
+    qm.close()
 
 # %%

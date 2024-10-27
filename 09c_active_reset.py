@@ -144,6 +144,10 @@ def active_reset_fast(threshold_g: float):
     play("x180", "qubit", condition=(I_reset > threshold_g))
     return 1
 
+import matplotlib
+import time
+
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
@@ -222,6 +226,8 @@ with program() as active_reset_prog:
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
 
 simulation = False
+save_data = True
+
 if simulation:
     simulation_config = SimulationConfig(
         duration=28000, simulation_interface=LoopbackInterface([("con1", 3, "con1", 1)])
@@ -245,6 +251,27 @@ else:
     # for state discrimination and derive the fidelity matrix
     angle, threshold, fidelity, gg, ge, eg, ee = two_state_discriminator(Ig, Qg, Ie, Qe, b_print=True, b_plot=True)
     plt.suptitle(f"{average_tries=}")
+    fig = plt.gcf()
     print(f"{average_tries=}")
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        save_data_dict["Ig"] = Ig
+        save_data_dict["Qg"] = Qg
+        save_data_dict["Ie"] = Ie
+        save_data_dict["Qe"] = Qe
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.save_data(data=save_data_dict, name="active_reset")
+       
+    plt.show()
+    qm.close()
 
 # %%

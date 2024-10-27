@@ -15,7 +15,6 @@ Next steps before going to the next node:
     - Update the readout amplitude (readout_amp) in the configuration.
 """
 
-
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
@@ -24,7 +23,10 @@ from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.analysis import two_state_discriminator
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
+import matplotlib
+import time
 
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
@@ -104,6 +106,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -122,6 +125,8 @@ else:
     while results.is_processing():
         # Fetch results
         iteration = results.fetch_all()
+        # Get elapsed time
+        elapsed_time = time.time() - results.get_start_time()
         # Progress bar
         progress_counter(iteration[0], len(amplitudes), start_time=results.get_start_time())
 
@@ -140,7 +145,7 @@ else:
         ground_fidelity_vec.append(gg)
 
     # Plot the data
-    plt.figure()
+    fig = plt.figure()
     plt.plot(amplitudes * readout_amp, fidelity_vec, "b.-", label="averaged fidelity")
     plt.plot(amplitudes * readout_amp, ground_fidelity_vec, "r.-", label="ground fidelity")
     plt.title("Readout amplitude optimization")
@@ -158,5 +163,26 @@ else:
     print(
         f"The optimal readout amplitude is {readout_amp * amplitudes[np.argmax(ground_fidelity_vec)] / u.mV:.3f} mV (Ground fidelity={max(ground_fidelity_vec):.1f}%)"
     )
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        save_data_dict["elapsed_time"] =  np.array([elapsed_time])
+        save_data_dict["Ig"] = I_g
+        save_data_dict["Qg"] = Q_g
+        save_data_dict["Ie"] = I_e
+        save_data_dict["Qe"] = Q_e
+                
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.save_data(data=save_data_dict, name="readout_amplitude_optimization")
+       
+    plt.show()
+    qm.close()
 
 # %%

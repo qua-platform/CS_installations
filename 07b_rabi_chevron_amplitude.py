@@ -23,7 +23,10 @@ from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
+import matplotlib
+import time
 
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
@@ -91,6 +94,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -110,6 +114,8 @@ else:
     while results.is_processing():
         # Fetch results
         I, Q, iteration = results.fetch_all()
+        # Get elapsed time
+        elapsed_time = time.time() - results.get_start_time()
         # Convert results into Volts
         S = u.demod2volts(I + 1j * Q, readout_len)
         R = np.abs(S)  # Amplitude
@@ -132,5 +138,24 @@ else:
         plt.ylabel("Pulse amplitude [V]")
         plt.tight_layout()
         plt.pause(0.1)
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        save_data_dict["elapsed_time"] =  np.array([elapsed_time])
+        save_data_dict["I"] = I
+        save_data_dict["Q"] = Q
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.save_data(data=save_data_dict, name="rabi_chevron_duration")
+       
+    plt.show()
+    qm.close()
 
 # %%

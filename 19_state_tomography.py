@@ -19,6 +19,9 @@ from configuration_with_mw_fem import *
 from qualang_tools.results import progress_counter, fetching_tool
 from macros import readout_macro
 import matplotlib.pyplot as plt
+import matplotlib
+
+matplotlib.use('TkAgg')
 
 
 ######################################
@@ -148,7 +151,10 @@ bloch_sphere.label_bra(bloch_sphere.South * 1.1, "e")
 bloch_sphere.label_bra(bloch_sphere.East * 1.1, "X")
 bloch_sphere.label_bra(bloch_sphere.West * 1.1, "Y")
 # bloch_sphere.plot_vector((1, 1, 0), 'Test', color='r')
-# bloch_sphere.plot_vector((1, 0, 1), bra_tex('k'), color='g')
+# bloch_sphere.plot_vector((1, 0, 1), bra_tex('k'), color='g')import matplotlib
+import time
+
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
@@ -210,6 +216,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -243,3 +250,25 @@ else:
     # Zero order approximation
     rho = 0.5 * (I + state[0] * sigma_x + state[1] * sigma_y + state[2] * sigma_z)
     print(f"The density matrix is:\n{rho}")
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        save_data_dict["state"] = state
+        save_data_dict["I"] = I
+        save_data_dict["sigma_x"] = sigma_x
+        save_data_dict["sigma_y"] = sigma_y
+        save_data_dict["sigma_z"] = sigma_z
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.save_data(data=save_data_dict, name="state_tomography")
+       
+    plt.show()
+    qm.close()
+
+# %%

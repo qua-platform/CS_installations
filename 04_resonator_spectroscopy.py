@@ -25,7 +25,10 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from scipy import signal
+import matplotlib
+import time
 
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
@@ -81,6 +84,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Simulate or execute #
 #######################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -103,6 +107,8 @@ else:
     while results.is_processing():
         # Fetch results
         I, Q, iteration = results.fetch_all()
+        # Get elapsed time
+        elapsed_time = time.time() - results.get_start_time()
         # Convert results into Volts
         S = u.demod2volts(I + 1j * Q, readout_len)
         R = np.abs(S)  # Amplitude
@@ -122,18 +128,39 @@ else:
         plt.ylabel("Phase [rad]")
         plt.pause(0.1)
         plt.tight_layout()
+
     # Fit the results to extract the resonance frequency
     try:
         from qualang_tools.plot.fitting import Fit
 
         fit = Fit()
-        plt.figure()
+        fig_analysis = plt.figure()
         res_spec_fit = fit.reflection_resonator_spectroscopy(frequencies / u.MHz, R, plot=True)
         plt.title(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
         plt.xlabel("Intermediate frequency [MHz]")
         plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
         print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit['f'][0]:.6f} MHz")
     except (Exception,):
-        pass
+        print("fitting failed")
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        save_data_dict["elapsed_time"] =  np.array([elapsed_time])
+        save_data_dict["I"] = I
+        save_data_dict["Q"] = Q
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig, "fig_analysis": fig_analysis})
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.save_data(data=save_data_dict, name=Path(__file__).stem)
+       
+    plt.show()
+    qm.close()
+
 
 # %%

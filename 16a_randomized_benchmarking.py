@@ -29,7 +29,10 @@ from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
 from macros import readout_macro
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
+import matplotlib
+import time
 
+matplotlib.use('TkAgg')
 
 ##############################
 # Program-specific variables #
@@ -147,7 +150,10 @@ def play_sequence(sequence_list, depth):
                 play("-x90", "qubit")
                 play("y90", "qubit")
                 play("-x90", "qubit")
+import matplotlib
+import time
 
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
@@ -242,6 +248,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -273,6 +280,8 @@ else:
             I, Q, iteration = results.fetch_all()
             value_avg = I
 
+        # Get elapsed time
+        elapsed_time = time.time() - results.get_start_time()
         # Progress bar
         progress_counter(iteration, num_of_sequences, start_time=results.get_start_time())
         # Plot averaged values
@@ -328,7 +337,7 @@ else:
     )
 
     # Plots
-    plt.figure()
+    fig = plt.figure()
     plt.errorbar(x, value_avg, yerr=error_avg, marker=".")
     plt.plot(x, power_law(x, *pars), linestyle="--", linewidth=2)
     plt.xlabel("Number of Clifford gates")
@@ -336,5 +345,32 @@ else:
     plt.title("Single qubit RB")
 
     # np.savez("rb_values", value)
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        save_data_dict["elapsed_time"] =  np.array([elapsed_time])
+
+        if state_discrimination:
+            save_data_dict["state"] = state
+            save_data_dict["value_avg"] = value_avg
+            save_data_dict["error_avg"] = error_avg
+        else:
+            save_data_dict["I"] = I
+            save_data_dict["Q"] = Q
+            save_data_dict["value_avg"] = value_avg
+            save_data_dict["error_avg"] = error_avg
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.save_data(data=save_data_dict, name="rb")
+       
+    plt.show()
+    qm.close()
 
 # %%

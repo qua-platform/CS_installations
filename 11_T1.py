@@ -21,7 +21,10 @@ from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array, get_equivalent_log_array
 import matplotlib.pyplot as plt
+import matplotlib
+import time
 
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
@@ -89,6 +92,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -109,6 +113,8 @@ else:
     while results.is_processing():
         # Fetch results
         I, Q, iteration = results.fetch_all()
+        # Get elapsed time
+        elapsed_time = time.time() - results.get_start_time()
         # Convert the results into Volts
         I, Q = u.demod2volts(I, readout_len), u.demod2volts(Q, readout_len)
         # Progress bar
@@ -132,7 +138,7 @@ else:
         from qualang_tools.plot.fitting import Fit
 
         fit = Fit()
-        plt.figure()
+        fig_analysis = plt.figure()
         decay_fit = fit.T1(4 * taus, I, plot=True)
         qubit_T1 = np.round(np.abs(decay_fit["T1"][0]) / 4) * 4
         plt.xlabel("Delay [ns]")
@@ -141,6 +147,25 @@ else:
         plt.legend((f"Relaxation time T1 = {qubit_T1:.0f} ns",))
         plt.title("T1 measurement")
     except (Exception,):
-        pass
+        print("fitting failed")
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        save_data_dict["elapsed_time"] =  np.array([elapsed_time])
+        save_data_dict["I"] = I
+        save_data_dict["Q"] = Q
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig, "fig_analysis": fig_analysis})
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.save_data(data=save_data_dict, name="T1")
+       
+    plt.show()
+    qm.close()
 
 # %%

@@ -93,7 +93,10 @@ def update_readout_length(new_readout_length, ringdown_length):
         "cosine": [(0.0, new_readout_length + ringdown_length)],
         "sine": [(-1.0, new_readout_length + ringdown_length)],
     }
+import matplotlib
+import time
 
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
@@ -184,6 +187,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -201,6 +205,8 @@ else:
     while results.is_processing():
         # Fetch results
         iteration = results.fetch_all()[0]
+        # Get elapsed time
+        elapsed_time = time.time() - results.get_start_time()
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
 
@@ -222,6 +228,7 @@ else:
     norm_subtracted_trace = normalize_complex_array(subtracted_trace)  # <- these are the optimal weights :)
     # Plot the results
     plot_three_complex_arrays(x_plot, ground_trace, excited_trace, norm_subtracted_trace)
+    fig = plt.gcf()
     # Reshape the optimal integration weights to match the configuration
     weights_real = norm_subtracted_trace.real
     weights_minus_imag = -norm_subtracted_trace.imag
@@ -236,6 +243,7 @@ else:
         weights_minus_real=weights_minus_real,
         division_length=division_length,
     )
+    
     # After obtaining the optimal weights, you need to load them to the 'integration_weights' dictionary in the config.
     # For this, you can just copy and paste the following lines into the "integration_weights" section:
     # "opt_cosine_weights": {
@@ -273,5 +281,31 @@ else:
     #     opt_weights_minus_imag = [(1.0, readout_len)]
     #     opt_weights_imag = [(1.0, readout_len)]
     #     opt_weights_minus_real = [(1.0, readout_len)]
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        save_data_dict["elapsed_time"] =  np.array([elapsed_time])
+        save_data_dict["IIg"] = IIg
+        save_data_dict["IIe"] = IIe
+        save_data_dict["IQg"] = IQg
+        save_data_dict["IQe"] = IQe
+        save_data_dict["QIg"] = QIg
+        save_data_dict["QIe"] = QIe
+        save_data_dict["QQg"] = QQg
+        save_data_dict["QQe"] = QQe
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.save_data(data=save_data_dict, name="readout_weights_optimization")
+       
+    plt.show()
+    qm.close()
+
 
 # %%

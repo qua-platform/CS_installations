@@ -22,7 +22,10 @@ from configuration_with_mw_fem import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 import matplotlib.pyplot as plt
+import matplotlib
+import time
 
+matplotlib.use('TkAgg')
 
 ##############################
 # Program-specific variables #
@@ -88,7 +91,10 @@ def allXY(pulses):
         dual_demod.full("rotated_minus_sin", "rotated_cos", Q_xy),
     )
     return I_xy, Q_xy
+import matplotlib
+import time
 
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
@@ -136,6 +142,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -159,9 +166,11 @@ else:
         res = results.fetch_all()
         I = -np.array(res[1::2])
         Q = -np.array(res[2::2])
+        # Get elapsed time
+        elapsed_time = time.time() - results.get_start_time()
         n = res[0]
         # Progress bar
-        progress_counter(n, n_avg, start_time=results.start_time)
+        progress_counter(n, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle("All XY")
         plt.subplot(211)
@@ -180,5 +189,24 @@ else:
         plt.legend()
         plt.tight_layout()
         plt.pause(0.1)
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        save_data_dict["elapsed_time"] =  np.array([elapsed_time])
+        save_data_dict["I"] = I
+        save_data_dict["Q"] = Q
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.save_data(data=save_data_dict, name="allxy")
+       
+    plt.show()
+    qm.close()
 
 # %%

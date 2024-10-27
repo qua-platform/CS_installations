@@ -21,7 +21,10 @@ from qm import SimulationConfig
 from configuration_with_mw_fem import *
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
+import matplotlib
+import time
 
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
@@ -56,6 +59,8 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Simulate or execute #
 #######################
 simulate = False
+save_data = True
+
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
@@ -105,9 +110,26 @@ else:
     plt.legend()
     plt.grid("all")
     plt.tight_layout()
-    plt.show()
 
     # Update the config
     print(f"Time Of Flight to add in the config: {delay} ns")
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        save_data_dict["adc"] = adc
+        save_data_dict["adc_single_run"] = adc_single_run
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.save_data(data=save_data_dict, name="time_of_flight_mw_fem")
+    
+    plt.show()
+    qm.close()
 
 # %%

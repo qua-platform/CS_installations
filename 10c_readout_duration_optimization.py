@@ -45,7 +45,10 @@ def update_readout_length(new_readout_length, ringdown_length):
         "cosine": [(0.0, new_readout_length + ringdown_length)],
         "sine": [(-1.0, new_readout_length + ringdown_length)],
     }
+import matplotlib
+import time
 
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
@@ -163,6 +166,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -186,6 +190,8 @@ else:
     while results.is_processing():
         # Fetch results
         Ig_avg, Qg_avg, Ie_avg, Qe_avg, Ig_var, Qg_var, Ie_var, Qe_var, iteration = results.fetch_all()
+        # Get elapsed time
+        elapsed_time = time.time() - results.get_start_time()
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Derive the SNR
@@ -222,3 +228,30 @@ else:
     # Get the optimal readout length in ns
     opt_readout_length = int(np.round(np.argmax(SNR) * division_length / 4) * 4 * 4)
     print(f"The optimal readout length is {opt_readout_length} ns (SNR={max(SNR)})")
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        save_data_dict["elapsed_time"] =  np.array([elapsed_time])
+        save_data_dict["Ig_avg"] = Ig_avg
+        save_data_dict["Qg_avg"] = Qg_avg
+        save_data_dict["Ie_avg"] = Ie_avg
+        save_data_dict["Qe_avg"] = Qe_avg
+        save_data_dict["Ig_var"] = Ig_var
+        save_data_dict["Qg_var"] = Qg_var
+        save_data_dict["Ie_var"] = Ie_var
+        save_data_dict["Qe_var"] = Qe_var
+                
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.save_data(data=save_data_dict, name="readout_frequency_optimization")
+       
+    plt.show()
+    qm.close()
+
+# %%

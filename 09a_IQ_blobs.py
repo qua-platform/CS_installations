@@ -23,12 +23,17 @@ from qm import SimulationConfig
 from qm import QuantumMachinesManager
 from configuration_with_mw_fem import *
 from qualang_tools.analysis.discriminator import two_state_discriminator
+import matplotlib.pyplot as plt
+import matplotlib
+import time
+
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
 ###################
 
-n_runs = 10000  # Number of runs
+n_runs = 100  # Number of runs
 
 with program() as IQ_blobs:
     n = declare(int)
@@ -91,6 +96,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -115,6 +121,7 @@ else:
     # Plot the IQ blobs, rotate them to get the separation along the 'I' quadrature, estimate a threshold between them
     # for state discrimination and derive the fidelity matrix
     angle, threshold, fidelity, gg, ge, eg, ee = two_state_discriminator(Ig, Qg, Ie, Qe, b_print=True, b_plot=True)
+    fig = plt.gcf()
 
     #########################################
     # The two_state_discriminator gives us the rotation angle which makes it such that all of the information will be in
@@ -157,5 +164,25 @@ else:
     #     assign(cont_condition, ((I > threshold) & (count < 3)))
     #
     #########################################
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        save_data_dict["Ig"] = Ig
+        save_data_dict["Qg"] = Qg
+        save_data_dict["Ie"] = Ie
+        save_data_dict["Qe"] = Qe
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.save_data(data=save_data_dict, name="IQ_blobs")
+       
+    plt.show()
+    qm.close()
 
 # %%

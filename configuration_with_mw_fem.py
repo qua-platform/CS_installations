@@ -16,14 +16,20 @@ from qualang_tools.units import unit
 qop_ip = "172.16.33.107" # "192.168.88.252"  # Write the QM router IP address
 cluster_name = "Beta_8" # 'beta6'  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
-
 octave_config = None
 
 con = "con1"
 fem = 1
 
 # Path to save data
-save_dir = Path().absolute() / "QM" / "INSTALLATION" / "data"
+save_dir = Path().absolute() / "data"
+save_dir.mkdir(exist_ok=True)
+default_additional_files = {
+    "configuration_mw_fem.py": "configuration_mw_fem.py",
+    "optimal_weights.npz": "optimal_weights.npz",
+}
+
+
 #############################################
 #                  Qubits                   #
 #############################################

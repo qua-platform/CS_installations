@@ -29,7 +29,10 @@ from qualang_tools.results import fetching_tool
 from qualang_tools.loops import from_array
 from macros import readout_macro
 import matplotlib.pyplot as plt
+import matplotlib
+import time
 
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
@@ -87,6 +90,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -99,7 +103,7 @@ else:
     I_tot = []
     Q_tot = []
     state_tot = []
-    plt.figure()
+    fig = plt.figure()
     # Since the DRAG waveforms need to be changed, we have to do it in Python
     for det in detunings:
         xaxis.append(det)
@@ -155,3 +159,24 @@ else:
         plt.tight_layout()
         plt.pause(0.01)
     print(f"Optimal DRAG detuning = {xaxis[np.argmin(np.sum(I_tot, axis=1))]:.0f} Hz")
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        save_data_dict["I"] = I
+        save_data_dict["Q"] = Q
+        save_data_dict["state"] = state
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.save_data(data=save_data_dict, name="AC_Stark_calibratoin_google")
+       
+    plt.show()
+    qm.close()
+
+# %%
