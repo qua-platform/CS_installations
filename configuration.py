@@ -259,4 +259,14 @@ config = {
         "ON": {"samples": [(1, 0)]},  # [(on/off, ns)]
         "OFF": {"samples": [(0, 0)]},  # [(on/off, ns)]
     },
+    "integration_weights": {
+        "constant_weights_snspd": {
+            "cosine": [(1, snspd_readout_len)],
+            "sine": [(0.0, snspd_readout_len)],
+        },
+        "constant_weights_apd": {
+            "cosine": [(1, apd_readout_len)],
+            "sine": [(0.0, apd_readout_len)],
+        },
+    },
 }

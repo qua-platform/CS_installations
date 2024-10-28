@@ -13,9 +13,10 @@ with program() as hello_qua:
     a = declare(fixed)
     with infinite_loop_():
         with for_(a, 0, a < 1.1, a + 0.05):
-            play("control" * amp(a), "control_eom")
-            wait(100, "control_eom")
-        wait(25, "control_eom")
+            play("control", "control_eom")
+            measure("readout", "SNSPD")
+            wait(100, "SNSPD")
+        wait(25, "SNSPD")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -36,7 +37,9 @@ if simulate:
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, hello_qua, simulation_config)
     # Plot the simulated samples
-    job.get_simulated_samples().con1.plot()
+    samples = job.get_simulated_samples()
+    waveform_report = job.get_simulated_waveform_report()
+    waveform_report.create_plot(samples, plot=True, save_path="./")
     plt.show()
 else:
     # Open a quantum machine to execute the QUA program
