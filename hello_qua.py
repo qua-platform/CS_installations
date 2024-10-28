@@ -14,7 +14,7 @@ with program() as hello_qua:
     with infinite_loop_():
         with for_(a, 0, a < 1.1, a + 0.05):
             play("control", "control_eom")
-            measure("readout", "SNSPD")
+            measure("readout", "SNSPD", None)
             wait(100, "SNSPD")
         wait(25, "SNSPD")
 
