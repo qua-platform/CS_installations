@@ -56,6 +56,7 @@ control_aom_len = 100 * u.ns
 control_eom_len = 100 * u.ns
 pulsed_laser_aom_len = 100 * u.ns
 snspd_readout_len = 1 * u.us
+apd_readout_len = 1 * u.us
 
 # Delays
 readout_aom_delay = 0 * u.ns
@@ -68,7 +69,6 @@ readout_amp = 0.1
 control_aom_amp = 0.1
 control_eom_amp = 0.1
 pulsed_laser_amp = 0.1
-snspd_readout_amp = 0.0
 
 # Time of flight
 time_of_flight = 24 * u.ns
@@ -103,7 +103,8 @@ config = {
                 9: {},
             },
             "analog_inputs": {
-                1: {}
+                1: {"offset": 0.0},
+                2: {"offset": 0.0},
             },
         },
     },
@@ -174,11 +175,20 @@ config = {
             "singleInput": {
                 "port": ("con1", 1),  # TODO: assign the right port
             },
-            "operations": {
-                "readout": "readout_pulse"
-            },
+            "operations": {"readout": "readout_pulse_snspd"},
             "outputs": {
                 "out1": ("con1", 1),
+            },
+            "time_of_flight": time_of_flight,
+            "smearing": 0,
+        },
+        "APD": {
+            "singleInput": {
+                "port": ("con1", 1),  # TODO: assign the right port
+            },
+            "operations": {"readout": "readout_pulse_apd"},
+            "outputs": {
+                "out1": ("con1", 2),
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -225,9 +235,15 @@ config = {
             "waveforms": {"single": "cw_pl_a"},
             "digital_marker": "ON",
         },
-        "readout_pulse": {
+        "readout_pulse_snspd": {
             "operation": "measurement",
             "length": snspd_readout_len,
+            "waveforms": {"single": "zero_wf"},
+            "digital_marker": "ON",
+        },
+        "readout_pulse_apd": {
+            "operation": "measurement",
+            "length": apd_readout_len,
             "waveforms": {"single": "zero_wf"},
             "digital_marker": "ON",
         },
