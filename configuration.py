@@ -1,10 +1,11 @@
+import matplotlib.pyplot as plt
 import numpy as np
+from octave_sdk import Octave
 from qm import QuantumMachine
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.units import unit
-
-from quam.quam.utils import pulse
+from set_octave import OctaveUnit, octave_declaration
 
 #######################
 # AUXILIARY FUNCTIONS #
@@ -32,10 +33,15 @@ u = unit(coerce_to_integer=True)
 #############
 # VARIABLES #
 #############
-qop_ip = "172.16.2.103"
-cluster_name = None
+qop_ip = "172.16.33.101"
+cluster_name = "Cluster_81"
 qop_port = None
-octave_config = None
+
+octave_1 = OctaveUnit("oct1", qop_ip, port=11232, con="con1")
+# Add the octaves
+octaves = [octave_1]
+# Configure the Octaves
+octave_config = octave_declaration(octaves)
 
 # Frequencies
 pulsed_laser_AOM_IF = 100 * u.MHz
@@ -71,12 +77,15 @@ config = {
     "version": 1,
     "controllers": {
         "con1": {
-            "type": "opx1",
             "analog_outputs": {
                 1: {"offset": 0.0},
                 2: {"offset": 0.0},
                 3: {"offset": 0.0},
-                9: {"offset": 0.0},
+                4: {"offset": 0.0},
+                5: {"offset": 0.0},
+                6: {"offset": 0.0},
+                7: {"offset": 0.0},
+                8: {"offset": 0.0},
             },
             "digital_outputs": {
                 1: {},
@@ -94,9 +103,8 @@ config = {
     },
     "elements": {
         "readout_aom": {
-            "SingleInput": {
+            "singleInput": {
                 "port": ("con1", 1),  # TODO: assign the right port
-                "delay": readout_aom_delay,
             },
             "intermediate_frequency": readout_AOM_IF,
             "operations": {
@@ -106,13 +114,13 @@ config = {
                 "marker": {
                     "port": ("con1", 1),  # TODO: what is this?
                     "delay": readout_aom_delay,
+                    "buffer": 0,
                 },
             },
         },
         "control_aom": {
-            "SingleInput": {
-                "port": ("con1", 1),  # TODO: assign the right port
-                "delay": control_aom_delay,
+            "singleInput": {
+                "port": ("con1", 2),  # TODO: assign the right port
             },
             "intermediate_frequency": control_AOM_IF,
             "operations": {
@@ -120,28 +128,29 @@ config = {
             },
             "digitalInputs": {
                 "marker": {
-                    "port": ("con1", 1),  # TODO: what is this?
+                    "port": ("con1", 2),  # TODO: what is this?
                     "delay": control_aom_delay,
+                    "buffer": 0,
                 },
             },
         },
         "control_eom": {
-            "RF_inputs": {"port": ("octave1", 2)},
+            "RF_inputs": {"port": ("oct1", 2)},
             "intermediate_frequency": control_EOM_IF,
             "operations": {
                 "control": "cw_control_eom",
             },
             "digitalInputs": {
                 "marker": {
-                    "port": ("con1", 1),  # TODO: what is this?
+                    "port": ("con1", 3),  # TODO: what is this?
                     "delay": control_eom_delay,
+                    "buffer": 0,
                 },
             },
         },
         "pulsed_laser_aom": {
-            "SingleInput": {
-                "port": ("con1", 1),  # TODO: assign the right port
-                "delay": pulsed_laser_aom_delay,
+            "singleInput": {
+                "port": ("con1", 5),  # TODO: assign the right port
             },
             "intermediate_frequency": pulsed_laser_AOM_IF,
             "operations": {
@@ -149,50 +158,60 @@ config = {
             },
             "digitalInputs": {
                 "marker": {
-                    "port": ("con1", 1),  # TODO: what is this?
+                    "port": ("con1", 5),  # TODO: what is this?
                     "delay": pulsed_laser_aom_delay,
+                    "buffer": 0,
                 },
             },
         },
     },
     "octaves": {
-        "octave1": {
+        "oct1": {
             "RF_outputs": {
-                1: {
+                2: {
                     "LO_frequency": control_EOM_LO,
                     "LO_source": "internal",  # can be external or internal. internal is the default
                     "output_mode": "triggered",  # can be: "always_on" / "always_off"/ "triggered" / "triggered_reversed". "always_off" is the default
                     "gain": 0,  # can be in the range [-20 : 0.5 : 20]dB
                 },
             },
+            "connectivity": "con1",
         },
     },
     "pulses": {
         "cw_readout_aom": {
-            "operation": "readout",
+            "operation": "control",
             "length": readout_aom_len,
             "waveforms": {"single": "cw_r"},
+            "digital_marker": "ON",
         },
         "cw_control_aom": {
             "operation": "control",
             "length": control_aom_len,
             "waveforms": {"single": "cw_c_a"},
+            "digital_marker": "ON",
         },
         "cw_control_eom": {
             "operation": "control",
             "length": control_eom_len,
-            "waveforms": {"single": "cw_c_e"},
+            "waveforms": {
+                "I": "cw_c_e",
+                "Q": "zero_c_e",
+            },
+            "digital_marker": "ON",
         },
         "cw_pulsed_laser_aom": {
             "operation": "control",
             "length": pulsed_laser_aom_len,
             "waveforms": {"single": "cw_pl_a"},
+            "digital_marker": "ON",
         },
     },
     "waveforms": {
         "cw_r": {"type": "constant", "sample": readout_amp},
         "cw_c_a": {"type": "constant", "sample": control_aom_amp},
         "cw_c_e": {"type": "constant", "sample": control_eom_amp},
+        "zero_c_e": {"type": "constant", "sample": 0.0},
         "cw_pl_a": {"type": "constant", "sample": pulsed_laser_amp},
     },
     "digital_waveforms": {
