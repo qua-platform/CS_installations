@@ -364,15 +364,15 @@ if not node.parameters.simulate:
 # %%
 
 # %% {Update_state}
-# if not node.parameters.simulate:
-#     if node.parameters.load_data_id is None:
-#         with node.record_state_updates():
-#             for qp in qubit_pairs:
-#                 qp.gates['Cz_unipolar'] = CZGate(flux_pulse_control = FluxPulse(length=lengths[qp.name], amplitude=amplitudes[qp.name], zero_padding=zero_paddings[qp.name], id = 'flux_pulse_control_' + qp.qubit_target.name))
-#                 qp.gates['Cz'] = f"#./Cz_unipolar"
+if not node.parameters.simulate:
+    if node.parameters.load_data_id is None:
+        with node.record_state_updates():
+            for qp in qubit_pairs:
+                qp.gates['SWAP_unipolar'] = CZGate(flux_pulse_control = FluxPulse(length=lengths[qp.name], amplitude=amplitudes[qp.name] / 2, zero_padding=zero_paddings[qp.name], id = 'flux_pulse_control_' + qp.qubit_target.name))
+                qp.gates['SWAP'] = f"#./SWAP_unipolar"
                 
-#                 qp.J2 = Js[qp.name]
-#                 qp.detuning = detunings[qp.name]
+                qp.J2 = Js[qp.name]
+                qp.detuning = detunings[qp.name]
                 
 # %% {Save_results}
 if not node.parameters.simulate:

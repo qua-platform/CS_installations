@@ -44,7 +44,7 @@ class Parameters(NodeParameters):
 
     qubits: Optional[List[str]] = None
     num_runs: int = 2000
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     simulate: bool = False
     timeout: int = 100
@@ -96,7 +96,8 @@ with program() as iq_blobs:
             if reset_type == "active":
                 active_reset(qubit)
             elif reset_type == "thermal":
-                wait(5*qubit.thermalization_time * u.ns)
+                # wait(5*qubit.thermalization_time * u.ns)
+                wait(30000)
             else:
                 raise ValueError(f"Unrecognized reset type {reset_type}.")
 
@@ -330,5 +331,5 @@ if not node.parameters.simulate:
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine
     node.save()
-
+ 
 # %%
