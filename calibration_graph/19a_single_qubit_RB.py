@@ -53,7 +53,7 @@ class Parameters(NodeParameters):
     multiplexed: bool = True
 
 
-node = QualibrationNode(name="11a_Randomized_Benchmarking", parameters=Parameters())
+node = QualibrationNode(name="19a_Randomized_Benchmarking", parameters=Parameters())
 
 
 from qm.qua import *

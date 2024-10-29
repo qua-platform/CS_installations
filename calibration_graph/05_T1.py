@@ -16,7 +16,7 @@ class Parameters(NodeParameters):
     reset_type: Literal["active", "thermal"] = "thermal"
 
 
-node = QualibrationNode(name="t1_experiment", parameters=Parameters())
+node = QualibrationNode(name="05_T1", parameters=Parameters())
 
 
 from qm.qua import *
@@ -82,7 +82,6 @@ with program() as t1:
         state = [declare(int) for _ in range(num_qubits)]
         state_st = [declare_stream() for _ in range(num_qubits)]
     for i, qubit in enumerate(qubits):
-
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)

@@ -58,7 +58,7 @@ u = unit(coerce_to_integer=True)
 machine = QuAM.load()
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
-octave_config = machine.get_octave_config()
+# octave_config = machine.get_octave_config()
 # Open Communication with the QOP
 qmm = machine.connect()
 
@@ -91,7 +91,7 @@ with program() as multi_res_spec:
                 # Update the resonator frequencies for all resonators
                 update_frequency(rr.name, df + rr.intermediate_frequency)
                 # Measure the resonator
-                rr.measure("readout", qua_vars=(I[i], Q[i]))
+                rr.measure("readout", qua_vars=(I[i], Q[i])) # qubit.resonator.operations["readout"].integration_weights_angle
                 # wait for the resonator to relax
                 rr.wait(machine.depletion_time * u.ns)
                 # save data
@@ -166,9 +166,7 @@ else:
     ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs})
 
     ds = ds.assign({"IQ_abs": np.sqrt(ds["I"] ** 2 + ds["Q"] ** 2)})
-    ds = ds.assign(
-        {"phase": subtract_slope(apply_angle(ds.I + 1j * ds.Q, dim="freq"), dim="freq")}
-    )
+    ds = ds.assign({"phase": subtract_slope(apply_angle(ds.I + 1j * ds.Q, dim="freq"), dim="freq")})
 
     def abs_freq(q, freq):
         return freq + q.resonator.RF_frequency
