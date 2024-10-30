@@ -6,18 +6,16 @@ from typing import Optional, Literal, List
 # %% {Node_parameters}
 class Parameters(NodeParameters):
     qubits: Optional[List[str]] = ["q2"]
-    num_averages: int = 100
-    min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 100000
-    wait_time_step_in_ns: int = 600
+    num_averages: int = 1000
+    num_time_points: int = 300
     flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "joint"
     simulate: bool = False
     timeout: int = 100
     use_state_discrimination: bool = True
-    reset_type: Literal['active', 'thermal'] = "thermal"
+    reset_type: Literal['active', 'thermal'] = "active"
 
 node = QualibrationNode(
-    name="10a_t1_experiment",
+    name="10c_t1_time_trace",
     parameters=Parameters()
 )
 
@@ -39,7 +37,7 @@ import matplotlib
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 from quam_libs.lib.save_utils import fetch_results_as_xarray
 from quam_libs.lib.fit import fit_decay_exp, decay_exp
-
+import xarray as xr
 
 
 
@@ -65,13 +63,6 @@ num_qubits = len(qubits)
 # %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 
-# Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
-idle_times = np.arange(
-    node.parameters.min_wait_time_in_ns // 4,
-    node.parameters.max_wait_time_in_ns // 4,
-    node.parameters.wait_time_step_in_ns // 4,
-)
-
 flux_point = node.parameters.flux_point_joint_or_independent_or_arbitrary  # 'independent' or 'joint'
 if flux_point == "arbitrary":
     detunings = {q.name : q.arbitrary_intermediate_frequency for q in qubits}
@@ -83,6 +74,9 @@ else:
 with program() as t1:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     t = declare(int)  # QUA variable for the idle time
+    p = declare(int)
+    p_num = 1000
+    state_p = declare(int)
     if node.parameters.use_state_discrimination:
         state = [declare(int) for _ in range(num_qubits)]
         state_st = [declare_stream() for _ in range(num_qubits)]
@@ -105,28 +99,42 @@ with program() as t1:
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
-            with for_(*from_array(t, idle_times)):
-                if node.parameters.reset_type == "active":
-                    active_reset(qubit)
-                else:
-                    qubit.resonator.wait(3*qubit.thermalization_time * u.ns)
-                    qubit.align()
-                
-                    
-                qubit.xy.play("x180")
-                qubit.align()
-                qubit.z.wait(20)
-                qubit.z.play("const", amplitude_scale=arb_flux_bias_offset[qubit.name]/qubit.z.operations["const"].amplitude, duration=t)
-                qubit.z.wait(20)
+            if node.parameters.reset_type == "active":
+                active_reset(qubit)
+            else:
+                qubit.resonator.wait(3*qubit.thermalization_time * u.ns)
                 qubit.align()
 
+            # with for_(p, 0, p < p_num, p + 1):
+            #     # readout_state(qubit, state_p)
+            #     # qubit.align()
+            #     # qubit.xy.play("x180", condition = (state_p == 0))
+            #     # qubit.align()
+            #     # wait(qubit.resonator.depletion_time // 4, qubit.resonator.name)
+            #     # qubit.align()
+            #     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+            #     qubit.align()
+            #     qubit.xy.play("x180", condition = (I[i] < qubit.resonator.operations["readout"].threshold))
+            #     qubit.align()
+            # qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+            # qubit.align()
+            # qubit.xy.play("x180", condition = (I[i] > qubit.resonator.operations["readout"].threshold))
+            # qubit.align()                
+            # # active_reset(qubit)  
+                
+            qubit.xy.play("x180")
+            qubit.align()
+            with for_(t, 0, t < node.parameters.num_time_points, t + 1):
                 # Measure the state of the resonators
                 if node.parameters.use_state_discrimination:
                     readout_state(qubit, state[i])
+                    qubit.align()
+                    qubit.xy.play("x180", condition = (state[i] == 0))
+                    qubit.align()                    
                     save(state[i], state_st[i])
                 else:
                     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
-                    # save data
+                    wait(qubit.resonator.depletion_time // 8, qubit.resonator.name)
                     save(I[i], I_st[i])
                     save(Q[i], Q_st[i])
 
@@ -136,10 +144,10 @@ with program() as t1:
         n_st.save("n")
         for i in range(num_qubits):
             if node.parameters.use_state_discrimination:
-                state_st[i].buffer(len(idle_times)).average().save(f"state{i + 1}")
+                state_st[i].buffer(node.parameters.num_time_points).buffer(n_avg).save(f"state{i + 1}")
             else:
-                I_st[i].buffer(len(idle_times)).average().save(f"I{i + 1}")
-                Q_st[i].buffer(len(idle_times)).average().save(f"Q{i + 1}")
+                I_st[i].buffer(node.parameters.num_time_points).buffer(n_avg).save(f"I{i + 1}")
+                Q_st[i].buffer(node.parameters.num_time_points).buffer(n_avg).save(f"Q{i + 1}")
 
 
 # %% {Simulate_or_execute}
@@ -173,39 +181,24 @@ else:
 # %% {Data_fetching_and_dataset_creation}
 if not node.parameters.simulate:
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
-    ds = fetch_results_as_xarray(job.result_handles, qubits, {"idle_time": idle_times})
+    ds = fetch_results_as_xarray(job.result_handles, qubits, {"N_meas": np.arange(node.parameters.num_time_points), "N_avg": np.arange(n_avg)})
 
-    ds = ds.assign_coords(idle_time=4*ds.idle_time/1e3)  # convert to usec
-    ds.idle_time.attrs = {'long_name': 'idle time', 'units': 'usec'}
+    def abs_time(q, time):
+        return time *  (q.resonator.operations["readout"].length + q.resonator.depletion_time *0  )
+
+    ds = ds.assign_coords(
+        {"idle_time": (["qubit", "N_meas"], np.array([abs_time(q, ds.N_meas) for q in qubits]))}
+    )
+    
+
+    # # Add attributes to the new coordinate
+    # ds.readout_length.attrs = {'long_name': 'Readout pulse length', 'units': 'ns'}
+    # ds = ds.assign_coords(
+    #     {"freq_full": (["qubit", "freq"], np.array([abs_freq(q, dfs) for q in qubits]))}
+    # )
 
 # %% {Data_analysis}
-if not node.parameters.simulate:
-    if node.parameters.use_state_discrimination:
-        fit_data = fit_decay_exp(ds.state, 'idle_time')
-    else:
-        fit_data = fit_decay_exp(ds.I, 'idle_time')
-    fit_data.attrs = {'long_name' : 'time', 'units' : 'usec'}
-    fitted =  decay_exp(ds.idle_time,
-                                                    fit_data.sel(
-                                                        fit_vals="a"),
-                                                    fit_data.sel(
-                                                        fit_vals="offset"),
-                                                    fit_data.sel(fit_vals="decay"))
 
-
-    decay = fit_data.sel(fit_vals = 'decay')
-    decay.attrs = {'long_name' : 'decay', 'units' : 'nSec'}
-
-    decay_res = fit_data.sel(fit_vals = 'decay_decay')
-    decay_res.attrs = {'long_name' : 'decay', 'units' : 'nSec'}
-    
-    tau = -1/fit_data.sel(fit_vals='decay')
-    tau.attrs = {'long_name' : 'T2*', 'units' : 'uSec'}
-
-    tau_error = -tau * (np.sqrt(decay_res)/decay)
-    tau_error.attrs = {'long_name' : 'T2* error', 'units' : 'uSec'}
-
-    node.results = {"ds": ds}
 
 # %% {Plotting}
 if not node.parameters.simulate:
@@ -213,28 +206,51 @@ if not node.parameters.simulate:
     grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         if node.parameters.use_state_discrimination:
-            ds.sel(qubit = qubit['qubit']).state.plot(ax = ax)
-            
+            ds.assign_coords({"idle_time_us": ds.idle_time/1e3}).sel(qubit = qubit['qubit']).state.plot(ax = ax, x = "idle_time_us", y = "N_avg")
             ax.set_ylabel('State')
         else:
-            ds.sel(qubit = qubit['qubit']).I.plot(ax = ax)
+            ds.assign_coords({"idle_time_us": ds.idle_time/1e3}).sel(qubit = qubit['qubit']).I.plot(ax = ax, x = "idle_time_us", y = "N_avg")
             ax.set_ylabel('I (V)')
-        ax.plot(ds.idle_time, fitted.loc[qubit], 'r--')
         ax.set_title(qubit['qubit'])
         ax.set_xlabel('Idle_time (uS)')
-        ax.text(0.1, 0.9, f'T1 = {tau.sel(qubit = qubit["qubit"]).values:.1f} + {tau_error.sel(qubit = qubit["qubit"]).values:.1f} usec', transform=ax.transAxes, fontsize=10,
-        verticalalignment='top', bbox=dict(facecolor='white', alpha=0.5))
-    grid.fig.suptitle('T1')
+    grid.fig.suptitle('Raw traces')
     plt.tight_layout()
     plt.show()
     node.results['figure_raw'] = grid.fig
 
-# # %%
-# if not node.parameters.simulate:
-#     with node.record_state_updates():
-#         for q in qubits:
-#             q.T1 = int(1e3 * tau.sel(qubit = q.name).values.tolist())
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
+    for ax, qubit in grid_iter(grid):
+        if node.parameters.use_state_discrimination:
+            ds.assign_coords({"idle_time_us": ds.idle_time/1e3}).sel(qubit = qubit['qubit']).state.mean(dim = "N_avg").plot(ax = ax, x = "idle_time_us")
+            ax.set_ylabel('State')
+        else:
+            ds.assign_coords({"idle_time_us": ds.idle_time/1e3}).sel(qubit = qubit['qubit']).I.mean(dim = "N_avg").plot(ax = ax, x = "idle_time_us")
+            ax.set_ylabel('I (V)')
+        ax.set_title(qubit['qubit'])
+        ax.set_xlabel('Idle_time (uS)')
+    grid.fig.suptitle('Average of traces')
+    plt.tight_layout()
+    plt.show()
+    node.results['figure_avg'] = grid.fig
 
+
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
+    for ax, qubit in grid_iter(grid):
+        if node.parameters.use_state_discrimination:
+            for i in range(2):
+                ds.assign_coords({"idle_time_us": ds.idle_time/1e3}).sel(qubit = qubit['qubit'], N_avg = i).state.plot(ax = ax, x = "idle_time_us")
+                ax.set_ylabel('State')
+        else:
+            for i in range(5):
+                ds.assign_coords({"idle_time_us": ds.idle_time/1e3}).sel(qubit = qubit['qubit'], N_avg = i).I.plot(ax = ax, x = "idle_time_us")
+            ax.set_ylabel('I (V)')
+            ax.axhline(machine.qubits[qubit['qubit']].resonator.operations["readout"].threshold, color = 'k', linestyle = '--')
+        ax.set_title(qubit['qubit'])
+        ax.set_xlabel('Idle_time (uS)')
+    grid.fig.suptitle('Examples of traces')
+    plt.tight_layout()
+    plt.show()
+    node.results['figure_examples'] = grid.fig
 
 # %% {Save_results}
 if not node.parameters.simulate:    

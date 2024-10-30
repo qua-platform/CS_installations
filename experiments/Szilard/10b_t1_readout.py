@@ -5,10 +5,10 @@ from typing import Optional, Literal, List
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubits: Optional[List[str]] = ["q2"]
+    qubits: Optional[List[str]] = ["q1"]
     num_averages: int = 100
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 100000
+    max_wait_time_in_ns: int = 200000
     wait_time_step_in_ns: int = 600
     flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "joint"
     simulate: bool = False
@@ -118,6 +118,8 @@ with program() as t1:
                 qubit.z.wait(20)
                 qubit.z.play("const", amplitude_scale=arb_flux_bias_offset[qubit.name]/qubit.z.operations["const"].amplitude, duration=t)
                 qubit.z.wait(20)
+                qubit.resonator.play("readout",duration = t, amplitude_scale=1.0)
+
                 qubit.align()
 
                 # Measure the state of the resonators

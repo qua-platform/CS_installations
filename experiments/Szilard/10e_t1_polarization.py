@@ -8,16 +8,17 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = ["q2"]
     num_averages: int = 100
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 100000
-    wait_time_step_in_ns: int = 600
+    max_wait_time_in_ns: int = 10000
+    wait_time_step_in_ns: int = 60
     flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "joint"
     simulate: bool = False
     timeout: int = 100
     use_state_discrimination: bool = True
     reset_type: Literal['active', 'thermal'] = "thermal"
+    polarization_number: int = 1000
 
 node = QualibrationNode(
-    name="10a_t1_experiment",
+    name="10e_t1_polarization",
     parameters=Parameters()
 )
 
@@ -83,6 +84,9 @@ else:
 with program() as t1:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     t = declare(int)  # QUA variable for the idle time
+    p = declare(int)
+    p_num = node.parameters.polarization_number
+    state_p = declare(int)
     if node.parameters.use_state_discrimination:
         state = [declare(int) for _ in range(num_qubits)]
         state_st = [declare_stream() for _ in range(num_qubits)]
@@ -111,9 +115,15 @@ with program() as t1:
                 else:
                     qubit.resonator.wait(3*qubit.thermalization_time * u.ns)
                     qubit.align()
-                
-                    
-                qubit.xy.play("x180")
+
+                with for_(p, 0, p < p_num, p + 1):
+                    readout_state(qubit, state_p)
+                    qubit.align()
+                    qubit.xy.play("x180", condition = (state_p == 0))
+                    qubit.align()
+                    wait(qubit.resonator.depletion_time // 4, qubit.resonator.name)
+                    qubit.align()
+                active_reset(qubit)                              
                 qubit.align()
                 qubit.z.wait(20)
                 qubit.z.play("const", amplitude_scale=arb_flux_bias_offset[qubit.name]/qubit.z.operations["const"].amplitude, duration=t)
@@ -178,34 +188,6 @@ if not node.parameters.simulate:
     ds = ds.assign_coords(idle_time=4*ds.idle_time/1e3)  # convert to usec
     ds.idle_time.attrs = {'long_name': 'idle time', 'units': 'usec'}
 
-# %% {Data_analysis}
-if not node.parameters.simulate:
-    if node.parameters.use_state_discrimination:
-        fit_data = fit_decay_exp(ds.state, 'idle_time')
-    else:
-        fit_data = fit_decay_exp(ds.I, 'idle_time')
-    fit_data.attrs = {'long_name' : 'time', 'units' : 'usec'}
-    fitted =  decay_exp(ds.idle_time,
-                                                    fit_data.sel(
-                                                        fit_vals="a"),
-                                                    fit_data.sel(
-                                                        fit_vals="offset"),
-                                                    fit_data.sel(fit_vals="decay"))
-
-
-    decay = fit_data.sel(fit_vals = 'decay')
-    decay.attrs = {'long_name' : 'decay', 'units' : 'nSec'}
-
-    decay_res = fit_data.sel(fit_vals = 'decay_decay')
-    decay_res.attrs = {'long_name' : 'decay', 'units' : 'nSec'}
-    
-    tau = -1/fit_data.sel(fit_vals='decay')
-    tau.attrs = {'long_name' : 'T2*', 'units' : 'uSec'}
-
-    tau_error = -tau * (np.sqrt(decay_res)/decay)
-    tau_error.attrs = {'long_name' : 'T2* error', 'units' : 'uSec'}
-
-    node.results = {"ds": ds}
 
 # %% {Plotting}
 if not node.parameters.simulate:
@@ -219,11 +201,8 @@ if not node.parameters.simulate:
         else:
             ds.sel(qubit = qubit['qubit']).I.plot(ax = ax)
             ax.set_ylabel('I (V)')
-        ax.plot(ds.idle_time, fitted.loc[qubit], 'r--')
         ax.set_title(qubit['qubit'])
         ax.set_xlabel('Idle_time (uS)')
-        ax.text(0.1, 0.9, f'T1 = {tau.sel(qubit = qubit["qubit"]).values:.1f} + {tau_error.sel(qubit = qubit["qubit"]).values:.1f} usec', transform=ax.transAxes, fontsize=10,
-        verticalalignment='top', bbox=dict(facecolor='white', alpha=0.5))
     grid.fig.suptitle('T1')
     plt.tight_layout()
     plt.show()
