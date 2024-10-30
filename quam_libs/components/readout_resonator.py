@@ -1,5 +1,5 @@
 from quam.core import quam_dataclass
-from quam.components.channels import InOutIQChannel, InOutMWChannel
+from quam.components.channels import InOutIQChannel, InOutMWChannel, DigitalOutputChannel
 from qualang_tools.units import unit
 import numpy as np
 from typing import Dict, Any, Optional, Union, List, Tuple
@@ -25,6 +25,7 @@ class ReadoutResonatorBase:
     
     gef_centers : Optional[List[List[float]]] = None
     gef_confusion_matrix : Optional[List[List[float]]] = None
+    digital_outputs: DigitalOutputChannel = None
 
 
 @quam_dataclass
