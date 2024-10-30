@@ -6,7 +6,7 @@ from typing import Optional, Literal, List
 # %% {Node_parameters}
 class Parameters(NodeParameters):
     qubits: Optional[List[str]] = ["q1"]
-    num_averages: int = 50
+    num_averages: int = 500
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 500
     num_time_steps: int = 500
@@ -17,7 +17,7 @@ class Parameters(NodeParameters):
     reset_type: Literal['active', 'thermal'] = "thermal"
     drive_pulse_name: str = "x180_Square"
     drive_amp_scale: float = 0.2
-    target_freq_in_Mhz: float = 50
+    target_freq_in_Mhz: float = 10
 
 node = QualibrationNode(
     name="02c_time_rabi_cal_amp",
@@ -187,12 +187,97 @@ if not node.parameters.simulate:
         fit_data.sel(fit_vals="phi"),
         fit_data.sel(fit_vals="offset"),
     )
+
+    def fit_cosine_with_fft_guess(ds, qubits, use_state_discrimination=True):
+        """
+        Fit dataset to cosine function using FFT for initial frequency guess
+        
+        Parameters:
+        -----------
+        ds : xarray.Dataset
+            Dataset containing the measurements
+        qubits : list
+            List of qubit objects to analyze
+        use_state_discrimination : bool
+            Whether to fit state or I quadrature data
+            
+        Returns:
+        --------
+        dict : Dictionary containing fit results for each qubit with keys:
+            'A': amplitude
+            'f': frequency in MHz
+            'phi': phase in radians 
+            'offset': vertical offset
+            'fit_func': fitted cosine function
+        """
+        def cosine(x, A, f, phi, offset):
+            return A * np.cos(2*np.pi*f*x + phi) + offset
+            
+        from scipy.optimize import curve_fit
+        from scipy.fft import fft, fftfreq
+        
+        fit_results = {}
+        
+        for q in qubits:
+            # Get data for this qubit
+            x_data = ds.idle_time.values
+            if use_state_discrimination:
+                y_data = ds.state.sel(qubit=q.name).values
+            else:
+                y_data = ds.I.sel(qubit=q.name).values
+                
+            # Use FFT to guess frequency
+            N = len(x_data)
+            T = (x_data[1] - x_data[0])  # sampling interval
+            yf = fft(y_data)
+            xf = fftfreq(N, T)
+            
+            # Get positive frequencies only
+            xf = xf[:N//2]
+            yf = np.abs(yf[:N//2])
+            
+            # Find peak frequency
+            f_guess = abs(xf[np.argmax(yf[1:])+1])  # Skip DC component
+            
+            # Initial parameter guesses
+            A_guess = (np.max(y_data) - np.min(y_data))/2
+            offset_guess = np.mean(y_data)
+            p0 = [A_guess, f_guess, 0, offset_guess]
+            
+            # Perform the fit
+            popt, pcov = curve_fit(cosine, x_data, y_data, p0=p0)
+            
+            # Store fit results
+            fit_results[q.name] = {
+                'A': popt[0],
+                'f': popt[1],
+                'phi': popt[2],
+                'offset': popt[3],
+                'fit_func': lambda x, p=popt: cosine(x, *p)
+            }
+            
+            print(f"\nFit results for {q.name}:")
+            print(f"Initial frequency guess from FFT: {f_guess:.3f} MHz")
+            print(f"Final fit results:")
+            print(f"Amplitude: {popt[0]:.3f}")
+            print(f"Frequency: {popt[1]:.3f} MHz")
+            print(f"Phase: {popt[2]:.3f} rad")
+            print(f"Offset: {popt[3]:.3f}")
+        
+        return fit_results
+        
+    # Perform the fit
+    fit_data = fit_cosine_with_fft_guess(ds, qubits, node.parameters.use_state_discrimination)
+
+    fit_evals = {}
+    for q in qubits:
+        fit_evals[q.name] = fit_data[q.name]['fit_func'](ds.idle_time)
     
 # Save fitting results
     for q in qubits:
         fit_results[q.name] = {}
-        fit_results[q.name]["f_fit"] = fit_data.loc[q.name].sel(fit_vals="f").values
-        fit_results[q.name]["phi_fit"] = fit_data.loc[q.name].sel(fit_vals="phi").values
+        fit_results[q.name]["f_fit"] = fit_data[q.name]["f"]
+        fit_results[q.name]["phi_fit"] = fit_data[q.name]["phi"]
         fit_results[q.name]["phi_fit"] = fit_results[q.name]["phi_fit"] - np.pi * (fit_results[q.name]["phi_fit"] > np.pi / 2)
         fit_results[q.name]["amp_fit"] = node.parameters.drive_amp_scale * node.parameters.target_freq_in_Mhz / fit_results[q.name]['f_fit']
     node.results["fit_results"] = fit_results
@@ -209,7 +294,7 @@ if not node.parameters.simulate:
         else:
             ds.sel(qubit = qubit['qubit']).I.plot(ax = ax)
             ax.set_ylabel('I (V)')
-        ax.plot(ds.idle_time, fit_evals.loc[qubit])
+        ax.plot(ds.idle_time, fit_evals[qubit['qubit']])
         ax.set_xlabel("Idle time [usec]")
         ax.set_title(qubit["qubit"])
     grid.fig.suptitle("Rabi : I vs. amplitude")

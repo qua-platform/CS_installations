@@ -8,7 +8,7 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = ["q1"]
     num_averages: int = 300
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 120000
+    max_wait_time_in_ns: int = 50000
     num_time_steps: int = 100
     flux_point_joint_or_independent_or_arbitrary: Literal['joint', 'independent', 'arbitrary'] = "joint"    
     simulate: bool = False
@@ -16,9 +16,9 @@ class Parameters(NodeParameters):
     use_state_discrimination: bool = True
     reset_type: Literal['active', 'thermal'] = "active"
     drive_pulse_name: str = "x180_Square"
-    min_amp_factor: float = 0.0003
-    max_amp_factor: float = 1.9
-    amp_steps: int = 80
+    min_amp_factor: float = 0.001
+    max_amp_factor: float = 1.99
+    amp_steps: int = 100
     
 node = QualibrationNode(
     name="07b_spinecho_amp",
@@ -199,7 +199,7 @@ if not node.parameters.simulate:
     ds = ds.assign_coords(idle_time=4*ds.idle_time/1e3)  # convert to usec
     ds.idle_time.attrs = {'long_name': 'idle time', 'units': 'usec'}
     
-    ds = ds.assign_coords({"freq": ds.amp * 50e6})
+    ds = ds.assign_coords({"freq": ds.amp * 10e6})
     ds.freq.attrs = {'long_name': 'frequency', 'units': 'Hz'}
 # %% {Data_analysis}
 import xarray as xr
@@ -284,8 +284,8 @@ if not node.parameters.simulate:
         ax.set_title(qubit['qubit'])
         ax.set_xlabel('Frequency [Hz]')
         ax.set_ylabel('S [rad s$^{-1}$]')
-        ax.set_ylim(5e3,4e5)
-        ax.set_xlim(1e4, 10e7)
+        # ax.set_ylim(5e3,5e6)
+        # ax.set_xlim(1e4, 2e7)
     grid.fig.suptitle('spin locking')
     plt.tight_layout()
     plt.show()
@@ -310,8 +310,8 @@ if not node.parameters.simulate:
         ax.set_title(qubit['qubit'])
         ax.set_xlabel('Frequency [Hz]')
         ax.set_ylabel('S [rad s$^{-1}$]')
-        ax.set_ylim(5e3,5e5)
-        ax.set_xlim(1e4, 1e8)
+        ax.set_ylim(5e3,5e6)
+        ax.set_xlim(1e4, 2e7)
     grid.fig.suptitle('spin locking')
     plt.tight_layout()
     plt.show()
