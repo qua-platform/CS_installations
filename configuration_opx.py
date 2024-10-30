@@ -34,27 +34,22 @@ u = unit(coerce_to_integer=True)
 # VARIABLES #
 #############
 qop_ip = "172.16.33.101"
-cluster_name = "Cluster_81"
+cluster_name = "Cluster_83"
 qop_port = None
 
-octave_1 = OctaveUnit("oct1", qop_ip, port=11232, con="con1")
-# Add the octaves
-octaves = [octave_1]
-# Configure the Octaves
-octave_config = octave_declaration(octaves)
 
 # Frequencies
 pulsed_laser_AOM_IF = 100 * u.MHz
-readout_AOM_IF = 0.0
-control_AOM_IF = 0.0
+readout_AOM_IF = 100 * u.MHz
+control_AOM_IF = 100 * u.MHz
 control_EOM_IF = 100 * u.MHz
 control_EOM_LO1 = 5.350 * u.GHz
 control_EOM_LO3 = 6.05 * u.GHz
 control_EOM_LO5 = 7.1 * u.GHz
 
 # Pulses lengths
-readout_aom_len = 1000 * u.ns
-control_aom_len = 1000 * u.ns
+readout_aom_len = 100 * u.ns
+control_aom_len = 100 * u.ns
 control_eom_len = 100 * u.ns
 pulsed_laser_aom_len = 100 * u.ns
 snspd_readout_len = 1 * u.us
@@ -145,64 +140,6 @@ config = {
                 },
             },
         },
-        "control_eom1": {
-            "RF_inputs": {"port": ("oct1", 1)},
-            "intermediate_frequency": control_EOM_IF,
-            "operations": {
-                "control": "cw_control_eom",
-            },
-            "digitalInputs": {
-                "marker": {
-                    "port": ("con1", 3),
-                    "delay": control_eom_delay,
-                    "buffer": 0,
-                },
-            },
-        },
-        "control_eom3": {
-            "RF_inputs": {"port": ("oct1", 3)},
-            "intermediate_frequency": control_EOM_IF,
-            "operations": {
-                "control": "cw_control_eom",
-            },
-            "digitalInputs": {
-                "marker": {
-                    "port": ("con1", 4),
-                    "delay": control_eom_delay,
-                    "buffer": 0,
-                },
-            },
-        },
-        "control_eom5": {
-            "RF_inputs": {"port": ("oct1", 5)},
-            "intermediate_frequency": control_EOM_IF,
-            "operations": {
-                "control": "cw_control_eom",
-            },
-            "digitalInputs": {
-                "marker": {
-                    "port": ("con1", 5),
-                    "delay": control_eom_delay,
-                    "buffer": 0,
-                },
-            },
-        },
-        "pulsed_laser_aom": {
-            "singleInput": {
-                "port": ("con1", 5),
-            },
-            "intermediate_frequency": pulsed_laser_AOM_IF,
-            "operations": {
-                "control": "cw_pulsed_laser_aom",
-            },
-            "digitalInputs": {
-                "marker": {
-                    "port": ("con1", 6),
-                    "delay": pulsed_laser_aom_delay,
-                    "buffer": 0,
-                },
-            },
-        },
         "SNSPD": {
             "singleInput": {
                 "port": ("con1", 1),
@@ -224,31 +161,6 @@ config = {
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
-        },
-    },
-    "octaves": {
-        "oct1": {
-            "RF_outputs": {
-                1: {
-                    "LO_frequency": control_EOM_LO1,
-                    "LO_source": "internal",  # can be external or internal. internal is the default
-                    "output_mode": "triggered",  # can be: "always_on" / "always_off"/ "triggered" / "triggered_reversed". "always_off" is the default
-                    "gain": 0,  # can be in the range [-20 : 0.5 : 20]dB
-                },
-                3: {
-                    "LO_frequency": control_EOM_LO3,
-                    "LO_source": "internal",  # can be external or internal. internal is the default
-                    "output_mode": "triggered",  # can be: "always_on" / "always_off"/ "triggered" / "triggered_reversed". "always_off" is the default
-                    "gain": 0,  # can be in the range [-20 : 0.5 : 20]dB
-                },
-                5: {
-                    "LO_frequency": control_EOM_LO5,
-                    "LO_source": "internal",  # can be external or internal. internal is the default
-                    "output_mode": "triggered",  # can be: "always_on" / "always_off"/ "triggered" / "triggered_reversed". "always_off" is the default
-                    "gain": 0,  # can be in the range [-20 : 0.5 : 20]dB
-                },
-            },
-            "connectivity": "con1",
         },
     },
     "pulses": {

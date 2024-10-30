@@ -2,7 +2,7 @@
 A simple sandbox to showcase different QUA functionalities during the installation.
 """
 
-from configuration import *
+from configuration_opx import *
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.video_mode.videomode import VideoMode
@@ -21,8 +21,14 @@ def qua_prog(vm: VideoMode):
         amp_aom_r, amp_aom_c = vm.declare_variables()
         with infinite_loop_():
             vm.load_parameters()
+            # update_frequency("readout_aom", 0.0)
+            # update_frequency("control_aom", 0.0)
             play("readout" * amp(amp_aom_r), "readout_aom")
             play("control" * amp(amp_aom_c), "control_aom")
+            # set_dc_offset("readout_aom", "single", amp_aom_r)
+            # set_dc_offset("control_aom", "single", amp_aom_r)
+            wait(100, "readout_aom")
+            align()
             measure("readout", "SNSPD", None, integration.full("constant", dc_1, "out1"))
             measure("readout", "APD", None, integration.full("constant", dc_2, "out2"))
             save(dc_1, dc_1_st)
@@ -70,4 +76,4 @@ if __name__ == "__main__":
         plt.ylabel("Amplitude Error [arb. units]")
         plt.ylim((-0.5, 0.5))
         plt.pause(0.1)
-        plt.show()
+        # plt.show()
