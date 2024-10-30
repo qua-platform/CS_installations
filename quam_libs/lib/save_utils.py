@@ -3,6 +3,7 @@ from quam_libs.components import QuAM
 import os
 from pathlib import Path
 import xarray as xr
+import json
 
 def extract_string(input_string):
     # Find the index of the first occurrence of a digit in the input string
@@ -54,7 +55,7 @@ def find_folder(path,id):
                 return os.path.join(root, dir)
     return None
 
-def load_dataset(serial_number):
+def load_dataset(serial_number, target_filename = "ds"):
     """
     Loads a dataset from a file based on the serial number.
     
@@ -72,18 +73,26 @@ def load_dataset(serial_number):
     # Look for .nc files in the subfolder
     nc_files = [f for f in os.listdir(base_folder) if f.endswith('.h5')]
     
+    # look for filename.h5
+    is_present = target_filename in [file.split('.')[0] for file in nc_files]
+    filename = [file for file in nc_files if target_filename == file.split('.')[0]][0] if is_present else None
+    json_filename = "data.json"
+    
     if nc_files:
         # Assuming there's only one .nc file per folder
-        file_path = os.path.join(base_folder, nc_files[0])
-        
+        file_path = os.path.join(base_folder, filename)
+        json_path = os.path.join(base_folder, json_filename)
         # Open the dataset
         ds = xr.open_dataset(file_path)
+        with open(json_path, 'r') as f:
+            json_data = json.load(f)
         try:
-            machine = QuAM.load(base_folder)
+            machine = QuAM.load(base_folder + "//quam_state.json")
         except Exception as e:
             print(f"Error loading machine: {e}")
             machine = None
-        return ds, machine
+        return ds, machine, json_data
     else:
         print(f"No .nc file found in folder: {base_folder}")
         return None
+    
