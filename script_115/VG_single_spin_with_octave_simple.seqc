@@ -1,0 +1,104 @@
+const f_s = 2400e6;      // AWG ampling frequency (Sa/s)
+//amplitude conversion factors: measured values are for 2V range
+
+const conv_p1 = 0.1/0.010 ;
+const conv_b1 = 0.1/0.010 ;
+const conv_p2 = 0.1/0.010 ;
+const conv_b2 = 0.1/0.010 ;
+const conv_p3 = 0.1/0.010 ; // 10
+const conv_s1 = 0.1/0.010 ;
+const conv_s2 = 0.1/0.010; //Not measured yet. This is arbitrary value
+// pulse amplitudes
+
+const A_Vp1 = 0.000 ;
+const A_Vb1 = 0.000 ;
+const A_Vp2 = 0.000 ;
+const A_Vb2 = 0.000 ;
+const A_Vp3 = 0.009 ; //9.5mV
+const A_Vs1 =  0.000 ;
+const A_Vs2 =  -0.000 ;
+
+const A_Vp1_2 = 0.000 ;
+const A_Vb1_2 = 0.000 ;
+const A_Vp2_2 = 0.022 ;
+const A_Vb2_2 = 0.000 ;
+const A_Vp3_2 = 0.0315 ; //0.0315V
+const A_Vs1_2 =  0.000 ;
+const A_Vs2_2 =  -0.000 ;
+ 
+// timings 
+const t_ramp = 0.5e-9;
+const t_ramp_2 =1000e-9;
+const pulse_width1 = 5e-6 ;
+const pulse_width2 = 50e-6 ; //s, 100e-6 = 100us
+const pulse_width3 = 50e-6 ; //40
+ 
+// number of samples
+const n_pwidth1 = round(pulse_width1 * f_s/4)*4; 
+const n_pwidth2 = round(pulse_width2 * f_s/4)*4; 
+const n_pwidth3 = round(pulse_width3 * f_s/4)*4; 
+const n_ramp = round(f_s*t_ramp/4)*4;
+const n_ramp2 = round(f_s*t_ramp_2/4)*4;
+
+// define virtual gate waves
+wave Vp1_i = join(ramp(n_ramp, 0, A_Vp1), A_Vp1 * ones(n_pwidth1));
+wave Vb1_i = join(ramp(n_ramp, 0, A_Vb1), A_Vb1 * ones(n_pwidth1));
+wave Vp2_i = join(ramp(n_ramp, 0, A_Vp2), A_Vp2 * ones(n_pwidth1));
+wave Vb2_i = join(ramp(n_ramp, 0, A_Vb2), A_Vb2 * ones(n_pwidth1));
+wave Vp3_i = join(ramp(n_ramp, 0, A_Vp3), A_Vp3 * ones(n_pwidth1));
+wave Vs1_i = join(ramp(n_ramp, 0, A_Vs1), A_Vs1 * ones(n_pwidth1));
+wave Vs2_i = join(ramp(n_ramp, 0, A_Vs2), A_Vs2 * ones(n_pwidth1));
+
+wave Vp1_s = join(ramp(n_ramp2, A_Vp1, A_Vp1_2), A_Vp1_2 * ones(n_pwidth2), ramp(n_ramp2, A_Vp1_2, A_Vp1));
+wave Vb1_s = join(ramp(n_ramp2, A_Vb1, A_Vb1_2), A_Vb1_2 * ones(n_pwidth2), ramp(n_ramp2, A_Vb1_2, A_Vb1));
+wave Vp2_s = join(ramp(n_ramp2, A_Vp2, A_Vp2+A_Vp2_2), (A_Vp2+A_Vp2_2) * ones(n_pwidth2), ramp(n_ramp2, A_Vp2+A_Vp2_2, A_Vp2));
+wave Vb2_s = join(ramp(n_ramp2, A_Vb2, A_Vb2_2), A_Vb2_2 * ones(n_pwidth2), ramp(n_ramp2, A_Vb2_2, A_Vb2));
+wave Vp3_s = join(ramp(n_ramp2, A_Vp3, A_Vp3-A_Vp3_2), (A_Vp3-A_Vp3_2) * ones(n_pwidth2), ramp(n_ramp2, A_Vp3-A_Vp3_2, A_Vp3));
+wave Vs1_s = join(ramp(n_ramp2, A_Vs1, A_Vs1_2), A_Vs1_2 * ones(n_pwidth2), ramp(n_ramp2, A_Vs1_2, A_Vs1));
+wave Vs2_s = join(ramp(n_ramp2, A_Vs2, A_Vs2_2), A_Vs2_2 * ones(n_pwidth2), ramp(n_ramp2, A_Vs2_2, A_Vs2));
+
+wave Vp1_f = join(A_Vp1 * ones(n_pwidth3), ramp(n_ramp, A_Vp1, 0));
+wave Vb1_f = join(A_Vb1 * ones(n_pwidth3), ramp(n_ramp, A_Vb1, 0));
+wave Vp2_f = join(A_Vp2 * ones(n_pwidth3), ramp(n_ramp, A_Vp2, 0));
+wave Vb2_f = join(A_Vb2 * ones(n_pwidth3), ramp(n_ramp, A_Vb2, 0));
+wave Vp3_f = join(A_Vp3 * ones(n_pwidth3), ramp(n_ramp, A_Vp3, 0));
+wave Vs1_f = join(A_Vs1 * ones(n_pwidth3), ramp(n_ramp, A_Vs1, 0));
+wave Vs2_f = join(A_Vs2 * ones(n_pwidth3), ramp(n_ramp, A_Vs2, 0));
+
+
+// convert to physical gate waves
+wave p1_i = conv_p1*Vp1_i;
+wave b1_i = conv_b1*Vb1_i;
+wave p2_i = conv_p2*Vp2_i;
+wave b2_i = conv_b2*Vb2_i;
+wave p3_i = conv_p3*Vp3_i;
+wave s1_i = conv_s1*Vs1_i;
+wave s2_i = conv_s2*Vs2_i;
+
+wave p1_s = conv_p1*Vp1_s;
+wave b1_s = conv_b1*Vb1_s;
+wave p2_s = conv_p2*Vp2_s;
+wave b2_s = conv_b2*Vb2_s;
+wave p3_s = conv_p3*Vp3_s;
+wave s1_s = conv_s1*Vs1_s;
+wave s2_s = conv_s2*Vs2_s;
+
+wave p1_f = conv_p1*Vp1_f;
+wave b1_f = conv_b1*Vb1_f;
+wave p2_f = conv_p2*Vp2_f;
+wave b2_f = conv_b2*Vb2_f;
+wave p3_f = conv_p3*Vp3_f;
+wave s1_f = conv_s1*Vs1_f;
+wave s2_f = conv_s2*Vs2_f;
+
+// //Play waveform in an infinite loop
+
+while(true){
+    waitDigTrigger(1);
+    playWave(1,p1_i,2,b1_i,3,p2_i,4, b2_i,5,p3_i,7,s1_i,8,s2_i);
+    playWave(1,p1_s,2,b1_s,3,p2_s,4, b2_s,5,p3_s,7,s1_s,8,s2_s);
+    playWave(1,p1_f,2,b1_f,3,p2_f,4, b2_f,5,p3_f,7,s1_f,8,s2_f);
+
+}
+
+
