@@ -2,7 +2,7 @@
 from qm.qua import *
 from qm import QuantumMachinesManager, SimulationConfig
 from qualang_tools.units import unit
-from configuration_with_lffem_and_octave import *
+from configuration_with_lffem import *
 import matplotlib.pyplot as plt
 import numpy as np
 
