@@ -262,7 +262,15 @@ if not node.parameters.simulate:
     for q in qubits:
         a[q.name] = float(-1e6*fitvals.sel(qubit = q.name,degree = 2).polyfit_coefficients.values)
         flux_offset[q.name]  = float((-0.5*fitvals.sel(qubit =q.name,degree = 1).polyfit_coefficients/fitvals.sel(qubit = q.name,degree = 2).polyfit_coefficients).values)
-        freq_offset[q.name]  = 1e6*float(fitvals.sel(qubit = q.name,degree = 0).polyfit_coefficients.values) - detuning
+        
+        # Find minimum of parabola by evaluating quadratic fit at flux offset point
+        # freq = a*x^2 + b*x + c
+        # minimum occurs at x = -b/(2a) which is flux_offset
+        # Evaluate freq at minimum and subtract detuning to get freq_offset
+        freq_at_min = float(fitvals.sel(qubit=q.name, degree=2).polyfit_coefficients * flux_offset[q.name]**2 + 
+                           fitvals.sel(qubit=q.name, degree=1).polyfit_coefficients * flux_offset[q.name] + 
+                           fitvals.sel(qubit=q.name, degree=0).polyfit_coefficients)
+        freq_offset[q.name]  = 1e6*float(freq_at_min) - detuning
 
 
 # %%
