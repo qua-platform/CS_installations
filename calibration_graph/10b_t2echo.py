@@ -6,7 +6,7 @@ from typing import Optional, Literal, List
 # %% {Node_parameters}
 class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
-    num_averages: int = 100
+    num_averages: int = 300
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 50000
     wait_time_step_in_ns: int = 300
@@ -60,7 +60,7 @@ qmm = machine.connect()
 if node.parameters.qubits is None or node.parameters.qubits == '':
     qubits = machine.active_qubits
 else:
-    qubits = [machine.qubits[q] for q in node.parameters.qubits.replace(' ', '').split(',')]
+    qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
 
 
