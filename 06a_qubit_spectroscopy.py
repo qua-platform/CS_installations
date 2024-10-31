@@ -97,13 +97,14 @@ simulate = True
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, qubit_spec, simulation_config)
-    job.get_simulated_samples().con1.plot()
-    plt.show()
+    job = qmm.simulate(qpu.generate_config(), qubit_spec, simulation_config)
+    samples = job.get_simulated_samples()
+    waveform_report = job.get_simulated_waveform_report()
+    waveform_report.create_plot(samples, plot=True, save_path=None)
 
 else:
     # Open the quantum machine
-    qm = qmm.open_qm(config)
+    qm = qmm.open_qm(qpu.generate_config())
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(qubit_spec)
     # Get results from QUA program
@@ -111,6 +112,8 @@ else:
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+    readout_len = qpu.channels["resonator"].operations["readout"].length
+    qubit_LO = qpu.channels["qubit_xy"].LO_frequency
     while results.is_processing():
         # Fetch results
         I, Q, iteration = results.fetch_all()

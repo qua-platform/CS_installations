@@ -19,6 +19,7 @@ from quam.components import (
 # Config variables
 
 qop_ip = "172.16.33.101"
+qop_port = None
 cluster_name = "Cluster_81"
 
 u = unit(coerce_to_integer=True)
@@ -53,6 +54,7 @@ octave.RF_outputs[1].LO_frequency = 6 * u.GHz
 octave.RF_inputs[1].LO_frequency = 6 * u.GHz
 
 depletion_time = 10 * u.us
+thermalization_time = 10 * u.us
 
 # Add Qubit xy drive channel
 

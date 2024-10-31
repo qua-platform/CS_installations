@@ -14,15 +14,13 @@ Next steps before going to the next node:
     - Update the qubit pulse duration (x180_len) in the configuration.
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
-
+from configuration.make_quam import *
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.loops import from_array
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import fetching_tool, progress_counter
 
 ###################
 # The QUA program #
@@ -35,6 +33,9 @@ t_max = 2000 // 4
 dt = 4 // 4
 durations = np.arange(t_min, t_max, dt)
 
+resonator = qpu.channels["resonator"]
+qubit = qpu.channels["qubit_xy"]
+
 with program() as time_rabi:
     n = declare(int)  # QUA variable for the averaging loop
     t = declare(int)  # QUA variable for the qubit pulse duration
@@ -45,22 +46,18 @@ with program() as time_rabi:
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
-        with for_(*from_array(t, durations)):  # QUA for_ loop for sweeping the pulse duration
-            # Play the qubit pulse with a variable duration (in clock cycles = 4ns)
-            play("x180", "qubit", duration=t)
+        with for_(
+            *from_array(t, durations)
+        ):  # QUA for_ loop for sweeping the pulse duration
+            qubit.play("x180", duration=t)
             # Align the two elements to measure after playing the qubit pulse.
             align("qubit", "resonator")
+            qubit.align(resonator)
             # Measure the state of the resonator
             # The integration weights have changed to maximize the SNR after having calibrated the IQ blobs.
-            measure(
-                "readout",
-                "resonator",
-                None,
-                dual_demod.full("rotated_cos", "rotated_sin", I),
-                dual_demod.full("rotated_minus_sin", "rotated_cos", Q),
-            )
+            resonator.measure("readout", qua_vars=(I, Q))
             # Wait for the qubit to decay to the ground state
-            wait(thermalization_time * u.ns, "resonator")
+            resonator.wait(thermalization_time * u.ns)
             # Save the 'I' & 'Q' quadratures to their respective streams
             save(I, I_st)
             save(Q, Q_st)
@@ -76,7 +73,9 @@ with program() as time_rabi:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 ###########################
 # Run or Simulate Program #
@@ -129,6 +128,8 @@ else:
         plt.title(f"Time Rabi")
         plt.xlabel("Rabi pulse duration [ns]")
         plt.ylabel("I quadrature [V]")
-        print(f"Optimal x180_len = {round(1 / rabi_fit['f'][0] / 2 / 4) * 4} ns for {x180_amp:} V")
+        print(
+            f"Optimal x180_len = {round(1 / rabi_fit['f'][0] / 2 / 4) * 4} ns for {x180_amp:} V"
+        )
     except (Exception,):
         pass
