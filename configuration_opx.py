@@ -40,8 +40,8 @@ qop_port = None
 
 # Frequencies
 pulsed_laser_AOM_IF = 100 * u.MHz
-readout_AOM_IF = 100 * u.MHz
-control_AOM_IF = 100 * u.MHz
+readout_AOM_IF = 0.0 * u.MHz
+control_AOM_IF = 0 * u.MHz
 control_EOM_IF = 100 * u.MHz
 control_EOM_LO1 = 5.350 * u.GHz
 control_EOM_LO3 = 6.05 * u.GHz

@@ -35,17 +35,17 @@ with program() as hello_qua:
         with for_(*from_array(f, frequencies)):
             update_frequency("control_eom1", f)
             play("control", "control_eom1")
-            measure("readout", "SNSPD", None, integration.full("constant", out1))
+            # measure("readout", "SNSPD", None, integration.full("constant", out1))
             save(out1, out1_st)
         with for_(*from_array(f, frequencies)):
             update_frequency("control_eom3", f)
             play("control", "control_eom3")
-            measure("readout", "SNSPD", None, integration.full("constant", out1))
+            # measure("readout", "SNSPD", None, integration.full("constant", out1))
             save(out1, out1_st)
         with for_(*from_array(f, frequencies)):
             update_frequency("control_eom5", f)
             play("control", "control_eom5")
-            measure("readout", "SNSPD", None, integration.full("constant", out1))
+            # measure("readout", "SNSPD", None, integration.full("constant", out1))
             save(out1, out1_st)
         save(n, n_st)
 
