@@ -1,0 +1,14 @@
+{
+    "created_at": "2024-11-02T01:17:45-05:00",
+    "metadata": {
+        "name": "11_t1",
+        "data_path": "2024-11-02/#27_11_t1_011745"
+    },
+    "data": {
+        "quam": "./quam_state.json"
+    },
+    "id": 27,
+    "parents": [
+        26
+    ]
+}

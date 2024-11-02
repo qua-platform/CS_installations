@@ -1,0 +1,22 @@
+{
+    "ds": "./ds.h5",
+    "fit_results": {
+        "q1": {
+            "GEF_detuning": -4350000
+        },
+        "q2": {
+            "GEF_detuning": -3500000
+        }
+    },
+    "figure": "./figure.png",
+    "figure2": "./figure2.png",
+    "initial_parameters": {
+        "qubits": null,
+        "num_averages": 40,
+        "frequency_span_in_mhz": 10,
+        "frequency_step_in_mhz": 0.05,
+        "flux_point_joint_or_independent": "independent",
+        "simulate": false,
+        "timeout": 100
+    }
+}

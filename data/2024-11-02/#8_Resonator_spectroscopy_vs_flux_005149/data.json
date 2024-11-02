@@ -1,0 +1,38 @@
+{
+    "ds": "./ds.h5",
+    "fit_results": {
+        "q1": {
+            "resonator_frequency": 7025234761.0,
+            "min_offset": -0.17633390109345015,
+            "offset": 15.413060093956354,
+            "dv_phi0": 31.178787990099607,
+            "m_pH": 0.0033163572629196884
+        },
+        "q2": {
+            "resonator_frequency": 7060233585.0,
+            "min_offset": 0.09924413214749417,
+            "offset": -0.12162534561117136,
+            "dv_phi0": 0.44173895551733106,
+            "m_pH": 0.23407489583730684
+        }
+    },
+    "figure": "./figure.png",
+    "initial_parameters": {
+        "qubits": [
+            "q1",
+            "q2"
+        ],
+        "num_averages": 100,
+        "min_flux_offset_in_v": -0.5,
+        "max_flux_offset_in_v": 0.5,
+        "num_flux_points": 201,
+        "frequency_span_in_mhz": 15.0,
+        "frequency_step_in_mhz": 0.1,
+        "flux_point_joint_or_independent": "joint",
+        "input_line_impedance_in_ohm": 50.0,
+        "line_attenuation_in_db": 0.0,
+        "update_flux_min": true,
+        "simulate": false,
+        "timeout": 100
+    }
+}

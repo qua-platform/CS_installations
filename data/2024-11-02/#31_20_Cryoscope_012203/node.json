@@ -1,0 +1,14 @@
+{
+    "created_at": "2024-11-02T01:22:03-05:00",
+    "metadata": {
+        "name": "20_Cryoscope",
+        "data_path": "2024-11-02/#31_20_Cryoscope_012203"
+    },
+    "data": {
+        "quam": "./quam_state.json"
+    },
+    "id": 31,
+    "parents": [
+        30
+    ]
+}

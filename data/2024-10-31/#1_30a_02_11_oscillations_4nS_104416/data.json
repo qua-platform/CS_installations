@@ -1,0 +1,19 @@
+{
+    "ds": "./ds.h5",
+    "figure_control": "./figure_control.png",
+    "figure_target": "./figure_target.png",
+    "initial_parameters": {
+        "qubit_pairs": [
+            "coupler_q1_q2"
+        ],
+        "num_averages": 1,
+        "max_time_in_ns": 160,
+        "flux_point_joint_or_independent": "joint",
+        "reset_type": "thermal",
+        "simulate": false,
+        "timeout": 100,
+        "amp_range": 0.2,
+        "amp_step": 0.01,
+        "load_data_id": null
+    }
+}

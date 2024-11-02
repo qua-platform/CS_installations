@@ -1,0 +1,14 @@
+{
+    "created_at": "2024-11-02T01:18:24-05:00",
+    "metadata": {
+        "name": "Ramsey_flux_cal",
+        "data_path": "2024-11-02/#28_Ramsey_flux_cal_011824"
+    },
+    "data": {
+        "quam": "./quam_state.json"
+    },
+    "id": 28,
+    "parents": [
+        27
+    ]
+}

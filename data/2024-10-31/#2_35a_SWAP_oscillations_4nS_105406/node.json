@@ -1,0 +1,14 @@
+{
+    "created_at": "2024-10-31T10:54:06-05:00",
+    "metadata": {
+        "name": "35a_SWAP_oscillations_4nS",
+        "data_path": "2024-10-31/#2_35a_SWAP_oscillations_4nS_105406"
+    },
+    "data": {
+        "quam": "./quam_state.json"
+    },
+    "id": 2,
+    "parents": [
+        1
+    ]
+}

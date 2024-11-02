@@ -1,0 +1,15 @@
+{
+    "initial_parameters": {
+        "qubits": [
+            "q2"
+        ],
+        "num_averages": 10000,
+        "amplitude_factor": 0.5,
+        "cryoscope_len": 240,
+        "reset_type_active_or_thermal": "active",
+        "flux_point_joint_or_independent": "joint",
+        "simulate": false,
+        "timeout": 100,
+        "reset_filters": false
+    }
+}

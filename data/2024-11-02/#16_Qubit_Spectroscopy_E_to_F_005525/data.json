@@ -1,0 +1,23 @@
+{
+    "ds": "./ds.h5",
+    "fit_results": {
+        "q1": {},
+        "q2": {}
+    },
+    "figure": "./figure.png",
+    "initial_parameters": {
+        "qubits": [
+            "q1",
+            "q2"
+        ],
+        "num_averages": 200,
+        "operation": "saturation",
+        "operation_amplitude_factor": null,
+        "operation_len_in_ns": null,
+        "frequency_span_in_mhz": 500.0,
+        "frequency_step_in_mhz": 1.0,
+        "flux_point_joint_or_independent": "joint",
+        "simulate": false,
+        "timeout": 100
+    }
+}

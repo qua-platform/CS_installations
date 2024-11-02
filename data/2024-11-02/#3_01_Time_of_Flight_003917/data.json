@@ -1,0 +1,16 @@
+{
+    "run_parameters": {
+        "qubit": "q1",
+        "num_averages": 1000,
+        "time_of_flight_in_ns": null,
+        "intermediate_frequency_in_mhz": null,
+        "readout_amplitude_in_v": null,
+        "readout_length_in_ns": null,
+        "simulate": false,
+        "timeout": 100
+    },
+    "delay": 268.0,
+    "raw_adc": "./arrays.npz#raw_adc",
+    "raw_adc_single_shot": "./arrays.npz#raw_adc_single_shot",
+    "figure": "./figure.png"
+}

@@ -1,0 +1,14 @@
+{
+    "created_at": "2024-11-02T00:39:17-05:00",
+    "metadata": {
+        "name": "01_Time_of_Flight",
+        "data_path": "2024-11-02/#3_01_Time_of_Flight_003917"
+    },
+    "data": {
+        "quam": "./quam_state.json"
+    },
+    "id": 3,
+    "parents": [
+        2
+    ]
+}

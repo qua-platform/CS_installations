@@ -1,0 +1,14 @@
+{
+    "created_at": "2024-11-02T01:01:37-05:00",
+    "metadata": {
+        "name": "Readout_Frequency_Optimization_G_E_F",
+        "data_path": "2024-11-02/#19_Readout_Frequency_Optimization_G_E_F_010137"
+    },
+    "data": {
+        "quam": "./quam_state.json"
+    },
+    "id": 19,
+    "parents": [
+        18
+    ]
+}

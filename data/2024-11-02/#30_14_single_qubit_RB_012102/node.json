@@ -1,0 +1,14 @@
+{
+    "created_at": "2024-11-02T01:21:02-05:00",
+    "metadata": {
+        "name": "14_single_qubit_RB",
+        "data_path": "2024-11-02/#30_14_single_qubit_RB_012102"
+    },
+    "data": {
+        "quam": "./quam_state.json"
+    },
+    "id": 30,
+    "parents": [
+        29
+    ]
+}

@@ -1,0 +1,28 @@
+{
+    "ds": "./ds.h5",
+    "fit_results": {
+        "q1": {
+            "Pi_amplitude": 0.1180690985386392
+        },
+        "q2": {
+            "Pi_amplitude": 0.19307633540640046
+        }
+    },
+    "figure": "./figure.png",
+    "initial_parameters": {
+        "qubits": [
+            "q1",
+            "q2"
+        ],
+        "num_averages": 50,
+        "operation_x180_or_any_90": "x180",
+        "min_amp_factor": 0.8,
+        "max_amp_factor": 1.2,
+        "amp_factor_step": 0.005,
+        "max_number_rabi_pulses_per_sweep": 100,
+        "flux_point_joint_or_independent": "joint",
+        "reset_type_thermal_or_active": "thermal",
+        "simulate": false,
+        "timeout": 100
+    }
+}

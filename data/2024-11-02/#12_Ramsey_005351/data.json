@@ -1,0 +1,32 @@
+{
+    "ds": "./ds.h5",
+    "fit_results": {
+        "q1": {
+            "freq_offset": -281984.89400867233,
+            "decay": "./arrays.npz#fit_results.q1.decay",
+            "decay_error": "./arrays.npz#fit_results.q1.decay_error"
+        },
+        "q2": {
+            "freq_offset": -406377.67269139434,
+            "decay": "./arrays.npz#fit_results.q2.decay",
+            "decay_error": "./arrays.npz#fit_results.q2.decay_error"
+        }
+    },
+    "figure": "./figure.png",
+    "initial_parameters": {
+        "qubits": [
+            "q1",
+            "q2"
+        ],
+        "num_averages": 100,
+        "frequency_detuning_in_mhz": 1.0,
+        "min_wait_time_in_ns": 16,
+        "max_wait_time_in_ns": 10000,
+        "num_time_points": 500,
+        "log_or_linear_sweep": "log",
+        "flux_point_joint_or_independent": "independent",
+        "use_state_discrimination": false,
+        "simulate": false,
+        "timeout": 100
+    }
+}

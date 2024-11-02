@@ -1,0 +1,25 @@
+{
+    "ds": "./ds.h5",
+    "figure": "./figure.png",
+    "resonator_frequency": {
+        "q1": {
+            "RO_amplitude": 0.0
+        },
+        "q2": {
+            "RO_amplitude": 0.0
+        }
+    },
+    "initial_parameters": {
+        "qubits": null,
+        "num_averages": 100,
+        "frequency_span_in_mhz": 10,
+        "frequency_step_in_mhz": 0.1,
+        "simulate": false,
+        "forced_flux_bias_v": null,
+        "max_power_dbm": 10,
+        "min_power_dbm": -20,
+        "flux_point_joint_or_independent": "independent",
+        "ro_line_attenuation_dB": 0,
+        "multiplexed": true
+    }
+}

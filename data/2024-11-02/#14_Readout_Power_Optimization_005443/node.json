@@ -1,0 +1,14 @@
+{
+    "created_at": "2024-11-02T00:54:43-05:00",
+    "metadata": {
+        "name": "Readout_Power_Optimization",
+        "data_path": "2024-11-02/#14_Readout_Power_Optimization_005443"
+    },
+    "data": {
+        "quam": "./quam_state.json"
+    },
+    "id": 14,
+    "parents": [
+        13
+    ]
+}
