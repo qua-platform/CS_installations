@@ -48,7 +48,7 @@ octave_port = (
 # Create the octave config object
 octave_config = QmOctaveConfig()
 # Specify where to store the outcome of the calibration (correction matrix, offsets...)
-octave_config.set_calibration_db('/Users/paul/QM/CS_installations/')
+octave_config.set_calibration_db("/Users/paul/QM/CS_installations/")
 # Add an Octave called 'octave1' with the specified IP and port
 octave_config.add_device_info(octave, octave_ip, octave_port)
 #############

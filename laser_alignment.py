@@ -40,7 +40,9 @@ def qua_prog(vm: VideoMode):
 
 if __name__ == "__main__":
     # Open the Quantum Machine Manager
-    qmm = QuantumMachinesManager(opx_ip, cluster_name=cluster_name, octave=octave_config)
+    qmm = QuantumMachinesManager(
+        opx_ip, cluster_name=cluster_name, octave=octave_config
+    )
     # Open the Quantum Machine
     qm = qmm.open_qm(config)
     # Define the parameters to be updated in video mode with their initial value and QUA type
