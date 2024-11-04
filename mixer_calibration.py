@@ -18,6 +18,8 @@ qm = qmm.open_qm(config)
 # Calibration #
 ##################
 
+save = True
+
 cal_res = []
 
 elements = ["control_eom1"]
@@ -26,9 +28,9 @@ for element in elements:
     res = qm.calibrate_element(element)
     cal_res.append(res)
 
-
-for result in cal_res:
-    plotter.show_lo_result(result)
-    plt.savefig(f"{os.getcwd()}/calibration_plots/{element}_lo_calibration.png")
-    plotter.show_if_result(result)
-    plt.savefig(f"{os.getcwd()}/calibration_plots/{element}_if_calibration.png")
+if save:
+    for result in cal_res:
+        plotter.show_lo_result(result)
+        plt.savefig(f"{os.getcwd()}/calibration_plots/{element}_lo_calibration.png")
+        plotter.show_if_result(result)
+        plt.savefig(f"{os.getcwd()}/calibration_plots/{element}_if_calibration.png")
