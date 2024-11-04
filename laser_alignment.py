@@ -2,7 +2,7 @@
 A simple sandbox to showcase different QUA functionalities during the installation.
 """
 
-from configuration_opx import *
+from configuration import *
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.video_mode.videomode import VideoMode
@@ -21,8 +21,6 @@ def qua_prog(vm: VideoMode):
         amp_aom_r, amp_aom_c = vm.declare_variables()
         with infinite_loop_():
             vm.load_parameters()
-            # update_frequency("readout_aom", 0.0)
-            # update_frequency("control_aom", 0.0)
             align()
             play("readout" * amp(amp_aom_r), "readout_aom")
             play("control" * amp(amp_aom_c), "control_aom")
@@ -42,7 +40,7 @@ def qua_prog(vm: VideoMode):
 
 if __name__ == "__main__":
     # Open the Quantum Machine Manager
-    qmm = QuantumMachinesManager(qop_ip, cluster_name=cluster_name)
+    qmm = QuantumMachinesManager(opx_ip, cluster_name=cluster_name, octave=octave_config)
     # Open the Quantum Machine
     qm = qmm.open_qm(config)
     # Define the parameters to be updated in video mode with their initial value and QUA type

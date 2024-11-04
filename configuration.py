@@ -1,11 +1,13 @@
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 from octave_sdk import Octave
 from qm import QuantumMachine
+from qm.octave import *
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.units import unit
-from set_octave import OctaveUnit, octave_declaration
 
 #######################
 # AUXILIARY FUNCTIONS #
@@ -29,24 +31,36 @@ def IQ_imbalance(g, phi):
 
 
 u = unit(coerce_to_integer=True)
-
+######################
+# Network parameters #
+######################
+opx_ip = "192.168.88.244"
+octave_ip = "192.168.88.253"
+cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
+qop_port = None  # Write the QOP port if version < QOP220
+octave = "oct1"
+############################
+# Set octave configuration #
+############################
+octave_port = (
+    80  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
+)
+# Create the octave config object
+octave_config = QmOctaveConfig()
+# Specify where to store the outcome of the calibration (correction matrix, offsets...)
+octave_config.set_calibration_db('/Users/paul/QM/CS_installations/')
+# Add an Octave called 'octave1' with the specified IP and port
+octave_config.add_device_info(octave, octave_ip, octave_port)
 #############
 # VARIABLES #
 #############
-qop_ip = "172.16.33.101"
-cluster_name = "Cluster_81"
+cluster_name = "Cluster_1"
 qop_port = None
-
-octave_1 = OctaveUnit("oct1", qop_ip, port=11232, con="con1")
-# Add the octaves
-octaves = [octave_1]
-# Configure the Octaves
-octave_config = octave_declaration(octaves)
 
 # Frequencies
 pulsed_laser_AOM_IF = 100 * u.MHz
-readout_AOM_IF = 0.0
-control_AOM_IF = 0.0
+readout_AOM_IF = 50.0 * u.MHz
+control_AOM_IF = 50.0 * u.MHz
 control_EOM_IF = 100 * u.MHz
 control_EOM_LO1 = 5.350 * u.GHz
 control_EOM_LO3 = 6.05 * u.GHz
@@ -115,7 +129,7 @@ config = {
     "elements": {
         "readout_aom": {
             "singleInput": {
-                "port": ("con1", 1),
+                "port": ("con1", 9),
             },
             "intermediate_frequency": readout_AOM_IF,
             "operations": {
@@ -131,7 +145,7 @@ config = {
         },
         "control_aom": {
             "singleInput": {
-                "port": ("con1", 2),
+                "port": ("con1", 10),
             },
             "intermediate_frequency": control_AOM_IF,
             "operations": {
