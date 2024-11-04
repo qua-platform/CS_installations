@@ -13,16 +13,16 @@ with program() as hello_qua:
     a = declare(fixed)
     with infinite_loop_():
         with for_(a, 0, a < 1.1, a + 0.05):
-            play("control", "control_eom")
-            measure("readout", "SNSPD", None)
-            wait(100, "SNSPD")
-        wait(25, "SNSPD")
+            play("control" * amp(a), "control_aom")
+            play("control" * amp(a), "control_eom1")
+            play("readout" * amp(a), "readout_aom")
+
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
 qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+    host=opx_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
 )
 
 ###########################
