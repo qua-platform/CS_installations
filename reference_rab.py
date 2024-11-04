@@ -2,21 +2,37 @@
 A simple sandbox to showcase different QUA functionalities during the installation.
 """
 
+from re import T
 from configuration import *
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
+from qualang_tools.loops import from_array
+
+# Variables
+
+n_rabi = 5
+
+ti = 200 * u.ns
+tf = 4 * u.us
+t_rabi = np.arange(ti, tf, 200 * u.ns)
+
+omega_rabi = 90 * u.MHz
 
 ###################
 # The QUA program #
 ###################
 with program() as hello_qua:
-    a = declare(fixed)
-    with infinite_loop_():
-        with for_(a, 0, a < 1.1, a + 0.05):
-            play("control" * amp(a), "control_aom")
-            play("control" * amp(a), "control_eom1")
-            play("readout" * amp(a), "readout_aom")
-            play("gaussian" * amp(a), "control_aom")
+    n = declare(fixed)
+    t = declare(int)
+    play("readout", "readout_aom", duration=100 * u.ns)
+    update_frequency("control_aom", omega_rabi)
+    with for_(n, 0, n < n_rabi, n + 1):
+        with for_(*from_array(t, t_rabi)):
+            play("control", "control_aom", duration=t/4)
+            align()
+            play("readout", "readout_aom", duration=100 * u.ns)
+
+
 
 
 #####################################
@@ -38,9 +54,7 @@ if simulate:
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, hello_qua, simulation_config)
     # Plot the simulated samples
-    samples = job.get_simulated_samples()
-    waveform_report = job.get_simulated_waveform_report()
-    waveform_report.create_plot(samples, plot=True, save_path="./")
+    job.get_simulated_samples().con1.plot()
     plt.show()
 else:
     # Open a quantum machine to execute the QUA program

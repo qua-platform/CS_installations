@@ -8,6 +8,7 @@ from qm.octave import *
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.units import unit
+from scipy.signal.windows import gaussian
 
 #######################
 # AUXILIARY FUNCTIONS #
@@ -73,6 +74,7 @@ control_eom_len = 100 * u.ns
 pulsed_laser_aom_len = 100 * u.ns
 snspd_readout_len = 1 * u.us
 apd_readout_len = 1 * u.us
+gaussian_len = 100 * u.ns
 
 # Delays
 readout_aom_delay = 0 * u.ns
@@ -85,6 +87,8 @@ readout_amp = 0.1
 control_aom_amp = 0.1
 control_eom_amp = 0.1
 pulsed_laser_amp = 0.1
+gaussian_amp = 0.1
+
 
 # Time of flight
 time_of_flight = 24 * u.ns
@@ -150,6 +154,7 @@ config = {
             "intermediate_frequency": control_AOM_IF,
             "operations": {
                 "control": "cw_control_aom",
+                "gaussian": "gaussian_pulse",
             },
             "digitalInputs": {
                 "marker": {
@@ -307,6 +312,12 @@ config = {
             "integration_weights": {"constant": "constant_weights_apd"},
             "digital_marker": "ON",
         },
+        "gaussian_pulse": {
+            "operation": "control",
+            "length": gaussian_len,
+            "waveforms": {"single": "gaussian_wf"},
+            "digital_marker": "ON",
+        },
     },
     "waveforms": {
         "cw_r": {"type": "constant", "sample": readout_amp},
@@ -314,6 +325,12 @@ config = {
         "cw_c_e": {"type": "constant", "sample": control_eom_amp},
         "zero_wf": {"type": "constant", "sample": 0.0},
         "cw_pl_a": {"type": "constant", "sample": pulsed_laser_amp},
+        "gaussian_wf": {
+            "type": "arbitrary",
+            "samples": list(
+                gaussian_amp * gaussian(gaussian_len, gaussian_len / 5)
+            ),
+        },
     },
     "digital_waveforms": {
         "ON": {"samples": [(1, 0)]},  # [(on/off, ns)]
