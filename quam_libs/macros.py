@@ -8,10 +8,26 @@ from quam_libs.components import QuAM
 
 
 __all__ = [
+    "apply_all_flux_to_min",
+    "apply_all_flux_to_idle",
     "qua_declaration",
     "multiplexed_readout",
     "node_save",
 ]
+
+
+def apply_all_flux_to_min(quam: "QuAM"):
+    align()
+    for q in quam.active_qubits:
+        q.z.to_min()
+    align()
+
+
+def apply_all_flux_to_idle(quam: "QuAM"):
+    align()
+    for q in quam.active_qubits:
+        q.z.to_joint_idle()
+    align()
 
 
 def qua_declaration(num_qubits):
@@ -58,7 +74,7 @@ def node_save(
     if isinstance(additional_files, dict):
         quam.data_handler.additional_files = additional_files
     elif additional_files is True:
-        files = ["../configuration/calibration_db.json"]
+        files = ["../calibration_db.json", "optimal_weights.npz"]
 
         try:
             files.append(inspect.currentframe().f_back.f_locals["__file__"])
@@ -79,6 +95,9 @@ def node_save(
 
     # Save QuAM to the data folder
     quam.save(
+        path=quam.data_handler.path / "state.json",
+    )
+    quam.save(
         path=quam.data_handler.path / "quam_state",
         content_mapping={"wiring.json": {"wiring", "network"}},
     )
@@ -86,3 +105,46 @@ def node_save(
     # Save QuAM to configuration directory / `state.json`
     quam.save(content_mapping={"wiring.json": {"wiring", "network"}})
 
+def readout_state(qubit , state, pulse_name : str = 'readout', threshold : float = None, save_qua_var : StreamType = None):
+    I = declare(fixed)
+    Q = declare(fixed)
+    if threshold is None:
+        threshold = qubit.resonator.operations[pulse_name].threshold
+    qubit.resonator.measure(pulse_name, qua_vars=(I, Q))
+    assign(state, Cast.to_int(I > threshold))
+    wait(qubit.resonator.depletion_time // 4, qubit.resonator.name)
+    
+    
+def active_reset(
+    quam: QuAM,
+    name: str,
+    save_qua_var: Optional[StreamType] = None,
+    pi_pulse_name: str = "x180",
+    readout_pulse_name: str = "readout"):
+    
+    qubit = quam.qubits[name]
+    pulse = qubit.resonator.operations[readout_pulse_name]
+
+    I = declare(fixed)
+    Q = declare(fixed)
+    state = declare(bool)
+    attempts = declare(int, value=1)
+    assign(attempts, 1)
+    qubit.align()
+    qubit.resonator.measure("readout", qua_vars=(I, Q))
+    assign(state, I > pulse.threshold)
+    wait(qubit.resonator.depletion_time // 4, qubit.resonator.name)
+    qubit.xy.play(pi_pulse_name, condition=state)
+    qubit.align()
+    with while_(I > pulse.rus_exit_threshold):
+        qubit.align()
+        qubit.resonator.measure("readout", qua_vars=(I, Q))
+        assign(state, I > pulse.threshold)
+        wait(qubit.resonator.depletion_time // 4, qubit.resonator.name)
+        qubit.xy.play(pi_pulse_name, condition=state)
+        qubit.align()
+        assign(attempts, attempts + 1)
+    wait(500,qubit.xy.name)
+    qubit.align()    
+    if save_qua_var is not None:
+        save(attempts, save_qua_var)

@@ -9,9 +9,11 @@ from quam_libs.components import QuAM
 
 machine = QuAM()  # or, QuAM.load() if the state already exists
 
-machine.network.host = "127.0.0.1"
-machine.network.cluster_name = "Cluster_1"
+# vvv  delete these if using QuAM.load()
+machine.network.host = "172.16.33.116"
+machine.network.cluster_name = "Beta_8"
 machine.wiring = QuamDict({})
+# ^^^
 
 mw_out = MWChannel(
     id="mw_out",
