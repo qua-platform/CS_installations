@@ -46,6 +46,7 @@ class Parameters(NodeParameters):
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 3000
     wait_time_step_in_ns: int = 16
+    time_scale_linear_or_log: Literal["linear", "log"] = "linear"
     flux_point_joint_or_independent_or_arbitrary: Literal[
         "joint", "independent", "arbitrary"
     ] = "joint"
@@ -84,12 +85,20 @@ idle_times = np.arange(
     node.parameters.wait_time_step_in_ns // 4,
 )
 
-idle_times = np.unique(
-    np.geomspace(
-        node.parameters.min_wait_time_in_ns, node.parameters.max_wait_time_in_ns, 500
-    )
-    // 4
-).astype(int)
+if node.parameters.time_scale_linear_or_log == "linear":
+    idle_times = np.unique(
+        np.arange(
+            node.parameters.min_wait_time_in_ns, node.parameters.max_wait_time_in_ns, node.parameters.wait_time_step_in_ns
+        )
+        // 4
+    ).astype(int)
+else:
+    idle_times = np.unique(
+        np.geomspace(
+            node.parameters.min_wait_time_in_ns, node.parameters.max_wait_time_in_ns, 500
+        )
+        // 4
+    ).astype(int)
 
 # Detuning converted into virtual Z-rotations to observe Ramsey oscillation and get the qubit frequency
 detuning = int(1e6 * node.parameters.frequency_detuning_in_mhz)
@@ -364,3 +373,5 @@ if not node.parameters.simulate:
     node.results["initial_parameters"] = node.parameters.model_dump()
     node.machine = machine
     node.save()
+
+# %%
