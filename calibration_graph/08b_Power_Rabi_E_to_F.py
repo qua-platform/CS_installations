@@ -43,15 +43,13 @@ class Parameters(NodeParameters):
 
     qubits: Optional[List[str]] = None
     num_averages: int = 200
-    operation: str = "x180"
+    operation: str = "EF_x180"
     min_amp_factor: float = 0.0
-    max_amp_factor: float = 1.5
-    amp_factor_step: float = 0.005
+    max_amp_factor: float = 2.0
+    amp_factor_step: float = 0.02
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     simulate: bool = False
     timeout: int = 100
-    duration: int = 60
-
 
 node = QualibrationNode(name="08b_Power_Rabi_E_to_F", parameters=Parameters())
 
@@ -72,6 +70,7 @@ if node.parameters.qubits is None or node.parameters.qubits == "":
     qubits = machine.active_qubits
 else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits]
+        
 num_qubits = len(qubits)
 
 for q in qubits:
@@ -125,13 +124,16 @@ with program() as power_rabi:
                 # Reset the qubit frequency
                 update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
                 # Drive the qubit to the excited state
+                qubit.align()
                 qubit.xy.play(operation)
                 # Update the qubit frequency to scan around the expected f_12
+                qubit.align()
                 update_frequency(
                     qubit.xy.name, qubit.xy.intermediate_frequency - qubit.anharmonicity
                 )
-                qubit.xy.play(operation, amplitude_scale=a, duration = node.parameters.duration)
-                align()
+                qubit.align()
+                qubit.xy.play(operation, amplitude_scale=a)
+                qubit.align()
                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])
@@ -230,30 +232,32 @@ if not node.parameters.simulate:
         ax.set_ylabel("Trans. amp. I [mV]")
         ax.set_xlabel("Amplitude [mV]")
         ax.set_title(qubit["qubit"])
-    grid.fig.suptitle("Rabi : I vs. amplitude")
+    grid.fig.suptitle("EF Rabi : I vs. amplitude")
     plt.tight_layout()
     plt.show()
     node.results["figure"] = grid.fig
-
+ 
 # %% {Update_state}
 if not node.parameters.simulate:
     ef_operation_name = f"EF_{operation}"
     for q in qubits:
         with node.record_state_updates():
-            if ef_operation_name not in q.xy.operations:
+            if operation == "x180":
+                print("Creating EF_x180 operation")
                 # Create the |e> -> |f> operation
-                q.xy.operations[ef_operation_name] = pulses.DragCosinePulse(
+                q.xy.operations["EF_x180"] = pulses.DragCosinePulse(
                     amplitude=fit_results[q.name]["Pi_amplitude"],
                     alpha=q.xy.operations[operation].alpha,
                     anharmonicity=q.xy.operations[operation].anharmonicity,
-                    length=node.parameters.duration,
+                    length=q.xy.operations[operation].length,
                     axis_angle=0,  # TODO: to check that the rotation does not overwrite y-pulses
                     digital_marker=q.xy.operations[operation].digital_marker,
                 )
             else:
                 # set the new amplitude for the EF operation
-                q.xy.operations[ef_operation_name].amplitude = fit_results[q.name]["Pi_amplitude"]
-                q.xy.operations[ef_operation_name].length = node.parameters.duration
+                q.xy.operations["EF_x180"].amplitude = fit_results[q.name]["Pi_amplitude"]
+
+
 
 # %% {Save_results}
 if not node.parameters.simulate:

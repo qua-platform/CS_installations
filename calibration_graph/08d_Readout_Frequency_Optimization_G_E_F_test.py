@@ -37,10 +37,10 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = None
-    num_averages: int = 40
-    frequency_span_in_mhz: float = 10
-    frequency_step_in_mhz: float = 0.05
+    qubits: Optional[List[str]] = ["qubitC2"]
+    num_averages: int = 100
+    frequency_span_in_mhz: float = 7
+    frequency_step_in_mhz: float = 0.2
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     simulate: bool = False
     timeout: int = 100
@@ -82,6 +82,9 @@ n_avg = node.parameters.num_averages  # The number of averages
 span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span / 2, +span / 2, step)
+drive_spane = 40e6
+drive_step = 1e6
+drive_dfs = np.arange(-drive_spane / 2, +drive_spane / 2, drive_step)
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 
 with program() as ro_freq_opt:
@@ -93,6 +96,7 @@ with program() as ro_freq_opt:
     I_f = [declare(fixed) for _ in range(num_qubits)]
     Q_f = [declare(fixed) for _ in range(num_qubits)]
     df = declare(int)
+    df_drive = declare(int)
     I_g_st = [declare_stream() for _ in range(num_qubits)]
     Q_g_st = [declare_stream() for _ in range(num_qubits)]
     I_e_st = [declare_stream() for _ in range(num_qubits)]
@@ -121,61 +125,63 @@ with program() as ro_freq_opt:
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_(*from_array(df, dfs)):
-                # Update the resonator frequencies
-                update_frequency(
-                    qubit.resonator.name, df + qubit.resonator.intermediate_frequency
-                )
-                align()
-                # Measure the state of the resonators
-                qubit.resonator.measure("readout", qua_vars=(I_g[i], Q_g[i]))
-                qubit.align()
-                # Wait for thermalization again in case of measurement induced transitions
-                wait(qubit.thermalization_time * u.ns)
-                save(I_g[i], I_g_st[i])
-                save(Q_g[i], Q_g_st[i])
+                with for_(*from_array(df_drive, drive_dfs)):
+                    # Update the resonator frequencies
+                    update_frequency(
+                        qubit.resonator.name, df + qubit.resonator.intermediate_frequency
+                    )
+                    align()
+                    # Measure the state of the resonators
+                    qubit.resonator.measure("readout", qua_vars=(I_g[i], Q_g[i]))
+                    qubit.align()
+                    # Wait for thermalization again in case of measurement induced transitions
+                    wait(qubit.thermalization_time * u.ns)
+                    save(I_g[i], I_g_st[i])
+                    save(Q_g[i], Q_g_st[i])
 
-                # Play the x180 gate to put the qubits in the excited state
-                qubit.xy.play("x180")
-                # Align the elements to measure after playing the qubit pulses.
-                align()
-                # Measure the state of the resonators
-                qubit.resonator.measure("readout", qua_vars=(I_e[i], Q_e[i]))
-                # wait(1000)
-                qubit.align()
-                # Wait for thermalization again in case of measurement induced transitions
-                wait(qubit.thermalization_time * u.ns)
-                save(I_e[i], I_e_st[i])
-                save(Q_e[i], Q_e_st[i])
+                    # Play the x180 gate to put the qubits in the excited state
+                    qubit.xy.play("x180")
+                    # Align the elements to measure after playing the qubit pulses.
+                    align()
+                    # Measure the state of the resonators
+                    qubit.resonator.measure("readout", qua_vars=(I_e[i], Q_e[i]))
+                    # wait(1000)
+                    qubit.align()
+                    # Wait for thermalization again in case of measurement induced transitions
+                    wait(qubit.thermalization_time * u.ns)
+                    save(I_e[i], I_e_st[i])
+                    save(Q_e[i], Q_e_st[i])
 
-                # Play the x180 gate and EFx180 gate to put the qubits in the f state
-                qubit.xy.play("x180")
-                update_frequency(
-                    qubit.xy.name, qubit.xy.intermediate_frequency - qubit.anharmonicity
-                )
-                qubit.align()
-                qubit.xy.play(operation)
-                qubit.align()
-                update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
-                # Align the elements to measure after playing the qubit pulses.
-                qubit.align()
-                # Measure the state of the resonators
-                qubit.resonator.measure("readout", qua_vars=(I_f[i], Q_f[i]))
-                # Wait for the qubits to decay to the ground state
-                wait(qubit.thermalization_time * u.ns)
-                save(I_f[i], I_f_st[i])
-                save(Q_f[i], Q_f_st[i])
+                    # Play the x180 gate and EFx180 gate to put the qubits in the f state
+                    qubit.xy.play("x180")
+                    qubit.align()
+                    update_frequency(
+                        qubit.xy.name, qubit.xy.intermediate_frequency + df_drive - qubit.anharmonicity
+                    )
+                    qubit.align()
+                    qubit.xy.play(operation, amplitude_scale=0.5)
+                    qubit.align()
+                    update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
+                    # Align the elements to measure after playing the qubit pulses.
+                    qubit.align()
+                    # Measure the state of the resonators
+                    qubit.resonator.measure("readout", qua_vars=(I_f[i], Q_f[i]))
+                    # Wait for the qubits to decay to the ground state
+                    wait(qubit.thermalization_time * u.ns)
+                    save(I_f[i], I_f_st[i])
+                    save(Q_f[i], Q_f_st[i])
 
         align()
 
     with stream_processing():
         n_st.save("n")
         for i in range(num_qubits):
-            I_g_st[i].buffer(len(dfs)).average().save(f"I_g{i + 1}")
-            Q_g_st[i].buffer(len(dfs)).average().save(f"Q_g{i + 1}")
-            I_e_st[i].buffer(len(dfs)).average().save(f"I_e{i + 1}")
-            Q_e_st[i].buffer(len(dfs)).average().save(f"Q_e{i + 1}")
-            I_f_st[i].buffer(len(dfs)).average().save(f"I_f{i + 1}")
-            Q_f_st[i].buffer(len(dfs)).average().save(f"Q_f{i + 1}")
+            I_g_st[i].buffer(len(drive_dfs)).buffer(len(dfs)).average().save(f"I_g{i + 1}")
+            Q_g_st[i].buffer(len(drive_dfs)).buffer(len(dfs)).average().save(f"Q_g{i + 1}")
+            I_e_st[i].buffer(len(drive_dfs)).buffer(len(dfs)).average().save(f"I_e{i + 1}")
+            Q_e_st[i].buffer(len(drive_dfs)).buffer(len(dfs)).average().save(f"Q_e{i + 1}")
+            I_f_st[i].buffer(len(drive_dfs)).buffer(len(dfs)).average().save(f"I_f{i + 1}")
+            Q_f_st[i].buffer(len(drive_dfs)).buffer(len(dfs)).average().save(f"Q_f{i + 1}")
 
 
 # %% {Simulate_or_execute}
@@ -201,7 +207,7 @@ else:
 if not node.parameters.simulate:
 
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
-    ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs})
+    ds = fetch_results_as_xarray(job.result_handles, qubits, {"drive_freq": drive_dfs, "freq": dfs})
     # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2) for |g>, [e> and |f> as well as the distance between the two blobs D
     ds = ds.assign(
         {
@@ -233,40 +239,76 @@ if not node.parameters.simulate:
 if not node.parameters.simulate:
 
     # Get the readout detuning as the index of the maximum of the cumulative average of D
-    detuning = ds.D.rolling({"freq": 5}).mean("freq").idxmax("freq")
+    detuning = ds.D.rolling({"freq": 3}).mean("freq").rolling({"drive_freq": 3}).mean("drive_freq")
     
-    # Save fitting results
+    # Find the indices of maximum detuning for each qubit
+    max_indices = detuning.argmax(dim=["freq", "drive_freq"])
+    
+    # Extract the optimal freq and drive_freq values
+    optimal_freq = ds.freq[max_indices["freq"]]
+    optimal_drive_freq = ds.drive_freq[max_indices["drive_freq"]]
+    
+    # Save fitting results 
     fit_results = {
-        q.name: {"GEF_detuning": int(detuning.loc[q.name].values)} for q in qubits
+        q.name: {
+            "GEF_detuning": int(optimal_freq.loc[q.name].values),
+            "GEF_drive_detuning": int(optimal_drive_freq.loc[q.name].values)
+        } for q in qubits
     }
     node.results["fit_results"] = fit_results
 
     for q in qubits:
         print(
-            f"{q.name}: GEF readout frequency is shifted by {fit_results[q.name]['GEF_detuning']/1e3:.0f} KHz from the GE readout frequency \n"
+            f"{q.name}: GEF readout frequency is shifted by {fit_results[q.name]['GEF_detuning']/1e6:.1f} MHz "
+            f"and drive frequency by {fit_results[q.name]['GEF_drive_detuning']/1e6:.1f} MHz\n"
         )
+    # # Save fitting results
+    # fit_results = {
+    #     q.name: {"GEF_detuning": int(detuning.loc[q.name].values)} for q in qubits
+    # }
+    # node.results["fit_results"] = fit_results
+
+    # for q in qubits:
+    #     print(
+    #         f"{q.name}: GEF readout frequency is shifted by {fit_results[q.name]['GEF_detuning']/1e3:.0f} KHz from the GE readout frequency \n"
+    #     )
 
 # %% {Plotting}
+
+
 if not node.parameters.simulate:
     grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
-        (1e3 * ds.assign_coords(freq_MHz=ds.freq / 1e6).Dge.loc[qubit]).plot(
+        ds.assign_coords(freq_MHz=ds.freq / 1e6, drive_freq_MHz=ds.drive_freq / 1e6).D.loc[qubit].plot(ax=ax, x="freq_MHz", y="drive_freq_MHz", label="D")
+        ax.plot(fit_results[qubit["qubit"]]["GEF_detuning"]/1e6, fit_results[qubit["qubit"]]["GEF_drive_detuning"]/1e6, "ro", label="Optimal")
+        ax.set_xlabel("R/O Freq. [MHz]")
+        ax.set_ylabel("Drive Freq. [MHz]")
+        # ax.legend()
+    plt.tight_layout()
+    plt.suptitle("Maximal difference between g.e.f. resonance")
+    plt.show()
+    node.results["figure3"] = grid.fig
+
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
+    for ax, qubit in grid_iter(grid):
+        best_ds = ds.sel(drive_freq = fit_results[qubit["qubit"]]["GEF_drive_detuning"])
+        (1e3 * best_ds.assign_coords(freq_MHz=best_ds.freq / 1e6).Dge.loc[qubit]).plot(
             ax=ax, x="freq_MHz", label="GE"
         )
-        (1e3 * ds.assign_coords(freq_MHz=ds.freq / 1e6).Def.loc[qubit]).plot(
+        (1e3 * best_ds.assign_coords(freq_MHz=ds.freq / 1e6).Def.loc[qubit]).plot(
             ax=ax, x="freq_MHz", label="EF"
         )
-        (1e3 * ds.assign_coords(freq_MHz=ds.freq / 1e6).Dgf.loc[qubit]).plot(
+        (1e3 * best_ds.assign_coords(freq_MHz=ds.freq / 1e6).Dgf.loc[qubit]).plot(
             ax=ax, x="freq_MHz", label="GF"
         )
-        (1e3 * ds.assign_coords(freq_MHz=ds.freq / 1e6).D.loc[qubit]).plot(
+        (1e3 * best_ds.assign_coords(freq_MHz=ds.freq / 1e6).D.loc[qubit]).plot(
             ax=ax, x="freq_MHz"
         )
-        ax.axvline(
-            fit_results[qubit["qubit"]]["GEF_detuning"] / 1e6,
-            color="red",
-            linestyle="--",
-        )
+        # ax.axvline(
+        #     fit_results[qubit["qubit"]]["GEF_detuning"] / 1e6,
+        #     color="red",
+        #     linestyle="--",
+        # )
         ax.set_xlabel("Frequency [MHz]")
         ax.set_ylabel("Distance between IQ blobs [m.v.]")
         ax.legend()
@@ -276,13 +318,14 @@ if not node.parameters.simulate:
 
     grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
-        (1e3 * ds.assign_coords(freq_MHz=ds.freq / 1e6).IQ_abs_g.loc[qubit]).plot(
+        best_ds = ds.sel(drive_freq = fit_results[qubit["qubit"]]["GEF_drive_detuning"])
+        (1e3 * best_ds.assign_coords(freq_MHz=best_ds.freq / 1e6).IQ_abs_g.loc[qubit]).plot(
             ax=ax, x="freq_MHz", label="g.s."
         )
-        (1e3 * ds.assign_coords(freq_MHz=ds.freq / 1e6).IQ_abs_e.loc[qubit]).plot(
+        (1e3 * best_ds.assign_coords(freq_MHz=best_ds.freq / 1e6).IQ_abs_e.loc[qubit]).plot(
             ax=ax, x="freq_MHz", label="e.s."
         )
-        (1e3 * ds.assign_coords(freq_MHz=ds.freq / 1e6).IQ_abs_f.loc[qubit]).plot(
+        (1e3 * best_ds.assign_coords(freq_MHz=best_ds.freq / 1e6).IQ_abs_f.loc[qubit]).plot(
             ax=ax, x="freq_MHz", label="f.s."
         )
         ax.set_xlabel("Frequency [MHz]")
@@ -291,12 +334,13 @@ if not node.parameters.simulate:
     plt.tight_layout()
     plt.show()
     node.results["figure2"] = grid.fig
-    
+
 # %% {Update_state}
 if not node.parameters.simulate:
     for q in qubits:
         with node.record_state_updates():
             q.GEF_frequency_shift = int(fit_results[q.name]["GEF_detuning"])
+            q.anharmonicity += int(fit_results[q.name]["GEF_drive_detuning"])
 
 # %% {Save_results}
 if not node.parameters.simulate:
