@@ -53,7 +53,7 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     num_averages: int = 500
     operation: str = "saturation"
-    operation_amplitude_factor: Optional[float] = 0.1
+    operation_amplitude_factor: Optional[float] = 0.01
     operation_len_in_ns: Optional[int] = None
     frequency_span_in_mhz: float = 40
     frequency_step_in_mhz: float = 0.25
@@ -271,14 +271,16 @@ else:
 # %% {Data_analysis}
 if not node.parameters.simulate:
     # search for frequency for which the amplitude the farthest from the mean to indicate the approximate location of the peak
-    shifts = np.abs((ds.IQ_abs - ds.IQ_abs.mean(dim="freq"))).idxmax(dim="freq")
+    
+    shifts = (np.sqrt((ds.I - ds.I.mean(dim = "freq"))**2 + (ds.Q - ds.Q.mean(dim = "freq"))**2) ).idxmax(dim="freq")
     # Find the rotation angle to align the separation along the 'I' axis
     angle = np.arctan2(
         ds.sel(freq=shifts).Q - ds.Q.mean(dim="freq"),
         ds.sel(freq=shifts).I - ds.I.mean(dim="freq"),
     )
     # rotate the data to the new I axis
-    ds = ds.assign({"I_rot": np.real(ds.IQ_abs * np.exp(1j * (ds.phase - angle)))})
+    ds = ds.assign({"I_rot" : ds.I * np.cos(angle) + ds.Q * np.sin(angle)})
+    # ds = ds.assign({"I_rot": np.real(ds.IQ_abs * np.exp(1j * (ds.phase - angle)))})
     # Find the peak with minimal prominence as defined, if no such peak found, returns nan
     result = peaks_dips(ds.I_rot, dim="freq", prominence_factor=5)
     # The resonant RF frequency of the qubits
