@@ -4,11 +4,11 @@
             "name": "octave1",
             "ip": "172.16.33.101",
             "port": 11232,
-            "calibration_db_path": "/workspaces/qua-libs/Quantum-Control-Applications-QuAM/Superconducting/configuration",
+            "calibration_db_path": "/workspaces/HI_20241110_Samsung/configuration",
             "RF_outputs": {
                 "1": {
                     "id": 1,
-                    "channel": "#/qubits/q4/resonator",
+                    "channel": "#/qubits/q7/resonator",
                     "LO_frequency": 8750000000,
                     "output_mode": "always_on"
                 },
@@ -32,7 +32,7 @@
                 },
                 "5": {
                     "id": 5,
-                    "channel": "#/qubits/q4/xy",
+                    "channel": "#/qubits/q7/xy",
                     "LO_frequency": 6600000000,
                     "output_mode": "always_on"
                 }
@@ -40,7 +40,7 @@
             "RF_inputs": {
                 "1": {
                     "id": 1,
-                    "channel": "#/qubits/q4/resonator",
+                    "channel": "#/qubits/q7/resonator",
                     "LO_frequency": 8750000000
                 },
                 "2": {
@@ -177,6 +177,7 @@
                     }
                 },
                 "intermediate_frequency": -200000000,
+                "thread": "q1",
                 "opx_output_I": "#/wiring/qubits/q1/xy/opx_output_I",
                 "opx_output_Q": "#/wiring/qubits/q1/xy/opx_output_Q",
                 "frequency_converter_up": "#/wiring/qubits/q1/xy/frequency_converter_up"
@@ -192,6 +193,7 @@
                     }
                 },
                 "intermediate_frequency": -210000000,
+                "thread": "q1",
                 "opx_output_I": "#/wiring/qubits/q1/xy/opx_output_I",
                 "opx_output_Q": "#/wiring/qubits/q1/xy/opx_output_Q",
                 "frequency_converter_up": "#/wiring/qubits/q1/xy/frequency_converter_up"
@@ -212,6 +214,7 @@
                     }
                 },
                 "intermediate_frequency": -200000000,
+                "thread": "q1",
                 "opx_input_I": "#/wiring/qubits/q1/rr/opx_input_I",
                 "opx_input_Q": "#/wiring/qubits/q1/rr/opx_input_Q",
                 "time_of_flight": 28,
@@ -356,6 +359,7 @@
                     }
                 },
                 "intermediate_frequency": -150000000,
+                "thread": "q2",
                 "opx_output_I": "#/wiring/qubits/q2/xy/opx_output_I",
                 "opx_output_Q": "#/wiring/qubits/q2/xy/opx_output_Q",
                 "frequency_converter_up": "#/wiring/qubits/q2/xy/frequency_converter_up"
@@ -378,6 +382,7 @@
                     }
                 },
                 "intermediate_frequency": -165000000,
+                "thread": "q2",
                 "opx_output_I": "#/wiring/qubits/q2/xy/opx_output_I",
                 "opx_output_Q": "#/wiring/qubits/q2/xy/opx_output_Q",
                 "frequency_converter_up": "#/wiring/qubits/q2/xy/frequency_converter_up"
@@ -398,6 +403,7 @@
                     }
                 },
                 "intermediate_frequency": -150000000,
+                "thread": "q2",
                 "opx_input_I": "#/wiring/qubits/q2/rr/opx_input_I",
                 "opx_input_Q": "#/wiring/qubits/q2/rr/opx_input_Q",
                 "time_of_flight": 28,
@@ -533,8 +539,8 @@
                         "axis_angle": 0,
                         "__class__": "quam.components.pulses.SquarePulse"
                     },
-                    "cr_q4_q3_Square": {
-                        "length": "#/qubit_pairs/q4-3/cross_resonance/operations/square/length",
+                    "cr_q7_q3_Square": {
+                        "length": "#/qubit_pairs/q7-3/cross_resonance/operations/square/length",
                         "digital_marker": "ON",
                         "amplitude": 0.1,
                         "axis_angle": 0,
@@ -542,6 +548,7 @@
                     }
                 },
                 "intermediate_frequency": -100000000,
+                "thread": "q3",
                 "opx_output_I": "#/wiring/qubits/q3/xy/opx_output_I",
                 "opx_output_Q": "#/wiring/qubits/q3/xy/opx_output_Q",
                 "frequency_converter_up": "#/wiring/qubits/q3/xy/frequency_converter_up"
@@ -555,8 +562,8 @@
                         "axis_angle": 0,
                         "__class__": "quam.components.pulses.SquarePulse"
                     },
-                    "zz_q4_q3_Square": {
-                        "length": "#/qubit_pairs/q4-3/zz_drive/operations/square/length",
+                    "zz_q7_q3_Square": {
+                        "length": "#/qubit_pairs/q7-3/zz_drive/operations/square/length",
                         "digital_marker": "ON",
                         "amplitude": 0.1,
                         "axis_angle": 0,
@@ -564,6 +571,7 @@
                     }
                 },
                 "intermediate_frequency": -120000000,
+                "thread": "q3",
                 "opx_output_I": "#/wiring/qubits/q3/xy/opx_output_I",
                 "opx_output_Q": "#/wiring/qubits/q3/xy/opx_output_Q",
                 "frequency_converter_up": "#/wiring/qubits/q3/xy/frequency_converter_up"
@@ -584,6 +592,7 @@
                     }
                 },
                 "intermediate_frequency": -100000000,
+                "thread": "q3",
                 "opx_input_I": "#/wiring/qubits/q3/rr/opx_input_I",
                 "opx_input_Q": "#/wiring/qubits/q3/rr/opx_input_Q",
                 "time_of_flight": 28,
@@ -595,8 +604,8 @@
                 "frequency_converter_up": "#/wiring/qubits/q3/rr/frequency_converter_up"
             }
         },
-        "q4": {
-            "id": "q4",
+        "q7": {
+            "id": "q7",
             "xy": {
                 "operations": {
                     "x180_DragCosine": {
@@ -605,7 +614,7 @@
                         "axis_angle": 0,
                         "amplitude": 0.2,
                         "alpha": 0.0,
-                        "anharmonicity": "#/qubits/q4/anharmonicity",
+                        "anharmonicity": "#/qubits/q7/anharmonicity",
                         "__class__": "quam.components.pulses.DragCosinePulse"
                     },
                     "x90_DragCosine": {
@@ -712,8 +721,8 @@
                         "axis_angle": 0,
                         "__class__": "quam.components.pulses.SquarePulse"
                     },
-                    "cr_q3_q4_Square": {
-                        "length": "#/qubit_pairs/q3-4/cross_resonance/operations/square/length",
+                    "cr_q3_q7_Square": {
+                        "length": "#/qubit_pairs/q3-7/cross_resonance/operations/square/length",
                         "digital_marker": "ON",
                         "amplitude": 0.1,
                         "axis_angle": 0,
@@ -721,14 +730,15 @@
                     }
                 },
                 "intermediate_frequency": -50000000,
-                "opx_output_I": "#/wiring/qubits/q4/xy/opx_output_I",
-                "opx_output_Q": "#/wiring/qubits/q4/xy/opx_output_Q",
-                "frequency_converter_up": "#/wiring/qubits/q4/xy/frequency_converter_up"
+                "thread": "q7",
+                "opx_output_I": "#/wiring/qubits/q7/xy/opx_output_I",
+                "opx_output_Q": "#/wiring/qubits/q7/xy/opx_output_Q",
+                "frequency_converter_up": "#/wiring/qubits/q7/xy/frequency_converter_up"
             },
             "xy_detuned": {
                 "operations": {
-                    "zz_q3_q4_Square": {
-                        "length": "#/qubit_pairs/q3-4/zz_drive/operations/square/length",
+                    "zz_q3_q7_Square": {
+                        "length": "#/qubit_pairs/q3-7/zz_drive/operations/square/length",
                         "digital_marker": "ON",
                         "amplitude": 0.1,
                         "axis_angle": 0,
@@ -736,9 +746,10 @@
                     }
                 },
                 "intermediate_frequency": -75000000,
-                "opx_output_I": "#/wiring/qubits/q4/xy/opx_output_I",
-                "opx_output_Q": "#/wiring/qubits/q4/xy/opx_output_Q",
-                "frequency_converter_up": "#/wiring/qubits/q4/xy/frequency_converter_up"
+                "thread": "q7",
+                "opx_output_I": "#/wiring/qubits/q7/xy/opx_output_I",
+                "opx_output_Q": "#/wiring/qubits/q7/xy/opx_output_Q",
+                "frequency_converter_up": "#/wiring/qubits/q7/xy/frequency_converter_up"
             },
             "resonator": {
                 "depletion_time": 1000,
@@ -756,15 +767,16 @@
                     }
                 },
                 "intermediate_frequency": -50000000,
-                "opx_input_I": "#/wiring/qubits/q4/rr/opx_input_I",
-                "opx_input_Q": "#/wiring/qubits/q4/rr/opx_input_Q",
+                "thread": "q7",
+                "opx_input_I": "#/wiring/qubits/q7/rr/opx_input_I",
+                "opx_input_Q": "#/wiring/qubits/q7/rr/opx_input_Q",
                 "time_of_flight": 28,
                 "opx_input_offset_I": 0.0,
                 "opx_input_offset_Q": 0.0,
-                "frequency_converter_down": "#/wiring/qubits/q4/rr/frequency_converter_down",
-                "opx_output_I": "#/wiring/qubits/q4/rr/opx_output_I",
-                "opx_output_Q": "#/wiring/qubits/q4/rr/opx_output_Q",
-                "frequency_converter_up": "#/wiring/qubits/q4/rr/frequency_converter_up"
+                "frequency_converter_down": "#/wiring/qubits/q7/rr/frequency_converter_down",
+                "opx_output_I": "#/wiring/qubits/q7/rr/opx_output_I",
+                "opx_output_Q": "#/wiring/qubits/q7/rr/opx_output_Q",
+                "frequency_converter_up": "#/wiring/qubits/q7/rr/frequency_converter_up"
             }
         }
     },
@@ -785,6 +797,7 @@
                 },
                 "id": "cr_q1_q2",
                 "intermediate_frequency": "#./inferred_intermediate_frequency",
+                "thread": "q1",
                 "opx_output_I": "#/wiring/qubit_pairs/q1-2/cr/opx_output_I",
                 "opx_output_Q": "#/wiring/qubit_pairs/q1-2/cr/opx_output_Q",
                 "frequency_converter_up": "#/qubits/q1/xy/frequency_converter_up"
@@ -802,6 +815,7 @@
                 },
                 "id": "zz_q1_q2",
                 "intermediate_frequency": "#./inferred_intermediate_frequency",
+                "thread": "q1",
                 "opx_output_I": "#/wiring/qubit_pairs/q1-2/zz/opx_output_I",
                 "opx_output_Q": "#/wiring/qubit_pairs/q1-2/zz/opx_output_Q",
                 "frequency_converter_up": "#/qubits/q1/xy/frequency_converter_up"
@@ -823,6 +837,7 @@
                 },
                 "id": "cr_q2_q1",
                 "intermediate_frequency": "#./inferred_intermediate_frequency",
+                "thread": "q2",
                 "opx_output_I": "#/wiring/qubit_pairs/q2-1/cr/opx_output_I",
                 "opx_output_Q": "#/wiring/qubit_pairs/q2-1/cr/opx_output_Q",
                 "frequency_converter_up": "#/qubits/q2/xy/frequency_converter_up"
@@ -840,6 +855,7 @@
                 },
                 "id": "zz_q2_q1",
                 "intermediate_frequency": "#./inferred_intermediate_frequency",
+                "thread": "q2",
                 "opx_output_I": "#/wiring/qubit_pairs/q2-1/zz/opx_output_I",
                 "opx_output_Q": "#/wiring/qubit_pairs/q2-1/zz/opx_output_Q",
                 "frequency_converter_up": "#/qubits/q2/xy/frequency_converter_up"
@@ -861,6 +877,7 @@
                 },
                 "id": "cr_q2_q3",
                 "intermediate_frequency": "#./inferred_intermediate_frequency",
+                "thread": "q2",
                 "opx_output_I": "#/wiring/qubit_pairs/q2-3/cr/opx_output_I",
                 "opx_output_Q": "#/wiring/qubit_pairs/q2-3/cr/opx_output_Q",
                 "frequency_converter_up": "#/qubits/q2/xy/frequency_converter_up"
@@ -878,6 +895,7 @@
                 },
                 "id": "zz_q2_q3",
                 "intermediate_frequency": "#./inferred_intermediate_frequency",
+                "thread": "q2",
                 "opx_output_I": "#/wiring/qubit_pairs/q2-3/zz/opx_output_I",
                 "opx_output_Q": "#/wiring/qubit_pairs/q2-3/zz/opx_output_Q",
                 "frequency_converter_up": "#/qubits/q2/xy/frequency_converter_up"
@@ -899,6 +917,7 @@
                 },
                 "id": "cr_q3_q2",
                 "intermediate_frequency": "#./inferred_intermediate_frequency",
+                "thread": "q3",
                 "opx_output_I": "#/wiring/qubit_pairs/q3-2/cr/opx_output_I",
                 "opx_output_Q": "#/wiring/qubit_pairs/q3-2/cr/opx_output_Q",
                 "frequency_converter_up": "#/qubits/q3/xy/frequency_converter_up"
@@ -916,18 +935,19 @@
                 },
                 "id": "zz_q3_q2",
                 "intermediate_frequency": "#./inferred_intermediate_frequency",
+                "thread": "q3",
                 "opx_output_I": "#/wiring/qubit_pairs/q3-2/zz/opx_output_I",
                 "opx_output_Q": "#/wiring/qubit_pairs/q3-2/zz/opx_output_Q",
                 "frequency_converter_up": "#/qubits/q3/xy/frequency_converter_up"
             }
         },
-        "q3-4": {
-            "id": "q3-4",
+        "q3-7": {
+            "id": "q3-7",
             "qubit_control": "#/qubits/q3",
-            "qubit_target": "#/qubits/q4",
+            "qubit_target": "#/qubits/q7",
             "cross_resonance": {
-                "target_qubit_LO_frequency": "#/qubits/q4/xy/LO_frequency",
-                "target_qubit_IF_frequency": "#/qubits/q4/xy/intermediate_frequency",
+                "target_qubit_LO_frequency": "#/qubits/q7/xy/LO_frequency",
+                "target_qubit_IF_frequency": "#/qubits/q7/xy/intermediate_frequency",
                 "operations": {
                     "square": {
                         "length": 100,
@@ -935,15 +955,16 @@
                         "__class__": "quam.components.pulses.SquarePulse"
                     }
                 },
-                "id": "cr_q3_q4",
+                "id": "cr_q3_q7",
                 "intermediate_frequency": "#./inferred_intermediate_frequency",
-                "opx_output_I": "#/wiring/qubit_pairs/q3-4/cr/opx_output_I",
-                "opx_output_Q": "#/wiring/qubit_pairs/q3-4/cr/opx_output_Q",
+                "thread": "q3",
+                "opx_output_I": "#/wiring/qubit_pairs/q3-7/cr/opx_output_I",
+                "opx_output_Q": "#/wiring/qubit_pairs/q3-7/cr/opx_output_Q",
                 "frequency_converter_up": "#/qubits/q3/xy/frequency_converter_up"
             },
             "zz_drive": {
-                "target_qubit_LO_frequency": "#/qubits/q4/xy/LO_frequency",
-                "target_qubit_IF_frequency": "#/qubits/q4/xy/intermediate_frequency",
+                "target_qubit_LO_frequency": "#/qubits/q7/xy/LO_frequency",
+                "target_qubit_IF_frequency": "#/qubits/q7/xy/intermediate_frequency",
                 "detuning": -12000000,
                 "operations": {
                     "square": {
@@ -952,16 +973,17 @@
                         "__class__": "quam.components.pulses.SquarePulse"
                     }
                 },
-                "id": "zz_q3_q4",
+                "id": "zz_q3_q7",
                 "intermediate_frequency": "#./inferred_intermediate_frequency",
-                "opx_output_I": "#/wiring/qubit_pairs/q3-4/zz/opx_output_I",
-                "opx_output_Q": "#/wiring/qubit_pairs/q3-4/zz/opx_output_Q",
+                "thread": "q3",
+                "opx_output_I": "#/wiring/qubit_pairs/q3-7/zz/opx_output_I",
+                "opx_output_Q": "#/wiring/qubit_pairs/q3-7/zz/opx_output_Q",
                 "frequency_converter_up": "#/qubits/q3/xy/frequency_converter_up"
             }
         },
-        "q4-3": {
-            "id": "q4-3",
-            "qubit_control": "#/qubits/q4",
+        "q7-3": {
+            "id": "q7-3",
+            "qubit_control": "#/qubits/q7",
             "qubit_target": "#/qubits/q3",
             "cross_resonance": {
                 "target_qubit_LO_frequency": "#/qubits/q3/xy/LO_frequency",
@@ -973,11 +995,12 @@
                         "__class__": "quam.components.pulses.SquarePulse"
                     }
                 },
-                "id": "cr_q4_q3",
+                "id": "cr_q7_q3",
                 "intermediate_frequency": "#./inferred_intermediate_frequency",
-                "opx_output_I": "#/wiring/qubit_pairs/q4-3/cr/opx_output_I",
-                "opx_output_Q": "#/wiring/qubit_pairs/q4-3/cr/opx_output_Q",
-                "frequency_converter_up": "#/qubits/q4/xy/frequency_converter_up"
+                "thread": "q7",
+                "opx_output_I": "#/wiring/qubit_pairs/q7-3/cr/opx_output_I",
+                "opx_output_Q": "#/wiring/qubit_pairs/q7-3/cr/opx_output_Q",
+                "frequency_converter_up": "#/qubits/q7/xy/frequency_converter_up"
             },
             "zz_drive": {
                 "target_qubit_LO_frequency": "#/qubits/q3/xy/LO_frequency",
@@ -990,11 +1013,12 @@
                         "__class__": "quam.components.pulses.SquarePulse"
                     }
                 },
-                "id": "zz_q4_q3",
+                "id": "zz_q7_q3",
                 "intermediate_frequency": "#./inferred_intermediate_frequency",
-                "opx_output_I": "#/wiring/qubit_pairs/q4-3/zz/opx_output_I",
-                "opx_output_Q": "#/wiring/qubit_pairs/q4-3/zz/opx_output_Q",
-                "frequency_converter_up": "#/qubits/q4/xy/frequency_converter_up"
+                "thread": "q7",
+                "opx_output_I": "#/wiring/qubit_pairs/q7-3/zz/opx_output_I",
+                "opx_output_Q": "#/wiring/qubit_pairs/q7-3/zz/opx_output_Q",
+                "frequency_converter_up": "#/qubits/q7/xy/frequency_converter_up"
             }
         }
     },
@@ -1002,15 +1026,15 @@
         "q1",
         "q2",
         "q3",
-        "q4"
+        "q7"
     ],
     "active_qubit_pair_names": [
         "q1-2",
         "q2-1",
         "q2-3",
         "q3-2",
-        "q3-4",
-        "q4-3"
+        "q3-7",
+        "q7-3"
     ],
     "ports": {
         "analog_outputs": {

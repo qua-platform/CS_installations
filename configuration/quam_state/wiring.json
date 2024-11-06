@@ -57,7 +57,7 @@
                     "frequency_converter_up": "#/octaves/octave1/RF_outputs/4"
                 }
             },
-            "q4": {
+            "q7": {
                 "rr": {
                     "opx_input_I": "#/ports/analog_inputs/con1/1",
                     "opx_input_Q": "#/ports/analog_inputs/con1/2",
@@ -138,32 +138,32 @@
                     "frequency_converter_up": "#/octaves/octave1/RF_outputs/4"
                 }
             },
-            "q3-4": {
+            "q3-7": {
                 "cr": {
                     "control_qubit": "#/qubits/q3",
-                    "target_qubit": "#/qubits/q4",
+                    "target_qubit": "#/qubits/q7",
                     "opx_output_I": "#/ports/analog_outputs/con1/3",
                     "opx_output_Q": "#/ports/analog_outputs/con1/4",
                     "frequency_converter_up": "#/octaves/octave1/RF_outputs/4"
                 },
                 "zz": {
                     "control_qubit": "#/qubits/q3",
-                    "target_qubit": "#/qubits/q4",
+                    "target_qubit": "#/qubits/q7",
                     "opx_output_I": "#/ports/analog_outputs/con1/3",
                     "opx_output_Q": "#/ports/analog_outputs/con1/4",
                     "frequency_converter_up": "#/octaves/octave1/RF_outputs/4"
                 }
             },
-            "q4-3": {
+            "q7-3": {
                 "cr": {
-                    "control_qubit": "#/qubits/q4",
+                    "control_qubit": "#/qubits/q7",
                     "target_qubit": "#/qubits/q3",
                     "opx_output_I": "#/ports/analog_outputs/con1/3",
                     "opx_output_Q": "#/ports/analog_outputs/con1/4",
                     "frequency_converter_up": "#/octaves/octave1/RF_outputs/5"
                 },
                 "zz": {
-                    "control_qubit": "#/qubits/q4",
+                    "control_qubit": "#/qubits/q7",
                     "target_qubit": "#/qubits/q3",
                     "opx_output_I": "#/ports/analog_outputs/con1/3",
                     "opx_output_Q": "#/ports/analog_outputs/con1/4",
