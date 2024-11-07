@@ -14,28 +14,12 @@ from scipy.signal.windows import gaussian
 # AUXILIARY FUNCTIONS #
 #######################
 
-
-# IQ imbalance matrix
-def IQ_imbalance(g, phi):
-    """
-    Creates the correction matrix for the mixer imbalance caused by the gain and phase imbalances, more information can
-    be seen here:
-    https://docs.qualang.io/libs/examples/mixer-calibration/#non-ideal-mixer
-
-    :param g: relative gain imbalance between the I & Q ports (unit-less). Set to 0 for no gain imbalance.
-    :param phi: relative phase imbalance between the I & Q ports (radians). Set to 0 for no phase imbalance.
-    """
-    c = np.cos(phi)
-    s = np.sin(phi)
-    N = 1 / ((1 - g**2) * (2 * c**2 - 1))
-    return [float(N * x) for x in [(1 - g) * c, (1 + g) * s, (1 - g) * s, (1 + g) * c]]
-
-
 u = unit(coerce_to_integer=True)
 ######################
 # Network parameters #
 ######################
-opx_ip = "192.168.88.244"
+# opx_ip = "192.168.88.244"
+qop_ip = "10.209.68.77"
 octave_ip = "192.168.88.253"
 cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
@@ -43,29 +27,22 @@ octave = "oct1"
 ############################
 # Set octave configuration #
 ############################
-octave_port = (
-    80  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
-)
+octave_port = 11232
 # Create the octave config object
 octave_config = QmOctaveConfig()
-# Specify where to store the outcome of the calibration (correction matrix, offsets...)
-octave_config.set_calibration_db("/Users/paul/QM/CS_installations/")
+octave_config.set_calibration_db(os.getcwd())
 # Add an Octave called 'octave1' with the specified IP and port
-octave_config.add_device_info(octave, octave_ip, octave_port)
+octave_config.add_device_info(octave, "172.16.33.101", octave_port)
 #############
 # VARIABLES #
 #############
-cluster_name = "Cluster_1"
-qop_port = None
 
 # Frequencies
 pulsed_laser_AOM_IF = 100 * u.MHz
 readout_AOM_IF = 50.0 * u.MHz
 control_AOM_IF = 50.0 * u.MHz
 control_EOM_IF = 100 * u.MHz
-control_EOM_LO1 = 5.350 * u.GHz
-control_EOM_LO3 = 6.05 * u.GHz
-control_EOM_LO5 = 7.1 * u.GHz
+control_EOM_LO = 5.350 * u.GHz
 
 # Pulses lengths
 readout_aom_len = 1000 * u.ns
@@ -73,7 +50,7 @@ control_aom_len = 1000 * u.ns
 control_eom_len = 100 * u.ns
 pulsed_laser_aom_len = 100 * u.ns
 snspd_readout_len = 1 * u.us
-apd_readout_len = 1 * u.us
+tt_readout_len = 1 * u.us
 gaussian_len = 100 * u.ns
 
 # Delays
@@ -91,7 +68,7 @@ gaussian_amp = 0.1
 
 
 # Time of flight
-time_of_flight = 24 * u.ns
+time_of_flight = 400 * u.ns
 
 #################
 # CONFIGURATION #
@@ -164,7 +141,7 @@ config = {
                 },
             },
         },
-        "control_eom1": {
+        "control_eom": {
             "RF_inputs": {"port": ("oct1", 1)},
             "intermediate_frequency": control_EOM_IF,
             "operations": {
@@ -173,34 +150,6 @@ config = {
             "digitalInputs": {
                 "marker": {
                     "port": ("con1", 3),
-                    "delay": control_eom_delay,
-                    "buffer": 0,
-                },
-            },
-        },
-        "control_eom3": {
-            "RF_inputs": {"port": ("oct1", 3)},
-            "intermediate_frequency": control_EOM_IF,
-            "operations": {
-                "control": "cw_control_eom",
-            },
-            "digitalInputs": {
-                "marker": {
-                    "port": ("con1", 4),
-                    "delay": control_eom_delay,
-                    "buffer": 0,
-                },
-            },
-        },
-        "control_eom5": {
-            "RF_inputs": {"port": ("oct1", 5)},
-            "intermediate_frequency": control_EOM_IF,
-            "operations": {
-                "control": "cw_control_eom",
-            },
-            "digitalInputs": {
-                "marker": {
-                    "port": ("con1", 5),
                     "delay": control_eom_delay,
                     "buffer": 0,
                 },
@@ -233,13 +182,19 @@ config = {
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
-        "APD": {
+        "time_tagger": {
             "singleInput": {
                 "port": ("con1", 1),
             },
-            "operations": {"readout": "readout_pulse_apd"},
+            "operations": {"readout": "readout_pulse_tt"},
             "outputs": {
-                "out2": ("con1", 2),
+                "out1": ("con1", 1),
+            },
+            "outputPulseParameters": {
+                "signalThreshold": -60,
+                "signalPolarity": "Below",
+                "derivativeThreshold": 5,
+                "derivativePolarity": "Above",
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -249,19 +204,7 @@ config = {
         "oct1": {
             "RF_outputs": {
                 1: {
-                    "LO_frequency": control_EOM_LO1,
-                    "LO_source": "internal",  # can be external or internal. internal is the default
-                    "output_mode": "triggered",  # can be: "always_on" / "always_off"/ "triggered" / "triggered_reversed". "always_off" is the default
-                    "gain": 0,  # can be in the range [-20 : 0.5 : 20]dB
-                },
-                3: {
-                    "LO_frequency": control_EOM_LO3,
-                    "LO_source": "internal",  # can be external or internal. internal is the default
-                    "output_mode": "triggered",  # can be: "always_on" / "always_off"/ "triggered" / "triggered_reversed". "always_off" is the default
-                    "gain": 0,  # can be in the range [-20 : 0.5 : 20]dB
-                },
-                5: {
-                    "LO_frequency": control_EOM_LO5,
+                    "LO_frequency": control_EOM_LO,
                     "LO_source": "internal",  # can be external or internal. internal is the default
                     "output_mode": "triggered",  # can be: "always_on" / "always_off"/ "triggered" / "triggered_reversed". "always_off" is the default
                     "gain": 0,  # can be in the range [-20 : 0.5 : 20]dB
@@ -305,11 +248,11 @@ config = {
             "integration_weights": {"constant": "constant_weights_snspd"},
             "digital_marker": "ON",
         },
-        "readout_pulse_apd": {
+        "readout_pulse_tt": {
             "operation": "measurement",
-            "length": apd_readout_len,
+            "length": snspd_readout_len,
             "waveforms": {"single": "zero_wf"},
-            "integration_weights": {"constant": "constant_weights_apd"},
+            "integration_weights": {"constant": "constant_weights_snspd"},
             "digital_marker": "ON",
         },
         "gaussian_pulse": {
@@ -327,9 +270,7 @@ config = {
         "cw_pl_a": {"type": "constant", "sample": pulsed_laser_amp},
         "gaussian_wf": {
             "type": "arbitrary",
-            "samples": list(
-                gaussian_amp * gaussian(gaussian_len, gaussian_len / 5)
-            ),
+            "samples": list(gaussian_amp * gaussian(gaussian_len, gaussian_len / 5)),
         },
     },
     "digital_waveforms": {
@@ -340,10 +281,6 @@ config = {
         "constant_weights_snspd": {
             "cosine": [(1, snspd_readout_len)],
             "sine": [(0.0, snspd_readout_len)],
-        },
-        "constant_weights_apd": {
-            "cosine": [(1, apd_readout_len)],
-            "sine": [(0.0, apd_readout_len)],
         },
     },
 }
