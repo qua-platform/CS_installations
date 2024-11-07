@@ -3,6 +3,7 @@ A simple sandbox to showcase different QUA functionalities during the installati
 """
 
 import time
+
 from configuration import *
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
@@ -104,6 +105,7 @@ else:
     job = qm.execute(time_tagger)
 
     res = job.result_handles
+    job.result_handles.wait_for_all_values()
     adc_res = res.get("adc_trace").fetch_all()["value"]
 
     try:
