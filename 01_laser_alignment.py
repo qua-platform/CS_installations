@@ -57,7 +57,7 @@ if __name__ == "__main__":
     # Execute the QUA program in video mode
     job = video_mode.execute(qua_prog)
     # Get the results from the OPX in live mode
-    results = fetching_tool(job, ["signal"], mode="live")
+    results = fetching_tool(job, "signal", mode="live")
     # Live plotting
     fig = plt.figure()
     while results.is_processing():
@@ -67,7 +67,7 @@ if __name__ == "__main__":
         signal = -u.demod2volts(signal, snspd_readout_len)
         # Plot the data
         plt.cla()
-        plt.plot(signal1, "b-")
+        plt.plot(signal, "b-")
         plt.title("Error signal [a.u.]")
         plt.xlabel("Time [μs]")
         plt.ylabel("Amplitude Error [arb. units]")
