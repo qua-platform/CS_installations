@@ -1,5 +1,5 @@
 """
-A simple sandbox to showcase different QUA functionalities during the installation.
+Demo Script for Playing a Lock Pulse Sequence
 """
 
 from configuration import *
@@ -9,41 +9,31 @@ from qualang_tools.loops import from_array
 
 # Variables
 
-n_polarize = 5
+n_locks = 100
 
 ti = 16 * u.ns
 tf = 200 * u.ns
 t_wait = np.arange(ti, tf, 4 * u.ns)
-
-omega_1 = 60 * u.MHz
-omega_2 = 80 * u.MHz
 
 ###################
 # The QUA program #
 ###################
 with program() as hello_qua:
     n = declare(fixed)
-    with for_(n, 0, n < n_polarize, n + 1):
-        play("control", "control_aom", duration=30 * u.ns)
-        update_frequency("control_aom", omega_1)
-        play("control", "control_aom", duration=30 * u.ns)
-        align()
-        play("readout", "readout_aom", duration=100 * u.ns)
-        align()
-        play("control", "control_aom", duration=30 * u.ns)
-        update_frequency("control_aom", omega_2)
-        play("control", "control_aom", duration=30 * u.ns)
-        align()
-        play("readout", "readout_aom", duration=100 * u.ns)
-
+    t = declare(int)
+    with for_(n, 0, n < n_locks, n + 1):
+        with for_(*from_array(t, t_wait)):
+            play("control", "control_aom", duration=30 * u.ns)
+            wait(t, "control_aom")
+            play("control", "control_aom", duration=60 * u.ns)
+            align()
+            play("readout", "readout_aom", duration=100 * u.ns)
 
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(
-    host=opx_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=opx_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 ###########################
 # Run or Simulate Program #

@@ -1,5 +1,5 @@
 """
-A simple sandbox to showcase different QUA functionalities during the installation.
+Pulse sequences can be synchronized to the arrival of an external trigger input from the Ti:sapph laser using the wait_for_trigger() API. The external trigger input is sampled at 250 MHz. 
 """
 
 from configuration import *
@@ -9,22 +9,15 @@ from qm.qua import *
 ###################
 # The QUA program #
 ###################
-with program() as hello_qua:
-    a = declare(fixed)
+with program() as pulse_laser_triggering:
     with infinite_loop_():
-        # with for_(a, 0, a < 1.1, a + 0.05):
+        wait_for_trigger('control_aom')
         play("control", "control_aom")
-            # play("control" * amp(a), "control_eom1")
-            # play("readout" * amp(a), "readout_aom")
-            # play("gaussian" * amp(a), "control_aom")
-
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(
-    host=opx_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=opx_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 ###########################
 # Run or Simulate Program #
@@ -36,14 +29,12 @@ if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
-    job = qmm.simulate(config, hello_qua, simulation_config)
+    job = qmm.simulate(config, pulse_laser_triggering, simulation_config)
     # Plot the simulated samples
-    samples = job.get_simulated_samples()
-    waveform_report = job.get_simulated_waveform_report()
-    waveform_report.create_plot(samples, plot=True, save_path="./")
+    job.get_simulated_samples().con1.plot()
     plt.show()
 else:
     # Open a quantum machine to execute the QUA program
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it - Execute does not block python!
-    job = qm.execute(hello_qua)
+    job = qm.execute(pulse_laser_triggering)
