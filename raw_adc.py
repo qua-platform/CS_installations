@@ -8,8 +8,8 @@ from configuration import *
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 
-meas_len = 100000
-resolution = 1000
+meas_len = 1000
+resolution = 1000 #ps
 t_vec = np.arange(0, meas_len * 1e3, 1)
 ###################
 # The QUA program #
@@ -49,6 +49,7 @@ with program() as hello_qua:
 
 with program() as time_tagger:
     i = declare(int)
+    n = declare(int)
     times = declare(
         int, size=100
     )  # 'size' defines the max number of photons to be counted
@@ -56,14 +57,15 @@ with program() as time_tagger:
     counts = declare(int)  # variable to save the total number of photons
     adc_st = declare_stream(adc_trace=True)
     # play("control", "control_eom")
-    align("SNSPD", "time_tagger")
-    measure("readout", "SNSPD", adc_st)
-    measure(
-        "readout", "time_tagger", None, time_tagging.high_res(times, meas_len, counts)
-    )
+    with for_(n, 0, n < 100, n + 1):
+        align("SNSPD", "time_tagger")
+        measure("readout", "SNSPD", adc_st)
+        measure(
+            "readout", "time_tagger", None, time_tagging.high_res(times, meas_len, counts)
+        )
 
-    with for_(i, 0, i < counts, i + 1):
-        save(times[i], times_st)  # save time tags to stream
+        with for_(i, 0, i < counts, i + 1):
+            save(times[i], times_st)  # save time tags to stream
 
     with stream_processing():
         adc_st.input1().save_all("adc_trace")
@@ -110,7 +112,7 @@ else:
 
     try:
         fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-
+        print(type(res.get("times_hist").fetch_all()))
         ax[0].plot(adc_res[0, :], ".--")
         ax[1].plot(
             (t_vec[::resolution] + resolution / 2) / 1000 * u.ns,

@@ -50,7 +50,7 @@ readout_aom_len = 1000 * u.ns
 control_aom_len = 1000 * u.ns
 control_eom_len = 100 * u.ns
 pulsed_laser_aom_len = 100 * u.ns
-snspd_readout_len = 100 * u.us
+snspd_readout_len = 1 * u.us
 gaussian_len = 100 * u.ns
 
 # Delays
