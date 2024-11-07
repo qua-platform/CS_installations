@@ -20,6 +20,7 @@ u = unit(coerce_to_integer=True)
 ######################
 # opx_ip = "192.168.88.244"
 qop_ip = "10.209.68.77"
+opx_ip = "192.168.88.244"
 octave_ip = "192.168.88.253"
 cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
@@ -27,12 +28,12 @@ octave = "oct1"
 ############################
 # Set octave configuration #
 ############################
-octave_port = 11232
+octave_port = 80
 # Create the octave config object
 octave_config = QmOctaveConfig()
 octave_config.set_calibration_db(os.getcwd())
 # Add an Octave called 'octave1' with the specified IP and port
-octave_config.add_device_info(octave, "172.16.33.101", octave_port)
+octave_config.add_device_info(octave, octave_ip, octave_port)
 #############
 # VARIABLES #
 #############
@@ -49,8 +50,7 @@ readout_aom_len = 1000 * u.ns
 control_aom_len = 1000 * u.ns
 control_eom_len = 100 * u.ns
 pulsed_laser_aom_len = 100 * u.ns
-snspd_readout_len = 1 * u.us
-tt_readout_len = 1 * u.us
+snspd_readout_len = 100 * u.us
 gaussian_len = 100 * u.ns
 
 # Delays
@@ -191,10 +191,10 @@ config = {
                 "out1": ("con1", 1),
             },
             "outputPulseParameters": {
-                "signalThreshold": -60,
+                "signalThreshold": -200,
                 "signalPolarity": "Below",
-                "derivativeThreshold": 5,
-                "derivativePolarity": "Above",
+                "derivativeThreshold": -10,
+                "derivativePolarity": "Below",
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,

@@ -2,11 +2,12 @@
 A simple sandbox to showcase different QUA functionalities during the installation.
 """
 
+import time
 from configuration import *
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 
-meas_len = 1000
+meas_len = 100000
 resolution = 1000
 t_vec = np.arange(0, meas_len * 1e3, 1)
 ###################
@@ -53,7 +54,7 @@ with program() as time_tagger:
     times_st = declare_stream()  # stream for 'times'
     counts = declare(int)  # variable to save the total number of photons
     adc_st = declare_stream(adc_trace=True)
-    play("control", "control_eom")
+    # play("control", "control_eom")
     align("SNSPD", "time_tagger")
     measure("readout", "SNSPD", adc_st)
     measure(
@@ -77,14 +78,14 @@ with program() as time_tagger:
 #  Open Communication with the QOP  #
 #####################################
 qmm = QuantumMachinesManager(
-    host="172.16.33.101", port=None, cluster_name="Cluster_81", octave=octave_config
+    host=opx_ip, port=None, cluster_name=cluster_name, octave=octave_config
 )
 
 ###########################
 # Run or Simulate Program #
 ###########################
 
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -100,7 +101,7 @@ else:
     # Open a quantum machine to execute the QUA program
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it - Execute does not block python!
-    job = qm.execute(hello_qua)
+    job = qm.execute(time_tagger)
 
     res = job.result_handles
     adc_res = res.get("adc_trace").fetch_all()["value"]
