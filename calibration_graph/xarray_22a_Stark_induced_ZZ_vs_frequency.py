@@ -296,7 +296,7 @@ else:
             ax.set_title(Vname)
         plt.tight_layout()
         plt.show(block=False)
-        node.results[f"figure_{qp.name}_raw"] = fig
+        node.results[f"figure_raw_{qp.name}"] = fig
 
 
     # %% {Fit the data}
@@ -342,7 +342,7 @@ else:
         axs[1].set_title("Stark-induce ZZ interaction")
         plt.tight_layout()
         plt.show(block=False)
-        node.results[f"figure_{qp.name}_summary"] = fig_summary
+        node.results[f"figure_summary_{qp.name}"] = fig_summary
 
 
 

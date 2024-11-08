@@ -85,9 +85,6 @@ class Parameters(NodeParameters):
     zz_target_amps: List[float] = [0.1]
     zz_control_amp_scalings: List[float] = [0.5]
     zz_target_amp_scalings: List[float] = [0.5]
-    # zz_control_phases: List[float] = [0.0]
-    # zz_target_phases: List[float] = [0.5]
-    use_state_discrimination: bool = False
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
     timeout: int = 100
@@ -299,7 +296,7 @@ else:
                 ax.set_title(Vname)
             plt.tight_layout()
             plt.show(block=False)
-            node.results[f"figure_{qp.name}_raw_amp_scaling={amp:5.4f}".replace(".", "-")] = fig
+            node.results[f"figure_raw_{qp.name}_amp_scaling={amp:5.4f}".replace(".", "-")] = fig
             
 
     # %% {Fit the data}
@@ -351,7 +348,7 @@ else:
             axs[1].set_title("Stark-induce ZZ interaction")
             plt.tight_layout()
             plt.show(block=False)
-            node.results[f"figure_{qp.name}_summary_amp_scaling={amp:5.4f}".replace(".", "-")] = fig_summary
+            node.results[f"figure_summary_{qp.name}_amp_scaling={amp:5.4f}".replace(".", "-")] = fig_summary
 
 
 # %% {Update_state}
