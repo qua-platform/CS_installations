@@ -11,13 +11,15 @@ from qm.qua import *
 ###################
 with program() as pulse_laser_triggering:
     with infinite_loop_():
-        wait_for_trigger('control_aom')
+        wait_for_trigger("control_aom")
         play("control", "control_aom")
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=opx_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=opx_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 ###########################
 # Run or Simulate Program #

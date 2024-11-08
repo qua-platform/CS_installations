@@ -1,5 +1,5 @@
 """
-A simple sandbox to showcase different QUA functionalities during the installation.
+A simple example of time tagging with the OPX+.
 """
 
 import time
@@ -8,35 +8,40 @@ from configuration import *
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 
-meas_len = 1000
-resolution = 1000 #ps
+###########################
+# Time tagging parameters #
+###########################
+
+meas_len = 1000  # ns
+resolution = 1000  # ps
 t_vec = np.arange(0, meas_len * 1e3, 1)
+
 ###################
 # The QUA program #
 ###################
-with program() as hello_qua:
+
+with program() as time_tagger_with_adc_trace:
     i = declare(int)
+    n = declare(int)
     times = declare(
         int, size=100
     )  # 'size' defines the max number of photons to be counted
     times_st = declare_stream()  # stream for 'times'
     counts = declare(int)  # variable to save the total number of photons
     adc_st = declare_stream(adc_trace=True)
-    update_frequency("readout_aom", 0)
-    for _ in range(4):
-        play("readout" * amp(0.3), "readout_aom", duration=16 * u.ns)
-        wait(100 * u.ns, "readout_aom")
-    for _ in range(2):
-        play("readout" * amp(0.1), "readout_aom", duration=16 * u.ns)
-        wait(100 * u.ns, "readout_aom")
-    align("SNSPD", "time_tagger")
-    measure("readout", "SNSPD", adc_st)
-    measure(
-        "readout", "time_tagger", None, time_tagging.high_res(times, meas_len, counts)
-    )
+    # play("control", "control_eom")
+    with for_(n, 0, n < 100, n + 1):
+        align("SNSPD", "time_tagger")
+        measure("readout", "SNSPD", adc_st)
+        measure(
+            "readout",
+            "time_tagger",
+            None,
+            time_tagging.high_res(times, meas_len, counts),
+        )
 
-    with for_(i, 0, i < counts, i + 1):
-        save(times[i], times_st)  # save time tags to stream
+        with for_(i, 0, i < counts, i + 1):
+            save(times[i], times_st)  # save time tags to stream
 
     with stream_processing():
         adc_st.input1().save_all("adc_trace")
@@ -58,17 +63,17 @@ with program() as time_tagger:
     adc_st = declare_stream(adc_trace=True)
     # play("control", "control_eom")
     with for_(n, 0, n < 100, n + 1):
-        align("SNSPD", "time_tagger")
-        measure("readout", "SNSPD", adc_st)
         measure(
-            "readout", "time_tagger", None, time_tagging.high_res(times, meas_len, counts)
+            "readout",
+            "time_tagger",
+            None,
+            time_tagging.high_res(times, meas_len, counts),
         )
 
         with for_(i, 0, i < counts, i + 1):
             save(times[i], times_st)  # save time tags to stream
 
     with stream_processing():
-        adc_st.input1().save_all("adc_trace")
         times_st.histogram(
             [
                 [i, i + (resolution - 1)]
@@ -88,6 +93,8 @@ qmm = QuantumMachinesManager(
 # Run or Simulate Program #
 ###########################
 
+adc_trace = False  # Set to True to measure the ADC trace
+
 simulate = False
 
 if simulate:
@@ -104,36 +111,49 @@ else:
     # Open a quantum machine to execute the QUA program
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it - Execute does not block python!
-    job = qm.execute(time_tagger)
-
+    job = qm.execute(time_tagger_with_adc_trace if adc_trace else time_tagger)
     res = job.result_handles
     job.result_handles.wait_for_all_values()
-    adc_res = res.get("adc_trace").fetch_all()["value"]
+    time_tagger_results = res.get("times_hist").fetch_all()
 
-    try:
-        fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-        print(type(res.get("times_hist").fetch_all()))
-        ax[0].plot(adc_res[0, :], ".--")
-        ax[1].plot(
-            (t_vec[::resolution] + resolution / 2) / 1000 * u.ns,
-            res.get("times_hist").fetch_all(),
-        )
+    if adc_trace:
+        adc_res = res.get("adc_trace").fetch_all()["value"]
+        try:
+            fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+            ax[0].plot(adc_res[0, :], ".--")
+            ax[1].plot(
+                (t_vec[::resolution] + resolution / 2) / 1000 * u.ns,
+                time_tagger_results,
+            )
 
-        ax[0].set_xlabel("t [ns]")
-        ax[0].set_ylabel("ADC units [a.u.]")
-        ax[0].set_title("ADC trace")
-        ax[1].set_xlabel("t [ns]")
-        ax[1].set_ylabel("counts")
-        ax[1].set_title("TimeTag Histogram")
+            ax[0].set_xlabel("t [ns]")
+            ax[0].set_ylabel("ADC units [a.u.]")
+            ax[0].set_title("ADC trace")
+            ax[1].set_xlabel("t [ns]")
+            ax[1].set_ylabel("counts")
+            ax[1].set_title("TimeTag Histogram")
 
-        fig.tight_layout()
-        plt.show()
-    except Exception as e:
-        print(e)
-        plt.close()
-        plt.figure()
-        plt.plot(adc_res[0, :])
-        plt.title("Time tagging failed. ADC trace only")
-        plt.xlabel("t [ns]")
-        plt.ylabel("ADC units [a.u.]")
-        plt.show()
+            fig.tight_layout()
+            plt.show()
+        except Exception as e:
+            print(e)
+            plt.close()
+            plt.figure()
+            plt.plot(adc_res[0, :])
+            plt.title("No counts detected. ADC trace only")
+            plt.xlabel("t [ns]")
+            plt.ylabel("ADC units [a.u.]")
+            plt.show()
+    else:
+        if time_tagger_results is not None:
+            plt.figure()
+            plt.plot(
+                (t_vec[::resolution] + resolution / 2) / 1000 * u.ns,
+                time_tagger_results,
+            )
+            plt.title("Time tagging histogram")
+            plt.xlabel("t [ns]")
+            plt.ylabel("counts")
+            plt.show()
+        else:
+            print("No counts detected")

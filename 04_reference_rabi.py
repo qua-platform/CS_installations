@@ -27,14 +27,16 @@ with program() as reference_rabi:
     update_frequency("control_aom", omega_rabi)
     with for_(n, 0, n < n_rabi, n + 1):
         with for_(*from_array(t, t_rabi)):
-            play("control", "control_aom", duration=t/4)
+            play("control", "control_aom", duration=t / 4)
             align()
             play("readout", "readout_aom", duration=100 * u.ns)
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=opx_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=opx_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 ###########################
 # Run or Simulate Program #

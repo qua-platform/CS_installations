@@ -9,7 +9,7 @@ from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 
 meas_len = 1000
-resolution = 1000 #ps
+resolution = 1000  # ps
 t_vec = np.arange(0, meas_len * 1e3, 1)
 ###################
 # The QUA program #
@@ -32,15 +32,20 @@ with program() as hello_qua:
     align("SNSPD", "time_tagger")
     measure("readout", "SNSPD", adc_st)
     measure(
-        "readout", "time_tagger1", None, time_tagging.high_res(times1, meas_len, counts1)
+        "readout",
+        "time_tagger1",
+        None,
+        time_tagging.high_res(times1, meas_len, counts1),
     )
     measure(
-        "readout", "time_tagger2", None, time_tagging.high_res(times2, meas_len, counts2)
+        "readout",
+        "time_tagger2",
+        None,
+        time_tagging.high_res(times2, meas_len, counts2),
     )
-    with if_(counts1>0):
-        with if_(counts2>0):
+    with if_(counts1 > 0):
+        with if_(counts2 > 0):
             play()
-
 
     with for_(i, 0, i < counts, i + 1):
         save(times[i], times_st)  # save time tags to stream
@@ -68,7 +73,10 @@ with program() as time_tagger:
         align("SNSPD", "time_tagger")
         measure("readout", "SNSPD", adc_st)
         measure(
-            "readout", "time_tagger", None, time_tagging.high_res(times, meas_len, counts)
+            "readout",
+            "time_tagger",
+            None,
+            time_tagging.high_res(times, meas_len, counts),
         )
 
         with for_(i, 0, i < counts, i + 1):
