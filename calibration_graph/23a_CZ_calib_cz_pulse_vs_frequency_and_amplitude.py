@@ -122,7 +122,6 @@ qmm = machine.connect()
 
 
 # Parameters Definition
-n_avg = 10  # The number of averages
 # The frequency sweep around the resonator resonance frequency
 span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
@@ -157,7 +156,7 @@ with program() as cz_calib_cz_pulse_vs_frequency_and_amplitude:
         qt = qp.qubit_target
         qt.xy_detuned.update_frequency(zz.intermediate_frequency)
 
-        with for_(n, 0, n < n_avg, n + 1):
+        with for_(n, 0, n < node.parameters.num_averages, n + 1):
             # Save the averaging iteration to get the progress bar
             save(n, n_st)
             
@@ -233,7 +232,7 @@ else:
         # Fetch results
         n = results.fetch_all()[0]
         # Progress bar
-        progress_counter(n, n_avg, start_time=results.start_time)
+        progress_counter(n, node.parameters.num_averages, start_time=results.start_time)
 
     # %% {Data_fetching_and_dataset_creation}
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
@@ -248,7 +247,6 @@ else:
     node.results = {"ds": ds}
 
 
-    # Prepare the figure for live plotting
     # %% {Plot raw data}
     Vnames = [
         "state_control_X_g", "state_control_X_e",
@@ -300,7 +298,7 @@ else:
         plt.title("CZ Gate Calibration")
         plt.colorbar()
         plt.tight_layout()
-        node.results[f"figure_summary_{qp.name}"] = fig
+        node.results[f"figure_summary_{qp.name}"] = fig_summary
 
 
 # %% {Update_state}
