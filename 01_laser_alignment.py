@@ -23,6 +23,7 @@ from qualang_tools.video_mode.videomode import VideoMode
 # The QUA program #
 ###################
 
+
 def qua_prog(vm: VideoMode):
     with program() as video:
         dc = declare(fixed)
@@ -40,9 +41,12 @@ def qua_prog(vm: VideoMode):
             dc_st.buffer(1000).save("signal")
     return video
 
+
 if __name__ == "__main__":
     # Open the Quantum Machine Manager
-    qmm = QuantumMachinesManager(opx_ip, cluster_name=cluster_name, octave=octave_config)
+    qmm = QuantumMachinesManager(
+        opx_ip, cluster_name=cluster_name, octave=octave_config
+    )
     # Open the Quantum Machine
     qm = qmm.open_qm(config)
     # Define the parameters to be updated in video mode with their initial value and QUA type
@@ -57,20 +61,20 @@ if __name__ == "__main__":
     # Execute the QUA program in video mode
     job = video_mode.execute(qua_prog)
     # Get the results from the OPX in live mode
-    results = fetching_tool(job, "signal", mode="live")
+    results = fetching_tool(job, ["signal"], mode="live")
     # Live plotting
     fig = plt.figure()
     while results.is_processing():
         # Fetch data from the OPX
         signal = results.fetch_all()
         # Convert the data into Volt
-        signal = -u.demod2volts(signal, snspd_readout_len)
+        signal = -u.demod2volts(signal[0], snspd_readout_len)
         # Plot the data
         plt.cla()
-        plt.plot(signal, "b-")
+        plt.plot(signal, "b.--")
         plt.title("Error signal [a.u.]")
         plt.xlabel("Time [μs]")
         plt.ylabel("Amplitude Error [arb. units]")
         plt.ylim((-0.5, 0.5))
         plt.pause(0.1)
-        # plt.show()
+        plt.show()
