@@ -22,10 +22,8 @@ rr_if = rr_freq - rr_LO
 
 xy_freq = np.array([6.20, 6.25, 6.30, 6.35]) * u.GHz
 xy_LO = np.array([6.40, 6.40, 6.60, 6.60]) * u.GHz
-xy_if_detuning = np.array([-10, -15, -20, -25]) * u.MHz
+xy_if_detuning = np.array([-5, -10, -15, -20]) * u.MHz
 xy_if = rr_freq - rr_LO
-xy_if_detuned = xy_if + xy_if_detuning
-
 
 machine.qubits["q1"].xy.thread = "a"
 machine.qubits["q1"].resonator.thread = "a"
@@ -47,7 +45,7 @@ for i, q in enumerate(machine.qubits):
 
     ## Update qubit xy detuned freq and power
     qb.xy_detuned.frequency_converter_up.LO_frequency = round(xy_LO[i])
-    qb.xy_detuned.intermediate_frequency = round(xy_if_detuned[i])
+    qb.xy_detuned.intermediate_frequency = qb.xy.intermediate_frequency + round(xy_if_detuning[i])
     qb.xy_detuned.thread = qb.name
 
     ## Update pulses
@@ -84,6 +82,8 @@ for i, qp in enumerate(machine.qubit_pairs):
 
     # ZZ gates - Square
     zz.thread = qbc.name
+    zz.detuning = -15 * u.MHz
+    # qbt.xy_detuned.detuning = f"#/qubit_pairs/{qb_pair.name}/zz_drive/intermediate_frquencys"
     qbt.xy_detuned.operations[f"{zz.name}_Square"] = pulses.SquarePulse(amplitude=-0.25, length=100, axis_angle=0, digital_marker="ON")
     qbt.xy_detuned.operations[f"{zz.name}_Square"].amplitude = 0.1
     qbt.xy_detuned.operations[f"{zz.name}_Square"].length = f"#/qubit_pairs/{qb_pair.name}/zz_drive/operations/square/length"
