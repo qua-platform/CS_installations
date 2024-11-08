@@ -13,11 +13,16 @@ from qm.qua import *
 with program() as hello_qua:
     a = declare(fixed)
     with infinite_loop_():
-        # with for_(a, 0, a < 1.1, a + 0.05):
-        play("control", "control_aom")
-            # play("control" * amp(a), "control_eom1")
-            # play("readout" * amp(a), "readout_aom")
-            # play("gaussian" * amp(a), "control_aom")
+        with for_(a, 0, a < 1.1, a + 0.05):
+        # play("control", "control_aom")
+            #update_frequency("readout_aom", 10e6)
+            
+            #frame_rotation(180,"readout_aom")
+            play("control" * amp(a), "control_eom")
+            reset_phase('readout_aom')
+            frame_rotation(180,'readout_aom')
+            play("readout" * amp(a), "readout_aom")
+            play("gaussian" * amp(a), "control_aom")
 
 
 #####################################

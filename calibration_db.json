@@ -10,7 +10,7 @@
             "mode_id": 1,
             "lo_freq": 5350000000.0,
             "gain": 0.0,
-            "latest": 4
+            "latest": 5
         }
     },
     "lo_cal": {
@@ -53,13 +53,23 @@
             "temperature": 58.4375,
             "timestamp": 1730731829.155823,
             "method": "auto"
+        },
+        "5": {
+            "i0": 0.18722236888450985,
+            "q0": 0.11916502565035372,
+            "lo_mode_id": 1,
+            "dc_gain": NaN,
+            "dc_phase": NaN,
+            "temperature": 58.125,
+            "timestamp": 1731057991.382717,
+            "method": "auto"
         }
     },
     "if_modes": {
         "1": {
             "lo_mode_id": 1,
             "if_freq": 100000000.0,
-            "latest": 4
+            "latest": 5
         }
     },
     "if_cal": {
@@ -93,6 +103,14 @@
             "phase": 0.10231979258078448,
             "temperature": 58.4375,
             "timestamp": 1730731829.159483,
+            "method": "auto"
+        },
+        "5": {
+            "if_mode_id": 1,
+            "gain": NaN,
+            "phase": NaN,
+            "temperature": 58.125,
+            "timestamp": 1731057991.3980038,
             "method": "auto"
         }
     }

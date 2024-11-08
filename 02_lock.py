@@ -11,9 +11,9 @@ from qualang_tools.loops import from_array
 
 n_locks = 100
 
-ti = 16 * u.ns
-tf = 200 * u.ns
-t_wait = np.arange(ti, tf, 4 * u.ns)
+ti = 20
+tf = 200
+t_wait = np.arange(ti, tf, 16)
 
 ###################
 # The QUA program #
@@ -24,7 +24,7 @@ with program() as hello_qua:
     with for_(n, 0, n < n_locks, n + 1):
         with for_(*from_array(t, t_wait)):
             play("control", "control_aom", duration=30 * u.ns)
-            wait(t, "control_aom")
+            wait(16 * u.ns, "control_aom")
             play("control", "control_aom", duration=60 * u.ns)
             align()
             play("readout", "readout_aom", duration=100 * u.ns)
@@ -47,7 +47,9 @@ if simulate:
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, hello_qua, simulation_config)
     # Plot the simulated samples
-    job.get_simulated_samples().con1.plot()
+    samples = job.get_simulated_samples()
+    waveform_report = job.get_simulated_waveform_report()
+    waveform_report.create_plot(samples, plot=True, save_path="./")
     plt.show()
 else:
     # Open a quantum machine to execute the QUA program

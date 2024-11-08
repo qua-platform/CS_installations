@@ -19,16 +19,16 @@ u = unit(coerce_to_integer=True)
 # Network parameters #
 ######################
 # opx_ip = "192.168.88.244"
-qop_ip = "172.16.33.101" #"10.209.68.77"
+qop_ip = "10.209.68.77" #"10.209.68.77"
 opx_ip = qop_ip #"192.168.88.244"
 octave_ip = qop_ip #"192.168.88.253"
-cluster_name = "Cluster_81" #"Cluster_1"  # Write your cluster_name if version >= QOP220
+cluster_name = "Cluster_1" #"Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 octave = "oct1"
 ############################
 # Set octave configuration #
 ############################
-octave_port = 11232 #80
+octave_port = 11253 #80
 # Create the octave config object
 octave_config = QmOctaveConfig()
 octave_config.set_calibration_db(os.getcwd())
@@ -118,7 +118,7 @@ config = {
             },
             "digitalInputs": {
                 "marker": {
-                    "port": ("con1", 1),
+                    "port": ("con1", 2),
                     "delay": readout_aom_delay,
                     "buffer": 0,
                 },
@@ -149,7 +149,7 @@ config = {
             },
             "digitalInputs": {
                 "marker": {
-                    "port": ("con1", 3),
+                    "port": ("con1", 1),
                     "delay": control_eom_delay,
                     "buffer": 0,
                 },
