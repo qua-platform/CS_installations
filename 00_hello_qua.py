@@ -45,7 +45,7 @@ if simulate:
     # Plot the simulated samples
     samples = job.get_simulated_samples()
     waveform_report = job.get_simulated_waveform_report()
-    waveform_report.create_plot(samples, plot=True, save_path="./")
+    waveform_report.create_plot(samples, plot=True, save_path=None)
     plt.show()
 else:
     # Open a quantum machine to execute the QUA program
