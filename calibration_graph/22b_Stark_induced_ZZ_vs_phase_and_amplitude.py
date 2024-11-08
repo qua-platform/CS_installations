@@ -71,13 +71,13 @@ class Parameters(NodeParameters):
     qubit_to_sweep_amp: List[Literal["control", "target", "both"]] = ["control"]
     num_averages: int = 20
     operation: str = "x180"
-    freq_detuning_in_mhz: float = -4.0
-    min_amp_scaling: float = 0.05
-    max_amp_scaling: float = 1.95
-    step_amp_scaling: float = 0.05
-    min_zz_target_phase: float = 0.05
-    max_zz_target_phase: float = 1.95
-    step_zz_target_phase: float = 0.05
+    ramsey_freq_detuning_in_mhz: float = -4.0
+    min_amp_scaling: float = 0.25
+    max_amp_scaling: float = 1.50
+    step_amp_scaling: float = 0.25
+    min_zz_target_phase: float = 0.1
+    max_zz_target_phase: float = 2.0
+    step_zz_target_phase: float = 0.1
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 1000
     wait_time_step_in_ns: int = 16
@@ -150,8 +150,8 @@ amp_scalings = np.arange(
     node.parameters.max_amp_scaling,
     node.parameters.step_amp_scaling,
 )
-ramsey_delta_phase = 4e-9 * 1e6 * node.parameters.freq_detuning_in_mhz * node.parameters.wait_time_step_in_ns
-ramsey_detuning = int(1e6 * node.parameters.freq_detuning_in_mhz)
+ramsey_delta_phase = 4e-9 * 1e6 * node.parameters.ramsey_freq_detuning_in_mhz * node.parameters.wait_time_step_in_ns
+ramsey_detuning = int(1e6 * node.parameters.ramsey_freq_detuning_in_mhz)
 
 
 ###################
@@ -230,7 +230,7 @@ with program() as stark_induced_zz_vs_frequency:
                             reset_frame(qt.xy_detuned.name)
 
     with stream_processing():
-        n_st.save("iteration")
+        n_st.save("n")
         for i, qb in enumerate(qubit_pairs):
             I_control_st[i].buffer(2).buffer(len(idle_time_cycles)).buffer(len(zz_target_phases)).buffer(len(amp_scalings)).average().save(f"I_control{i + 1}")
             Q_control_st[i].buffer(2).buffer(len(idle_time_cycles)).buffer(len(zz_target_phases)).buffer(len(amp_scalings)).average().save(f"Q_control{i + 1}")
@@ -273,103 +273,121 @@ else:
     # Add the dataset to the node
     node.results = {"ds": ds}
 
-#             # Prepare the figure for live plotting
-#             fig_axss = [plt.subplots(4, 2, figsize=(8, 10)) for _ in amps]
-#             interrupt_on_close(fig_axss[0][0], job)
-#             # Live plotting
-#             while results.is_processing():
-#                 # Fetch results
-#                 res = results.fetch_all()
-#                 iteration, Ic, Qc, It, Qt = res
-#                 Ic_g, Qc_g, It_g, Qt_g = Ic[..., 0], Qc[..., 0], It[..., 0], Qt[..., 0]
-#                 Ic_e, Qc_e, It_e, Qt_e = Ic[..., 1], Qc[..., 1], It[..., 1], Qt[..., 1]
-#                 Ic_g, Qc_g, It_g, Qt_g = u.demod2volts(Ic_g, READOUT_LEN), u.demod2volts(Qc_g, READOUT_LEN), u.demod2volts(It_g, READOUT_LEN), u.demod2volts(Qt_g, READOUT_LEN)
-#                 Ic_e, Qc_e, It_e, Qt_e = u.demod2volts(Ic_e, READOUT_LEN), u.demod2volts(Qc_e, READOUT_LEN), u.demod2volts(It_e, READOUT_LEN), u.demod2volts(Qt_e, READOUT_LEN)
-#                 Vs = [Ic_g, Qc_g, Ic_e, Qc_e, It_g, Qt_g, It_e, Qt_e]
-#                 Vnames = ["Ic_g", "Qc_g", "Ic_e", "Qc_e", "It_g", "Qt_g", "It_e", "Qt_e"]
-#                 # Progress bar
-#                 progress_counter(iteration, n_avg, start_time=results.start_time)
 
-#                 # Live plot data
-#                 for i, (amp, (fig, axss)) in enumerate(zip(amps, fig_axss)):
-#                     fig.suptitle(f"Off-resonant Stark shift at amp = {amp} - I & Q")
-#                     for ax, V, Vname in zip(axss.T.ravel(), Vs, Vnames):
-#                         ax.pcolor(ts_ns, phases, V[i, ...])
-#                         ax.set_xlabel("Idle time [ns]")
-#                         ax.set_ylabel("Drive phase [2pi rad.]")
-#                         ax.set_title(Vname)
-#                     fig.tight_layout()
-#                 plt.pause(1)
-
-#             # Save data
-#             for fname, r in zip(fetch_names[1:], res[1:]):
-#                 save_data_dict[fname] = r
-
-#             for i, (amp, (fig, axss)) in enumerate(zip(amps, fig_axss)):
-#                 save_data_dict.update({f"fig_live_{i:02d}_amp={amp:4.3f}": fig})
-
-#             # Fit the data
-#             from qualang_tools.plot.fitting import Fit
-#             St_g = It_g + 1j * Qt_g
-#             St_e = It_e + 1j * Qt_e
-#             detuning_qt = np.zeros((2, len(amps), len(phases)))
-#             # fit & plot
-#             for i, (s, St) in enumerate(zip(["g", "e"], [St_g, St_e])):
-#                 for j, amp in enumerate(amps):
-#                     for k, phase in enumerate(phases):
-#                         try:
-#                             fig_analysis = plt.figure()
-#                             fit = Fit()
-#                             ramsey_fit = fit.ramsey(ts_ns, np.abs(St[j, k, :]), plot=True)
-#                             qb_T2 = np.abs(ramsey_fit["T2"][0])
-#                             detuning_qt[i, j, k] = ramsey_fit["f"][0] * u.GHz - freq_detuning
-#                             plt.xlabel("Idle time [ns]")
-#                             plt.ylabel("abs(I + iQ) [V]")
-#                             plt.legend((f"qubit detuning = {-detuning_qt[i, j, k] / u.kHz:.3f} kHz", f"T2* = {qb_T2:.0f} ns"))
-#                             plt.title(f"Ramsey with off-resonant drive and Qc = {s} at amp = {amp * amp_actual} phase = {phase}")
-#                         except (Exception,):
-#                             pass
-#                         finally:
-#                             save_data_dict.update({f"fig_analysis_target_{i:03d}_qc={s}_amp={amp:4.3f}_phase={phase:4.3f}": fig_analysis})
+    # Prepare the figure for live plotting
+    # %% {Plot raw data}
+    Vnames = ["Ic_g", "Qc_g", "Ic_e", "Qc_e", "It_g", "Qt_g", "It_e", "Qt_e"]
+    for qp in qubit_pairs:
+        for i, amp in enumerate(amp_scalings):
+            Vs = [
+                ds.sel(qubit=qp.name, qc_state=0).isel(amp_scalings=i).I_control,
+                ds.sel(qubit=qp.name, qc_state=0).isel(amp_scalings=i).Q_control,
+                ds.sel(qubit=qp.name, qc_state=1).isel(amp_scalings=i).I_control,
+                ds.sel(qubit=qp.name, qc_state=1).isel(amp_scalings=i).Q_control,
+                ds.sel(qubit=qp.name, qc_state=0).isel(amp_scalings=i).I_target,
+                ds.sel(qubit=qp.name, qc_state=0).isel(amp_scalings=i).Q_target,
+                ds.sel(qubit=qp.name, qc_state=1).isel(amp_scalings=i).I_target,
+                ds.sel(qubit=qp.name, qc_state=1).isel(amp_scalings=i).Q_target,
+            ]
+            fig, axss = plt.subplots(4, 2, figsize=(6, 10), sharex=True, sharey=True)
+            # Live plot data
+            plt.suptitle("Off-resonant Stark shift - I & Q")
+            for j, (ax, V, Vname) in enumerate(zip(axss.ravel(), Vs, Vnames)):
+                ax.pcolor(ds.time, ds.zz_target_phases, V)
+                ax.set_xlabel("Idle time [ns]") if j % 2 == 1 else None
+                ax.set_ylabel("Drive Frequency") if j // 2 == 0 else None
+                ax.set_title(Vname)
+            plt.tight_layout()
+            plt.show(block=False)
+            node.results[f"figure_{qp.name}_raw_amp_scaling={amp:5.4f}".replace(".", "-")] = fig
             
-#             # Summary
-#             fig_summary, axs = plt.subplots(3, 1, figsize=(5, 9), sharex=True)
-#             # conditional qubit detuning
-#             for i, amp in enumerate(amps):
-#                 # Qc = g
-#                 axs[0].plot(phases, detuning_qt[0, i])
-#                 # axs[0].set_xlabel("Drive phases [2pi rad.]")
-#                 axs[0].set_ylabel("Freq detuning [Hz]")
-#                 axs[0].set_title("Off-resonant Stark shift: Qc=g")
-#                 # axs[0].legend([f"amp scale = {amp:4.3f}" for amp in amps])
-#                 # Qc = e
-#                 axs[1].plot(phases, detuning_qt[0, i])
-#                 # axs[1].set_xlabel("Drive phases [2pi rad.]")
-#                 axs[1].set_ylabel("Freq detuning [Hz]")
-#                 axs[1].set_title("Off-resonant Stark shift: Qc=e")
-#                 # axs[1].legend([f"amp scale = {amp:4.3f}" for amp in amps])
-#                 # zz interaction
-#                 axs[2].plot(phases, detuning_qt[1, i] - detuning_qt[0, i])
-#                 axs[2].set_xlabel("Drive phase [2pi rad.]")
-#                 axs[2].set_ylabel("ZZ interaction [Hz]")
-#                 axs[2].legend([f" q{qubit_to_sweep_amp} amp = {amp * amp_actual:5.4f}" for amp in amps])
-#                 axs[2].set_title("Stark-induce ZZ interaction")
-#             plt.tight_layout()
-#             save_data_dict.update({f"fig_summary": fig_summary})
-#             save_data_dict.update({"detuning_qt": detuning_qt})
 
-#             # Save results
-#             script_name = Path(__file__).name
-#             data_handler = DataHandler(root_data_folder=save_dir)
-#             data_handler.additional_files = {script_name: script_name, **default_additional_files}
-#             data_handler.save_data(data=save_data_dict, name="Stark_induced_ZZ_vs_phase_and_amplitude")
+    # %% {Fit the data}
+    from qualang_tools.plot.fitting import Fit
+    for qp in qubit_pairs:
+        ds_sliced_g = ds.sel(qubit=qp.name, qc_state=0)
+        ds_sliced_e = ds.sel(qubit=qp.name, qc_state=1)
+        St_g = ds_sliced_g.I_target + 1j * ds_sliced_g.Q_target
+        St_e = ds_sliced_e.I_target + 1j * ds_sliced_e.Q_target
+        detuning_qt = np.zeros((2, len(amp_scalings), len(zz_target_phases)))
+        # fit & plot
+        for i, (s, St) in enumerate(zip(["g", "e"], [St_g, St_e])):
+            for j, amp in enumerate(amp_scalings):
+                for k, phase in enumerate(zz_target_phases):
+                    try:
+                        fig_analysis = plt.figure()
+                        fit = Fit()
+                        ramsey_fit = fit.ramsey(ds.time, np.abs(St[j, k, :]), plot=True)
+                        qb_T2 = np.abs(ramsey_fit["T2"][0])
+                        detuning_qt[i, j, k] = ramsey_fit["f"][0] * u.GHz - node.parameters.ramsey_freq_detuning_in_mhz * u.MHz
+                        plt.xlabel("Idle time [ns]")
+                        plt.ylabel("abs(I + iQ) [V]")
+                        plt.legend((f"qubit detuning = {-detuning_qt[i, j, k] / u.kHz:.3f} kHz", f"T2* = {qb_T2:.0f} ns"))
+                        plt.title(f"Ramsey with off-resonant drive and Qc = {s} at amp = {amp:5.4f} phase = {phase:5.4f}")
+                        plt.tight_layout()
+                        plt.show(block=False)
+                        node.results[f"figure_{qp.name}_ramsey_fit_Qc={s}_amp_scaling={amp:5.4f}_phase={phase:5.4f}".replace(".", "-")] = fig_analysis
+                        plt.close()
+                    except (Exception,):
+                        print(f"-> failed: amp={amp:5.4f} phase={phase:5.4f}".replace(".", "-"))
 
-#         except Exception as e:
-#             print(f"An exception occurred: {e}")
 
-#         finally:
-#             qm.close()
-#             print("Experiment QM is now closed")
-#             plt.show(block=True)
+        
+    # %% {Plot the summary}
+    for qp in qubit_pairs:
+        for i, amp in enumerate(amp_scalings):
+            fig_summary, axs = plt.subplots(2, 1, figsize=(5, 6), sharex=True)
+            # conditional qubit detuning
+            axs[0].plot(zz_target_phases, detuning_qt[0, i, :])
+            axs[0].plot(zz_target_phases, detuning_qt[1, i, :])
+            axs[0].set_xlabel("Drive Freq detuning [Hz]")
+            axs[0].set_ylabel("Qubit Freq detuning [Hz]")
+            axs[0].set_title("Off-resonant Stark shift")
+            axs[0].legend(["Qc=g", "Qc=e"])
+            # zz interaction
+            axs[1].plot(zz_target_phases, detuning_qt[1, i, :] - detuning_qt[0, i, :], color='m')
+            axs[1].set_xlabel("Drive Freq detuning [Hz]")
+            axs[1].set_ylabel("ZZ interaction [Hz]")
+            axs[1].set_title("Stark-induce ZZ interaction")
+            plt.tight_layout()
+            plt.show(block=False)
+            node.results[f"figure_{qp.name}_summary_amp_scaling={amp:5.4f}".replace(".", "-")] = fig_summary
+
+
+# %% {Update_state}
+if not node.parameters.simulate:
+    with node.record_state_updates():
+        zz_control_amp = [0.1]
+        zz_target_amp = [0.1]
+        zz_target_phases = [0.25]
+        for i, qp in enumerate(qubit_pairs):
+            zz = qp.zz_drive
+            qc = qp.qubit_control
+            qt = qp.qubit_target
+            if node.parameters.qubit_to_sweep_amp == "both":
+                zz.operations["square"].amplitude = zz_control_amp[i]
+                qt.xy_detuned.operations[f"{zz_name}_Square"].amplitude = zz_target_amp[i]
+                qt.xy_detuned.operations[f"{zz_name}_Square"].axis_angle = zz_target_phases[i] * 360
+            
+            elif node.parameters.qubit_to_sweep_amp == "control":
+                zz.operations["square"].amplitude = zz_control_amp[i]
+                qt.xy_detuned.operations[f"{zz_name}_Square"].axis_angle = zz_target_phases[i] * 360
+            
+            elif node.parameters.qubit_to_sweep_amp == "target":
+                qt.xy_detuned.operations[f"{zz_name}_Square"].amplitude = zz_target_amp[i]
+                qt.xy_detuned.operations[f"{zz_name}_Square"].axis_angle = zz_target_phases[i] * 360
+
+
+    # Revert the change done at the beginning of the node
+    for tracked_qubit in tracked_qubits:
+        tracked_qubit.revert_changes()
+
+
+# %% {Save_results}
+if not node.parameters.simulate:
+    node.outcomes = {qp.name: "successful" for qp in qubit_pairs}
+    node.results["initial_parameters"] = node.parameters.model_dump()
+    node.machine = machine
+    node.save()
 
 # %%
