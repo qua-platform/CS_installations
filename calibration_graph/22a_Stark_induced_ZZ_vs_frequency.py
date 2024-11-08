@@ -162,7 +162,7 @@ with program() as stark_induced_zz_vs_frequency:
         qc = qp.qubit_control
         qt = qp.qubit_target
 
-        with for_(n, 0, n < n_avg, n + 1):
+        with for_(n, 0, n < node.parameters.num_averages, n + 1):
             # Save the averaging iteration to get the progress bar
             save(n, n_st)
             
@@ -239,7 +239,7 @@ else:
         # Fetch results
         n = results.fetch_all()[0]
         # Progress bar
-        progress_counter(n, n_avg, start_time=results.start_time)
+        progress_counter(n, node.parameters.num_averages, start_time=results.start_time)
 
     # %% {Data_fetching_and_dataset_creation}
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
