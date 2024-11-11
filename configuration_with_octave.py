@@ -3,11 +3,11 @@ Octave configuration working for QOP222 and qm-qua==1.1.5 and newer.
 """
 
 from pathlib import Path
+
 import numpy as np
-from set_octave import OctaveUnit, octave_declaration
 from qualang_tools.config.waveform_tools import drag_gaussian_pulse_waveforms
 from qualang_tools.units import unit
-
+from set_octave import OctaveUnit, octave_declaration
 
 #######################
 # AUXILIARY FUNCTIONS #
@@ -87,24 +87,52 @@ AC_stark_detuning_q2 = 0 * u.MHz
 
 # DRAG waveforms
 x180_wf_q1, x180_der_wf_q1 = np.array(
-    drag_gaussian_pulse_waveforms(pi_amp_q1, pi_len, pi_sigma, drag_coef_q1, anharmonicity_q1, AC_stark_detuning_q1)
+    drag_gaussian_pulse_waveforms(
+        pi_amp_q1,
+        pi_len,
+        pi_sigma,
+        drag_coef_q1,
+        anharmonicity_q1,
+        AC_stark_detuning_q1,
+    )
 )
 x180_I_wf_q1 = x180_wf_q1
 x180_Q_wf_q1 = x180_der_wf_q1
 x180_wf_q2, x180_der_wf_q2 = np.array(
-    drag_gaussian_pulse_waveforms(pi_amp_q2, pi_len, pi_sigma, drag_coef_q2, anharmonicity_q2, AC_stark_detuning_q2)
+    drag_gaussian_pulse_waveforms(
+        pi_amp_q2,
+        pi_len,
+        pi_sigma,
+        drag_coef_q2,
+        anharmonicity_q2,
+        AC_stark_detuning_q2,
+    )
 )
 x180_I_wf_q2 = x180_wf_q2
 x180_Q_wf_q2 = x180_der_wf_q2
 # No DRAG when alpha=0, it's just a gaussian.
 
 x90_wf_q1, x90_der_wf_q1 = np.array(
-    drag_gaussian_pulse_waveforms(pi_amp_q1 / 2, pi_len, pi_sigma, drag_coef_q1, anharmonicity_q1, AC_stark_detuning_q1)
+    drag_gaussian_pulse_waveforms(
+        pi_amp_q1 / 2,
+        pi_len,
+        pi_sigma,
+        drag_coef_q1,
+        anharmonicity_q1,
+        AC_stark_detuning_q1,
+    )
 )
 x90_I_wf_q1 = x90_wf_q1
 x90_Q_wf_q1 = x90_der_wf_q1
 x90_wf_q2, x90_der_wf_q2 = np.array(
-    drag_gaussian_pulse_waveforms(pi_amp_q2 / 2, pi_len, pi_sigma, drag_coef_q2, anharmonicity_q2, AC_stark_detuning_q2)
+    drag_gaussian_pulse_waveforms(
+        pi_amp_q2 / 2,
+        pi_len,
+        pi_sigma,
+        drag_coef_q2,
+        anharmonicity_q2,
+        AC_stark_detuning_q2,
+    )
 )
 x90_I_wf_q2 = x90_wf_q2
 x90_Q_wf_q2 = x90_der_wf_q2
@@ -112,14 +140,24 @@ x90_Q_wf_q2 = x90_der_wf_q2
 
 minus_x90_wf_q1, minus_x90_der_wf_q1 = np.array(
     drag_gaussian_pulse_waveforms(
-        -pi_amp_q1 / 2, pi_len, pi_sigma, drag_coef_q1, anharmonicity_q1, AC_stark_detuning_q1
+        -pi_amp_q1 / 2,
+        pi_len,
+        pi_sigma,
+        drag_coef_q1,
+        anharmonicity_q1,
+        AC_stark_detuning_q1,
     )
 )
 minus_x90_I_wf_q1 = minus_x90_wf_q1
 minus_x90_Q_wf_q1 = minus_x90_der_wf_q1
 minus_x90_wf_q2, minus_x90_der_wf_q2 = np.array(
     drag_gaussian_pulse_waveforms(
-        -pi_amp_q2 / 2, pi_len, pi_sigma, drag_coef_q2, anharmonicity_q2, AC_stark_detuning_q2
+        -pi_amp_q2 / 2,
+        pi_len,
+        pi_sigma,
+        drag_coef_q2,
+        anharmonicity_q2,
+        AC_stark_detuning_q2,
     )
 )
 minus_x90_I_wf_q2 = minus_x90_wf_q2
@@ -127,24 +165,52 @@ minus_x90_Q_wf_q2 = minus_x90_der_wf_q2
 # No DRAG when alpha=0, it's just a gaussian.
 
 y180_wf_q1, y180_der_wf_q1 = np.array(
-    drag_gaussian_pulse_waveforms(pi_amp_q1, pi_len, pi_sigma, drag_coef_q1, anharmonicity_q1, AC_stark_detuning_q1)
+    drag_gaussian_pulse_waveforms(
+        pi_amp_q1,
+        pi_len,
+        pi_sigma,
+        drag_coef_q1,
+        anharmonicity_q1,
+        AC_stark_detuning_q1,
+    )
 )
 y180_I_wf_q1 = (-1) * y180_der_wf_q1
 y180_Q_wf_q1 = y180_wf_q1
 y180_wf_q2, y180_der_wf_q2 = np.array(
-    drag_gaussian_pulse_waveforms(pi_amp_q2, pi_len, pi_sigma, drag_coef_q2, anharmonicity_q2, AC_stark_detuning_q2)
+    drag_gaussian_pulse_waveforms(
+        pi_amp_q2,
+        pi_len,
+        pi_sigma,
+        drag_coef_q2,
+        anharmonicity_q2,
+        AC_stark_detuning_q2,
+    )
 )
 y180_I_wf_q2 = (-1) * y180_der_wf_q2
 y180_Q_wf_q2 = y180_wf_q2
 # No DRAG when alpha=0, it's just a gaussian.
 
 y90_wf_q1, y90_der_wf_q1 = np.array(
-    drag_gaussian_pulse_waveforms(pi_amp_q1 / 2, pi_len, pi_sigma, drag_coef_q1, anharmonicity_q1, AC_stark_detuning_q1)
+    drag_gaussian_pulse_waveforms(
+        pi_amp_q1 / 2,
+        pi_len,
+        pi_sigma,
+        drag_coef_q1,
+        anharmonicity_q1,
+        AC_stark_detuning_q1,
+    )
 )
 y90_I_wf_q1 = (-1) * y90_der_wf_q1
 y90_Q_wf_q1 = y90_wf_q1
 y90_wf_q2, y90_der_wf_q2 = np.array(
-    drag_gaussian_pulse_waveforms(pi_amp_q2 / 2, pi_len, pi_sigma, drag_coef_q2, anharmonicity_q2, AC_stark_detuning_q2)
+    drag_gaussian_pulse_waveforms(
+        pi_amp_q2 / 2,
+        pi_len,
+        pi_sigma,
+        drag_coef_q2,
+        anharmonicity_q2,
+        AC_stark_detuning_q2,
+    )
 )
 y90_I_wf_q2 = (-1) * y90_der_wf_q2
 y90_Q_wf_q2 = y90_wf_q2
@@ -152,35 +218,29 @@ y90_Q_wf_q2 = y90_wf_q2
 
 minus_y90_wf_q1, minus_y90_der_wf_q1 = np.array(
     drag_gaussian_pulse_waveforms(
-        -pi_amp_q1 / 2, pi_len, pi_sigma, drag_coef_q1, anharmonicity_q1, AC_stark_detuning_q1
+        -pi_amp_q1 / 2,
+        pi_len,
+        pi_sigma,
+        drag_coef_q1,
+        anharmonicity_q1,
+        AC_stark_detuning_q1,
     )
 )
 minus_y90_I_wf_q1 = (-1) * minus_y90_der_wf_q1
 minus_y90_Q_wf_q1 = minus_y90_wf_q1
 minus_y90_wf_q2, minus_y90_der_wf_q2 = np.array(
     drag_gaussian_pulse_waveforms(
-        -pi_amp_q2 / 2, pi_len, pi_sigma, drag_coef_q2, anharmonicity_q2, AC_stark_detuning_q2
+        -pi_amp_q2 / 2,
+        pi_len,
+        pi_sigma,
+        drag_coef_q2,
+        anharmonicity_q2,
+        AC_stark_detuning_q2,
     )
 )
 minus_y90_I_wf_q2 = (-1) * minus_y90_der_wf_q2
 minus_y90_Q_wf_q2 = minus_y90_wf_q2
 # No DRAG when alpha=0, it's just a gaussian.
-
-##########################################
-#               Flux line                #
-##########################################
-flux_settle_time = 100 * u.ns
-
-max_frequency_point1 = 0.0
-max_frequency_point2 = 0.0
-
-# Resonator frequency versus flux fit parameters according to resonator_spec_vs_flux
-# amplitude * np.cos(2 * np.pi * frequency * x + phase) + offset
-amplitude_fit1, frequency_fit1, phase_fit1, offset_fit1 = [0, 0, 0, 0]
-amplitude_fit2, frequency_fit2, phase_fit2, offset_fit2 = [0, 0, 0, 0]
-
-const_flux_len = 200
-const_flux_amp = 0.45
 
 #############################################
 #                Resonators                 #
@@ -207,18 +267,28 @@ depletion_time = 2 * u.us
 
 opt_weights = False
 if opt_weights:
-    from qualang_tools.config.integration_weights_tools import convert_integration_weights
+    from qualang_tools.config.integration_weights_tools import (
+        convert_integration_weights,
+    )
 
     weights_q1 = np.load("optimal_weights_q1.npz")
     opt_weights_real_q1 = convert_integration_weights(weights_q1["weights_real"])
-    opt_weights_minus_imag_q1 = convert_integration_weights(weights_q1["weights_minus_imag"])
+    opt_weights_minus_imag_q1 = convert_integration_weights(
+        weights_q1["weights_minus_imag"]
+    )
     opt_weights_imag_q1 = convert_integration_weights(weights_q1["weights_imag"])
-    opt_weights_minus_real_q1 = convert_integration_weights(weights_q1["weights_minus_real"])
+    opt_weights_minus_real_q1 = convert_integration_weights(
+        weights_q1["weights_minus_real"]
+    )
     weights_q2 = np.load("optimal_weights_q2.npz")
     opt_weights_real_q2 = convert_integration_weights(weights_q2["weights_real"])
-    opt_weights_minus_imag_q2 = convert_integration_weights(weights_q2["weights_minus_imag"])
+    opt_weights_minus_imag_q2 = convert_integration_weights(
+        weights_q2["weights_minus_imag"]
+    )
     opt_weights_imag_q2 = convert_integration_weights(weights_q2["weights_imag"])
-    opt_weights_minus_real_q2 = convert_integration_weights(weights_q2["weights_minus_real"])
+    opt_weights_minus_real_q2 = convert_integration_weights(
+        weights_q2["weights_minus_real"]
+    )
 else:
     opt_weights_real_q1 = [(1.0, readout_len)]
     opt_weights_minus_imag_q1 = [(0.0, readout_len)]
@@ -249,8 +319,6 @@ config = {
                 4: {"offset": 0.0},  # Q qubit1 XY
                 5: {"offset": 0.0},  # I qubit2 XY
                 6: {"offset": 0.0},  # Q qubit2 XY
-                7: {"offset": max_frequency_point1},  # qubit1 Z
-                8: {"offset": max_frequency_point2},  # qubit2 Z
             },
             "digital_outputs": {
                 1: {},
@@ -265,7 +333,7 @@ config = {
         "rr1": {
             "RF_inputs": {"port": ("octave1", 1)},
             "RF_outputs": {"port": ("octave1", 1)},
-            "intermediate_frequency": resonator_IF_q1,  # frequency at offset ch7
+            "intermediate_frequency": resonator_IF_q1,
             "operations": {
                 "cw": "const_pulse",
                 "readout": "readout_pulse_q1",
@@ -276,7 +344,7 @@ config = {
         "rr2": {
             "RF_inputs": {"port": ("octave1", 1)},
             "RF_outputs": {"port": ("octave1", 1)},
-            "intermediate_frequency": resonator_IF_q2,  # frequency at offset ch8
+            "intermediate_frequency": resonator_IF_q2,
             "operations": {
                 "cw": "const_pulse",
                 "readout": "readout_pulse_q2",
@@ -286,7 +354,7 @@ config = {
         },
         "q1_xy": {
             "RF_inputs": {"port": ("octave1", 2)},
-            "intermediate_frequency": qubit_IF_q1,  # frequency at offset ch7 (max freq)
+            "intermediate_frequency": qubit_IF_q1,
             "operations": {
                 "cw": "const_pulse",
                 "x180": "x180_pulse_q1",
@@ -299,7 +367,7 @@ config = {
         },
         "q2_xy": {
             "RF_inputs": {"port": ("octave1", 3)},
-            "intermediate_frequency": qubit_IF_q2,  # frequency at offset ch8 (max freq)
+            "intermediate_frequency": qubit_IF_q2,
             "operations": {
                 "cw": "const_pulse",
                 "x180": "x180_pulse_q2",
@@ -359,13 +427,6 @@ config = {
         }
     },
     "pulses": {
-        "const_flux_pulse": {
-            "operation": "control",
-            "length": const_flux_len,
-            "waveforms": {
-                "single": "const_flux_wf",
-            },
-        },
         "const_pulse": {
             "operation": "control",
             "length": const_len,
@@ -513,33 +574,56 @@ config = {
     },
     "waveforms": {
         "const_wf": {"type": "constant", "sample": const_amp},
-        "const_flux_wf": {"type": "constant", "sample": const_flux_amp},
         "zero_wf": {"type": "constant", "sample": 0.0},
         "x90_I_wf_q1": {"type": "arbitrary", "samples": x90_I_wf_q1.tolist()},
         "x90_Q_wf_q1": {"type": "arbitrary", "samples": x90_Q_wf_q1.tolist()},
         "x180_I_wf_q1": {"type": "arbitrary", "samples": x180_I_wf_q1.tolist()},
         "x180_Q_wf_q1": {"type": "arbitrary", "samples": x180_Q_wf_q1.tolist()},
-        "minus_x90_I_wf_q1": {"type": "arbitrary", "samples": minus_x90_I_wf_q1.tolist()},
-        "minus_x90_Q_wf_q1": {"type": "arbitrary", "samples": minus_x90_Q_wf_q1.tolist()},
+        "minus_x90_I_wf_q1": {
+            "type": "arbitrary",
+            "samples": minus_x90_I_wf_q1.tolist(),
+        },
+        "minus_x90_Q_wf_q1": {
+            "type": "arbitrary",
+            "samples": minus_x90_Q_wf_q1.tolist(),
+        },
         "y90_I_wf_q1": {"type": "arbitrary", "samples": y90_I_wf_q1.tolist()},
         "y90_Q_wf_q1": {"type": "arbitrary", "samples": y90_Q_wf_q1.tolist()},
         "y180_I_wf_q1": {"type": "arbitrary", "samples": y180_I_wf_q1.tolist()},
         "y180_Q_wf_q1": {"type": "arbitrary", "samples": y180_Q_wf_q1.tolist()},
-        "minus_y90_I_wf_q1": {"type": "arbitrary", "samples": minus_y90_I_wf_q1.tolist()},
-        "minus_y90_Q_wf_q1": {"type": "arbitrary", "samples": minus_y90_Q_wf_q1.tolist()},
+        "minus_y90_I_wf_q1": {
+            "type": "arbitrary",
+            "samples": minus_y90_I_wf_q1.tolist(),
+        },
+        "minus_y90_Q_wf_q1": {
+            "type": "arbitrary",
+            "samples": minus_y90_Q_wf_q1.tolist(),
+        },
         "readout_wf_q1": {"type": "constant", "sample": readout_amp_q1},
         "x90_I_wf_q2": {"type": "arbitrary", "samples": x90_I_wf_q2.tolist()},
         "x90_Q_wf_q2": {"type": "arbitrary", "samples": x90_Q_wf_q2.tolist()},
         "x180_I_wf_q2": {"type": "arbitrary", "samples": x180_I_wf_q2.tolist()},
         "x180_Q_wf_q2": {"type": "arbitrary", "samples": x180_Q_wf_q2.tolist()},
-        "minus_x90_I_wf_q2": {"type": "arbitrary", "samples": minus_x90_I_wf_q2.tolist()},
-        "minus_x90_Q_wf_q2": {"type": "arbitrary", "samples": minus_x90_Q_wf_q2.tolist()},
+        "minus_x90_I_wf_q2": {
+            "type": "arbitrary",
+            "samples": minus_x90_I_wf_q2.tolist(),
+        },
+        "minus_x90_Q_wf_q2": {
+            "type": "arbitrary",
+            "samples": minus_x90_Q_wf_q2.tolist(),
+        },
         "y90_I_wf_q2": {"type": "arbitrary", "samples": y90_I_wf_q2.tolist()},
         "y90_Q_wf_q2": {"type": "arbitrary", "samples": y90_Q_wf_q2.tolist()},
         "y180_I_wf_q2": {"type": "arbitrary", "samples": y180_I_wf_q2.tolist()},
         "y180_Q_wf_q2": {"type": "arbitrary", "samples": y180_Q_wf_q2.tolist()},
-        "minus_y90_I_wf_q2": {"type": "arbitrary", "samples": minus_y90_I_wf_q2.tolist()},
-        "minus_y90_Q_wf_q2": {"type": "arbitrary", "samples": minus_y90_Q_wf_q2.tolist()},
+        "minus_y90_I_wf_q2": {
+            "type": "arbitrary",
+            "samples": minus_y90_I_wf_q2.tolist(),
+        },
+        "minus_y90_Q_wf_q2": {
+            "type": "arbitrary",
+            "samples": minus_y90_Q_wf_q2.tolist(),
+        },
         "readout_wf_q2": {"type": "constant", "sample": readout_amp_q2},
     },
     "digital_waveforms": {
