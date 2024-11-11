@@ -1,6 +1,7 @@
 # Single QUA script generated at 2024-10-31 17:44:23.525722
 # QUA library version: 1.2.1a1
 
+from configuration.make_quam import *
 from qm import QuantumMachine, QuantumMachinesManager
 from qm.qua import *
 
@@ -112,7 +113,7 @@ with program() as prog:
         # pause()
         # assign(v34, IO1)
         # with if_((v34 < 2)):
-        # assign(v17, 1.0)
+        assign(v17, 1.0)
         # assign(v15, Util.cond((v34 == 0), 1.0, 0.125))
         # assign(v7, Util.cond((v34 == 0), 0.0, v7))
         # assign(v8, Util.cond((v34 == 0), 0.0, v8))
@@ -127,7 +128,8 @@ with program() as prog:
         reset_phase("__oct__oct1_1_image_analyzer")
         # play("DC_offset" * amp(v11), "__oct__oct1_1_I_offset")
         # play("DC_offset" * amp(v12), "__oct__oct1_1_Q_offset")
-        play("calibration" * amp(v17), "__oct__oct1_1_IQmixer")
+        with infinite_loop_():
+            play("calibration" * amp(v17), "__oct__oct1_1_IQmixer")
         measure(
             "Analyze",
             "__oct__oct1_1_lo_analyzer",
@@ -635,6 +637,20 @@ config = {
             "time_of_flight": 1400,
             "intermediate_frequency": 43000000.0,
         },
+    },
+    "octaves": {
+        "octave1": {
+            "RF_outputs": {
+                1: {
+                    "LO_frequency": 6e9,
+                    "LO_source": "internal",
+                    "output_mode": "always_on",
+                    "gain": 0,
+                },
+            },
+            "RF_inputs": {},
+            "connectivity": "con1",
+        }
     },
     "pulses": {
         "__oct__Analyze_pulse": {
@@ -1561,7 +1577,11 @@ loaded_config = {
     },
 }
 
-qmm = QuantumMachinesManager(host='172.16.33.101', cluster_name='Cluster_81')
+qmm = QuantumMachinesManager(
+    host="172.16.33.101",
+    cluster_name="Cluster_81",
+    octave=qpu.octaves["oct1"].get_octave_config(),
+)
 qm = qmm.open_qm(loaded_config)
 
 job = qm.execute(prog)

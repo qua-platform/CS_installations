@@ -51,8 +51,8 @@ with program() as time_rabi:
         ):  # QUA for_ loop for sweeping the pulse duration
             qubit.play("x180", duration=t)
             # Align the two elements to measure after playing the qubit pulse.
-            align("qubit", "resonator")
-            qubit.align(resonator)
+            # qubit.align(resonator)
+            resonator.align()
             # Measure the state of the resonator
             # The integration weights have changed to maximize the SNR after having calibrated the IQ blobs.
             resonator.measure("readout", qua_vars=(I, Q))
@@ -74,19 +74,20 @@ with program() as time_rabi:
 #  Open Communication with the QOP  #
 #####################################
 qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=qpu.octaves["oct1"].get_octave_config()
 )
 
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, time_rabi, simulation_config)
+    job = qmm.simulate(qpu.generate_config(), time_rabi, simulation_config)
     job.get_simulated_samples().con1.plot()
+    plt.show()
 
 else:
     # Open the quantum machine

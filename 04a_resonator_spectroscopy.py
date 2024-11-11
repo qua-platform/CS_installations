@@ -31,7 +31,7 @@ u = unit(coerce_to_integer=True)
 ###################
 # The QUA program #
 ###################
-n_avg = 1000  # The number of averages
+n_avg = 10  # The number of averages
 # The frequency sweep parameters
 f_min = 30 * u.MHz
 f_max = 70 * u.MHz
@@ -47,6 +47,7 @@ resonator = qpu.channels["resonator"]
 with program() as resonator_spec:
 
     n = declare(int)  # QUA variable for the averaging loop
+    k = declare(int)  # QUA variable for the averaging loop
     f = declare(int)  # QUA variable for the readout frequency
     I = declare(fixed)  # QUA variable for the measured 'I' quadrature
     Q = declare(fixed)  # QUA variable for the measured 'Q' quadrature
@@ -61,9 +62,10 @@ with program() as resonator_spec:
             # Update the frequency of the digital oscillator linked to the resonator element
             resonator.update_frequency(f)
             # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
-            resonator.measure("readout", qua_vars=(I, Q))
+            with for_(k, 0, k < 1000, k + 1):
+                resonator.measure("readout", qua_vars=(I, Q))
             # Wait for the resonator to deplete
-            resonator.wait(depletion_time * u.ns)
+            resonator.wait(500 * u.ns)
             # Save the 'I' & 'Q' quadratures to their respective streams
             save(I, I_st)
             save(Q, Q_st)
@@ -80,9 +82,9 @@ with program() as resonator_spec:
 #  Open Communication with the QOP  #
 #####################################
 qmm = QuantumMachinesManager(
-    host="172.16.33.101",       #TODO: could this not be hardcoded?
+    host="172.16.33.101",  # TODO: could this not be hardcoded?
     cluster_name="Cluster_81",
-    octave=qpu.octaves["octave1"].get_octave_config(),
+    octave=qpu.octaves["oct1"].get_octave_config(),
 )
 
 #######################
@@ -113,7 +115,9 @@ else:
         # Fetch results
         I, Q, iteration = results.fetch_all()
         # Convert results into Volts
-        S = u.demod2volts(I + 1j * Q, qpu.channels["resonator"].operations["readout"].length)
+        S = u.demod2volts(
+            I + 1j * Q, qpu.channels["resonator"].operations["readout"].length
+        )
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
         # Progress bar
