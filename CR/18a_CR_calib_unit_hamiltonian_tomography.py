@@ -232,8 +232,6 @@ else:
             I1, Q1 = u.demod2volts(I1, readout_len), u.demod2volts(Q1, readout_len)
             I2, Q2 = u.demod2volts(I2, readout_len), u.demod2volts(Q2, readout_len)
             bloch_c, bloch_t = -2 * state_c + 1, -2 * state_t + 1  # convert |0> -> 1, |1> -> -1
-            # Progress bar
-            progress_counter(iterations, n_avg, start_time=results.start_time)
             # plotting data
             fig = plot_crqst_result_2D(ts_ns, bloch_c, bloch_t, fig, axss)
             plt.tight_layout()
