@@ -12,6 +12,21 @@ from qualang_tools.addons.variables import assign_variables_to_element
 ##############
 
 
+def two_step_readout(element: str, I, I_st, Q, Q_st):
+    play("step", element)
+    measure(
+        "readout",
+        element,
+        None,
+        dual_demod.full("cos", "sin", I),
+        dual_demod.full("minus_sin", "cos", Q),
+    )
+    if I_st is not None:
+        save(I, I_st)
+    if Q_st is not None:
+        save(Q, Q_st)
+
+
 def cz_gate(dc0):
     set_dc_offset("q1_z", "single", -0.10557)
     wait(189 // 4, "q1_z")
@@ -22,7 +37,9 @@ def cz_gate(dc0):
     wait(10)  # for flux pulse to relax back completely
 
 
-def multiplexed_readout(I, I_st, Q, Q_st, resonators, sequential=False, amplitude=1.0, weights=""):
+def multiplexed_readout(
+    I, I_st, Q, Q_st, resonators, sequential=False, amplitude=1.0, weights=""
+):
     """Perform multiplexed readout on two resonators"""
     if type(resonators) is not list:
         resonators = [resonators]
@@ -101,7 +118,11 @@ def reset_qubit(method: str, qubit: str, resonator: str, **kwargs):
             raise Exception("'threshold' must be specified for active reset.")
         # Check max_tries
         max_tries = kwargs.get("max_tries", 1)
-        if (max_tries is None) or (not float(max_tries).is_integer()) or (max_tries < 1):
+        if (
+            (max_tries is None)
+            or (not float(max_tries).is_integer())
+            or (max_tries < 1)
+        ):
             raise Exception("'max_tries' must be an integer > 0.")
         # Check Ig
         Ig = kwargs.get("Ig", None)
