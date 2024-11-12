@@ -22,7 +22,7 @@ Before proceeding to the next node:
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from configuration import *
+from configuration_with_octave import *
 import matplotlib.pyplot as plt
 import numpy as np
 from qualang_tools.results import fetching_tool, progress_counter
