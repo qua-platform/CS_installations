@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "qua_config"
+version = "0.1.0"
+description = "Make configuration.py installable as a package."
+readme = "README.md"
+authors = ["Hiro Inoue <hiroyuki.inoue@quantum-machines.co>"]
+license = "BSD-3-Clause"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.12"
+numpy = "*"
+scipy = "*"
+qualang-tools = "*"
+qualibrate = "*"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
