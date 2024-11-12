@@ -2,24 +2,25 @@
 A simple sandbox to showcase different QUA functionalities during the installation.
 """
 
+from configuration_with_octave import *
+from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
-
 
 ###################
 # The QUA program #
 ###################
 with program() as hello_qua:
-    set_dc_offset("q1_z", "single", 0.153)
-    play("cw", "q1_xy")
+    a = declare(fixed)
+    with for_(a, 0, a < 1.1, a + 0.05):
+        play("cw" * amp(a), "q1_xy")
 
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 ###########################
 # Run or Simulate Program #

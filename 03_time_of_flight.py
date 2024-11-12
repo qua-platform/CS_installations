@@ -14,13 +14,11 @@ The data undergoes post-processing to calibrate three distinct parameters:
     This gain, ranging from -12 dB to 20 dB, can also be adjusted in the configuration at: config/controllers/"con1"/analog_inputs.
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
 import matplotlib.pyplot as plt
+from configuration_with_octave import *
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
 from scipy.signal import savgol_filter
-
 
 ###################
 # The QUA program #
@@ -52,7 +50,10 @@ with program() as raw_trace_prog:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name
+)  # , octave=octave_config
+# )
 
 #######################
 # Simulate or execute #

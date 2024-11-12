@@ -11,7 +11,7 @@ correcting any non-zero DC offsets, and estimating the SNR.
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from configuration import *
+from configuration_with_octave import *
 import matplotlib.pyplot as plt
 
 
@@ -53,7 +53,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -62,6 +62,7 @@ if simulate:
     job = qmm.simulate(config, raw_trace_prog, simulation_config)
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
+    plt.show()
 
 else:
     # Open a quantum machine to execute the QUA program
