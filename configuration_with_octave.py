@@ -306,6 +306,11 @@ rotation_angle_q2 = (0.0 / 180) * np.pi
 ge_threshold_q1 = 0.0
 ge_threshold_q2 = 0.0
 
+
+# Two-Step readout pre-pulse:
+pre_pulse_len = 10
+pre_pulse_samples = np.concatenate((np.zeros(16 - pre_pulse_len), 0.5 * np.ones(pre_pulse_len)))
+
 #############################################
 #                  Config                   #
 #############################################
@@ -338,6 +343,7 @@ config = {
             "operations": {
                 "cw": "const_pulse",
                 "readout": "readout_pulse_q1",
+                "step": "step_pulse",
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -488,6 +494,14 @@ config = {
             },
             "digital_marker": "ON",
         },
+        "step_pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "step_wf",
+                "Q": "zero_wf",
+            },
+        },
         "x90_pulse_q2": {
             "operation": "control",
             "length": pi_len,
@@ -560,6 +574,7 @@ config = {
     "waveforms": {
         "const_wf": {"type": "constant", "sample": const_amp},
         "zero_wf": {"type": "constant", "sample": 0.0},
+        "step_wf": {"type": "arbitrary", "samples": pre_pulse_samples.tolist()},
         "x90_I_wf_q1": {"type": "arbitrary", "samples": x90_I_wf_q1.tolist()},
         "x90_Q_wf_q1": {"type": "arbitrary", "samples": x90_Q_wf_q1.tolist()},
         "x180_I_wf_q1": {"type": "arbitrary", "samples": x180_I_wf_q1.tolist()},

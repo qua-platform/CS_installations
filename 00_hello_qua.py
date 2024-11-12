@@ -11,8 +11,15 @@ from qm.qua import *
 ###################
 with program() as hello_qua:
     a = declare(fixed)
+    I = declare(fixed)
+    Q = declare(fixed)
+    # update_frequency("rr1", 0.0)
     with for_(a, 0, a < 1.1, a + 0.05):
         play("cw" * amp(a), "q1_xy")
+        wait(100, "q1_xy")
+        align()
+        play("step", "rr1")
+        measure("readout", "rr1", None, dual_demod.full("cos", "sin", I), dual_demod.full("minus_sin", "cos", Q))
 
 
 #####################################
@@ -34,7 +41,10 @@ if simulate:
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, hello_qua, simulation_config)
     # Plot the simulated samples
-    job.get_simulated_samples().con1.plot()
+    samples = job.get_simulated_samples()
+    waveform_report = job.get_simulated_waveform_report()
+    waveform_report.create_plot(samples, "con1")
+    # plt.show()
 else:
     # Open a quantum machine to execute the QUA program
     qm = qmm.open_qm(config)
