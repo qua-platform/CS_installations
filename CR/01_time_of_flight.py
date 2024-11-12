@@ -18,7 +18,7 @@ from qm.qua import *
 from qm import QuantumMachinesManager, SimulationConfig
 from qm import SimulationConfig
 
-from configuration_mw_fem import *
+from configuration import *
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 from qualang_tools.results.data_handler import DataHandler
