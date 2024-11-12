@@ -4,13 +4,15 @@ All the macros below have been written and tested with the basic configuration. 
 (elements, operations, integration weights...) these macros will need to be modified accordingly.
 """
 
+from time import sleep
 from qm.qua import *
+from qualang_tools import callable_from_qua
 from qualang_tools.addons.variables import assign_variables_to_element
+
 
 ##############
 # QUA macros #
 ##############
-
 
 def two_step_readout(element: str, I, I_st, Q, Q_st):
     play("step", element)
