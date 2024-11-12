@@ -77,7 +77,7 @@ cr_drive = f"cr_drive_c{qc}t{qt}"
 cr_cancel = f"cr_cancel_c{qc}t{qt}"
 qubits = [f"q{i}_xy" for i in [qc, qt]]
 resonators = [f"rr{i}" for i in [qc, qt]]
-ts_ns = 4 * ts_cycles  # in clock cylcle = 4ns
+ts_ns = 4 * ts_cycles  # in clock cycle = 4ns
 
 # Data to save
 save_data_dict = {

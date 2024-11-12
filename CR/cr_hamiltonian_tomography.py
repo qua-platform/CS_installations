@@ -140,7 +140,7 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
         :params data (np.ndarray):
             A 3-dimensional numpy array (len(ts) x len(TARGET_BASES) x len(CONTROL_STATES))
             where the first to durations of CR drive, the second to TARGET_BASES.
-            the thir dimension corresponds to CONTROL_STATES.
+            the third dimension corresponds to CONTROL_STATES.
         """
         self.ts = ts
         self.data = data
@@ -182,7 +182,7 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
 
         :param ts: durations of CR drive.
         :param d, mx, my: Hamiltonian parameters.
-        :return: Array of expected 'x', 'y', and 'z' basiss concatenated.
+        :return: Array of expected 'x', 'y', and 'z' basis concatenated.
         """
         ts_len = len(ts) // len(TARGET_BASES)
         xyz = self.compute_XYZ(ts[:ts_len], *[d, mx, my])
