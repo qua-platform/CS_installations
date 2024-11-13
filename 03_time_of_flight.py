@@ -15,7 +15,7 @@ The data undergoes post-processing to calibrate three distinct parameters:
 """
 
 import matplotlib.pyplot as plt
-from configuration_with_octave import *
+from configuration import *
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from scipy.signal import savgol_filter
@@ -26,16 +26,42 @@ from scipy.signal import savgol_filter
 resonator = "rr1"  # The resonator element
 n_avg = 100  # Number of averaging loops
 
+# Set the sliced demod parameters
+division_length = 2  # Size of each demodulation slice in clock cycles
+number_of_divisions = int((readout_len) / (4 * division_length))
+
 with program() as raw_trace_prog:
     n = declare(int)  # QUA variable for the averaging loop
     adc_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace
+    II = declare(fixed, size=number_of_divisions)
+    II_st = declare_stream()
+    IQ = declare(fixed, size=number_of_divisions)
+    IQ_st = declare_stream()
+    QI = declare(fixed, size=number_of_divisions)
+    QI_st = declare_stream()
+    QQ = declare(fixed, size=number_of_divisions)
+    QQ_st = declare_stream()
+    ind = declare(int)
 
     with for_(n, 0, n < n_avg, n + 1):
         # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
         reset_phase(resonator)
         # Sends the readout pulse and stores the raw ADC traces in the stream called "adc_st"
-        measure("readout", resonator, adc_st)
+        measure(
+            "readout",
+            resonator,
+            adc_st,
+            demod.sliced("cos", II, division_length, "out1"),
+            demod.sliced("sin", IQ, division_length, "out2"),
+            demod.sliced("minus_sin", QI, division_length, "out1"),
+            demod.sliced("cos", QQ, division_length, "out2"),
+        )
         # Wait for the resonator to deplete
+        with for_(ind, 0, ind < number_of_divisions, ind + 1):
+            save(II[ind], II_st)
+            save(IQ[ind], IQ_st)
+            save(QI[ind], QI_st)
+            save(QQ[ind], QQ_st)
         wait(depletion_time * u.ns, resonator)
 
     with stream_processing():
@@ -46,14 +72,18 @@ with program() as raw_trace_prog:
         adc_st.input1().save("adc1_single_run")
         adc_st.input2().save("adc2_single_run")
 
+        II_st.buffer(number_of_divisions).average().save("II")
+        IQ_st.buffer(number_of_divisions).average().save("IQ")
+        QI_st.buffer(number_of_divisions).average().save("QI")
+        QQ_st.buffer(number_of_divisions).average().save("QQ")
+
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
 qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name
-)  # , octave=octave_config
-# )
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 #######################
 # Simulate or execute #
@@ -94,9 +124,18 @@ else:
     delay = np.where(signal > th)[0][0]
     delay = np.round(delay / 4) * 4  # Find the closest multiple integer of 4ns
 
+    I_trace = u.demod2volts(
+        res_handles.get("II").fetch_all() + res_handles.get("IQ").fetch_all(),
+        division_length,
+    )
+    Q_trace = u.demod2volts(
+        res_handles.get("QI").fetch_all() + res_handles.get("QQ").fetch_all(),
+        division_length,
+    )
+
     # Plot data
-    fig = plt.figure()
-    plt.subplot(121)
+    fig = plt.figure(figsize=(12, 5))
+    plt.subplot(131)
     plt.title("Single run")
     plt.plot(adc1_single_run, "b", label="Input 1")
     plt.plot(adc2_single_run, "r", label="Input 2")
@@ -109,8 +148,9 @@ else:
     plt.plot(delay * np.ones(2), yl, "k--")
     plt.xlabel("Time [ns]")
     plt.ylabel("Signal amplitude [V]")
+    plt.grid("all")
     plt.legend()
-    plt.subplot(122)
+    plt.subplot(132)
     plt.title("Averaged run")
     plt.plot(adc1, "b", label="Input 1")
     plt.plot(adc2, "r", label="Input 2")
@@ -120,7 +160,24 @@ else:
     plt.plot(xl, adc2_mean * np.ones(2), "k--")
     plt.plot(delay * np.ones(2), yl, "k--")
     plt.xlabel("Time [ns]")
+    plt.grid("all")
     plt.legend()
+    plt.subplot(133)
+    plt.title("Demodulted I and Q traces")
+    plt.plot(
+        np.linspace(0, number_of_divisions * division_length * 4, number_of_divisions),
+        I_trace,
+        "b.--",
+        label="Demodulated I trace",
+    )
+    plt.plot(
+        np.linspace(0, number_of_divisions * division_length * 4, number_of_divisions),
+        Q_trace,
+        "r.--",
+        label="Demodulated Q trace",
+    )
+    plt.legend()
+    plt.xlabel("Time [ns]")
     plt.grid("all")
     plt.tight_layout()
     plt.show()
