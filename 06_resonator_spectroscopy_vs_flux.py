@@ -87,11 +87,11 @@ with program() as multi_res_spec_vs_flux:
     with stream_processing():
         n_st.save("n")
         # resonator 1
-        I_st[0].buffer(len(dfs)).average().buffer(len(flux)).save("I1")
-        Q_st[0].buffer(len(dfs)).average().buffer(len(flux)).save("Q1")
+        I_st[0].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(flux)).save("I1")
+        Q_st[0].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(flux)).save("Q1")
         # resonator 2
-        I_st[1].buffer(len(dfs)).average().buffer(len(flux)).save("I2")
-        Q_st[1].buffer(len(dfs)).average().buffer(len(flux)).save("Q2")
+        I_st[1].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(flux)).save("I2")
+        Q_st[1].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(flux)).save("Q2")
 
 #####################################
 #  Open Communication with the QOP  #
