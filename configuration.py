@@ -42,7 +42,7 @@ save_dir = Path().absolute() / "QM" / "INSTALLATION" / "data"
 # Add the octaves
 # octaves = [octave_1]
 # Configure the Octaves
-# octave_config = octave_declaration(octaves)
+octave_config = None
 
 #####################
 # OPX configuration #
@@ -302,7 +302,7 @@ readout_amp_q1 = 0.01
 readout_amp_q2 = 0.01
 
 # TOF and depletion time
-time_of_flight = 240  # must be a multiple of 4
+time_of_flight = 124  # must be a multiple of 4
 depletion_time = 50 * u.us
 
 opt_weights = False
@@ -350,7 +350,7 @@ rotation_angle_q2 = ((0) / 180) * np.pi
 ge_threshold_q1 = 0.0
 ge_threshold_q2 = 0.0
 
-
+smearing = 100
 #############################################
 #                  Config                   #
 #############################################
@@ -406,7 +406,7 @@ config = {
                 },
             },
             "time_of_flight": time_of_flight,
-            "smearing": 0,
+            "smearing": smearing,
         },
     },
     "pulses": {

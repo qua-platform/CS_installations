@@ -15,16 +15,14 @@ Before proceeding to the next node:
     - Update the readout frequency, labeled as "resonator_IF_q1" and "resonator_IF_q2", in the configuration.
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration_with_octave import *
-from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
+from configuration_with_octave import *
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.loops import from_array
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import fetching_tool, progress_counter
 from scipy import signal
-
 
 ###################
 # The QUA program #
@@ -37,7 +35,9 @@ dfs = np.arange(-span, span, step)
 
 with program() as multi_res_spec:
     n = declare(int)  # QUA variable for the averaging loop
-    df = declare(int)  # QUA variable for the readout frequency detuning around the resonance
+    df = declare(
+        int
+    )  # QUA variable for the readout frequency detuning around the resonance
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
     # Here we define one 'I', 'Q', 'I_st' & 'Q_st' for each resonator via a python list
     I = [declare(fixed) for _ in range(2)]
@@ -51,7 +51,9 @@ with program() as multi_res_spec:
             wait(depletion_time * u.ns, "rr1", "rr2")
 
             # resonator 1
-            update_frequency("rr1", df + resonator_IF_q1)  # Update the frequency the rr1 element
+            update_frequency(
+                "rr1", df + resonator_IF_q1
+            )  # Update the frequency the rr1 element
             # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
             measure(
                 "readout",
@@ -66,7 +68,9 @@ with program() as multi_res_spec:
 
             # align("rr1", "rr2")  # Uncomment to measure sequentially
             # resonator 2
-            update_frequency("rr2", df + resonator_IF_q2)  # Update the frequency the rr1 element
+            update_frequency(
+                "rr2", df + resonator_IF_q2
+            )  # Update the frequency the rr1 element
             # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
             measure(
                 "readout",
@@ -94,7 +98,9 @@ with program() as multi_res_spec:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 #######################
 # Simulate or execute #
@@ -105,7 +111,9 @@ if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, multi_res_spec, simulation_config)
-    job.get_simulated_samples().con1.plot()
+    samples = job.get_simulated_samples()
+    waveform_report = job.get_simulated_waveform_report()
+    waveform_report.create_plot(samples, "con1")
 
 else:
     # Open a quantum machine to execute the QUA program
@@ -151,6 +159,7 @@ else:
         plt.xlabel("Readout IF [MHz]")
         plt.tight_layout()
         plt.pause(0.1)
+        plt.show()
 
     try:
         from qualang_tools.plot.fitting import Fit
@@ -158,15 +167,19 @@ else:
         fit = Fit()
         plt.figure()
         plt.subplot(121)
-        fit.reflection_resonator_spectroscopy((resonator_IF_q1 + dfs) / u.MHz, R1, plot=True)
+        fit.reflection_resonator_spectroscopy(
+            (resonator_IF_q1 + dfs) / u.MHz, R1, plot=True
+        )
         plt.xlabel("rr1 IF [MHz]")
         plt.ylabel("Amplitude [V]")
         plt.subplot(122)
-        fit.reflection_resonator_spectroscopy((resonator_IF_q2 + dfs) / u.MHz, R2, plot=True)
+        fit.reflection_resonator_spectroscopy(
+            (resonator_IF_q2 + dfs) / u.MHz, R2, plot=True
+        )
         plt.xlabel("rr2 IF [MHz]")
         plt.title(f"Multiplexed resonator spectroscopy")
         plt.tight_layout()
-    except (Exception,):
-        pass
+    except Exception as e:
+        print(e)
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
