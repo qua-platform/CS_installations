@@ -71,8 +71,10 @@ octave.RF_outputs[2].LO_frequency = 4 * u.GHz
 # Add readout pulse
 
 readout_pulse = pulses.SquareReadoutPulse(length=1000, amplitude=0.3)
-
 qpu.channels["resonator"].operations["readout"] = readout_pulse
+
+square = pulses.SquarePulse(length=2000, amplitude=0.4)
+qpu.channels["resonator"].operations["square"] = square
 
 # Add x180 pulse
 

@@ -1585,3 +1585,6 @@ qmm = QuantumMachinesManager(
 qm = qmm.open_qm(loaded_config)
 
 job = qm.execute(prog)
+
+
+qm.calibrate_element()

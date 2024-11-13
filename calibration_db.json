@@ -20,7 +20,7 @@
             "mode_id": 2,
             "lo_freq": 6000000000.0,
             "gain": 0.0,
-            "latest": 14
+            "latest": 17
         }
     },
     "lo_cal": {
@@ -163,6 +163,36 @@
             "temperature": 59.0,
             "timestamp": 1730709084.439473,
             "method": "auto"
+        },
+        "15": {
+            "i0": -0.015467142999628878,
+            "q0": 0.006839896070583658,
+            "lo_mode_id": 2,
+            "dc_gain": 0.0005201027102406108,
+            "dc_phase": 0.014261542124240365,
+            "temperature": 58.75,
+            "timestamp": 1731494474.9897852,
+            "method": "auto"
+        },
+        "16": {
+            "i0": NaN,
+            "q0": NaN,
+            "lo_mode_id": 2,
+            "dc_gain": NaN,
+            "dc_phase": NaN,
+            "temperature": 58.875,
+            "timestamp": 1731494788.284252,
+            "method": "auto"
+        },
+        "17": {
+            "i0": -0.015435414125046011,
+            "q0": 0.006861812196988547,
+            "lo_mode_id": 2,
+            "dc_gain": 0.0006559300965136572,
+            "dc_phase": 0.014018143165724114,
+            "temperature": 58.8125,
+            "timestamp": 1731494903.651337,
+            "method": "auto"
         }
     },
     "if_modes": {
@@ -179,7 +209,7 @@
         "3": {
             "lo_mode_id": 2,
             "if_freq": 50000000.0,
-            "latest": 14
+            "latest": 17
         }
     },
     "if_cal": {
@@ -293,6 +323,30 @@
             "phase": 0.010905984924147525,
             "temperature": 59.0,
             "timestamp": 1730709084.444455,
+            "method": "auto"
+        },
+        "15": {
+            "if_mode_id": 3,
+            "gain": 0.0014760380640422646,
+            "phase": 0.013277195510211585,
+            "temperature": 58.75,
+            "timestamp": 1731494474.9934888,
+            "method": "auto"
+        },
+        "16": {
+            "if_mode_id": 3,
+            "gain": NaN,
+            "phase": NaN,
+            "temperature": 58.875,
+            "timestamp": 1731494788.287024,
+            "method": "auto"
+        },
+        "17": {
+            "if_mode_id": 3,
+            "gain": 0.0015329558886319585,
+            "phase": 0.013056548784750252,
+            "temperature": 58.8125,
+            "timestamp": 1731494903.6558561,
             "method": "auto"
         }
     }
