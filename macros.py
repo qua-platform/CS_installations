@@ -5,14 +5,24 @@ All the macros below have been written and tested with the basic configuration. 
 """
 
 from time import sleep
+
 from qm.qua import *
-from qualang_tools import callable_from_qua
+from qualang_tools.callable_from_qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
+
+patch_qua_program_addons()
 
 
 ##############
 # QUA macros #
 ##############
+
+
+@callable_from_qua
+def update_offset(offset):
+    print(f"External dc sourse set to {offset}")
+    sleep(0.5)
+
 
 def two_step_readout(element: str, I, I_st, Q, Q_st):
     play("step", element)

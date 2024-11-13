@@ -311,6 +311,11 @@ ge_threshold_q2 = 0.0
 pre_pulse_len = 10
 pre_pulse_samples = np.concatenate((np.zeros(16 - pre_pulse_len), 0.5 * np.ones(pre_pulse_len)))
 
+# Resonator frequency versus flux fit parameters according to resonator_spec_vs_flux
+# amplitude * np.cos(2 * np.pi * frequency * x + phase) + offset (Hz, 1/V, degrees, Hz)
+amplitude_fit1, frequency_fit1, phase_fit1, offset_fit1 = [0, 0, 0, 0]
+amplitude_fit2, frequency_fit2, phase_fit2, offset_fit2 = [0, 0, 0, 0]
+
 #############################################
 #                  Config                   #
 #############################################

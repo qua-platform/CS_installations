@@ -20,12 +20,9 @@ Before proceeding to the next node:
 """
 
 from time import sleep
-from tracemalloc import stop
-from unittest import result
-
 import matplotlib.pyplot as plt
 from configuration_with_octave import *
-from macros import multiplexed_readout, qua_declaration
+from macros import multiplexed_readout, qua_declaration, update_offset
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.callable_from_qua import *
@@ -35,13 +32,6 @@ from qualang_tools.results import fetching_tool, progress_counter
 from scipy import signal
 from scipy.optimize import curve_fit
 
-patch_qua_program_addons()
-
-
-@callable_from_qua
-def update_offset(offset):
-    print(f"External dc sourse set to {offset}")
-    sleep(0.5)
 
 
 ###################
@@ -50,13 +40,13 @@ def update_offset(offset):
 n_avg = 20
 # The frequency sweep around the resonators' frequency "resonator_IF_q"
 span = 10 * u.MHz
-df = 1000 * u.kHz
+df = 100 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)
 # Flux bias sweep in V
 flux_min = -0.49
 flux_max = 0.49
-step = 0.1
-flux = np.arange(flux_min, flux_max + step / 2, step)
+num = 5
+flux = np.linspace(flux_min, flux_max, num)
 
 with program() as multi_res_spec_vs_flux:
     # QUA macro to declare the measurement variables and their corresponding streams for a given number of resonators
@@ -184,7 +174,7 @@ else:
     # Frequency range for the 2 resonators
     frequencies = [dfs + resonator_IF_q1, dfs + resonator_IF_q1]
     # Amplitude for the 2 resonators
-    R = [R1, R2]
+    R = [R1.T, R2.T]
     plt.figure()
     for rr in range(2):
         print(f"Resonator rr{rr+1}")
@@ -205,7 +195,7 @@ else:
             flux, amplitude_fit, frequency_fit, phase_fit, offset_fit
         )
         plt.subplot(2, 1, rr + 1)
-        plt.pcolor(flux, frequencies[rr] / u.MHz, R1)
+        plt.pcolor(flux, frequencies[rr] / u.MHz, R[rr])
         plt.plot(flux, minima / u.MHz, "x-", color="red", label="Flux minima")
         plt.plot(flux, fitted_curve / u.MHz, label="Fitted Cosine", color="orange")
         plt.xlabel("Flux bias [V]")
