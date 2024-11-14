@@ -26,11 +26,15 @@ with program() as manual_mixer_calib:
         play("cw" * amp(0.4), element)
 
 
+
 #####################################
 #  Open Communication with the QOP  #
 #####################################
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 qm = qmm.open_qm(config)
+
+qm.calibrate_element("rr1")
+
 job = qm.execute(manual_mixer_calib)
 
 # When done, the halt command can be called and the offsets can be written directly into the config file.
