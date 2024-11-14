@@ -29,10 +29,15 @@ octave = Octave(
     ip="172.16.33.101",
     port=11232,
 )
+import os
+from qm.octave import QmOctaveConfig
+octave_config = QmOctaveConfig()
+octave_config.set_calibration_db(os.getcwd())
 
 qpu = BasicQuAM(octaves={"oct1": octave})
 
 # Add Octave to the qpu
+
 
 
 octave.initialize_frequency_converters()

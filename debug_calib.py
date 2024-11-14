@@ -1580,11 +1580,11 @@ loaded_config = {
 qmm = QuantumMachinesManager(
     host="172.16.33.101",
     cluster_name="Cluster_81",
-    octave=qpu.octaves["oct1"].get_octave_config(),
+    octave=octave_config,
 )
 qm = qmm.open_qm(loaded_config)
 
 job = qm.execute(prog)
 
 
-qm.calibrate_element()
+# qm.calibrate_element("resonator")
