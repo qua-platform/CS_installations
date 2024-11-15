@@ -34,7 +34,7 @@ def IQ_imbalance(g, phi):
 # Network parameters #
 ######################
 qop_ip = "172.16.33.101"  # Write the QM router IP address
-cluster_name = "Cluster_83"  # Write your cluster_name if version >= QOP220
+cluster_name = "Cluster_81"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 octave_config = None
 

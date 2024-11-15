@@ -62,7 +62,7 @@ qc = 1  # index of control qubit
 qt = 2  # index of target qubit
 
 # Parameters Definition
-n_avg = 200
+n_avg = 1
 cr_type = "direct+cancel+echo"  # "direct", "direct+echo", "direct+cancel", "direct+cancel+echo"
 cr_drive_amp = 1.0  # ratio
 cr_drive_phase = 0.0  # in units of 2pi
