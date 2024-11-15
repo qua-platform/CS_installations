@@ -180,7 +180,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -229,6 +229,7 @@ else:
         plot_three_complex_arrays(x_plot, ground_trace[i], excited_trace[i], norm_subtracted_trace[i])
         plt.suptitle(f"Integration weight optimization for qubit {i+1}")
         plt.tight_layout()
+        plt.show()
 
         weights_real = norm_subtracted_trace.real
         weights_minus_imag = -norm_subtracted_trace.imag

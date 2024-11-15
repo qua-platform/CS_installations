@@ -9,7 +9,6 @@ from time import sleep
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.callable_from_qua import *
-from tqdm.auto import tqdm
 import numpy as np
 
 patch_qua_program_addons()

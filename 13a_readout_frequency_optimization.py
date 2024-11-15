@@ -16,15 +16,13 @@ Next steps before going to the next node:
     - Update the readout frequency (resonator_IF_q) in the configuration.
 """
 
-from qm import QuantumMachinesManager
-from qm.qua import *
-from qm import SimulationConfig
-from configuration_with_octave import *
 import matplotlib.pyplot as plt
+from configuration_with_octave import *
+from macros import multiplexed_readout, qua_declaration
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
 from qualang_tools.loops import from_array
 from qualang_tools.results import fetching_tool, progress_counter
-from macros import multiplexed_readout, qua_declaration
-
 
 ###################
 # The QUA program #
@@ -110,6 +108,7 @@ else:
     job = qm.execute(ro_freq_opt)
     # Get results from QUA program
     data_list = [
+        "n",
         "Ig1_avg",
         "Qg1_avg",
         "Ie1_avg",
@@ -126,10 +125,10 @@ else:
         "Qg2_var",
         "Ie2_var",
         "Qe2_var",
-        "iteration",
     ]
     results = fetching_tool(job, data_list=data_list, mode="live")
     (
+        n,
         Ig1_avg,
         Qg1_avg,
         Ie1_avg,
@@ -146,10 +145,9 @@ else:
         Qg2_var,
         Ie2_var,
         Qe2_var,
-        iteration,
     ) = results.fetch_all()
     # Progress bar
-    progress_counter(iteration, n_avg, start_time=results.get_start_time())
+    progress_counter(n, n_avg, start_time=results.get_start_time())
     # Derive the SNR
     Z1 = (Ie1_avg - Ig1_avg) + 1j * (Qe1_avg - Qg1_avg)
     var1 = (Ig1_var + Qg1_var + Ie1_var + Qe1_var) / 4
@@ -175,6 +173,8 @@ else:
     plt.pause(0.1)
     print(f"The optimal readout frequency is {dfs[np.argmax(SNR1)] + resonator_IF_q1} Hz (SNR={max(SNR1)})")
     print(f"The optimal readout frequency is {dfs[np.argmax(SNR2)] + resonator_IF_q2} Hz (SNR={max(SNR2)})")
+
+    plt.show()
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()

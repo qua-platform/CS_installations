@@ -27,15 +27,17 @@ https://github.com/bornman-nick/quantum-state-and-process-tomography. See that
 notebook for a detailed explanation of standard two-qubit state tomography
 """
 
+from turtle import title
 import numpy as np
 from configuration_with_octave import *
 from helper_functions import rotated_multiplexed_state_discrimination
+from qiskit.visualization import plot_state_city
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.results import fetching_tool, progress_counter
 from scipy.linalg import sqrtm
 
-###################
+###################s
 # The QUA program #
 ###################
 
@@ -76,9 +78,7 @@ def prepare_state(qubit1, qubit2):
 
 # matrix representation of the ideal composite qubit state from above
 # (|1> 1/sqrt(2)(|0>+i|1>)) (<1| 1/sqrt(2)(<0|-i<1|))
-ideal_state = np.array(
-    [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1 / 2, 1j / 2], [0, 0, -1j / 2, 1 / 2]]
-)
+ideal_state = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1 / 2, 1j / 2], [0, 0, -1j / 2, 1 / 2]])
 
 
 with program() as two_qubit_state_tomography:
@@ -101,16 +101,12 @@ with program() as two_qubit_state_tomography:
     p10 = declare(int)  # variable to track number of |1>|0> measurements
     p11 = declare(int)  # variable to track number of |1>|1> measurements
 
-    prob_vec_results_st = (
-        declare_stream()
-    )  # Stream for the probability vector - average of states vector
+    prob_vec_results_st = declare_stream()  # Stream for the probability vector - average of states vector
 
     c = declare(int)  # QUA variable for switching between projections
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
-        with for_(
-            c, 1, c <= 15, c + 1
-        ):  # QUA for_ loop for switching between projections
+        with for_(c, 1, c <= 15, c + 1):  # QUA for_ loop for switching between projections
 
             prepare_state(qubit1, qubit2)
             align()
@@ -247,14 +243,12 @@ with program() as two_qubit_state_tomography:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -270,7 +264,7 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(two_qubit_state_tomography)
     # Get results from QUA program
-    results = fetching_tool(job, data_list=["probs", "iteration"], mode="live")
+    results = fetching_tool(job, data_list=["iteration", "probs"], mode="live")
 
     while results.is_processing():
 
@@ -294,17 +288,11 @@ else:
     # For cases 5, 6, 7, 9, 10, 11, 13, 14, 15 - P00 + P11 - P10 - P01
     for i in range(1, 16):
         if i in [1, 2, 3]:
-            stokes[i - 1] = (
-                probs[i - 1][0] + probs[i - 1][2] - probs[i - 1][1] - probs[i - 1][3]
-            )
+            stokes[i - 1] = probs[i - 1][0] + probs[i - 1][2] - probs[i - 1][1] - probs[i - 1][3]
         elif i in [4, 8, 12]:
-            stokes[i - 1] = (
-                probs[i - 1][0] + probs[i - 1][1] - probs[i - 1][2] - probs[i - 1][3]
-            )
+            stokes[i - 1] = probs[i - 1][0] + probs[i - 1][1] - probs[i - 1][2] - probs[i - 1][3]
         elif i in [5, 6, 7, 9, 10, 11, 13, 14, 15]:
-            stokes[i - 1] = (
-                probs[i - 1][0] + probs[i - 1][3] - probs[i - 1][1] - probs[i - 1][2]
-            )
+            stokes[i - 1] = probs[i - 1][0] + probs[i - 1][3] - probs[i - 1][1] - probs[i - 1][2]
 
     # Derive the density matrix
     I = np.array([[1, 0], [0, 1]])
@@ -353,8 +341,8 @@ else:
 
     sqrt_ideal_state = sqrtm(ideal_state)
 
-    state_fidelity = (
-        np.abs(sqrtm(sqrt_ideal_state @ rho @ sqrt_ideal_state).trace())
-    ) ** 2
+    state_fidelity = (np.abs(sqrtm(sqrt_ideal_state @ rho @ sqrt_ideal_state).trace())) ** 2
 
+    plot_state_city(state=rho, title="Two Qubit State Tomography", color=['royalblue', 'crimson'])
+    plt.show()
     print(f"The state fidelity is: {np.round(state_fidelity, decimals=4)}")
