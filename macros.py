@@ -7,8 +7,10 @@ All the macros below have been written and tested with the basic configuration. 
 from time import sleep
 
 from qm.qua import *
-from qualang_tools.callable_from_qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
+from qualang_tools.callable_from_qua import *
+from tqdm.auto import tqdm
+import numpy as np
 
 patch_qua_program_addons()
 
@@ -20,8 +22,13 @@ patch_qua_program_addons()
 
 @callable_from_qua
 def update_offset(offset):
+    """
+    Callable from QUA that updates the value of the external dc source.
+
+    :param offset: The new value of the offset in Volts.
+    :type offset: float
+    """
     print(f"External dc sourse set to {offset}")
-    sleep(0.5)
 
 
 def two_step_readout(element: str, I, I_st, Q, Q_st):
@@ -49,9 +56,7 @@ def cz_gate(dc0):
     wait(10)  # for flux pulse to relax back completely
 
 
-def multiplexed_readout(
-    I, I_st, Q, Q_st, resonators, sequential=False, amplitude=1.0, weights=""
-):
+def multiplexed_readout(I, I_st, Q, Q_st, resonators, sequential=False, amplitude=1.0, weights=""):
     """Perform multiplexed readout on two resonators"""
     if type(resonators) is not list:
         resonators = [resonators]
@@ -130,11 +135,7 @@ def reset_qubit(method: str, qubit: str, resonator: str, **kwargs):
             raise Exception("'threshold' must be specified for active reset.")
         # Check max_tries
         max_tries = kwargs.get("max_tries", 1)
-        if (
-            (max_tries is None)
-            or (not float(max_tries).is_integer())
-            or (max_tries < 1)
-        ):
+        if (max_tries is None) or (not float(max_tries).is_integer()) or (max_tries < 1):
             raise Exception("'max_tries' must be an integer > 0.")
         # Check Ig
         Ig = kwargs.get("Ig", None)

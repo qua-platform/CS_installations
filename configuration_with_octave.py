@@ -2,6 +2,7 @@
 Octave configuration working for QOP222 and qm-qua==1.1.5 and newer.
 """
 
+import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -32,6 +33,7 @@ save_dir = Path().absolute() / "QM" / "INSTALLATION" / "data"
 from qm.octave import QmOctaveConfig
 
 octave_config = QmOctaveConfig()
+octave_config.set_calibration_db(os.getcwd())
 
 #####################
 # OPX configuration #
@@ -57,9 +59,11 @@ qubit1_T1 = int(3 * u.us)
 qubit2_T1 = int(3 * u.us)
 thermalization_time = 5 * max(qubit1_T1, qubit2_T1)
 
-# CW pulse parameter
-const_len = 1000
-const_amp = 270 * u.mV
+# Saturation pulse parameter
+saturation_len_q1 = 1000
+saturation_amp_q1 = 270 * u.mV
+saturation_len_q2 = 1000
+saturation_amp_q2 = 270 * u.mV
 
 # Pi pulse parameters
 pi_len = 40
@@ -257,28 +261,18 @@ depletion_time = 2 * u.us
 
 opt_weights = False
 if opt_weights:
-    from qualang_tools.config.integration_weights_tools import (
-        convert_integration_weights,
-    )
+    from qualang_tools.config.integration_weights_tools import convert_integration_weights
 
     weights_q1 = np.load("optimal_weights_q1.npz")
     opt_weights_real_q1 = convert_integration_weights(weights_q1["weights_real"])
-    opt_weights_minus_imag_q1 = convert_integration_weights(
-        weights_q1["weights_minus_imag"]
-    )
+    opt_weights_minus_imag_q1 = convert_integration_weights(weights_q1["weights_minus_imag"])
     opt_weights_imag_q1 = convert_integration_weights(weights_q1["weights_imag"])
-    opt_weights_minus_real_q1 = convert_integration_weights(
-        weights_q1["weights_minus_real"]
-    )
+    opt_weights_minus_real_q1 = convert_integration_weights(weights_q1["weights_minus_real"])
     weights_q2 = np.load("optimal_weights_q2.npz")
     opt_weights_real_q2 = convert_integration_weights(weights_q2["weights_real"])
-    opt_weights_minus_imag_q2 = convert_integration_weights(
-        weights_q2["weights_minus_imag"]
-    )
+    opt_weights_minus_imag_q2 = convert_integration_weights(weights_q2["weights_minus_imag"])
     opt_weights_imag_q2 = convert_integration_weights(weights_q2["weights_imag"])
-    opt_weights_minus_real_q2 = convert_integration_weights(
-        weights_q2["weights_minus_real"]
-    )
+    opt_weights_minus_real_q2 = convert_integration_weights(weights_q2["weights_minus_real"])
 else:
     opt_weights_real_q1 = [(1.0, readout_len)]
     opt_weights_minus_imag_q1 = [(0.0, readout_len)]
@@ -298,9 +292,7 @@ ge_threshold_q2 = 0.0
 
 # Two-Step readout pre-pulse:
 pre_pulse_len = 10
-pre_pulse_samples = np.concatenate(
-    (np.zeros(16 - pre_pulse_len), 0.5 * np.ones(pre_pulse_len))
-)
+pre_pulse_samples = np.concatenate((np.zeros(16 - pre_pulse_len), 0.5 * np.ones(pre_pulse_len)))
 
 # Resonator frequency versus flux fit parameters according to resonator_spec_vs_flux
 # amplitude * np.cos(2 * np.pi * frequency * x + phase) + offset (Hz, 1/V, degrees, Hz)
@@ -337,7 +329,6 @@ config = {
             "RF_outputs": {"port": ("oct1", 1)},
             "intermediate_frequency": resonator_IF_q1,
             "operations": {
-                "cw": "const_pulse",
                 "readout": "readout_pulse_q1",
                 "step": "step_pulse",
             },
@@ -349,8 +340,8 @@ config = {
             "RF_outputs": {"port": ("oct1", 1)},
             "intermediate_frequency": resonator_IF_q2,
             "operations": {
-                "cw": "const_pulse",
                 "readout": "readout_pulse_q2",
+                "step": "step_pulse",
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -359,7 +350,7 @@ config = {
             "RF_inputs": {"port": ("oct1", 2)},
             "intermediate_frequency": qubit_IF_q1,
             "operations": {
-                "cw": "const_pulse",
+                "saturation": "saturation_pulse_q1",
                 "x180": "x180_pulse_q1",
                 "x90": "x90_pulse_q1",
                 "-x90": "-x90_pulse_q1",
@@ -372,7 +363,7 @@ config = {
             "RF_inputs": {"port": ("oct1", 3)},
             "intermediate_frequency": qubit_IF_q2,
             "operations": {
-                "cw": "const_pulse",
+                "saturation": "saturation_pulse_q2",
                 "x180": "x180_pulse_q2",
                 "x90": "x90_pulse_q2",
                 "-x90": "-x90_pulse_q2",
@@ -414,11 +405,19 @@ config = {
         }
     },
     "pulses": {
-        "const_pulse": {
+        "saturation_pulse_q1": {
             "operation": "control",
-            "length": const_len,
+            "length": saturation_len_q1,
             "waveforms": {
-                "I": "const_wf",
+                "I": "const_wf_q1",
+                "Q": "zero_wf",
+            },
+        },
+        "saturation_pulse_q2": {
+            "operation": "control",
+            "length": saturation_len_q2,
+            "waveforms": {
+                "I": "const_wf_q2",
                 "Q": "zero_wf",
             },
         },
@@ -568,7 +567,8 @@ config = {
         },
     },
     "waveforms": {
-        "const_wf": {"type": "constant", "sample": const_amp},
+        "const_wf_q1": {"type": "constant", "sample": saturation_amp_q1},
+        "const_wf_q2": {"type": "constant", "sample": saturation_amp_q2},
         "zero_wf": {"type": "constant", "sample": 0.0},
         "step_wf": {"type": "arbitrary", "samples": pre_pulse_samples.tolist()},
         "x90_I_wf_q1": {"type": "arbitrary", "samples": x90_I_wf_q1.tolist()},

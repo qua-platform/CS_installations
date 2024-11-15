@@ -16,7 +16,7 @@ Before proceeding to the next node:
 
 import matplotlib.pyplot as plt
 from configuration_with_octave import *
-from macros import multiplexed_readout, qua_declaration
+from macros import multiplexed_readout, qua_declaration, update_offset
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.loops import from_array
@@ -33,50 +33,41 @@ def cosine_func(x, amplitude, frequency, phase, offset):
 ###################
 # The QUA program #
 ###################
-n_avg = 1000  # The number of averages
+n_avg = 10  # The number of averages
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
-saturation_len = 10 * u.us  # In ns
-saturation_amp = (
-    0.5  # pre-factor to the value defined in the config - restricted to [-2; 2)
-)
+saturation_len = 10_000  # In ns
+saturation_amp = 0.5  # pre-factor to the value defined in the config - restricted to [-2; 2)
 # Qubit detuning sweep with respect to qubit_IF
 dfs = np.arange(-20e6, +20e6, 0.5e6)
 # Flux sweep
-dcs = np.arange(-0.5, 0.49, 0.02)
+dcs = np.arange(-0.5, 0.49, 0.2)
 flux_offset_1 = 0
 flux_offset_2 = 0
 
 # The fit parameters are take from the config
 fitted_curve1 = (
-    cosine_func(
-        dcs + flux_offset_1, amplitude_fit1, frequency_fit1, phase_fit1, offset_fit1
-    )
-    * u.MHz
+    cosine_func(dcs + flux_offset_1, amplitude_fit1, frequency_fit1, phase_fit1, offset_fit1) * u.MHz
 ).astype(int)
 fitted_curve2 = (
-    cosine_func(
-        dcs + flux_offset_2, amplitude_fit2, frequency_fit2, phase_fit2, offset_fit2
-    )
-    * u.MHz
+    cosine_func(dcs + flux_offset_2, amplitude_fit2, frequency_fit2, phase_fit2, offset_fit2) * u.MHz
 ).astype(int)
 
 with program() as multi_qubit_spec_vs_flux:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
     df = declare(int)  # QUA variable for the qubit detuning
     dc = declare(fixed)  # QUA variable for the flux bias
-    resonator_freq1 = declare(
-        int, value=fitted_curve1.tolist()
-    )  # res freq vs flux table
-    resonator_freq2 = declare(
-        int, value=fitted_curve2.tolist()
-    )  # res freq vs flux table
-    index = declare(
-        int, value=0
-    )  # index to get the right resonator freq for a given flux
+    resonator_freq1 = declare(int, value=fitted_curve1.tolist())  # res freq vs flux table
+    resonator_freq2 = declare(int, value=fitted_curve2.tolist())  # res freq vs flux table
+    index = declare(int, value=0)  # index to get the right resonator freq for a given flux
 
     assign(index, 0)
-
     with for_(*from_array(dc, dcs)):
+        update_offset(dc)
+        # Update the resonator frequency to always measure on resonance
+        update_frequency("rr1", resonator_freq1[index] + resonator_IF_q1)
+        update_frequency("rr2", resonator_freq2[index] + resonator_IF_q2)
+        assign(index, index + 1)
+        save(index, n_st)
         with for_(n, 0, n < n_avg, n + 1):
             with for_(*from_array(df, dfs)):
                 # Update the frequency of the two qubit elements
@@ -84,20 +75,16 @@ with program() as multi_qubit_spec_vs_flux:
                 update_frequency("q2_xy", df + qubit_IF_q2)
                 # Update the resonator frequency vs flux index
 
-                # Update the resonator frequency to always measure on resonance
-                # update_frequency("rr1", resonator_freq1[index] + resonator_IF_q1)
-                # update_frequency("rr2", resonator_freq2[index] + resonator_IF_q2)
-
                 # Saturate qubit
                 play(
                     "saturation" * amp(saturation_amp),
                     "q1_xy",
-                    duration=saturation_len * u.ns,
+                    duration=saturation_len,
                 )
                 play(
                     "saturation" * amp(saturation_amp),
                     "q2_xy",
-                    duration=saturation_len * u.ns,
+                    duration=saturation_len,
                 )
 
                 # Measure after the qubit pulses (can be commented for measuring while driving if T1 is short)
@@ -108,33 +95,21 @@ with program() as multi_qubit_spec_vs_flux:
                 # Wait for the qubit to decay to the ground state
                 wait(thermalization_time * u.ns)
                 # Update the resonator frequency vs flux index
-                assign(index, index + 1)
             # Save the averaging iteration to get the progress bar
-        save(n, n_st)
 
     with stream_processing():
         n_st.save("n")
         # resonator 1
-        I_st[0].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(
-            len(dcs)
-        ).save("I1")
-        Q_st[0].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(
-            len(dcs)
-        ).save("Q1")
+        I_st[0].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(dcs)).save("I1")
+        Q_st[0].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(dcs)).save("Q1")
         # resonator 2
-        I_st[1].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(
-            len(dcs)
-        ).save("I2")
-        Q_st[1].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(
-            len(dcs)
-        ).save("Q2")
+        I_st[1].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(dcs)).save("I2")
+        Q_st[1].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(dcs)).save("Q2")
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 ###########################
 # Run or Simulate Program #
@@ -163,10 +138,10 @@ else:
         # Fetch results
         n, I1, Q1, I2, Q2 = results.fetch_all()
         # Progress bar
-        progress_counter(n, n_avg, start_time=results.start_time)
+        progress_counter(n, len(dcs), start_time=results.start_time)
         # Data analysis
-        S1 = u.demod2volts(I1 + 1j * Q1, readout_len)
-        S2 = u.demod2volts(I2 + 1j * Q2, readout_len)
+        S1 = u.demod2volts(I1 + 1j * Q1, readout_len).T
+        S2 = u.demod2volts(I2 + 1j * Q2, readout_len).T
         R1 = np.abs(S1)
         phase1 = np.angle(S1)
         R2 = np.abs(S2)
@@ -213,5 +188,7 @@ else:
         plt.ylabel("q2 IF [MHz]")
         plt.tight_layout()
         plt.pause(0.1)
+
+    plt.show()
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
