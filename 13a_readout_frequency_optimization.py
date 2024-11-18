@@ -149,30 +149,30 @@ else:
     # Progress bar
     progress_counter(n, n_avg, start_time=results.get_start_time())
     # Derive the SNR
-    Z1 = (Ie0_avg - Ig0_avg) + 1j * (Qe0_avg - Qg0_avg)
-    var1 = (Ig0_var + Qg0_var + Ie0_var + Qe0_var) / 4
+    Z0 = (Ie0_avg - Ig0_avg) + 1j * (Qe0_avg - Qg0_avg)
+    var0 = (Ig0_var + Qg0_var + Ie0_var + Qe0_var) / 4
+    SNR0 = ((np.abs(Z0)) ** 2) / (2 * var0)
+    Z1 = (Ie1_avg - Ig1_avg) + 1j * (Qe1_avg - Qg1_avg)
+    var1 = (Ig1_var + Qg1_var + Ie1_var + Qe1_var) / 4
     SNR1 = ((np.abs(Z1)) ** 2) / (2 * var1)
-    Z2 = (Ie1_avg - Ig1_avg) + 1j * (Qe1_avg - Qg1_avg)
-    var2 = (Ig1_var + Qg1_var + Ie1_var + Qe1_var) / 4
-    SNR2 = ((np.abs(Z2)) ** 2) / (2 * var2)
     # Plot results
     plt.suptitle("Readout frequency optimization")
     plt.subplot(121)
     plt.cla()
-    plt.plot(dfs / u.MHz, SNR1, ".-")
+    plt.plot(dfs / u.MHz, SNR0, ".-")
     plt.title(f"Qubit 1 around {resonator_IF_q1 / u.MHz} MHz")
     plt.xlabel("Readout frequency detuning [MHz]")
     plt.ylabel("SNR")
     plt.grid("on")
-    plt.subplot(121)
+    plt.subplot(122)
     plt.cla()
-    plt.plot(dfs / u.MHz, SNR2, ".-")
+    plt.plot(dfs / u.MHz, SNR1, ".-")
     plt.title(f"Qubit 2 around {resonator_IF_q2 / u.MHz} MHz")
     plt.xlabel("Readout frequency detuning [MHz]")
     plt.grid("on")
     plt.pause(0.1)
-    print(f"The optimal readout frequency is {dfs[np.argmax(SNR1)] + resonator_IF_q1} Hz (SNR={max(SNR1)})")
-    print(f"The optimal readout frequency is {dfs[np.argmax(SNR2)] + resonator_IF_q2} Hz (SNR={max(SNR2)})")
+    print(f"The optimal readout frequency is {dfs[np.argmax(SNR0)] + resonator_IF_q1} Hz (SNR={max(SNR0)})")
+    print(f"The optimal readout frequency is {dfs[np.argmax(SNR1)] + resonator_IF_q2} Hz (SNR={max(SNR1)})")
 
     plt.show()
 
