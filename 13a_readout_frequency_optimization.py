@@ -109,6 +109,14 @@ else:
     # Get results from QUA program
     data_list = [
         "n",
+        "Ig0_avg",
+        "Qg0_avg",
+        "Ie0_avg",
+        "Qe0_avg",
+        "Ig0_var",
+        "Qg0_var",
+        "Ie0_var",
+        "Qe0_var",
         "Ig1_avg",
         "Qg1_avg",
         "Ie1_avg",
@@ -117,18 +125,18 @@ else:
         "Qg1_var",
         "Ie1_var",
         "Qe1_var",
-        "Ig2_avg",
-        "Qg2_avg",
-        "Ie2_avg",
-        "Qe2_avg",
-        "Ig2_var",
-        "Qg2_var",
-        "Ie2_var",
-        "Qe2_var",
     ]
     results = fetching_tool(job, data_list=data_list, mode="live")
     (
         n,
+        Ig0_avg,
+        Qg0_avg,
+        Ie0_avg,
+        Qe0_avg,
+        Ig0_var,
+        Qg0_var,
+        Ie0_var,
+        Qe0_var,
         Ig1_avg,
         Qg1_avg,
         Ie1_avg,
@@ -137,23 +145,15 @@ else:
         Qg1_var,
         Ie1_var,
         Qe1_var,
-        Ig2_avg,
-        Qg2_avg,
-        Ie2_avg,
-        Qe2_avg,
-        Ig2_var,
-        Qg2_var,
-        Ie2_var,
-        Qe2_var,
     ) = results.fetch_all()
     # Progress bar
     progress_counter(n, n_avg, start_time=results.get_start_time())
     # Derive the SNR
-    Z1 = (Ie1_avg - Ig1_avg) + 1j * (Qe1_avg - Qg1_avg)
-    var1 = (Ig1_var + Qg1_var + Ie1_var + Qe1_var) / 4
+    Z1 = (Ie0_avg - Ig0_avg) + 1j * (Qe0_avg - Qg0_avg)
+    var1 = (Ig0_var + Qg0_var + Ie0_var + Qe0_var) / 4
     SNR1 = ((np.abs(Z1)) ** 2) / (2 * var1)
-    Z2 = (Ie2_avg - Ig2_avg) + 1j * (Qe2_avg - Qg2_avg)
-    var2 = (Ig2_var + Qg2_var + Ie2_var + Qe2_var) / 4
+    Z2 = (Ie1_avg - Ig1_avg) + 1j * (Qe1_avg - Qg1_avg)
+    var2 = (Ig1_var + Qg1_var + Ie1_var + Qe1_var) / 4
     SNR2 = ((np.abs(Z2)) ** 2) / (2 * var2)
     # Plot results
     plt.suptitle("Readout frequency optimization")

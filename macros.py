@@ -30,31 +30,42 @@ def update_offset(offset):
     print(f"External dc sourse set to {offset}")
 
 
-def two_step_readout(element: str, I, I_st, Q, Q_st):
+def two_step_readout(element: str, I, I_st, Q, Q_st, weights=""):
     play("step", element)
     measure(
         "readout",
         element,
         None,
-        dual_demod.full("cos", "sin", I),
-        dual_demod.full("minus_sin", "cos", Q),
+        dual_demod.full(weights + "cos", weights + "sin", I),
+        dual_demod.full(weights + "minus_sin", weights + "cos", Q),
     )
     if I_st is not None:
         save(I, I_st)
     if Q_st is not None:
         save(Q, Q_st)
 
+def multiplexed_step_readout(I, I_st, Q, Q_st, resonators, sequential=False, amplitude=1.0, weights=""):
+    """Perform multiplexed readout on two resonators"""
+    if type(resonators) is not list:
+        resonators = [resonators]
 
-def cz_gate(dc0):
-    set_dc_offset("q1_z", "single", -0.10557)
-    wait(189 // 4, "q1_z")
-    # set_dc_offset("q1_z", "single", -0.10342)
-    # wait(161//4, "q1_z")
-    align()
-    set_dc_offset("q1_z", "single", dc0)
-    wait(10)  # for flux pulse to relax back completely
+    for ind, res in enumerate(resonators):
+        play("step", f"rr{res}")
+        measure(
+            "readout" * amp(amplitude),
+            f"rr{res}",
+            None,
+            dual_demod.full(weights + "cos", weights + "sin", I[ind]),
+            dual_demod.full(weights + "minus_sin", weights + "cos", Q[ind]),
+        )
 
+        if I_st is not None:
+            save(I[ind], I_st[ind])
+        if Q_st is not None:
+            save(Q[ind], Q_st[ind])
 
+        if sequential and ind < len(resonators) - 1:
+            align(f"rr{res}", f"rr{res+1}")
 def multiplexed_readout(I, I_st, Q, Q_st, resonators, sequential=False, amplitude=1.0, weights=""):
     """Perform multiplexed readout on two resonators"""
     if type(resonators) is not list:
