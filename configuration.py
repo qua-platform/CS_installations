@@ -140,7 +140,7 @@ config = {
                 },
             },
         },
-        "RF": {
+        "Spin": {
             "singleInput": {"port": ("con1", 3)},
             "intermediate_frequency": rf_frequency,
             "operations": {

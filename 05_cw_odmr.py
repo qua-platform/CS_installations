@@ -131,9 +131,9 @@ else:
         plt.pause(0.1)
 
 
-        # Save results
-        script_name = Path(__file__).name
-        data_handler = DataHandler(root_data_folder=save_dir)
-        save_data_dict.update({"fig_live": fig})
-        data_handler.additional_files = {script_name: script_name}
-        data_handler.save_data(data=save_data_dict, name="cw_odmr")
+    # Save results
+    script_name = Path(__file__).name
+    data_handler = DataHandler(root_data_folder=save_dir)
+    save_data_dict.update({"fig_live": fig})
+    data_handler.additional_files = {script_name: script_name}
+    data_handler.save_data(data=save_data_dict, name="cw_odmr")
