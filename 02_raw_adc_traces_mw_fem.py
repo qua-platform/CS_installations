@@ -11,7 +11,7 @@ correcting any non-zero DC offsets, and estimating the SNR.
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from configuration import *
+from configuration_with_lf_fem_and_mw_fem import *
 import matplotlib.pyplot as plt
 
 
@@ -84,3 +84,4 @@ else:
     plt.xlabel("Time [ns]")
     plt.legend()
     plt.tight_layout()
+plt.show()

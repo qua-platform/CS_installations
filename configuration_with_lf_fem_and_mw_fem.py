@@ -11,9 +11,9 @@ from qualang_tools.units import unit
 ######################
 # Network parameters #
 ######################
-qop_ip = "127.0.0.1"  # Write the QM router IP address
-cluster_name = None  # Write your cluster_name if version >= QOP220
-qop_port = None  # Write the QOP port if version < QOP220
+qop_ip = "172.16.33.107"  # Write the QM router IP address
+cluster_name = "Beta_8"  # Write your cluster_name if version >= QOP220
+qop_port = 9510  # Write the QOP port if version < QOP220
 
 # Path to save data
 save_dir = Path().absolute() / "QM" / "INSTALLATION" / "data"
@@ -22,8 +22,8 @@ save_dir = Path().absolute() / "QM" / "INSTALLATION" / "data"
 # OPX configuration #
 #####################
 con = "con1"
-lf_fem = 1
-mw_fem = 5
+lf_fem = 3
+mw_fem = 1
 
 # Set octave_config to None if no octave are present
 octave_config = None
@@ -142,7 +142,7 @@ resonator_power = 1  # power in dBm at waveform amp = 1
 readout_len = 5000
 readout_amp = 0.6
 
-time_of_flight = 24
+time_of_flight = 288 #24
 depletion_time = 2 * u.us
 
 
@@ -187,7 +187,7 @@ config = {
         con: {
             "type": "opx1000",
             "fems": {
-                mw_fem: {
+                1: {
                     # The keyword "band" refers to the following frequency bands:
                     #   1: (50 MHz - 5.5 GHz)
                     #   2: (4.5 GHz - 7.5 GHz)
@@ -208,7 +208,7 @@ config = {
                             "band": 2,
                             "upconverter_frequency": resonator_LO,
                         },  # resonator
-                        2: {"full_scale_power_dbm": qubit_power, "band": 2, "upconverter_frequency": qubit_LO},  # qubit
+                        8: {"full_scale_power_dbm": qubit_power, "band": 2, "upconverter_frequency": qubit_LO},  # qubit
                     },
                     "digital_outputs": {},
                     "analog_inputs": {
@@ -266,7 +266,7 @@ config = {
         },
         "resonator": {
             "MWInput": {
-                "port": (con, mw_fem, 2),
+                "port": (con, mw_fem, 1),
             },
             "intermediate_frequency": resonator_IF,
             "operations": {
