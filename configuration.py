@@ -4,7 +4,7 @@ from itertools import accumulate
 from qualang_tools.units import unit
 from qualang_tools.config.waveform_tools import drag_gaussian_pulse_waveforms
 import matplotlib.pyplot as plt
-
+import copy
 
 def generate_gaussian_waveform(
     amplitude: float,
@@ -93,20 +93,23 @@ def generate_waveform_segments(
     """
     ts_segments = []
     wf_segments = []
-    num_segments = len(wf_segments_cycle)
-    for i in range(num_segments - 1):
-        t_cycle_from = wf_segments_cycle[i]
-        if i < num_segments - 1:
-            t_cycle_to = wf_segments_cycle[i + 1]
-        else:
-            t_cycle_to = wf_segments_cycle[i + 1] + 1
+    num_segments = len(wf_segments_cycle) - 1
+
+    for i in range(num_segments):
         
-        # print(t_cycle_from, t_cycle_to)
+        t_cycle_from = wf_segments_cycle[i]
+        t_cycle_to = wf_segments_cycle[i + 1]
+ 
         t_ns_from = 4 * t_cycle_from
         t_ns_to = 4 * t_cycle_to
         
-        ts_segments.append(np.arange(t_ns_from, t_ns_to))
-        wf_segments.append(wf_array[t_ns_from:t_ns_to])
+        _ts = np.arange(t_ns_from, t_ns_to) # - i
+        _wf = copy.deepcopy(wf_array[_ts[0]:_ts[-1] + 1])
+        # if i < num_segments - 1:
+        #     _wf[-3:] = 0
+
+        ts_segments.append(_ts)
+        wf_segments.append(_wf)
 
     return ts_segments, wf_segments
 
@@ -124,22 +127,44 @@ cooling_fm_freq = 0 * u.MHz # in units of Hz
 cooling_fm_len = 1000  # in ns
 cooling_fm_amp = 0.2  # in units of volts
 
-gauss_amp = 0.1
+gauss_amp = 0.2
 gauss_rise_fall_len_ns = 1000 // 4 * 4 # ensure it's multiple of 4ns 
 num_gauss_rise_fall_wf_segments = 6
 
-gauss_wf = generate_gaussian_waveform(
+# generate time (in cycle) segments
+wf_segments_cycle = get_waveform_segments_length_cycle(
+    waveform_len_ns=gauss_rise_fall_len_ns,
+    num_waveform_segments=num_gauss_rise_fall_wf_segments,
+)
+# gauss rise
+gauss_rise_wf = generate_gaussian_waveform(
     amplitude=gauss_amp,
     length=gauss_rise_fall_len_ns,
     sigma_ratio=0.2,
     rise_fall="rise", # rise or fall
 )
-wf_segments_cycle = get_waveform_segments_length_cycle(
-    waveform_len_ns=gauss_rise_fall_len_ns,
-    num_waveform_segments=num_gauss_rise_fall_wf_segments,
+# gauss rise
+gauss_rise_wf = generate_gaussian_waveform(
+    amplitude=gauss_amp,
+    length=gauss_rise_fall_len_ns,
+    sigma_ratio=0.2,
+    rise_fall="rise", # rise or fall
 )
+# generate gauss rise segments for time (in ns) and waveform
 gauss_rise_ts_segments, gauss_rise_wf_segments = generate_waveform_segments(
-    wf_array=gauss_wf,
+    wf_array=gauss_rise_wf,
+    wf_segments_cycle=wf_segments_cycle,
+)
+# gauss fall
+gauss_fall_wf = generate_gaussian_waveform(
+    amplitude=gauss_amp,
+    length=gauss_rise_fall_len_ns,
+    sigma_ratio=0.2,
+    rise_fall="fall", # rise or fall
+)
+# generate gauss fall segments for time (in ns) and waveform
+gauss_fall_ts_segments, gauss_fall_wf_segments = generate_waveform_segments(
+    wf_array=gauss_fall_wf,
     wf_segments_cycle=wf_segments_cycle,
 )
 
@@ -149,21 +174,9 @@ config = {
         "con1": {
             "analog_outputs": {
                 1: {"offset": 0.0, "delay": 0.0},
-                2: {"offset": 0.0, "delay": 0.0},
-                3: {"offset": 0.0, "delay": 0.0}, 
-                4: {"offset": 0.0, "delay": 0.0},
             },
             "digital_outputs": {
-                1: {}, 
-                2: {},
-                3: {},
-                4: {},
-                5: {},
-                6: {},
-                7: {},
-                8: {}, 
-                9: {},
-                10: {},
+                1: {},
             },
             "analog_inputs": {},
         }
@@ -176,35 +189,14 @@ config = {
             "intermediate_frequency": cooling_fm_freq,
             "operations": {
                 "const": "const_pulse",
-                "const_1us": "const_pulse_1us",
-                "const_1ms": "const_pulse_1ms",
-                "const_1s": "const_pulse_1s",
-            },
-        },
-        "cooling_fm_even_segment": {
-            "singleInput": {
-                "port": ("con1", 1)
-            },
-            "intermediate_frequency": cooling_fm_freq,
-            "operations": {
-                "const": "const_pulse",
                 **{
                     f"gauss_rise_{s:02d}": f"gauss_rise_pulse_{s:02d}"
-                    for s in range(num_gauss_rise_fall_wf_segments) if s % 2 == 0
-                }
-            },
-        },
-        "cooling_fm_odd_segment": {
-            "singleInput": {
-                "port": ("con1", 1)
-            },
-            "intermediate_frequency": cooling_fm_freq,
-            "operations": {
-                "const": "const_pulse",
+                    for s in range(num_gauss_rise_fall_wf_segments)
+                },
                 **{
-                    f"gauss_rise_{s:02d}": f"gauss_rise_pulse_{s:02d}"
-                    for s in range(num_gauss_rise_fall_wf_segments) if s % 2 == 1
-                }
+                    f"gauss_fall_{s:02d}": f"gauss_rise_pulse_{s:02d}"
+                    for s in range(num_gauss_rise_fall_wf_segments)
+                },
             },
         },
     },
@@ -214,21 +206,6 @@ config = {
             "length": cooling_fm_len,
             "waveforms": {"single": "const_wf"},
         },
-        "const_pulse_1us": {
-            "operation": "control",
-            "length": 1 * u.us,
-            "waveforms": {"single": "const_wf"},
-        },
-        "const_pulse_1ms": {
-            "operation": "control",
-            "length": 1 * u.ms,
-            "waveforms": {"single": "const_wf"},
-        },
-        "const_pulse_1s": {
-            "operation": "control",
-            "length": 1 * u.s,
-            "waveforms": {"single": "const_wf"},
-        },
         **{
             f"gauss_rise_pulse_{s:02d}": {
                 "operation": "control",
@@ -236,7 +213,15 @@ config = {
                 "waveforms": {"single": f"gauss_rise_wf_{s:02d}"},
             }
             for s, _ts in enumerate(gauss_rise_ts_segments)
-        }
+        },
+        **{
+            f"gauss_fall_pulse_{s:02d}": {
+                "operation": "control",
+                "length": len(_ts) * u.ns,
+                "waveforms": {"single": f"gauss_fall_wf_{s:02d}"},
+            }
+            for s, _ts in enumerate(gauss_rise_ts_segments)
+        },
     },
     "waveforms": {
         "const_wf": {"type": "constant", "sample": cooling_fm_amp},
@@ -247,7 +232,14 @@ config = {
                 "samples": _wf,
             }
             for s, _wf in enumerate(gauss_rise_wf_segments)
-        }
+        },
+        **{
+            f"gauss_fall_wf_{s:02d}": {
+                "type": "arbitrary",
+                "samples": _wf,
+            }
+            for s, _wf in enumerate(gauss_fall_wf_segments)
+        },
     },
     "digital_waveforms": {
         "ON": {"samples": [(1, 0)]},  # [(on/off, ns)]
