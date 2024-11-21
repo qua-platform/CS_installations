@@ -17,8 +17,8 @@ from qualang_tools.loops import from_array
 # The QUA program #
 ###################
 
-total_integration_time = int(1 * u.ms)  # 100ms
-single_integration_time_ns = int(5 * u.us)  # 500us
+total_integration_time = int(100 * u.ms)  # 100ms
+single_integration_time_ns = int(500 * u.us)  # 500us
 single_integration_time_cycles = single_integration_time_ns // 4
 n_count = int(total_integration_time / single_integration_time_ns)
 # Note, measure length for readout must be set to single_integration_time_ns in configuration
@@ -67,7 +67,7 @@ with program() as threshold_detection:
 #####################################
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
 
-simulate = True
+simulate = False
 
 if simulate:
     simulation_config = SimulationConfig(duration=10000)  # in clock cycles

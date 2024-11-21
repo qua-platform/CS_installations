@@ -81,7 +81,7 @@ excited_state_init = 500  # in ns
 
 # SNSPD
 signal_threshold = 500
-meas_len = 5000  # in ns
+meas_len = 1000  # in ns
 long_meas_len = 10000  # in ns
 SNSPD_delay = 0  # in ns
 time_of_flight = 136  # in ns
