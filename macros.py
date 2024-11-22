@@ -6,10 +6,10 @@ All the macros below have been written and tested with the basic configuration. 
 
 from time import sleep
 
+import numpy as np
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.callable_from_qua import *
-import numpy as np
 
 patch_qua_program_addons()
 
@@ -44,6 +44,7 @@ def two_step_readout(element: str, I, I_st, Q, Q_st, weights=""):
     if Q_st is not None:
         save(Q, Q_st)
 
+
 def multiplexed_step_readout(I, I_st, Q, Q_st, resonators, sequential=False, amplitude=1.0, weights=""):
     """Perform multiplexed readout on two resonators"""
     if type(resonators) is not list:
@@ -66,6 +67,8 @@ def multiplexed_step_readout(I, I_st, Q, Q_st, resonators, sequential=False, amp
 
         if sequential and ind < len(resonators) - 1:
             align(f"rr{res}", f"rr{res+1}")
+
+
 def multiplexed_readout(I, I_st, Q, Q_st, resonators, sequential=False, amplitude=1.0, weights=""):
     """Perform multiplexed readout on two resonators"""
     if type(resonators) is not list:

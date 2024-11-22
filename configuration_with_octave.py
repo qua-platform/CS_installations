@@ -291,7 +291,7 @@ ge_threshold_q2 = 0.0
 
 
 # Two-Step readout pre-pulse:
-pre_pulse_len = 10
+pre_pulse_len = 4
 pre_pulse_samples = np.concatenate((np.zeros(16 - pre_pulse_len), 0.5 * np.ones(pre_pulse_len)))
 
 # Resonator frequency versus flux fit parameters according to resonator_spec_vs_flux
