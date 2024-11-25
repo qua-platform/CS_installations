@@ -113,10 +113,14 @@ config = {
                 1: {
                     "LO_frequency": mode_LO_1,
                     "LO_source": "internal",
+                    "IF_mode_I": "direct",
+                    "IF_mode_Q": "off",
                 },
                 2: {
                     "LO_frequency": mode_LO_1,
                     "LO_source": "external",
+                    "IF_mode_I": "off",
+                    "IF_mode_Q": "direct",
                 },
             },
             "connectivity": "con1",
