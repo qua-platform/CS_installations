@@ -18,7 +18,7 @@ Next steps before going to the next node:
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from configuration import *
+from configuration_with_lf_fem_and_mw_fem import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -136,5 +136,6 @@ else:
         plt.xlabel("Rabi pulse duration [ns]")
         plt.ylabel("I quadrature [V]")
         print(f"Optimal x180_len = {round(1 / rabi_fit['f'][0] / 2 / 4) * 4} ns for {x180_amp:} V")
+        plt.show()
     except (Exception,):
         pass

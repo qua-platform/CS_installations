@@ -20,7 +20,7 @@ Next steps before going to the next node:
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from configuration import *
+from configuration_with_lf_fem_and_mw_fem import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
@@ -138,3 +138,4 @@ else:
     print(f"Optimal x180_amp = {amplitudes[np.argmin(np.sum(I, axis=0))] * x180_amp:.4f} V")
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
+    plt.show()

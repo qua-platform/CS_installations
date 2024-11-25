@@ -21,8 +21,9 @@ Next steps before going to the next node:
 from qm.qua import *
 from qm import SimulationConfig
 from qm import QuantumMachinesManager
-from configuration import *
+from configuration_with_lf_fem_and_mw_fem import *
 from qualang_tools.analysis.discriminator import two_state_discriminator
+from matplotlib import pyplot as plt
 
 ###################
 # The QUA program #
@@ -118,6 +119,8 @@ else:
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
+
+    plt.show()
 
     #########################################
     # The two_state_discriminator gives us the rotation angle which makes it such that all of the information will be in
