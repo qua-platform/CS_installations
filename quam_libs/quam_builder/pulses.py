@@ -2,12 +2,12 @@ from quam.components import pulses
 from qualang_tools.units import unit
 from quam_libs.components import Transmon
 import numpy as np
+
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 
 
 def add_default_transmon_pulses(transmon: Transmon):
-    # TODO: make sigma=length/5
     # TODO: Make gates amplitude a reference to x180 amplitude
     if transmon.xy is not None:
         transmon.xy.operations["x180_DragCosine"] = pulses.DragCosinePulse(
@@ -21,16 +21,16 @@ def add_default_transmon_pulses(transmon: Transmon):
         )
         transmon.xy.operations["x90_DragCosine"] = pulses.DragCosinePulse(
             amplitude=0.1 / 2,
-            alpha="#../x180_DragCosine/alpha",
+            alpha=0.0,
             anharmonicity="#../x180_DragCosine/anharmonicity",
             length="#../x180_DragCosine/length",
             axis_angle=0,
-            detuning="#../x180_DragCosine/detuning",
+            detuning=0,
             digital_marker="ON",
         )
         transmon.xy.operations["-x90_DragCosine"] = pulses.DragCosinePulse(
             amplitude="#../x90_DragCosine/amplitude",
-            alpha="#../x180_DragCosine/alpha",
+            alpha="#../x90_DragCosine/alpha",
             anharmonicity="#../x180_DragCosine/anharmonicity",
             length="#../x180_DragCosine/length",
             axis_angle=np.pi,
@@ -48,19 +48,19 @@ def add_default_transmon_pulses(transmon: Transmon):
         )
         transmon.xy.operations["y90_DragCosine"] = pulses.DragCosinePulse(
             amplitude="#../x90_DragCosine/amplitude",
-            alpha="#../x180_DragCosine/alpha",
+            alpha="#../x90_DragCosine/alpha",
             anharmonicity="#../x180_DragCosine/anharmonicity",
             length="#../x180_DragCosine/length",
             axis_angle=np.pi / 2,
-            detuning="#../x180_DragCosine/detuning",
+            detuning="#../x90_DragCosine/detuning",
             digital_marker="ON",
         )
         transmon.xy.operations["-y90_DragCosine"] = pulses.DragCosinePulse(
             amplitude="#../x90_DragCosine/amplitude",
-            alpha="#../x180_DragCosine/alpha",
+            alpha="#../x90_DragCosine/alpha",
             anharmonicity="#../x180_DragCosine/anharmonicity",
             length="#../x180_DragCosine/length",
-            detuning="#../x180_DragCosine/detuning",
+            detuning="#../x90_DragCosine/detuning",
             axis_angle=-np.pi / 2,
             digital_marker="ON",
         )

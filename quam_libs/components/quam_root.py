@@ -1,4 +1,5 @@
 import os
+import toml
 import warnings
 from pathlib import Path
 from quam.core import QuamRoot, quam_dataclass
@@ -19,18 +20,16 @@ from .transmon_pair import TransmonPair
 from qm.qua import align
 from qm import QuantumMachinesManager, QuantumMachine
 from qualang_tools.results.data_handler import DataHandler
-import toml
 
 from dataclasses import field
 from typing import List, Dict, ClassVar, Any, Optional, Sequence, Union
-
 
 __all__ = ["QuAM", "FEMQuAM", "OPXPlusQuAM"]
 
 
 def _get_quam_state_path() -> Optional[Path]:
     if "QUAM_STATE_PATH" in os.environ:
-        return os.environ["QUAM_STATE_PATH"]
+        return Path(os.environ["QUAM_STATE_PATH"])
 
     config_path = Path.home() / ".qualibrate" / "config.toml"
     if not config_path.exists():
@@ -51,7 +50,7 @@ class QuAM(QuamRoot):
     octaves: Dict[str, Octave] = field(default_factory=dict)
 
     qubits: Dict[str, Transmon] = field(default_factory=dict)
-    qubit_pairs: List[TransmonPair] = field(default_factory=list)
+    qubit_pairs: Dict[str, TransmonPair] = field(default_factory=dict)
     wiring: dict = field(default_factory=dict)
     network: dict = field(default_factory=dict)
 
@@ -83,7 +82,8 @@ class QuAM(QuamRoot):
         include_defaults: bool = False,
         ignore: Sequence[str] = None,
     ):
-        path = path or _get_quam_state_path()
+        if path is None and "QUAM_STATE_PATH" in os.environ:
+            path = os.environ["QUAM_STATE_PATH"]
 
         super().save(path, content_mapping, include_defaults, ignore)
 
@@ -105,7 +105,7 @@ class QuAM(QuamRoot):
     @property
     def active_qubit_pairs(self) -> List[TransmonPair]:
         """Return the list of active qubits."""
-        return self.qubit_pairs
+        return [self.qubit_pairs[q] for q in self.active_qubit_pair_names]
 
     @property
     def depletion_time(self) -> int:
@@ -121,7 +121,8 @@ class QuAM(QuamRoot):
         """Apply the offsets that bring all the active qubit pairs to a decoupled point."""
         align()
         for qp in self.active_qubit_pairs:
-            qp.coupler.to_decouple_idle()
+            if qp.coupler is not None:
+                qp.coupler.to_decouple_idle()
         align()
 
     def apply_all_flux_to_joint_idle(self) -> None:
@@ -130,22 +131,32 @@ class QuAM(QuamRoot):
         for q in self.active_qubits:
             if q.z is not None:
                 q.z.to_joint_idle()
+                q.z.settle()
             else:
                 warnings.warn(
                     f"Didn't find z-element on qubit {q.name}, didn't set to joint-idle"
                 )
+        for q in self.qubits:
+            if self.qubits[q] not in self.active_qubits:
+                if self.qubits[q].z is not None:
+                    self.qubits[q].z.to_min()
+                    self.qubits[q].z.settle()
+                else:
+                    warnings.warn(
+                        f"Didn't find z-element on qubit {q}, didn't set to min"
+                    )
         align()
 
     def apply_all_flux_to_min(self) -> None:
         """Apply the offsets that bring all the active qubits to the minimum frequency point."""
         align()
-        for q in self.active_qubits:
-            if q.z is not None:
-                q.z.to_min()
+        for q in self.qubits:
+            if self.qubits[q].z is not None:
+                self.qubits[q].z.to_min()
+                self.qubits[q].z.settle()
             else:
-                warnings.warn(
-                    f"Didn't find z-element on qubit {q.name}, didn't set to min"
-                )
+                warnings.warn(f"Didn't find z-element on qubit {q}, didn't set to min")
+        self.apply_all_couplers_to_min()
         align()
 
     def apply_all_flux_to_zero(self) -> None:
@@ -153,6 +164,7 @@ class QuAM(QuamRoot):
         align()
         for q in self.active_qubits:
             q.z.to_zero()
+            q.z.settle()
         align()
 
     def connect(self) -> QuantumMachinesManager:
