@@ -83,11 +83,10 @@ config = {
             "analog_outputs": {
                 1: {"offset": 0.0, "delay": mw_delay},  # NV I
                 2: {"offset": 0.0, "delay": mw_delay},  # NV Q
+                3: {"offset": 0.0},  # SPCM
             },
             "digital_outputs": {
-                1: {},  # NV
-                2: {},  # AOM/Laser
-                3: {},  # SPCM - indicator
+                1: {},  # AOM/Laser
             },
             "analog_inputs": {
                 1: {"offset": 0},  # SPCM
@@ -107,18 +106,11 @@ config = {
                 "y90": "y90_pulse",
                 "y180": "y180_pulse",
             },
-            "digitalInputs": {
-                "marker": {
-                    "port": ("con1", 1),
-                    "delay": trigger_delay,
-                    "buffer": 0,
-                },
-            },
         },
         "AOM": {
             "digitalInputs": {
                 "marker": {
-                    "port": ("con1", 2),
+                    "port": ("con1", 1),
                     "delay": laser_delay,
                     "buffer": 0,
                 },
