@@ -33,7 +33,7 @@ octave_config = octave_declaration(octaves)
 save_dir = Path().absolute() / "data"
 save_dir.mkdir(exist_ok=True)
 default_additional_files = {
-    "configuration_mw_fem.py": "configuration_mw_fem.py",
+    "configuration_with_octave.py": "configuration_with_octave.py",
     "optimal_weights.npz": "optimal_weights.npz",
 }
 
@@ -85,8 +85,9 @@ config = {
                 2: {"offset": 0.0, "delay": mw_delay},  # NV Q
             },
             "digital_outputs": {
-                1: {},  # AOM/Laser
-                2: {},  # SPCM - indicator
+                1: {},  # NV
+                2: {},  # AOM/Laser
+                3: {},  # SPCM - indicator
             },
             "analog_inputs": {
                 1: {"offset": 0},  # SPCM
@@ -110,14 +111,14 @@ config = {
                 "marker": {
                     "port": ("con1", 1),
                     "delay": trigger_delay,
-                    "buffer": trigger_buffer,
+                    "buffer": 0,
                 },
             },
         },
         "AOM": {
             "digitalInputs": {
                 "marker": {
-                    "port": ("con1", 1),
+                    "port": ("con1", 2),
                     "delay": laser_delay,
                     "buffer": 0,
                 },
@@ -127,14 +128,7 @@ config = {
             },
         },
         "SPCM": {
-            "singleInput": {"port": ("con1", 1)},  # not used
-            "digitalInputs": {  # for visualization in simulation
-                "marker": {
-                    "port": ("con1", 2),
-                    "delay": detection_delay,
-                    "buffer": 0,
-                },
-            },
+            "singleInput": {"port": ("con1", 3)},  # not used
             "operations": {
                 "readout": "readout_pulse",
                 "long_readout": "long_readout_pulse",
@@ -226,6 +220,8 @@ config = {
     },
     "digital_waveforms": {
         "ON": {"samples": [(1, 0)]},  # [(on/off, ns)]
-        "OFF": {"samples": [(0, 0)]},  # [(on/off, ns)]
+        # "OFF": {"samples": [(0, 0)]},  # [(on/off, ns)]
     },
 }
+
+# %%

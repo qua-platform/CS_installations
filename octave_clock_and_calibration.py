@@ -9,6 +9,7 @@ from configuration_with_octave import *
 
 # Configure the Octave according to the elements settings and calibrate
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, octave=octave_config, log_level="ERROR")
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name, octave=octave_config)
 qm = qmm.open_qm(config)
 
 ##################
@@ -26,7 +27,7 @@ qm.octave.set_clock("octave1", clock_mode=ClockMode.Internal)
 calibration = True
 
 if calibration:
-    elements = ["qubit", "resonator"]
+    elements = ["NV"]
     for element in elements:
         print("-" * 37 + f" Calibrates {element}")
         qm.calibrate_element(element)
