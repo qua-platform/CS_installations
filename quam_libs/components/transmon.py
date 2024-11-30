@@ -1,5 +1,5 @@
 from quam.core import quam_dataclass
-from quam.components.channels import IQChannel, Pulse
+from quam.components.channels import Pulse, MWChannel
 from quam import QuamComponent
 from .flux_line import FluxLine
 from .readout_resonator import ReadoutResonator
@@ -22,7 +22,7 @@ class Transmon(QuamComponent):
     Args:
         id (str, int): The id of the Transmon, used to generate the name.
             Can be a string, or an integer in which case it will add`Channel._default_label`.
-        xy (IQChannel): The xy drive component.
+        xy (MWChannel): The xy drive component.
         z (FluxLine): The z drive component.
         resonator (ReadoutResonator): The readout resonator component.
         T1 (float): The transmon T1 in ns.
@@ -42,27 +42,27 @@ class Transmon(QuamComponent):
 
     id: Union[int, str]
 
-    xy: IQChannel = None
-    xy_detuned: IQChannel = None
+    xy: MWChannel = None
+    xy_detuned: MWChannel = None
     z: FluxLine = None
     resonator: ReadoutResonator = None
 
     f_01: float = None
     f_12: float = None
-    anharmonicity: int = 150e6
+    anharmonicity: int = None
     freq_vs_flux_01_quad_term : float = 0.0
-    arbitrary_intermediate_frequency : float = 0.0
+    arbitrary_intermediate_frequency : float = None
 
-    T1: float = 10_000
-    T2ramsey: float = 10_000
-    T2echo: float = 10_000
+    T1: float = 10e-6
+    T2ramsey: float = None
+    T2echo: float = None
     thermalization_time_factor: int = 5
     sigma_time_factor: int = 5
-    phi0_current: float = 0.0
-    phi0_voltage: float = 0.0
+    phi0_current: float = None
+    phi0_voltage: float = None
     
-    GEF_frequency_shift : int = 10
-    chi : float = 0.0
+    GEF_frequency_shift : int = None
+    chi : float = None
     grid_location : str = None
     extras: Dict[str, Any] = field(default_factory=dict)
 
@@ -100,7 +100,7 @@ class Transmon(QuamComponent):
     @property
     def thermalization_time(self):
         """The transmon thermalization time in ns."""
-        return self.thermalization_time_factor * self.T1
+        return int(self.thermalization_time_factor * self.T1 * 1e9 * 4) // 4
 
     def calibrate_octave(self, QM: QuantumMachine, calibrate_drive: bool = True, calibrate_resonator: bool = True) -> None:
         """Calibrate the Octave channels (xy and resonator) linked to this transmon for the LO frequency, intermediate

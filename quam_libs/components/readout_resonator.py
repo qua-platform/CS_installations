@@ -54,5 +54,5 @@ class ReadoutResonatorMW(InOutMWChannel, ReadoutResonatorBase):
         return 10 * np.log10(((x_v / np.sqrt(2)) ** 2 * 1000) / Z)
 
 
-ReadoutResonator = ReadoutResonatorIQ
+ReadoutResonator = ReadoutResonatorMW
 

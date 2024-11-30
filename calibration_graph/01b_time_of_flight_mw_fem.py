@@ -15,7 +15,7 @@ The data undergoes post-processing to calibrate three distinct parameters:
 from qualibrate import QualibrationNode, NodeParameters
 from quam_libs.components import QuAM
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
-from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset  # TODO: Unused
+from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset
 from quam_libs.trackable_object import tracked_updates
 from qualang_tools.multi_user import qm_session
 from qualang_tools.units import unit
@@ -34,14 +34,14 @@ class Parameters(NodeParameters):
     num_averages: int = 100
     time_of_flight_in_ns: Optional[int] = 24
     intermediate_frequency_in_mhz: Optional[float] = 50
-    readout_amplitude_in_v: Optional[float] = 0.1
+    readout_amplitude_in_dBm: Optional[float] = -3
     readout_length_in_ns: Optional[int] = None
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
 
 
-node = QualibrationNode(name="01b_Time_of_Flight", parameters=Parameters())
+node = QualibrationNode(name="01b_Time_of_Flight_MW_FEM", parameters=Parameters())
 
 
 # %% {Initialize_QuAM_and_QOP}
@@ -65,7 +65,7 @@ for q in qubits:
     with tracked_updates(resonator, auto_revert=False, dont_assign_to_none=True) as resonator:
         resonator.time_of_flight = node.parameters.time_of_flight_in_ns
         resonator.operations["readout"].length = node.parameters.readout_length_in_ns
-        resonator.operations["readout"].amplitude = node.parameters.readout_amplitude_in_v
+        resonator.set_output_power(node.parameters.readout_amplitude_in_dBm, operation="readout")
         if node.parameters.intermediate_frequency_in_mhz is not None:
             resonator.intermediate_frequency = node.parameters.intermediate_frequency_in_mhz * u.MHz
         tracked_resonators.append(resonator)
@@ -95,11 +95,11 @@ with program() as raw_trace_prog:
     with stream_processing():
         for i in range(num_qubits):
             # Will save average:
-            adc_st[i].input1().average().save(f"adcI{i + 1}")
-            adc_st[i].input2().average().save(f"adcQ{i + 1}")
+            adc_st[i].input1().real().average().save(f"adcI{i + 1}")
+            adc_st[i].input1().image().average().save(f"adcQ{i + 1}")
             # Will save only last run:
-            adc_st[i].input1().save(f"adc_single_runI{i + 1}")
-            adc_st[i].input2().save(f"adc_single_runQ{i + 1}")
+            adc_st[i].input1().real().save(f"adc_single_runI{i + 1}")
+            adc_st[i].input1().image().save(f"adc_single_runQ{i + 1}")
 
 
 # %% {Simulate_or_execute}
@@ -158,10 +158,8 @@ else:
     node.results["fit_results"] = fit_results
     # Add the delays to the dataset
     ds = ds.assign_coords({"delays": (["qubit"], delays)})
-    ds = ds.assign_coords({"offsets_I": ds.adcI.mean(dim="time")})
-    ds = ds.assign_coords({"offsets_Q": ds.adcQ.mean(dim="time")})
     ds = ds.assign_coords(
-        {"con": (["qubit"], [machine.qubits[q.name].resonator.opx_input_I.controller_id for q in qubits])}
+        {"con": (["qubit"], [machine.qubits[q.name].resonator.opx_input.controller_id for q in qubits])}
     )
 
     # %% {Plotting}
@@ -171,8 +169,6 @@ else:
         ds.loc[qubit].adc_single_runI.plot(ax=ax, x="time", label="I", color="b")
         ds.loc[qubit].adc_single_runQ.plot(ax=ax, x="time", label="Q", color="r")
         ax.axvline(ds.loc[qubit].delays, color="k", linestyle="--", label="TOF")
-        ax.axhline(ds.loc[qubit].offsets_I, color="b", linestyle="--")
-        ax.axhline(ds.loc[qubit].offsets_Q, color="r", linestyle="--")
         ax.fill_between(range(ds.sizes["time"]), -0.5, 0.5, color="grey", alpha=0.2, label="ADC Range")
         ax.set_xlabel("Time [ns]")
         ax.set_ylabel("Readout amplitude [mV]")
@@ -188,8 +184,6 @@ else:
         ds.loc[qubit].adcI.plot(ax=ax, x="time", label="I", color="b")
         ds.loc[qubit].adcQ.plot(ax=ax, x="time", label="Q", color="r")
         ax.axvline(ds.loc[qubit].delays, color="k", linestyle="--", label="TOF")
-        ax.axhline(ds.loc[qubit].offsets_I, color="b", linestyle="--")
-        ax.axhline(ds.loc[qubit].offsets_Q, color="r", linestyle="--")
         ax.set_xlabel("Time [ns]")
         ax.set_ylabel("Readout amplitude [mV]")
         ax.set_title(qubit["qubit"])
@@ -200,8 +194,6 @@ else:
 
     # %% {Update_state}
     print(f"Time Of Flight to add: {delays} ns")
-    print(f"Offsets to add for I: {ds.offsets_I.values * 1000} mV")
-    print(f"Offsets to add for Q: {ds.offsets_Q.values * 1000} mV")
 
     with node.record_state_updates():
         for q in qubits:
@@ -210,35 +202,6 @@ else:
             else:
                 q.resonator.time_of_flight += int(ds.sel(qubit=q.name).delays)
 
-    # Update the offsets per controller for each qubit
-    for con in np.unique(ds.con.values):
-        for i, q in enumerate(ds.where(ds.con == con).qubit.values):
-            # Only add the offsets once,
-            if i == 0:
-                if machine.qubits[q].resonator.opx_input_I.offset is not None:
-                    machine.qubits[q].resonator.opx_input_I.offset += float(
-                        ds.where(ds.con == con).offsets_I.mean(dim="qubit").values
-                    )
-                else:
-                    machine.qubits[q].resonator.opx_input_I.offset = float(
-                        ds.where(ds.con == con).offsets_I.mean(dim="qubit").values
-                    )
-                if machine.qubits[q].resonator.opx_input_Q.offset is not None:
-                    machine.qubits[q].resonator.opx_input_Q.offset += float(
-                        ds.where(ds.con == con).offsets_Q.mean(dim="qubit").values
-                    )
-                else:
-                    machine.qubits[q].resonator.opx_input_Q.offset = float(
-                        ds.where(ds.con == con).offsets_Q.mean(dim="qubit").values
-                    )
-            # else copy the values from the updated qubit
-            else:
-                machine.qubits[q].resonator.opx_input_I.offset = machine.qubits[
-                    ds.where(ds.con == con).qubit.values[0]
-                ].resonator.opx_input_I.offset
-                machine.qubits[q].resonator.opx_input_Q.offset = machine.qubits[
-                    ds.where(ds.con == con).qubit.values[0]
-                ].resonator.opx_input_Q.offset
     # Revert the change done at the beginning of the node
     for resonator in tracked_resonators:
         resonator.revert_changes()

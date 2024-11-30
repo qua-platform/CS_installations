@@ -9,9 +9,9 @@ __all__ = ["ZZDrive", "ZZDriveIQ", "ZZDriveMW"]
 
 @quam_dataclass
 class ZZDriveBase:
-    target_qubit_LO_frequency: int
-    target_qubit_IF_frequency: int
-    detuning: int
+    target_qubit_LO_frequency: int = None
+    target_qubit_IF_frequency: int = None
+    detuning: int = None
 
 @quam_dataclass
 class ZZDriveIQ(IQChannel, ZZDriveBase):

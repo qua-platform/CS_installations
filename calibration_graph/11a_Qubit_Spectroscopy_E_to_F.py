@@ -33,7 +33,7 @@ from qualibrate import QualibrationNode, NodeParameters
 from quam_libs.components import QuAM
 from quam_libs.macros import qua_declaration
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
-from quam_libs.lib.save_utils import fetch_results_as_xarray
+from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset
 from quam_libs.lib.fit import peaks_dips
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.loops import from_array
@@ -48,18 +48,22 @@ import numpy as np
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
+
     qubits: Optional[List[str]] = None
-    num_averages: int = 200
+    num_averages: int = 500
     operation: str = "saturation"
-    operation_amplitude_factor: Optional[float] = None
+    operation_amplitude_factor: Optional[float] = 0.5
     operation_len_in_ns: Optional[int] = None
-    frequency_span_in_mhz: float = 500
-    frequency_step_in_mhz: float = 1
+    frequency_span_in_mhz: float = 200
+    frequency_step_in_mhz: float = 1.0
+    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
     simulate: bool = False
     timeout: int = 100
+    multiplexed: bool = False
+    load_data_id: Optional[int] = None
 
 
-node = QualibrationNode(name="10a_Qubit_Spectroscopy_E_to_F", parameters=Parameters())
+node = QualibrationNode(name="11a_Qubit_Spectroscopy_E_to_F", parameters=Parameters())
 
 
 # %% {Initialize_QuAM_and_QOP}
@@ -71,7 +75,8 @@ machine = QuAM.load()
 config = machine.generate_config()
 octave_config = machine.get_octave_config()
 # Open Communication with the QOP
-qmm = machine.connect()
+if node.parameters.load_data_id is None:
+    qmm = machine.connect()
 
 # Get the relevant QuAM components
 if node.parameters.qubits is None or node.parameters.qubits == "":
@@ -94,7 +99,8 @@ else:
 # Qubit detuning sweep with respect to their resonance frequencies
 span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
-dfs = np.arange(-span // 2, +span // 2, step, dtype=np.int32)
+dfs = np.arange(-span // 2, + span // 2, step, dtype=np.int32)
+flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 
 with program() as qubit_spec:
     # Macro to declare I, Q, n and their respective streams for a given number of qubit (defined in macros.py)
@@ -102,18 +108,21 @@ with program() as qubit_spec:
     df = declare(int)  # QUA variable for the qubit frequency
 
     for i, qubit in enumerate(qubits):
+        # Bring the active qubits to the desired frequency point
+        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_(*from_array(df, dfs)):
+                qubit.align()
+                qubit.xy.wait(5*qubit.thermalization_time * u.ns)
                 # Reset the qubit frequency
                 update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
                 # Drive the qubit to the excited state
                 qubit.xy.play("x180")
                 # Update the qubit frequency to scan around the excepted f_01
                 update_frequency(
-                    qubit.xy.name,
-                    df - qubit.anharmonicity + qubit.xy.intermediate_frequency,
+                    qubit.xy.name, df - qubit.anharmonicity + qubit.xy.intermediate_frequency
                 )
                 # Play the saturation pulse
                 qubit.xy.play(
@@ -121,7 +130,7 @@ with program() as qubit_spec:
                     amplitude_scale=operation_amp,
                     duration=operation_len,
                 )
-                align(qubit.xy.name, qubit.resonator.name)
+                qubit.align()
                 # readout the resonator
                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                 # Wait for the qubit to decay to the ground state
@@ -129,7 +138,8 @@ with program() as qubit_spec:
                 # save data
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])
-        align()
+        if not node.parameters.multiplexed:
+            align()
 
     with stream_processing():
         n_st.save("n")
@@ -148,52 +158,64 @@ if node.parameters.simulate:
     node.machine = machine
     node.save()
 
-else:
-    qm = qmm.open_qm(config, close_other_machines=True)
-    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-    job = qm.execute(qubit_spec)
+elif node.parameters.load_data_id is None:
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+        job = qm.execute(qubit_spec)
+        results = fetching_tool(job, ["n"], mode="live")
+        while results.is_processing():
+            # Fetch results
+            n = results.fetch_all()[0]
+            # Progress bar
+            progress_counter(n, n_avg, start_time=results.start_time)
 
-    # %% {Live_plot}
-    results = fetching_tool(job, ["n"], mode="live")
-    while results.is_processing():
-        # Fetch results
-        n = results.fetch_all()[0]
-        # Progress bar
-        progress_counter(n, n_avg, start_time=results.start_time)
-
-    # %% {Data_fetching_and_dataset_creation}
-    # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
-    ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs})
-    # Add the qubit pulse absolute amplitude and phase to the dataset
-    ds = ds.assign({"IQ_abs": np.sqrt(ds["I"] ** 2 + ds["Q"] ** 2)})
-    ds = ds.assign({"phase": np.arctan2(ds.Q, ds.I)})
-    # Add the resonator RF frequency axis of each qubit to the dataset coordinates for plotting
-    ds = ds.assign_coords(
-        {
-            "freq_full": (
-                ["qubit", "freq"],
-                np.array([dfs + q.xy.RF_frequency - q.anharmonicity for q in qubits]),
-            )
-        }
-    )
-    ds.freq_full.attrs["long_name"] = "Frequency"
-    ds.freq_full.attrs["units"] = "GHz"
+# %% {Data_fetching_and_dataset_creation}
+if not node.parameters.simulate:
+    if node.parameters.load_data_id is None:
+        # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
+        ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs})
+        # Add the qubit pulse absolute amplitude and phase to the dataset
+        ds = ds.assign({"IQ_abs": (np.sqrt((ds.I - ds.I.mean(dim = "freq"))**2 + (ds.Q - ds.Q.mean(dim = "freq"))**2) )})
+        ds = ds.assign({"phase": np.arctan2(ds.Q, ds.I)})
+        # Add the resonator RF frequency axis of each qubit to the dataset coordinates for plotting
+        ds = ds.assign_coords(
+            {
+                "freq_full": (
+                    ["qubit", "freq"],
+                    np.array([dfs + q.xy.RF_frequency - q.anharmonicity for q in qubits]),
+                ),
+                "detuning": (
+                    ["qubit", "freq"],
+                    np.array([dfs - q.anharmonicity for q in qubits]),
+                )            
+            }
+        )
+        ds.freq_full.attrs["long_name"] = "Frequency"
+        ds.freq_full.attrs["units"] = "GHz"
+    else:
+        node = node.load_from_id(node.parameters.load_data_id)
+        ds = node.results["ds"]
     # Add the dataset to the node
     node.results = {"ds": ds}
 
-    # %% {Data_analysis}
+# %% {Data_analysis}
+# shifts = (np.sqrt((ds.I - ds.I.mean(dim = "freq"))**2 + (ds.Q - ds.Q.mean(dim = "freq"))**2) ).idxmax(dim="freq")
+
+if not node.parameters.simulate:
+
     # find the peak with minimal prominence as defined, if no such peak found, returns nan
     result = peaks_dips(
-        ds.IQ_abs, dim="freq", prominence_factor=5, remove_baseline=False
+        ds.I, dim="freq", prominence_factor=3, remove_baseline=True
     )
+    
+    
     # calculate the modified anharmonicity
     anharmonicities = dict(
         [
-            (q.name, q.anharmonicity - result.sel(qubit=q.name).position.values)
-            for q in qubits
+            (q.name, ds.detuning.sel(qubit = q.name, freq = result.sel(qubit = q.name).position.values))
+            for q in qubits if not np.isnan(result.sel(qubit = q.name).position.values)
         ]
     )
-
+    
     # Save fitting results
     fit_results = {}
     for q in qubits:
@@ -203,39 +225,30 @@ else:
             print(
                 f"Anharmonicity for {q.name} is {anharmonicities[q.name]/1e6:.3f} MHz"
             )
-            fit_results[q.name]["anharmonicity"] = anharmonicities[q.name]
-            print(
-                f"(shift of {result.sel(qubit = q.name).position.values/1e6:.3f} MHz)"
-            )
-            print()
+            fit_results[q.name]["anharmonicity"] = anharmonicities[q.name].values
         else:
             fit_results[q.name]["fit_successful"] = False
             print(f"Failed to find a peak for {q.name}")
             print()
 
     node.results["fit_results"] = fit_results
+    
+# %% {Plotting}
+if not node.parameters.simulate:
 
-    # %% {Plotting}
-    grid_names = [f"{q.name}_0" for q in qubits]
-    grid = QubitGrid(ds, grid_names)
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
 
     for ax, qubit in grid_iter(grid):
         # Plot the IQ_abs as a function of the full frequency
-        (ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].IQ_abs * 1e3).plot(
-            ax=ax, x="freq_GHz"
+        (ds.assign_coords(freq_MHz=ds.detuning / 1e6).loc[qubit].I * 1e3).plot(
+            ax=ax, x="freq_MHz"
         )
         # Add a lin where the e->f is supposed to be
-        ax.axvline(
-            (
-                result.sel(qubit=qubit["qubit"]).position.values
-                + machine.qubits[qubit["qubit"]].xy.RF_frequency
-                - machine.qubits[qubit["qubit"]].anharmonicity
-            )
-            / 1e9,
+        ax.axvline(anharmonicities[qubit["qubit"]]/ 1e6,
             color="r",
             linestyle="--",
         )
-        ax.set_xlabel("Qubit freq [GHz]")
+        ax.set_xlabel("Detuning [MHz]")
         ax.set_ylabel("Trans. amp. [mV]")
         ax.set_title(qubit["qubit"])
     grid.fig.suptitle("Qubit spectroscopy (E-F)")
@@ -243,15 +256,20 @@ else:
     plt.show()
     node.results["figure"] = grid.fig
 
-    # %% {Update_state}
-    with node.record_state_updates():
-        for q in qubits:
-            fit_results[q.name] = {}
-            if not np.isnan(result.sel(qubit=q.name).position.values):
-                q.anharmonicity = int(anharmonicities[q.name])
+# %% {Update_state}
+if not node.parameters.load_data_id:
+    if not node.parameters.simulate:
+        with node.record_state_updates():
+            for q in qubits:
+                fit_results[q.name] = {}
+                if not np.isnan(result.sel(qubit=q.name).position.values):
+                    q.anharmonicity = int(anharmonicities[q.name])
 
     # %% {Save_results}
-    node.outcomes = {q.name: "successful" for q in qubits}
-    node.results["initial_parameters"] = node.parameters.model_dump()
-    node.machine = machine
-    node.save()
+    if not node.parameters.simulate:
+        node.outcomes = {q.name: "successful" for q in qubits}
+        node.results["initial_parameters"] = node.parameters.model_dump()
+        node.machine = machine
+        node.save()
+
+# %%

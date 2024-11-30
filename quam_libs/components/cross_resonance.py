@@ -9,8 +9,8 @@ __all__ = ["CrossResonance", "CrossResonanceIQ", "CrossResonanceMW"]
 
 @quam_dataclass
 class CrossResonanceBase:
-    target_qubit_LO_frequency: int
-    target_qubit_IF_frequency: int
+    target_qubit_LO_frequency: int=None
+    target_qubit_IF_frequency: int=None
 
 @quam_dataclass
 class CrossResonanceIQ(IQChannel, CrossResonanceBase):
@@ -49,5 +49,5 @@ class CrossResonanceMW(MWChannel, CrossResonanceBase):
         return 10 * np.log10(((x_v / np.sqrt(2)) ** 2 * 1000) / Z)
 
 
-CrossResonance = CrossResonanceIQ
+CrossResonance = CrossResonanceMW
 

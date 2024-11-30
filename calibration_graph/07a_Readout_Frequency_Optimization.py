@@ -1,4 +1,3 @@
-# %%
 """
         READOUT OPTIMISATION: FREQUENCY
 This sequence involves measuring the state of the resonator in two scenarios: first, after thermalization
@@ -10,18 +9,20 @@ optimal choice.
 
 Prerequisites:
     - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
-    - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy, rabi_chevron, power_rabi and updated the state.
+    - Having calibrated qubit pi pulse (x180) by running qubit spectroscopy, power_rabi and updated the state.
+    - Set the desired flux bias
 
 Next steps before going to the next node:
-    - Update the readout frequency  in the state.
-    - Save the current state by calling machine.save("quam")
+    - Update the readout frequency and dispersive shift chi in the state.
+    - Save the current state
 """
 
 # %% {Imports}
 from qualibrate import QualibrationNode, NodeParameters
 from quam_libs.components import QuAM
+from quam_libs.lib.qua_datasets import convert_IQ_to_V
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
-from quam_libs.lib.save_utils import fetch_results_as_xarray
+from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.loops import from_array
 from qualang_tools.multi_user import qm_session
@@ -35,15 +36,19 @@ import numpy as np
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
+
     qubits: Optional[List[str]] = None
     num_averages: int = 100
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.1
+    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
     simulate: bool = False
+    simulation_duration_ns: int = 2500
     timeout: int = 100
+    load_data_id: Optional[int] = None
+    multiplexed: bool = False
 
-
-node = QualibrationNode(name="09a_Readout_Frequency_Optimization", parameters=Parameters())
+node = QualibrationNode(name="07a_Readout_Frequency_Optimization", parameters=Parameters())
 
 
 # %% {Initialize_QuAM_and_QOP}
@@ -53,9 +58,9 @@ u = unit(coerce_to_integer=True)
 machine = QuAM.load()
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
-octave_config = machine.get_octave_config()
 # Open Communication with the QOP
-qmm = machine.connect()
+if node.parameters.load_data_id is None:
+    qmm = machine.connect()
 
 # Get the relevant QuAM components
 if node.parameters.qubits is None or node.parameters.qubits == "":
@@ -71,6 +76,7 @@ n_avg = node.parameters.num_averages  # The number of averages
 span = node.parameters.frequency_span_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span / 2, +span / 2, step)
+flux_point = node.parameters.flux_point_joint_or_independent
 
 with program() as ro_freq_opt:
     n = declare(int)
@@ -87,13 +93,14 @@ with program() as ro_freq_opt:
 
     for i, qubit in enumerate(qubits):
 
+        # Bring the active qubits to the desired frequency point
+        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+        
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_(*from_array(df, dfs)):
                 # Update the resonator frequencies
-                update_frequency(
-                    qubit.resonator.name, df + qubit.resonator.intermediate_frequency
-                )
+                update_frequency(qubit.resonator.name, df + qubit.resonator.intermediate_frequency)
                 # Wait for the qubits to decay to the ground state
                 wait(qubit.thermalization_time * u.ns)
                 align()
@@ -115,8 +122,9 @@ with program() as ro_freq_opt:
                 save(Q_g[i], Q_g_st[i])
                 save(I_e[i], I_e_st[i])
                 save(Q_e[i], Q_e_st[i])
-
-        align()
+        # Measure sequentially
+        if not node.parameters.multiplexed:
+            align()
 
     with stream_processing():
         n_st.save("n")
@@ -130,46 +138,58 @@ with program() as ro_freq_opt:
 # %% {Simulate_or_execute}
 if node.parameters.simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=node.parameters.simulation_duration_ns * 4)  # In clock cycles = 4ns
     job = qmm.simulate(config, ro_freq_opt, simulation_config)
-    job.get_simulated_samples().con1.plot()
+    # Get the simulated samples and plot them for all controllers
+    samples = job.get_simulated_samples()
+    fig, ax = plt.subplots(nrows=len(samples.keys()), sharex=True)
+    for i, con in enumerate(samples.keys()):
+        plt.subplot(len(samples.keys()),1,i+1)
+        samples[con].plot()
+        plt.title(con)
+    plt.tight_layout()
+    # Save the figure
     node.results = {"figure": plt.gcf()}
     node.machine = machine
     node.save()
 
-else:
-    qm = qmm.open_qm(config, close_other_machines=True)
-    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-    job = qm.execute(ro_freq_opt)
+elif node.parameters.load_data_id is None:
+    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+        job = qm.execute(ro_freq_opt)
+        results = fetching_tool(job, ["n"], mode="live")
+        while results.is_processing():
+            n = results.fetch_all()[0]
+            progress_counter(n, n_avg, start_time=results.start_time)
 
-    # %% {Live_plot}
-    results = fetching_tool(job, ["n"], mode="live")
-    while results.is_processing():
-        n = results.fetch_all()[0]
-        progress_counter(n, n_avg, start_time=results.start_time)
-
-    # %% {Data_fetching_and_dataset_creation}
-    # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
-    ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs})
-    # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2) for |g> and |e> as well as the distance between the two blobs D
-    ds = ds.assign(
-        {
-            "D": np.sqrt((ds.I_g - ds.I_e) ** 2 + (ds.Q_g - ds.Q_e) ** 2),
-            "IQ_abs_g": np.sqrt(ds.I_g**2 + ds.Q_g**2),
-            "IQ_abs_e": np.sqrt(ds.I_e**2 + ds.Q_e**2),
-        }
-    )
-    # Add the absolute frequency to the dataset
-    ds = ds.assign_coords(
-        {
-            "freq_full": (
-                ["qubit", "freq"],
-                np.array([dfs + q.resonator.RF_frequency for q in qubits]),
-            )
-        }
-    )
-    ds.freq_full.attrs["long_name"] = "Frequency"
-    ds.freq_full.attrs["units"] = "GHz"
+# %% {Data_fetching_and_dataset_creation}
+if not node.parameters.simulate:
+    if node.parameters.load_data_id is None:
+        # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
+        ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs})
+        # Convert IQ data into volts
+        ds = convert_IQ_to_V(ds, qubits, ["I_g", "Q_g", "I_e", "Q_e"])
+        # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2) for |g> and |e> as well as the distance between the two blobs D
+        ds = ds.assign(
+            {
+                "D": np.sqrt((ds.I_g - ds.I_e) ** 2 + (ds.Q_g - ds.Q_e) ** 2),
+                "IQ_abs_g": np.sqrt(ds.I_g**2 + ds.Q_g**2),
+                "IQ_abs_e": np.sqrt(ds.I_e**2 + ds.Q_e**2),
+            }
+        )
+        # Add the absolute frequency to the dataset
+        ds = ds.assign_coords(
+            {
+                "freq_full": (
+                    ["qubit", "freq"],
+                    np.array([dfs + q.resonator.RF_frequency for q in qubits]),
+                )
+            }
+        )
+        ds.freq_full.attrs["long_name"] = "Frequency"
+        ds.freq_full.attrs["units"] = "GHz"
+    else:
+        node = node.load_from_id(node.parameters.load_data_id)
+        ds = node.results["ds"]
     # Add the dataset to the node
     node.results = {"ds": ds}
 
@@ -180,60 +200,57 @@ else:
     chi = (ds.IQ_abs_e.idxmin(dim="freq") - ds.IQ_abs_g.idxmin(dim="freq")) / 2
 
     # Save fitting results
-    fit_results = {
-        q.name: {"detuning": detuning.loc[q.name].values, "chi": chi.loc[q.name].values}
-        for q in qubits
-    }
+    fit_results = {q.name: {"detuning": detuning.loc[q.name].values, "chi": chi.loc[q.name].values} for q in qubits}
     node.results["fit_results"] = fit_results
 
     for q in qubits:
-        print(
-            f"{q.name}: Shifting readout frequency by {fit_results[q.name]['detuning']/1e3:.0f} kHz"
-        )
+        print(f"{q.name}: Shifting readout frequency by {fit_results[q.name]['detuning']/1e3:.0f} kHz")
         print(f"{q.name}: Chi = {fit_results[q.name]['chi']:.2f} \n")
 
     # %% {Plotting}
-    grid_names = [f"{q.name}_0" for q in qubits]
-    grid = QubitGrid(ds, grid_names)
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
-        (1e3 * ds.assign_coords(freq_MHz=ds.freq / 1e6).D.loc[qubit]).plot(
-            ax=ax, x="freq_MHz"
-        )
+        (1e3 * ds.assign_coords(freq_MHz=ds.freq / 1e6).D.loc[qubit]).plot(ax=ax, x="freq_MHz", label=None)
         ax.axvline(
-            fit_results[qubit["qubit"]]["detuning"] / 1e6, color="red", linestyle="--"
+            fit_results[qubit["qubit"]]["detuning"] / 1e6,
+            color="red",
+            linestyle="--",
+            label="applied detuning",
         )
-        ax.set_xlabel("Frequency [MHz]")
-        ax.set_ylabel("Distance between IQ blobs [m.v.]")
+        ax.set_xlabel("Detuning [MHz]")
+        ax.set_ylabel("Distance between IQ blobs [mv]")
+        ax.legend(loc="upper left")
     plt.tight_layout()
     plt.show()
     node.results["figure"] = grid.fig
 
-    grid = QubitGrid(ds, [f"q-{i}_0" for i in range(num_qubits)])
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
-        (1e3 * ds.assign_coords(freq_MHz=ds.freq / 1e6).IQ_abs_g.loc[qubit]).plot(
-            ax=ax, x="freq_MHz", label="g.s"
-        )
-        (1e3 * ds.assign_coords(freq_MHz=ds.freq / 1e6).IQ_abs_e.loc[qubit]).plot(
-            ax=ax, x="freq_MHz", label="e.s"
-        )
+        (1e3 * ds.assign_coords(freq_MHz=ds.freq / 1e6).IQ_abs_g.loc[qubit]).plot(ax=ax, x="freq_MHz", label="g.s")
+        (1e3 * ds.assign_coords(freq_MHz=ds.freq / 1e6).IQ_abs_e.loc[qubit]).plot(ax=ax, x="freq_MHz", label="e.s")
         ax.axvline(
-            fit_results[qubit["qubit"]]["detuning"] / 1e6, color="red", linestyle="--"
+            fit_results[qubit["qubit"]]["detuning"] / 1e6,
+            color="red",
+            linestyle="--",
+            label="applied detuning",
         )
-        ax.set_xlabel("Frequency [MHz]")
+        ax.set_xlabel("Detuning [MHz]")
         ax.set_ylabel("Resonator response [mV]")
-        ax.legend()
+        ax.legend(loc="upper left")
     plt.tight_layout()
     plt.show()
     node.results["figure2"] = grid.fig
 
     # %% {Update_state}
-    for q in qubits:
-        with node.record_state_updates():
-            q.resonator.intermediate_frequency += int(fit_results[q.name]["detuning"])
-            q.chi = float(fit_results[q.name]["chi"])
+    if node.parameters.load_data_id is None:
+        for q in qubits:
+            with node.record_state_updates():
+                q.resonator.intermediate_frequency += int(fit_results[q.name]["detuning"])
+                q.chi = float(fit_results[q.name]["chi"])
 
-    # %% {Save_results}
-    node.outcomes = {q.name: "successful" for q in qubits}
-    node.results["initial_parameters"] = node.parameters.model_dump()
-    node.machine = machine
-    node.save()
+        # %% {Save_results}
+        node.outcomes = {q.name: "successful" for q in qubits}
+        node.results["initial_parameters"] = node.parameters.model_dump()
+        node.machine = machine
+        node.save()
+

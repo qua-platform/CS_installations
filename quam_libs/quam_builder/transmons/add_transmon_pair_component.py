@@ -39,7 +39,7 @@ def add_transmon_pair_cross_resonance_component(transmon_pair: TransmonPair, wir
         )
 
     elif all(key in mw_in_out_channel_ports for key in ports):
-        transmon_pair.zz_drive = CrossResonanceMW(id=cross_resonance_name, opx_output=f"{wiring_path}/opx_output")
+        transmon_pair.cross_resonance = CrossResonanceMW(id=cross_resonance_name, opx_output=f"{wiring_path}/opx_output")
 
     else:
         raise ValueError(f"Unimplemented mapping of port keys to channel for ports: {ports}")
@@ -65,7 +65,7 @@ def add_transmon_pair_zz_drive_component(transmon_pair: TransmonPair, wiring_pat
         )
 
     elif all(key in mw_in_out_channel_ports for key in ports):
-        transmon_pair = ZZDriveMW(id=zz_drive_name, opx_output=f"{wiring_path}/opx_output")
+        transmon_pair.zz_drive = ZZDriveMW(id=zz_drive_name, opx_output=f"{wiring_path}/opx_output")
 
     else:
         raise ValueError(f"Unimplemented mapping of port keys to channel for ports: {ports}")
