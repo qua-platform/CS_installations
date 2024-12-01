@@ -1,0 +1,382 @@
+{
+    "channels": {
+        "EOM": {
+            "operations": {
+                "const_pulse": {
+                    "length": 512,
+                    "id": "const_pulse",
+                    "amplitude": 0.01,
+                    "axis_angle": 0,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                },
+                "pi": {
+                    "length": 512,
+                    "amplitude": 0.02,
+                    "axis_angle": 0,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                },
+                "pi_half": {
+                    "length": 256,
+                    "amplitude": 0.03,
+                    "axis_angle": 0,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                }
+            },
+            "digital_outputs": {
+                "trigger": {
+                    "opx_output": [
+                        "con1",
+                        4
+                    ],
+                    "delay": 0,
+                    "buffer": 0
+                }
+            },
+            "intermediate_frequency": 30000000.0,
+            "opx_output_I": [
+                "con1",
+                1
+            ],
+            "opx_output_Q": [
+                "con1",
+                2
+            ],
+            "frequency_converter_up": "#/octaves/octave1/RF_outputs/1",
+            "__class__": "quam.components.channels.IQChannel"
+        },
+        "EOM_A": {
+            "operations": {
+                "const_pulse": {
+                    "length": 512,
+                    "id": "const_pulse",
+                    "amplitude": 0.01,
+                    "axis_angle": 0,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                },
+                "pi": {
+                    "length": 512,
+                    "amplitude": 0.02,
+                    "axis_angle": 0,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                },
+                "pi_half": {
+                    "length": 256,
+                    "amplitude": 0.03,
+                    "axis_angle": 0,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                }
+            },
+            "digital_outputs": {
+                "trigger": {
+                    "opx_output": [
+                        "con1",
+                        4
+                    ],
+                    "delay": 0,
+                    "buffer": 0
+                }
+            },
+            "intermediate_frequency": 30000000.0,
+            "opx_output_I": [
+                "con1",
+                1
+            ],
+            "opx_output_Q": [
+                "con1",
+                2
+            ],
+            "frequency_converter_up": "#/octaves/octave1/RF_outputs/1",
+            "__class__": "quam.components.channels.IQChannel"
+        },
+        "EOM_B": {
+            "operations": {
+                "const_pulse": {
+                    "length": 512,
+                    "id": "const_pulse",
+                    "amplitude": 0.01,
+                    "axis_angle": 0,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                },
+                "pi": {
+                    "length": 512,
+                    "amplitude": 0.02,
+                    "axis_angle": 0,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                },
+                "pi_half": {
+                    "length": 256,
+                    "amplitude": 0.03,
+                    "axis_angle": 0,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                }
+            },
+            "digital_outputs": {
+                "trigger": {
+                    "opx_output": [
+                        "con1",
+                        4
+                    ],
+                    "delay": 0,
+                    "buffer": 0
+                }
+            },
+            "intermediate_frequency": 30000000.0,
+            "opx_output_I": [
+                "con1",
+                1
+            ],
+            "opx_output_Q": [
+                "con1",
+                2
+            ],
+            "frequency_converter_up": "#/octaves/octave1/RF_outputs/1",
+            "__class__": "quam.components.channels.IQChannel"
+        },
+        "mwe": {
+            "operations": {
+                "const_pulse": {
+                    "length": 512,
+                    "amplitude": 0.04,
+                    "axis_angle": 0,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                },
+                "pi": {
+                    "length": 512,
+                    "amplitude": 0.05,
+                    "axis_angle": 0,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                },
+                "pi_half": {
+                    "length": 256,
+                    "amplitude": 0.04,
+                    "axis_angle": 0,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                }
+            },
+            "intermediate_frequency": 30000000.0,
+            "opx_output_I": [
+                "con1",
+                3
+            ],
+            "opx_output_Q": [
+                "con1",
+                4
+            ],
+            "frequency_converter_up": "#/octaves/octave1/RF_outputs/2",
+            "__class__": "quam.components.channels.IQChannel"
+        },
+        "mwg": {
+            "operations": {
+                "const_pulse": {
+                    "length": 512,
+                    "amplitude": 0.03,
+                    "axis_angle": 0,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                },
+                "pi": {
+                    "length": 512,
+                    "amplitude": 0.02,
+                    "axis_angle": 0,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                },
+                "pi_half": {
+                    "length": 256,
+                    "amplitude": 0.01,
+                    "axis_angle": 0,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                }
+            },
+            "intermediate_frequency": 30000000.0,
+            "opx_output_I": [
+                "con1",
+                5
+            ],
+            "opx_output_Q": [
+                "con1",
+                6
+            ],
+            "frequency_converter_up": "#/octaves/octave1/RF_outputs/3",
+            "__class__": "quam.components.channels.IQChannel"
+        },
+        "AOM1": {
+            "operations": {
+                "AOM1_ON": {
+                    "length": 512,
+                    "amplitude": 0.02,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                }
+            },
+            "opx_output": [
+                "con1",
+                7
+            ],
+            "__class__": "quam.components.channels.SingleChannel"
+        },
+        "AOM2": {
+            "operations": {
+                "AOM2_ON": {
+                    "length": 512,
+                    "amplitude": 0.03,
+                    "__class__": "quam.components.pulses.SquarePulse"
+                }
+            },
+            "opx_output": [
+                "con1",
+                8
+            ],
+            "__class__": "quam.components.channels.SingleChannel"
+        },
+        "SNSPD": {
+            "operations": {
+                "readout": {
+                    "length": 1024,
+                    "digital_marker": [
+                        [
+                            1,
+                            0
+                        ]
+                    ]
+                }
+            },
+            "id": "SNSPD",
+            "digital_outputs": {
+                "trigger": {
+                    "opx_output": [
+                        "con1",
+                        2
+                    ],
+                    "delay": 0,
+                    "buffer": 0
+                }
+            },
+            "opx_input": [
+                "con1",
+                1
+            ],
+            "time_of_flight": 36,
+            "time_tagging": {
+                "signal_threshold": 0.1,
+                "signal_polarity": "above",
+                "derivative_threshold": -0.2,
+                "derivative_polarity": "above"
+            },
+            "__class__": "quam.components.channels.InSingleChannel"
+        },
+        "SNSPD_RAW": {
+            "operations": {
+                "readout": {
+                    "length": 1024,
+                    "digital_marker": [
+                        [
+                            1,
+                            0
+                        ]
+                    ]
+                }
+            },
+            "id": "SNSPD_RAW",
+            "digital_outputs": {
+                "trigger": {
+                    "opx_output": [
+                        "con1",
+                        2
+                    ],
+                    "delay": 0,
+                    "buffer": 0
+                }
+            },
+            "opx_input": [
+                "con1",
+                1
+            ],
+            "time_of_flight": 36,
+            "__class__": "quam.components.channels.InSingleChannel"
+        },
+        "OpticalTrigger": {
+            "operations": {
+                "Laser_ON": {
+                    "length": 512,
+                    "digital_marker": [
+                        [
+                            1,
+                            0
+                        ]
+                    ]
+                }
+            },
+            "digital_outputs": {
+                "trigger": {
+                    "opx_output": [
+                        "con1",
+                        1
+                    ],
+                    "delay": 0,
+                    "buffer": 0
+                }
+            }
+        },
+        "RF_switch": {
+            "operations": {
+                "RF_ON": {
+                    "length": 512,
+                    "digital_marker": [
+                        [
+                            1,
+                            0
+                        ]
+                    ]
+                }
+            },
+            "digital_outputs": {
+                "trigger": {
+                    "opx_output": [
+                        "con1",
+                        3
+                    ],
+                    "delay": 0,
+                    "buffer": 0
+                }
+            }
+        }
+    },
+    "octaves": {
+        "octave1": {
+            "name": "oct1",
+            "ip": "172.16.33.101",
+            "port": 80,
+            "RF_outputs": {
+                "1": {
+                    "id": 1,
+                    "channel": "#/channels/EOM",
+                    "LO_frequency": 6000000000.0
+                },
+                "2": {
+                    "id": 2,
+                    "channel": "#/channels/mwe",
+                    "LO_frequency": 2500000000.0
+                },
+                "3": {
+                    "id": 3,
+                    "channel": "#/channels/mwg",
+                    "LO_frequency": 2500000000.0
+                },
+                "4": {
+                    "id": 4
+                },
+                "5": {
+                    "id": 5
+                }
+            },
+            "RF_inputs": {
+                "1": {
+                    "id": 1
+                },
+                "2": {
+                    "id": 2,
+                    "LO_source": "external"
+                }
+            }
+        }
+    },
+    "__class__": "quam.components.basic_quam.BasicQuAM"
+}
