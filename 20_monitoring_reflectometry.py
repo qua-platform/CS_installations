@@ -19,7 +19,6 @@ from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from configuration_with_lf_fem import *
-
 # from configuration import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
@@ -38,14 +37,10 @@ total_duration = 30 * u.s
 sub_duration = 10 * u.s
 reflectometry_readout_long_length = 1 * u.ms
 num_reps = total_duration // reflectometry_readout_long_length
-num_outer = total_duration // sub_duration  # Number of averaging loops
-num_inner = (
-    sub_duration // reflectometry_readout_long_length
-)  # Number of averaging loops
+num_outer = total_duration // sub_duration # Number of averaging loops
+num_inner = sub_duration // reflectometry_readout_long_length # Number of averaging loops
 ts_s = np.arange(0, total_duration, reflectometry_readout_long_length)
-config["pulses"]["reflectometry_readout_long_pulse"][
-    "length"
-] = reflectometry_readout_long_length
+config["pulses"]["reflectometry_readout_long_pulse"]["length"] = reflectometry_readout_long_length
 
 
 with program() as reflectometry_spectro:
@@ -61,13 +56,7 @@ with program() as reflectometry_spectro:
         with for_(m, 0, m < num_inner, m + 1):
             # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
             # Please choose the right "out1" or "out2" according to the connectivity
-            measure(
-                "long_readout",
-                "tank_circuit",
-                None,
-                demod.full("cos", I, "out1"),
-                demod.full("sin", Q, "out1"),
-            )
+            measure("long_readout", "tank_circuit", None, demod.full("cos", I, "out1"), demod.full("sin", Q, "out1"))
             save(I, I_st)
             save(Q, Q_st)
             wait(1_000 * u.ns)  # in ns
@@ -85,9 +74,7 @@ with program() as reflectometry_spectro:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 #######################
 # Simulate or execute #
@@ -149,6 +136,7 @@ else:
         plt.tight_layout()
         plt.pause(1)
 
+
     if save_data:
         from qualang_tools.results.data_handler import DataHandler
 
@@ -163,12 +151,9 @@ else:
         script_name = Path(__file__).name
         data_handler = DataHandler(root_data_folder=save_dir)
         save_data_dict.update({"fig_live": fig})
-        data_handler.additional_files = {
-            script_name: script_name,
-            **default_additional_files,
-        }
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_handler.save_data(data=save_data_dict, name="monitoring_reflectometry")
-
+       
     plt.show()
     qm.close()
 

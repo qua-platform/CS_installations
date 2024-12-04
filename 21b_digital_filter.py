@@ -14,10 +14,17 @@ import numpy as np
 from scipy import optimize
 from qualang_tools.digital_filters import exponential_decay, single_exponential_correction
 
-# A = -0.5
-# tau = 100
-# ts = np.arange(1000)
-# xs = 1 + A * np.exp(-ts/tau)
+#############
+# WAVEFORMS #
+#############
+
+A = -0.5
+exp_tau = 100
+exp_len = 1000
+exp_amp = 0.2
+exp_ts = np.arange(exp_len)
+exp_wf = exp_amp * (1 + A * np.exp(-exp_ts / exp_tau))
+
 
 # fig = plt.figure()
 # plt.plot(ts, xs)
