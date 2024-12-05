@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 
 ramp_rate = 3e-4
-ramp_duration = 1000 # ramp_rate * ramp_duration will be the voltage applied
+ramp_duration = 1000  # ramp_rate * ramp_duration will be the voltage applied
 ramp_amp = ramp_rate * ramp_duration
 flat_duration = 4000
 

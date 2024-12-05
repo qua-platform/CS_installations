@@ -19,6 +19,7 @@ from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from configuration_with_lf_fem import *
+
 # from configuration import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
@@ -38,10 +39,14 @@ total_duration = 30 * u.s
 sub_duration = 10 * u.s
 reflectometry_readout_long_length = 1 * u.ms
 num_reps = total_duration // reflectometry_readout_long_length
-num_outer = total_duration // sub_duration # Number of averaging loops
-num_inner = sub_duration // reflectometry_readout_long_length # Number of averaging loops
+num_outer = total_duration // sub_duration  # Number of averaging loops
+num_inner = (
+    sub_duration // reflectometry_readout_long_length
+)  # Number of averaging loops
 ts_s = np.arange(0, total_duration, reflectometry_readout_long_length)
-config["pulses"]["reflectometry_readout_long_pulse"]["length"] = reflectometry_readout_long_length
+config["pulses"]["reflectometry_readout_long_pulse"][
+    "length"
+] = reflectometry_readout_long_length
 
 
 with program() as reflectometry_spectro:
@@ -57,7 +62,13 @@ with program() as reflectometry_spectro:
         with for_(m, 0, m < num_inner, m + 1):
             # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
             # Please choose the right "out1" or "out2" according to the connectivity
-            measure("long_readout", "tank_circuit", None, demod.full("cos", I, "out1"), demod.full("sin", Q, "out1"))
+            measure(
+                "long_readout",
+                "tank_circuit",
+                None,
+                demod.full("cos", I, "out1"),
+                demod.full("sin", Q, "out1"),
+            )
             save(I, I_st)
             save(Q, Q_st)
             wait(1_000 * u.ns)  # in ns
@@ -75,7 +86,9 @@ with program() as reflectometry_spectro:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 #######################
 # Simulate or execute #
@@ -100,6 +113,7 @@ else:
     # make a temporal directory for the data
     if save_data:
         from qualang_tools.results.data_handler import DataHandler
+
         # Save results
         script_name = Path(__file__).name
         data_handler = DataHandler(root_data_folder=save_dir)
@@ -135,23 +149,21 @@ else:
         current_datetime = datetime.now().strftime("%Y/%m/%d-%H:%M:%S")
         _log_this = f"{current_datetime}, len-I={I_flat.shape[0]:_}, len-Q={Q_flat.shape[0]:_}, iteration={iteration+1}"
         print(_log_this)
-        
+
         # Save log
         if save_data:
             # Open the log file in append mode and write the log
             with open(data_handler.path / "log.txt", encoding="utf8", mode="a") as f:
-                f.write(_log_this.replace("_","") + "\n")  # Append the log message to the file
-            
+                f.write(
+                    _log_this.replace("_", "") + "\n"
+                )  # Append the log message to the file
+
             # Data to save
             save_data_dict = {}
             save_data_dict["I"] = I_flat
             save_data_dict["Q"] = Q_flat
             data_handler.save_data(data=save_data_dict)
 
-        # Save results
-        save_data_dict.update({"fig_live": fig})
-        data_handler.additional_files = {script_name: script_name, **default_additional_files}
-        data_handler.save_data(data=save_data_dict)
         # Plot results
         plt.suptitle("RF-reflectometry")
         plt.cla()
@@ -162,7 +174,6 @@ else:
         plt.ylabel("Voltage [V]")
         plt.tight_layout()
         plt.pause(2)
-
 
     if save_data:
         from qualang_tools.results.data_handler import DataHandler
@@ -175,9 +186,12 @@ else:
 
         # Save results
         save_data_dict.update({"fig_live": fig})
-        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.additional_files = {
+            script_name: script_name,
+            **default_additional_files,
+        }
         data_handler.save_data(data=save_data_dict)
-       
+
     plt.show()
     qm.close()
 

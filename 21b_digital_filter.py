@@ -12,7 +12,10 @@ import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
 from scipy import optimize
-from qualang_tools.digital_filters import exponential_decay, single_exponential_correction
+from qualang_tools.digital_filters import (
+    exponential_decay,
+    single_exponential_correction,
+)
 
 #############
 # WAVEFORMS #
@@ -35,15 +38,14 @@ exp_wf = exp_amp * (1 + A * np.exp(-exp_ts / exp_tau))
 [A_lpf, tau_lpf_ns], _ = optimize.curve_fit(
     exponential_decay,
     exp_ts,
-    exp_wf/exp_wf.max(),
+    exp_wf / exp_wf.max(),
 )
 # Derive the corresponding taps
 feedforward_taps, feedback_tap = single_exponential_correction(A_lpf, tau_lpf_ns)
 
 # config["controllers"]["con1"]["analog_outputs"][1] = {
-#     "offset": 0.0, 
+#     "offset": 0.0,
 #     "filter": {"feedforward": feedforward_taps, "feedback": feedback_tap}}
-
 
 
 ###################
@@ -61,7 +63,9 @@ with program() as pulse_on:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=None, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=None, cluster_name=cluster_name, octave=octave_config
+)
 
 simulate = False
 

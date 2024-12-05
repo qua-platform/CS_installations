@@ -20,7 +20,11 @@ from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from configuration_with_lf_fem import *
-from qualang_tools.results import progress_counter, fetching_tool, wait_until_job_is_paused
+from qualang_tools.results import (
+    progress_counter,
+    fetching_tool,
+    wait_until_job_is_paused,
+)
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
@@ -69,7 +73,9 @@ with program() as charge_sensor_sweep:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 #######################
 # Simulate or execute #
@@ -156,4 +162,3 @@ else:
     qm.close()
 
 # %%
-
