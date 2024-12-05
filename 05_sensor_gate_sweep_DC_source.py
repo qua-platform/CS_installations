@@ -31,7 +31,7 @@ from macros import RF_reflectometry_macro, DC_current_sensing_macro
 # The QUA program #
 ###################
 n_avg = 100  # Number of averaging loops
-n_points = 101
+n_points = 11
 dc_offsets = np.linspace(-0.2, 0.2, n_points)
 
 with program() as charge_sensor_sweep:
@@ -90,8 +90,8 @@ else:
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(charge_sensor_sweep)
-    # Get results from QUA program
-    results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
+    # # Get results from QUA program
+    # results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
 
     # Live plotting
     fig = plt.figure()

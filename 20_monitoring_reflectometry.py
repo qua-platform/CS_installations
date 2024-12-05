@@ -26,6 +26,7 @@ from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from scipy import signal
 from datetime import datetime
+from pathlib import Path
 import copy
 
 
@@ -95,19 +96,28 @@ else:
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(reflectometry_spectro)
+
+    # make a temporal directory for the data
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name="monitoring_reflectometry")
+
     # results = fetching_tool(job, data_list=["I", "Q", "I_all", "Q_all", "iteration"], mode="live")
     results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
     Is, Qs = [], []
     _I, _Q = np.zeros(num_inner), np.zeros(num_inner)
-    log_results = []
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch results
-        # I, Q, I_all, Q_all, iteration = results.fetch_all()
         I, Q, iteration = results.fetch_all()
-        current_datetime = datetime.now().strftime("%Y/%m/%d-%H:%M:%S")
+
+        # Progress bar
+        progress_counter(iteration, num_outer, start_time=results.get_start_time())
 
         if not np.allclose(I, _I):
             Is.append(I)
@@ -121,10 +131,27 @@ else:
             Q_flat = np.array(Qs).ravel()
             ts_Q = np.arange(Q_flat.shape[0]) * reflectometry_readout_long_length / u.s
 
-        print(current_datetime, len(Is), len(Qs), iteration)
-        log_results.append(f"{current_datetime},{len(Is)},{len(Qs)},{iteration}")
-        # Progress bar
-        progress_counter(iteration, num_outer, start_time=results.get_start_time())
+        # Print log
+        current_datetime = datetime.now().strftime("%Y/%m/%d-%H:%M:%S")
+        _log_this = f"{current_datetime}, len-I={I_flat.shape[0]:_}, len-Q={Q_flat.shape[0]:_}, iteration={iteration+1}"
+        print(_log_this)
+        
+        # Save log
+        if save_data:
+            # Open the log file in append mode and write the log
+            with open(data_handler.path / "log.txt", encoding="utf8", mode="a") as f:
+                f.write(_log_this.replace("_","") + "\n")  # Append the log message to the file
+            
+            # Data to save
+            save_data_dict = {}
+            save_data_dict["I"] = I_flat
+            save_data_dict["Q"] = Q_flat
+            data_handler.save_data(data=save_data_dict)
+
+        # Save results
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {script_name: script_name, **default_additional_files}
+        data_handler.save_data(data=save_data_dict)
         # Plot results
         plt.suptitle("RF-reflectometry")
         plt.cla()
@@ -134,7 +161,7 @@ else:
         plt.xlabel("Time [sec]")
         plt.ylabel("Voltage [V]")
         plt.tight_layout()
-        plt.pause(1)
+        plt.pause(2)
 
 
     if save_data:
@@ -145,14 +172,11 @@ else:
         # save_data_dict["elapsed_time"] =  np.array([elapsed_time])
         save_data_dict["I"] = I_flat
         save_data_dict["Q"] = Q_flat
-        save_data_dict["log_results"] = "\n".join(log_results)
 
         # Save results
-        script_name = Path(__file__).name
-        data_handler = DataHandler(root_data_folder=save_dir)
         save_data_dict.update({"fig_live": fig})
         data_handler.additional_files = {script_name: script_name, **default_additional_files}
-        data_handler.save_data(data=save_data_dict, name="monitoring_reflectometry")
+        data_handler.save_data(data=save_data_dict)
        
     plt.show()
     qm.close()
