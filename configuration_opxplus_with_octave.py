@@ -5,7 +5,6 @@ from pathlib import Path
 import numpy as np
 from qualang_tools.config.waveform_tools import drag_gaussian_pulse_waveforms, flattop_gaussian_waveform
 from qualang_tools.units import unit
-from set_octave import OctaveUnit, octave_declaration
 
 
 #######################
@@ -13,37 +12,10 @@ from set_octave import OctaveUnit, octave_declaration
 #######################
 u = unit(coerce_to_integer=True)
 
-######################
-# Network parameters #
-######################
-qop_ip = "172.16.33.101" # Write the QM router IP address
-cluster_name = "Cluster_81" # Write the QM router IP address
-qop_port = None  # Write the QOP port if version < QOP220
-
-############################
-# Set octave configuration #
-############################
-con = "con1"
-
-# The Octave port is 11xxx, where xxx are the last three digits of the Octave internal IP that can be accessed from
-# the OPX admin panel if you QOP version is >= QOP220. Otherwise, it is 50 for Octave1, then 51, 52 and so on.
-octave_1 = OctaveUnit("octave1", qop_ip, port=11232, con=con)
-# octave_2 = OctaveUnit("octave2", qop_ip, port=11051, con=con)
-
-# If the control PC or local network is connected to the internal network of the QM router (port 2 onwards)
-# or directly to the Octave (without QM the router), use the local octave IP and port 80.
-# octave_ip = "192.168.88.X"
-# octave_1 = OctaveUnit("octave1", octave_ip, port=80, con=con)
-
-# Add the octaves
-octaves = [octave_1]
-# Configure the Octaves
-octave_config = octave_declaration(octaves)
-
-
 #####################
 # OPX configuration #
 #####################
+con = "con1"
 
 # MARK: QUBITS
 #############################################

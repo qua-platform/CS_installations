@@ -27,16 +27,13 @@ Before proceeding to the next node:
 """
 
 from qm.qua import *
-from qm import QuantumMachinesManager, SimulationConfig
+from qm import QuantumMachinesManager
 from configuration_opxplus_with_octave import *
-# from configuration_opxplus_without_octave import *
-from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 from macros import qua_declaration, multiplexed_readout
-import matplotlib.pyplot as plt
-import math
-from qualang_tools.results.data_handler import DataHandler
+from set_octave import OctaveUnit, octave_declaration
+import numpy as np
+import time
 
 
 ##################
@@ -49,23 +46,17 @@ resonators = [key for key in RR_CONSTANTS.keys()]
 
 # Parameters Definition
 n_avg = 1_000  # The number of averages
+
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
 # Qubit detuning sweep with respect to qubit_IF
 span = 2.0 * u.MHz
 freq_step = 125 * u.kHz
 dfs = np.arange(-span, +span, freq_step)
-scaling_factor = 1.0
 
 # Readout Parameters
 weights = "rotated_" # ["", "rotated_", "opt_"]
 reset_method = "wait" # ["wait", "active"]
 readout_operation = "readout" # ["readout", "midcircuit_readout"]
-
-# Assertion
-assert len(dfs) <= 400, "check your frequencies"
-for qb in qubits:
-    assert scaling_factor * QUBIT_CONSTANTS[qb]["amp"] <= 0.499, f"{qb} scaling factor times amplitude exceeded 0.499"
-
 
 ###################
 #   QUA Program   #
@@ -82,7 +73,7 @@ with program() as qubit_spec:
             # Update the frequency of the two qubit elements
             for qb in qubits:
                 update_frequency(qb, df + QUBIT_CONSTANTS[qb]["IF"])
-                play("saturation" * amp(scaling_factor), qb)
+                play("saturation", qb)
                 
             align()
 
@@ -99,28 +90,39 @@ with program() as qubit_spec:
             Q_st[ind].buffer(len(dfs)).average().save(f"Q_{rr}")
 
 
-if __name__ == "__main__":
-    import time
-    
-    times = [time.time()]
-    qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
-    times.append(time.time())
-    # Open the quantum machine
-    qm = qmm.open_qm(config)
-    times.append(time.time())
-    # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(qubit_spec)
-    times.append(time.time())
-    job.result_handles.wait_for_all_values()
-    times.append(time.time())
-    job.result_handles.get("I_q1_rr").fetch_all()
-    times.append(time.time())
+# run the protocol and time the steps
 
-    times = np.diff(times)
 
-    print(f'Time for opening qmm - {times[0]}')
-    print(f'Time for opening qm - {times[1]}')
-    print(f'Time to execute - {times[2]}')
-    print(f'Time of program runtime + stream processing - {times[3]}')
-    print(f'Time to fetch data - {times[4]}')
+con = "con1"
+qop_ip = "127.0.0.1" # Update the QM router IP address
+cluster_name = "Cluster_1" # Update the cluster name
+qop_port = None
+
+# Update "port": the Octave port is 11xxx, where xxx are the last three digits of the Octave internal IP that can be accessed from the OPX admin panel
+octave_1 = OctaveUnit("octave1", qop_ip, port=11050, con=con) 
+octaves = [octave_1]
+octave_config = octave_declaration(octaves)
+
+
+times = [time.time()]
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+times.append(time.time())
+# Open the quantum machine
+qm = qmm.open_qm(config)
+times.append(time.time())
+# Send the QUA program to the OPX, which compiles and executes it
+job = qm.execute(qubit_spec)
+times.append(time.time())
+job.result_handles.wait_for_all_values()
+times.append(time.time())
+job.result_handles.get("I_q1_rr").fetch_all()
+times.append(time.time())
+
+times = np.diff(times)
+
+print(f'Time for opening qmm - {times[0]}')
+print(f'Time for opening qm - {times[1]}')
+print(f'Time to execute - {times[2]}')
+print(f'Time of program runtime + stream processing - {times[3]}')
+print(f'Time to fetch data - {times[4]}')
 # %%
