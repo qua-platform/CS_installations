@@ -34,10 +34,8 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.addons.variables import assign_variables_to_element
 from qdac2_driver import QDACII, load_voltage_list
 import matplotlib.pyplot as plt
-from HI_20241204_JunYoneda._macros import (
-    RF_reflectometry_macro,
-    DC_current_sensing_macro,
-)
+from macros import RF_reflectometry_macro
+
 
 ###################
 # The QUA program #
@@ -116,7 +114,7 @@ qmm = QuantumMachinesManager(
 ## QDAC2 section
 # Create the qdac instrument
 qdac = QDACII("Ethernet", IP_address="127.0.0.1", port=5025)  # Using Ethernet protocol
-# qdac = QDACII("USB", USB_device=4)  # Using USB protocol
+qdac = QDACII("USB", USB_device=4)  # Using USB protocol
 # Set up the qdac and load the voltage list
 load_voltage_list(
     qdac,

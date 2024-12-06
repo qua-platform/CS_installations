@@ -16,6 +16,8 @@ from typing import Union
 ######################
 qop_ip = "172.16.33.107"  # Write the QM router IP address
 cluster_name = "Beta_8"  # Write your cluster_name if version >= QOP220
+# qop_ip = "192.168.88.253"  # Write the QM router IP address
+# cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = 9510  # Write the QOP port if version < QOP220
 octave_config = None
 

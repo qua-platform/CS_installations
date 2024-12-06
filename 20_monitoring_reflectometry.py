@@ -159,10 +159,11 @@ else:
                 )  # Append the log message to the file
 
             # Data to save
-            save_data_dict = {}
-            save_data_dict["I"] = I_flat
-            save_data_dict["Q"] = Q_flat
-            data_handler.save_data(data=save_data_dict)
+            np.savez(
+                file=data_handler.path / "data.npz",
+                I=I_flat,
+                Q=Q_flat,
+            )
 
         # Plot results
         plt.suptitle("RF-reflectometry")
