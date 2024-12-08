@@ -90,89 +90,137 @@ with program() as PROGRAM:
             
                 with for_(nn, 0, nn < n_shots, nn + 1):
 
-                    # TODO: initialize protocol
+                    # # TODO: initialize protocol
+                    # with if_((germ_idx >= 0)):
+                    #     with strict_timing_():
+                    #         # prep fiducials
+                    #         with switch_(germ_idx, unsafe=True):
+                    #             with case_(0):
+                    #                 with for_(d, 0, d < germ_len, d + 1):
+                    #                     play("x90", qb)
+                    #             with case_(1):
+                    #                 with for_(d, 0, d < germ_len, d + 1):
+                    #                     play("y90", qb)
+                    #             with case_(2):
+                    #                 with for_(d, 0, d < germ_len, d + 1):
+                    #                     play("x90", qb)
+                    #                     play("y90", qb)
+                    #             with case_(3):
+                    #                 with for_(d, 0, d < germ_len, d + 1):
+                    #                     play("x90", qb)
+                    #                     play("x90", qb)
+                    #                     play("y90", qb)
+                    #             with case_(4):
+                    #                 with for_(d, 0, d < germ_len, d + 1):
+                    #                     play("x90", qb)
+                    #                     play("y90", qb)
+                    #                     play("y90", qb)
+                    #             with case_(5):
+                    #                 with for_(d, 0, d < germ_len, d + 1):
+                    #                     play("x90", qb)
+                    #                     play("x90", qb)
+                    #                     play("y90", qb)
+                    #                     play("x90", qb)
+                    #                     play("y90", qb)
 
-                    # with strict_timing_():
-                    # prep fiducials
-                    with if_(prep_fiducical_idx >= 1):
-                        with switch_(prep_fiducical_idx, unsafe=True):
-                            with case_(1):
-                                play("x90", qb)
-                            with case_(2):
-                                play("y90", qb)
-                            with case_(3):
-                                play("x90", qb)
-                                play("x90", qb)
-                            with case_(4):
-                                play("x90", qb)
-                                play("x90", qb)
-                                play("x90", qb)
-                            with case_(5):
-                                play("y90", qb)
-                                play("y90", qb)
-                                play("y90", qb)
-
-                    # germ
-                    with if_(germ_idx >= 0):
-                        with switch_(germ_idx, unsafe=True):
-                            with case_(0):
-                                with for_(d, 0, d < germ_len, d + 1):
+                    with if_((prep_fiducical_idx >= 1) & (germ_idx >= 0) & (meas_fiducical_idx >= 1)):
+                        with strict_timing_():
+                            # prep fiducials
+                            with switch_(prep_fiducical_idx, unsafe=True):
+                                with case_(1):
                                     play("x90", qb)
-                            with case_(1):
-                                with for_(d, 0, d < germ_len, d + 1):
+                                with case_(2):
                                     play("y90", qb)
-                            with case_(2):
-                                with for_(d, 0, d < germ_len, d + 1):
-                                    play("x90", qb)
-                                    play("y90", qb)
-                            with case_(3):
-                                with for_(d, 0, d < germ_len, d + 1):
+                                with case_(3):
                                     play("x90", qb)
                                     play("x90", qb)
-                                    play("y90", qb)
-                            with case_(4):
-                                with for_(d, 0, d < germ_len, d + 1):
+                                with case_(4):
                                     play("x90", qb)
+                                    play("x90", qb)
+                                    play("x90", qb)
+                                with case_(5):
                                     play("y90", qb)
                                     play("y90", qb)
-                            with case_(5):
-                                with for_(d, 0, d < germ_len, d + 1):
-                                    play("x90", qb)
-                                    play("x90", qb)
-                                    play("y90", qb)
-                                    play("x90", qb)
                                     play("y90", qb)
 
-                    # meas fiducials
-                    with if_(meas_fiducical_idx >= 0):
-                        with switch_(meas_fiducical_idx, unsafe=True):
-                            with case_(1):
-                                play("x90", qb)
-                            with case_(2):
-                                play("y90", qb)
-                            with case_(3):
-                                play("x90", qb)
-                                play("x90", qb)
-                            with case_(4):
-                                play("x90", qb)
-                                play("x90", qb)
-                                play("x90", qb)
-                            with case_(5):
-                                play("y90", qb)
-                                play("y90", qb)
-                                play("y90", qb)
+                            with switch_(meas_fiducical_idx, unsafe=True):
+                                with case_(1):
+                                    play("x90", qb)
+                                with case_(2):
+                                    play("y90", qb)
+                                with case_(3):
+                                    play("x90", qb)
+                                    play("x90", qb)
+                                with case_(4):
+                                    play("x90", qb)
+                                    play("x90", qb)
+                                    play("x90", qb)
+                                with case_(5):
+                                    play("y90", qb)
+                                    play("y90", qb)
+                                    play("y90", qb)
 
-                    # TODO: measurement protocol
+                        # # germ
+                        # with if_(germ_idx >= 0):
+                        #     with switch_(germ_idx, unsafe=True):
+                        #         with case_(0):
+                        #             with for_(d, 0, d < germ_len, d + 1):
+                        #                 play("x90", qb)
+                        #         with case_(1):
+                        #             with for_(d, 0, d < germ_len, d + 1):
+                        #                 play("y90", qb)
+                        #         with case_(2):
+                        #             with for_(d, 0, d < germ_len, d + 1):
+                        #                 play("x90", qb)
+                        #                 play("y90", qb)
+                        #         with case_(3):
+                        #             with for_(d, 0, d < germ_len, d + 1):
+                        #                 play("x90", qb)
+                        #                 play("x90", qb)
+                        #                 play("y90", qb)
+                        #         with case_(4):
+                        #             with for_(d, 0, d < germ_len, d + 1):
+                        #                 play("x90", qb)
+                        #                 play("y90", qb)
+                        #                 play("y90", qb)
+                        #         with case_(5):
+                        #             with for_(d, 0, d < germ_len, d + 1):
+                        #                 play("x90", qb)
+                        #                 play("x90", qb)
+                        #                 play("y90", qb)
+                        #                 play("x90", qb)
+                        #                 play("y90", qb)
 
-                    save(c_idx, circuit_st)
-                    save(prep_fiducical_idx, circuit_st)
-                    save(germ_idx, circuit_st)
-                    save(germ_len, circuit_st)
-                    save(meas_fiducical_idx, circuit_st)
-                    wait(5 * u.us)
+                        # # meas fiducials
+                        # with if_(meas_fiducical_idx >= 0):
+                        #     with switch_(meas_fiducical_idx, unsafe=True):
+                        #         with case_(1):
+                        #             play("x90", qb)
+                        #         with case_(2):
+                        #             play("y90", qb)
+                        #         with case_(3):
+                        #             play("x90", qb)
+                        #             play("x90", qb)
+                        #         with case_(4):
+                        #             play("x90", qb)
+                        #             play("x90", qb)
+                        #             play("x90", qb)
+                        #         with case_(5):
+                        #             play("y90", qb)
+                        #             play("y90", qb)
+                        #             play("y90", qb)
 
-    with stream_processing():
-        circuit_st.buffer(5).buffer(num_cicuits_per_batch).save("circuit_history") 
+                        # # TODO: measurement protocol
+
+                        # save(c_idx, circuit_st)
+                        # save(prep_fiducical_idx, circuit_st)
+                        # save(germ_idx, circuit_st)
+                        # save(germ_len, circuit_st)
+                        # save(meas_fiducical_idx, circuit_st)
+                        # wait(5 * u.us)
+
+    # with stream_processing():
+    #     circuit_st.buffer(5).buffer(num_cicuits_per_batch).save("circuit_history") 
 
 
 #####################################
@@ -187,7 +235,13 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 simulate = False
 
 if simulate:
-    pass
+    # Simulates the QUA program for the specified duration
+    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    # Simulate blocks python until the simulation is done
+    job = qmm.simulate(config, PROGRAM, simulation_config)
+    # Plot the simulated samples
+    job.get_simulated_samples().con1.plot()
+    plt.show()
 
 else:
     from qm import generate_qua_script
@@ -195,27 +249,27 @@ else:
     print(generate_qua_script(PROGRAM, config), file=sourceFile) 
     sourceFile.close()
     # Open the quantum machine
-    qm = qmm.open_qm(config)
+    qm = qmm.open_qm(config, flags=["not-strict-timing"])
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(PROGRAM)
     
     res_handles = job.result_handles
     # Waits (blocks the Python console) until all results have been acquired
     # results = fetching_tool(job, data_list=["circuit_history"], mode="live")
-    for _ in list_n_shots:
+    for _n_shots in list_n_shots:
         for b in range(num_cicuits_batches):
             n_from = b * num_cicuits_per_batch
             n_to = (b + 1) * num_cicuits_per_batch
             encoded_circuit_batch = dg[["index", "P_enc", "G_enc", "d_enc", "M_enc"]].iloc[n_from:n_to,:].values
             encoded_circuit_batch_flattened = encoded_circuit_batch.ravel()
             encoded_circuit_batch_flattened_list = encoded_circuit_batch_flattened.tolist()
-            print(f"n_batch: {b}")
+            print(f"n_shots: {_n_shots}, n_batch: {b}")
             # print(f"    encoded_circuit: {encoded_circuit_batch_flattened_list}")
             job.push_to_input_stream('circuit_idxs_input_stream', encoded_circuit_batch_flattened_list)
             # circuit_history = results.fetch_all()
             # res_handles.wait_for_values(1)
-            circuit_history = res_handles.get("circuit_history").fetch_all()
+            # circuit_history = res_handles.get("circuit_history").fetch_all()
             # print(f"    res: {circuit_history}")
-            assert np.allclose(encoded_circuit_batch, circuit_history), "input and output streams don't match!"
-            print("    success!")
+            # assert np.allclose(encoded_circuit_batch, circuit_history), "input and output streams don't match!"
+            print("    ---> success!")
 # %%

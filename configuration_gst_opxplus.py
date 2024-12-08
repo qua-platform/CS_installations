@@ -40,7 +40,7 @@ qubit_IF = 0 * u.MHz
 
 # CW pulse
 const_amp = 0.3  # in V
-const_len = 100  # in ns
+const_len = 80  # in ns
 
 #############################################
 #                  Config                   #
@@ -71,6 +71,19 @@ config = {
                 "x90": "const_pulse",
                 "y90": "const_pulse",
             },
+            "thread": "a",
+        },
+        "qubit_twin": {
+            "singleInput": {
+                "port": ("con1", 1),
+            },
+            "intermediate_frequency": qubit_IF,
+            "operations": {
+                "const": "const_pulse",
+                "x90": "const_pulse",
+                "y90": "const_pulse",
+            },
+            "thread": "b",
         },
         "tank_circuit": {
             "singleInput": {
