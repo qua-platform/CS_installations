@@ -76,19 +76,19 @@ with program() as PROGRAM:
 
     with for_each_(n_shots, list_n_shots):
         
-        with for_(nn, 0, nn < n_shots, nn + 1):
-            
-            with for_(bb, 0, bb < num_cicuits_batches, bb + 1):
+        with for_(bb, 0, bb < num_cicuits_batches, bb + 1):
 
-                advance_input_stream(circuit_idxs)  # ordered or randomized
+            advance_input_stream(circuit_idxs)  # ordered or randomized
+            
+            with for_(mm, 0, mm < num_cicuits_per_batch, mm + 1):
                 
-                with for_(mm, 0, mm < num_cicuits_per_batch, mm + 1):
-                
-                    c_idx = circuit_idxs[5 * mm + 0]
-                    prep_fiducical_idx = circuit_idxs[5 * mm + 1]
-                    germ_idx = circuit_idxs[5 * mm + 2]
-                    germ_len = circuit_idxs[5 * mm + 3]
-                    meas_fiducical_idx = circuit_idxs[5 * mm + 4]
+                c_idx = circuit_idxs[5 * mm + 0]
+                prep_fiducical_idx = circuit_idxs[5 * mm + 1]
+                germ_idx = circuit_idxs[5 * mm + 2]
+                germ_len = circuit_idxs[5 * mm + 3]
+                meas_fiducical_idx = circuit_idxs[5 * mm + 4]
+            
+                with for_(nn, 0, nn < n_shots, nn + 1):
 
                     # TODO: initialize protocol
 
