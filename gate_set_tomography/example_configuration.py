@@ -15,7 +15,6 @@ config = {
     "version": 1,
     "controllers": {
         "con1": {
-            "type": "opx1",
             "analog_outputs": {
                 1: {"offset": +0.0},
                 2: {"offset": +0.0},
@@ -31,21 +30,15 @@ config = {
             "singleInput": {"port": ("con1", 1)},
             "intermediate_frequency": 100e6,
             "operations": {
-                "readoutOp": "readoutPulse",
                 "x_pi/2": "gaussPulse",
             },
-            "time_of_flight": 180,
-            "smearing": 0,
         },
         "y_control": {
             "singleInput": {"port": ("con1", 2)},
             "intermediate_frequency": 100e6,
             "operations": {
-                "readoutOp": "readoutPulse",
                 "y_pi/2": "gaussPulse",
             },
-            "time_of_flight": 180,
-            "smearing": 0,
         },
         "readout": {
             "singleInput": {"port": ("con1", 3)},
@@ -61,7 +54,7 @@ config = {
     },
     "pulses": {
         "readoutPulse": {
-            "operation": "measure",
+            "operation": "measurement",
             "length": pulse_len,
             "waveforms": {"single": "const_wf"},
             "digital_marker": "ON",

@@ -1,11 +1,18 @@
+# %%
 from QuaGST import QuaGST
 from qm.qua import *
-from qm.QuantumMachinesManager import QuantumMachinesManager, SimulationConfig
+from qm import QuantumMachinesManager, SimulationConfig
 from pygsti.modelpacks import smq1Q_XYI
 from example_configuration import *
 
-qmm = QuantumMachinesManager()
+qop_ip = "172.16.33.101"  # Write the QM router IP address
+cluster_name = "Cluster_83"  # Write your cluster_name if version >= QOP220
+qop_port = None  # Write the QOP port if version < QOP220
+octave_config = None
 
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 # different controls just for coloring of the generated samples
 def x_pi2():
@@ -30,7 +37,7 @@ def post_circuit(out_st):
     save(I, out_st)
 
 
-GST_sequence_file = "Circuits_before_results.txt"
+GST_sequence_file = "/workspaces/HI_20250106_SeigoTarucha/gate_set_tomography/Circuits_before_results.txt"
 # gate keys should match the model gates without the 'G' at the beginning.
 gate_macros = {"xpi2:0": x_pi2, "ypi2:0": y_pi2, "[]": id_gate}
 gst = QuaGST(
@@ -41,9 +48,12 @@ gst = QuaGST(
     post_circuit=post_circuit,
     config=config,
     quantum_machines_manager=qmm,
-    simulate=SimulationConfig(int(1e5)),
+    # simulate=SimulationConfig(int(1e5)),
 )
-gst.run(300, plot_simulated_samples_con="con1")
+gst.run(
+    300,
+    # plot_simulated_samples_con="con1",
+)
 # gst.last_job.get_simulated_samples().con1.plot()
 # gst.run_IO()
 
@@ -52,3 +62,5 @@ print(*gst.qua_script, file=gst_script)
 gst_script.close()
 
 results = gst.results
+
+# %%
