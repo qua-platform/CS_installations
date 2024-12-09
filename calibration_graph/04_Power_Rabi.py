@@ -40,14 +40,14 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = None
+    qubits: Optional[List[str]] = ["q6"]
     num_averages: int = 50
     operation_x180_or_any_90: Literal["x180", "x90", "-x90", "y90", "-y90"] = "x180"
-    min_amp_factor: float = 0.001
-    max_amp_factor: float = 1.99
+    min_amp_factor: float = 0.001*0+0.8
+    max_amp_factor: float = 1.99*0+1.2
     amp_factor_step: float = 0.005
-    max_number_rabi_pulses_per_sweep: int = 1
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
+    max_number_rabi_pulses_per_sweep: int = 100
+    flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     state_discrimination: bool = False
     update_x90: bool = True
@@ -116,7 +116,7 @@ with program() as power_rabi:
 
     for i, qubit in enumerate(qubits):
         # Bring the active qubits to the minimum frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
         
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
@@ -139,29 +139,30 @@ with program() as power_rabi:
                     else:
                         save(I[i], I_st[i])
                         save(Q[i], Q_st[i])
+                        align()
         if not node.parameters.multiplexed:
             align()
 
     with stream_processing():
-        n_st.save("n")
-        for i, qubit in enumerate(qubits):
+        n_st.save("iteration")
+        for j, q in enumerate(qubits):
             if operation == "x180":
                 if state_discrimination:
-                    state_stream[i].boolean_to_int().buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(
-                        f"state{i + 1}"
+                    state_stream[j].boolean_to_int().buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(
+                        f"state{j + 1}"
                     )
                 else:
-                    I_st[i].buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(f"I{i + 1}")
-                    Q_st[i].buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(f"Q{i + 1}")
+                    I_st[j].buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(f"I{j + 1}")
+                    Q_st[j].buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(f"Q{j + 1}")
 
             elif operation in ["x90", "-x90", "y90", "-y90"]:
                 if state_discrimination:
-                    state_stream[i].boolean_to_int().buffer(len(amps)).buffer(np.ceil(N_pi / 4)).average().save(
-                        f"state{i + 1}"
+                    state_stream[j].boolean_to_int().buffer(len(amps)).buffer(np.ceil(N_pi / 4)).average().save(
+                        f"state{j + 1}"
                     )
                 else:
-                    I_st[i].buffer(len(amps)).buffer(np.ceil(N_pi / 4)).average().save(f"I{i + 1}")
-                    Q_st[i].buffer(len(amps)).buffer(np.ceil(N_pi / 4)).average().save(f"Q{i + 1}")
+                    I_st[j].buffer(len(amps)).buffer(np.ceil(N_pi / 4)).average().save(f"I{j + 1}")
+                    Q_st[j].buffer(len(amps)).buffer(np.ceil(N_pi / 4)).average().save(f"Q{j + 1}")
             else:
                 raise ValueError(f"Unrecognized operation {operation}.")
 
@@ -187,7 +188,7 @@ if node.parameters.simulate:
 elif node.parameters.load_data_id is None:
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         job = qm.execute(power_rabi)
-        results = fetching_tool(job, ["n"], mode="live")
+        results = fetching_tool(job, ["iteration"], mode="live")
         while results.is_processing():
             # Fetch results
             n = results.fetch_all()[0]
@@ -213,6 +214,7 @@ if not node.parameters.simulate:
     else:
         node = node.load_from_id(node.parameters.load_data_id)
         ds = node.results["ds"]
+        qubits = [machine.qubits[qb_name] for qb_name in ds.qubit.values]  # TODO
     # Add the dataset to the node
     node.results = {"ds": ds}
 
@@ -316,3 +318,8 @@ if not node.parameters.simulate:
         node.results["initial_parameters"] = node.parameters.model_dump()
         node.machine = machine
         node.save()
+
+from qm import generate_qua_script
+sourceFile = open('rabi_debug.py', 'w')
+print(generate_qua_script(power_rabi, config), file=sourceFile)
+sourceFile.close()

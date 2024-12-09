@@ -13,14 +13,14 @@ path = "C:\git\CS_installations\configuration\quam_state"
 
 # Define the available instrument setup
 instruments = Instruments()
-instruments.add_mw_fem(controller=1, slots=[1, 2, 3, 4])
+instruments.add_mw_fem(controller=1, slots=[2, 3, 5, 7])
 
 # Define which quantum elements are present in the system
 qubits = [i+1 for i in range(8)]
-rr_slots = [1, 1, 2, 2, 3, 3, 4, 4]
+rr_slots = [2, 2, 3, 3, 5, 5, 7, 7]
 rr_out_ports = [1, 8, 1, 8, 1, 8, 1, 8]
 rr_in_ports = [1, 2, 1, 2, 1, 2, 1, 2]
-xy_slots = [1, 1, 2, 2, 3, 3, 4, 4]
+xy_slots = rr_slots
 xy_ports = [2, 3, 2, 3, 2, 3, 2, 3]
 connectivity = Connectivity()
 for i in range(8):
@@ -45,7 +45,7 @@ for i in range(len(qubit_pairs)):
     connectivity.add_qubit_pair_zz_drive_lines(qubit_pairs=qubit_pairs[i], constraints=mw_fem_spec(con=1, slot=xy_slots[i], out_port=xy_ports[i]))
     allocate_wiring(connectivity, instruments, block_used_channels=False)
 # Build the wiring and network into a QuAM machine and save it as "wiring.json"
-build_quam_wiring(connectivity, host_ip, cluster_name, path)
+# build_quam_wiring(connectivity, host_ip, cluster_name, path)
 
 # View wiring schematic
 visualize(connectivity.elements, available_channels=instruments.available_channels)

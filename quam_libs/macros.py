@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Optional, Union
 import warnings
 import xarray as xr
-
+import matplotlib
+matplotlib.use("TkAgg")
 from qm.qua import *
 from quam_libs.components import QuAM
 

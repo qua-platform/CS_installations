@@ -41,13 +41,13 @@ import numpy as np
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubits: Optional[List[str]] = None
+    qubits: Optional[List[str]] = ["q4"]
     num_averages: int = 20
     operation: str = "x180"
     frequency_span_in_mhz: float = 20
     frequency_step_in_mhz: float = 0.02
     max_number_pulses_per_sweep: int = 20
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
+    flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     DRAG_setpoint: Optional[float] = -1.0
     simulate: bool = False
@@ -111,7 +111,7 @@ with program() as stark_detuning:
 
     for i, qubit in enumerate(qubits):
         # Bring the active qubits to the desired frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
         
 
         with for_(n, 0, n < n_avg, n + 1):
@@ -195,6 +195,7 @@ if not node.parameters.simulate:
     else:
         node = node.load_from_id(node.parameters.load_data_id)
         ds = node.results["ds"]
+        qubits = [machine.qubits[qb_name] for qb_name in ds.qubit.values]  # TODO
     # Add the dataset to the node
     node.results = {"ds": ds}
 

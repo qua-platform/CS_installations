@@ -79,16 +79,16 @@ class Parameters(NodeParameters):
     num_averages: int = 20
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 1000
-    wait_time_step_in_ns: int = 16
+    wait_time_step_in_ns: int = 4
     min_amp_scaling: float = 0.05
     max_amp_scaling: float = 1.95
     step_amp_scaling: float = 0.05
-    cr_type: Literal["direct", "direct+echo", "direct+cancel", "direct+cancel+echo"] = "direct+cancel+echo"
-    cr_drive_amps: List[float] = [0.1]
+    cr_type: Literal["direct", "direct+echo", "direct+cancel", "direct+cancel+echo"] = "direct"
+    cr_drive_amps: List[float] = [0.3]
     cr_cancel_amps: List[float] = [0.1]
-    cr_drive_amp_scalings: List[float] = [0.5]
-    cr_cancel_amp_scalings: List[float] = [0.5]
-    cr_drive_phases: List[float] = [0.5]
+    cr_drive_amp_scalings: List[float] = [1]
+    cr_cancel_amp_scalings: List[float] = [1]
+    cr_drive_phases: List[float] = [0.25]
     cr_cancel_phases: List[float] = [0.5]
     use_state_discrimination: bool = False
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
@@ -121,11 +121,11 @@ for i, qp in enumerate(qubit_pairs):
     qt_xy = qp.qubit_target.xy
     with tracked_updates(cr, auto_revert=False, dont_assign_to_none=True) as cr:
         cr.operations["square"].amplitude = node.parameters.cr_drive_amps[i]
-        cr.operations["square"].axis_angle = node.parameters.cr_drive_phases[i] * 360
+        # cr.operations["square"].axis_angle = node.parameters.cr_drive_phases[i] * 360
         tracked_qubits.append(cr)
     with tracked_updates(qt_xy, auto_revert=False, dont_assign_to_none=True) as qt_xy:
         qt_xy.operations[f"{cr_name}_Square"].amplitude = node.parameters.cr_cancel_amps[i]
-        qt_xy.operations[f"{cr_name}_Square"].axis_angle = node.parameters.cr_cancel_phases[i] * 360
+        # qt_xy.operations[f"{cr_name}_Square"].axis_angle = node.parameters.cr_cancel_phases[i] * 360
         tracked_qubits.append(qt_xy)
 
 
@@ -264,7 +264,7 @@ with program() as cr_calib_unit_ham_tomo:
                             save(state_target[i], state_st_target[i])
 
                             # Wait for the qubit to decay to the ground state - Can be replaced by active reset
-                            wait(1 * u.us)
+                            wait(machine.thermalization_time * u.ns)
 
     with stream_processing():
         n_st.save("n")

@@ -46,14 +46,14 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = None
+    qubits: Optional[List[str]] = ["q6"]
     num_averages: int = 500
     operation: str = "saturation"
     operation_amplitude_factor: Optional[float] = 0.1
     operation_len_in_ns: Optional[int] = None
     frequency_span_in_mhz: float = 100
     frequency_step_in_mhz: float = 0.25
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
+    flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     target_peak_width: Optional[float] = 2e6
     arbitrary_flux_bias: Optional[float] = None
     arbitrary_qubit_frequency_in_ghz: Optional[float] = None
@@ -131,7 +131,7 @@ with program() as qubit_spec:
 
     for i, qubit in enumerate(qubits):
         # Bring the active qubits to the desired frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
@@ -139,11 +139,12 @@ with program() as qubit_spec:
                 # Update the qubit frequency
                 qubit.xy.update_frequency(df + qubit.xy.intermediate_frequency + detunings[qubit.name])
                 qubit.align()
-                duration = operation_len * u.ns if operation_len is not None else (qubit.xy.operations[operation].length + qubit.z.settle_time) * u.ns
+                duration = operation_len * u.ns if operation_len is not None else qubit.xy.operations[operation].length * u.ns
+                # duration = operation_len * u.ns if operation_len is not None else (qubit.xy.operations[operation].length + qubit.z.settle_time) * u.ns
                 # Bring the qubit to the desired point during the saturation pulse
-                qubit.z.play("const", amplitude_scale=arb_flux_bias_offset[qubit.name] / qubit.z.operations["const"].amplitude, duration=duration)
+                # qubit.z.play("const", amplitude_scale=arb_flux_bias_offset[qubit.name] / qubit.z.operations["const"].amplitude, duration=duration)
                 # Play the saturation pulse
-                qubit.xy.wait(qubit.z.settle_time * u.ns)
+                # qubit.xy.wait(qubit.z.settle_time * u.ns)
                 qubit.xy.play(
                     operation,
                     amplitude_scale=operation_amp,
@@ -158,6 +159,7 @@ with program() as qubit_spec:
                 # save data
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])
+                align()
 
         # Measure sequentially
         if not node.parameters.multiplexed:
@@ -204,6 +206,7 @@ if not node.parameters.simulate:
     if node.parameters.load_data_id is not None:
         node = node.load_from_id(node.parameters.load_data_id)
         ds = node.results["ds"]
+        qubits = [machine.qubits[qb_name] for qb_name in ds.qubit.values]  # TODO
     else:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
         ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs})

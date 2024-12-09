@@ -40,14 +40,14 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = None
+    qubits: Optional[List[str]] = ["q4"]
     num_averages: int = 100
     frequency_detuning_in_mhz: float = 1.0
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 3000
+    max_wait_time_in_ns: int = 30000
     num_time_points: int = 500
     log_or_linear_sweep: Literal["log", "linear"] = "log"
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
+    flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     use_state_discrimination: bool = False
     simulate: bool = False
     simulation_duration_ns: int = 2500
@@ -116,7 +116,7 @@ with program() as ramsey:
     for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the desired frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
         
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
@@ -208,6 +208,7 @@ if not node.parameters.simulate:
     else:
         node = node.load_from_id(node.parameters.load_data_id)
         ds = node.results["ds"]
+        qubits = [machine.qubits[qb_name] for qb_name in ds.qubit.values]  # TODO
     # Add the dataset to the node
     node.results = {"ds": ds}
 

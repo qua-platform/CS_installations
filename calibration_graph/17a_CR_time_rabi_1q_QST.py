@@ -26,10 +26,10 @@ from typing import Optional, Literal, List
 class Parameters(NodeParameters):
 
     qubit_pairs: Optional[List[str]] = ["q1-2"]
-    num_averages: int = 20
+    num_averages: int = 100
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 1000
-    wait_time_step_in_ns: int = 16
+    max_wait_time_in_ns: int = 4000
+    wait_time_step_in_ns: int = 40
     use_state_discrimination: bool = False
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
@@ -149,7 +149,7 @@ with program() as cr_time_rabi:
                         save(state_target[i], state_st_target[i])
 
                         # Wait for the qubit to decay to the ground state - Can be replaced by active reset
-                        wait(1 * u.us)
+                        wait(machine.thermalization_time * u.ns)
 
     with stream_processing():
         n_st.save("n")
@@ -164,6 +164,7 @@ if node.parameters.simulate:
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, cr_time_rabi, simulation_config)
     job.get_simulated_samples().con1.plot()
+    plt.show()
     node.results = {"figure": plt.gcf()}
     node.machine = machine
     node.save()
@@ -214,12 +215,12 @@ if not node.parameters.simulate:
 
     qm.close()
     print("Experiment QM is now closed")
-    plt.show(block=True)
+    plt.show(block=False)
 
 
 # %% {Save_results}
-if not node.parameters.simulate:
-    node.outcomes = {qp.name: "successful" for qp in qubit_pairs}
-    node.results["initial_parameters"] = node.parameters.model_dump()
-    node.machine = machine
-    node.save()
+# if not node.parameters.simulate:
+#     node.outcomes = {qp.name: "successful" for qp in qubit_pairs}
+#     node.results["initial_parameters"] = node.parameters.model_dump()
+#     node.machine = machine
+#     node.save()

@@ -239,6 +239,7 @@ else:
                 machine.qubits[q].resonator.opx_input_Q.offset = machine.qubits[
                     ds.where(ds.con == con).qubit.values[0]
                 ].resonator.opx_input_Q.offset
+
     # Revert the change done at the beginning of the node
     for resonator in tracked_resonators:
         resonator.revert_changes()

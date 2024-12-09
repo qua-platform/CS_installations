@@ -53,6 +53,7 @@ for i, q in enumerate(machine.qubits):
     qb.xy.opx_output.band = get_band(xy_LO[i])
     qb.xy.intermediate_frequency = xy_if
 
+    qb.anharmonicity = int(anaharmonicity[i])
     ## Update qubit xy detuned freq and power
     # qb.xy_detuned.frequency_converter_up.LO_frequency = round(xy_LO[i])
     # qb.xy_detuned.intermediate_frequency = qb.xy.intermediate_frequency + round(xy_if_detuning[i])

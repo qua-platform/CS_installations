@@ -43,12 +43,12 @@ from sklearn.mixture import GaussianMixture
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = None
-    num_runs: int = 2000
+    qubits: Optional[List[str]] = ["q4"]
+    num_runs: int = 6000
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
-    start_amp: float = 0.5
-    end_amp: float = 1.99
+    flux_point_joint_or_independent: Literal["joint", "independent", None] = None
+    start_amp: float = 0.1
+    end_amp: float = 1.5
     num_amps: int = 10
     outliers_threshold: float = 0.98
     plot_raw: bool = False
@@ -95,7 +95,7 @@ with program() as iq_blobs:
     for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the desired frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
          
 
         with for_(n, 0, n < n_runs, n + 1):
@@ -199,6 +199,7 @@ if not node.parameters.simulate:
     else:
         node = node.load_from_id(node.parameters.load_data_id)
         ds = node.results["ds"]
+        qubits = [machine.qubits[qb_name] for qb_name in ds.qubit.values]  # TODO
 
 
     node.results = {"ds": ds, "results": {}, "figs": {}}

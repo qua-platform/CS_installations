@@ -40,6 +40,10 @@ class CrossResonanceMW(MWChannel, CrossResonanceBase):
     def upconverter_frequency(self):
         return self.opx_output.upconverter_frequency
 
+    @property
+    def inferred_RF_frequency(self):
+        return self.upconverter_frequency + self.inferred_intermediate_frequency
+
     # add property of upconverter here?
     def get_output_power(self, operation, Z=50) -> float:
         power = self.opx_output.full_scale_power_dbm

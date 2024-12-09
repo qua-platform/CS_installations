@@ -48,7 +48,7 @@ class Parameters(NodeParameters):
     min_flux_offset_in_v: float = -0.02
     max_flux_offset_in_v: float = 0.03
     num_flux_points: int = 51
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
+    flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
@@ -108,7 +108,7 @@ with program() as multi_qubit_spec_vs_flux:
 
     for i, qubit in enumerate(qubits):
         # Bring the active qubits to the minimum frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
@@ -181,6 +181,7 @@ if not node.parameters.simulate:
     if node.parameters.load_data_id is not None:
         node = node.load_from_id(node.parameters.load_data_id)
         ds = node.results["ds"]
+        qubits = [machine.qubits[qb_name] for qb_name in ds.qubit.values]  # TODO
     else:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
         ds = fetch_results_as_xarray(job.result_handles, qubits, {"flux": dcs, "freq": dfs})

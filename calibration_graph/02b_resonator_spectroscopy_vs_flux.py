@@ -48,7 +48,7 @@ class Parameters(NodeParameters):
     num_flux_points: int = 201
     frequency_span_in_mhz: float = 15
     frequency_step_in_mhz: float = 0.1
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
+    flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     input_line_impedance_in_ohm: float = 50
     line_attenuation_in_db: float = 0
     update_flux_min: bool = False
@@ -113,7 +113,7 @@ with program() as multi_res_spec_vs_flux:
         # resonator of the qubit
         rr = resonators[i]
         # Bring the active qubits to the desired frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
@@ -175,6 +175,7 @@ if not node.parameters.simulate:
     if node.parameters.load_data_id is not None:
         node = node.load_from_id(node.parameters.load_data_id)
         ds = node.results["ds"]
+        qubits = [machine.qubits[qb_name] for qb_name in ds.qubit.values]  # TODO
     else:
         ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs, "flux": dcs})
         # Convert IQ data into volts

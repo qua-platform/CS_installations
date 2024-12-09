@@ -5,8 +5,8 @@ from .flux_line import FluxLine
 from .readout_resonator import ReadoutResonator
 from qualang_tools.octave_tools import octave_calibration_tool
 from qm import QuantumMachine, logger
-from typing import Dict, Any, Union
-from qm.qua import align
+from typing import Dict, Any, Optional, Union, List, Tuple
+from qm.qua import align, wait
 import numpy as np
 from dataclasses import field
 
@@ -25,9 +25,9 @@ class Transmon(QuamComponent):
         xy (MWChannel): The xy drive component.
         z (FluxLine): The z drive component.
         resonator (ReadoutResonator): The readout resonator component.
-        T1 (float): The transmon T1 in ns.
-        T2ramsey (float): The transmon T2* in ns.
-        T2echo (float): The transmon T2 in ns.
+        T1 (float): The transmon T1 in s.
+        T2ramsey (float): The transmon T2* in s.
+        T2echo (float): The transmon T2 in s.
         thermalization_time_factor (int): thermalization time in units of T1.
         anharmonicity (int, float): the transmon anharmonicity in Hz.
         freq_vs_flux_01_quad_term (float):
@@ -100,9 +100,11 @@ class Transmon(QuamComponent):
     @property
     def thermalization_time(self):
         """The transmon thermalization time in ns."""
-        return int(self.thermalization_time_factor * self.T1 * 1e9 * 4) // 4
+        return int(self.thermalization_time_factor * self.T1 * 1e9 / 4) * 4
 
-    def calibrate_octave(self, QM: QuantumMachine, calibrate_drive: bool = True, calibrate_resonator: bool = True) -> None:
+    def calibrate_octave(
+        self, QM: QuantumMachine, calibrate_drive: bool = True, calibrate_resonator: bool = True
+    ) -> None:
         """Calibrate the Octave channels (xy and resonator) linked to this transmon for the LO frequency, intermediate
         frequency and Octave gain as defined in the state.
 
@@ -154,6 +156,15 @@ class Transmon(QuamComponent):
                 return qubit_pair
         else:
             raise ValueError("Qubit pair not found: qubit_control={self.name}, " "qubit_target={other.name}")
-        
+
     def align(self):
-        align(self.xy.name, self.z.name, self.resonator.name)
+        if self.z is not None:
+            align(self.xy.name, self.z.name, self.resonator.name)
+        else:
+            align(self.xy.name, self.resonator.name)
+
+    def wait(self, duration):
+        if self.z is not None:
+            wait(duration, self.xy.name, self.z.name, self.resonator.name)
+        else:
+            wait(duration, self.xy.name, self.resonator.name)

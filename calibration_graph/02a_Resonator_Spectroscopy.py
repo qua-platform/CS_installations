@@ -38,14 +38,14 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = None
+    qubits: Optional[List[str]] = ["q6"]
     num_averages: int = 100
-    frequency_span_in_mhz: float = 30.0
-    frequency_step_in_mhz: float = 0.1
+    frequency_span_in_mhz: float = 8.0
+    frequency_step_in_mhz: float = 0.01
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
-    load_data_id: Optional[int] = None
+    load_data_id: Optional[int] = None#217
     multiplexed: bool = True
 
 
@@ -149,6 +149,7 @@ if not node.parameters.simulate:
     if node.parameters.load_data_id is not None:
         node = node.load_from_id(node.parameters.load_data_id)
         ds = node.results["ds"]
+        qubits = [machine.qubits[qb_name] for qb_name in ds.qubit.values]  # TODO
     else:
         ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs})
         # Convert IQ data into volts
@@ -175,7 +176,7 @@ if not node.parameters.simulate:
     fit_results = {}
 
     for index, q in enumerate(qubits):
-        fit, fit_eval = fit_resonator(ds.sel(qubit=q.name), q.resonator.RF_frequency)
+        fit, fit_eval = fit_resonator(ds.sel(qubit=q.name), q.resonator.RF_frequency, print_report=True)
         fits[q.name] = fit
         fit_evals[q.name] = fit_eval
         Qe = np.abs(fit.params["Qe_real"].value + 1j * fit.params["Qe_imag"].value)

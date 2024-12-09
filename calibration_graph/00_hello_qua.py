@@ -14,7 +14,6 @@ from quam_libs.components import QuAM
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-path = r"C:\Users\KevinAVillegasRosale\OneDrive - QM Machines LTD\Documents\GitKraken\CS_installations\configuration\quam_state"
 machine = QuAM.load()
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
@@ -24,10 +23,6 @@ qmm = machine.connect()
 qubits = machine.active_qubits
 
 with program() as prog:
-
-    qubits[2].xy.update_frequency(-100e6)
-    qubits[1].xy.update_frequency(-100e6)
-    qubits[0].xy.update_frequency(-100e6)
 
     a = declare(fixed)
 

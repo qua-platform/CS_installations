@@ -1,5 +1,5 @@
 from typing import Optional
-
+from quam_libs.components.transmon import Transmon
 import numpy as np
 import xarray as xr
 
@@ -8,8 +8,11 @@ def to_long_dataframe(ds: xr.Dataset):
     """
     convert a dataset to a pandas dataframe in a long format. This is primarily used when plotting with plotly
     """
-    return ds.to_dataframe().reset_index().melt(id_vars=[k for k in ds.coords.keys()],
-                                                value_vars=[k for k in ds.data_vars.keys()])
+    return (
+        ds.to_dataframe()
+        .reset_index()
+        .melt(id_vars=[k for k in ds.coords.keys()], value_vars=[k for k in ds.data_vars.keys()])
+    )
 
 
 def extract_dict(ds: xr.Dataset, data_var) -> dict:
@@ -18,6 +21,26 @@ def extract_dict(ds: xr.Dataset, data_var) -> dict:
     dataframe for this value
     """
     return ds[[data_var]].to_dataframe().to_dict()[data_var]
+
+
+def convert_IQ_to_V(da: xr.DataArray, qubits: list[Transmon], IQ_list: list[str] = ("I", "Q")) -> xr.DataArray:
+    """
+    return data array with the 'I' and 'Q' quadratures converted to Volts.
+
+    :param da: the array on which to calculate angle. Assumed to have complex data
+    :type da: xr.DataArray
+    :param qubits: the list of qubits components.
+    :type qubits: list[Transmon]
+    :param IQ_list: the list of data to convert to V e.g. ["I", "Q"].
+    :type IQ_list: list[str]
+    :return: a data array with the same dimensions and coordinates, with a 'I' and 'Q' in Volts
+    :type: xr.DataArray
+    """
+    # Create a xarray with a coordinate 'qubit' and the value is q.resonator.operations["readout"].length
+    readout_lengths = xr.DataArray(
+        [q.resonator.operations["readout"].length for q in qubits], coords=[("qubit", [q.name for q in qubits])]
+    )
+    return da.assign({key: da[key] * 2**12 / readout_lengths for key in IQ_list})
 
 
 def apply_angle(da: xr.DataArray, dim: str, unwrap=True) -> xr.DataArray:
@@ -29,15 +52,20 @@ def apply_angle(da: xr.DataArray, dim: str, unwrap=True) -> xr.DataArray:
     :type da: xr.DataArray
     :param dim: the dimesnsion along which to subtract
     :type dim: str
-    :param unwrap: whether to unwrap the phase 
+    :param unwrap: whether to unwrap the phase
     :type unwrap: bool, optional
     :return: a dataarray with the same dimensions and coordinates, with a linear slope subtrcated along dim
-    :rtype: xr.DataArray
+    :type: xr.DataArray
     """
     if unwrap:
-        def f(x): return np.unwrap(np.angle(x))
+
+        def f(x):
+            return np.unwrap(np.angle(x))
+
     else:
-        def f(x): return np.angle(x)
+
+        def f(x):
+            return np.angle(x)
 
     return xr.apply_ufunc(f, da, input_core_dims=[[dim]], output_core_dims=[[dim]])
 
@@ -57,8 +85,12 @@ def subtract_slope(da: xr.DataArray, dim: str) -> xr.DataArray:
     x = da[dim]
 
     def sub_slope(arr):
-        def fit_func(a): return np.polyfit(x, a, deg=1)
-        def eval_func(c): return np.polyval(c, x)
+        def fit_func(a):
+            return np.polyfit(x, a, deg=1)
+
+        def eval_func(c):
+            return np.polyval(c, x)
+
         pf = np.apply_along_axis(fit_func, -1, arr)
         evaled = np.apply_along_axis(eval_func, -1, pf)
         return arr - evaled
@@ -77,18 +109,22 @@ def unrotate_phase(da: xr.DataArray, dim: str) -> xr.DataArray:
     :type da: xr.DataArray
     :param dim: the dimesnsion along which to unrotate
     :type dim: str
-    :return: a dataarray with the same dimensions and coordinates, with phase unrotated along dim  
+    :return: a dataarray with the same dimensions and coordinates, with phase unrotated along dim
     :rtype: xr.DataArray
     """
     x = da[dim]
     angle = apply_angle(da, dim).values
 
     def unrotate(arr):
-        def fit_func(a): return np.polyfit(x, a, deg=1)
-        def eval_func(c): return np.polyval(c, x)
+        def fit_func(a):
+            return np.polyfit(x, a, deg=1)
+
+        def eval_func(c):
+            return np.polyval(c, x)
+
         pf = np.apply_along_axis(fit_func, -1, angle)
         evaled_angle = np.apply_along_axis(eval_func, -1, pf)
-        return arr*np.exp(-1j*evaled_angle)
+        return arr * np.exp(-1j * evaled_angle)
 
     return xr.apply_ufunc(unrotate, da, input_core_dims=[[dim]], output_core_dims=[[dim]])
 
@@ -112,12 +148,6 @@ def integer_histogram(da: xr.DataArray, dim: str, minlength: Optional[int] = Non
 
     def count_bins(vec):
         return np.bincount(vec, minlength=minlength)
-    da2 = xr.apply_ufunc(count_bins, da, input_core_dims=[
-                         [dim]], output_core_dims=[[da.name]], vectorize=True)
+
+    da2 = xr.apply_ufunc(count_bins, da, input_core_dims=[[dim]], output_core_dims=[[da.name]], vectorize=True)
     return da2.assign_coords({da.name: np.arange(len(da2[da.name]))})
-
-
-
-
-
-

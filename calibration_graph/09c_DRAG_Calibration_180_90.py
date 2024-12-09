@@ -40,13 +40,13 @@ import xarray as xr
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubits: Optional[List[str]] = None
+    qubits: Optional[List[str]] = ["q2"]
     num_averages: int = 1000
     operation: str = "x180"
     min_amp_factor: float = 0.0001
     max_amp_factor: float = 2.0
     amp_factor_step: float = 0.05
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
+    flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
     simulation_duration_ns: int = 2500
@@ -104,7 +104,7 @@ with program() as drag_calibration:
 
     for i, qubit in enumerate(qubits):
         # Bring the active qubits to the desired frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
@@ -177,6 +177,7 @@ if not node.parameters.simulate:
     else:
         node = node.load_from_id(node.parameters.load_data_id)
         ds = node.results["ds"]
+        qubits = [machine.qubits[qb_name] for qb_name in ds.qubit.values]  # TODO
     # Add the dataset to the node
     node.results = {"ds": ds}
 

@@ -29,7 +29,7 @@ class Parameters(NodeParameters):
     num_averages: int = 20
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 1000
-    wait_time_step_in_ns: int = 16
+    wait_time_step_in_ns: int = 4
     cr_cancel_amp: float = 0.5
     cr_drive_phase: float = 0.5
     cr_cancel_phase: float = 0.5
@@ -153,8 +153,10 @@ with program() as cr_time_rabi:
                         align(qc.xy.name, qt.xy.name, cr.name)
                         qc.xy.play("x180")
 
-                        reset_frame(qt.xy.name)
                         align(qt.xy.name, cr.name)
+                        reset_frame(qt.xy.name)
+                        reset_frame(cr.name)
+
                         with switch_(c):
                             with case_(0):  # projection along X
                                 qt.xy.play("-y90")
@@ -172,7 +174,7 @@ with program() as cr_time_rabi:
                         save(state_target[i], state_st_target[i])
 
                         # Wait for the qubit to decay to the ground state - Can be replaced by active reset
-                        wait(1 * u.us)
+                        wait(machine.thermalization_time * u.ns)
 
     with stream_processing():
         n_st.save("n")

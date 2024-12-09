@@ -72,17 +72,17 @@ from cr_hamiltonian_tomography import (
 class Parameters(NodeParameters):
 
     qubit_pairs: Optional[List[str]] = ["q1-2"]
-    num_averages: int = 20
+    num_averages: int = 200
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 1000
-    wait_time_step_in_ns: int = 16
-    cr_type: Literal["direct", "direct+echo", "direct+cancel", "direct+cancel+echo"] = "direct+cancel+echo"
-    cr_drive_amp: List[float] = [0.1]
-    cr_cancel_amp: List[float] = [0.1]
-    cr_drive_amp_scaling: List[float] = [0.5]
-    cr_cancel_amp_scaling: List[float] = [0.5]
-    cr_drive_phase: List[float] = [0.5]
-    cr_cancel_phase: List[float] = [0.5]
+    max_wait_time_in_ns: int = 4000
+    wait_time_step_in_ns: int = 40
+    cr_type: Literal["direct", "direct+echo", "direct+cancel", "direct+cancel+echo"] = "direct"
+    cr_drive_amp: List[float] = [0.225]
+    cr_cancel_amp: List[float] = [0.01]
+    cr_drive_amp_scaling: List[float] = [1]
+    cr_cancel_amp_scaling: List[float] = [0.05]
+    cr_drive_phase: List[float] = [0.75]  # Or 0.25
+    cr_cancel_phase: List[float] = [0.25]
     use_state_discrimination: bool = False
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
@@ -254,7 +254,7 @@ with program() as cr_calib_unit_ham_tomo:
                         save(state_target[i], state_st_target[i])
 
                         # Wait for the qubit to decay to the ground state - Can be replaced by active reset
-                        wait(1 * u.us)
+                        wait(machine.thermalization_time * u.ns)
 
     with stream_processing():
         n_st.save("n")
@@ -338,21 +338,21 @@ if not node.parameters.simulate:
 
 
 # %% {Update_state}
-if not node.parameters.simulate:
-    with node.record_state_updates():
-        cr_drive_amps = [0.1]
-        cr_cancel_amps = [0.1]
-        cr_drive_amp_scalings = [0.5]
-        cr_cancel_amp_scalings = [0.5]
-        cr_drive_phases = [0.5]
-        cr_cancel_phases = [0.5]
-        for i, qp in enumerate(qubit_pairs):
-            cr = qp.cross_resonance
-            qt = qp.qubit_target
-            cr.operations["square"].amplitude = cr_drive_amps[i] * cr_drive_amp_scalings[i]
-            cr.operations["square"].axis_angle = cr_drive_phases[i] * 360
-            qt.xy.operations[f"{cr.name}_Square"].amplitude = cr_cancel_amps[i] * cr_cancel_amp_scalings[i]
-            qt.xy.operations[f"{cr.name}_Square"].axis_angle = cr_cancel_phases[i] * 360
+# if not node.parameters.simulate:
+#     with node.record_state_updates():
+#         cr_drive_amps = [0.1]
+#         cr_cancel_amps = [0.1]
+#         cr_drive_amp_scalings = [0.5]
+#         cr_cancel_amp_scalings = [0.5]
+#         cr_drive_phases = [0.5]
+#         cr_cancel_phases = [0.5]
+#         for i, qp in enumerate(qubit_pairs):
+#             cr = qp.cross_resonance
+#             qt = qp.qubit_target
+#             cr.operations["square"].amplitude = cr_drive_amps[i] * cr_drive_amp_scalings[i]
+#             cr.operations["square"].axis_angle = cr_drive_phases[i] * 360
+#             qt.xy.operations[f"{cr.name}_Square"].amplitude = cr_cancel_amps[i] * cr_cancel_amp_scalings[i]
+#             qt.xy.operations[f"{cr.name}_Square"].axis_angle = cr_cancel_phases[i] * 360
 
 
     # Revert the change done at the beginning of the node

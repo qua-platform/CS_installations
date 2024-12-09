@@ -56,7 +56,7 @@ class Parameters(NodeParameters):
     operation_len_in_ns: Optional[int] = None
     frequency_span_in_mhz: float = 200
     frequency_step_in_mhz: float = 1.0
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
+    flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     simulate: bool = False
     timeout: int = 100
     multiplexed: bool = False
@@ -109,13 +109,13 @@ with program() as qubit_spec:
 
     for i, qubit in enumerate(qubits):
         # Bring the active qubits to the desired frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_(*from_array(df, dfs)):
                 qubit.align()
-                qubit.xy.wait(5*qubit.thermalization_time * u.ns)
+                qubit.xy.wait(qubit.thermalization_time * u.ns)
                 # Reset the qubit frequency
                 update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
                 # Drive the qubit to the excited state
@@ -194,6 +194,7 @@ if not node.parameters.simulate:
     else:
         node = node.load_from_id(node.parameters.load_data_id)
         ds = node.results["ds"]
+        qubits = [machine.qubits[qb_name] for qb_name in ds.qubit.values]  # TODO
     # Add the dataset to the node
     node.results = {"ds": ds}
 
@@ -263,7 +264,7 @@ if not node.parameters.load_data_id:
             for q in qubits:
                 fit_results[q.name] = {}
                 if not np.isnan(result.sel(qubit=q.name).position.values):
-                    q.anharmonicity = int(anharmonicities[q.name])
+                    q.anharmonicity = -int(anharmonicities[q.name])
 
     # %% {Save_results}
     if not node.parameters.simulate:

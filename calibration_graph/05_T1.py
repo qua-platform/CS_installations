@@ -37,9 +37,9 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     num_averages: int = 100
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 100000
+    max_wait_time_in_ns: int = 120000
     wait_time_step_in_ns: int = 600
-    flux_point_joint_or_independent_or_arbitrary: Literal["joint", "independent", "arbitrary"] = "independent"
+    flux_point_joint_or_independent_or_arbitrary: Literal["joint", "independent", "arbitrary", None] = None
     reset_type: Literal["active", "thermal"] = "thermal"
     use_state_discrimination: bool = False
     simulate: bool = False
@@ -96,7 +96,7 @@ with program() as t1:
     for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the desired frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
@@ -108,14 +108,15 @@ with program() as t1:
                     qubit.align()
 
                 qubit.xy.play("x180")
-                qubit.align()
-                qubit.z.wait(20)
-                qubit.z.play(
-                    "const",
-                    amplitude_scale=arb_flux_bias_offset[qubit.name] / qubit.z.operations["const"].amplitude,
-                    duration=t,
-                )
-                qubit.z.wait(20)
+                qubit.xy.wait(t)
+                # qubit.align()
+                # qubit.z.wait(20)
+                # qubit.z.play(
+                #     "const",
+                #     amplitude_scale=arb_flux_bias_offset[qubit.name] / qubit.z.operations["const"].amplitude,
+                #     duration=t,
+                # )
+                # qubit.z.wait(20)
                 qubit.align()
 
                 # Measure the state of the resonators
@@ -127,6 +128,7 @@ with program() as t1:
                     # save data
                     save(I[i], I_st[i])
                     save(Q[i], Q_st[i])
+                    # align()
         # Measure sequentially
         if not node.parameters.multiplexed:
             align()
@@ -182,6 +184,7 @@ if not node.parameters.simulate:
     else:
         node = node.load_from_id(node.parameters.load_data_id)
         ds = node.results["ds"]
+        qubits = [machine.qubits[qb_name] for qb_name in ds.qubit.values]  # TODO
     # Add the dataset to the node
     node.results = {"ds": ds}
 

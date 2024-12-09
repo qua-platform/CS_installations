@@ -47,7 +47,7 @@ class Parameters(NodeParameters):
     wait_time_step_in_ns: int = 20
     flux_span: float = 0.02
     flux_step: float = 0.002
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
+    flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
@@ -104,7 +104,7 @@ with program() as ramsey:
 
     for i, qubit in enumerate(qubits):
         # Bring the active qubits to the desired frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
         
 
         with for_(n, 0, n < n_avg, n + 1):
@@ -187,6 +187,7 @@ if not node.parameters.simulate:
     else:
         node = node.load_from_id(node.parameters.load_data_id)
         ds = node.results["ds"]
+        qubits = [machine.qubits[qb_name] for qb_name in ds.qubit.values]  # TODO
     # Add the dataset to the node
     node.results = {"ds": ds}
 

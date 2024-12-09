@@ -43,10 +43,10 @@ import xarray as xr
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = None
+    qubits: Optional[List[str]] = ["q1"]
     num_runs: int = 2000
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
+    flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     operation_name: str = "readout"  # or "readout_QND"
     simulate: bool = False
     simulation_duration_ns: int = 2500
@@ -89,7 +89,7 @@ with program() as iq_blobs:
     for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the desired frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
 
         with for_(n, 0, n < n_runs, n + 1):
             # ground iq blobs for all qubits
@@ -124,7 +124,7 @@ with program() as iq_blobs:
             # save data
             save(I_e[i], I_e_st[i])
             save(Q_e[i], Q_e_st[i])
-        
+
         # Measure sequentially
         if not node.parameters.multiplexed:
             align()
@@ -189,7 +189,8 @@ if not node.parameters.simulate:
     else:
         node = node.load_from_id(node.parameters.load_data_id)
         ds = node.results["ds"]
-    
+        qubits = [machine.qubits[qb_name] for qb_name in ds.qubit.values]  # TODO
+
     # %% {Data_analysis}
     node.results = {"ds": ds, "figs": {}, "results": {}}
     plot_individual = False
@@ -279,7 +280,8 @@ if not node.parameters.simulate:
         ax.set_ylabel("Q [mV]")
         ax.set_title(qubit["qubit"])
 
-    ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+    # ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+    ax.legend(loc="upper right")
     grid.fig.suptitle("g.s. and e.s. discriminators (rotated)")
     plt.tight_layout()
     node.results["figure_IQ_blobs"] = grid.fig

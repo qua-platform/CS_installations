@@ -34,7 +34,7 @@ class Parameters(NodeParameters):
     num_averages: int = 100
     time_of_flight_in_ns: Optional[int] = 24
     intermediate_frequency_in_mhz: Optional[float] = 50
-    readout_amplitude_in_dBm: Optional[float] = -3
+    readout_amplitude_in_dBm: Optional[float] = -20
     readout_length_in_ns: Optional[int] = None
     simulate: bool = False
     simulation_duration_ns: int = 2500
@@ -84,7 +84,7 @@ with program() as raw_trace_prog:
     for i, rr in enumerate(resonators):
         with for_(n, 0, n < node.parameters.num_averages, n + 1):
             # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
-            reset_phase(rr.name)
+            reset_if_phase(rr.name)
             # Measure the resonator (send a readout pulse and record the raw ADC trace)
             rr.measure("readout", stream=adc_st[i])
             # Wait for the resonator to deplete
@@ -94,12 +94,20 @@ with program() as raw_trace_prog:
 
     with stream_processing():
         for i in range(num_qubits):
-            # Will save average:
-            adc_st[i].input1().real().average().save(f"adcI{i + 1}")
-            adc_st[i].input1().image().average().save(f"adcQ{i + 1}")
-            # Will save only last run:
-            adc_st[i].input1().real().save(f"adc_single_runI{i + 1}")
-            adc_st[i].input1().image().save(f"adc_single_runQ{i + 1}")
+            if machine.qubits[f"q{i+1}"].resonator.opx_input.port_id == 1:
+                # Will save average:
+                adc_st[i].input1().real().average().save(f"adcI{i + 1}")
+                adc_st[i].input1().image().average().save(f"adcQ{i + 1}")
+                # Will save only last run:
+                adc_st[i].input1().real().save(f"adc_single_runI{i + 1}")
+                adc_st[i].input1().image().save(f"adc_single_runQ{i + 1}")
+            else:
+                # Will save average:
+                adc_st[i].input2().real().average().save(f"adcI{i + 1}")
+                adc_st[i].input2().image().average().save(f"adcQ{i + 1}")
+                # Will save only last run:
+                adc_st[i].input2().real().save(f"adc_single_runI{i + 1}")
+                adc_st[i].input2().image().save(f"adc_single_runQ{i + 1}")
 
 
 # %% {Simulate_or_execute}
@@ -195,16 +203,16 @@ else:
     # %% {Update_state}
     print(f"Time Of Flight to add: {delays} ns")
 
+    # Revert the change done at the beginning of the node
+    for resonator in tracked_resonators:
+        resonator.revert_changes()
+
     with node.record_state_updates():
         for q in qubits:
             if node.parameters.time_of_flight_in_ns is not None:
                 q.resonator.time_of_flight = node.parameters.time_of_flight_in_ns + int(ds.sel(qubit=q.name).delays)
             else:
                 q.resonator.time_of_flight += int(ds.sel(qubit=q.name).delays)
-
-    # Revert the change done at the beginning of the node
-    for resonator in tracked_resonators:
-        resonator.revert_changes()
 
     # %% {Save_results}
     node.outcomes = {rr.name: "successful" for rr in resonators}

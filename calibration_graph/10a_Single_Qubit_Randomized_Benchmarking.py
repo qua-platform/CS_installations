@@ -41,7 +41,7 @@ import xarray as xr
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = None
+    qubits: Optional[List[str]] = ["q7"]
     use_state_discrimination: bool = True
     use_strict_timing: bool = False
     num_random_sequences: int = 100  # Number of random sequences
@@ -49,7 +49,7 @@ class Parameters(NodeParameters):
     max_circuit_depth: int = 1000  # Maximum circuit depth
     delta_clifford: int = 20
     seed: int = 345324
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
+    flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
     simulation_duration_ns: int = 2500
@@ -217,7 +217,7 @@ with program() as randomized_benchmarking:
 
     for i, qubit in enumerate(qubits):
         # Bring the active qubits to the desired frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
 
         # QUA for_ loop over the random sequences
         with for_(m, 0, m < num_of_sequences, m + 1):
@@ -309,6 +309,7 @@ elif node.parameters.load_data_id is None:
     else:
         node = node.load_from_id(node.parameters.load_data_id)
         ds = node.results["ds"]
+        qubits = [machine.qubits[qb_name] for qb_name in ds.qubit.values]  # TODO
     # Add the dataset to the node
     node.results = {"ds": ds}
     # %% {Data_analysis}

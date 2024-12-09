@@ -51,16 +51,16 @@ class Parameters(NodeParameters):
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
-    max_power_dbm: int = -30
+    max_power_dbm: int = -20
     min_power_dbm: int = -50
-    num_power_points: int = 100
+    num_power_points: int = 51
     max_amp: float = 0.1
-    flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
+    flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     ro_line_attenuation_dB: float = 0
     derivative_crossing_threshold_in_hz_per_dbm: int = int(-50e3)
     derivative_smoothing_window_num_points: int = 30
-    moving_average_filter_window_num_points: int = 30
-    multiplexed: bool = False
+    moving_average_filter_window_num_points: int = 1
+    multiplexed: bool = True
     load_data_id: Optional[int] = None
 
 node = QualibrationNode(name="02c_Resonator_Spectroscopy_vs_Amplitude", parameters=Parameters())
@@ -126,7 +126,7 @@ with program() as multi_res_spec_vs_amp:
     for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the desired frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
         
         # resonator of this qubit
         rr = qubit.resonator
@@ -144,6 +144,7 @@ with program() as multi_res_spec_vs_amp:
                     rr.measure("readout", qua_vars=(I[i], Q[i]), amplitude_scale=a)
                     # wait for the resonator to relax
                     rr.wait(machine.depletion_time * u.ns)
+                    # wait(machine.depletion_time * u.ns)
                     # save data
                     save(I[i], I_st[i])
                     save(Q[i], Q_st[i])
@@ -191,6 +192,7 @@ if not node.parameters.simulate:
     if node.parameters.load_data_id is not None:
         node = node.load_from_id(node.parameters.load_data_id)
         ds = node.results["ds"]
+        qubits = [machine.qubits[qb_name] for qb_name in ds.qubit.values]  # TODO
     else:
         power_dbm = np.linspace(
             node.parameters.min_power_dbm,
@@ -307,9 +309,9 @@ if not node.parameters.simulate:
                         power_in_dbm=rr_optimal_power_dbm[q.name].item(),
                         max_amplitude=0.1
                     )
+                    fit_results[q.name] = power_settings
                 if not np.isnan(rr_optimal_frequencies[q.name]):
                     q.resonator.intermediate_frequency += rr_optimal_frequencies[q.name]
-        fit_results[q.name] = power_settings
         fit_results[q.name]["RO_frequency"] = q.resonator.RF_frequency
     node.results["fit_results"] = fit_results
 

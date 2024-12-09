@@ -201,7 +201,7 @@ with program() as cz_calib_cz_pulse_vs_frequency_and_amplitude:
                             save(state_target[i], state_st_target[i])
 
                             # Wait for the qubit to decay to the ground state - Can be replaced by active reset
-                            wait(1 * u.us)
+                             wait(machine.thermalization_time * u.ns)
 
     with stream_processing():
         n_st.save("n")
