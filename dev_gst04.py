@@ -2,7 +2,7 @@
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from configuration_gst_opxplus import *
+from configuration_gst_lffem import *
 import matplotlib.pyplot as plt
 import pandas as pd
 import math
@@ -53,7 +53,7 @@ list_encoded_circuits = dg[["index", "P_enc", "G_enc", "d_enc", "M_enc"]].values
 num_cicuits = len(list_encoded_circuits)
 num_cicuits_per_batch = 200
 num_cicuits_batches = math.ceil(num_cicuits / num_cicuits_per_batch)
-qb = "qubit"
+qbm = "qubit"
 qbt = "qubit_twin"
 
 
@@ -63,6 +63,7 @@ with program() as PROGRAM:
     bb = declare(int)
     mm = declare(int)
     d = declare(int)
+    delay_main = declare(int)
     delay_twin = declare(int)
     circuit_idxs = declare_input_stream(
         int,
@@ -85,70 +86,90 @@ with program() as PROGRAM:
                 germ_len = circuit_idxs[5 * mm + 3]
                 meas_fiducical_idx = circuit_idxs[5 * mm + 4]
             
-                with for_(nn, 0, nn < n_shots, nn + 1):
+                with if_((prep_fiducical_idx >= 1) & (germ_idx >= 0) & (meas_fiducical_idx >= 1)):
+                    with switch_(prep_fiducical_idx):
+                        with case_(1):
+                            assign(delay_twin, const_len // 4)
+                        with case_(2):
+                            assign(delay_twin, const_len // 4)
+                        with case_(3):
+                            assign(delay_twin, 2 * const_len // 4)
+                        with case_(4):
+                            assign(delay_twin, 2 * const_len // 4)
+                        with case_(5):
+                            assign(delay_twin, 3 * const_len // 4)
 
-                    with if_((prep_fiducical_idx >= 1) & (germ_idx >= 0) & (meas_fiducical_idx >= 1)):
-                            # prep fiducials
-                        with switch_(prep_fiducical_idx, unsafe=True):
-                            with case_(1):
-                                assign(delay_twin, const_len // 4)
-                            with case_(2):
-                                assign(delay_twin, const_len // 4)
-                            with case_(3):
-                                assign(delay_twin, const_len // 2)
-                            with case_(4):
-                                assign(delay_twin, const_len // 2)
-                            with case_(5):
-                                assign(delay_twin, 3 * const_len // 4)
+                    with switch_(germ_idx):
+                        with case_(0):
+                            assign(delay_main, germ_len * const_len >> 2)
+                        with case_(1):
+                            assign(delay_main, germ_len * const_len >> 2)
+                        with case_(2):
+                            assign(delay_main, 2 * germ_len * const_len >> 2)
+                        with case_(3):
+                            assign(delay_main, 3 * germ_len * const_len >> 2)
+                        with case_(4):
+                            assign(delay_main, 3 * germ_len * const_len >> 2)
+                        with case_(5):
+                            assign(delay_main, 5 * germ_len * const_len >> 2)
 
+
+                    with for_(nn, 0, nn < n_shots, nn + 1):
+            
                         with strict_timing_():
                             # prep fiducials
                             with switch_(prep_fiducical_idx, unsafe=True):
                                 with case_(1):
-                                    play("x90", qb)
+                                    play("x90", qbm)
                                 with case_(2):
-                                    play("y90", qb)
+                                    play("y90", qbm)
                                 with case_(3):
-                                    play("x90", qb)
-                                    play("x90", qb)
+                                    play("x90", qbm)
+                                    play("x90", qbm)
                                 with case_(4):
-                                    play("x90", qb)
-                                    play("x90", qb)
-                                    play("x90", qb)
+                                    play("x90", qbm)
+                                    play("x90", qbm)
+                                    play("x90", qbm)
                                 with case_(5):
-                                    play("y90", qb)
-                                    play("y90", qb)
-                                    play("y90", qb)
+                                    play("y90", qbm)
+                                    play("y90", qbm)
+                                    play("y90", qbm)
 
                             with switch_(germ_idx, unsafe=True):
                                 with case_(0):
                                     wait(delay_twin, qbt)
                                     with for_(d, 0, d < germ_len, d + 1):
+                                    # for dd in range(germ_len):
                                         play("x90", qbt)
                                 with case_(1):
                                     wait(delay_twin, qbt)
                                     with for_(d, 0, d < germ_len, d + 1):
+                                    # for dd in range(germ_len):
                                         play("y90", qbt)
                                 with case_(2):
                                     wait(delay_twin, qbt)
                                     with for_(d, 0, d < germ_len, d + 1):
+                                    # for dd in range(germ_len):
                                         play("x90", qbt)
                                         play("y90", qbt)
                                 with case_(3):
                                     wait(delay_twin, qbt)
                                     with for_(d, 0, d < germ_len, d + 1):
+                                    # for dd in range(germ_len):
                                         play("x90", qbt)
                                         play("x90", qbt)
                                         play("y90", qbt)
                                 with case_(4):
                                     wait(delay_twin, qbt)
                                     with for_(d, 0, d < germ_len, d + 1):
+                                    # for dd in range(germ_len):
                                         play("x90", qbt)
                                         play("y90", qbt)
                                         play("y90", qbt)
                                 with case_(5):
                                     wait(delay_twin, qbt)
                                     with for_(d, 0, d < germ_len, d + 1):
+                                    # for dd in range(germ_len):
                                         play("x90", qbt)
                                         play("x90", qbt)
                                         play("y90", qbt)

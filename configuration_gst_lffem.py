@@ -45,8 +45,10 @@ time_of_flight = 28
 qubit_IF = 0 * u.MHz
 
 # CW pulse
-const_amp = 0.3  # in V
 const_len = 52  # in ns
+const_amp = 0.3  # in V
+x90_amp = 0.2
+y90_amp = 0.1
 
 #############################################
 #                  Config                   #
@@ -100,8 +102,15 @@ config = {
                             #   unmodulated pulses (optimized for clean step response): "pulse"
                             "upsampling_mode": "pulse",
                         },
+                        # qubit
+                        5: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "mw",
+                        },
                         # RF Reflectometry
-                        2: {
+                        8: {
                             "offset": 0.0,
                             "output_mode": "direct",
                             "sampling_rate": sampling_rate,
@@ -128,31 +137,31 @@ config = {
     "elements": {
         "qubit": {
             "singleInput": {
-                "port": (con, lf_fem, 1),
+                "port": (con, lf_fem, 5),
             },
             "intermediate_frequency": qubit_IF,
             "operations": {
                 "const": "const_pulse",
-                "x90": "const_pulse",
-                "y90": "const_pulse",
+                "x90": "x90_pulse",
+                "y90": "y90_pulse",
             },
             "thread": "a",
         },
         "qubit_twin": {
             "singleInput": {
-                "port": (con, lf_fem, 1),
+                "port": (con, lf_fem, 5),
             },
             "intermediate_frequency": qubit_IF,
             "operations": {
                 "const": "const_pulse",
-                "x90": "const_pulse",
-                "y90": "const_pulse",
+                "x90": "minus_x90_pulse",
+                "y90": "minus_y90_pulse",
             },
             "thread": "b",
         },
         "tank_circuit": {
             "singleInput": {
-                "port": (con, lf_fem, 2),
+                "port": (con, lf_fem, 8),
             },
             "intermediate_frequency": resonator_IF,
             "operations": {
@@ -174,6 +183,34 @@ config = {
                 "single": "const_wf",
             },
         },
+        "x90_pulse": {
+            "operation": "control",
+            "length": const_len,
+            "waveforms": {
+                "single": "x90_wf",
+            },
+        },
+        "y90_pulse": {
+            "operation": "control",
+            "length": const_len,
+            "waveforms": {
+                "single": "y90_wf",
+            },
+        },
+        "minus_x90_pulse": {
+            "operation": "control",
+            "length": const_len,
+            "waveforms": {
+                "single": "minus_x90_wf",
+            },
+        },
+        "minus_y90_pulse": {
+            "operation": "control",
+            "length": const_len,
+            "waveforms": {
+                "single": "minus_y90_wf",
+            },
+        },
         "reflectometry_readout_pulse": {
             "operation": "measurement",
             "length": reflectometry_readout_len,
@@ -190,6 +227,10 @@ config = {
     "waveforms": {
         "zero_wf": {"type": "constant", "sample": 0.0},
         "const_wf": {"type": "constant", "sample": const_amp},
+        "x90_wf": {"type": "constant", "sample": x90_amp},
+        "y90_wf": {"type": "constant", "sample": y90_amp},
+        "minus_x90_wf": {"type": "constant", "sample": -x90_amp},
+        "minus_y90_wf": {"type": "constant", "sample": -y90_amp},
         "readout_pulse_wf": {"type": "constant", "sample": reflectometry_readout_amp},
     },
     "digital_waveforms": {

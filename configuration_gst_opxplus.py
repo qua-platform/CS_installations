@@ -16,7 +16,7 @@ u = unit(coerce_to_integer=True)
 # Network parameters #
 ######################
 qop_ip = "172.16.33.101"  # Write the QM router IP address
-cluster_name = "Cluster_81"  # Write your cluster_name if version >= QOP220
+cluster_name = "Cluster_83"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 octave_config = None
 
@@ -39,8 +39,10 @@ time_of_flight = 28
 qubit_IF = 0 * u.MHz
 
 # CW pulse
-const_amp = 0.3  # in V
-const_len = 80  # in ns
+const_len = 60  # in ns
+const_amp = 0.4  # in V
+x90_amp = 0.3
+y90_amp = 0.2
 
 #############################################
 #                  Config                   #
@@ -51,7 +53,8 @@ config = {
         "con1": {
             "analog_outputs": {
                 1: {"offset": 0.0},  # qubit
-                2: {"offset": 0.0},  # RF reflectometry
+                2: {"offset": 0.0},  # qubit
+                3: {"offset": 0.0},  # RF reflectometry
             },
             "digital_outputs": {},
             "analog_inputs": {
@@ -68,26 +71,13 @@ config = {
             "intermediate_frequency": qubit_IF,
             "operations": {
                 "const": "const_pulse",
-                "x90": "const_pulse",
-                "y90": "const_pulse",
+                "x90": "x90_pulse",
+                "y90": "y90_pulse",
             },
-            "thread": "a",
-        },
-        "qubit_twin": {
-            "singleInput": {
-                "port": ("con1", 1),
-            },
-            "intermediate_frequency": qubit_IF,
-            "operations": {
-                "const": "const_pulse",
-                "x90": "const_pulse",
-                "y90": "const_pulse",
-            },
-            "thread": "b",
         },
         "tank_circuit": {
             "singleInput": {
-                "port": ("con1", 2),
+                "port": ("con1", 3),
             },
             "intermediate_frequency": resonator_IF,
             "operations": {
@@ -109,6 +99,34 @@ config = {
                 "single": "const_wf",
             },
         },
+        "x90_pulse": {
+            "operation": "control",
+            "length": const_len,
+            "waveforms": {
+                "single": "x90_wf",
+            },
+        },
+        "y90_pulse": {
+            "operation": "control",
+            "length": const_len,
+            "waveforms": {
+                "single": "y90_wf",
+            },
+        },
+        "minus_x90_pulse": {
+            "operation": "control",
+            "length": const_len,
+            "waveforms": {
+                "single": "minus_x90_wf",
+            },
+        },
+        "minus_y90_pulse": {
+            "operation": "control",
+            "length": const_len,
+            "waveforms": {
+                "single": "minus_y90_wf",
+            },
+        },
         "reflectometry_readout_pulse": {
             "operation": "measurement",
             "length": reflectometry_readout_len,
@@ -125,6 +143,10 @@ config = {
     "waveforms": {
         "zero_wf": {"type": "constant", "sample": 0.0},
         "const_wf": {"type": "constant", "sample": const_amp},
+        "x90_wf": {"type": "constant", "sample": x90_amp},
+        "y90_wf": {"type": "constant", "sample": y90_amp},
+        "minus_x90_wf": {"type": "constant", "sample": -x90_amp},
+        "minus_y90_wf": {"type": "constant", "sample": -y90_amp},
         "readout_pulse_wf": {"type": "constant", "sample": reflectometry_readout_amp},
     },
     "digital_waveforms": {
