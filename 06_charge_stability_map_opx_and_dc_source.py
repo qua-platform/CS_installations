@@ -23,20 +23,13 @@ from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import (
-    fetching_tool,
-    progress_counter,
-    wait_until_job_is_paused,
-)
+from qualang_tools.results import (fetching_tool, progress_counter,
+                                   wait_until_job_is_paused)
 
 from configuration_with_octave import *
-
 # from qua_config.configuration_with_octave import *
-from macros import (
-    DC_current_sensing_macro,
-    RF_reflectometry_macro,
-    get_filtered_voltage,
-)
+from macros import (DC_current_sensing_macro, RF_reflectometry_macro,
+                    get_filtered_voltage)
 
 ###################
 # The QUA program #

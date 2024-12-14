@@ -14,8 +14,8 @@ Before proceeding to the next node:
     - Update the config with the resonance frequency for reflectometry readout.
 """
 
-from typing import List, Literal, Optional
 from pathlib import Path
+from typing import List, Literal, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,14 +25,14 @@ from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.units import unit
-
 # %% {Imports}
 from qualibrate import NodeParameters, QualibrationNode
 from scipy import signal
 
-from configuration_with_octave import *
-
 # from qua_config.configuration_with_octave import *
+from macros import RF_reflectometry_macro
+# from configuration_with_octave import *
+from qua_config.configuration_with_octave import *
 
 
 # %% {Node_parameters}
@@ -57,7 +57,7 @@ n_avg = node.parameters.num_averages
 freq_min = node.parameters.frequency_min_in_mhz * u.MHz
 freq_max = node.parameters.frequency_max_in_mhz * u.MHz
 step = node.parameters.frequency_step_in_mhz * u.MHz
-frequencies = np.arange(freq_min, freq_max + 1, step)
+frequencies = np.arange(freq_min, freq_max + step, step)
 
 with program() as reflectometry_spectro:
     f = declare(int)  # QUA variable for the frequency sweep
@@ -166,7 +166,9 @@ else:
             script_name: script_name,
             **default_additional_files,
         }
-        data_handler.save_data(data=save_data_dict, name="04_reflectometry_spectroscopy")
+        data_handler.save_data(
+            data=save_data_dict, name="04_reflectometry_spectroscopy"
+        )
 
     plt.show()
     qm.close()

@@ -28,14 +28,10 @@ from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import (
-    fetching_tool,
-    progress_counter,
-    wait_until_job_is_paused,
-)
+from qualang_tools.results import (fetching_tool, progress_counter,
+                                   wait_until_job_is_paused)
 
 from configuration_with_octave import *
-
 # from qua_config.configuration_with_octave import *
 from macros import DC_current_sensing_macro, RF_reflectometry_macro
 

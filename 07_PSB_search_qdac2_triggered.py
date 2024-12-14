@@ -32,7 +32,6 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 
 from configuration_with_octave import *
-
 # from qua_config.configuration_with_octave import *
 from macros import DC_current_sensing_macro, RF_reflectometry_macro
 from qdac2_driver import QDACII, load_voltage_list
