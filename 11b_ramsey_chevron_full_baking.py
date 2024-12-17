@@ -34,8 +34,7 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 
 from configuration_with_octave import *
-# from qua_config.configuration_with_octave import *
-from macros import DC_current_sensing_macro, RF_reflectometry_macro
+from macros import RF_reflectometry_macro
 
 ###################
 # The QUA program #
@@ -81,11 +80,10 @@ with program() as Ramsey_chevron:
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
     I = declare(fixed)  # QUA variable for the measured 'I' quadrature
     Q = declare(fixed)  # QUA variable for the measured 'Q' quadrature
-    dc_signal = declare(fixed)  # QUA variable for the measured dc signal
+    # QUA variable for the measured dc signal
 
     # Ensure that the result variables are assigned to the measurement elements
     assign_variables_to_element("tank_circuit", I, Q)
-    assign_variables_to_element("TIA", dc_signal)
 
     with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
         save(n, n_st)
@@ -122,11 +120,8 @@ with program() as Ramsey_chevron:
                                 pi_list[ii].run()
 
                     # Measure the dot right after the qubit manipulation
-                    wait((duration_init + duration_manip) * u.ns, "tank_circuit", "TIA")
+                    wait((duration_init + duration_manip) * u.ns, "tank_circuit")
                     I, Q, I_st, Q_st = RF_reflectometry_macro(I=I, Q=Q)
-                    dc_signal, dc_signal_st = DC_current_sensing_macro(
-                        dc_signal=dc_signal
-                    )
 
                 # Ramp the background voltage to zero to avoid propagating floating point errors
                 seq.ramp_to_zero()
@@ -138,10 +133,6 @@ with program() as Ramsey_chevron:
         # RF reflectometry
         I_st.buffer(len(durations)).buffer(len(detunings)).average().save("I")
         Q_st.buffer(len(durations)).buffer(len(detunings)).average().save("Q")
-        # DC current sensing
-        dc_signal_st.buffer(len(durations)).buffer(len(detunings)).average().save(
-            "dc_signal"
-        )
 
 #####################################
 #  Open Communication with the QOP  #
@@ -200,9 +191,7 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(Ramsey_chevron)
     # Get results from QUA program and initialize live plotting
-    results = fetching_tool(
-        job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live"
-    )
+    results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure

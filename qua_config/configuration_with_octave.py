@@ -1,5 +1,5 @@
-from typing import Union
 from pathlib import Path
+from typing import Union
 
 import numpy as np
 from qm.qua import Cast, amp, assign, declare, fixed, play, ramp, ramp_to_zero, wait

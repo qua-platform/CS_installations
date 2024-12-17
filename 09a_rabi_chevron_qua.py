@@ -30,8 +30,7 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 
 from configuration_with_octave import *
-# from qua_config.configuration_with_octave import *
-from macros import DC_current_sensing_macro, RF_reflectometry_macro
+from macros import RF_reflectometry_macro
 
 ###################
 # The QUA program #
@@ -77,9 +76,8 @@ with program() as Rabi_prog:
                     play("pi", "qubit", duration=t >> 2)
 
                     # Measure the dot right after the qubit manipulation
-                    wait(duration_init * u.ns, "tank_circuit", "TIA")
+                    wait(duration_init * u.ns, "tank_circuit")
                     I, Q, I_st, Q_st = RF_reflectometry_macro()
-                    dc_signal, dc_signal_st = DC_current_sensing_macro()
                 seq.ramp_to_zero()
     # Stream processing section used to process the data before saving it.
     with stream_processing():
@@ -88,10 +86,6 @@ with program() as Rabi_prog:
         # RF reflectometry
         I_st.buffer(len(durations)).buffer(len(frequencies)).average().save("I")
         Q_st.buffer(len(durations)).buffer(len(frequencies)).average().save("Q")
-        # DC current sensing
-        dc_signal_st.buffer(len(durations)).buffer(len(frequencies)).average().save(
-            "dc_signal"
-        )
 
 qmm = QuantumMachinesManager(
     host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
@@ -147,9 +141,7 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(Rabi_prog)
     # Get results from QUA program and initialize live plotting
-    results = fetching_tool(
-        job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live"
-    )
+    results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure

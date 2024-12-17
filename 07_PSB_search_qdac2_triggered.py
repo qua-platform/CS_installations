@@ -32,8 +32,7 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 
 from configuration_with_octave import *
-# from qua_config.configuration_with_octave import *
-from macros import DC_current_sensing_macro, RF_reflectometry_macro
+from macros import RF_reflectometry_macro
 from qdac2_driver import QDACII, load_voltage_list
 
 ###################
@@ -72,11 +71,9 @@ with program() as PSB_search_prog:
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
     I = declare(fixed)
     Q = declare(fixed)
-    dc_signal = declare(fixed)
 
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("tank_circuit", I, Q)
-    assign_variables_to_element("TIA", dc_signal)
 
     with for_(i, 0, i < n_points_slow, i + 1):
         # Trigger the QDAC2 channel to output the next voltage level from the list
@@ -85,7 +82,7 @@ with program() as PSB_search_prog:
             # Trigger the QDAC2 channel to output the next voltage level from the list
             play("trigger", "qdac_trigger1")
             # Wait for the voltages to settle (depends on the channel bandwidth)
-            wait(300 * u.us, "tank_circuit", "TIA", "P1_sticky", "P2_sticky")
+            wait(300 * u.us, "tank_circuit", "P1_sticky", "P2_sticky")
 
             with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
                 # Play the triangle
@@ -94,13 +91,11 @@ with program() as PSB_search_prog:
                 seq.add_step(voltage_point_name="readout")
                 seq.add_compensation_pulse(duration=duration_compensation_pulse)
                 # Measure the dot right after the qubit manipulation
-                wait((duration_init + duration_empty) * u.ns, "tank_circuit", "TIA")
+                wait((duration_init + duration_empty) * u.ns, "tank_circuit")
                 # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
                 # frequency and the integrated quadratures are stored in "I" and "Q"
                 I, Q, I_st, Q_st = RF_reflectometry_macro(I=I, Q=Q)
                 # DC current sensing: the voltage measured by the analog input 1 is recorded and the integrated result
-                # is stored in "dc_signal"
-                dc_signal, dc_signal_st = DC_current_sensing_macro(dc_signal=dc_signal)
                 # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
                 # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
                 # process them which can cause the OPX to crash.
@@ -118,10 +113,6 @@ with program() as PSB_search_prog:
         I_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(n_points_fast).save_all("I")
         Q_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(n_points_fast).save_all("Q")
         # DC current sensing
-        dc_signal_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(
-            n_points_fast
-        ).save_all("dc_signal")
-
 
 #####################################
 #  Open Communication with the QOP  #
@@ -174,9 +165,7 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(PSB_search_prog)
     # Get results from QUA program and initialize live plotting
-    results = fetching_tool(
-        job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live"
-    )
+    results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure

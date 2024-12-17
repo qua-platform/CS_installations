@@ -32,12 +32,14 @@ from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import (fetching_tool, progress_counter,
-                                   wait_until_job_is_paused)
+from qualang_tools.results import (
+    fetching_tool,
+    progress_counter,
+    wait_until_job_is_paused,
+)
 
 from configuration_with_octave import *
-# from qua_config.configuration_with_octave import *
-from macros import DC_current_sensing_macro, RF_reflectometry_macro
+from macros import RF_reflectometry_macro
 
 ###################
 # The QUA program #
@@ -98,9 +100,8 @@ with program() as qubit_spectroscopy_prog:
                         play("cw", "qubit")
 
                         # Measure the dot right after the qubit manipulation
-                        wait(duration_init * u.ns, "tank_circuit", "TIA")
+                        wait(duration_init * u.ns, "tank_circuit")
                         I, Q, I_st, Q_st = RF_reflectometry_macro()
-                        dc_signal, dc_signal_st = DC_current_sensing_macro()
                     seq.ramp_to_zero()
         save(i, n_st)
     # Stream processing section used to process the data before saving it.
@@ -114,10 +115,7 @@ with program() as qubit_spectroscopy_prog:
         Q_st.buffer(len(IFs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(
             len(lo_frequencies)
         ).save_all("Q")
-        # DC current sensing
-        dc_signal_st.buffer(len(IFs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(
-            len(lo_frequencies)
-        ).save_all("dc_signal")
+
 
 #####################################
 #  Open Communication with the QOP  #
@@ -187,9 +185,7 @@ else:
             wait_until_job_is_paused(job)
         if i == 0:
             # Get results from QUA program and initialize live plotting
-            results = fetching_tool(
-                job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live"
-            )
+            results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
         # Fetch the data from the last OPX run corresponding to the current slow axis iteration
         I, Q, DC_signal, iteration = results.fetch_all()
         # Convert results into Volts

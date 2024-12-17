@@ -1,3 +1,4 @@
+# %%
 """
         CHARGE SENSOR GATE SWEEP with the OPX
 Here the voltage biasing the sensor gate is provided and being swept by the OPX connected to the DC line of the bias-tee.
@@ -17,52 +18,22 @@ Before proceeding to the next node:
     - Update the config with the optimal sensing point.
 """
 
-
-from pathlib import Path
-from typing import List, Literal, Optional
-
 import matplotlib.pyplot as plt
-import numpy as np
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
-from qualang_tools.units import unit
-# %% {Imports}
-from qualibrate import NodeParameters, QualibrationNode
-from scipy import signal
 
-# from qua_config.configuration_with_octave import *
-from macros import DC_current_sensing_macro, RF_reflectometry_macro
-# from configuration_with_octave import *
-from qua_config.configuration_with_octave import *
-
-
-# %% {Node_parameters}
-class Parameters(NodeParameters):
-    qubits: Optional[List[str]] = None
-    num_averages: int = 100
-    bias_min_in_volts: float = -0.2
-    bias_max_in_volts: float = +0.2
-    bias_step_in_volts: float = 0.01
-    simulate: bool = False
-    timeout: int = 100
-
-
-node = QualibrationNode(name="05_sensor_gate_sweep_OPX", parameters=Parameters())
-
+from configuration_with_octave import *
+from macros import RF_reflectometry_macro
 
 ###################
 # The QUA program #
 ###################
-n_avg = node.parameters.num_averages
-# The frequency sweep around the resonator resonance frequency
-bias_min = node.parameters.bias_min_in_volts
-bias_max = node.parameters.bias_min_in_volts
-bias_step = node.parameters.bias_step_in_volts
-biases = np.arange(bias_min, bias_max + bias_step, bias_step)
-
+n_avg = 100  # Number of averaging loops
+offsets = np.linspace(-0.2, 0.2, 101)
+d_offset = np.diff(offsets)[0]
 
 with program() as charge_sensor_sweep:
     dc = declare(fixed)  # QUA variable for the voltage sweep
@@ -71,22 +42,19 @@ with program() as charge_sensor_sweep:
 
     with for_(n, 0, n < n_avg, n + 1):
         # Set the voltage to the 1st point of the sweep
-        play("step" * amp(bias_min / charge_sensor_amp), "sensor_gate_sticky")
+        play("step" * amp(offsets[0] / charge_sensor_amp), "sensor_gate_sticky")
         # Wait for the voltage to settle (depends on the bias-tee cut-off frequency)
         wait(1 * u.ms, "sensor_gate_sticky")
-        with for_(*from_array(dc, biases)):
+        with for_(*from_array(dc, offsets)):
             # Play only from the second iteration
-            with if_(~(dc == bias_min)):
-                play("step" * amp(bias_step / charge_sensor_amp), "sensor_gate_sticky")
+            with if_(~(dc == offsets[0])):
+                play("step" * amp(d_offset / charge_sensor_amp), "sensor_gate_sticky")
                 # Wait for the voltage to settle (depends on the bias-tee cut-off frequency)
                 wait(1 * u.ms, "sensor_gate_sticky")
             align()
             # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
             # frequency and the integrated quadratures are stored in "I" and "Q"
             I, Q, I_st, Q_st = RF_reflectometry_macro()
-            # DC current sensing: the voltage measured by the analog input 1 is recorded and the integrated result
-            # is stored in "dc_signal"
-            dc_signal, dc_signal_st = DC_current_sensing_macro()
             # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
             # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
             # process them which can cause the OPX to crash.
@@ -95,9 +63,8 @@ with program() as charge_sensor_sweep:
         save(n, n_st)
 
     with stream_processing():
-        I_st.buffer(len(biases)).average().save("I")
-        Q_st.buffer(len(biases)).average().save("Q")
-        dc_signal_st.buffer(len(biases)).average().save("dc_signal")
+        I_st.buffer(len(offsets)).average().save("I")
+        Q_st.buffer(len(offsets)).average().save("Q")
         n_st.save("iteration")
 
 #####################################
@@ -111,6 +78,7 @@ qmm = QuantumMachinesManager(
 # Simulate or execute #
 #######################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -127,6 +95,7 @@ else:
     job = qm.execute(charge_sensor_sweep)
     # Get results from QUA program
     results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
+
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
@@ -143,13 +112,38 @@ else:
         plt.suptitle("Charge sensor gate sweep")
         plt.subplot(211)
         plt.cla()
-        plt.plot(biases, R)
+        plt.plot(offsets, R)
         plt.xlabel("Sensor gate voltage [V]")
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
         plt.subplot(212)
         plt.cla()
-        plt.plot(biases, phase)
+        plt.plot(offsets, phase)
         plt.xlabel("Sensor gate voltage [V]")
         plt.ylabel("Phase [rad]")
         plt.tight_layout()
         plt.pause(0.1)
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        # save_data_dict["elapsed_time"] =  np.array([elapsed_time])
+        save_data_dict["I"] = I
+        save_data_dict["Q"] = Q
+        save_data_dict["S"] = S
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {
+            script_name: script_name,
+            **default_additional_files,
+        }
+        data_handler.save_data(data=save_data_dict, name="sensor_gate_sweep_OPX")
+
+    plt.show()
+    qm.close()
+
+# %%

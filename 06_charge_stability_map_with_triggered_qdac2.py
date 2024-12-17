@@ -1,3 +1,4 @@
+# %%
 """
         CHARGE STABILITY MAP - fast and slow axes: QDAC2 set to trigger mode
 The goal of the script is to acquire the charge stability map.
@@ -7,19 +8,15 @@ and the data can be fetched from the OPX in real time to enable live plotting.
 The speed can also be further improved by removing the live plotting and increasing the QDAC2 bandwidth.
 
 The QUA program consists in sending the triggers to the QDAC2 to increment the voltages and measure the charge of the dot
-either via dc current sensing or RF reflectometry.
-On top of the DC voltage sweeps, the OPX can output a continuous square wave (Coulomb pulse) through the AC line of the
-bias-tee. This allows to check the coupling of the fast line to the sample and measure the lever arms between the DC and
 AC lines.
+
 
 A global average is performed (averaging on the most outer loop) and the data is extracted while the program is running
 to display the full charge stability map with increasing SNR.
 
 Prerequisites:
-    - Readout calibration (resonance frequency for RF reflectometry and sensor operating point for DC current sensing).
-    - Setting the parameters of the QDAC2 and preloading the two voltages lists for the slow and fast axes.
-    - Connect the two plunger gates (DC line of the bias-tee) to the QDAC2 and two digital markers from the OPX to the
       QDAC2 external trigger ports.
+
     - (optional) Connect the OPX to the fast line of the plunger gates for playing the Coulomb pulse and calibrate the
       lever arm.
 
@@ -36,20 +33,19 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 
 from configuration_with_octave import *
-# from qua_config.configuration_with_octave import *
-from macros import DC_current_sensing_macro, RF_reflectometry_macro
+from macros import RF_reflectometry_macro
 from qdac2_driver import QDACII, load_voltage_list
 
 ###################
 # The QUA program #
 ###################
-n_avg = 100  # Number of averages
-n_points_slow = 101  # Number of points for the slow axis
-n_points_fast = 100  # Number of points for the fast axis
+n_avg = 3  # Number of averages
+n_points_slow = 11  # Number of points for the slow axis
+n_points_fast = 10  # Number of points for the fast axis
 Coulomb_amp = 0.0  # amplitude of the Coulomb pulse
 # How many Coulomb pulse periods to last the whole program
 N = (
-    (int((readout_len + 1_000) / (2 * step_length)) + 1)
+    (int((reflectometry_readout_length + 1_000) / (2 * step_length)) + 1)
     * n_points_fast
     * n_points_slow
     * n_avg
@@ -67,19 +63,17 @@ with program() as charge_stability_prog:
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
     I = declare(fixed)
     Q = declare(fixed)
-    dc_signal = declare(fixed)
 
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("tank_circuit", I, Q)
-    assign_variables_to_element("TIA", dc_signal)
-    # Play the Coulomb pulse continuously for the whole sequence
-    #      ____      ____      ____      ____
-    #     |    |    |    |    |    |    |    |
-    # ____|    |____|    |____|    |____|    |...
-    with for_(counter, 0, counter < N, counter + 1):
-        # The Coulomb pulse
-        play("step" * amp(Coulomb_amp / P1_step_amp), "P1")
-        play("step" * amp(-Coulomb_amp / P1_step_amp), "P1")
+    # # Play the Coulomb pulse continuously for the whole sequence
+    # #      ____      ____      ____      ____
+    # #     |    |    |    |    |    |    |    |
+    # # ____|    |____|    |____|    |____|    |...
+    # with for_(counter, 0, counter < N, counter + 1):
+    #     # The Coulomb pulse
+    #     play("step" * amp(Coulomb_amp / P1_step_amp), "P1")
+    #     play("step" * amp(-Coulomb_amp / P1_step_amp), "P1")
 
     with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
         with for_(i, 0, i < n_points_slow, i + 1):
@@ -89,13 +83,12 @@ with program() as charge_stability_prog:
                 # Trigger the QDAC2 channel to output the next voltage level from the list
                 play("trigger", "qdac_trigger1")
                 # Wait for the voltages to settle (depends on the channel bandwidth)
-                wait(300 * u.us, "tank_circuit", "TIA")
+                wait(
+                    300 * u.us
+                )  # fastest can be 1 us, depending on the "output_filter"
                 # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
                 # frequency and the integrated quadratures are stored in "I" and "Q"
                 I, Q, I_st, Q_st = RF_reflectometry_macro(I=I, Q=Q)
-                # DC current sensing: the voltage measured by the analog input 1 is recorded and the integrated result
-                # is stored in "dc_signal"
-                dc_signal, dc_signal_st = DC_current_sensing_macro(dc_signal=dc_signal)
                 # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
                 # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
                 # process them which can cause the OPX to crash.
@@ -110,10 +103,6 @@ with program() as charge_stability_prog:
         # RF reflectometry
         I_st.buffer(n_points_fast).buffer(n_points_slow).average().save("I")
         Q_st.buffer(n_points_fast).buffer(n_points_slow).average().save("Q")
-        # DC current sensing
-        dc_signal_st.buffer(n_points_fast).buffer(n_points_slow).average().save(
-            "dc_signal"
-        )
 
 
 #####################################
@@ -135,7 +124,7 @@ load_voltage_list(
     slew_rate=2e7,
     trigger_port="ext1",
     output_range="low",
-    output_filter="med",
+    output_filter="med",  # changes the wait time after changing the voltage
     voltage_list=voltage_values_fast,
 )
 load_voltage_list(
@@ -153,6 +142,7 @@ load_voltage_list(
 # Run or Simulate Program #
 ###########################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -166,20 +156,17 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(charge_stability_prog)
     # Get results from QUA program and initialize live plotting
-    results = fetching_tool(
-        job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live"
-    )
+    results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch the data from the last OPX run corresponding to the current slow axis iteration
-        I, Q, DC_signal, iteration = results.fetch_all()
+        I, Q, iteration = results.fetch_all()
         # Convert results into Volts
         S = u.demod2volts(I + 1j * Q, reflectometry_readout_length)
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
-        DC_signal = u.demod2volts(DC_signal, readout_len)
         # Progress bar
         progress_counter(iteration, n_points_slow, start_time=results.start_time)
         # Plot data
@@ -197,3 +184,30 @@ else:
         plt.ylabel("Slow voltage axis [V]")
         plt.tight_layout()
         plt.pause(0.1)
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        # save_data_dict["elapsed_time"] =  np.array([elapsed_time])
+        save_data_dict["I"] = I
+        save_data_dict["Q"] = Q
+        save_data_dict["S"] = S
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {
+            script_name: script_name,
+            **default_additional_files,
+        }
+        data_handler.save_data(
+            data=save_data_dict, name="charge_stability_map_with_triggered_qdac2"
+        )
+
+    plt.show()
+    qm.close()
+
+# %%

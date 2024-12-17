@@ -17,8 +17,6 @@ from qm.qua import *
 
 from configuration_with_octave import *
 
-# from qua_config.configuration_with_octave import *
-
 ###################
 # The QUA program #
 ###################

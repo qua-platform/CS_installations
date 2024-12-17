@@ -56,8 +56,10 @@ def DC_current_sensing_macro(
 ):
     if dc_signal is None:
         dc_signal = declare(fixed)
+
     if dc_signal_st is None:
         dc_signal_st = declare_stream()
+
     measure(
         operation,
         element,

@@ -1,3 +1,4 @@
+# %%
 """
         RAW ADC TRACES
 This script aims to measure data captured within a specific window defined by the measure() function.
@@ -13,8 +14,6 @@ from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 
 from configuration_with_octave import *
-
-# from qua_config.configuration_with_octave import *
 
 ###################
 # The QUA program #
@@ -34,21 +33,17 @@ with program() as raw_trace_prog:
         # Make sure that the readout pulse is sent with the same phase so that the acquired signal does not average out
         reset_phase("tank_circuit")
         # *amp(0) sets the amplitude to zero, thus the collected trace is the digitization of the analog input
-        # in the majority of cases the DC bias to the sensor is applied with an external DC source.
-        measure("readout" * amp(0), "TIA", adc_dc_st)
         # Measure the tank circuit (send a readout pulse and record the raw ADC trace)
         measure("readout", "tank_circuit", adc_rf_st)
         # Wait for the resonator to deplete
-        wait(1_000 * u.ns, "TIA", "tank_circuit")
+        wait(1_000 * u.ns, "tank_circuit")
 
     with stream_processing():
         # Please adjust the analog inputs according to the connectivity (input1/2 -> dc or rf)
         # Will save average:
-        adc_dc_st.input1().average().save("adc_dc")
-        adc_rf_st.input2().average().save("adc_rf")
+        adc_rf_st.input1().average().save("adc_rf")
         # Will save only last run:
-        adc_dc_st.input1().save("adc_dc_single_run")
-        adc_rf_st.input2().save("adc_rf_single_run")
+        adc_rf_st.input1().save("adc_rf_single_run")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -61,6 +56,7 @@ qmm = QuantumMachinesManager(
 # Run or Simulate Program #
 ###########################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -80,15 +76,12 @@ else:
     # Waits (blocks the Python console) until all results have been acquired
     res_handles.wait_for_all_values()
     # Fetch the raw ADC traces and convert them into Volts
-    adc_dc = u.raw2volts(res_handles.get("adc_dc").fetch_all())
     adc_rf = u.raw2volts(res_handles.get("adc_rf").fetch_all())
-    adc_dc_single_run = u.raw2volts(res_handles.get("adc_dc_single_run").fetch_all())
     adc_rf_single_run = u.raw2volts(res_handles.get("adc_rf_single_run").fetch_all())
     # Plot data
-    plt.figure()
+    fig = plt.figure()
     plt.subplot(121)
     plt.title("Single run")
-    plt.plot(adc_dc_single_run, label="DC input")
     plt.plot(adc_rf_single_run, label="RF input")
     plt.xlabel("Time [ns]")
     plt.ylabel("Signal amplitude [V]")
@@ -96,11 +89,33 @@ else:
 
     plt.subplot(122)
     plt.title("Averaged run")
-    plt.plot(adc_dc, label="DC input")
     plt.plot(adc_rf, label="RF input")
     plt.xlabel("Time [ns]")
     plt.legend()
     plt.tight_layout()
 
-    print(f"\nDC input mean: {np.mean(adc_dc)} V")
     print(f"RF input mean: {np.mean(adc_rf)} V\n")
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        # save_data_dict["elapsed_time"] =  np.array([elapsed_time])
+        save_data_dict["adc_rf"] = adc_rf
+        save_data_dict["adc_rf_single_run"] = adc_rf_single_run
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {
+            script_name: script_name,
+            **default_additional_files,
+        }
+        data_handler.save_data(data=save_data_dict, name="raw_adc_traces")
+
+    plt.show()
+    qm.close()
+
+# %%

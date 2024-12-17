@@ -1,3 +1,4 @@
+# %%
 """
         TIME OF FLIGHT
 This sequence involves sending a readout pulse and capturing the raw ADC traces.
@@ -21,8 +22,6 @@ from scipy.signal import savgol_filter
 
 from configuration_with_octave import *
 
-# from qua_config.configuration_with_octave import *
-
 ###################
 # The QUA program #
 ###################
@@ -36,7 +35,6 @@ with program() as tof_prog:
         # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
         reset_phase("tank_circuit")
         # Sends the readout pulse and stores the raw ADC traces in the stream called "adc_st"
-        # measure("readout", "TIA", adc_st)
         measure("readout", "tank_circuit", adc_st)
         # Wait for the resonator to deplete
         wait(1_000 * u.ns, "tank_circuit")
@@ -60,6 +58,8 @@ qmm = QuantumMachinesManager(
 # Simulate or execute #
 #######################
 simulate = False
+save_data = True
+
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
@@ -121,3 +121,27 @@ else:
     # Update the config
     print(f"DC offset to add to Q in the config: {-adc1_mean:.6f} V")
     print(f"Time Of Flight to add in the config: {delay} ns")
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+
+        # Data to save
+        save_data_dict = {}
+        # save_data_dict["elapsed_time"] =  np.array([elapsed_time])
+        save_data_dict["adc_rf"] = adc1_mean
+        save_data_dict["adc_rf_single_run"] = adc1_single_run
+
+        # Save results
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"fig_live": fig})
+        data_handler.additional_files = {
+            script_name: script_name,
+            **default_additional_files,
+        }
+        data_handler.save_data(data=save_data_dict, name="time_of_flight_RF")
+
+    plt.show()
+    qm.close()
+
+# %%

@@ -2,8 +2,7 @@ from pathlib import Path
 from typing import Union
 
 import numpy as np
-from qm.qua import (Cast, amp, assign, declare, fixed, play, ramp,
-                    ramp_to_zero, wait)
+from qm.qua import Cast, amp, assign, declare, fixed, play, ramp, ramp_to_zero, wait
 from qm.qua._dsl import QuaExpression, QuaVariable
 from qualang_tools.units import unit
 from scipy.signal.windows import gaussian
@@ -31,8 +30,9 @@ default_additional_files = {
 ######################
 # Network parameters #
 ######################
-qop_ip = "127.0.0.1"  # Write the QM router IP address
-cluster_name = "my_cluster"  # Write your cluster_name if version >= QOP220
+# qop_ip = "192.168.88.239"  # Write the QM router IP address
+qop_ip = "192.168.88.238"  # Write the QM router IP address
+cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 ############################
@@ -41,19 +41,19 @@ qop_port = None  # Write the QOP port if version < QOP220
 
 # The Octave port is 11xxx, where xxx are the last three digits of the Octave internal IP that can be accessed from
 # the OPX admin panel if you QOP version is >= QOP220. Otherwise, it is 50 for Octave1, then 51, 52 and so on.
-octave_1 = OctaveUnit("octave1", qop_ip, port=11050, con="con1")
+# octave_1 = OctaveUnit("octave1", qop_ip, port=11237, con="con1")
 # octave_2 = OctaveUnit("octave2", qop_ip, port=11051, con="con1")
 
 # If the control PC or local network is connected to the internal network of the QM router (port 2 onwards)
 # or directly to the Octave (without QM the router), use the local octave IP and port 80.
-# octave_ip = "192.168.88.X"
-# octave_1 = OctaveUnit("octave1", octave_ip, port=80, con="con1")
+octave_ip = "192.168.88.237"
+octave_1 = OctaveUnit("octave1", octave_ip, port=80, con="con1")
 
 # Add the octaves
 octaves = [octave_1]
 # Configure the Octaves
 octave_config = octave_declaration(octaves)
-
+# octave_config = None
 
 ######################
 #       READOUT      #
@@ -132,7 +132,6 @@ config = {
                 4: {"offset": 0.0},  # EDSR Q quadrature
                 5: {"offset": 0.0},  # Sensor gate
                 9: {"offset": 0.0},  # RF reflectometry
-                10: {"offset": 0.0},  # DC readout
             },
             "digital_outputs": {
                 1: {},  # TTL for QDAC
@@ -142,6 +141,14 @@ config = {
                 1: {"offset": 0.0, "gain_db": 0},  # RF reflectometry input
                 2: {"offset": 0.0, "gain_db": 0},  # DC readout input
             },
+        },
+        "con2": {
+            "analog_outputs": {
+                1: {"offset": 0.0},  # P1
+                2: {"offset": 0.0},  # P2
+            },
+            "digital_outputs": {},
+            "analog_inputs": {},
         },
     },
     "elements": {
@@ -237,20 +244,6 @@ config = {
             "intermediate_frequency": resonator_IF,
             "operations": {
                 "readout": "reflectometry_readout_pulse",
-            },
-            "outputs": {
-                "out1": ("con1", 1),
-                "out2": ("con1", 2),
-            },
-            "time_of_flight": time_of_flight,
-            "smearing": 0,
-        },
-        "TIA": {
-            "singleInput": {
-                "port": ("con1", 10),
-            },
-            "operations": {
-                "readout": "readout_pulse",
             },
             "outputs": {
                 "out1": ("con1", 1),
