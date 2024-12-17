@@ -10,7 +10,7 @@ The resulting IQ blobs are displayed, and the data is processed to determine:
 
 Prerequisites:
     - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
-    - Having calibrated qubit pi pulse (x180) by running qubit.wait(qubit.thermalization_time * u.ns) spectroscopy, power_rabi and updated the state.
+    - Having calibrated qubit pi pulse (x180) by running qubit.wait(machine.thermalization_time * u.ns) spectroscopy, power_rabi and updated the state.
     - Set the desired flux bias
 
 Next steps before going to the next node:
@@ -43,7 +43,7 @@ import xarray as xr
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = ["q1"]
+    qubits: Optional[List[str]] = ["q3", "q4"]
     num_runs: int = 2000
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
@@ -52,7 +52,7 @@ class Parameters(NodeParameters):
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = False
+    multiplexed: bool = True
 
 
 node = QualibrationNode(name="07b_IQ_Blobs", parameters=Parameters())
@@ -86,23 +86,24 @@ with program() as iq_blobs:
     I_g, I_g_st, Q_g, Q_g_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     I_e, I_e_st, Q_e, Q_e_st, _, _ = qua_declaration(num_qubits=num_qubits)
 
-    for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the desired frequency point
         # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
 
-        with for_(n, 0, n < n_runs, n + 1):
+    with for_(n, 0, n < n_runs, n + 1):
+        for i, qubit in enumerate(qubits):
             # ground iq blobs for all qubits
             save(n, n_st)
             if reset_type == "active":
                 active_reset(qubit, "readout")
             elif reset_type == "thermal":
-                qubit.wait(qubit.thermalization_time * u.ns)
+                qubit.wait(machine.thermalization_time * u.ns)
             else:
                 raise ValueError(f"Unrecognized reset type {reset_type}.")
 
             qubit.align()
             qubit.resonator.measure(operation_name, qua_vars=(I_g[i], Q_g[i]))
+            # machine.qubits["q5"].resonator.play("readout")
             qubit.resonator.wait(qubit.resonator.depletion_time * u.ns)
             # save data
             save(I_g[i], I_g_st[i])
@@ -113,12 +114,13 @@ with program() as iq_blobs:
             if reset_type == "active":
                 active_reset(qubit, "readout")
             elif reset_type == "thermal":
-                qubit.wait(qubit.thermalization_time * u.ns)
+                qubit.wait(machine.thermalization_time * u.ns)
             else:
                 raise ValueError(f"Unrecognized reset type {reset_type}.")
             qubit.align()
             qubit.xy.play("x180")
             qubit.align()
+            # machine.qubits["q5"].resonator.play("readout")
             qubit.resonator.measure(operation_name, qua_vars=(I_e[i], Q_e[i]))
             qubit.resonator.wait(qubit.resonator.depletion_time * u.ns)
             # save data
@@ -151,6 +153,7 @@ if node.parameters.simulate:
         samples[con].plot()
         plt.title(con)
     plt.tight_layout()
+    plt.show()
     # Save the figure
     node.results = {"figure": plt.gcf()}
     node.machine = machine

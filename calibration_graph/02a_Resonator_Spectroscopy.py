@@ -38,9 +38,9 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = ["q6"]
+    qubits: Optional[List[str]] = ["q4"]
     num_averages: int = 100
-    frequency_span_in_mhz: float = 8.0
+    frequency_span_in_mhz: float = 18.0
     frequency_step_in_mhz: float = 0.01
     simulate: bool = False
     simulation_duration_ns: int = 2500
@@ -230,17 +230,17 @@ if not node.parameters.simulate:
     plt.show()
 
     # %% {Update_state}
-    if node.parameters.load_data_id is None:
-        with node.record_state_updates():
-            for index, q in enumerate(qubits):
-                q.resonator.intermediate_frequency += int(fits[q.name].params["omega_r"].value)
-
-        # %% {Save_results}
-        node.outcomes = {q.name: "successful" for q in qubits}
-        node.results["initial_parameters"] = node.parameters.model_dump()
-        node.machine = machine
-        node.save()
-        print("Results saved")
+    # if node.parameters.load_data_id is None:
+    #     with node.record_state_updates():
+    #         for index, q in enumerate(qubits):
+    #             q.resonator.intermediate_frequency += int(fits[q.name].params["omega_r"].value)
+    #
+    #     # %% {Save_results}
+    #     node.outcomes = {q.name: "successful" for q in qubits}
+    #     node.results["initial_parameters"] = node.parameters.model_dump()
+    #     node.machine = machine
+    #     node.save()
+    #     print("Results saved")
 
 
 # %%

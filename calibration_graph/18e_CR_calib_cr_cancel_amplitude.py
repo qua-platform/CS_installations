@@ -76,21 +76,21 @@ from cr_hamiltonian_tomography import (
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubit_pairs: Optional[List[str]] = ["q1-2"]
+    qubit_pairs: Optional[List[str]] = ["q2-3"]
     num_averages: int = 20
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 3000
     wait_time_step_in_ns: int = 40
-    min_amp_scaling: float = 0.05
-    max_amp_scaling: float = 1.95
-    step_amp_scaling: float = 0.05
-    cr_type: Literal["direct+cancel", "direct+cancel+echo"] = "direct+cancel"
-    cr_drive_amps: List[float] = [0.225]
-    cr_cancel_amps: List[float] = [0.002]
+    min_amp_scaling: float = 0.0
+    max_amp_scaling: float = 1.9
+    step_amp_scaling: float = 0.01
+    cr_type: Literal["direct+cancel", "direct+cancel+echo"] = "direct+cancel+echo"
+    cr_drive_amps: List[float] = [0.19]  # 0.225
+    cr_cancel_amps: List[float] = [0.1]
     cr_drive_amp_scalings: List[float] = [1]
     cr_cancel_amp_scalings: List[float] = [1]
-    cr_drive_phases: List[float] = [0.25]
-    cr_cancel_phases: List[float] = [0.25]
+    cr_drive_phases: List[float] = [- 0.06]
+    cr_cancel_phases: List[float] = [0.46]
     use_state_discrimination: bool = False
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
@@ -115,19 +115,19 @@ num_qubit_pairs = len(qubit_pairs)
 
 
 # Update the readout power to match the desired range, this change will be reverted at the end of the node.
-tracked_qubits = []
-for i, qp in enumerate(qubit_pairs):
-    cr = qp.cross_resonance
-    cr_name = cr.name
-    qt_xy = qp.qubit_target.xy
-    with tracked_updates(cr, auto_revert=False, dont_assign_to_none=True) as cr:
-        cr.operations["square"].amplitude = node.parameters.cr_drive_amps[i]
-        cr.operations["square"].axis_angle = node.parameters.cr_drive_phases[i] * 360
-        tracked_qubits.append(cr)
-    with tracked_updates(qt_xy, auto_revert=False, dont_assign_to_none=True) as qt_xy:
-        qt_xy.operations[f"{cr_name}_Square"].amplitude = node.parameters.cr_cancel_amps[i]
-        qt_xy.operations[f"{cr_name}_Square"].axis_angle = node.parameters.cr_cancel_phases[i] * 360
-        tracked_qubits.append(qt_xy)
+# tracked_qubits = []
+# for i, qp in enumerate(qubit_pairs):
+#     cr = qp.cross_resonance
+#     cr_name = cr.name
+#     qt_xy = qp.qubit_target.xy
+#     with tracked_updates(cr, auto_revert=False, dont_assign_to_none=True) as cr:
+#         cr.operations["square"].amplitude = node.parameters.cr_drive_amps[i]
+#         # cr.operations["square"].axis_angle = node.parameters.cr_drive_phases[i] * 360
+#         tracked_qubits.append(cr)
+#     with tracked_updates(qt_xy, auto_revert=False, dont_assign_to_none=True) as qt_xy:
+#         qt_xy.operations[f"{cr_name}_Square"].amplitude = node.parameters.cr_cancel_amps[i]
+#         # qt_xy.operations[f"{cr_name}_Square"].axis_angle = node.parameters.cr_cancel_phases[i] * 360
+#         tracked_qubits.append(qt_xy)
 
 
 # Generate the OPX and Octave configurations
@@ -327,21 +327,21 @@ if not node.parameters.simulate:
 
     qm.close()
     print("Experiment QM is now closed")
-    plt.show(block=True)
+    plt.show(block=False)
 
 
 # %% {Update_state}
-if not node.parameters.simulate:
-    with node.record_state_updates():
-        cr_cancel_amps = [0.1]
-        cr_cancel_amp_scalings = [0.5]
-        for i, qp in enumerate(qubit_pairs):
-            qt = qp.qubit_target
-            qt.xy.operations[f"{cr.name}_Square"].amplitude = cr_cancel_amps[i] * cr_cancel_amp_scalings[i]
-
-    # Revert the change done at the beginning of the node
-    for tracked_qubit in tracked_qubits:
-        tracked_qubit.revert_changes()
+# if not node.parameters.simulate:
+#     with node.record_state_updates():
+#         cr_cancel_amps = [0.1]
+#         cr_cancel_amp_scalings = [0.5]
+#         for i, qp in enumerate(qubit_pairs):
+#             qt = qp.qubit_target
+#             qt.xy.operations[f"{cr.name}_Square"].amplitude = cr_cancel_amps[i] * cr_cancel_amp_scalings[i]
+#
+#     # Revert the change done at the beginning of the node
+#     for tracked_qubit in tracked_qubits:
+#         tracked_qubit.revert_changes()
 
 
 # %% {Save_results}
@@ -351,5 +351,13 @@ if not node.parameters.simulate:
     node.machine = machine
     node.save()
 
+# amp_s=0.03
+# plt.figure()
+# ds_sliced.sel(amp_scalings=amp_s, method="nearest").sel(qt_component="Z", qc_state="0").bloch_target.plot()
+# ds_sliced.sel(amp_scalings=amp_s, method="nearest").sel(qt_component="Z", qc_state="1").bloch_target.plot()
+# plt.show()
 
+# plt.figure()
+# (ds_sliced.sel(qt_component="Z", qc_state="0").bloch_target - ds_sliced.sel(qt_component="Z", qc_state="1").bloch_target).plot()
+# plt.show()
 # %%

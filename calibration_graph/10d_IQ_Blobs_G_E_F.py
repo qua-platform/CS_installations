@@ -100,7 +100,7 @@ with program() as iq_blobs:
             if reset_type == "active":
                 active_reset(machine, qubit.name)
             elif reset_type == "thermal":
-                wait(qubit.thermalization_time * u.ns)
+                wait(machine.thermalization_time * u.ns)
             else:
                 raise ValueError(f"Unrecognized reset type {reset_type}.")
 
@@ -114,7 +114,7 @@ with program() as iq_blobs:
             if reset_type == "active":
                 active_reset(machine, qubit.name)
             elif reset_type == "thermal":
-                wait(qubit.thermalization_time * u.ns)
+                wait(machine.thermalization_time * u.ns)
             else:
                 raise ValueError(f"Unrecognized reset type {reset_type}.")
             align()
@@ -125,7 +125,7 @@ with program() as iq_blobs:
             save(I_e[i], I_e_st[i])
             save(Q_e[i], Q_e_st[i])
 
-            wait(qubit.thermalization_time * u.ns)
+            wait(machine.thermalization_time * u.ns)
             align()
             qubit.xy.play("x180")
             update_frequency(

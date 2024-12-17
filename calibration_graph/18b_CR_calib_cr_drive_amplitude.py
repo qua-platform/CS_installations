@@ -75,21 +75,21 @@ from cr_hamiltonian_tomography import (
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubit_pairs: Optional[List[str]] = ["q1-2"]
+    qubit_pairs: Optional[List[str]] = ["q5-6"]
     num_averages: int = 20
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 1000
-    wait_time_step_in_ns: int = 4
+    max_wait_time_in_ns: int = 4000
+    wait_time_step_in_ns: int = 40
     min_amp_scaling: float = 0.05
-    max_amp_scaling: float = 1.95
+    max_amp_scaling: float = 1.99
     step_amp_scaling: float = 0.05
-    cr_type: Literal["direct", "direct+echo", "direct+cancel", "direct+cancel+echo"] = "direct"
-    cr_drive_amps: List[float] = [0.3]
-    cr_cancel_amps: List[float] = [0.1]
-    cr_drive_amp_scalings: List[float] = [1]
-    cr_cancel_amp_scalings: List[float] = [1]
-    cr_drive_phases: List[float] = [0.25]
-    cr_cancel_phases: List[float] = [0.5]
+    cr_type: Literal["direct", "direct+echo", "direct+cancel", "direct+cancel+echo"] = "direct+echo"
+    cr_drive_amps: List[float] = [0.225*0+0.5]
+    cr_cancel_amps: List[float] = [0.0]
+    cr_drive_amp_scalings: List[float] = [1.0]
+    cr_cancel_amp_scalings: List[float] = [0.0]
+    cr_drive_phases: List[float] = [0.0]
+    cr_cancel_phases: List[float] = [0.0]
     use_state_discrimination: bool = False
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
@@ -123,10 +123,10 @@ for i, qp in enumerate(qubit_pairs):
         cr.operations["square"].amplitude = node.parameters.cr_drive_amps[i]
         # cr.operations["square"].axis_angle = node.parameters.cr_drive_phases[i] * 360
         tracked_qubits.append(cr)
-    with tracked_updates(qt_xy, auto_revert=False, dont_assign_to_none=True) as qt_xy:
-        qt_xy.operations[f"{cr_name}_Square"].amplitude = node.parameters.cr_cancel_amps[i]
-        # qt_xy.operations[f"{cr_name}_Square"].axis_angle = node.parameters.cr_cancel_phases[i] * 360
-        tracked_qubits.append(qt_xy)
+    # with tracked_updates(qt_xy, auto_revert=False, dont_assign_to_none=True) as qt_xy:
+    #     qt_xy.operations[f"{cr_name}_Square"].amplitude = node.parameters.cr_cancel_amps[i]
+    #     # qt_xy.operations[f"{cr_name}_Square"].axis_angle = node.parameters.cr_cancel_phases[i] * 360
+    #     tracked_qubits.append(qt_xy)
 
 
 # Generate the OPX and Octave configurations
@@ -201,7 +201,7 @@ with program() as cr_calib_unit_ham_tomo:
                                 qc.xy.play("x180")
                                 # echoed direct + cancel
                                 align(qc.xy.name, cr.name)
-                                cr.play("square", duration=t, amplitude_scale=a)
+                                cr.play("square", duration=t, amplitude_scale=-a)
                                 # pi pulse on control
                                 align(qc.xy.name, cr.name)
                                 qc.xy.play("x180")
@@ -351,17 +351,17 @@ if not node.parameters.simulate:
 
     qm.close()
     print("Experiment QM is now closed")
-    plt.show(block=True)
+    plt.show(block=False)
 
 
 # %% {Update_state}
 if not node.parameters.simulate:
-    with node.record_state_updates():
-        cr_drive_amps = [0.1]
-        cr_drive_amp_scalings = [0.5]
-        for i, qp in enumerate(qubit_pairs):
-            cr = qp.cross_resonance
-            cr.operations["square"].amplitude = cr_drive_amps[i] * cr_drive_amp_scalings[i]
+    # with node.record_state_updates():
+    #     # cr_drive_amps = [0.1]
+    #     # cr_drive_amp_scalings = [0.5]
+    #     for i, qp in enumerate(qubit_pairs):
+    #         cr = qp.cross_resonance
+    #         cr.operations["square"].amplitude = cr_drive_amps[i] * cr_drive_amp_scalings[i]
 
     # Revert the change done at the beginning of the node
     for tracked_qubit in tracked_qubits:

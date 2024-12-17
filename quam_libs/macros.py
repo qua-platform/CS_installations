@@ -115,7 +115,7 @@ def readout_state(qubit , state, pulse_name : str = 'readout', threshold : float
         threshold = qubit.resonator.operations[pulse_name].threshold
     qubit.resonator.measure(pulse_name, qua_vars=(I, Q))
     assign(state, Cast.to_int(I > threshold))
-    wait(qubit.resonator.depletion_time // 4, qubit.resonator.name)
+    qubit.resonator.wait(qubit.resonator.depletion_time //4 )
     
     
 def active_reset(

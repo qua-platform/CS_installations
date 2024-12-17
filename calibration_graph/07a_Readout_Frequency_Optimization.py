@@ -20,6 +20,7 @@ Next steps before going to the next node:
 # %% {Imports}
 from qualibrate import QualibrationNode, NodeParameters
 from quam_libs.components import QuAM
+from quam_libs.macros import qua_declaration
 from quam_libs.lib.qua_datasets import convert_IQ_to_V
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset
@@ -37,7 +38,7 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = ["q4"]
+    qubits: Optional[List[str]] = None
     num_averages: int = 300
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.1
@@ -46,7 +47,7 @@ class Parameters(NodeParameters):
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = False
+    multiplexed: bool = True
 
 node = QualibrationNode(name="07a_Readout_Frequency_Optimization", parameters=Parameters())
 
@@ -91,29 +92,30 @@ with program() as ro_freq_opt:
     Q_e_st = [declare_stream() for _ in range(num_qubits)]
     n_st = declare_stream()
 
-    for i, qubit in enumerate(qubits):
 
-        # Bring the active qubits to the desired frequency point
-        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
-        
-        with for_(n, 0, n < n_avg, n + 1):
-            save(n, n_st)
+    # Bring the active qubits to the desired frequency point
+    # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+
+    with for_(n, 0, n < n_avg, n + 1):
+        save(n, n_st)
+        for i, qubit in enumerate(qubits):
+
             with for_(*from_array(df, dfs)):
                 # Update the resonator frequencies
                 update_frequency(qubit.resonator.name, df + qubit.resonator.intermediate_frequency)
                 # Wait for the qubits to decay to the ground state
-                wait(qubit.thermalization_time * u.ns)
-                align()
+                qubit.wait(machine.thermalization_time * u.ns)
+                qubit.align()
                 # Measure the state of the resonators
                 qubit.resonator.measure("readout", qua_vars=(I_g[i], Q_g[i]))
 
-                align()
+                qubit.align()
                 # Wait for thermalization again in case of measurement induced transitions
-                wait(qubit.thermalization_time * u.ns)
+                qubit.wait(machine.thermalization_time * u.ns)
                 # Play the x180 gate to put the qubits in the excited state
                 qubit.xy.play("x180")
                 # Align the elements to measure after playing the qubit pulses.
-                align()
+                qubit.align()
                 # Measure the state of the resonators
                 qubit.resonator.measure("readout", qua_vars=(I_e[i], Q_e[i]))
 
@@ -122,7 +124,7 @@ with program() as ro_freq_opt:
                 save(Q_g[i], Q_g_st[i])
                 save(I_e[i], I_e_st[i])
                 save(Q_e[i], Q_e_st[i])
-                align()
+                # align()
         # Measure sequentially
         if not node.parameters.multiplexed:
             align()

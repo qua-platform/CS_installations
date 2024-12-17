@@ -109,7 +109,7 @@ with program() as ro_freq_opt:
                 qubit.resonator.measure("readout", qua_vars=(I_g[i], Q_g[i]))
                 qubit.align()
                 # Wait for thermalization again in case of measurement induced transitions
-                wait(qubit.thermalization_time * u.ns)
+                wait(machine.thermalization_time * u.ns)
                 save(I_g[i], I_g_st[i])
                 save(Q_g[i], Q_g_st[i])
 
@@ -122,7 +122,7 @@ with program() as ro_freq_opt:
                 # wait(1000)
                 qubit.align()
                 # Wait for thermalization again in case of measurement induced transitions
-                wait(qubit.thermalization_time * u.ns)
+                wait(machine.thermalization_time * u.ns)
                 save(I_e[i], I_e_st[i])
                 save(Q_e[i], Q_e_st[i])
 
@@ -140,7 +140,7 @@ with program() as ro_freq_opt:
                 # Measure the state of the resonators
                 qubit.resonator.measure("readout", qua_vars=(I_f[i], Q_f[i]))
                 # Wait for the qubits to decay to the ground state
-                wait(qubit.thermalization_time * u.ns)
+                wait(machine.thermalization_time * u.ns)
                 save(I_f[i], I_f_st[i])
                 save(Q_f[i], Q_f_st[i])
 

@@ -9,6 +9,7 @@ from typing import Dict, Any, Optional, Union, List, Tuple
 from qm.qua import align, wait
 import numpy as np
 from dataclasses import field
+from quam.components.pulses import GaussianPulse
 
 
 __all__ = ["Transmon"]
@@ -56,6 +57,7 @@ class Transmon(QuamComponent):
     T1: float = 10e-6
     T2ramsey: float = None
     T2echo: float = None
+    RB_fidelity: float = None
     thermalization_time_factor: int = 5
     sigma_time_factor: int = 5
     phi0_current: float = None

@@ -331,6 +331,7 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
             ax.scatter(self.ts, v0, s=20, color="b", label="ctrl in |0>")
             ax.scatter(self.ts, v1, s=20, color="r", label="ctrl in |1>")
             ax.set_ylabel(f"<{bss}(t)>", fontsize=16)
+            ax.set_ylim((-1, 1))
 
         # plot "R"
         if len(axs) == 4:
@@ -340,7 +341,7 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
             ax.plot(self.ts, R, "k")
             ax.set_xlabel("time")
             ax.set_ylabel("R", fontsize=16)
-
+            ax.set_ylim((0, 1))
         if show:
             plt.tight_layout()
             plt.show(block=False)

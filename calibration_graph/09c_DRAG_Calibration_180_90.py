@@ -114,7 +114,7 @@ with program() as drag_calibration:
                     if reset_type == "active":
                         active_reset(qubit, "readout")
                     else:
-                        qubit.wait(qubit.thermalization_time * u.ns)
+                        qubit.wait(machine.thermalization_time * u.ns)
 
                     if option == 0:
                         play("x180" * amp(1, 0, 0, a), qubit.xy.name)

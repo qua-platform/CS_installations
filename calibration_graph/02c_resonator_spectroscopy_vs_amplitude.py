@@ -54,7 +54,7 @@ class Parameters(NodeParameters):
     max_power_dbm: int = -20
     min_power_dbm: int = -50
     num_power_points: int = 51
-    max_amp: float = 0.1
+    max_amp: float = 0.7
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     ro_line_attenuation_dB: float = 0
     derivative_crossing_threshold_in_hz_per_dbm: int = int(-50e3)

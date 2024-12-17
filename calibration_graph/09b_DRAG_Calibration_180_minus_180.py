@@ -38,11 +38,11 @@ import numpy as np
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubits: Optional[List[str]] = ["q4"]
+    qubits: Optional[List[str]] = ["q8"]
     num_averages: int = 10
     operation: str = "x180"
-    min_amp_factor: float = 0.0001
-    max_amp_factor: float = 2.0
+    min_amp_factor: float = 0.5
+    max_amp_factor: float = 1.5
     amp_factor_step: float = 0.02
     max_number_pulses_per_sweep: int = 100
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
@@ -50,9 +50,9 @@ class Parameters(NodeParameters):
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
-    alpha_setpoint: Optional[float] = -1.0
+    alpha_setpoint: Optional[float] = None
     load_data_id: Optional[int] = None
-    multiplexed: bool = False
+    multiplexed: bool = True
 
 
 
@@ -127,7 +127,7 @@ with program() as drag_calibration:
                     if reset_type == "active":
                         active_reset(qubit, "readout")
                     else:
-                        qubit.wait(qubit.thermalization_time * u.ns)
+                        qubit.wait(machine.thermalization_time * u.ns)
 
                     # Loop for error amplification (perform many qubit pulses)
                     with for_(count, 0, count < npi, count + 1):

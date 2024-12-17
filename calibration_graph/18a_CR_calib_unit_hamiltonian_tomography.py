@@ -71,18 +71,18 @@ from cr_hamiltonian_tomography import (
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubit_pairs: Optional[List[str]] = ["q1-2"]
-    num_averages: int = 200
+    qubit_pairs: Optional[List[str]] = ["q3-4"]
+    num_averages: int = 500
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 4000
-    wait_time_step_in_ns: int = 40
-    cr_type: Literal["direct", "direct+echo", "direct+cancel", "direct+cancel+echo"] = "direct"
-    cr_drive_amp: List[float] = [0.225]
-    cr_cancel_amp: List[float] = [0.01]
-    cr_drive_amp_scaling: List[float] = [1]
-    cr_cancel_amp_scaling: List[float] = [0.05]
-    cr_drive_phase: List[float] = [0.75]  # Or 0.25
-    cr_cancel_phase: List[float] = [0.25]
+    max_wait_time_in_ns: int = 1000
+    wait_time_step_in_ns: int = 20
+    cr_type: Literal["direct", "direct+echo", "direct+cancel", "direct+cancel+echo"] = "direct+echo"
+    cr_drive_amp: List[float] = [0.0]
+    cr_cancel_amp: List[float] = [0.0]
+    cr_drive_amp_scaling: List[float] = [1.0]
+    cr_cancel_amp_scaling: List[float] = [0.1]
+    cr_drive_phase: List[float] = [0.0]  # Or 0.25
+    cr_cancel_phase: List[float] = [0.46]
     use_state_discrimination: bool = False
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
@@ -108,18 +108,18 @@ num_qubit_pairs = len(qubit_pairs)
 
 # Update the readout power to match the desired range, this change will be reverted at the end of the node.
 tracked_qubits = []
-for i, qp in enumerate(qubit_pairs):
-    cr = qp.cross_resonance
-    cr_name = cr.name
-    qt_xy = qp.qubit_target.xy
-    with tracked_updates(cr, auto_revert=False, dont_assign_to_none=True) as cr:
-        cr.operations["square"].amplitude = node.parameters.cr_drive_amp[i]
-        cr.operations["square"].axis_angle = node.parameters.cr_drive_phase[i] * 360
-        tracked_qubits.append(cr)
-    with tracked_updates(qt_xy, auto_revert=False, dont_assign_to_none=True) as qt_xy:
-        qt_xy.operations[f"{cr_name}_Square"].amplitude = node.parameters.cr_cancel_amp[i]
-        qt_xy.operations[f"{cr_name}_Square"].axis_angle = node.parameters.cr_cancel_phase[i] * 360
-        tracked_qubits.append(qt_xy)
+# for i, qp in enumerate(qubit_pairs):
+#     cr = qp.cross_resonance
+#     cr_name = cr.name
+#     qt_xy = qp.qubit_target.xy
+#     with tracked_updates(cr, auto_revert=False, dont_assign_to_none=True) as cr:
+#         cr.operations["square"].amplitude = node.parameters.cr_drive_amp[i]
+#         # cr.operations["square"].axis_angle = node.parameters.cr_drive_phase[i] * 360
+#         tracked_qubits.append(cr)
+#     with tracked_updates(qt_xy, auto_revert=False, dont_assign_to_none=True) as qt_xy:
+#         qt_xy.operations[f"{cr_name}_Square"].amplitude = node.parameters.cr_cancel_amp[i]
+#         # qt_xy.operations[f"{cr_name}_Square"].axis_angle = node.parameters.cr_cancel_phase[i] * 360
+#         tracked_qubits.append(qt_xy)
 
 
 # Generate the OPX and Octave configurations
@@ -185,17 +185,21 @@ with program() as cr_calib_unit_ham_tomo:
                             # direct + cancel
                             align(qc.xy.name, cr.name)
                             cr.play("square", duration=t, amplitude_scale=node.parameters.cr_drive_amp_scaling[i])
+                            # cr.play("gaussian", duration=t, amplitude_scale=node.parameters.cr_drive_amp_scaling[i])
                             # pi pulse on control
                             align(qc.xy.name, cr.name)
                             qc.xy.play("x180")
                             # echoed direct + cancel
                             align(qc.xy.name, cr.name)
-                            cr.play("square", duration=t, amplitude_scale=node.parameters.cr_drive_amp_scaling[i])
+                            cr.play("square", duration=t, amplitude_scale=-node.parameters.cr_drive_amp_scaling[i])
+                            # cr.play("gaussian", duration=t, amplitude_scale=-node.parameters.cr_drive_amp_scaling[i])
                             # pi pulse on control
                             align(qc.xy.name, cr.name)
                             qc.xy.play("x180")
                             # align for the next step and clear the phase shift
                             align(qc.xy.name, qt.xy.name)
+                            # qc.xy.play("-x90")
+                            # qc.xy.play("-y90")
                             reset_frame(cr.name)
                             reset_frame(qt.xy.name)
 
@@ -226,7 +230,7 @@ with program() as cr_calib_unit_ham_tomo:
                             # echoed direct + cancel
                             align(qc.xy.name, qt.xy.name, cr.name)
                             cr.play("square", duration=t, amplitude_scale=-node.parameters.cr_drive_amp_scaling[i])
-                            qt.xy.play(f"{cr.name}_Square", duration=t, amplitude_scale=node.parameters.cr_cancel_amp_scaling[i])
+                            qt.xy.play(f"{cr.name}_Square", duration=t, amplitude_scale=-node.parameters.cr_cancel_amp_scaling[i])
                             # pi pulse on control
                             align(qc.xy.name, qt.xy.name, cr.name)
                             qc.xy.play("x180")
@@ -334,7 +338,7 @@ if not node.parameters.simulate:
 
     qm.close()
     print("Experiment QM is now closed")
-    plt.show(block=True)
+    plt.show(block=False)
 
 
 # %% {Update_state}

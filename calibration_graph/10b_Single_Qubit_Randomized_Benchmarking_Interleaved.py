@@ -286,7 +286,7 @@ with program() as randomized_benchmarking:
                         if reset_type == "active":
                             active_reset(qubit, "readout")
                         else:
-                            qubit.resonator.wait(qubit.thermalization_time * u.ns)
+                            qubit.resonator.wait(machine.thermalization_time * u.ns)
                         # Align the two elements to play the sequence after qubit initialization
                         qubit.align()
                         # The strict_timing ensures that the sequence will be played without gaps

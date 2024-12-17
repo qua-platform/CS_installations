@@ -37,7 +37,7 @@ xy_LO = xy_freq_01 - xy_if
 
 # Update qubit parameters
 T1 = np.array([23, 41, 49, 33, 49, 14, 19, 34]) * 1e-6
-grid_locations = ["0-0", "0-1", "0-2", "1-2", "2-2", "2-1", "2-0", "1-0"]
+grid_locations = ["0-2", "1-2", "2-2", "2-1", "2-0", "1-0", "0-0", "0-1"]
 # NOTE: be aware of coupled ports for bands
 for i, q in enumerate(machine.qubits):
     qb = machine.qubits[q]

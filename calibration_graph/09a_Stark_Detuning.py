@@ -41,7 +41,7 @@ import numpy as np
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubits: Optional[List[str]] = ["q4"]
+    qubits: Optional[List[str]] = ["q1"]
     num_averages: int = 20
     operation: str = "x180"
     frequency_span_in_mhz: float = 20
@@ -49,12 +49,12 @@ class Parameters(NodeParameters):
     max_number_pulses_per_sweep: int = 20
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
-    DRAG_setpoint: Optional[float] = -1.0
+    DRAG_setpoint: Optional[float] = None
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = False
+    multiplexed: bool = True
 
 node = QualibrationNode(name="09a_Stark_Detuning", parameters=Parameters())
 
@@ -122,7 +122,7 @@ with program() as stark_detuning:
                     if reset_type == "active":
                         active_reset(qubit, "readout")
                     else:
-                        qubit.wait(qubit.thermalization_time * u.ns)
+                        qubit.wait(machine.thermalization_time * u.ns)
 
                     # Update the qubit frequency after initialization for active reset
                     update_frequency(qubit.xy.name, df + qubit.xy.intermediate_frequency)

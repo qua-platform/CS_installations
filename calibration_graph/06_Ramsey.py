@@ -40,20 +40,20 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = ["q4"]
+    qubits: Optional[List[str]] = None
     num_averages: int = 100
     frequency_detuning_in_mhz: float = 1.0
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 30000
+    max_wait_time_in_ns: int = 50000
     num_time_points: int = 500
     log_or_linear_sweep: Literal["log", "linear"] = "log"
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
-    use_state_discrimination: bool = False
+    use_state_discrimination: bool = True
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = False
+    multiplexed: bool = True
 
 node = QualibrationNode(name="06_Ramsey", parameters=Parameters())
 
@@ -116,7 +116,7 @@ with program() as ramsey:
     for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the desired frequency point
-        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
         
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
@@ -148,7 +148,7 @@ with program() as ramsey:
                         save(Q[i], Q_st[i])
 
                     # Wait for the qubits to decay to the ground state
-                    qubit.resonator.wait(qubit.thermalization_time * u.ns)
+                    qubit.resonator.wait(machine.thermalization_time * u.ns)
                     # Reset the frame of the qubits in order not to accumulate rotations
                     reset_frame(qubit.xy.name)
         # Measure sequentially
@@ -200,7 +200,8 @@ if not node.parameters.simulate:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
         ds = fetch_results_as_xarray(job.result_handles, qubits, {"sign": [-1, 1], "time": idle_times})
         # Convert IQ data into volts
-        ds = convert_IQ_to_V(ds, qubits)
+        if not node.parameters.use_state_discrimination:
+            ds = convert_IQ_to_V(ds, qubits)
         # Add the absolute time to the dataset
         ds = ds.assign_coords({"time": (["time"], 4 * idle_times)})
         ds.time.attrs["long_name"] = "idle_time"

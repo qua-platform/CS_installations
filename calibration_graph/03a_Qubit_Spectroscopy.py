@@ -46,13 +46,13 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = ["q6"]
+    qubits: Optional[List[str]] = None
     num_averages: int = 500
     operation: str = "saturation"
-    operation_amplitude_factor: Optional[float] = 0.1
+    operation_amplitude_factor: Optional[float] = 0.01
     operation_len_in_ns: Optional[int] = None
-    frequency_span_in_mhz: float = 100
-    frequency_step_in_mhz: float = 0.25
+    frequency_span_in_mhz: float = 25
+    frequency_step_in_mhz: float = 0.1
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     target_peak_width: Optional[float] = 2e6
     arbitrary_flux_bias: Optional[float] = None
@@ -61,7 +61,7 @@ class Parameters(NodeParameters):
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = False
+    multiplexed: bool = True
 
 
 node = QualibrationNode(name="03a_Qubit_Spectroscopy", parameters=Parameters())
@@ -159,7 +159,8 @@ with program() as qubit_spec:
                 # save data
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])
-                align()
+                if not node.parameters.multiplexed:
+                    align()
 
         # Measure sequentially
         if not node.parameters.multiplexed:
@@ -345,11 +346,11 @@ if not node.parameters.simulate:
                             q.xy.operations["x180"].amplitude = limits.max_x180_wf_amplitude
         node.results["ds"] = ds
 
-        # %% {Save_results}
-        node.outcomes = {q.name: "successful" for q in qubits}
-        node.results["initial_parameters"] = node.parameters.model_dump()
-        node.machine = machine
-        node.save()
+    # %% {Save_results}
+    node.outcomes = {q.name: "successful" for q in qubits}
+    node.results["initial_parameters"] = node.parameters.model_dump()
+    node.machine = machine
+    node.save()
 
 
 # %%

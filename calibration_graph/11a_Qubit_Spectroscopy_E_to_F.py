@@ -115,7 +115,7 @@ with program() as qubit_spec:
             save(n, n_st)
             with for_(*from_array(df, dfs)):
                 qubit.align()
-                qubit.xy.wait(qubit.thermalization_time * u.ns)
+                qubit.xy.wait(machine.thermalization_time * u.ns)
                 # Reset the qubit frequency
                 update_frequency(qubit.xy.name, qubit.xy.intermediate_frequency)
                 # Drive the qubit to the excited state
@@ -134,7 +134,7 @@ with program() as qubit_spec:
                 # readout the resonator
                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                 # Wait for the qubit to decay to the ground state
-                qubit.resonator.wait(qubit.thermalization_time * u.ns)
+                qubit.resonator.wait(machine.thermalization_time * u.ns)
                 # save data
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])

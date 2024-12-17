@@ -35,13 +35,13 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
-    num_averages: int = 100
+    num_averages: int = 200
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 120000
+    max_wait_time_in_ns: int = 200000
     wait_time_step_in_ns: int = 600
     flux_point_joint_or_independent_or_arbitrary: Literal["joint", "independent", "arbitrary", None] = None
     reset_type: Literal["active", "thermal"] = "thermal"
-    use_state_discrimination: bool = False
+    use_state_discrimination: bool = True
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
@@ -104,7 +104,7 @@ with program() as t1:
                 if node.parameters.reset_type == "active":
                     active_reset(qubit, "readout")
                 else:
-                    qubit.resonator.wait(qubit.thermalization_time * u.ns)
+                    qubit.resonator.wait(machine.thermalization_time * u.ns)
                     qubit.align()
 
                 qubit.xy.play("x180")
@@ -128,7 +128,7 @@ with program() as t1:
                     # save data
                     save(I[i], I_st[i])
                     save(Q[i], Q_st[i])
-                    # align()
+
         # Measure sequentially
         if not node.parameters.multiplexed:
             align()
@@ -177,7 +177,8 @@ if not node.parameters.simulate:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
         ds = fetch_results_as_xarray(job.result_handles, qubits, {"idle_time": idle_times})
         # Convert IQ data into volts
-        ds = convert_IQ_to_V(ds, qubits)
+        if not node.parameters.use_state_discrimination:
+            ds = convert_IQ_to_V(ds, qubits)
         # Convert time into µs
         ds = ds.assign_coords(idle_time=4 * ds.idle_time / u.us)  # convert to µs
         ds.idle_time.attrs = {"long_name": "idle time", "units": "µs"}

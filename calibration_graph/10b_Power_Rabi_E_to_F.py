@@ -116,7 +116,7 @@ with program() as power_rabi:
                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])
-                qubit.resonator.wait(qubit.thermalization_time * u.ns)
+                qubit.resonator.wait(machine.thermalization_time * u.ns)
 
         align()
 

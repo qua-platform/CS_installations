@@ -112,7 +112,7 @@ with program() as power_rabi:
                     if reset_type == "active":
                         active_reset(machine, qubit.name)
                     else:
-                        wait(qubit.thermalization_time * u.ns)
+                        wait(machine.thermalization_time * u.ns)
 
                     qubit.align()
                     # Loop for error amplification (perform many qubit pulses)

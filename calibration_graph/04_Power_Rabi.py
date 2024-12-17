@@ -40,22 +40,22 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = ["q6"]
+    qubits: Optional[List[str]] = None
     num_averages: int = 50
     operation_x180_or_any_90: Literal["x180", "x90", "-x90", "y90", "-y90"] = "x180"
-    min_amp_factor: float = 0.001*0+0.8
-    max_amp_factor: float = 1.99*0+1.2
+    min_amp_factor: float = 0.001*0 + 0.8
+    max_amp_factor: float = 1.99*0 + 1.2
     amp_factor_step: float = 0.005
     max_number_rabi_pulses_per_sweep: int = 100
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
-    state_discrimination: bool = False
+    state_discrimination: bool = True
     update_x90: bool = True
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = False
+    multiplexed: bool = True
 
 node = QualibrationNode(name="04_Power_Rabi", parameters=Parameters())
 
@@ -126,7 +126,7 @@ with program() as power_rabi:
                     if reset_type == "active":
                         active_reset(qubit, "readout")
                     else:
-                        qubit.wait(qubit.thermalization_time * u.ns)
+                        qubit.wait(machine.thermalization_time * u.ns)
 
                     # Loop for error amplification (perform many qubit pulses)
                     with for_(count, 0, count < npi, count + 1):
@@ -139,7 +139,7 @@ with program() as power_rabi:
                     else:
                         save(I[i], I_st[i])
                         save(Q[i], Q_st[i])
-                        align()
+                        # align()
         if not node.parameters.multiplexed:
             align()
 
@@ -207,7 +207,7 @@ if not node.parameters.simulate:
         {
             "abs_amp": (
                 ["qubit", "amp"],
-                np.array([q.xy.operations[operation].amplitude * amps for q in qubits]),
+                np.array([q.xy.operations[operation].amplitude * amps for q in qubits]),  # TODO not in V with MW fem
             )
             }
         )
@@ -319,7 +319,7 @@ if not node.parameters.simulate:
         node.machine = machine
         node.save()
 
-from qm import generate_qua_script
-sourceFile = open('rabi_debug.py', 'w')
-print(generate_qua_script(power_rabi, config), file=sourceFile)
-sourceFile.close()
+# from qm import generate_qua_script
+# sourceFile = open('rabi_debug.py', 'w')
+# print(generate_qua_script(power_rabi, config), file=sourceFile)
+# sourceFile.close()

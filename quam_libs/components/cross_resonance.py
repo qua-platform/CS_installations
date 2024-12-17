@@ -11,6 +11,7 @@ __all__ = ["CrossResonance", "CrossResonanceIQ", "CrossResonanceMW"]
 class CrossResonanceBase:
     target_qubit_LO_frequency: int=None
     target_qubit_IF_frequency: int=None
+    bell_state_fidelity: float = None
 
 @quam_dataclass
 class CrossResonanceIQ(IQChannel, CrossResonanceBase):

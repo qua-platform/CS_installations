@@ -239,7 +239,7 @@ if not node.parameters.simulate:
 
     qm.close()
     print("Experiment QM is now closed")
-    plt.show(block=True)
+    plt.show(block=False)
 
 
 # %% {Save_results}

@@ -41,13 +41,13 @@ import xarray as xr
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = ["q7"]
+    qubits: Optional[List[str]] = ["q4", "q8"]
     use_state_discrimination: bool = True
     use_strict_timing: bool = False
     num_random_sequences: int = 100  # Number of random sequences
     num_averages: int = 20
-    max_circuit_depth: int = 1000  # Maximum circuit depth
-    delta_clifford: int = 20
+    max_circuit_depth: int = 800  # Maximum circuit depth
+    delta_clifford: int = 8
     seed: int = 345324
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
@@ -55,7 +55,7 @@ class Parameters(NodeParameters):
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = False
+    multiplexed: bool = True
 
 node = QualibrationNode(name="10a_Single_Qubit_Randomized_Benchmarking", parameters=Parameters())
 
@@ -237,7 +237,7 @@ with program() as randomized_benchmarking:
                         if reset_type == "active":
                             active_reset(qubit, "readout")
                         else:
-                            qubit.resonator.wait(qubit.thermalization_time * u.ns)
+                            qubit.resonator.wait(machine.thermalization_time * u.ns)
                         # Align the two elements to play the sequence after qubit initialization
                         qubit.align()
                         # The strict_timing ensures that the sequence will be played without gaps
@@ -366,6 +366,7 @@ if not node.parameters.simulate:
             f"RB fidelity = {1 - EPG.sel(**qubit).values:.5f}",
             transform=ax.transAxes,
         )
+        machine.qubits[qubit["qubit"]].RB_fidelity = 1 - EPG.sel(**qubit).values
     plt.tight_layout()
     plt.show()
     node.results["figure"] = grid.fig
