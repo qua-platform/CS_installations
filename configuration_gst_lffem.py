@@ -45,7 +45,7 @@ time_of_flight = 28
 qubit_IF = 0 * u.MHz
 
 # CW pulse
-const_len = 52  # in ns
+const_len = 48  # in ns
 const_amp = 0.3  # in V
 x90_amp = 0.2
 y90_amp = 0.1

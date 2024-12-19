@@ -39,15 +39,15 @@ map_measfiducial = {
 path = "gate_set_tomography/encoded_parsed_dataset.csv"
 dg = pd.read_csv(path, header=0)  # Use header=0 to indicate the first row is the header
 dg.reset_index(inplace=True)
-dg = dg.tail(600)
-# dg = dg.head(12)
+dg = dg.tail(70)
+dg = dg.head(30)
 
 
 ###################
 # The QUA program #
 ###################
 
-list_n_shots = [4, 10]
+list_n_shots = [128, 8192]
 # gst_parser = GSTParser()
 # list_circuits = gst_parser.get_encoded_circuits()
 sequence_max_len = 2 + 1 + 8192 + 1
@@ -112,6 +112,8 @@ with program() as PROGRAM:
                                 play("y90", qb)
 
                             # germs
+                            # TODO: with case():
+                            #   I = XXXX
                             with case_(7):
                                 play("x90", qb)
                             with case_(8):
