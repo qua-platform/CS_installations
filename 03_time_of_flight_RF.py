@@ -20,7 +20,7 @@ from qm.qua import *
 from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy.signal import savgol_filter
 
-from configuration_with_lf_fem import *
+from configuration_with_lffem import *
 
 ###################
 # The QUA program #
@@ -66,6 +66,7 @@ if simulate:
     job = qmm.simulate(config, tof_prog, simulation_config)
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
+    plt.show()
 
 else:
     # Open the quantum machine

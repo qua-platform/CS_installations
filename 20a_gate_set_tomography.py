@@ -185,6 +185,7 @@ if simulate:
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
     plt.show()
+    plt.show()
 
 else:
     from qm import generate_qua_script

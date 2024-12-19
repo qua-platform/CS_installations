@@ -32,8 +32,8 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.voltage_gates import VoltageGateSequence
 
-from configuration_with_lf_fem import *
-from macros import DC_current_sensing_macro, RF_reflectometry_macro
+from configuration_with_lffem import *
+from macros import RF_reflectometry_macro
 from qdac2_driver import QDACII, load_voltage_list
 
 ###################

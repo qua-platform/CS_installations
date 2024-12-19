@@ -23,7 +23,7 @@ from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy import signal
 
-from configuration_with_lf_fem import *
+from configuration_with_lffem import *
 
 ###################
 # The QUA program #
@@ -87,6 +87,7 @@ if simulate:
     job = qmm.simulate(config, reflectometry_spectro, simulation_config)
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
+    plt.show()
 
 else:
     # Open the quantum machine

@@ -145,6 +145,7 @@ if simulate:
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
     plt.show()
+    plt.show()
 else:
     # Open a quantum machine to execute the QUA program
     qm = qmm.open_qm(config)

@@ -30,7 +30,7 @@ from qualang_tools.results import (
 )
 from qualang_tools.voltage_gates import VoltageGateSequence
 
-from configuration_with_lf_fem import *
+from configuration_with_lffem import *
 from macros import (
     DC_current_sensing_macro,
     RF_reflectometry_macro,

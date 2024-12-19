@@ -5,7 +5,7 @@ This file is used to configure the Octave's clock and do the automatic calibrati
 from qm import QuantumMachinesManager
 from qm.octave import ClockMode
 
-from configuration_with_lf_fem import *
+from configuration_with_lffem import *
 
 # Configure the Octave according to the elements settings and calibrate
 qmm = QuantumMachinesManager(

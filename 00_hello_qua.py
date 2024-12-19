@@ -7,7 +7,7 @@ from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.voltage_gates import VoltageGateSequence
 
-from configuration_with_lf_fem import *
+from configuration_with_lffem import *
 
 ###################
 # The QUA program #
@@ -57,6 +57,7 @@ if simulate:
     job = qmm.simulate(config, hello_qua, simulation_config)
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
+    plt.show()
 else:
     # Open a quantum machine to execute the QUA program
     qm = qmm.open_qm(config)

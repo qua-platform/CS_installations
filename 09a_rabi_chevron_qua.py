@@ -30,8 +30,8 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.voltage_gates import VoltageGateSequence
 
-from configuration_with_lf_fem import *
-from macros import DC_current_sensing_macro, RF_reflectometry_macro
+from configuration_with_lffem import *
+from macros import RF_reflectometry_macro
 
 ###################
 # The QUA program #
@@ -64,7 +64,9 @@ with program() as Rabi_prog:
             with for_(*from_array(t, durations)):  # Loop over the qubit pulse duration
                 with strict_timing_():  # Ensure that the sequence will be played without gap
                     # Navigate through the charge stability map
-                    seq.add_step(voltage_point_name="initialization")
+                    seq.add_step(
+                        voltage_point_name="initialization"
+                    )  # includes manipulation
                     seq.add_step(voltage_point_name="readout")
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 

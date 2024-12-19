@@ -16,7 +16,7 @@ from qm import QuantumMachinesManager
 from qm.qua import *
 from qualang_tools.voltage_gates import VoltageGateSequence
 
-from configuration_with_lf_fem import *
+from configuration_with_lffem import *
 
 ###################
 # The QUA program #

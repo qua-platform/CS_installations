@@ -3,6 +3,7 @@
 QUA-Config supporting OPX1000 w/ LF-FEM & External Mixers
 """
 import numpy as np
+from pathlib import Path
 from qualang_tools.config.waveform_tools import drag_gaussian_pulse_waveforms
 from qualang_tools.units import unit
 
@@ -38,6 +39,18 @@ qop_port = 9510  # Write the QOP port if version < QOP220
 octave_config = None
 
 
+#############
+# Save Path #
+#############
+
+# Path to save data
+save_dir = Path().absolute() / "data"
+save_dir.mkdir(exist_ok=True)
+default_additional_files = {
+    "configuration_with_lffem.py": "configuration_with_lffem.py",
+}
+
+
 #####################
 # OPX configuration #
 #####################
@@ -52,6 +65,60 @@ fem2 = 2  # Should be the LF-FEM index, e.g., 1
 #############################################
 sampling_rate = int(1e9)  # or, int(2e9)
 
+
+############################################
+#              VIRTUAL GATES               #
+############################################
+
+VIRTUALIZATION_MATRIX = np.array(
+    [
+        [1.0, -0.1],
+        [-0.1, 1.0],
+    ]
+)
+STEP_LEN = 1000
+STEP_AMP = 0.25
+
+
+######################
+#      DC GATES      #
+######################
+
+## Section defining the points from the charge stability map - can be done in the config
+# Relevant points in the charge stability map as ["P1", "P2"] in V
+level_init = [0.1, -0.1]
+level_manip = [0.2, -0.2]
+level_readout = [0.12, -0.12]
+
+# Duration of each step in ns
+duration_init = 2500
+duration_manip = 1000
+duration_readout = 1200  # reflectometry_readout_len + 100
+duration_compensation_pulse = 4 * u.us
+
+# Time to ramp down to zero for sticky elements in ns
+hold_offset_duration = 4  # in ns
+bias_tee_cut_off_frequency = 10 * u.kHz
+
+
+######################
+#    QUBIT PULSES    #
+######################
+
+# CW pulse
+CONST_AMP = 0.1  # in V
+CONST_LEN = 100  # in ns
+PI_AMP = 0.1
+PI_LEN = 52
+PI_SIGMA = PI_LEN / 5
+
+
+########################
+#    REFELECTOMETRY    #
+########################
+
+REFLECTOMETRY_READOUT_AMP = 0.1
+REFLECTOMETRY_READOUT_LEN = 10_000
 
 #################
 #   CONSTANTS   #
@@ -68,9 +135,9 @@ QUBIT_CONSTANTS = {
         "IF": 50 * u.GHz,
         "mixer_g": 0,
         "mixer_phi": 0,
-        "pi_amp": 0.25,
-        "pi_len": 52,
-        "pi_sigma": 10,
+        "pi_amp": PI_AMP,
+        "pi_len": PI_LEN,
+        "pi_sigma": PI_SIGMA,
         "midcircuit_parity_threshold": 0.0,
         "delay": 0,
         "digital_delay": 0,
@@ -85,9 +152,9 @@ QUBIT_CONSTANTS = {
         "IF": 200 * u.GHz,
         "mixer_g": 0,
         "mixer_phi": 0,
-        "pi_amp": 0.25,
-        "pi_len": 52,
-        "pi_sigma": 10,
+        "pi_amp": PI_AMP,
+        "pi_len": PI_LEN,
+        "pi_sigma": PI_SIGMA,
         "midcircuit_parity_threshold": 0.0,
         "delay": 0,
         "digital_delay": 0,
@@ -102,9 +169,9 @@ QUBIT_CONSTANTS = {
         "IF": 50 * u.GHz,
         "mixer_g": 0,
         "mixer_phi": 0,
-        "pi_amp": 0.25,
-        "pi_len": 52,
-        "pi_sigma": 10,
+        "pi_amp": PI_AMP,
+        "pi_len": PI_LEN,
+        "pi_sigma": PI_SIGMA,
         "midcircuit_parity_threshold": 0.0,
         "delay": 0,
         "digital_delay": 0,
@@ -119,9 +186,9 @@ QUBIT_CONSTANTS = {
         "IF": 200 * u.GHz,
         "mixer_g": 0,
         "mixer_phi": 0,
-        "pi_amp": 0.25,
-        "pi_len": 52,
-        "pi_sigma": 10,
+        "pi_amp": PI_AMP,
+        "pi_len": PI_LEN,
+        "pi_sigma": PI_SIGMA,
         "midcircuit_parity_threshold": 0.0,
         "delay": 0,
         "digital_delay": 0,
@@ -136,9 +203,9 @@ QUBIT_CONSTANTS = {
         "IF": 50 * u.GHz,
         "mixer_g": 0,
         "mixer_phi": 0,
-        "pi_amp": 0.25,
-        "pi_len": 52,
-        "pi_sigma": 10,
+        "pi_amp": PI_AMP,
+        "pi_len": PI_LEN,
+        "pi_sigma": PI_SIGMA,
         "midcircuit_parity_threshold": 0.0,
         "delay": 0,
         "digital_delay": 0,
@@ -150,35 +217,40 @@ PLUNGER_CONSTANTS = {
         "con": "con1",
         "fem": 2,
         "ao": 1,
-        "step_amp": 0.25,
+        "step_amp": STEP_AMP,
+        "step_len": STEP_LEN,
         "delay": 0,
     },
     "P2": {
         "con": "con1",
         "fem": 2,
         "ao": 2,
-        "step_amp": 0.25,
+        "step_amp": STEP_AMP,
+        "step_len": STEP_LEN,
         "delay": 0,
     },
     "P3": {
         "con": "con1",
         "fem": 2,
         "ao": 3,
-        "step_amp": 0.25,
+        "step_amp": STEP_AMP,
+        "step_len": STEP_LEN,
         "delay": 0,
     },
     "P4": {
         "con": "con1",
         "fem": 2,
         "ao": 4,
-        "step_amp": 0.25,
+        "step_amp": STEP_AMP,
+        "step_len": STEP_LEN,
         "delay": 0,
     },
     "P5": {
         "con": "con1",
         "fem": 2,
         "ao": 5,
-        "step_amp": 0.25,
+        "step_amp": STEP_AMP,
+        "step_len": STEP_LEN,
         "delay": 0,
     },
 }
@@ -188,28 +260,32 @@ BARRIER_CONSTANTS = {
         "con": "con1",
         "fem": 2,
         "ao": 6,
-        "step_amp": 0.25,
+        "step_amp": STEP_AMP,
+        "step_len": STEP_LEN,
         "delay": 0,
     },
     "B2": {
         "con": "con1",
         "fem": 2,
         "ao": 7,
-        "step_amp": 0.25,
+        "step_amp": STEP_AMP,
+        "step_len": STEP_LEN,
         "delay": 0,
     },
     "B3": {
         "con": "con1",
         "fem": 2,
         "ao": 8,
-        "step_amp": 0.25,
+        "step_amp": STEP_AMP,
+        "step_len": STEP_LEN,
         "delay": 0,
     },
     "B4": {
         "con": "con1",
         "fem": 1,
         "ao": 7,
-        "step_amp": 0.25,
+        "step_amp": STEP_AMP,
+        "step_len": STEP_LEN,
         "delay": 0,
     },
 }
@@ -219,14 +295,16 @@ PLUNGER_SD_CONSTANTS = {
         "con": "con1",
         "fem": 2,
         "ao": 6,
-        "step_amp": 0.25,
+        "step_amp": STEP_AMP,
+        "step_len": STEP_LEN,
         "delay": 0,
     },
     "Psd2": {
         "con": "con1",
         "fem": 2,
         "ao": 7,
-        "step_amp": 0.25,
+        "step_amp": STEP_AMP,
+        "step_len": STEP_LEN,
         "delay": 0,
     },
 }
@@ -238,8 +316,8 @@ TANK_CIRCUIT_CONSTANTS = {
         "ao": 8,
         "ai": 2,
         "IF": 150 * u.MHz,
-        "readout_amp": 0.1,
-        "readout_len": 1_000,
+        "readout_amp": REFLECTOMETRY_READOUT_AMP,
+        "readout_len": REFLECTOMETRY_READOUT_LEN,
         "time_of_flight": 24,
         "delay": 0,
     },
@@ -249,8 +327,8 @@ TANK_CIRCUIT_CONSTANTS = {
         "ao": 8,
         "ai": 2,
         "IF": 200 * u.MHz,
-        "readout_amp": 0.1,
-        "readout_len": 1_000,
+        "readout_amp": REFLECTOMETRY_READOUT_AMP,
+        "readout_len": REFLECTOMETRY_READOUT_LEN,
         "time_of_flight": 24,
         "delay": 0,
     },
@@ -312,50 +390,6 @@ def generate_waveforms(rotation_keys):
 qubit_rotation_keys = ["x180", "x90", "minus_x90", "y180", "y90", "minus_y90"]
 waveforms = generate_waveforms(qubit_rotation_keys)
 
-
-######################
-#      DC GATES      #
-######################
-
-## Section defining the points from the charge stability map - can be done in the config
-# Relevant points in the charge stability map as ["P1", "P2"] in V
-level_init = [0.1, -0.1]
-level_manip = [0.2, -0.2]
-level_readout = [0.12, -0.12]
-
-# Duration of each step in ns
-duration_init = 2500
-duration_manip = 1000
-duration_readout = 1200  # reflectometry_readout_length + 100
-duration_compensation_pulse = 4 * u.us
-
-# Step parameters
-step_length = 16  # in ns
-
-# Time to ramp down to zero for sticky elements in ns
-hold_offset_duration = 4  # in ns
-bias_tee_cut_off_frequency = 10 * u.kHz
-
-######################
-#    QUBIT PULSES    #
-######################
-qubit_LO = 4 * u.GHz
-qubit_IF = 100 * u.MHz
-qubit_g = 0.0
-qubit_phi = 0.0
-
-# Pi pulse
-pi_amp = 0.25  # in V
-pi_length = 32  # in ns
-# Pi half
-pi_half_amp = 0.25  # in V
-pi_half_length = 16  # in ns
-# Gaussian pulse
-gaussian_amp = 0.1  # in V
-gaussian_length = 20 * int(sampling_rate // 1e9)  # in units of [1/sampling_rate]
-# CW pulse
-CONST_AMP = 0.3  # in V
-CONST_LEN = 100  # in ns
 
 #############################################
 #                  Config                   #
@@ -599,6 +633,31 @@ config = {
             }
             for br, val in BARRIER_CONSTANTS.items()
         },
+        # barrier (B1, B2, ...)
+        **{
+            psdg: {
+                "singleInput": {
+                    "port": (val["con"], val["fem"], val["ao"]),
+                },
+                "operations": {
+                    "step": f"{psdg}_step_pulse",
+                },
+            }
+            for psdg, val in PLUNGER_SD_CONSTANTS.items()
+        },
+        # barrier sticky (B1_sticky, B2_sticky, ...)
+        **{
+            f"{psdg}_sticky": {
+                "singleInput": {
+                    "port": (val["con"], val["fem"], val["ao"]),
+                },
+                "sticky": {"analog": True, "duration": hold_offset_duration},
+                "operations": {
+                    "step": f"{psdg}_step_pulse",
+                },
+            }
+            for psdg, val in PLUNGER_SD_CONSTANTS.items()
+        },
         # qubits (qubit1, ...)
         **{
             qb: {
@@ -659,7 +718,7 @@ config = {
         **{
             f"{pg}_step_pulse": {
                 "operation": "control",
-                "length": step_length,
+                "length": val["step_len"],
                 "waveforms": {
                     "single": f"{pg}_step_wf",
                 },
@@ -669,7 +728,7 @@ config = {
         **{
             f"{br}_step_pulse": {
                 "operation": "control",
-                "length": step_length,
+                "length": val["step_len"],
                 "waveforms": {
                     "single": f"{br}_step_wf",
                 },
@@ -679,7 +738,7 @@ config = {
         **{
             f"{pg}_step_pulse": {
                 "operation": "control",
-                "length": step_length,
+                "length": val["step_len"],
                 "waveforms": {
                     "single": f"{pg}_step_wf",
                 },
@@ -792,15 +851,24 @@ config = {
             for key, val in TANK_CIRCUIT_CONSTANTS.items()
         },
         **{
-            f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]}
+            f"{key}_step_wf": {
+                "type": "constant",
+                "sample": val["step_amp"],
+            }
             for key, val in PLUNGER_CONSTANTS.items()
         },
         **{
-            f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]}
+            f"{key}_step_wf": {
+                "type": "constant",
+                "sample": val["step_amp"],
+            }
             for key, val in BARRIER_CONSTANTS.items()
         },
         **{
-            f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]}
+            f"{key}_step_wf": {
+                "type": "constant",
+                "sample": val["step_amp"],
+            }
             for key, val in PLUNGER_SD_CONSTANTS.items()
         },
         **{
