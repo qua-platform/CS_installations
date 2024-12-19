@@ -1,12 +1,11 @@
+# %%
 """
 QUA-Config supporting OPX1000 w/ LF-FEM & External Mixers
 """
 import numpy as np
-from scipy.signal.windows import gaussian
 from qualang_tools.units import unit
-from qm.qua._dsl import QuaVariable, QuaExpression
-from qm.qua import declare, assign, play, fixed, Cast, amp, wait, ramp, ramp_to_zero
-from typing import Union
+from qualang_tools.config.waveform_tools import drag_gaussian_pulse_waveforms
+
 
 #######################
 # AUXILIARY FUNCTIONS #
@@ -32,18 +31,21 @@ def IQ_imbalance(g, phi):
 ######################
 # Network parameters #
 ######################
-qop_ip = "127.0.0.1"  # Write the QM router IP address
-cluster_name = "my_cluster"  # Write your cluster_name if version >= QOP220
-qop_port = None  # Write the QOP port if version < QOP220
+qop_ip = "172.16.33.107"  # Write the QM router IP address
+cluster_name = "Beta_8"  # Write your cluster_name if version >= QOP220
+# qop_ip = "192.168.88.253"  # Write the QM router IP address
+# cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
+qop_port = 9510  # Write the QOP port if version < QOP220
+octave_config = None
+
 
 #####################
 # OPX configuration #
 #####################
-con = "con1"
-fem = 1  # Should be the LF-FEM index, e.g., 1
-
-# Set octave_config to None if no octave are present
-octave_config = None
+con1 = "con1"
+fem1 = 1  # Should be the LF-FEM index, e.g., 1
+fem2 = 2  # Should be the LF-FEM index, e.g., 1
+# fem3 = 3  # Should be the LF-FEM index, e.g., 1
 
 
 #############################################
@@ -52,262 +54,257 @@ octave_config = None
 sampling_rate = int(1e9)  # or, int(2e9)
 
 
-class OPX_virtual_gate_sequence:
-    def __init__(self, configuration: dict, elements: list):
-        """Framework allowing to design an arbitrary pulse sequence using virtual gates and pre-defined point from the
-        charge stability map. TODO better docstring explaining how it works
+#################
+#   CONSTANTS   #
+#################
 
-        :param configuration: The OPX configuration.
-        :param elements: List containing the elements taking part in the virtual gate.
-        """
-        # List of the elements involved in the virtual gates
-        self._elements = elements
-        # The OPX configuration
-        self._config = configuration
-        # Initialize the current voltage level for sticky elements
-        self.current_level = [0.0 for _ in self._elements]
-        # Relevant voltage points in the charge stability diagram
-        self._voltage_points = {}
-        # Keep track of the averaged voltage played for defining the compensation pulse at the end of the sequence
-        self.average_power = [0 for _ in self._elements]
-        self._expression = None
-        self._expression2 = None
-        # Add to the config the step operation (length=16ns & amp=0.25V)
-        for el in self._elements:
-            self._config["elements"][el]["operations"]["step"] = "step_pulse"
-        self._config["pulses"]["step_pulse"] = {
-            "operation": "control",
-            "length": 16,
-            "waveforms": {"single": "step_wf"},
-        }
-        self._config["waveforms"]["step_wf"] = {"type": "constant", "sample": 0.25}
+QUBIT_CONSTANTS = {
+    "qubit1": {
+        "con": "con1",
+        "fem": 1,
+        "ao_I": 1,
+        "ao_Q": 2,
+        "do": 1,
+        "LO": 16 * u.GHz,
+        "IF": 50 * u.GHz,
+        "mixer_g": 0,
+        "mixer_phi": 0,
+        "pi_amp": 0.25,
+        "pi_len": 52,
+        "pi_sigma": 10,
+        "midcircuit_parity_threshold": 0.0,
+        "delay": 0,
+        "digital_delay": 0,
+    },
+    "qubit2": {
+        "con": "con1",
+        "fem": 1,
+        "ao_I": 1,
+        "ao_Q": 2,
+        "do": 1,
+        "LO": 16 * u.GHz,
+        "IF": 200 * u.GHz,
+        "mixer_g": 0,
+        "mixer_phi": 0,
+        "pi_amp": 0.25,
+        "pi_len": 52,
+        "pi_sigma": 10,
+        "midcircuit_parity_threshold": 0.0,
+        "delay": 0,
+        "digital_delay": 0,
+    },
+    "qubit3": {
+        "con": "con1",
+        "fem": 1,
+        "ao_I": 3,
+        "ao_Q": 4,
+        "do": 2,
+        "LO": 16.3 * u.GHz,
+        "IF": 50 * u.GHz,
+        "mixer_g": 0,
+        "mixer_phi": 0,
+        "pi_amp": 0.25,
+        "pi_len": 52,
+        "pi_sigma": 10,
+        "midcircuit_parity_threshold": 0.0,
+        "delay": 0,
+        "digital_delay": 0,
+    },
+    "qubit4": {
+        "con": "con1",
+        "fem": 1,
+        "ao_I": 3,
+        "ao_Q": 4,
+        "do": 2,
+        "LO": 16.3 * u.GHz,
+        "IF": 200 * u.GHz,
+        "mixer_g": 0,
+        "mixer_phi": 0,
+        "pi_amp": 0.25,
+        "pi_len": 52,
+        "pi_sigma": 10,
+        "midcircuit_parity_threshold": 0.0,
+        "delay": 0,
+        "digital_delay": 0,
+    },
+    "qubit5": {
+        "con": "con1",
+        "fem": 1,
+        "ao_I": 1,
+        "ao_Q": 1,
+        "do": 3,
+        "LO": 16.6 * u.GHz,
+        "IF": 50 * u.GHz,
+        "mixer_g": 0,
+        "mixer_phi": 0,
+        "pi_amp": 0.25,
+        "pi_len": 52,
+        "pi_sigma": 10,
+        "midcircuit_parity_threshold": 0.0,
+        "delay": 0,
+        "digital_delay": 0,
+    },
+}
 
-    def _check_name(self, name, key):
-        if name in key:
-            return self._check_name(name + "%", key)
-        else:
-            return name
+PLUNGER_CONSTANTS = {
+    "P1": {
+        "con": "con1",
+        "fem": 2,
+        "ao": 1,
+        "step_amp": 0.25,
+        "delay": 0,
+    },
+    "P2": {
+        "con": "con1",
+        "fem": 2,
+        "ao": 2,
+        "step_amp": 0.25,
+        "delay": 0,
+    },
+    "P3": {
+        "con": "con1",
+        "fem": 2,
+        "ao": 3,
+        "step_amp": 0.25,
+        "delay": 0,
+    },
+    "P4": {
+        "con": "con1",
+        "fem": 2,
+        "ao": 4,
+        "step_amp": 0.25,
+        "delay": 0,
+    },
+    "P5": {
+        "con": "con1",
+        "fem": 2,
+        "ao": 5,
+        "step_amp": 0.25,
+        "delay": 0,
+    },
+}
 
-    def _add_op_to_config(self, el: str, name: str, amplitude: float, length: int) -> str:
-        """Add an operation to an element when the amplitude is fixed to release the number of real-time operations on
-        the OPX.
+BARRIER_CONSTANTS = {
+    "B1": {
+        "con": "con1",
+        "fem": 2,
+        "ao": 6,
+        "step_amp": 0.25,
+        "delay": 0,
+    },
+    "B2": {
+        "con": "con1",
+        "fem": 2,
+        "ao": 7,
+        "step_amp": 0.25,
+        "delay": 0,
+    },
+    "B3": {
+        "con": "con1",
+        "fem": 2,
+        "ao": 8,
+        "step_amp": 0.25,
+        "delay": 0,
+    },
+    "B4": {
+        "con": "con1",
+        "fem": 1,
+        "ao": 7,
+        "step_amp": 0.25,
+        "delay": 0,
+    },
+}
 
-        :param el: the element to which we want to add the operation.
-        :param name: name of the operation.
-        :param amplitude: Amplitude of the pulse in V.
-        :param length: Duration of the pulse in ns.
-        :return : The name of the created operation.
-        """
-        op_name = self._check_name(name, self._config["elements"][el]["operations"])
-        pulse_name = self._check_name(f"{el}_{op_name}_pulse", self._config["pulses"])
-        wf_name = self._check_name(f"{el}_{op_name}_wf", self._config["waveforms"])
-        self._config["elements"][el]["operations"][op_name] = pulse_name
-        self._config["pulses"][pulse_name] = {
-            "operation": "control",
-            "length": length,
-            "waveforms": {"single": wf_name},
-        }
-        self._config["waveforms"][wf_name] = {"type": "constant", "sample": amplitude}
-        return op_name
+PLUNGER_SD_CONSTANTS = {
+    "Psd1": {
+        "con": "con1",
+        "fem": 2,
+        "ao": 6,
+        "step_amp": 0.25,
+        "delay": 0,
+    },
+    "Psd2": {
+        "con": "con1",
+        "fem": 2,
+        "ao": 7,
+        "step_amp": 0.25,
+        "delay": 0,
+    },
+}
 
-    @staticmethod
-    def _check_duration(duration: int):
-        if duration is not None and not isinstance(duration, (QuaVariable, QuaExpression)):
-            assert duration >= 4, "The duration must be a larger than 16 ns."
+TANK_CIRCUIT_CONSTANTS = {
+    "tank_circuit1": {
+        "con": "con1",
+        "fem": 1,
+        "ao": 8,
+        "ai": 2,
+        "IF": 150 * u.MHz,
+        "readout_amp": 0.1,
+        "readout_len": 1_000,
+        "time_of_flight": 24,
+        "delay": 0,
+    },
+    "tank_circuit2": {
+        "con": "con1",
+        "fem": 1,
+        "ao": 8,
+        "ai": 2,
+        "IF": 200 * u.MHz,
+        "readout_amp": 0.1,
+        "readout_len": 1_000,
+        "time_of_flight": 24,
+        "delay": 0,
+    },
+}
 
-    def _update_averaged_power(self, level, duration, ramp_duration=None, current_level=None):
-        if self.is_QUA(level):
-            self._expression = declare(fixed)
-            assign(self._expression, level)
-            new_average = Cast.mul_int_by_fixed(duration, self._expression)
-        elif self.is_QUA(duration):
-            new_average = Cast.mul_int_by_fixed(duration, float(level))
-        else:
-            new_average = int(np.round(level * duration))
 
-        if ramp_duration is not None:
-            if not self.is_QUA(ramp_duration):
-                if self.is_QUA(level):
-                    self._expression2 = declare(fixed)
-                    assign(self._expression2, (self._expression + current_level) >> 1)
-                    new_average += Cast.mul_int_by_fixed(ramp_duration, self._expression2)
-                elif self.is_QUA(current_level):
-                    expression2 = declare(fixed)
-                    assign(expression2, (level + current_level) >> 1)
-                    new_average += Cast.mul_int_by_fixed(ramp_duration, expression2)
-                elif self.is_QUA(duration):
-                    new_average += Cast.mul_int_by_fixed(ramp_duration, (level + current_level) / 2)
-                else:
-                    new_average += int(np.round((level + current_level) * ramp_duration / 2))
+########################
+#  Pi pulse waveforms  #
+########################
 
+# TODO: Implement Kaiser
+def generate_waveforms(rotation_keys):
+    """ Generate all necessary waveforms for a set of rotation types across all qubits. """
+    
+    if not isinstance(rotation_keys, list):
+        raise ValueError("rotation_keys must be a list")
+
+    waveforms = {}
+
+    for qb, constants in QUBIT_CONSTANTS.items():
+        pi_amp = constants["pi_amp"]
+        pi_len = constants["pi_len"]
+        pi_sigma = constants["pi_sigma"]
+
+        for rotation_key in rotation_keys:
+            if rotation_key in ["x180", "y180"]:
+                wf_amp = pi_amp
+            elif rotation_key in ["x90", "y90"]:
+                wf_amp = pi_amp / 2
+            elif rotation_key in ["minus_x90", "minus_y90"]:
+                wf_amp = -pi_amp / 2
             else:
-                pass
-        return new_average
+                continue
 
-    @staticmethod
-    def is_QUA(var):
-        return isinstance(var, (QuaVariable, QuaExpression))
+            wf, der_wf = np.array(drag_gaussian_pulse_waveforms(wf_amp, pi_len, pi_sigma, alpha=0, anharmonicity=0))
 
-    def add_step(
-        self,
-        level: list[Union[int, QuaExpression, QuaVariable]] = None,
-        duration: Union[int, QuaExpression, QuaVariable] = None,
-        voltage_point_name: str = None,
-        ramp_duration: Union[int, QuaExpression, QuaVariable] = None,
-    ) -> None:
-        """Add a voltage level to the pulse sequence.
-        The voltage level is either identified by its voltage_point_name if added to the voltage_point dict beforehand, or by its level and duration.
-        A ramp_duration can be used to ramp to the desired level instead of stepping to it.
-
-        :param level: Desired voltage level of the different gates composing the virtual gate in Volt.
-        :param duration: How long the voltage level should be maintained in ns. Must be a multiple of 4ns and larger than 16ns.
-        :param voltage_point_name: Name of the voltage level if added to the list of relevant points in the charge stability map.
-        :param ramp_duration: Duration in ns of the ramp if the voltage should be ramped to the desired level instead of stepped. Must be a multiple of 4ns and larger than 16ns.
-        """
-        self._check_duration(duration)
-        self._check_duration(ramp_duration)
-        if level is not None:
-            if type(level) is not list or len(level) != len(self._elements):
-                raise TypeError(
-                    "the provided level must be a list of same length as the number of elements involved in the virtual gate."
-                )
-
-        if voltage_point_name is not None and duration is None:
-            _duration = self._voltage_points[voltage_point_name]["duration"]
-        elif duration is not None:
-            _duration = duration
-        else:
-            raise RuntimeError(
-                "Either the voltage_point_name or the duration and desired voltage level must be provided."
-            )
-
-        for i, gate in enumerate(self._elements):
-            if voltage_point_name is not None and level is None:
-                voltage_level = self._voltage_points[voltage_point_name]["coordinates"][i]
-            elif level is not None:
-                voltage_point_name = "unregistered_value"
-                voltage_level = level[i]
+            if rotation_key in ["x180", "x90", "minus_x90"]:
+                I_wf = wf
+                Q_wf = der_wf
+            elif rotation_key in ["y180", "y90", "minus_y90"]:
+                I_wf = (-1) * der_wf
+                Q_wf = wf
             else:
-                raise RuntimeError(
-                    "Either the voltage_point_name or the duration and desired voltage level must be provided."
-                )
-            # Play a step
-            if ramp_duration is None:
-                self.average_power[i] += self._update_averaged_power(voltage_level, _duration)
+                raise ValueError(f'{rotation_key} is passed. rotation_key must be one of ["x180", "x90", "minus_x90", "y180", "y90", "minus_y90"]')
 
-                # Dynamic amplitude change...
-                if self.is_QUA(voltage_level) or self.is_QUA(self.current_level[i]):
-                    # if dynamic duration --> play step and wait
-                    if self.is_QUA(_duration):
-                        play("step" * amp((voltage_level - self.current_level[i]) * 4), gate)
-                        wait((_duration - 16) >> 2, gate)
-                    # if constant duration --> new operation and play(*amp(..))
-                    else:
-                        operation = self._add_op_to_config(
-                            gate,
-                            "step",
-                            amplitude=0.25,
-                            length=_duration,
-                        )
-                        play(operation * amp((voltage_level - self.current_level[i]) * 4), gate)
+            waveforms[f"{qb}_{rotation_key}_I"] = I_wf
+            waveforms[f"{qb}_{rotation_key}_Q"] = Q_wf
 
-                # Fixed amplitude but dynamic duration --> new operation and play(duration=..)
-                elif isinstance(_duration, (QuaVariable, QuaExpression)):
-                    operation = self._add_op_to_config(
-                        gate,
-                        voltage_point_name,
-                        amplitude=voltage_level - self.current_level[i],
-                        length=16,
-                    )
-                    play(operation, gate, duration=_duration >> 2)
+    return waveforms
 
-                # Fixed amplitude and duration --> new operation and play()
-                else:
-                    operation = self._add_op_to_config(
-                        gate,
-                        voltage_point_name,
-                        amplitude=voltage_level - self.current_level[i],
-                        length=_duration,
-                    )
-                    play(operation, gate)
+qubit_rotation_keys = ["x180", "x90", "minus_x90", "y180", "y90", "minus_y90"]
+waveforms = generate_waveforms(qubit_rotation_keys)
 
-            # Play a ramp
-            else:
-                self.average_power[i] += self._update_averaged_power(
-                    voltage_level, _duration, ramp_duration, self.current_level[i]
-                )
-
-                if not self.is_QUA(ramp_duration):
-                    ramp_rate = 1 / ramp_duration
-                    play(ramp((voltage_level - self.current_level[i]) * ramp_rate), gate, duration=ramp_duration >> 2)
-                    wait(_duration >> 2, gate)
-
-            self.current_level[i] = voltage_level
-
-    def add_compensation_pulse(self, duration: int) -> None:
-        """Add a compensation pulse of the specified duration whose amplitude is derived from the previous operations.
-
-        :param duration: Duration of the compensation pulse in clock cycles (4ns). Must be larger than 4 clock cycles.
-        """
-        self._check_duration(duration)
-        for i, gate in enumerate(self._elements):
-            if not self.is_QUA(self.average_power[i]):
-                compensation_amp = -self.average_power[i] / duration
-                operation = self._add_op_to_config(
-                    gate, "compensation", amplitude=compensation_amp - self.current_level[i], length=duration
-                )
-                play(operation, gate)
-            else:
-                operation = self._add_op_to_config(gate, "compensation", amplitude=0.25, length=duration)
-                compensation_amp = declare(fixed)
-                eval_average_power = declare(int)
-                assign(eval_average_power, self.average_power[i])
-                assign(compensation_amp, -Cast.mul_fixed_by_int(1 / duration, eval_average_power))
-                play(operation * amp((compensation_amp - self.current_level[i]) * 4), gate)
-            self.current_level[i] = compensation_amp
-
-    def ramp_to_zero(self, duration: int = None):
-        """Ramp all the gate voltages down to zero Volt and reset the averaged voltage derived for defining the compensation pulse.
-
-        :param duration: How long will it take for the voltage to ramp down to 0V in clock cycles (4ns). If not
-            provided, the default pulse duration defined in the configuration will be used.
-        """
-        for i, gate in enumerate(self._elements):
-            ramp_to_zero(gate, duration)
-            self.current_level[i] = 0
-            self.average_power[i] = 0
-        if self._expression is not None:
-            assign(self._expression, 0)
-        if self._expression2 is not None:
-            assign(self._expression2, 0)
-
-    def add_points(self, name: str, coordinates: list, duration: int) -> None:
-        """Register a relevant voltage point.
-
-        :param name: Name of the voltage point.
-        :param coordinates: Voltage value of each gate involved in the virtual gate in V.
-        :param duration: How long should the voltages be maintained at this level in ns. Must be larger than 16ns and a multiple of 4ns.
-        """
-        self._voltage_points[name] = {}
-        self._voltage_points[name]["coordinates"] = coordinates
-        self._voltage_points[name]["duration"] = duration
-
-
-######################
-#       READOUT      #
-######################
-# DC readout parameters
-readout_len = 1 * u.us
-readout_amp = 0.0
-IV_scale_factor = 0.5e-9  # in A/V
-
-# Reflectometry
-resonator_IF = 151 * u.MHz
-reflectometry_readout_length = 1 * u.us
-reflectometry_readout_amp = 30 * u.mV
-
-# Time of flight
-time_of_flight = 24
 
 ######################
 #      DC GATES      #
@@ -322,14 +319,11 @@ level_readout = [0.12, -0.12]
 # Duration of each step in ns
 duration_init = 2500
 duration_manip = 1000
-duration_readout = readout_len + 100
+duration_readout = 1200 # reflectometry_readout_length + 100
 duration_compensation_pulse = 4 * u.us
 
 # Step parameters
 step_length = 16  # in ns
-P1_step_amp = 0.25  # in V
-P2_step_amp = 0.25  # in V
-charge_sensor_amp = 0.25  # in V
 
 # Time to ramp down to zero for sticky elements in ns
 hold_offset_duration = 4  # in ns
@@ -353,8 +347,8 @@ pi_half_length = 16  # in ns
 gaussian_amp = 0.1  # in V
 gaussian_length = 20 * int(sampling_rate // 1e9)  # in units of [1/sampling_rate]
 # CW pulse
-cw_amp = 0.3  # in V
-cw_len = 100  # in ns
+CONST_AMP = 0.3  # in V
+CONST_LEN = 100  # in ns
 
 #############################################
 #                  Config                   #
@@ -362,20 +356,20 @@ cw_len = 100  # in ns
 config = {
     "version": 1,
     "controllers": {
-        con: {
+        con1: {
             "type": "opx1000",
             "fems": {
-                fem: {
+                fem1: {
                     "type": "LF",
                     "analog_outputs": {
-                        # P1
+                        # EDSR I1 (q1, q2)
                         1: {
                             # DC Offset applied to the analog output at the beginning of a program.
                             "offset": 0.0,
                             # The "output_mode" can be used to tailor the max voltage and frequency bandwidth, i.e.,
                             #   "direct":    1Vpp (-0.5V to 0.5V), 750MHz bandwidth (default)
                             #   "amplified": 5Vpp (-2.5V to 2.5V), 330MHz bandwidth
-                            "output_mode": "amplified",
+                            "output_mode": "direct",
                             # The "sampling_rate" can be adjusted by using more FEM cores, i.e.,
                             #   1 GS/s: uses one core per output (default)
                             #   2 GS/s: uses two cores per output
@@ -385,6 +379,80 @@ config = {
                             # At 1 GS/s, use the "upsampling_mode" to optimize output for
                             #   modulated pulses (optimized for modulated pulses):      "mw"    (default)
                             #   unmodulated pulses (optimized for clean step response): "pulse"
+                            "upsampling_mode": "mw",
+                        },
+                        # EDSR Q1 (q1, q2)
+                        2: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "mw",
+                        },
+                        # EDSR I2 (q3, q4)
+                        3: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "mw",
+                        },
+                        # EDSR Q2 (q3, q4)
+                        4: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "mw",
+                        },
+                        # EDSR I3 (q5)
+                        5: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "mw",
+                        },
+                        # EDSR Q3 (q5)
+                        6: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "mw",
+                        },
+                        # B4
+                        7: {
+                            "offset": 0.0,
+                            "output_mode": "amplified",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "pulse",
+                        },
+                        # RF Reflectometry
+                        8: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "mw",
+                        },
+                    },
+                    "digital_outputs": {
+                        1: {},  # TTL for RF1
+                        2: {},  # TTL for RF2
+                        3: {},  # TTL for RF3
+                    },
+                    "analog_inputs": {
+                        # 1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},  # RF reflectometry input
+                        2: {
+                            "offset": 0.0,
+                            "gain_db": 0,
+                            "sampling_rate": sampling_rate,
+                        },  # DC readout input
+                    },
+                },
+                fem2: {
+                    "type": "LF",
+                    "analog_outputs": {
+                        # P1
+                        1: {
+                            "offset": 0.0,
+                            "output_mode": "amplified",
+                            "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
                         # P2
@@ -394,35 +462,42 @@ config = {
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
-                        # EDSR I quadrature
+                        # P3
                         3: {
                             "offset": 0.0,
-                            "output_mode": "direct",
+                            "output_mode": "amplified",
                             "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
+                            "upsampling_mode": "pulse",
                         },
-                        # EDSR Q quadrature
+                        # P4
                         4: {
                             "offset": 0.0,
-                            "output_mode": "direct",
+                            "output_mode": "amplified",
                             "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
+                            "upsampling_mode": "pulse",
                         },
-                        # Sensor gate
+                        # P5
                         5: {
                             "offset": 0.0,
                             "output_mode": "amplified",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
-                        # RF Reflectometry
+                        # B1
+                        6: {
+                            "offset": 0.0,
+                            "output_mode": "amplified",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "pulse",
+                        },
+                        # B2
                         7: {
                             "offset": 0.0,
                             "output_mode": "amplified",
                             "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
+                            "upsampling_mode": "pulse",
                         },
-                        # DC readout
+                        # B3
                         8: {
                             "offset": 0.0,
                             "output_mode": "amplified",
@@ -430,159 +505,267 @@ config = {
                             "upsampling_mode": "pulse",
                         },
                     },
-                    "digital_outputs": {
-                        1: {},  # TTL for QDAC
-                        2: {},  # TTL for QDAC
-                    },
-                    "analog_inputs": {
-                        1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},  # RF reflectometry input
-                        2: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},  # DC readout input
-                    },
-                }
+                    "digital_outputs": {},
+                    "analog_inputs": {},
+                },
+                # fem3: {
+                #     "type": "LF",
+                #     "analog_outputs": {
+                #         # B4
+                #         1: {
+                #             "offset": 0.0,
+                #             "output_mode": "amplified",
+                #             "sampling_rate": sampling_rate,
+                #             "upsampling_mode": "pulse",
+                #         },
+                #         # Psd1
+                #         2: {
+                #             "offset": 0.0,
+                #             "output_mode": "amplified",
+                #             "sampling_rate": sampling_rate,
+                #             "upsampling_mode": "pulse",
+                #         },
+                #         # Psd2
+                #         3: {
+                #             "offset": 0.0,
+                #             "output_mode":"amplified",
+                #             "sampling_rate": sampling_rate,
+                #             "upsampling_mode": "pulse",
+                #         },
+                #     },
+                #     "digital_outputs": {
+                #     },
+                #     "analog_inputs": {
+                #     },
+                # },
             },
         }
     },
     "elements": {
-        "P1": {
-            "singleInput": {
-                "port": (con, fem, 1),
-            },
-            "operations": {
-                "step": "P1_step_pulse",
-            },
+        # pluger (P1, P2, ...)
+        **{
+            pg: {
+                "singleInput": {
+                    "port": (val["con"], val["fem"], val["ao"]),
+                },
+                "operations": {
+                    "step": f"{pg}_step_pulse",
+                },
+            }
+            for pg, val in PLUNGER_CONSTANTS.items()
         },
-        "P1_sticky": {
-            "singleInput": {
-                "port": (con, fem, 1),
-            },
-            "sticky": {"analog": True, "duration": hold_offset_duration},
-            "operations": {
-                "step": "P1_step_pulse",
-            },
+        # pluger sticky (P1_sticky, P2_sticky, ...)
+        **{
+            f"{pg}_sticky": {
+                "singleInput": {
+                    "port": (val["con"], val["fem"], val["ao"]),
+                },
+                "sticky": {"analog": True, "duration": hold_offset_duration},
+                "operations": {
+                    "step": f"{pg}_step_pulse",
+                },
+            }
+            for pg, val in PLUNGER_CONSTANTS.items()
         },
-        "P2": {
-            "singleInput": {
-                "port": (con, fem, 2),
-            },
-            "operations": {
-                "step": "P2_step_pulse",
-            },
+        # barrier (B1, B2, ...)
+        **{
+            br: {
+                "singleInput": {
+                    "port": (val["con"], val["fem"], val["ao"]),
+                },
+                "operations": {
+                    "step": f"{br}_step_pulse",
+                },
+            }
+            for br, val in BARRIER_CONSTANTS.items()
         },
-        "P2_sticky": {
-            "singleInput": {
-                "port": (con, fem, 2),
-            },
-            "sticky": {"analog": True, "duration": hold_offset_duration},
-            "operations": {
-                "step": "P2_step_pulse",
-            },
+        # barrier sticky (B1_sticky, B2_sticky, ...)
+        **{
+            f"{br}_sticky": {
+                "singleInput": {
+                    "port": (val["con"], val["fem"], val["ao"]),
+                },
+                "sticky": {"analog": True, "duration": hold_offset_duration},
+                "operations": {
+                    "step": f"{br}_step_pulse",
+                },
+            }
+            for br, val in BARRIER_CONSTANTS.items()
         },
-        "sensor_gate": {
-            "singleInput": {
-                "port": (con, fem, 5),
-            },
-            "operations": {
-                "step": "bias_charge_pulse",
-            },
+        # qubits (qubit1, ...)
+        **{
+            qb: {
+                "mixInputs": {
+                    "I": (val["con"], val["fem"], val["ao_I"]),
+                    "Q": (val["con"], val["fem"], val["ao_Q"]),
+                    "lo_frequency": val["LO"],
+                    "mixer": f"mixer_{qb}",
+                },
+                "intermediate_frequency": val["IF"],
+                "operations": {
+                    "const": "const_pulse",
+                    "x180": f"x180_gaussian_pulse_{qb}",
+                    "x90": f"x90_gaussian_pulse_{qb}",
+                    "y180": f"y180_gaussian_pulse_{qb}",
+                    "y90": f"y90_gaussian_pulse_{qb}",
+                },
+            }
+            for qb, val in QUBIT_CONSTANTS.items()
         },
-        "sensor_gate_sticky": {
-            "singleInput": {
-                "port": (con, fem, 5),
-            },
-            "sticky": {"analog": True, "duration": hold_offset_duration},
-            "operations": {
-                "step": "bias_charge_pulse",
-            },
+        # qubit_triggers (qubit1_trigger, ...)
+        **{
+            f"{qb}_trigger": {
+                "digitalInputs": {
+                    "trigger": {
+                        "port": (val["con"], val["fem"], val["do"]),
+                        "delay": 0,
+                        "buffer": 0,
+                    }
+                },
+                "operations": {
+                    "trigger": "trigger_pulse",
+                },
+            }
+            for qb, val in QUBIT_CONSTANTS.items()
         },
-        "qdac_trigger1": {
-            "digitalInputs": {
-                "trigger": {
-                    "port": (con, fem, 1),
-                    "delay": 0,
-                    "buffer": 0,
-                }
-            },
-            "operations": {
-                "trigger": "trigger_pulse",
-            },
-        },
-        "qdac_trigger2": {
-            "digitalInputs": {
-                "trigger": {
-                    "port": (con, fem, 2),
-                    "delay": 0,
-                    "buffer": 0,
-                }
-            },
-            "operations": {
-                "trigger": "trigger_pulse",
-            },
-        },
-        "qubit": {
-            "mixInputs": {
-                "I": (con, fem, 3),
-                "Q": (con, fem, 4),
-                "lo_frequency": qubit_LO,
-                "mixer": "mixer_qubit_left",  # a fixed name, do not change.
-            },
-            "intermediate_frequency": qubit_IF,
-            "operations": {
-                "cw": "cw_pulse",
-                "pi": "pi_pulse",
-                "pi_half": "pi_half_pulse",
-                "gauss": "gaussian_pulse",
-            },
-        },
-        "tank_circuit": {
-            "singleInput": {
-                "port": (con, fem, 7),
-            },
-            "intermediate_frequency": resonator_IF,
-            "operations": {
-                "readout": "reflectometry_readout_pulse",
-            },
-            "outputs": {
-                "out1": (con, fem, 1),
-                "out2": (con, fem, 2),
-            },
-            "time_of_flight": time_of_flight,
-            "smearing": 0,
-        },
-        "TIA": {
-            "singleInput": {
-                "port": (con, fem, 8),
-            },
-            "operations": {
-                "readout": "readout_pulse",
-            },
-            "outputs": {
-                "out1": (con, fem, 1),
-                "out2": (con, fem, 2),
-            },
-            "time_of_flight": time_of_flight,
-            "smearing": 0,
+        # reflectometry (qubit1, ...)
+        **{
+            tc: {
+                "singleInput": {
+                    "port": (val["con"], val["fem"], val["ao"]),
+                },
+                "intermediate_frequency": val["IF"],
+                "operations": {
+                    "readout": "reflectometry_readout_pulse",
+                },
+                "outputs": {
+                    "out1": (val["con"], val["fem"], val["ai"]),
+                },
+                "time_of_flight": val["time_of_flight"],
+                "smearing": 0,
+            }
+            for tc, val in TANK_CIRCUIT_CONSTANTS.items()
         },
     },
     "pulses": {
-        "P1_step_pulse": {
-            "operation": "control",
-            "length": step_length,
-            "waveforms": {
-                "single": "P1_step_wf",
-            },
+        # pluger (P1, P2, ...)
+        **{
+            f"{pg}_step_pulse": {
+                "operation": "control",
+                "length": step_length,
+                "waveforms": {
+                    "single": f"{pg}_step_wf",
+                },
+            }
+            for pg, val in PLUNGER_CONSTANTS.items()
         },
-        "P2_step_pulse": {
-            "operation": "control",
-            "length": step_length,
-            "waveforms": {
-                "single": "P2_step_wf",
-            },
+        **{
+            f"{br}_step_pulse": {
+                "operation": "control",
+                "length": step_length,
+                "waveforms": {
+                    "single": f"{br}_step_wf",
+                },
+            }
+            for br, val in BARRIER_CONSTANTS.items()
         },
-        "bias_charge_pulse": {
+        **{
+            f"{pg}_step_pulse": {
+                "operation": "control",
+                "length": step_length,
+                "waveforms": {
+                    "single": f"{pg}_step_wf",
+                },
+            }
+            for pg, val in PLUNGER_SD_CONSTANTS.items()
+        },
+        **{
+            f"x180_gaussian_pulse_{qb}": {
+                "operation": "control",
+                "length": val["pi_len"],
+                "waveforms": {
+                    "I": f"x180_gaussian_I_wf_{qb}",
+                    "Q": f"x180_gaussian_Q_wf_{qb}",
+                },
+            }
+            for qb, val in QUBIT_CONSTANTS.items()
+        },
+        **{
+            f"x90_gaussian_pulse_{qb}": {
+                "operation": "control",
+                "length": val["pi_len"],
+                "waveforms": {
+                    "I": f"x90_gaussian_I_wf_{qb}",
+                    "Q": f"x90_gaussian_Q_wf_{qb}",
+                },
+            }
+            for qb, val in QUBIT_CONSTANTS.items()
+        },
+        **{
+            f"minus_x90_gaussian_pulse_{qb}": {
+                "operation": "control",
+                "length": val["pi_len"],
+                "waveforms": {
+                    "I": f"minus_x90_gaussian_I_wf_{qb}",
+                    "Q": f"minus_x90_gaussian_Q_wf_{qb}",
+                },
+            }
+            for qb, val in QUBIT_CONSTANTS.items()
+        },
+        **{
+            f"y180_gaussian_pulse_{qb}": {
+                "operation": "control",
+                "length": val["pi_len"],
+                "waveforms": {
+                    "I": f"y180_gaussian_I_wf_{qb}",
+                    "Q": f"y180_gaussian_Q_wf_{qb}",
+                },
+            }
+            for qb, val in QUBIT_CONSTANTS.items()
+        },
+        **{
+            f"y90_gaussian_pulse_{qb}": {
+                "operation": "control",
+                "length": val["pi_len"],
+                "waveforms": {
+                    "I": f"y90_gaussian_I_wf_{qb}",
+                    "Q": f"y90_gaussian_Q_wf_{qb}",
+                },
+            }
+            for qb, val in QUBIT_CONSTANTS.items()
+        },
+        **{
+            f"minus_y90_gaussian_pulse_{qb}": {
+                "operation": "control",
+                "length": val["pi_len"],
+                "waveforms": {
+                    "I": f"minus_y90_gaussian_I_wf_{qb}",
+                    "Q": f"minus_y90_gaussian_Q_wf_{qb}",
+                },
+            }
+            for qb, val in QUBIT_CONSTANTS.items()
+        },
+        **{
+            f"reflectometry_readout_pulse_{tc}": {
+                "operation": "measurement",
+                "length": val["readout_len"],
+                "waveforms": {
+                    "single": f"reflectometry_readout_wf_{tc}",
+                },
+                "integration_weights": {
+                    "cos": f"cosine_weights_{tc}",
+                    "sin": f"sine_weights_{tc}",
+                },
+                "digital_marker": "ON",
+            }
+            for tc, val in TANK_CIRCUIT_CONSTANTS.items()
+        },
+        "const_pulse": {
             "operation": "control",
-            "length": step_length,
+            "length": CONST_LEN,
             "waveforms": {
-                "single": "charge_sensor_step_wf",
+                "I": "const_wf",
+                "Q": "zero_wf",
             },
         },
         "trigger_pulse": {
@@ -590,101 +773,145 @@ config = {
             "length": 1000,
             "digital_marker": "ON",
         },
-        "cw_pulse": {
-            "operation": "control",
-            "length": cw_len,
-            "waveforms": {
-                "I": "const_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "gaussian_pulse": {
-            "operation": "control",
-            "length": gaussian_length,
-            "waveforms": {
-                "I": "gaussian_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "pi_pulse": {
-            "operation": "control",
-            "length": pi_length,
-            "waveforms": {
-                "I": "pi_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "pi_half_pulse": {
-            "operation": "control",
-            "length": pi_half_length,
-            "waveforms": {
-                "I": "pi_half_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "reflectometry_readout_pulse": {
-            "operation": "measurement",
-            "length": reflectometry_readout_length,
-            "waveforms": {
-                "single": "reflect_wf",
-            },
-            "integration_weights": {
-                "cos": "cosine_weights",
-                "sin": "sine_weights",
-            },
-            "digital_marker": "ON",
-        },
-        "readout_pulse": {
-            "operation": "measurement",
-            "length": readout_len,
-            "waveforms": {
-                "single": "readout_pulse_wf",
-            },
-            "integration_weights": {
-                "constant": "constant_weights",
-            },
-            "digital_marker": "ON",
-        },
     },
     "waveforms": {
-        "P1_step_wf": {"type": "constant", "sample": P1_step_amp},
-        "P2_step_wf": {"type": "constant", "sample": P2_step_amp},
-        "charge_sensor_step_wf": {"type": "constant", "sample": charge_sensor_amp},
-        "pi_wf": {"type": "constant", "sample": pi_amp},
-        "pi_half_wf": {"type": "constant", "sample": pi_half_amp},
-        "gaussian_wf": {
-            "type": "arbitrary",
-            "samples": list(gaussian_amp * gaussian(gaussian_length, gaussian_length / 5)),
-        },
-        "readout_pulse_wf": {"type": "constant", "sample": readout_amp},
-        "reflect_wf": {"type": "constant", "sample": reflectometry_readout_amp},
-        "const_wf": {"type": "constant", "sample": cw_amp},
+        "const_wf": {"type": "constant", "sample": CONST_AMP},
         "zero_wf": {"type": "constant", "sample": 0.0},
+        **{
+            f"reflectometry_readout_wf_{key}": {
+                "type": "constant",
+                "sample": val["readout_amp"],
+            }
+            for key, val in TANK_CIRCUIT_CONSTANTS.items()
+        },
+        **{
+            f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]}
+            for key, val in PLUNGER_CONSTANTS.items()
+        },
+        **{
+            f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]}
+            for key, val in BARRIER_CONSTANTS.items()
+        },
+        **{
+            f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]}
+            for key, val in PLUNGER_SD_CONSTANTS.items()
+        },
+        **{
+            f"x90_I_wf_{key}": {
+                "type": "arbitrary",
+                "samples": waveforms[key + "_x90_I"].tolist(),
+            }
+            for key in QUBIT_CONSTANTS.keys()
+        },
+        **{
+            f"x90_Q_wf_{key}": {
+                "type": "arbitrary",
+                "samples": waveforms[key + "_x90_Q"].tolist(),
+            }
+            for key in QUBIT_CONSTANTS.keys()
+        },
+        **{
+            f"x180_I_wf_{key}": {
+                "type": "arbitrary",
+                "samples": waveforms[key + "_x180_I"].tolist(),
+            }
+            for key in QUBIT_CONSTANTS.keys()
+        },
+        **{
+            f"x180_Q_wf_{key}": {
+                "type": "arbitrary",
+                "samples": waveforms[key + "_x180_Q"].tolist(),
+            }
+            for key in QUBIT_CONSTANTS.keys()
+        },
+        **{
+            f"minus_x90_I_wf_{key}": {
+                "type": "arbitrary",
+                "samples": waveforms[key + "_minus_x90_I"].tolist(),
+            }
+            for key in QUBIT_CONSTANTS.keys()
+        },
+        **{
+            f"minus_x90_Q_wf_{key}": {
+                "type": "arbitrary",
+                "samples": waveforms[key + "_minus_x90_Q"].tolist(),
+            }
+            for key in QUBIT_CONSTANTS.keys()
+        },
+        **{
+            f"y90_I_wf_{key}": {
+                "type": "arbitrary",
+                "samples": waveforms[key + "_y90_I"].tolist(),
+            }
+            for key in QUBIT_CONSTANTS.keys()
+        },
+        **{
+            f"y90_Q_wf_{key}": {
+                "type": "arbitrary",
+                "samples": waveforms[key + "_y90_Q"].tolist(),
+            }
+            for key in QUBIT_CONSTANTS.keys()
+        },
+        **{
+            f"y180_I_wf_{key}": {
+                "type": "arbitrary",
+                "samples": waveforms[key + "_y180_I"].tolist(),
+            }
+            for key in QUBIT_CONSTANTS.keys()
+        },
+        **{
+            f"y180_Q_wf_{key}": {
+                "type": "arbitrary",
+                "samples": waveforms[key + "_y180_Q"].tolist(),
+            }
+            for key in QUBIT_CONSTANTS.keys()
+        },
+        **{
+            f"minus_y90_I_wf_{key}": {
+                "type": "arbitrary",
+                "samples": waveforms[key + "_minus_y90_I"].tolist(),
+            }
+            for key in QUBIT_CONSTANTS.keys()
+        },
+        **{
+            f"minus_y90_Q_wf_{key}": {
+                "type": "arbitrary",
+                "samples": waveforms[key + "_minus_y90_Q"].tolist(),
+            }
+            for key in QUBIT_CONSTANTS.keys()
+        },
     },
     "digital_waveforms": {
         "ON": {"samples": [(1, 0)]},
     },
     "integration_weights": {
-        "constant_weights": {
-            "cosine": [(1, readout_len)],
-            "sine": [(0.0, readout_len)],
+        **{
+            f"cosine_weights_{tc}": {
+                "cosine": [(1.0, val["readout_len"])],
+                "sine": [(0.0, val["readout_len"])],
+            }
+            for tc, val in TANK_CIRCUIT_CONSTANTS.items()
         },
-        "cosine_weights": {
-            "cosine": [(1.0, reflectometry_readout_length)],
-            "sine": [(0.0, reflectometry_readout_length)],
-        },
-        "sine_weights": {
-            "cosine": [(0.0, reflectometry_readout_length)],
-            "sine": [(1.0, reflectometry_readout_length)],
+        **{
+            f"sine_weights_{tc}": {
+                "cosine": [(0.0, val["readout_len"])],
+                "sine": [(1.0, val["readout_len"])],
+            }
+            for tc, val in TANK_CIRCUIT_CONSTANTS.items()
         },
     },
     "mixers": {
-        "mixer_qubit": [
-            {
-                "intermediate_frequency": qubit_IF,
-                "lo_frequency": qubit_LO,
-                "correction": IQ_imbalance(qubit_g, qubit_phi),
-            },
-        ],
+        **{
+            f"mixer_{qb}": [
+                {
+                    "intermediate_frequency": val["IF"],
+                    "lo_frequency": val["LO"],
+                    "correction": IQ_imbalance(val["mixer_g"], val["mixer_phi"]),
+                },
+            ]
+            for qb, val in QUBIT_CONSTANTS.items()
+        },
     },
 }
+
+# %%
