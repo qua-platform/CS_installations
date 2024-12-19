@@ -24,16 +24,17 @@ Before proceeding to the next node:
     - Identify the PSB region and update the config.
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.addons.variables import assign_variables_to_element
-from qdac2_driver import QDACII, load_voltage_list
 import matplotlib.pyplot as plt
-from macros import RF_reflectometry_macro, DC_current_sensing_macro
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.addons.variables import assign_variables_to_element
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import fetching_tool, progress_counter
+from qualang_tools.voltage_gates import VoltageGateSequence
+
+from configuration_with_lf_fem import *
+from macros import DC_current_sensing_macro, RF_reflectometry_macro
+from qdac2_driver import QDACII, load_voltage_list
 
 ###################
 # The QUA program #
@@ -43,13 +44,18 @@ n_points_slow = 101  # Number of points for the slow axis
 n_points_fast = 100  # Number of points for the fast axis
 Coulomb_amp = 0.0  # amplitude of the Coulomb pulse
 # How many Coulomb pulse periods to last the whole program
-N = (int((readout_len + 1_000) / (2 * step_length)) + 1) * n_points_fast * n_points_slow * n_avg
+N = (
+    (int((readout_len + 1_000) / (2 * step_length)) + 1)
+    * n_points_fast
+    * n_points_slow
+    * n_avg
+)
 
 # Points in the charge stability map [V1, V2]
 level_empty = [-0.2, 0.0]
 duration_empty = 5000
 
-seq = OPX_virtual_gate_sequence(config, ["P1_sticky", "P2_sticky"])
+seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
 seq.add_points("empty", level_empty, duration_empty)
 seq.add_points("initialization", level_init, duration_init)
 seq.add_points("readout", level_readout, duration_readout)
@@ -112,13 +118,17 @@ with program() as PSB_search_prog:
         I_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(n_points_fast).save_all("I")
         Q_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(n_points_fast).save_all("Q")
         # DC current sensing
-        dc_signal_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(n_points_fast).save_all("dc_signal")
+        dc_signal_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(
+            n_points_fast
+        ).save_all("dc_signal")
 
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 ## QDAC2 section
 # Create the qdac instrument
@@ -164,7 +174,9 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(PSB_search_prog)
     # Get results from QUA program and initialize live plotting
-    results = fetching_tool(job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live")
+    results = fetching_tool(
+        job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live"
+    )
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
@@ -173,7 +185,9 @@ else:
         I, Q, DC_signal, iteration = results.fetch_all()
         # Convert results into Volts
         min_idx = min(I.shape[0], Q.shape[0])
-        S = u.demod2volts(I[:min_idx, :] + 1j * Q[:min_idx, :], reflectometry_readout_length)
+        S = u.demod2volts(
+            I[:min_idx, :] + 1j * Q[:min_idx, :], reflectometry_readout_length
+        )
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
         DC_signal = u.demod2volts(DC_signal, readout_len)

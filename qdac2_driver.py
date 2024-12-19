@@ -1,6 +1,7 @@
 from time import sleep
-import pyvisa as visa
 from typing import Union
+
+import pyvisa as visa
 from numpy.typing import NDArray
 
 

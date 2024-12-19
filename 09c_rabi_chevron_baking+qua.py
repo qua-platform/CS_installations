@@ -23,17 +23,17 @@ Before proceeding to the next node:
     - Identify the pi and pi/2 pulse parameters, Rabi frequency...
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
-from qualang_tools.bakery import baking
 import matplotlib.pyplot as plt
-from macros import RF_reflectometry_macro, DC_current_sensing_macro
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.bakery import baking
+from qualang_tools.loops import from_array
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import fetching_tool, progress_counter
+from qualang_tools.voltage_gates import VoltageGateSequence
 
+from configuration_with_lf_fem import *
+from macros import DC_current_sensing_macro, RF_reflectometry_macro
 
 ###################
 # The QUA program #
@@ -47,7 +47,7 @@ frequencies = np.arange(-100 * u.MHz, 100 * u.MHz, 100 * u.kHz)
 # Delay in ns before stepping to the readout point after playing the qubit pulse - must be a multiple of 4ns and >= 16ns
 delay_before_readout = 16
 
-seq = OPX_virtual_gate_sequence(config, ["P1_sticky", "P2_sticky"])
+seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
 seq.add_points("initialization", level_init, duration_init)
 seq.add_points("idle", level_manip, duration_manip)
 seq.add_points("readout", level_readout, duration_readout)
@@ -57,7 +57,9 @@ pi_list = []
 pi_list_4ns = []
 for t in range(16):  # Create the different baked sequences
     t = int(t)
-    with baking(config, padding_method="left") as b:  # don't use padding to assure error if timing is incorrect
+    with baking(
+        config, padding_method="left"
+    ) as b:  # don't use padding to assure error if timing is incorrect
         if t == 0:
             wf_I = [0.0] * 16
             wf_Q = [0.0] * 16  # Otherwise the baked pulse will be empty
@@ -68,18 +70,24 @@ for t in range(16):  # Create the different baked sequences
         # Add the baked operation to the config
         b.add_op("pi_baked", "qubit", [wf_I, wf_Q])
         # Baked sequence
-        b.wait(16 - t, "qubit")  # Wait time to take gaps into account and always play right before reading out
+        b.wait(
+            16 - t, "qubit"
+        )  # Wait time to take gaps into account and always play right before reading out
         b.play("pi_baked", "qubit")  # Play the qubit pulse
 
     if t < 4:
-        with baking(config, padding_method="left") as b4ns:  # don't use padding to assure error if timing is incorrect
+        with baking(
+            config, padding_method="left"
+        ) as b4ns:  # don't use padding to assure error if timing is incorrect
             wf_I = [pi_amp] * t
             wf_Q = [0.0] * t  # The baked waveforms (only the "I" quadrature)
 
             # Add the baked operation to the config
             b4ns.add_op("pi_baked2", "qubit", [wf_I, wf_Q])
             # Baked sequence
-            b4ns.wait(32 - t, "qubit")  # Wait time to take gaps into account and always play right before reading out
+            b4ns.wait(
+                32 - t, "qubit"
+            )  # Wait time to take gaps into account and always play right before reading out
             b4ns.play("pi_baked2", "qubit")  # Play the qubit pulse
     # Append the baking object in the list to call it from the QUA program
     pi_list.append(b)
@@ -111,19 +119,34 @@ with program() as Rabi_prog:
                         for ii in range(16):
                             with case_(ii):
                                 # Drive the singlet-triplet qubit using an exchange pulse at the end of the manipulation step
-                                wait((duration_init - delay_before_readout) * u.ns - 4 - 9, "qubit")
+                                wait(
+                                    (duration_init - delay_before_readout) * u.ns
+                                    - 4
+                                    - 9,
+                                    "qubit",
+                                )
                                 pi_list[ii].run()
 
                 # Long qubit pulse: baking and play combined
                 with else_():
-                    assign(t_cycles, t >> 2)  # Right shift by 2 is a quick way to divide by 4
-                    assign(t_left_ns, t - (t_cycles << 2))  # left shift by 2 is a quick way to multiply by 4
+                    assign(
+                        t_cycles, t >> 2
+                    )  # Right shift by 2 is a quick way to divide by 4
+                    assign(
+                        t_left_ns, t - (t_cycles << 2)
+                    )  # left shift by 2 is a quick way to multiply by 4
                     # switch case to select the baked waveform corresponding to the burst duration
                     with switch_(t_left_ns, unsafe=True):
                         for ii in range(4):
                             with case_(ii):
                                 # Drive the singlet-triplet qubit using an exchange pulse at the end of the manipulation step
-                                wait((duration_init - delay_before_readout) * u.ns - t_cycles - 4 - 29, "qubit")
+                                wait(
+                                    (duration_init - delay_before_readout) * u.ns
+                                    - t_cycles
+                                    - 4
+                                    - 29,
+                                    "qubit",
+                                )
                                 pi_list_4ns[ii].run()
                                 play("pi", "qubit", duration=t_cycles)
 
@@ -142,12 +165,16 @@ with program() as Rabi_prog:
         I_st.buffer(len(durations)).buffer(len(frequencies)).average().save("I")
         Q_st.buffer(len(durations)).buffer(len(frequencies)).average().save("Q")
         # DC current sensing
-        dc_signal_st.buffer(len(durations)).buffer(len(frequencies)).average().save("dc_signal")
+        dc_signal_st.buffer(len(durations)).buffer(len(frequencies)).average().save(
+            "dc_signal"
+        )
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 ###########################
 # Run or Simulate Program #
@@ -185,7 +212,12 @@ if simulate:
     from macros import get_filtered_voltage
 
     plt.subplot(212)
-    get_filtered_voltage(job.get_simulated_samples().con1.analog["1"], 1e-9, bias_tee_cut_off_frequency, True)
+    get_filtered_voltage(
+        job.get_simulated_samples().con1.analog["1"],
+        1e-9,
+        bias_tee_cut_off_frequency,
+        True,
+    )
 
 else:
     # Open the quantum machine
@@ -193,7 +225,9 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(Rabi_prog)
     # Get results from QUA program and initialize live plotting
-    results = fetching_tool(job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live")
+    results = fetching_tool(
+        job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live"
+    )
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure

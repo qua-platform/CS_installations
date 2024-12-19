@@ -1,16 +1,16 @@
 # %%
+import matplotlib.pyplot as plt
 import numpy as np
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.config.waveform_tools import drag_gaussian_pulse_waveforms
 from qualang_tools.units import unit
 from scipy.special import i0  # Zeroth-order modified Bessel function of the first kind
-from qualang_tools.config.waveform_tools import drag_gaussian_pulse_waveforms
-import matplotlib.pyplot as plt
-
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
 
 
-def generate_kaiser_wwaveform(amplitude: float, length: int, alpha: float) -> np.ndarray:
+def generate_kaiser_wwaveform(
+    amplitude: float, length: int, alpha: float
+) -> np.ndarray:
     """
     Generate a Kaiser window for digital signal processing.
 
@@ -41,7 +41,7 @@ const_amp = 0.1
 const_len_ns = 1000
 
 kaiser_amp = 0.1
-kaiser_len_ns = 300 # ensure it's multiple of 4ns 
+kaiser_len_ns = 300  # ensure it's multiple of 4ns
 
 gauss_amp = kaiser_amp
 gauss_len_ns = kaiser_len_ns
@@ -50,7 +50,7 @@ gauss_len_ns = kaiser_len_ns
 kaiser_wf = generate_kaiser_wwaveform(
     amplitude=kaiser_amp,
     length=kaiser_len_ns,
-    alpha=2.0, # rise or fall
+    alpha=2.0,  # rise or fall
 )
 
 gauss_wf, _ = drag_gaussian_pulse_waveforms(
@@ -75,9 +75,7 @@ config = {
     },
     "elements": {
         "qubit": {
-            "singleInput": {
-                "port": ("con1", 1)
-            },
+            "singleInput": {"port": ("con1", 1)},
             "intermediate_frequency": qubit_if_freq,
             "operations": {
                 "const": "const_pulse",
@@ -115,12 +113,13 @@ config = {
 }
 
 
+from qualang_tools.voltage_gates import VoltageGateSequence
+
 ###################
 # The QUA program #
 ###################
 
 with program() as PROGRAM:
-
     play("kaiser", "qubit")
     wait(100 * u.ns)
     play("gauss", "qubit")
@@ -153,4 +152,3 @@ else:
     job = qm.execute(PROGRAM)
 
 # %%
-

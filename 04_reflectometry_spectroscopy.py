@@ -14,15 +14,16 @@ Before proceeding to the next node:
     - Update the config with the resonance frequency for reflectometry readout.
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.loops import from_array
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import fetching_tool, progress_counter
+from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy import signal
+
+from configuration_with_lf_fem import *
 
 ###################
 # The QUA program #
@@ -47,7 +48,13 @@ with program() as reflectometry_spectro:
             # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
             # frequency and the integrated quadratures are stored in "I" and "Q"
             # Please choose the right "out1" or "out2" according to the connectivity
-            measure("readout", "tank_circuit", None, demod.full("cos", I, "out2"), demod.full("sin", Q, "out2"))
+            measure(
+                "readout",
+                "tank_circuit",
+                None,
+                demod.full("cos", I, "out2"),
+                demod.full("sin", Q, "out2"),
+            )
             save(I, I_st)
             save(Q, Q_st)
             # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
@@ -64,7 +71,9 @@ with program() as reflectometry_spectro:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 #######################
 # Simulate or execute #

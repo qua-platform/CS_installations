@@ -14,7 +14,9 @@ Before proceeding to the next node, take the following steps:
 
 from qm import QuantumMachinesManager
 from qm.qua import *
-from configuration import *
+from qualang_tools.voltage_gates import VoltageGateSequence
+
+from configuration_with_lf_fem import *
 
 ###################
 # The QUA program #
@@ -28,7 +30,9 @@ with program() as cw_output:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 qm = qmm.open_qm(config)
 
 job = qm.execute(cw_output)

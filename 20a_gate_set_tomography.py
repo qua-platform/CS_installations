@@ -1,16 +1,17 @@
 # %%
-from qm import *
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration_gst_lffem import *
+import math
+
 # from configuration_gst_opxplus import *
 import matplotlib.pyplot as plt
 import pandas as pd
-import math
+from qm import *
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+
+from configuration_gst_lffem import *
 
 
-class GSTParser():
+class GSTParser:
     pass
 
 
@@ -43,6 +44,8 @@ dg = dg.tail(70)
 dg = dg.head(30)
 
 
+from qualang_tools.voltage_gates import VoltageGateSequence
+
 ###################
 # The QUA program #
 ###################
@@ -52,7 +55,9 @@ list_n_shots = [128, 8192]
 # list_circuits = gst_parser.get_encoded_circuits()
 sequence_max_len = 2 + 1 + 8192 + 1
 list_circuits = dg[["index", "P", "G", "d", "M"]].values.tolist()
-list_encoded_circuits = dg[["index", "P_enc", "G_enc", "d_enc", "M_enc"]].values.tolist()
+list_encoded_circuits = dg[
+    ["index", "P_enc", "G_enc", "d_enc", "M_enc"]
+].values.tolist()
 num_cicuits = len(list_encoded_circuits)
 qb = "qubit"
 
@@ -66,35 +71,32 @@ with program() as PROGRAM:
         int,
         name="_encoded_circuit_input_stream",
         size=sequence_max_len,
-    ) # input stream the sequence
+    )  # input stream the sequence
     idx_st = declare_stream()
-    
 
     with for_each_(n_shots, list_n_shots):
-
         with for_(circ, 0, circ < num_cicuits, circ + 1):
-
             advance_input_stream(encoded_circuit)  # ordered or randomized
-            
+
             circ_idx = encoded_circuit[0]
             circ_len = encoded_circuit[1]
 
             with for_(n, 0, n < n_shots, n + 1):
-
                 with strict_timing_():
-                    
                     with for_(idx, 2, idx < circ_len + 2, idx + 1):
-                        
                         with switch_(encoded_circuit[idx], unsafe=True):
-                            
+                            # baseband operation is fixed regardless L
+                            # normal:just run till the end with Null
+                            # option: adjust the length accoridngly
+
                             with case_(0):
                                 # TODO: initialization step
-                                play("const", qb) # dummy I
+                                play("const", qb)  # dummy I
                                 # play("const" * amp(0), qb, duration=4)
 
                             # prep fiducials
                             with case_(1):
-                                play("const", qb) # dummy I
+                                play("const", qb)  # Null -> wait for pi/2 pulse length
                             with case_(2):
                                 play("x90", qb)
                             with case_(3):
@@ -128,7 +130,7 @@ with program() as PROGRAM:
 
                             # meas fiducial
                             with case_(11):
-                                play("const", qb) # dummy I
+                                play("const", qb)  # dummy I
                             with case_(12):
                                 play("x90", qb)
                             with case_(13):
@@ -147,17 +149,16 @@ with program() as PROGRAM:
 
                             with case_(17):
                                 # TODO: readout step
-                                play("const", qb) # dummy I
+                                play("const", qb)  # dummy I
 
                     # # TODO: readout step
                     # play("const", qb) # dummy I
                     # wait(100)
-                    
+
             save(n_shots, idx_st)
             save(circ_idx, idx_st)
             save(circ_len, idx_st)
             wait(1000)
-
 
     with stream_processing():
         idx_st.buffer(3).save_all("idx_history")
@@ -166,7 +167,9 @@ with program() as PROGRAM:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 
 ###########################
@@ -185,57 +188,66 @@ if simulate:
 
 else:
     from qm import generate_qua_script
-    sourceFile = open('debug08.py', 'w')
-    print(generate_qua_script(PROGRAM, config), file=sourceFile) 
+
+    sourceFile = open("debug08.py", "w")
+    print(generate_qua_script(PROGRAM, config), file=sourceFile)
     sourceFile.close()
 
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(PROGRAM, compiler_options=CompilerOptionArguments(flags=["not-strict-timing"]))
+    job = qm.execute(
+        PROGRAM, compiler_options=CompilerOptionArguments(flags=["not-strict-timing"])
+    )
     # job = qm.execute(PROGRAM)
-    
+
     res_handles = job.result_handles
     # Waits (blocks the Python console) until all results have been acquired
     # results = fetching_tool(job, data_list=["circuit_history"], mode="live")
-    
+
     record = []
     for _n_shots in list_n_shots:
-        encoded_circuit_batch = dg[["index", "P_enc_seq", "G_enc_seq", "d_enc_seq", "M_enc_seq"]]
-        
+        encoded_circuit_batch = dg[
+            ["index", "P_enc_seq", "G_enc_seq", "d_enc_seq", "M_enc_seq"]
+        ]
+
         for i, row in encoded_circuit_batch.iterrows():
             P = int(row["P_enc_seq"])
             G = int(row["G_enc_seq"])
             d = int(row["d_enc_seq"])
             M = int(row["M_enc_seq"])
-    
+
             seq_len = 0
             _encoded_circuit_input_stream = [i]
             if P != -1:
                 _encoded_circuit_input_stream.append(P)
                 seq_len += 1
             if G != -1:
-                _encoded_circuit_input_stream.extend([G] * d )
+                _encoded_circuit_input_stream.extend([G] * d)
                 seq_len += d
             if M != -1:
                 _encoded_circuit_input_stream.append(M)
                 seq_len += 1
-            
+
             # initialization
             _encoded_circuit_input_stream.insert(1, 0)
             seq_len += 1
-            
+
             # readout
             _encoded_circuit_input_stream.append(17)
             seq_len += 1
-            
+
             # sequence length
             _encoded_circuit_input_stream.insert(1, seq_len)
 
             record.append([_n_shots] + _encoded_circuit_input_stream)
 
-            print(f"n_shots: {_n_shots}, circ_idx = {i}, n_circuits: P={P}, G={G}, d={d}, M={M}")
-            job.push_to_input_stream("_encoded_circuit_input_stream", _encoded_circuit_input_stream)
+            print(
+                f"n_shots: {_n_shots}, circ_idx = {i}, n_circuits: P={P}, G={G}, d={d}, M={M}"
+            )
+            job.push_to_input_stream(
+                "_encoded_circuit_input_stream", _encoded_circuit_input_stream
+            )
             print("    ---> success!")
 
     idx_history = res_handles.get("idx_history").fetch_all()

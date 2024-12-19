@@ -17,15 +17,16 @@ Before proceeding to the next node:
     - Update the config with the optimal sensing point.
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
-from macros import RF_reflectometry_macro, DC_current_sensing_macro
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.loops import from_array
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import fetching_tool, progress_counter
+from qualang_tools.voltage_gates import VoltageGateSequence
+
+from configuration_with_lf_fem import *
+from macros import DC_current_sensing_macro, RF_reflectometry_macro
 
 ###################
 # The QUA program #
@@ -73,7 +74,9 @@ with program() as charge_sensor_sweep:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 #######################
 # Simulate or execute #

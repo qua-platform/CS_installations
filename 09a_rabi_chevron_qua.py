@@ -22,16 +22,16 @@ Before proceeding to the next node:
     - Identify the pi and pi/2 pulse parameters, Rabi frequency...
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
-from macros import RF_reflectometry_macro, DC_current_sensing_macro
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.loops import from_array
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import fetching_tool, progress_counter
+from qualang_tools.voltage_gates import VoltageGateSequence
 
+from configuration_with_lf_fem import *
+from macros import DC_current_sensing_macro, RF_reflectometry_macro
 
 ###################
 # The QUA program #
@@ -46,7 +46,7 @@ frequencies = np.arange(-100 * u.MHz, 100 * u.MHz, 100 * u.kHz)
 delay_before_readout = 16
 
 # Add the relevant voltage points describing the "slow" sequence (no qubit pulse)
-seq = OPX_virtual_gate_sequence(config, ["P1_sticky", "P2_sticky"])
+seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
 seq.add_points("initialization", level_init, duration_init)
 seq.add_points("idle", level_manip, duration_manip)
 seq.add_points("readout", level_readout, duration_readout)
@@ -70,7 +70,8 @@ with program() as Rabi_prog:
 
                     # Drive the qubit by playing the MW pulse at the end of the manipulation step
                     wait(
-                        (duration_init - delay_before_readout) * u.ns - (t >> 2) - 4, "qubit"
+                        (duration_init - delay_before_readout) * u.ns - (t >> 2) - 4,
+                        "qubit",
                     )  # Need -4 cycles to compensate the gap
                     wait(4, "qubit")  # Need 4 additional cycles because of a gap
                     play("pi", "qubit", duration=t >> 2)
@@ -88,9 +89,13 @@ with program() as Rabi_prog:
         I_st.buffer(len(durations)).buffer(len(frequencies)).average().save("I")
         Q_st.buffer(len(durations)).buffer(len(frequencies)).average().save("Q")
         # DC current sensing
-        dc_signal_st.buffer(len(durations)).buffer(len(frequencies)).average().save("dc_signal")
+        dc_signal_st.buffer(len(durations)).buffer(len(frequencies)).average().save(
+            "dc_signal"
+        )
 
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 
 ###########################
@@ -129,7 +134,12 @@ if simulate:
     from macros import get_filtered_voltage
 
     plt.subplot(212)
-    get_filtered_voltage(job.get_simulated_samples().con1.analog["1"], 1e-9, bias_tee_cut_off_frequency, True)
+    get_filtered_voltage(
+        job.get_simulated_samples().con1.analog["1"],
+        1e-9,
+        bias_tee_cut_off_frequency,
+        True,
+    )
 
 else:
     # Open the quantum machine
@@ -137,7 +147,9 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(Rabi_prog)
     # Get results from QUA program and initialize live plotting
-    results = fetching_tool(job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live")
+    results = fetching_tool(
+        job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live"
+    )
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure

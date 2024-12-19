@@ -3,9 +3,8 @@
 QUA-Config supporting OPX1000 w/ LF-FEM & External Mixers
 """
 import numpy as np
-from qualang_tools.units import unit
 from qualang_tools.config.waveform_tools import drag_gaussian_pulse_waveforms
-
+from qualang_tools.units import unit
 
 #######################
 # AUXILIARY FUNCTIONS #
@@ -262,10 +261,11 @@ TANK_CIRCUIT_CONSTANTS = {
 #  Pi pulse waveforms  #
 ########################
 
+
 # TODO: Implement Kaiser
 def generate_waveforms(rotation_keys):
-    """ Generate all necessary waveforms for a set of rotation types across all qubits. """
-    
+    """Generate all necessary waveforms for a set of rotation types across all qubits."""
+
     if not isinstance(rotation_keys, list):
         raise ValueError("rotation_keys must be a list")
 
@@ -286,7 +286,11 @@ def generate_waveforms(rotation_keys):
             else:
                 continue
 
-            wf, der_wf = np.array(drag_gaussian_pulse_waveforms(wf_amp, pi_len, pi_sigma, alpha=0, anharmonicity=0))
+            wf, der_wf = np.array(
+                drag_gaussian_pulse_waveforms(
+                    wf_amp, pi_len, pi_sigma, alpha=0, anharmonicity=0
+                )
+            )
 
             if rotation_key in ["x180", "x90", "minus_x90"]:
                 I_wf = wf
@@ -295,12 +299,15 @@ def generate_waveforms(rotation_keys):
                 I_wf = (-1) * der_wf
                 Q_wf = wf
             else:
-                raise ValueError(f'{rotation_key} is passed. rotation_key must be one of ["x180", "x90", "minus_x90", "y180", "y90", "minus_y90"]')
+                raise ValueError(
+                    f'{rotation_key} is passed. rotation_key must be one of ["x180", "x90", "minus_x90", "y180", "y90", "minus_y90"]'
+                )
 
             waveforms[f"{qb}_{rotation_key}_I"] = I_wf
             waveforms[f"{qb}_{rotation_key}_Q"] = Q_wf
 
     return waveforms
+
 
 qubit_rotation_keys = ["x180", "x90", "minus_x90", "y180", "y90", "minus_y90"]
 waveforms = generate_waveforms(qubit_rotation_keys)
@@ -319,7 +326,7 @@ level_readout = [0.12, -0.12]
 # Duration of each step in ns
 duration_init = 2500
 duration_manip = 1000
-duration_readout = 1200 # reflectometry_readout_length + 100
+duration_readout = 1200  # reflectometry_readout_length + 100
 duration_compensation_pulse = 4 * u.us
 
 # Step parameters

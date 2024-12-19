@@ -18,15 +18,24 @@ Before proceeding to the next node:
     - Identify the different charge occupation regions
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool, wait_until_job_is_paused
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
-from macros import RF_reflectometry_macro, DC_current_sensing_macro, get_filtered_voltage
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.loops import from_array
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import (
+    fetching_tool,
+    progress_counter,
+    wait_until_job_is_paused,
+)
+from qualang_tools.voltage_gates import VoltageGateSequence
+
+from configuration_with_lf_fem import *
+from macros import (
+    DC_current_sensing_macro,
+    RF_reflectometry_macro,
+    get_filtered_voltage,
+)
 
 ###################
 # The QUA program #
@@ -42,12 +51,16 @@ voltage_values_slow = np.linspace(-1.5, 1.5, n_points_slow)
 voltage_values_fast = np.linspace(-0.2, 0.2, n_points_fast)
 # TODO: set DC offset on the external source for the fast gate
 # One can check the expected voltage levels after the bias-tee using the following function:
-_, _ = get_filtered_voltage(voltage_values_fast, step_duration=1e-6, bias_tee_cut_off_frequency=1e3, plot=True)
+_, _ = get_filtered_voltage(
+    voltage_values_fast, step_duration=1e-6, bias_tee_cut_off_frequency=1e3, plot=True
+)
 
 with program() as charge_stability_prog:
     n = declare(int)  # QUA integer used as an index for the averaging loop
     i = declare(int)  # QUA integer used as an index to loop over the voltage points
-    Vfast = declare(fixed)  # QUA fixed to increment the voltage offset handled by one OPX channel
+    Vfast = declare(
+        fixed
+    )  # QUA fixed to increment the voltage offset handled by one OPX channel
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
 
     with for_(i, 0, i < n_points_slow + 1, i + 1):
@@ -81,13 +94,17 @@ with program() as charge_stability_prog:
         I_st.buffer(n_points_fast).buffer(n_avg).map(FUNCTIONS.average()).save_all("I")
         Q_st.buffer(n_points_fast).buffer(n_avg).map(FUNCTIONS.average()).save_all("Q")
         # DC current sensing
-        dc_signal_st.buffer(n_points_fast).buffer(n_avg).map(FUNCTIONS.average()).save_all("dc_signal")
+        dc_signal_st.buffer(n_points_fast).buffer(n_avg).map(
+            FUNCTIONS.average()
+        ).save_all("dc_signal")
 
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 ###########################
 # Run or Simulate Program #
@@ -118,7 +135,9 @@ else:
         # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
         wait_until_job_is_paused(job)
         # Get results from QUA program and initialize live plotting
-        results = fetching_tool(job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live")
+        results = fetching_tool(
+            job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live"
+        )
 
         # Fetch the data from the last OPX run corresponding to the current slow axis iteration
         I, Q, DC_signal, iteration = results.fetch_all()

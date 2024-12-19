@@ -2,12 +2,13 @@
         CHARGE STABILITY DIAGRAM
 """
 
-from qm.qua import *
-import matplotlib.pyplot as plt
-from scipy.signal import butter, lfilter
 from typing import Union
-from numpy.typing import NDArray
+
+import matplotlib.pyplot as plt
 import numpy as np
+from numpy.typing import NDArray
+from qm.qua import *
+from scipy.signal import butter, lfilter
 
 
 def round_to_fixed(x, number_of_bits=12):
@@ -34,26 +35,44 @@ def RF_reflectometry_macro(
         I_st = declare_stream()
     if Q_st is None:
         Q_st = declare_stream()
-    measure(operation, element, None, demod.full("cos", I, element_output), demod.full("sin", Q, element_output))
+    measure(
+        operation,
+        element,
+        None,
+        demod.full("cos", I, element_output),
+        demod.full("sin", Q, element_output),
+    )
     save(I, I_st)
     save(Q, Q_st)
     return I, Q, I_st, Q_st
 
 
 def DC_current_sensing_macro(
-    operation: str = "readout", element: str = "TIA", element_output: str = "out2", dc_signal=None, dc_signal_st=None
+    operation: str = "readout",
+    element: str = "TIA",
+    element_output: str = "out2",
+    dc_signal=None,
+    dc_signal_st=None,
 ):
     if dc_signal is None:
         dc_signal = declare(fixed)
     if dc_signal_st is None:
         dc_signal_st = declare_stream()
-    measure(operation, element, None, integration.full("constant", dc_signal, element_output))
+    measure(
+        operation,
+        element,
+        None,
+        integration.full("constant", dc_signal, element_output),
+    )
     save(dc_signal, dc_signal_st)
     return dc_signal, dc_signal_st
 
 
 def get_filtered_voltage(
-    voltage_list: Union[NDArray, list], step_duration: float, bias_tee_cut_off_frequency: float, plot: bool = False
+    voltage_list: Union[NDArray, list],
+    step_duration: float,
+    bias_tee_cut_off_frequency: float,
+    plot: bool = False,
 ):
     """Get the voltage after filtering through the bias-tee
 

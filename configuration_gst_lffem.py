@@ -1,7 +1,7 @@
 # %%
 import numpy as np
-from scipy.signal.windows import gaussian
 from qualang_tools.units import unit
+from scipy.signal.windows import gaussian
 
 #######################
 # AUXILIARY FUNCTIONS #

@@ -1,6 +1,6 @@
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.special import i0  # Zeroth-order modified Bessel function of the first kind
-import matplotlib.pyplot as plt
 
 
 def kaiser_window(T: int, alpha: float) -> np.ndarray:
@@ -29,11 +29,17 @@ alpha = 2.0  # Shape parameter
 kaiser_win = kaiser_window(T, alpha)
 
 # FFT of the Kaiser window
-fft_kaiser = np.fft.fftshift(np.fft.fft(kaiser_win, n=1024))  # FFT with zero-padding for better resolution
-fft_freqs = np.fft.fftshift(np.fft.fftfreq(len(fft_kaiser), d=1 / T))  # Corresponding frequencies
+fft_kaiser = np.fft.fftshift(
+    np.fft.fft(kaiser_win, n=1024)
+)  # FFT with zero-padding for better resolution
+fft_freqs = np.fft.fftshift(
+    np.fft.fftfreq(len(fft_kaiser), d=1 / T)
+)  # Corresponding frequencies
 
 # Magnitude of FFT
-fft_magnitude = 20 * np.log10(np.abs(fft_kaiser) / np.max(np.abs(fft_kaiser)))  # In decibels (normalized)
+fft_magnitude = 20 * np.log10(
+    np.abs(fft_kaiser) / np.max(np.abs(fft_kaiser))
+)  # In decibels (normalized)
 
 # Plot the Kaiser window
 plt.figure(figsize=(12, 6))

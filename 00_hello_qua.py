@@ -2,12 +2,12 @@
 A simple sandbox to showcase different QUA functionalities during the installation.
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
 import matplotlib.pyplot as plt
-from qm import generate_qua_script
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.voltage_gates import VoltageGateSequence
+
+from configuration_with_lf_fem import *
 
 ###################
 # The QUA program #
@@ -20,7 +20,7 @@ duration_manip = 800
 duration_readout = 500
 
 # Add the relevant voltage points describing the "slow" sequence (no qubit pulse)
-seq = OPX_virtual_gate_sequence(config, ["P1_sticky", "P2_sticky"])
+seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
 seq.add_points("initialization", level_init, duration_init)
 seq.add_points("idle", level_manip, duration_manip)
 seq.add_points("readout", level_readout, duration_readout)
@@ -40,7 +40,9 @@ with program() as hello_qua:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 ###########################
 # Run or Simulate Program #

@@ -27,16 +27,20 @@ Before proceeding to the next node:
     - Identify the qubit frequency and update the configuration.
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool, wait_until_job_is_paused
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
-from macros import RF_reflectometry_macro, DC_current_sensing_macro
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.loops import from_array
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import (
+    fetching_tool,
+    progress_counter,
+    wait_until_job_is_paused,
+)
+from qualang_tools.voltage_gates import VoltageGateSequence
 
+from configuration_with_lf_fem import *
+from macros import DC_current_sensing_macro, RF_reflectometry_macro
 
 ###################
 # The QUA program #
@@ -55,7 +59,9 @@ df_external = f_max - f_min
 lo_frequencies = np.arange(f_min_external, f_max_external + 0.1, df_external)
 # lo_frequencies = [6e9]
 # Total frequency vector
-frequencies = np.array(np.concatenate([IFs + lo_frequencies[i] for i in range(len(lo_frequencies))]))
+frequencies = np.array(
+    np.concatenate([IFs + lo_frequencies[i] for i in range(len(lo_frequencies))])
+)
 
 # Magnetic field in T
 # B_fields = np.arange(-5, 5, 0.1)
@@ -64,7 +70,7 @@ B_fields = [0, 1, 2]
 # Delay in ns before stepping to the readout point after playing the qubit pulse - must be a multiple of 4ns and >= 16ns
 delay_before_readout = 16
 
-seq = OPX_virtual_gate_sequence(config, ["P1_sticky", "P2_sticky"])
+seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
 seq.add_points("initialization", level_init, duration_init)
 seq.add_points("idle", level_manip, duration_manip)
 seq.add_points("readout", level_readout, duration_readout)
@@ -88,7 +94,10 @@ with program() as qubit_spectroscopy_prog:
                         seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
                         # Drive the qubit by playing the MW pulse at the end of the manipulation step
-                        wait((duration_init - delay_before_readout - cw_len) * u.ns, "qubit")
+                        wait(
+                            (duration_init - delay_before_readout - cw_len) * u.ns,
+                            "qubit",
+                        )
                         play("cw", "qubit")
 
                         # Measure the dot right after the qubit manipulation
@@ -102,17 +111,23 @@ with program() as qubit_spectroscopy_prog:
         n_st.save("iteration")
         # Cast the data into a 2D matrix and performs a global averaging of the received 2D matrices together.
         # RF reflectometry
-        I_st.buffer(len(IFs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(lo_frequencies)).save_all("I")
-        Q_st.buffer(len(IFs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(lo_frequencies)).save_all("Q")
+        I_st.buffer(len(IFs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(
+            len(lo_frequencies)
+        ).save_all("I")
+        Q_st.buffer(len(IFs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(
+            len(lo_frequencies)
+        ).save_all("Q")
         # DC current sensing
-        dc_signal_st.buffer(len(IFs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(lo_frequencies)).save_all(
-            "dc_signal"
-        )
+        dc_signal_st.buffer(len(IFs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(
+            len(lo_frequencies)
+        ).save_all("dc_signal")
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 ###########################
 # Run or Simulate Program #
@@ -150,7 +165,12 @@ if simulate:
     from macros import get_filtered_voltage
 
     plt.subplot(212)
-    get_filtered_voltage(job.get_simulated_samples().con1.analog["1"], 1e-9, bias_tee_cut_off_frequency, True)
+    get_filtered_voltage(
+        job.get_simulated_samples().con1.analog["1"],
+        1e-9,
+        bias_tee_cut_off_frequency,
+        True,
+    )
 
 else:
     # Open the quantum machine
@@ -170,7 +190,9 @@ else:
             wait_until_job_is_paused(job)
         if i == 0:
             # Get results from QUA program and initialize live plotting
-            results = fetching_tool(job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live")
+            results = fetching_tool(
+                job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live"
+            )
         # Fetch the data from the last OPX run corresponding to the current slow axis iteration
         I, Q, DC_signal, iteration = results.fetch_all()
         # Convert results into Volts
@@ -185,14 +207,20 @@ else:
             plt.subplot(121)
             plt.cla()
             plt.title(r"$R=\sqrt{I^2 + Q^2}$ [V]")
-            plt.pcolor(frequencies / u.MHz, B_fields[: iteration + 1], np.reshape(R, (iteration + 1, len(frequencies))))
+            plt.pcolor(
+                frequencies / u.MHz,
+                B_fields[: iteration + 1],
+                np.reshape(R, (iteration + 1, len(frequencies))),
+            )
             plt.xlabel("Qubit pulse frequency [MHz]")
             plt.ylabel("B [mT]")
             plt.subplot(122)
             plt.cla()
             plt.title("Phase [rad]")
             plt.pcolor(
-                frequencies / u.MHz, B_fields[: iteration + 1], np.reshape(phase, (iteration + 1, len(frequencies)))
+                frequencies / u.MHz,
+                B_fields[: iteration + 1],
+                np.reshape(phase, (iteration + 1, len(frequencies))),
             )
             plt.xlabel("Qubit pulse frequency [MHz]")
             plt.ylabel("B [mT]")

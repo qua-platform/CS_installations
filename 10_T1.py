@@ -23,17 +23,17 @@ Before proceeding to the next node:
     - Measure T1.
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
-from qualang_tools.addons.variables import assign_variables_to_element
 import matplotlib.pyplot as plt
-from macros import RF_reflectometry_macro, DC_current_sensing_macro
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.addons.variables import assign_variables_to_element
+from qualang_tools.loops import from_array
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import fetching_tool, progress_counter
+from qualang_tools.voltage_gates import VoltageGateSequence
 
+from configuration_with_lf_fem import *
+from macros import DC_current_sensing_macro, RF_reflectometry_macro
 
 ###################
 # The QUA program #
@@ -44,7 +44,7 @@ n_avg = 100
 durations = np.arange(16, 2000, 100)
 
 # Add the relevant voltage points describing the "slow" sequence (no qubit pulse)
-seq = OPX_virtual_gate_sequence(config, ["P1_sticky", "P2_sticky"])
+seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
 seq.add_points("initialization", level_init, duration_init)
 seq.add_points("idle", level_manip, duration_manip)
 seq.add_points("readout", level_readout, readout_len)
@@ -73,11 +73,15 @@ with program() as T1_prog:
                 seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
                 # Drive the singlet-triplet qubit using an exchange pulse at the end of the manipulation step
-                wait(duration_init * u.ns, "qubit")  # Need -4 cycles to compensate the gap
+                wait(
+                    duration_init * u.ns, "qubit"
+                )  # Need -4 cycles to compensate the gap
                 play("pi", "qubit")
 
                 # Measure the dot right after the qubit manipulation
-                wait((duration_init + pi_length) * u.ns + (t >> 2), "tank_circuit", "TIA")
+                wait(
+                    (duration_init + pi_length) * u.ns + (t >> 2), "tank_circuit", "TIA"
+                )
                 I, Q, I_st, Q_st = RF_reflectometry_macro(I=I, Q=Q)
                 dc_signal, dc_signal_st = DC_current_sensing_macro(dc_signal=dc_signal)
             # Ramp the background voltage to zero to avoid propagating floating point errors
@@ -96,7 +100,9 @@ with program() as T1_prog:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 ###########################
 # Run or Simulate Program #
@@ -134,7 +140,12 @@ if simulate:
     from macros import get_filtered_voltage
 
     plt.subplot(212)
-    get_filtered_voltage(job.get_simulated_samples().con1.analog["1"], 1e-9, bias_tee_cut_off_frequency, True)
+    get_filtered_voltage(
+        job.get_simulated_samples().con1.analog["1"],
+        1e-9,
+        bias_tee_cut_off_frequency,
+        True,
+    )
 
 else:
     # Open the quantum machine
@@ -142,7 +153,9 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(T1_prog)
     # Get results from QUA program and initialize live plotting
-    results = fetching_tool(job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live")
+    results = fetching_tool(
+        job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live"
+    )
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
