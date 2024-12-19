@@ -32,6 +32,7 @@ machine.qubits["q1"].resonator.thread = "a"
 for i, q in enumerate(machine.qubits):
     qb = machine.qubits[q]
 
+    qb.anharmonicity = -200 * u.MHz
     ## Update qubit rr freq and power
     qb.resonator.frequency_converter_up.LO_frequency = round(rr_LO)
     qb.resonator.frequency_converter_down.LO_frequency = round(rr_LO)
