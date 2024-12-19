@@ -23,8 +23,8 @@ from qm.qua import *
 from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
-from qualang_tools.voltage_gates import VoltageGateSequence
 from qualang_tools.results.data_handler import DataHandler
+from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy import signal
 
 from configuration_with_lffem import *
@@ -34,10 +34,6 @@ from macros import RF_reflectometry_macro
 # The QUA program #
 ###################
 
-# # Qubits and tank_circuits
-# qb = "qubit1" # index of control qubit
-# qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
-# qubits_to_play = ['q4_xy'] # ["q1_xy"]
 sd = "Psd1"
 sd_sticky = f"{sd}_sticky"
 sd_constants = PLUNGER_SD_CONSTANTS[sd]
@@ -46,8 +42,8 @@ tank_circuits = ["tank_circuit1", "tank_circuit2"]
 num_tank_circuits = len(tank_circuits)
 
 n_avg = 100  # Number of averaging loops
-offset_min = -0.2
 offset_max = +0.2
+offset_min = -offset_max
 offset_step = 0.02
 offsets = np.arange(offset_min, offset_max + offset_step, offset_step)
 num_offsets = len(offsets)
@@ -84,7 +80,6 @@ with program() as charge_sensor_sweep:
             align()
             # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
             # frequency and the integrated quadratures are stored in "I" and "Q"
-
             for j, tc in enumerate(tank_circuits):
                 measure(
                     "readout",
@@ -107,6 +102,7 @@ with program() as charge_sensor_sweep:
         for j, tc in enumerate(tank_circuits):
             I_st[j].buffer(len(offsets)).average().save(f"I_{tc}")
             Q_st[j].buffer(len(offsets)).average().save(f"Q_{tc}")
+
 
 #####################################
 #  Open Communication with the QOP  #
@@ -145,7 +141,7 @@ else:
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
-        # Fetch results 
+        # Fetch results
         res = results.fetch_all()
         # Progress bar
         progress_counter(res[0], n_avg, start_time=results.get_start_time())
@@ -172,7 +168,7 @@ else:
         plt.tight_layout()
         plt.pause(1)
 
-    # Fetch results 
+    # Fetch results
     res = results.fetch_all()
     for ind, tc in enumerate(tank_circuits):
         save_data_dict[f"I_{tc}"] = res[2 * ind + 1]
@@ -186,6 +182,4 @@ else:
         script_name: script_name,
         **default_additional_files,
     }
-    data_handler.save_data(
-        data=save_data_dict, name="resonator_spectroscopy_multiplexed"
-    )
+    data_handler.save_data(data=save_data_dict, name="05_sensor_gate_sweep_opx")

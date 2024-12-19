@@ -32,11 +32,8 @@ from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import (
-    fetching_tool,
-    progress_counter,
-    wait_until_job_is_paused,
-)
+from qualang_tools.results import (fetching_tool, progress_counter,
+                                   wait_until_job_is_paused)
 from qualang_tools.voltage_gates import VoltageGateSequence
 
 from configuration_with_lffem import *

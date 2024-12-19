@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.special import i0  # Zeroth-order modified Bessel function of the first kind
+from scipy.special import \
+    i0  # Zeroth-order modified Bessel function of the first kind
 
 
 def kaiser_window(T: int, alpha: float) -> np.ndarray:

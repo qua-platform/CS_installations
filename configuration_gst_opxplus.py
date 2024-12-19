@@ -2,7 +2,8 @@
 from typing import Union
 
 import numpy as np
-from qm.qua import Cast, amp, assign, declare, fixed, play, ramp, ramp_to_zero, wait
+from qm.qua import (Cast, amp, assign, declare, fixed, play, ramp,
+                    ramp_to_zero, wait)
 from qm.qua._dsl import QuaExpression, QuaVariable
 from qualang_tools.units import unit
 from scipy.signal.windows import gaussian
