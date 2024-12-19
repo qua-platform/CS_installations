@@ -72,7 +72,6 @@ with program() as PSB_search_prog:
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
     I = declare(fixed)
     Q = declare(fixed)
-    dc_signal = declare(fixed)
 
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("tank_circuit", I, Q)
@@ -98,9 +97,6 @@ with program() as PSB_search_prog:
                 # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
                 # frequency and the integrated quadratures are stored in "I" and "Q"
                 I, Q, I_st, Q_st = RF_reflectometry_macro(I=I, Q=Q)
-                # DC current sensing: the voltage measured by the analog input 1 is recorded and the integrated result
-                # is stored in "dc_signal"
-                dc_signal, dc_signal_st = DC_current_sensing_macro(dc_signal=dc_signal)
                 # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
                 # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
                 # process them which can cause the OPX to crash.
@@ -117,10 +113,6 @@ with program() as PSB_search_prog:
         # RF reflectometry
         I_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(n_points_fast).save_all("I")
         Q_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(n_points_fast).save_all("Q")
-        # DC current sensing
-        dc_signal_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(
-            n_points_fast
-        ).save_all("dc_signal")
 
 
 #####################################
