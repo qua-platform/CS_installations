@@ -36,12 +36,24 @@ from macros import RF_reflectometry_macro, get_filtered_voltage
 matplotlib.use('TkAgg')
 
 
+
+
+
+
+
 ###################
 # The QUA program #
 ###################
 
-Px = "P1"
-Py = "P2"
+# generate some C
+target_gates = ["P1", "P2"]
+N = len(target_gates)
+A = np.random.rand(N, N)
+CC = 0.1 * (A + A.T) / 2
+np.fill_diagonal(CC, 1)
+CCinv = np.linalg.inv(CC)
+
+
 tank_circuits = ["tank_circuit1", "tank_circuit2"]
 num_tank_circuits = len(tank_circuits)
 
@@ -54,21 +66,29 @@ voltages_Px = np.linspace(-0.1, 0.1, n_voltages_Px)
 # Because of the bias-tee, it is important that the voltages swept along the fast axis are centered around 0.
 # Also, since the OPX dynamic range is [-0.5, 0.5)V, one may need to add a voltage offset on the DC part of the bias-tee.
 voltages_Py = np.linspace(-0.2, 0.2, n_voltages_Py)
-# TODO: set DC offset on the external source for the fast gate
-# One can check the expected voltage levels after the bias-tee using the following function:
-_, _ = get_filtered_voltage(
-    voltages_Py, step_duration=1e-6, bias_tee_cut_off_frequency=1e3, plot=True
-)
+# # TODO: set DC offset on the external source for the fast gate
+# # One can check the expected voltage levels after the bias-tee using the following function:
+# _, _ = get_filtered_voltage(
+#     voltages_Py, step_duration=1e-6, bias_tee_cut_off_frequency=1e3, plot=True
+# )
+
+Vs_mesh = np.meshgrid(n_voltages_Px, n_voltages_Py)
+Vs_xy = np.vstack((Vs_mesh[0].ravel(), Vs_mesh[1].ravel()))
+kaka = CCinv @ Vs_xy
+plt.pcolor(kaka);plt.show()
+
 
 save_data_dict = {
-    "Px": Px,
-    "Py": Py,
     "tank_circuits": tank_circuits,
     "n_avg": n_avg,
     "voltages_Px": voltages_Px,
     "voltages_Py": voltages_Py,
     "config": config,
 }
+
+
+# want to loop over
+
 
 
 with program() as charge_stability_prog:

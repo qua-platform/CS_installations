@@ -1,3 +1,4 @@
+# %%
 """
 A simple sandbox to showcase different QUA functionalities during the installation.
 """
@@ -48,7 +49,7 @@ qmm = QuantumMachinesManager(
 # Run or Simulate Program #
 ###########################
 
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -63,3 +64,5 @@ else:
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it - Execute does not block python!
     job = qm.execute(hello_qua)
+
+# %%

@@ -282,9 +282,7 @@ from qualang_tools.voltage_gates import VoltageGateSequence
 ###################
 with program() as rb:
     depth = declare(int)  # QUA variable for the varying depth
-    depth_target = declare(
-        int
-    )  # QUA variable for the current depth (changes in steps of delta_clifford)
+    depth_target = declare(int)
     # QUA variable to store the last Clifford gate of the current sequence which is replaced by the recovery gate
     saved_gate = declare(int)
     m = declare(int)  # QUA variable for the loop over random sequences
@@ -292,13 +290,9 @@ with program() as rb:
     I = declare(fixed)  # QUA variable for the 'I' quadrature
     Q = declare(fixed)  # QUA variable for the 'Q' quadrature
     state = declare(bool)  # QUA variable for state discrimination
-    sequence_time = declare(
-        int
-    )  # QUA variable for RB sequence duration for a given depth
-    dc_signal = declare(fixed)  # QUA variable for the measured dc signal
+    sequence_time = declare(int)  # QUA variable for RB sequence duration for a given depth
     # Ensure that the result variables are assigned to the measurement elements
     assign_variables_to_element("tank_circuit", I, Q)
-    assign_variables_to_element("TIA", dc_signal)
 
     # The relevant streams
     m_st = declare_stream()
@@ -308,21 +302,12 @@ with program() as rb:
         I_st = declare_stream()
         Q_st = declare_stream()
 
-    with for_(
-        m, 0, m < num_of_sequences, m + 1
-    ):  # QUA for_ loop over the random sequences
-        (
-            sequence_list,
-            inv_gate_list,
-        ) = (
-            generate_sequence()
-        )  # Generate the random sequence of length max_circuit_depth
+    with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
+        sequence_list, inv_gate_list = generate_sequence() # Generate the random sequence of length max_circuit_depth
 
         assign(depth_target, 1)  # Initialize the current depth to 1
 
-        with for_(
-            depth, 1, depth <= max_circuit_depth, depth + 1
-        ):  # Loop over the depths
+        with for_(depth, 1, depth <= max_circuit_depth, depth + 1):  # Loop over the depths
             # Replacing the last gate in the sequence with the sequence's inverse gate
             # The original gate is saved in 'saved_gate' and is being restored at the end
             assign(saved_gate, sequence_list[depth])
@@ -336,24 +321,15 @@ with program() as rb:
                 with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
                     # Define voltage steps
                     seq.add_step(voltage_point_name="initialization")
-                    seq.add_step(
-                        voltage_point_name="idle", duration=sequence_time + RB_delay
-                    )  # Includes processing time for RB sequence
-                    seq.add_step(voltage_point_name="readout", duration=readout_len)
+                    seq.add_step(voltage_point_name="idle", duration=sequence_time + RB_delay)  # Includes processing time for RB sequence
+                    seq.add_step(voltage_point_name="readout", duration=REFLECTOMETRY_READOUT_LEN)
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
                     wait((duration_init * u.ns), "qubit")
                     play_sequence(sequence_list, depth)
 
-                    wait(
-                        (duration_init * u.ns) + (sequence_time >> 2) + (RB_delay >> 2),
-                        "tank_circuit",
-                        "TIA",
-                    )  # Includes calculated RB duration as well as RB sequence processing time
+                    wait((duration_init * u.ns) + (sequence_time >> 2) + (RB_delay >> 2), "tank_circuit")  # Includes calculated RB duration as well as RB sequence processing time
                     I, Q, I_st, Q_st = RF_reflectometry_macro(I=I, Q=Q)
-                    dc_signal, dc_signal_st = DC_current_sensing_macro(
-                        dc_signal=dc_signal
-                    )
 
                     # Make sure you updated the ge_threshold and angle if you want to use state discrimination
                     # Save the results to their respective streams
@@ -397,14 +373,6 @@ with program() as rb:
             Q_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(
                 max_circuit_depth / delta_clifford
             ).average().save("Q_avg")
-
-            # DC current sensing
-            dc_signal_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(
-                max_circuit_depth / delta_clifford
-            ).buffer(num_of_sequences).save("dc_signal")
-            dc_signal_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(
-                max_circuit_depth / delta_clifford
-            ).average().save("dc_signal_avg")
 
 
 #####################################

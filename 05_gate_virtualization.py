@@ -39,6 +39,18 @@ matplotlib.use('TkAgg')
 ###################
 # The QUA program #
 ###################
+"""
+# n_voltages_Px = 51
+# n_voltages_Py = 101
+# C = np.array([[1.1, -0.2], [-0.2, 1.1]])
+# Vx = np.linspace(-0.1, 0.1, n_voltages_Px)
+# Vy = np.linspace(-0.2, 0.2, n_voltages_Py)
+
+# Vs = np.meshgrid(Vx, Vy)
+# Vs_xy = np.vstack((Vs[0].ravel(), Vs[1].ravel()))
+# kaka = C @ Vs_xy
+# plt.pcolor(kaka);plt.show()
+"""
 
 Px = "P1"
 Py = "P2"
@@ -201,3 +213,14 @@ else:
     data_handler.save_data(data=save_data_dict, name="06_charge_stability_map_opx")
 
 # %%
+
+
+# class VirtualGate():
+#     def __init__(self):
+#         points = []
+
+#     def virtualize():
+#         VIRTUALIZATION_MATRIX @ np.array(level_init)
+    
+#     @property
+#     def 

@@ -56,8 +56,8 @@ default_additional_files = {
 # OPX configuration #
 #####################
 con1 = "con1"
-fem1 = 1  # Should be the LF-FEM index, e.g., 1
-fem2 = 2  # Should be the LF-FEM index, e.g., 1
+fem1 = 3  # Should be the LF-FEM index, e.g., 1
+fem2 = 5  # Should be the LF-FEM index, e.g., 1
 # fem3 = 3  # Should be the LF-FEM index, e.g., 1
 
 
@@ -121,6 +121,7 @@ PI_SIGMA = PI_LEN / 5
 REFLECTOMETRY_READOUT_AMP = 0.1
 REFLECTOMETRY_READOUT_LEN = 10_000
 
+
 #################
 #   CONSTANTS   #
 #################
@@ -128,12 +129,12 @@ REFLECTOMETRY_READOUT_LEN = 10_000
 QUBIT_CONSTANTS = {
     "qubit1": {
         "con": "con1",
-        "fem": 1,
+        "fem": fem1,
         "ao_I": 1,
         "ao_Q": 2,
         "do": 1,
         "LO": 16 * u.GHz,
-        "IF": 50 * u.GHz,
+        "IF": 50 * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0,
         "pi_amp": PI_AMP,
@@ -145,12 +146,12 @@ QUBIT_CONSTANTS = {
     },
     "qubit2": {
         "con": "con1",
-        "fem": 1,
-        "ao_I": 1,
-        "ao_Q": 2,
-        "do": 1,
+        "fem": fem1,
+        "ao_I": 3,
+        "ao_Q": 4,
+        "do": 2,
         "LO": 16 * u.GHz,
-        "IF": 200 * u.GHz,
+        "IF": 200 * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0,
         "pi_amp": PI_AMP,
@@ -162,46 +163,12 @@ QUBIT_CONSTANTS = {
     },
     "qubit3": {
         "con": "con1",
-        "fem": 1,
-        "ao_I": 3,
-        "ao_Q": 4,
-        "do": 2,
-        "LO": 16.3 * u.GHz,
-        "IF": 50 * u.GHz,
-        "mixer_g": 0,
-        "mixer_phi": 0,
-        "pi_amp": PI_AMP,
-        "pi_len": PI_LEN,
-        "pi_sigma": PI_SIGMA,
-        "midcircuit_parity_threshold": 0.0,
-        "delay": 0,
-        "digital_delay": 0,
-    },
-    "qubit4": {
-        "con": "con1",
-        "fem": 1,
-        "ao_I": 3,
-        "ao_Q": 4,
-        "do": 2,
-        "LO": 16.3 * u.GHz,
-        "IF": 200 * u.GHz,
-        "mixer_g": 0,
-        "mixer_phi": 0,
-        "pi_amp": PI_AMP,
-        "pi_len": PI_LEN,
-        "pi_sigma": PI_SIGMA,
-        "midcircuit_parity_threshold": 0.0,
-        "delay": 0,
-        "digital_delay": 0,
-    },
-    "qubit5": {
-        "con": "con1",
-        "fem": 1,
-        "ao_I": 1,
-        "ao_Q": 1,
+        "fem": fem1,
+        "ao_I": 5,
+        "ao_Q": 6,
         "do": 3,
-        "LO": 16.6 * u.GHz,
-        "IF": 50 * u.GHz,
+        "LO": 16.3 * u.GHz,
+        "IF": 50 * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0,
         "pi_amp": PI_AMP,
@@ -216,7 +183,7 @@ QUBIT_CONSTANTS = {
 PLUNGER_CONSTANTS = {
     "P1": {
         "con": "con1",
-        "fem": 2,
+        "fem": fem2,
         "ao": 1,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
@@ -224,7 +191,7 @@ PLUNGER_CONSTANTS = {
     },
     "P2": {
         "con": "con1",
-        "fem": 2,
+        "fem": fem2,
         "ao": 2,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
@@ -232,24 +199,8 @@ PLUNGER_CONSTANTS = {
     },
     "P3": {
         "con": "con1",
-        "fem": 2,
+        "fem": fem2,
         "ao": 3,
-        "step_amp": STEP_AMP,
-        "step_len": STEP_LEN,
-        "delay": 0,
-    },
-    "P4": {
-        "con": "con1",
-        "fem": 2,
-        "ao": 4,
-        "step_amp": STEP_AMP,
-        "step_len": STEP_LEN,
-        "delay": 0,
-    },
-    "P5": {
-        "con": "con1",
-        "fem": 2,
-        "ao": 5,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
@@ -259,32 +210,24 @@ PLUNGER_CONSTANTS = {
 BARRIER_CONSTANTS = {
     "B1": {
         "con": "con1",
-        "fem": 2,
-        "ao": 6,
+        "fem": fem2,
+        "ao": 4,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
     },
     "B2": {
         "con": "con1",
-        "fem": 2,
-        "ao": 7,
+        "fem": fem2,
+        "ao": 5,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
     },
     "B3": {
         "con": "con1",
-        "fem": 2,
-        "ao": 8,
-        "step_amp": STEP_AMP,
-        "step_len": STEP_LEN,
-        "delay": 0,
-    },
-    "B4": {
-        "con": "con1",
-        "fem": 1,
-        "ao": 7,
+        "fem": fem2,
+        "ao": 6,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
@@ -294,16 +237,16 @@ BARRIER_CONSTANTS = {
 PLUNGER_SD_CONSTANTS = {
     "Psd1": {
         "con": "con1",
-        "fem": 2,
-        "ao": 6,
+        "fem": fem2,
+        "ao": 7,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
     },
     "Psd2": {
         "con": "con1",
-        "fem": 2,
-        "ao": 7,
+        "fem": fem2,
+        "ao": 8,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
@@ -313,7 +256,7 @@ PLUNGER_SD_CONSTANTS = {
 TANK_CIRCUIT_CONSTANTS = {
     "tank_circuit1": {
         "con": "con1",
-        "fem": 1,
+        "fem": fem1,
         "ao": 8,
         "ai": 2,
         "IF": 150 * u.MHz,
@@ -324,7 +267,7 @@ TANK_CIRCUIT_CONSTANTS = {
     },
     "tank_circuit2": {
         "con": "con1",
-        "fem": 1,
+        "fem": fem1,
         "ao": 8,
         "ai": 2,
         "IF": 200 * u.MHz,
@@ -404,7 +347,7 @@ config = {
                 fem1: {
                     "type": "LF",
                     "analog_outputs": {
-                        # EDSR I1 (q1, q2)
+                        # EDSR I1 (q1)
                         1: {
                             # DC Offset applied to the analog output at the beginning of a program.
                             "offset": 0.0,
@@ -423,47 +366,40 @@ config = {
                             #   unmodulated pulses (optimized for clean step response): "pulse"
                             "upsampling_mode": "mw",
                         },
-                        # EDSR Q1 (q1, q2)
+                        # EDSR Q1 (q1)
                         2: {
                             "offset": 0.0,
                             "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "mw",
                         },
-                        # EDSR I2 (q3, q4)
+                        # EDSR I2 (q2)
                         3: {
                             "offset": 0.0,
                             "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "mw",
                         },
-                        # EDSR Q2 (q3, q4)
+                        # EDSR Q2 (q2)
                         4: {
                             "offset": 0.0,
                             "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "mw",
                         },
-                        # EDSR I3 (q5)
+                        # EDSR I3 (q3)
                         5: {
                             "offset": 0.0,
                             "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "mw",
                         },
-                        # EDSR Q3 (q5)
+                        # EDSR Q3 (q3)
                         6: {
                             "offset": 0.0,
                             "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "mw",
-                        },
-                        # B4
-                        7: {
-                            "offset": 0.0,
-                            "output_mode": "amplified",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "pulse",
                         },
                         # RF Reflectometry
                         8: {
@@ -511,35 +447,35 @@ config = {
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
-                        # P4
+                        # B1
                         4: {
                             "offset": 0.0,
                             "output_mode": "amplified",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
-                        # P5
+                        # B2
                         5: {
                             "offset": 0.0,
                             "output_mode": "amplified",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
-                        # B1
+                        # B3
                         6: {
                             "offset": 0.0,
                             "output_mode": "amplified",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
-                        # B2
+                        # Psd1
                         7: {
                             "offset": 0.0,
                             "output_mode": "amplified",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
-                        # B3
+                        # Psd2
                         8: {
                             "offset": 0.0,
                             "output_mode": "amplified",
@@ -550,36 +486,6 @@ config = {
                     "digital_outputs": {},
                     "analog_inputs": {},
                 },
-                # fem3: {
-                #     "type": "LF",
-                #     "analog_outputs": {
-                #         # B4
-                #         1: {
-                #             "offset": 0.0,
-                #             "output_mode": "amplified",
-                #             "sampling_rate": sampling_rate,
-                #             "upsampling_mode": "pulse",
-                #         },
-                #         # Psd1
-                #         2: {
-                #             "offset": 0.0,
-                #             "output_mode": "amplified",
-                #             "sampling_rate": sampling_rate,
-                #             "upsampling_mode": "pulse",
-                #         },
-                #         # Psd2
-                #         3: {
-                #             "offset": 0.0,
-                #             "output_mode":"amplified",
-                #             "sampling_rate": sampling_rate,
-                #             "upsampling_mode": "pulse",
-                #         },
-                #     },
-                #     "digital_outputs": {
-                #     },
-                #     "analog_inputs": {
-                #     },
-                # },
             },
         }
     },
@@ -703,7 +609,7 @@ config = {
                 },
                 "intermediate_frequency": val["IF"],
                 "operations": {
-                    "readout": "reflectometry_readout_pulse",
+                    "readout": f"reflectometry_readout_pulse_{tc}",
                 },
                 "outputs": {
                     "out1": (val["con"], val["fem"], val["ai"]),
@@ -873,84 +779,84 @@ config = {
             for key, val in PLUNGER_SD_CONSTANTS.items()
         },
         **{
-            f"x90_I_wf_{key}": {
+            f"x90_gaussian_I_wf_{key}": {
                 "type": "arbitrary",
                 "samples": waveforms[key + "_x90_I"].tolist(),
             }
             for key in QUBIT_CONSTANTS.keys()
         },
         **{
-            f"x90_Q_wf_{key}": {
+            f"x90_gaussian_Q_wf_{key}": {
                 "type": "arbitrary",
                 "samples": waveforms[key + "_x90_Q"].tolist(),
             }
             for key in QUBIT_CONSTANTS.keys()
         },
         **{
-            f"x180_I_wf_{key}": {
+            f"x180_gaussian_I_wf_{key}": {
                 "type": "arbitrary",
                 "samples": waveforms[key + "_x180_I"].tolist(),
             }
             for key in QUBIT_CONSTANTS.keys()
         },
         **{
-            f"x180_Q_wf_{key}": {
+            f"x180_gaussian_Q_wf_{key}": {
                 "type": "arbitrary",
                 "samples": waveforms[key + "_x180_Q"].tolist(),
             }
             for key in QUBIT_CONSTANTS.keys()
         },
         **{
-            f"minus_x90_I_wf_{key}": {
+            f"minus_x90_gaussian_I_wf_{key}": {
                 "type": "arbitrary",
                 "samples": waveforms[key + "_minus_x90_I"].tolist(),
             }
             for key in QUBIT_CONSTANTS.keys()
         },
         **{
-            f"minus_x90_Q_wf_{key}": {
+            f"minus_x90_gaussian_Q_wf_{key}": {
                 "type": "arbitrary",
                 "samples": waveforms[key + "_minus_x90_Q"].tolist(),
             }
             for key in QUBIT_CONSTANTS.keys()
         },
         **{
-            f"y90_I_wf_{key}": {
+            f"y90_gaussian_I_wf_{key}": {
                 "type": "arbitrary",
                 "samples": waveforms[key + "_y90_I"].tolist(),
             }
             for key in QUBIT_CONSTANTS.keys()
         },
         **{
-            f"y90_Q_wf_{key}": {
+            f"y90_gaussian_Q_wf_{key}": {
                 "type": "arbitrary",
                 "samples": waveforms[key + "_y90_Q"].tolist(),
             }
             for key in QUBIT_CONSTANTS.keys()
         },
         **{
-            f"y180_I_wf_{key}": {
+            f"y180_gaussian_I_wf_{key}": {
                 "type": "arbitrary",
                 "samples": waveforms[key + "_y180_I"].tolist(),
             }
             for key in QUBIT_CONSTANTS.keys()
         },
         **{
-            f"y180_Q_wf_{key}": {
+            f"y180_gaussian_Q_wf_{key}": {
                 "type": "arbitrary",
                 "samples": waveforms[key + "_y180_Q"].tolist(),
             }
             for key in QUBIT_CONSTANTS.keys()
         },
         **{
-            f"minus_y90_I_wf_{key}": {
+            f"minus_y90_gaussian_I_wf_{key}": {
                 "type": "arbitrary",
                 "samples": waveforms[key + "_minus_y90_I"].tolist(),
             }
             for key in QUBIT_CONSTANTS.keys()
         },
         **{
-            f"minus_y90_Q_wf_{key}": {
+            f"minus_y90_gaussian_Q_wf_{key}": {
                 "type": "arbitrary",
                 "samples": waveforms[key + "_minus_y90_Q"].tolist(),
             }
