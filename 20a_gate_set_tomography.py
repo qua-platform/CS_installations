@@ -8,49 +8,24 @@ from qm import *
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 
-from configuration_gst_lffem import *
+from qualang_tools.voltage_gates import VoltageGateSequence
+# from configuration_gst_lffem import *
+from configuration_gst_lffem_gates import *
 
 
-class GSTParser:
-    pass
-
-
-map_prepfiducial = {
-    "{}": 1,
-    "Gxpi2:0": 2,
-    "Gypi2:0": 3,
-    "Gxpi2:0Gxpi2:0": 4,
-    "Gxpi2:0Gxpi2:0Gxpi2:0": 5,
-    "Gypi2:0Gypi2:0Gypi2:0": 6,
-}
-map_germs = {
-    "Gxpi2:0": 1 + 6,
-    "Gypi2:0": 2 + 6,
-    "Gxpi2:0Gypi2:0": 3 + 6,
-    "Gxpi2:0Gxpi2:0Gypi2:0": 4 + 6,
-}
-map_measfiducial = {
-    "{}": 1 + 6 + 4,
-    "Gxpi2:0": 2 + 6 + 4,
-    "Gypi2:0": 3 + 6 + 4,
-    "Gxpi2:0Gxpi2:0": 4 + 6 + 4,
-    "Gxpi2:0Gxpi2:0Gxpi2:0": 5 + 6 + 4,
-    "Gypi2:0Gypi2:0Gypi2:0": 6 + 6 + 4,
-}
 path = "gate_set_tomography/encoded_parsed_dataset.csv"
 dg = pd.read_csv(path, header=0)  # Use header=0 to indicate the first row is the header
 dg.reset_index(inplace=True)
-dg = dg.tail(70)
-dg = dg.head(30)
+dg = dg.tail(60)
+dg = dg.head(10)
 
 
-from qualang_tools.voltage_gates import VoltageGateSequence
 
 ###################
 # The QUA program #
 ###################
 
-list_n_shots = [128, 8192]
+list_n_shots = [10, 100]
 # gst_parser = GSTParser()
 # list_circuits = gst_parser.get_encoded_circuits()
 sequence_max_len = 2 + 1 + 8192 + 1
@@ -60,6 +35,28 @@ list_encoded_circuits = dg[
 ].values.tolist()
 num_cicuits = len(list_encoded_circuits)
 qb = "qubit"
+
+
+# Delay in ns before stepping to the readout point after playing the qubit pulse - must be a multiple of 4ns and >= 16ns
+# Relevant points in the charge stability map as ["P1", "P2"] in V
+level_init = [0.1, -0.1]
+level_manip = [0.05, -0.05]
+level_readout = [0.0, 0.0]
+
+# Duration of each step in ns
+duration_init = 400
+duration_manip = 400
+duration_readout = reflectometry_readout_len + 100
+duration_compensation_pulse = 400 * u.us
+
+delay_before_readout = 16
+
+# Add the relevant voltage points describing the "slow" sequence (no qubit pulse)
+seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
+seq.add_points("initialization", level_init, duration_init)
+seq.add_points("manipulation", level_manip, duration_manip)
+seq.add_points("readout", level_readout, duration_readout)
+
 
 
 with program() as PROGRAM:
@@ -82,7 +79,18 @@ with program() as PROGRAM:
             circ_len = encoded_circuit[1]
 
             with for_(n, 0, n < n_shots, n + 1):
+                play("const", qb)
+                play("step", "P1", duration=const_len * u.ns)
                 with strict_timing_():
+                    
+                    # Navigate through the charge stability map
+                    seq.add_step(voltage_point_name="initialization")  # includes manipulation
+                    seq.add_step(voltage_point_name="manipulation")  # includes manipulation
+                    seq.add_step(voltage_point_name="readout")
+                    seq.add_compensation_pulse(duration=duration_compensation_pulse)
+                    
+                    wait((duration_init - const_len) * u.ns, qb)
+
                     with for_(idx, 2, idx < circ_len + 2, idx + 1):
                         with switch_(encoded_circuit[idx], unsafe=True):
                             # baseband operation is fixed regardless L
@@ -114,40 +122,43 @@ with program() as PROGRAM:
                                 play("y90", qb)
 
                             # germs
-                            # TODO: with case():
-                            #   I = XXXX
-                            with case_(7):
+                            with case_(7): #   I = XXXX
+                                play("x90", qb)
+                                play("x90", qb)
+                                play("x90", qb)
                                 play("x90", qb)
                             with case_(8):
-                                play("y90", qb)
-                            with case_(9):
                                 play("x90", qb)
+                            with case_(9):
                                 play("y90", qb)
                             with case_(10):
+                                play("x90", qb)
+                                play("y90", qb)
+                            with case_(11):
                                 play("x90", qb)
                                 play("x90", qb)
                                 play("y90", qb)
 
                             # meas fiducial
-                            with case_(11):
-                                play("const", qb)  # dummy I
                             with case_(12):
-                                play("x90", qb)
+                                play("const", qb)  # dummy I
                             with case_(13):
-                                play("y90", qb)
+                                play("x90", qb)
                             with case_(14):
-                                play("x90", qb)
-                                play("x90", qb)
+                                play("y90", qb)
                             with case_(15):
                                 play("x90", qb)
                                 play("x90", qb)
-                                play("x90", qb)
                             with case_(16):
+                                play("x90", qb)
+                                play("x90", qb)
+                                play("x90", qb)
+                            with case_(17):
                                 play("y90", qb)
                                 play("y90", qb)
                                 play("y90", qb)
 
-                            with case_(17):
+                            with case_(18):
                                 # TODO: readout step
                                 play("const", qb)  # dummy I
 
@@ -188,11 +199,11 @@ if simulate:
     plt.show()
 
 else:
-    from qm import generate_qua_script
+    # from qm import generate_qua_script
 
-    sourceFile = open("debug08.py", "w")
-    print(generate_qua_script(PROGRAM, config), file=sourceFile)
-    sourceFile.close()
+    # sourceFile = open("debug08.py", "w")
+    # print(generate_qua_script(PROGRAM, config), file=sourceFile)
+    # sourceFile.close()
 
     # Open the quantum machine
     qm = qmm.open_qm(config)

@@ -27,6 +27,11 @@ con = "con1"
 lf_fem = 5  # Should be the LF-FEM index, e.g., 1
 sampling_rate = 1e9
 
+step_length = 16
+P1_step_amp = 0.25
+P2_step_amp = 0.25
+hold_offset_duration = 4
+
 ######################
 #       READOUT      #
 ######################
@@ -109,6 +114,20 @@ config = {
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "mw",
                         },
+                        # P1
+                        6: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "pulse",
+                        },
+                        # P2
+                        7: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "pulse",
+                        },
                         # RF Reflectometry
                         8: {
                             "offset": 0.0,
@@ -158,6 +177,40 @@ config = {
                 "y90": "minus_y90_pulse",
             },
             "thread": "b",
+        },
+        "P1": {
+            "singleInput": {
+                "port": (con, lf_fem, 6),
+            },
+            "operations": {
+                "step": "P1_step_pulse",
+            },
+        },
+        "P1_sticky": {
+            "singleInput": {
+                "port": (con, lf_fem, 6),
+            },
+            "sticky": {"analog": True, "duration": hold_offset_duration},
+            "operations": {
+                "step": "P1_step_pulse",
+            },
+        },
+        "P2": {
+            "singleInput": {
+                "port": (con, lf_fem, 7),
+            },
+            "operations": {
+                "step": "P2_step_pulse",
+            },
+        },
+        "P2_sticky": {
+            "singleInput": {
+                "port": (con, lf_fem, 7),
+            },
+            "sticky": {"analog": True, "duration": hold_offset_duration},
+            "operations": {
+                "step": "P1_step_pulse",
+            },
         },
         "tank_circuit": {
             "singleInput": {
@@ -211,6 +264,20 @@ config = {
                 "single": "minus_y90_wf",
             },
         },
+        "P1_step_pulse": {
+            "operation": "control",
+            "length": step_length,
+            "waveforms": {
+                "single": "P1_step_wf",
+            },
+        },
+        "P2_step_pulse": {
+            "operation": "control",
+            "length": step_length,
+            "waveforms": {
+                "single": "P2_step_wf",
+            },
+        },
         "reflectometry_readout_pulse": {
             "operation": "measurement",
             "length": reflectometry_readout_len,
@@ -227,6 +294,8 @@ config = {
     "waveforms": {
         "zero_wf": {"type": "constant", "sample": 0.0},
         "const_wf": {"type": "constant", "sample": const_amp},
+        "P1_step_wf": {"type": "constant", "sample": P1_step_amp},
+        "P2_step_wf": {"type": "constant", "sample": P2_step_amp},
         "x90_wf": {"type": "constant", "sample": x90_amp},
         "y90_wf": {"type": "constant", "sample": y90_amp},
         "minus_x90_wf": {"type": "constant", "sample": -x90_amp},
