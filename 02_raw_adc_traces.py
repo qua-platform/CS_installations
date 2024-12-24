@@ -14,6 +14,9 @@ from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from configuration_with_lf_fem import *
 import matplotlib.pyplot as plt
+import matplotlib
+
+matplotlib.use('TkAgg')
 
 
 ###################

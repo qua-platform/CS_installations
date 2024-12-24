@@ -28,14 +28,15 @@ from qualang_tools.results import (
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
-from macros import RF_reflectometry_macro
+from macros import RF_reflectometry_macro, DC_current_sensing_macro
+
 
 ###################
 # The QUA program #
 ###################
 n_avg = 100  # Number of averaging loops
-n_points = 11
-dc_offsets = np.linspace(-0.2, 0.2, n_points)
+n_points = 101
+dc_offsets = np.linspace(0.1, 0.3, n_points)
 
 with program() as charge_sensor_sweep:
     n = declare(int)  # QUA integer used as an index for the averaging loop

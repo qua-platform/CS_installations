@@ -21,12 +21,14 @@ from qm import SimulationConfig
 from configuration_with_lf_fem import *
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
+import matplotlib
 
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
 ###################
-n_avg = 100  # Number of averaging loops
+n_avg = 1000  # Number of averaging loops
 
 with program() as tof_prog:
     n = declare(int)  # QUA variable for the averaging loop
@@ -80,7 +82,8 @@ else:
     # Waits (blocks the Python console) until all results have been acquired
     res_handles.wait_for_all_values()
     # Fetch the raw ADC traces and convert them into Volts
-    adc1 = u.raw2volts(res_handles.get("adc1").fetch_all())
+    adc1_raw = res_handles.get("adc1").fetch_all()
+    adc1 = u.raw2volts(adc1_raw)
     adc1_single_run = u.raw2volts(res_handles.get("adc1_single_run").fetch_all())
     # Derive the average values
     adc1_mean = np.mean(adc1)
@@ -118,7 +121,7 @@ else:
     plt.legend()
     plt.grid("all")
     plt.tight_layout()
-    plt.show()
+    # plt.show()
 
     # Update the config
     print(f"DC offset to add to Q in the config: {-adc1_mean:.6f} V")
@@ -143,7 +146,27 @@ else:
         }
         data_handler.save_data(data=save_data_dict, name="time_of_flight_RF")
 
-    plt.show()
+    # plt.show()
     qm.close()
+    
+# if save_data:
+#         from qualang_tools.results.data_handler import DataHandler
+
+#         # Data to save
+#         save_data_dict = {}
+#         # save_data_dict["elapsed_time"] =  np.array([elapsed_time])
+#         save_data_dict["adc_rf"] = adc1_mean
+#         save_data_dict["adc_rf_single_run"] = adc1_single_run
+
+#         # Save results
+#         script_name = Path(__file__).name
+#         data_handler = DataHandler(root_data_folder=save_dir)
+#         save_data_dict.update({"fig_live": fig})
+#         data_handler.additional_files = {
+#             script_name: script_name,
+#             **default_additional_files,
+#         }
+#         data_handler.save_data(data=save_data_dict, name="time_of_flight_RF")
+
 
 # %%

@@ -24,14 +24,17 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from scipy import signal
+import matplotlib
+
+matplotlib.use('TkAgg')
 
 
 ###################
 # The QUA program #
 ###################
-n_avg = 100  # Number of averaging loops
+n_avg = 10000  # Number of averaging loops
 # The frequency axis
-frequencies = np.linspace(50 * u.MHz, 350 * u.MHz, 101)
+frequencies = np.linspace(175 * u.MHz, 185 * u.MHz, 11)
 
 with program() as reflectometry_spectro:
     f = declare(int)  # QUA variable for the frequency sweep
@@ -111,12 +114,19 @@ else:
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle("RF-reflectometry spectroscopy")
-        plt.subplot(211)
+        plt.subplot(311)
+        plt.cla()
+        plt.plot(frequencies / u.MHz, I)
+        plt.plot(frequencies / u.MHz, Q)
+        plt.xlabel("Readout frequency [MHz]")
+        plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
+        plt.legend(["I", "Q"])
+        plt.subplot(312)
         plt.cla()
         plt.plot(frequencies / u.MHz, R)
         plt.xlabel("Readout frequency [MHz]")
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
-        plt.subplot(212)
+        plt.subplot(313)
         plt.cla()
         plt.plot(frequencies / u.MHz, signal.detrend(np.unwrap(phase)))
         plt.xlabel("Readout frequency [MHz]")
@@ -144,7 +154,7 @@ else:
         }
         data_handler.save_data(data=save_data_dict, name="reflectometory_spectroscopy")
 
-    plt.show()
+    # plt.show()
     qm.close()
 
 # %%

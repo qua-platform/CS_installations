@@ -7,7 +7,7 @@ The program plays WM in order to verify the signal on an osccilloscope.
 from qm import QuantumMachinesManager
 from qm.qua import *
 from qm import SimulationConfig
-from configuration import *
+from configuration_with_lf_fem import *
 import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
@@ -15,8 +15,6 @@ from scipy import optimize
 from qualang_tools.digital_filters import (
     exponential_decay,
     single_exponential_correction,
-    highpass_correction,
-    high_pass_exponential,
 )
 
 #############
@@ -45,34 +43,11 @@ exp_wf = exp_amp * (1 + A * np.exp(-exp_ts / exp_tau))
 # Derive the corresponding taps
 feedforward_taps, feedback_tap = single_exponential_correction(A_lpf, tau_lpf_ns)
 
-# config["controllers"]["con1"]["analog_outputs"][1] = {
-#     "offset": 0.0,
-#     "filter": {"feedforward": feedforward_taps, "feedback": feedback_tap}}
+config["controllers"]["con1"]["analog_outputs"][1] = {
+    "offset": 0.0,
+    "filter": {"feedforward": feedforward_taps, "feedback": feedback_tap}}
 
 
-
-exp_tau = 100
-exp_len = 1000
-exp_amp = 0.2
-exp_ts = np.arange(exp_len)
-exp_wf = exp_amp * np.exp(-exp_ts / exp_tau)
-
-
-# fig = plt.figure()
-# plt.plot(ts, xs)
-# plt.show()
-
-
-# Fit your data with the exponential_decay function
-[tau_lpf_ns], _ = optimize.curve_fit(
-    high_pass_exponential,
-    exp_ts,
-    exp_wf / exp_wf.max(),
-)
-# Derive the corresponding taps
-feedforward_taps, feedback_tap = highpass_correction(tau_lpf_ns)
-
-# %%
 ###################
 # The QUA program #
 ###################
