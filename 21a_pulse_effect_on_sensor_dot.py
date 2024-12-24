@@ -65,6 +65,7 @@ with program() as PROG:
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
 
     with for_(n, 0, n < n_avg, n + 1):
+        wait(100 * u.ns, "P1_sticky") # to make sure 0
         play(ramp(ramp_rate), "P1_sticky", duration=ramp_duration)  # 1Vpp
         wait(flat_duration, "P1_sticky")
         play(ramp(-ramp_rate), "P1_sticky", duration=ramp_duration)  # 1Vpp
@@ -86,6 +87,7 @@ with program() as PROG:
         # process them which can cause the OPX to crash.
         wait(1_000 * u.ns)  # in ns
         save(n, n_st)
+        ramp_to_zero("P1_sticky")
 
     with stream_processing():
         n_st.save("iteration")

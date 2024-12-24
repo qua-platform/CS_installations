@@ -34,8 +34,7 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.addons.variables import assign_variables_to_element
 from qdac2_driver import QDACII, load_voltage_list
 import matplotlib.pyplot as plt
-from macros import RF_reflectometry_macro
-
+from macros import RF_reflectometry_macro, DC_current_sensing_macro
 
 ###################
 # The QUA program #
@@ -67,14 +66,14 @@ with program() as charge_stability_prog:
 
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("tank_circuit", I, Q)
-    # Play the Coulomb pulse continuously for the whole sequence
-    #      ____      ____      ____      ____
-    #     |    |    |    |    |    |    |    |
-    # ____|    |____|    |____|    |____|    |...
-    with for_(counter, 0, counter < N, counter + 1):
-        # The Coulomb pulse
-        play("step" * amp(Coulomb_amp / P1_step_amp), "P1")
-        play("step" * amp(-Coulomb_amp / P1_step_amp), "P1")
+    # # Play the Coulomb pulse continuously for the whole sequence
+    # #      ____      ____      ____      ____
+    # #     |    |    |    |    |    |    |    |
+    # # ____|    |____|    |____|    |____|    |...
+    # with for_(counter, 0, counter < N, counter + 1):
+    #     # The Coulomb pulse
+    #     play("step" * amp(Coulomb_amp / P1_step_amp), "P1")
+    #     play("step" * amp(-Coulomb_amp / P1_step_amp), "P1")
 
     with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
         with for_(i, 0, i < n_points_slow, i + 1):
@@ -84,7 +83,7 @@ with program() as charge_stability_prog:
                 # Trigger the QDAC2 channel to output the next voltage level from the list
                 play("trigger", "qdac_trigger1")
                 # Wait for the voltages to settle (depends on the channel bandwidth)
-                wait(300 * u.us)
+                wait(300 * u.us) # fastest can be 1 us, depending on the "output_filter"
                 # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
                 # frequency and the integrated quadratures are stored in "I" and "Q"
                 I, Q, I_st, Q_st = RF_reflectometry_macro(I=I, Q=Q)
@@ -114,7 +113,7 @@ qmm = QuantumMachinesManager(
 ## QDAC2 section
 # Create the qdac instrument
 qdac = QDACII("Ethernet", IP_address="127.0.0.1", port=5025)  # Using Ethernet protocol
-qdac = QDACII("USB", USB_device=4)  # Using USB protocol
+# qdac = QDACII("USB", USB_device=4)  # Using USB protocol
 # Set up the qdac and load the voltage list
 load_voltage_list(
     qdac,
@@ -123,7 +122,7 @@ load_voltage_list(
     slew_rate=2e7,
     trigger_port="ext1",
     output_range="low",
-    output_filter="med",
+    output_filter="med", # changes the wait time after changing the voltage
     voltage_list=voltage_values_fast,
 )
 load_voltage_list(

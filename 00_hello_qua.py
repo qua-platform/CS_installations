@@ -57,11 +57,11 @@ qmm = QuantumMachinesManager(
 # Run or Simulate Program #
 ###########################
 
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=1_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, hello_qua, simulation_config)
     # Plot the simulated samples

@@ -15,6 +15,8 @@ from scipy import optimize
 from qualang_tools.digital_filters import (
     exponential_decay,
     single_exponential_correction,
+    highpass_correction,
+    high_pass_exponential,
 )
 
 #############
@@ -48,6 +50,29 @@ feedforward_taps, feedback_tap = single_exponential_correction(A_lpf, tau_lpf_ns
 #     "filter": {"feedforward": feedforward_taps, "feedback": feedback_tap}}
 
 
+
+exp_tau = 100
+exp_len = 1000
+exp_amp = 0.2
+exp_ts = np.arange(exp_len)
+exp_wf = exp_amp * np.exp(-exp_ts / exp_tau)
+
+
+# fig = plt.figure()
+# plt.plot(ts, xs)
+# plt.show()
+
+
+# Fit your data with the exponential_decay function
+[tau_lpf_ns], _ = optimize.curve_fit(
+    high_pass_exponential,
+    exp_ts,
+    exp_wf / exp_wf.max(),
+)
+# Derive the corresponding taps
+feedforward_taps, feedback_tap = highpass_correction(tau_lpf_ns)
+
+# %%
 ###################
 # The QUA program #
 ###################

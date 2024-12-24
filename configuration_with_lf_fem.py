@@ -381,6 +381,14 @@ config = {
                 "Q": "zero_wf",
             },
         },
+        "gaussian_pulse": {
+            "operation": "control",
+            "length": gaussian_length,
+            "waveforms": {
+                "I": "gaussian_wf",
+                "Q": "zero_wf",
+            },
+        },
         "pi_pulse": {
             "operation": "control",
             "length": pi_length,
