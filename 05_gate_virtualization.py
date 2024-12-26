@@ -27,13 +27,14 @@ from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.results.data_handler import DataHandler
+from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy import signal
 
 from configuration_with_lffem import *
 from macros import RF_reflectometry_macro, get_filtered_voltage
 
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 ###################
@@ -58,8 +59,8 @@ tank_circuits = ["tank_circuit1", "tank_circuit2"]
 num_tank_circuits = len(tank_circuits)
 
 n_avg = 3
-n_voltages_Px = 51
-n_voltages_Py = 101
+n_voltages_Px = 11
+n_voltages_Py = 21
 
 # Voltages in Volt
 voltages_Px = np.linspace(-0.1, 0.1, n_voltages_Px)
@@ -68,9 +69,9 @@ voltages_Px = np.linspace(-0.1, 0.1, n_voltages_Px)
 voltages_Py = np.linspace(-0.2, 0.2, n_voltages_Py)
 # TODO: set DC offset on the external source for the fast gate
 # One can check the expected voltage levels after the bias-tee using the following function:
-_, _ = get_filtered_voltage(
-    voltages_Py, step_duration=1e-6, bias_tee_cut_off_frequency=1e3, plot=True
-)
+# _, _ = get_filtered_voltage(
+#     voltages_Py, step_duration=1e-6, bias_tee_cut_off_frequency=1e3, plot=True
+# )
 
 save_data_dict = {
     "Px": Px,
@@ -82,27 +83,35 @@ save_data_dict = {
     "config": config,
 }
 
+gver = GateVirtualizer()
 
 with program() as charge_stability_prog:
     Vx = declare(fixed)
     Vy = declare(fixed)
+    Vs_virtual = [declare(fixed) for _ in range(gver.num_vgs)]
     n = declare(int)  # QUA integer used as an index for the averaging loop
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
+    
     I = [declare(fixed) for _ in range(num_tank_circuits)]
     Q = [declare(fixed) for _ in range(num_tank_circuits)]
     I_st = [declare_stream() for _ in range(num_tank_circuits)]
     Q_st = [declare_stream() for _ in range(num_tank_circuits)]
 
+    for g, idx in gver.g2i.items():
+        assign_variables_to_element(g, Vs_virtual[idx])
+
     with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
         with for_(*from_array(Vy, voltages_Py)):
-            # Pause the OPX to update the external DC voltages in Python
-            set_dc_offset(Py, "single", Vy)
-            # Wait for the voltages to settle (depends on the voltage source bandwidth)
-            wait(5 * u.ms)
             with for_(*from_array(Vx, voltages_Px)):
-                # Update the dc offset of the specified element
-                set_dc_offset(Px, "single", Vx)
+                Vs_virtual = gver.generate_virtual_voltages(
+                    gates=[Px, Py],
+                    Vs_real=[Vx, Vy],
+                    Vs_virtual=Vs_virtual,
+                )
+                for g, idx in gver.g2i.items():
+                    set_dc_offset(g, "single", Vs_virtual[idx])
                 wait(1 * u.ms)
+
                 # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
                 # frequency and the integrated quadratures are stored in "I" and "Q"
                 for j, tc in enumerate(tank_circuits):
@@ -141,11 +150,11 @@ qmm = QuantumMachinesManager(
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=1_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, charge_stability_prog, simulation_config)
     plt.figure()
     job.get_simulated_samples().con1.plot()
@@ -213,14 +222,3 @@ else:
     data_handler.save_data(data=save_data_dict, name="06_charge_stability_map_opx")
 
 # %%
-
-
-# class VirtualGate():
-#     def __init__(self):
-#         points = []
-
-#     def virtualize():
-#         VIRTUALIZATION_MATRIX @ np.array(level_init)
-    
-#     @property
-#     def 

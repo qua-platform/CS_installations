@@ -32,6 +32,8 @@ def IQ_imbalance(g, phi):
 ######################
 # Network parameters #
 ######################
+# qop_ip = "192.168.88.253"  # Write the QM router IP address
+# cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_ip = "172.16.33.107"  # Write the QM router IP address
 cluster_name = "Beta_8"  # Write your cluster_name if version >= QOP220
 # qop_ip = "192.168.88.253"  # Write the QM router IP address
@@ -128,7 +130,7 @@ REFLECTOMETRY_READOUT_LEN = 10_000
 
 QUBIT_CONSTANTS = {
     "qubit1": {
-        "con": "con1",
+        "con": con1,
         "fem": fem1,
         "ao_I": 1,
         "ao_Q": 2,
@@ -145,7 +147,7 @@ QUBIT_CONSTANTS = {
         "digital_delay": 0,
     },
     "qubit2": {
-        "con": "con1",
+        "con": con1,
         "fem": fem1,
         "ao_I": 3,
         "ao_Q": 4,
@@ -162,7 +164,7 @@ QUBIT_CONSTANTS = {
         "digital_delay": 0,
     },
     "qubit3": {
-        "con": "con1",
+        "con": con1,
         "fem": fem1,
         "ao_I": 5,
         "ao_Q": 6,
@@ -182,7 +184,7 @@ QUBIT_CONSTANTS = {
 
 PLUNGER_CONSTANTS = {
     "P1": {
-        "con": "con1",
+        "con": con1,
         "fem": fem2,
         "ao": 1,
         "step_amp": STEP_AMP,
@@ -190,7 +192,7 @@ PLUNGER_CONSTANTS = {
         "delay": 0,
     },
     "P2": {
-        "con": "con1",
+        "con": con1,
         "fem": fem2,
         "ao": 2,
         "step_amp": STEP_AMP,
@@ -198,7 +200,7 @@ PLUNGER_CONSTANTS = {
         "delay": 0,
     },
     "P3": {
-        "con": "con1",
+        "con": con1,
         "fem": fem2,
         "ao": 3,
         "step_amp": STEP_AMP,
@@ -209,7 +211,7 @@ PLUNGER_CONSTANTS = {
 
 BARRIER_CONSTANTS = {
     "B1": {
-        "con": "con1",
+        "con": con1,
         "fem": fem2,
         "ao": 4,
         "step_amp": STEP_AMP,
@@ -217,7 +219,7 @@ BARRIER_CONSTANTS = {
         "delay": 0,
     },
     "B2": {
-        "con": "con1",
+        "con": con1,
         "fem": fem2,
         "ao": 5,
         "step_amp": STEP_AMP,
@@ -225,7 +227,7 @@ BARRIER_CONSTANTS = {
         "delay": 0,
     },
     "B3": {
-        "con": "con1",
+        "con": con1,
         "fem": fem2,
         "ao": 6,
         "step_amp": STEP_AMP,
@@ -236,7 +238,7 @@ BARRIER_CONSTANTS = {
 
 PLUNGER_SD_CONSTANTS = {
     "Psd1": {
-        "con": "con1",
+        "con": con1,
         "fem": fem2,
         "ao": 7,
         "step_amp": STEP_AMP,
@@ -244,7 +246,7 @@ PLUNGER_SD_CONSTANTS = {
         "delay": 0,
     },
     "Psd2": {
-        "con": "con1",
+        "con": con1,
         "fem": fem2,
         "ao": 8,
         "step_amp": STEP_AMP,
@@ -255,7 +257,7 @@ PLUNGER_SD_CONSTANTS = {
 
 TANK_CIRCUIT_CONSTANTS = {
     "tank_circuit1": {
-        "con": "con1",
+        "con": con1,
         "fem": fem1,
         "ao": 8,
         "ai": 2,
@@ -266,7 +268,7 @@ TANK_CIRCUIT_CONSTANTS = {
         "delay": 0,
     },
     "tank_circuit2": {
-        "con": "con1",
+        "con": con1,
         "fem": fem1,
         "ao": 8,
         "ai": 2,
@@ -277,6 +279,74 @@ TANK_CIRCUIT_CONSTANTS = {
         "delay": 0,
     },
 }
+
+
+#########################
+#  GATE VIRTUALIZATION  #
+#########################
+
+from collections import OrderedDict
+
+MAP_GATE_TO_IDX = OrderedDict([
+    ("P1", 0),
+    ("P2", 1),
+    ("P3", 2),
+    ("B1", 3),
+    ("B2", 4),
+    ("B3", 5),
+    ("Psd1", 6),
+    ("Psd2", 7), 
+])
+
+NUM_VGs = len(MAP_GATE_TO_IDX)
+A = np.random.rand(NUM_VGs, NUM_VGs)
+CROSSTALK_MATRIX = 0.1 * (A + A.T) / 2
+np.fill_diagonal(CROSSTALK_MATRIX, 1)
+INV_CROSSTALK_MATARIX = np.linalg.inv(CROSSTALK_MATRIX)
+
+INV_CROSSTALK_MATARIX = np.array([
+    [ 1.03, -0.03, -0.06, -0.06, -0.05, -0.07, -0.03, -0.02, -0.05, -0.07, -0.03],
+    [-0.03,  1.03, -0.06, -0.05,  0.01, -0.05, -0.05, -0.03, -0.06, -0.01, -0.04],
+    [-0.06, -0.06,  1.02, -0.03, -0.03,  0.01, -0.01, -0.05, -0.02, -0.06,  0.00],
+    [-0.06, -0.05, -0.03,  1.03, -0.03, -0.07, -0.01,  0.00, -0.03, -0.05, -0.06],
+    [-0.05,  0.01, -0.03, -0.03,  1.02, -0.04, -0.00, -0.05, -0.04, -0.02, -0.03],
+    [-0.07, -0.05,  0.01, -0.07, -0.04,  1.03,  0.00, -0.02, -0.03, -0.06, -0.03],
+    [-0.03, -0.05, -0.01, -0.01, -0.00,  0.00,  1.02, -0.05, -0.03, -0.05, -0.06],
+    [-0.02, -0.03, -0.05,  0.00, -0.05, -0.02, -0.05,  1.03, -0.07, -0.06, -0.05],
+    [-0.05, -0.06, -0.02, -0.03, -0.04, -0.03, -0.03, -0.07,  1.02, -0.02, -0.02],
+    [-0.07, -0.01, -0.06, -0.05, -0.02, -0.06, -0.05, -0.06, -0.02,  1.03, -0.01],
+    [-0.03, -0.04,  0.00, -0.06, -0.03, -0.03, -0.06, -0.05, -0.02, -0.01,  1.02],
+])
+
+
+from qm.qua import *
+from qm.qua._expressions import QuaVariable
+import copy
+
+
+class GateVirtualizer:
+    MAP_GATE_TO_IDX = MAP_GATE_TO_IDX
+    INV_CROSSTALK_MATARIX = INV_CROSSTALK_MATARIX
+    
+    def __init__(self):
+        # Initialize the mapping of gates to indices
+        self.num_vgs = len(MAP_GATE_TO_IDX)
+        self.g2i = copy.deepcopy(GateVirtualizer.MAP_GATE_TO_IDX)
+
+    def generate_virtual_voltages(
+        self,
+        gates: list[str],
+        Vs_real: list[QuaVariable],
+        Vs_virtual: list[QuaVariable],
+    ):
+        assert len(gates) == len(Vs_real), "length of gates and Vs_real must be the same"
+
+        for g1, idx1 in self.g2i.items():
+            for g2, v2 in zip(gates, Vs_real):
+                idx2 = self.g2i[g2]
+                assign(Vs_virtual[idx1], GateVirtualizer.INV_CROSSTALK_MATARIX[idx2, idx1] * v2)
+
+        return Vs_virtual
 
 
 ########################
