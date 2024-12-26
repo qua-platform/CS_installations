@@ -79,8 +79,10 @@ with program() as PROGRAM:
             circ_len = encoded_circuit[1]
 
             with for_(n, 0, n < n_shots, n + 1):
-                play("const", qb)
-                play("step", "P1", duration=const_len * u.ns)
+                
+                # play("const", qb)
+                # play("step", "P1", duration=const_len * u.ns)
+
                 with strict_timing_():
                     
                     # Navigate through the charge stability map
@@ -89,7 +91,9 @@ with program() as PROGRAM:
                     seq.add_step(voltage_point_name="readout")
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
                     
-                    wait((duration_init - const_len) * u.ns, qb)
+                    
+                    # wait((duration_init - const_len) * u.ns, qb)
+                    wait(duration_init * u.ns, qb)
 
                     with for_(idx, 2, idx < circ_len + 2, idx + 1):
                         with switch_(encoded_circuit[idx], unsafe=True):

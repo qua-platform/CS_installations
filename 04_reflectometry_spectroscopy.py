@@ -122,3 +122,25 @@ else:
         plt.ylabel("Phase [rad]")
         plt.tight_layout()
         plt.pause(0.1)
+
+    # Fetch results
+    res = results.fetch_all()
+    for ind, tc in enumerate(tank_circuits):
+        save_data_dict[f"I_{tc}"] = res[2 * ind + 1]
+        save_data_dict[f"Q_{tc}"] = res[2 * ind + 2]
+
+    # Save results
+    script_name = Path(__file__).name
+    data_handler = DataHandler(root_data_folder=save_dir)
+    save_data_dict.update({"fig_live": fig})
+    data_handler.additional_files = {
+        script_name: script_name,
+        **default_additional_files,
+    }
+    data_handler.save_data(data=save_data_dict, name="05_sensor_gate_sweep_opx")
+
+    qm.close()
+    plt.close()
+
+# %%
+

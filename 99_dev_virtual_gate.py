@@ -57,6 +57,7 @@ CCinv = np.linalg.inv(CC)
 tank_circuits = ["tank_circuit1", "tank_circuit2"]
 num_tank_circuits = len(tank_circuits)
 
+
 n_avg = 3
 n_voltages_Px = 51
 n_voltages_Py = 101
@@ -86,8 +87,72 @@ save_data_dict = {
     "config": config,
 }
 
+"""
+loop over P vs P
+loop over P vs VP
+loop over VP vs P
+loop over VP vs VP
+"""
 
-# want to loop over
+
+
+
+"""
+CC12 = np.array( 
+    [
+        [1, 0, ...],
+        [0, 1, ...],
+        [...],
+    ]
+)
+
+if every pair wise calibration, use new virtual gates (but intermediate ones)
+starting wiht 78, ... , 12
+
+CC = CC12 * CC13 * ... * CC34 * .. * C78
+CCinv = CC78inv * ... * C34inv * ... * CC13inv * CC12inv
+
+[VP1, VP2, RP3, RP4, ..., RP8]
+
+with for_(i, 0, i < M, i + 1):
+    g1 = V1[i]
+    
+    with for_(j):
+        g2 = V2[j]
+
+
+# during the calibration, 
+with for_(i, 0, i < M, i + 1):
+    g1 = V1[i]
+    
+    with for_(j):
+        vg2 = V2[j] # virtual
+        
+        [g1, g2] <- CC12inv @ [, vg2, ....]
+
+
+
+# once we know CCinv, think everything in the virtual gate 
+with for_(i, 0, i < M, i + 1):
+    p1 = V1[i]
+    
+    with for_(j):
+        p2 = V2[j]
+        
+        [g1, g2, ..., g8] = CCinv @ [p1, p2, ..., p8]
+        
+        align()
+        
+        play("step" * g1 / step_amp, "P1")
+        play("step" * g2 / step_amp, "P2")
+        ...
+        play("step" * g8 / step_amp, "P8")
+
+
+
+
+
+"""
 
 
 
