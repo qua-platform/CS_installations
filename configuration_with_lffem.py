@@ -89,14 +89,12 @@ STEP_AMP = 0.25
 
 ## Section defining the points from the charge stability map - can be done in the config
 # Relevant points in the charge stability map as ["P1", "P2"] in V
-level_init = [0.1, -0.1]
-level_manip = [0.2, -0.2]
+level_init = [-0.1, 0.1]
 level_readout = [0.12, -0.12]
 
 # Duration of each step in ns
-duration_init = 2500
-duration_manip = 1000
-duration_readout = 1200  # reflectometry_readout_len + 100
+duration_init = 100
+duration_readout = 200  # reflectometry_readout_len + 100
 duration_compensation_pulse = 4 * u.us
 
 # Time to ramp down to zero for sticky elements in ns

@@ -201,6 +201,5 @@ else:
     data_handler.save_data(data=save_data_dict, name="06_charge_stability_map_opx")
 
     qm.close()
-    plt.close()
 
 # %%

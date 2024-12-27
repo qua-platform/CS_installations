@@ -191,6 +191,5 @@ else:
     data_handler.save_data(data=save_data_dict, name="05_sensor_gate_sweep_opx")
 
     qm.close()
-    plt.close()
 
 # %%
