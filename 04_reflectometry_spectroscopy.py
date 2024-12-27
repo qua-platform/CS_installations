@@ -1,3 +1,4 @@
+# %%
 """
         RF REFLECTOMETRY SPECTROSCOPY
 The goal of this script is to perform the spectroscopy of the RF-reflectometry readout.
@@ -20,6 +21,7 @@ from qm.qua import *
 from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
+from qualang_tools.results.data_handler import DataHandler
 from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy import signal
 
@@ -28,32 +30,41 @@ from configuration_with_lffem import *
 ###################
 # The QUA program #
 ###################
+tank_circuit = "tank_circuit1"
 n_avg = 100  # Number of averaging loops
 # The frequency axis
 frequencies = np.linspace(50 * u.MHz, 350 * u.MHz, 101)
+
+save_data_dict = {
+    "tank_circuit": tank_circuit,
+    "frequencies": frequencies,
+    "n_avg": n_avg,
+    "config": config,
+}
+
 
 with program() as reflectometry_spectro:
     f = declare(int)  # QUA variable for the frequency sweep
     n = declare(int)  # QUA variable for the averaging loop
     I = declare(fixed)  # QUA variable for the measured 'I' quadrature
     Q = declare(fixed)  # QUA variable for the measured 'Q' quadrature
+    n_st = declare_stream()  # Stream for the averaging iteration 'n'
     I_st = declare_stream()  # Stream for the 'I' quadrature
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
-    n_st = declare_stream()  # Stream for the averaging iteration 'n'
 
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(f, frequencies)):
             # Update the frequency of the tank_circuit element
-            update_frequency("tank_circuit", f)
+            update_frequency(tank_circuit, f)
             # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
             # frequency and the integrated quadratures are stored in "I" and "Q"
             # Please choose the right "out1" or "out2" according to the connectivity
             measure(
                 "readout",
-                "tank_circuit",
+                tank_circuit,
                 None,
-                demod.full("cos", I, "out2"),
-                demod.full("sin", Q, "out2"),
+                demod.full("cos", I, "out1"),
+                demod.full("sin", Q, "out1"),
             )
             save(I, I_st)
             save(Q, Q_st)
@@ -103,7 +114,7 @@ else:
         # Fetch results
         I, Q, iteration = results.fetch_all()
         # Convert results into Volts
-        S = u.demod2volts(I + 1j * Q, reflectometry_readout_length)
+        S = u.demod2volts(I + 1j * Q, REFLECTOMETRY_READOUT_LEN)
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
         # Progress bar
@@ -125,9 +136,9 @@ else:
 
     # Fetch results
     res = results.fetch_all()
-    for ind, tc in enumerate(tank_circuits):
-        save_data_dict[f"I_{tc}"] = res[2 * ind + 1]
-        save_data_dict[f"Q_{tc}"] = res[2 * ind + 2]
+    save_data_dict["I"] = I
+    save_data_dict["Q"] = Q
+    save_data_dict["S"] = S
 
     # Save results
     script_name = Path(__file__).name
@@ -137,7 +148,7 @@ else:
         script_name: script_name,
         **default_additional_files,
     }
-    data_handler.save_data(data=save_data_dict, name="05_sensor_gate_sweep_opx")
+    data_handler.save_data(data=save_data_dict, name="04_reflectometry_spectroscopy")
 
     qm.close()
 

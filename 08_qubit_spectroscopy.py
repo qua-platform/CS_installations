@@ -43,81 +43,83 @@ from macros import RF_reflectometry_macro
 # The QUA program #
 ###################
 
+qubit = "qubit3"
 n_avg = 100
-# The intermediate frequency sweep parameters
-f_min = 1 * u.MHz
-f_max = 251 * u.MHz
-df = 2000 * u.kHz
-IFs = np.arange(f_min, f_max + 0.1, df)
-# The LO frequency sweep parameters
-f_min_external = 4.501e9 - f_min
-f_max_external = 6.5e9 - f_max
-df_external = f_max - f_min
-lo_frequencies = np.arange(f_min_external, f_max_external + 0.1, df_external)
-# lo_frequencies = [6e9]
-# Total frequency vector
-frequencies = np.array(
-    np.concatenate([IFs + lo_frequencies[i] for i in range(len(lo_frequencies))])
-)
-
-# Magnetic field in T
-# B_fields = np.arange(-5, 5, 0.1)
-B_fields = [0, 1, 2]
+# The frequency axis
+frequencies = np.linspace(50 * u.MHz, 350 * u.MHz, 101)
 
 # Delay in ns before stepping to the readout point after playing the qubit pulse - must be a multiple of 4ns and >= 16ns
 delay_before_readout = 16
 
-seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
+sweep_gates = ["P1_sticky", "P2_sticky"]
+seq = VoltageGateSequence(config, sweep_gates)
 seq.add_points("initialization", level_init, duration_init)
-seq.add_points("idle", level_manip, duration_manip)
 seq.add_points("readout", level_readout, duration_readout)
+    
+
+tank_circuits = ["tank_circuit1", "tank_circuit2"]
+num_tank_circuits = len(tank_circuits)
+
+
+save_data_dict = {
+    "sweep_gates": sweep_gates,
+    "tank_circuits": tank_circuits,
+    "frequencies": frequencies,
+    "n_avg": n_avg,
+    "config": config,
+}
+
 
 with program() as qubit_spectroscopy_prog:
     n = declare(int)  # QUA integer used as an index for the averaging loop
     f = declare(int)  # QUA variable for the qubit pulse duration
-    i = declare(int)  # QUA variable for the magnetic field sweep
-    j = declare(int)  # QUA variable for the lo frequency sweep
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
-    with for_(i, 0, i < len(B_fields) + 1, i + 1):
-        with for_(j, 0, j < len(lo_frequencies), j + 1):
-            pause()
-            with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
-                with for_(*from_array(f, IFs)):  # Loop over the qubit pulse amplitude
-                    update_frequency("qubit", f)
-                    with strict_timing_():  # Ensure that the sequence will be played without gap
-                        # Navigate through the charge stability map
-                        seq.add_step(voltage_point_name="initialization")
-                        seq.add_step(voltage_point_name="readout")
-                        seq.add_compensation_pulse(duration=duration_compensation_pulse)
+    I = [declare(fixed) for _ in range(num_tank_circuits)]
+    Q = [declare(fixed) for _ in range(num_tank_circuits)]
+    I_st = [declare_stream() for _ in range(num_tank_circuits)]
+    Q_st = [declare_stream() for _ in range(num_tank_circuits)]
 
-                        # Drive the qubit by playing the MW pulse at the end of the manipulation step
-                        wait(
-                            (duration_init - delay_before_readout - cw_len) * u.ns,
-                            "qubit",
-                        )
-                        play("cw", "qubit")
+    with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
 
-                        # Measure the dot right after the qubit manipulation
-                        wait(duration_init * u.ns, "tank_circuit", "TIA")
-                        I, Q, I_st, Q_st = RF_reflectometry_macro()
-                        dc_signal, dc_signal_st = DC_current_sensing_macro()
-                    seq.ramp_to_zero()
-        save(i, n_st)
+        with for_(*from_array(f, frequencies)):  # Loop over the qubit pulse amplitude
+            update_frequency(qubit, f)
+
+            with strict_timing_():  # Ensure that the sequence will be played without gap
+                # Navigate through the charge stability map
+                seq.add_step(voltage_point_name="initialization")
+                seq.add_step(voltage_point_name="readout")
+                seq.add_compensation_pulse(duration=duration_compensation_pulse)
+
+                # Drive the qubit by playing the MW pulse at the end of the manipulation step
+                wait((duration_init - delay_before_readout - CONST_LEN) * u.ns, qubit)
+                play("const", qubit)
+
+                # Measure the dot right after the qubit manipulation
+                wait(duration_init * u.ns, "tank_circuit")
+                # Measure the dot right after the qubit manipulation
+                for j, tc in enumerate(tank_circuits):
+                    measure(
+                        "readout",
+                        tc,
+                        None,
+                        demod.full("cos", I[j], "out1"),
+                        demod.full("sin", Q[j], "out1"),
+                    )
+                    save(I[j], I_st[j])
+                    save(Q[j], Q_st[j])
+
+            seq.ramp_to_zero()
+
+        save(n, n_st)
+
     # Stream processing section used to process the data before saving it.
     with stream_processing():
         n_st.save("iteration")
-        # Cast the data into a 2D matrix and performs a global averaging of the received 2D matrices together.
         # RF reflectometry
-        I_st.buffer(len(IFs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(
-            len(lo_frequencies)
-        ).save_all("I")
-        Q_st.buffer(len(IFs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(
-            len(lo_frequencies)
-        ).save_all("Q")
-        # DC current sensing
-        dc_signal_st.buffer(len(IFs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(
-            len(lo_frequencies)
-        ).save_all("dc_signal")
+        for j, tc in enumerate(tank_circuits):
+            I_st[j].buffer(len(frequencies)).save_all(f"I_{tc}")
+            Q_st[j].buffer(len(frequencies)).save_all(f"Q_{tc}")
+
 
 #####################################
 #  Open Communication with the QOP  #
@@ -141,19 +143,15 @@ if simulate:
     plt.subplot(211)
     job.get_simulated_samples().con1.plot()
     plt.axhline(level_init[0], color="k", linestyle="--")
-    plt.axhline(level_manip[0], color="k", linestyle="--")
     plt.axhline(level_readout[0], color="k", linestyle="--")
     plt.axhline(level_init[1], color="k", linestyle="--")
-    plt.axhline(level_manip[1], color="k", linestyle="--")
     plt.axhline(level_readout[1], color="k", linestyle="--")
     plt.yticks(
         [
             level_readout[1],
-            level_manip[1],
             level_init[1],
             0.0,
             level_init[0],
-            level_manip[0],
             level_readout[0],
         ],
         ["readout", "manip", "init", "0", "init", "manip", "readout"],

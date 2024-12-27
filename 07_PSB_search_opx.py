@@ -119,8 +119,7 @@ with program() as PSB_search_prog:
             # process them which can cause the OPX to crash.
             wait(1_000 * u.ns)  # in ns
             # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
-            ramp_to_zero("P1_sticky")
-            ramp_to_zero("P2_sticky")
+            seq.ramp_to_zero()
 
         # Save the LO iteration to get the progress bar
         save(n, n_st)
