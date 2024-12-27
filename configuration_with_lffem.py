@@ -326,9 +326,10 @@ INV_CROSSTALK_MATARIX = np.array([
 ])
 
 
+import copy
+
 from qm.qua import *
 from qm.qua._expressions import QuaVariable
-import copy
 
 
 class GateVirtualizer:

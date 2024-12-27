@@ -30,7 +30,6 @@ from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy import signal
 
 from configuration_with_lffem import *
-from macros import RF_reflectometry_macro
 
 matplotlib.use('TkAgg')
 

@@ -20,7 +20,8 @@ Prerequisites:
 """
 
 import matplotlib.pyplot as plt
-from qm import QuantumMachinesManager, SimulationConfig, CompilerOptionArguments
+from qm import (CompilerOptionArguments, QuantumMachinesManager,
+                SimulationConfig)
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
@@ -30,7 +31,6 @@ from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy.optimize import curve_fit
 
 from configuration_with_lffem import *
-from macros import RF_reflectometry_macro
 
 ##############################
 # Program-specific variables #
@@ -288,7 +288,6 @@ def generate_sequence_time(sequence_list, depth):
 
 
 from qualang_tools.voltage_gates import VoltageGateSequence
-
 
 ###################
 # The QUA program #

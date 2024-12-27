@@ -28,16 +28,17 @@ import matplotlib
 import matplotlib.pyplot as plt
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
+from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
-from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.results.data_handler import DataHandler
 from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy import signal
 
 from configuration_with_lffem import *
-from macros import RF_reflectometry_macro, get_filtered_voltage
+
+, get_filtered_voltage
 
 matplotlib.use('TkAgg')
 

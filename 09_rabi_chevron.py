@@ -31,7 +31,6 @@ from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.voltage_gates import VoltageGateSequence
 
 from configuration_with_lffem import *
-from macros import RF_reflectometry_macro
 
 ###################
 # The QUA program #

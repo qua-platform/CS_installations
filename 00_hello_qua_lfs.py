@@ -3,15 +3,14 @@
 A simple sandbox to showcase different QUA functionalities during the installation.
 """
 
+import matplotlib.pyplot as plt
+from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
+# from configuration_with_lffem import *
+from qualang_tools.voltage_gates import VoltageGateSequence
 
 from configuration_with_lffem_full import *
 
-# from configuration_with_lffem import *
-from qualang_tools.voltage_gates import VoltageGateSequence
-import matplotlib.pyplot as plt
 # from qm import generate_qua_script
 # import matplotlib
 

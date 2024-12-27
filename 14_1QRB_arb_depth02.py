@@ -20,7 +20,8 @@ Prerequisites:
 """
 
 import matplotlib.pyplot as plt
-from qm import QuantumMachinesManager, SimulationConfig, CompilerOptionArguments
+from qm import (CompilerOptionArguments, QuantumMachinesManager,
+                SimulationConfig)
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
