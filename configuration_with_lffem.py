@@ -93,8 +93,8 @@ level_init = [-0.1, 0.1]
 level_readout = [0.12, -0.12]
 
 # Duration of each step in ns
-duration_init = 1000
-duration_readout = 2500  # reflectometry_readout_len + 100
+duration_init = 400
+duration_readout = 400  # reflectometry_readout_len + 100
 duration_compensation_pulse = 4 * u.us
 
 # Time to ramp down to zero for sticky elements in ns
@@ -128,7 +128,7 @@ PI_SIGMA = PI_LEN / 5
 ########################
 
 REFLECTOMETRY_READOUT_AMP = 0.1
-REFLECTOMETRY_READOUT_LEN = 10_000
+REFLECTOMETRY_READOUT_LEN = 400 # 10_000
 
 
 #################

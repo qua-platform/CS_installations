@@ -58,8 +58,8 @@ ge_threshold = 0.155  # arbitrary atm, in V
 B_field = 0  # Predetermined magnetic field value if not set externally
 
 
-# seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
-seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
+# seq = VoltageGateSequence(config, sweep_gates)
+seq = VoltageGateSequence(config, sweep_gates)
 seq.add_points("initialization", level_init, duration_init)
 # Idle is when RB sequence takes place, duration is overridden with calculated sequence timing
 seq.add_points("idle", level_manip, duration_manip)
@@ -352,9 +352,7 @@ with program() as rb:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 qmm.clear_all_job_results()
 qmm.close_all_qms()
 

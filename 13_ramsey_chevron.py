@@ -45,7 +45,7 @@ durations = np.arange(16 // 4, 200 // 4, 1)
 detunings = np.arange(-10 * u.MHz, 10 * u.MHz, 100 * u.kHz)
 
 # Add the relevant voltage points describing the "slow" sequence (no qubit pulse)
-seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
+seq = VoltageGateSequence(config, sweep_gates)
 seq.add_points("initialization", level_init, duration_init)
 seq.add_points("idle", level_manip, duration_manip)
 seq.add_points("readout", level_readout, duration_readout)
@@ -137,22 +137,18 @@ if simulate:
     plt.subplot(211)
     job.get_simulated_samples().con1.plot()
     plt.axhline(level_init[0], color="k", linestyle="--")
-    plt.axhline(level_manip[0], color="k", linestyle="--")
     plt.axhline(level_readout[0], color="k", linestyle="--")
     plt.axhline(level_init[1], color="k", linestyle="--")
-    plt.axhline(level_manip[1], color="k", linestyle="--")
     plt.axhline(level_readout[1], color="k", linestyle="--")
     plt.yticks(
         [
             level_readout[1],
-            level_manip[1],
             level_init[1],
             0.0,
             level_init[0],
-            level_manip[0],
             level_readout[0],
         ],
-        ["readout", "manip", "init", "0", "init", "manip", "readout"],
+        ["readout", "init", "0", "init", "readout"],
     )
     plt.legend("")
     from macros import get_filtered_voltage

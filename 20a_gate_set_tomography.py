@@ -51,7 +51,7 @@ duration_compensation_pulse = 400 * u.us
 delay_before_readout = 16
 
 # Add the relevant voltage points describing the "slow" sequence (no qubit pulse)
-seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
+seq = VoltageGateSequence(config, sweep_gates)
 seq.add_points("initialization", level_init, duration_init)
 seq.add_points("manipulation", level_manip, duration_manip)
 seq.add_points("readout", level_readout, duration_readout)

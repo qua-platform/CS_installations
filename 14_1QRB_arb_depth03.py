@@ -33,8 +33,8 @@ seed = 34553  # Pseudo-random number generator seed
 state_discrimination = False
 ge_threshold = 0.155  # arbitrary atm, in V
 
-# seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
-seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
+# seq = VoltageGateSequence(config, sweep_gates)
+seq = VoltageGateSequence(config, sweep_gates)
 seq.add_points("initialization", level_init, duration_init)
 # Idle is when RB sequence takes place, duration is overridden with calculated sequence timing
 seq.add_points("idle", level_manip, duration_manip)

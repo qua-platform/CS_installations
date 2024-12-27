@@ -57,11 +57,9 @@ sweep_gates = ["P1_sticky", "P2_sticky"]
 seq = VoltageGateSequence(config, sweep_gates)
 seq.add_points("initialization", level_init, duration_init)
 seq.add_points("readout", level_readout, duration_readout)
-    
 
 tank_circuits = ["tank_circuit1", "tank_circuit2"]
 num_tank_circuits = len(tank_circuits)
-
 
 save_data_dict = {
     "sweep_gates": sweep_gates,
@@ -156,7 +154,7 @@ if simulate:
             level_init[0],
             level_readout[0],
         ],
-        ["readout", "manip", "init", "0", "init", "manip", "readout"],
+        ["readout", "init", "0", "init", "readout"],
     )
     plt.legend("")
     from macros import get_filtered_voltage
@@ -174,7 +172,6 @@ else:
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(qubit_spectroscopy_prog)
-
 
     # Get results from QUA program
     fetch_names = ["iteration"]
