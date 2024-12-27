@@ -35,7 +35,7 @@ def IQ_imbalance(g, phi):
 # qop_ip = "192.168.88.253"  # Write the QM router IP address
 # cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_ip = "172.16.33.107"  # Write the QM router IP address
-cluster_name = "Beta_8"  # Write your cluster_name if version >= QOP220
+cluster_name = "Cluster_1" # "Beta_8"  # Write your cluster_name if version >= QOP220
 # qop_ip = "192.168.88.253"  # Write the QM router IP address
 # cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = 9510  # Write the QOP port if version < QOP220
@@ -58,8 +58,8 @@ default_additional_files = {
 # OPX configuration #
 #####################
 con1 = "con1"
-fem1 = 3  # Should be the LF-FEM index, e.g., 1
-fem2 = 5  # Should be the LF-FEM index, e.g., 1
+fem1 = 5  # Should be the LF-FEM index, e.g., 1
+fem2 = 3  # Should be the LF-FEM index, e.g., 1
 # fem3 = 3  # Should be the LF-FEM index, e.g., 1
 
 
@@ -111,6 +111,15 @@ bias_tee_cut_off_frequency = 10 * u.kHz
 # CW pulse
 CONST_AMP = 0.1  # in V
 CONST_LEN = 100  # in ns
+
+SQUARE_X180_AMP = 0.4
+SQUARE_X90_AMP = 0.35
+SQUARE_MINUS_X90_AMP = -0.35
+SQUARE_Y180_AMP = 0.3
+SQUARE_Y90_AMP = 0.25
+SQUARE_MINUS_Y90_AMP = -0.25
+SQUARE_LEN = 48
+
 PI_AMP = 0.1
 PI_LEN = 52
 PI_SIGMA = PI_LEN / 5
@@ -170,7 +179,7 @@ QUBIT_CONSTANTS = {
         "ao_Q": 6,
         "do": 3,
         "LO": 16.3 * u.GHz,
-        "IF": 50 * u.MHz,
+        "IF": 0 * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0,
         "pi_amp": PI_AMP,
@@ -649,9 +658,47 @@ config = {
                     "const": "const_pulse",
                     "x180": f"x180_gaussian_pulse_{qb}",
                     "x90": f"x90_gaussian_pulse_{qb}",
+                    "-x90": f"minus_x90_gaussian_pulse_{qb}",
                     "y180": f"y180_gaussian_pulse_{qb}",
                     "y90": f"y90_gaussian_pulse_{qb}",
+                    "-y90": f"minus_y90_gaussian_pulse_{qb}",
+                    "square_x180": f"square_x180_pulse",
+                    "square_x90": f"square_x90_pulse",
+                    "square_-x90": f"square_minus_x90_pulse",
+                    "square_y180": f"square_y180_pulse",
+                    "square_y90": f"square_y90_pulse",
+                    "square_-y90": f"square_minus_y90_pulse",
                 },
+                # "thread": qb,
+            }
+            for qb, val in QUBIT_CONSTANTS.items()
+        },
+        # qubits (qubit1, ...)
+        **{
+            f"{qb}_dummy": {
+                "mixInputs": {
+                    "I": (val["con"], val["fem"], val["ao_I"]),
+                    "Q": (val["con"], val["fem"], val["ao_Q"]),
+                    "lo_frequency": val["LO"],
+                    "mixer": f"mixer_{qb}",
+                },
+                "intermediate_frequency": val["IF"],
+                "operations": {
+                    "const": "const_pulse",
+                    "x180": f"x180_gaussian_pulse_{qb}",
+                    "x90": f"x90_gaussian_pulse_{qb}",
+                    "-x90": f"minus_x90_gaussian_pulse_{qb}",
+                    "y180": f"y180_gaussian_pulse_{qb}",
+                    "y90": f"y90_gaussian_pulse_{qb}",
+                    "-y90": f"minus_y90_gaussian_pulse_{qb}",
+                    "square_x180": f"square_x180_pulse",
+                    "square_x90": f"square_x90_pulse",
+                    "square_-x90": f"square_minus_x90_pulse",
+                    "square_y180": f"square_y180_pulse",
+                    "square_y90": f"square_y90_pulse",
+                    "square_-y90": f"square_minus_y90_pulse",
+                },
+                # "thread": f"{qb}_dummy",
             }
             for qb, val in QUBIT_CONSTANTS.items()
         },
@@ -811,6 +858,54 @@ config = {
                 "Q": "zero_wf",
             },
         },
+        "square_x180_pulse": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_x180_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "square_x90_pulse": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_x90_I_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "square_minus_x90_pulse": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_minus_x90_I_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "square_y180_pulse": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_y180_I_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "square_y90_pulse": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_y90_I_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "square_minus_y90_pulse": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_minus_y90_I_wf",
+                "Q": "zero_wf",
+            },
+        },
         "trigger_pulse": {
             "operation": "control",
             "length": 1000,
@@ -818,8 +913,14 @@ config = {
         },
     },
     "waveforms": {
-        "const_wf": {"type": "constant", "sample": CONST_AMP},
         "zero_wf": {"type": "constant", "sample": 0.0},
+        "const_wf": {"type": "constant", "sample": CONST_AMP},
+        "square_x180_wf": {"type": "constant", "sample": SQUARE_X180_AMP},
+        "square_x90_I_wf": {"type": "constant", "sample": SQUARE_X90_AMP},
+        "square_minus_x90_I_wf": {"type": "constant", "sample": SQUARE_MINUS_X90_AMP},
+        "square_y180_I_wf": {"type": "constant", "sample": SQUARE_Y180_AMP},
+        "square_y90_I_wf": {"type": "constant", "sample": SQUARE_Y90_AMP},
+        "square_minus_y90_I_wf": {"type": "constant", "sample": SQUARE_MINUS_Y90_AMP},
         **{
             f"reflectometry_readout_wf_{key}": {
                 "type": "constant",

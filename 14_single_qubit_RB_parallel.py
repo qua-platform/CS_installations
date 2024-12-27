@@ -36,26 +36,24 @@ from macros import RF_reflectometry_macro
 # Program-specific variables #
 ##############################
 
-qubit = "qubit3"
-qubit_dummy = f"{qubit}_dummy"
-tank_circuit = "tank_circuit1"
+qubits = ["qubit3", "qubit1"]
+tank_circuits = ["tank_circuit1", "tank_circuit2"]
 
 # Number of of averages for each random sequence
 n_avg = 2
 num_of_sequences = 1  # Number of random sequences
-max_circuit_depth = 40  # Maximum circuit depth
+max_circuit_depth = 100  # Maximum circuit depth
 delta_clifford = (
     10  #  Play each sequence with a depth step equals to 'delta_clifford - Must be > 0
 )
 assert max_circuit_depth % delta_clifford == 0, "max_circuit_depth / delta_clifford must be an integer."
 
-seed = 34553  # Pseudo-random number generator seed
+seed = 123  # Pseudo-random number generator seed
 
 # Flag to enable state discrimination if the readout has been calibrated (rotated blobs and threshold)
 state_discrimination = False
 
 ge_threshold = 0.155  # arbitrary atm, in V
-B_field = 0  # Predetermined magnetic field value if not set externally
 
 
 # seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
@@ -109,79 +107,83 @@ def generate_sequence():
     return sequence, inv_gate
 
 
-def play_sequence(sequence_list, depth, qubit=qubit):
+def play_clifford(c_idx, qb):
+    with switch_(c_idx, unsafe=True):
+        with case_(0):
+            wait(x180_len // 4, qb)
+        with case_(1):
+            play("square_x180", qb)
+        with case_(2):
+            play("square_y180", qb)
+        with case_(3):
+            play("square_y180", qb)
+            play("square_x180", qb)
+        with case_(4):
+            play("square_x90", qb)
+            play("square_y90", qb)
+        with case_(5):
+            play("square_x90", qb)
+            play("square_-y90", qb)
+        with case_(6):
+            play("square_-x90", qb)
+            play("square_y90", qb)
+        with case_(7):
+            play("square_-x90", qb)
+            play("square_-y90", qb)
+        with case_(8):
+            play("square_y90", qb)
+            play("square_x90", qb)
+        with case_(9):
+            play("square_y90", qb)
+            play("square_-x90", qb)
+        with case_(10):
+            play("square_-y90", qb)
+            play("square_x90", qb)
+        with case_(11):
+            play("square_-y90", qb)
+            play("square_-x90", qb)
+        with case_(12):
+            play("square_x90", qb)
+        with case_(13):
+            play("square_-x90", qb)
+        with case_(14):
+            play("square_y90", qb)
+        with case_(15):
+            play("square_-y90", qb)
+        with case_(16):
+            play("square_-x90", qb)
+            play("square_y90", qb)
+            play("square_x90", qb)
+        with case_(17):
+            play("square_-x90", qb)
+            play("square_-y90", qb)
+            play("square_x90", qb)
+        with case_(18):
+            play("square_x180", qb)
+            play("square_y90", qb)
+        with case_(19):
+            play("square_x180", qb)
+            play("square_-y90", qb)
+        with case_(20):
+            play("square_y180", qb)
+            play("square_x90", qb)
+        with case_(21):
+            play("square_y180", qb)
+            play("square_-x90", qb)
+        with case_(22):
+            play("square_x90", qb)
+            play("square_y90", qb)
+            play("square_x90", qb)
+        with case_(23):
+            play("square_-x90", qb)
+            play("square_y90", qb)
+            play("square_-x90", qb)
+
+
+def play_sequence(sequence_list, depth, qb):
     i = declare(int)
     with for_(i, 0, i <= depth, i + 1):
-        with switch_(sequence_list[i], unsafe=True):
-            with case_(0):
-                wait(x180_len // 4, qubit)
-            with case_(1):
-                play("square_x180", qubit)
-            with case_(2):
-                play("square_y180", qubit)
-            with case_(3):
-                play("square_y180", qubit)
-                play("square_x180", qubit)
-            with case_(4):
-                play("square_x90", qubit)
-                play("square_y90", qubit)
-            with case_(5):
-                play("square_x90", qubit)
-                play("square_-y90", qubit)
-            with case_(6):
-                play("square_-x90", qubit)
-                play("square_y90", qubit)
-            with case_(7):
-                play("square_-x90", qubit)
-                play("square_-y90", qubit)
-            with case_(8):
-                play("square_y90", qubit)
-                play("square_x90", qubit)
-            with case_(9):
-                play("square_y90", qubit)
-                play("square_-x90", qubit)
-            with case_(10):
-                play("square_-y90", qubit)
-                play("square_x90", qubit)
-            with case_(11):
-                play("square_-y90", qubit)
-                play("square_-x90", qubit)
-            with case_(12):
-                play("square_x90", qubit)
-            with case_(13):
-                play("square_-x90", qubit)
-            with case_(14):
-                play("square_y90", qubit)
-            with case_(15):
-                play("square_-y90", qubit)
-            with case_(16):
-                play("square_-x90", qubit)
-                play("square_y90", qubit)
-                play("square_x90", qubit)
-            with case_(17):
-                play("square_-x90", qubit)
-                play("square_-y90", qubit)
-                play("square_x90", qubit)
-            with case_(18):
-                play("square_x180", qubit)
-                play("square_y90", qubit)
-            with case_(19):
-                play("square_x180", qubit)
-                play("square_-y90", qubit)
-            with case_(20):
-                play("square_y180", qubit)
-                play("square_x90", qubit)
-            with case_(21):
-                play("square_y180", qubit)
-                play("square_-x90", qubit)
-            with case_(22):
-                play("square_x90", qubit)
-                play("square_y90", qubit)
-                play("square_x90", qubit)
-            with case_(23):
-                play("square_-x90", qubit)
-                play("square_y90", qubit)
-                play("square_-x90", qubit)
+        play_clifford(sequence_list[i], qb=qb)
 
 
 # Macro to calculate exact duration of generated sequence at a given depth
@@ -192,102 +194,99 @@ def generate_sequence_time(sequence_list, depth):
     with for_(j, 0, j <= depth, j + 1):
         with switch_(sequence_list[j], unsafe=True):
             with case_(0):
-                # wait(x180_len // 4, qubit)
+                # wait(x180_len // 4, qb)
                 assign(duration, duration + x180_len)
             with case_(1):
-                # play("x180", qubit)
+                # play("x180", qb)
                 assign(duration, duration + x180_len)
             with case_(2):
-                # play("y180", qubit)
+                # play("y180", qb)
                 assign(duration, duration + y180_len)
             with case_(3):
-                # play("y180", qubit)
-                # play("x180", qubit)
+                # play("y180", qb)
+                # play("x180", qb)
                 assign(duration, duration + y180_len + x180_len)
             with case_(4):
-                # play("x90", qubit)
-                # play("y90", qubit)
+                # play("x90", qb)
+                # play("y90", qb)
                 assign(duration, duration + x90_len + y90_len)
             with case_(5):
-                # play("x90", qubit)
-                # play("-y90", qubit)
+                # play("x90", qb)
+                # play("-y90", qb)
                 assign(duration, duration + x90_len + minus_y90_len)
             with case_(6):
-                # play("-x90", qubit)
-                # play("y90", qubit)
+                # play("-x90", qb)
+                # play("y90", qb)
                 assign(duration, duration + minus_x90_len + y90_len)
             with case_(7):
-                # play("-x90", qubit)
-                # play("-y90", qubit)
+                # play("-x90", qb)
+                # play("-y90", qb)
                 assign(duration, duration + minus_x90_len + minus_y90_len)
             with case_(8):
-                # play("y90", qubit)
-                # play("x90", qubit)
+                # play("y90", qb)
+                # play("x90", qb)
                 assign(duration, duration + y90_len + x90_len)
             with case_(9):
-                # play("y90", qubit)
-                # play("-x90", qubit)
+                # play("y90", qb)
+                # play("-x90", qb)
                 assign(duration, duration + y90_len + minus_x90_len)
             with case_(10):
-                # play("-y90", qubit)
-                # play("x90", qubit)
+                # play("-y90", qb)
+                # play("x90", qb)
                 assign(duration, duration + minus_y90_len + x90_len)
             with case_(11):
-                # play("-y90", qubit)
-                # play("-x90", qubit)
+                # play("-y90", qb)
+                # play("-x90", qb)
                 assign(duration, duration + minus_y90_len + minus_x90_len)
             with case_(12):
-                # play("x90", qubit)
+                # play("x90", qb)
                 assign(duration, duration + x90_len)
             with case_(13):
-                # play("-x90", qubit)
+                # play("-x90", qb)
                 assign(duration, duration + minus_x90_len)
             with case_(14):
-                # play("y90", qubit)
+                # play("y90", qb)
                 assign(duration, duration + y90_len)
             with case_(15):
-                # play("-y90", qubit)
+                # play("-y90", qb)
                 assign(duration, duration + minus_y90_len)
             with case_(16):
-                # play("-x90", qubit)
-                # play("y90", qubit)
-                # play("x90", qubit)
+                # play("-x90", qb)
+                # play("y90", qb)
+                # play("x90", qb)
                 assign(duration, duration + minus_x90_len + y90_len + x90_len)
             with case_(17):
-                # play("-x90", qubit)
-                # play("-y90", qubit)
-                # play("x90", qubit)
+                # play("-x90", qb)
+                # play("-y90", qb)
+                # play("x90", qb)
                 assign(duration, duration + minus_x90_len + minus_y90_len + x90_len)
             with case_(18):
-                # play("x180", qubit)
-                # play("y90", qubit)
+                # play("x180", qb)
+                # play("y90", qb)
                 assign(duration, duration + x180_len + y90_len)
             with case_(19):
-                # play("x180", qubit)
-                # play("-y90", qubit)
+                # play("x180", qb)
+                # play("-y90", qb)
                 assign(duration, duration + x180_len + minus_y90_len)
             with case_(20):
-                # play("y180", qubit)
-                # play("x90", qubit)
+                # play("y180", qb)
+                # play("x90", qb)
                 assign(duration, duration + y180_len + x90_len)
             with case_(21):
-                # play("y180", qubit)
-                # play("-x90", qubit)
+                # play("y180", qb)
+                # play("-x90", qb)
                 assign(duration, duration + y180_len + minus_x90_len)
             with case_(22):
-                # play("x90", qubit)
-                # play("y90", qubit)
-                # play("x90", qubit)
+                # play("x90", qb)
+                # play("y90", qb)
+                # play("x90", qb)
                 assign(duration, duration + x90_len + y90_len + x90_len)
             with case_(23):
-                # play("-x90", qubit)
-                # play("y90", qubit)
-                # play("-x90", qubit)
+                # play("-x90", qb)
+                # play("y90", qb)
+                # play("-x90", qb)
                 assign(duration, duration + minus_x90_len + y90_len + minus_x90_len)
     return duration
-
-
-from qualang_tools.voltage_gates import VoltageGateSequence
 
 
 ###################
@@ -300,118 +299,90 @@ with program() as rb:
     saved_gate = declare(int)
     m = declare(int)  # QUA variable for the loop over random sequences
     n = declare(int)  # QUA variable for the averaging loop
-    I = declare(fixed)  # QUA variable for the 'I' quadrature
-    Q = declare(fixed)  # QUA variable for the 'Q' quadrature
-    state = declare(bool)  # QUA variable for state discrimination
-    
-    sequence_time1 = declare(int)  # QUA variable for RB sequence duration for a given depth
-    sequence_time2 = declare(int)  # QUA variable for RB sequence duration for a given depth
+    I = [declare(fixed) for _ in range(2)]  # QUA variable for the 'I' quadrature
+    Q = [declare(fixed) for _ in range(2)]  # QUA variable for the 'Q' quadrature
+    state = [declare(bool) for _ in range(2)]  # QUA variable for state discrimination
+    sequence_time = declare(int)  # QUA variable for RB sequence duration for a given depth
     # Ensure that the result variables are assigned to the measurement elements
-    assign_variables_to_element(tank_circuit, I, Q)
+    assign_variables_to_element(tank_circuits[0], I[0], Q[0], state[0])
+    assign_variables_to_element(tank_circuits[1], I[1], Q[1], state[1])
 
     # The relevant streams
     m_st = declare_stream()
-    I_st = declare_stream()
-    Q_st = declare_stream()
-    state_st = declare_stream()
-    
-    # cayley = [declare(int, value=c1_table.flatten().tolist()) for _ range(2)]
-    # inv_list = [declare(int, value=inv_gates) for _ range(2)]
-    # current_state = [declare(int, value=0) for _ range(2)]
-    # gate = [declare(int) for _ range(2)]
-    # inv_gate = [declare(int) for _ range(2)]
-    
-    # assign_variables_to_element(qubit, cayley[0], inv_list[0], current_state[0], gate[0], inv_gate[0])
-    # assign_variables_to_element(qubit_dummy, cayley[1], inv_list[1], current_state[1], gate[1], inv_gate[1])  
+    I_st = [declare_stream() for _ in range(2)]
+    Q_st = [declare_stream() for _ in range(2)]
+    state_st = [declare_stream() for _ in range(2)]
 
     with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
-        # sequence_list, inv_gate_list = generate_sequence() # Generate the random sequence of length max_circuit_depth
+        sequence_list, inv_gate_list = generate_sequence() # Generate the random sequence of length max_circuit_depth
 
         assign(depth_target, 1)  # Initialize the current depth to 1
 
         with for_(depth, 1, depth <= max_circuit_depth, depth + 1):  # Loop over the depths
             # Replacing the last gate in the sequence with the sequence's inverse gate
             # The original gate is saved in 'saved_gate' and is being restored at the end
-            # assign(saved_gate, sequence_list[depth])
-            # assign(sequence_list[depth], inv_gate_list[depth - 1])
+            assign(saved_gate, sequence_list[depth])
+            assign(sequence_list[depth], inv_gate_list[depth - 1])
 
-            with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
+            # Only played the depth corresponding to target_depth
+            with if_(depth == depth_target):
+                # Assign sequence_time to duration of idle step for generated sequence "m" at a given depth
+                assign(sequence_time, generate_sequence_time(sequence_list, depth))
 
-                sequence_list1, inv_gate_list1 = generate_sequence() # Generate the random sequence of length max_circuit_depth
-                assign(sequence_time1, generate_sequence_time(sequence_list1, depth))
-
-                with strict_timing_():
-                
-                    # Define voltage steps
-                    seq.add_step(voltage_point_name="initialization")
-                    seq.add_step(voltage_point_name="idle", duration=sequence_time1 + RB_delay)  # Includes processing time for RB sequence
-                    seq.add_step(voltage_point_name="readout", duration=REFLECTOMETRY_READOUT_LEN)
-                    seq.add_compensation_pulse(duration=duration_compensation_pulse)
-
-                    wait((duration_init >> 2), qubit)
-                    play_sequence(sequence_list1, depth, qubit=qubit)
-
-                    sequence_list2, inv_gate_list2 = generate_sequence() # Generate the random sequence of length max_circuit_depth
-                    assign(sequence_time2, generate_sequence_time(sequence_list2, depth))
+                with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
                     
-                    wait((duration_init >> 2) + (sequence_time1 >> 2), qubit_dummy)                        
-                    play_sequence(sequence_list2, depth, qubit=qubit_dummy)
+                    with strict_timing_():
+                    
+                        # Define voltage steps
+                        seq.add_step(voltage_point_name="initialization")
+                        seq.add_step(voltage_point_name="idle", duration=sequence_time + RB_delay)  # Includes processing time for RB sequence
+                        seq.add_step(voltage_point_name="readout", duration=REFLECTOMETRY_READOUT_LEN)
+                        seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
-                    # sequence_list1, inv_gate_list1 = generate_sequence() # Generate the random sequence of length max_circuit_depth
-                    # assign(sequence_time1, generate_sequence_time(sequence_list1, depth))
+                        wait((duration_init >> 2), *qubits)
+                        for qb in qubits:
+                            play_sequence(sequence_list, depth, qb=qb)
 
+                        wait((duration_init >> 2) + (sequence_time >> 2) + (RB_delay >> 2), *tank_circuits)  # Includes calculated RB duration as well as RB sequence processing time
+                        for i, tc in enumerate(tank_circuits):
+                            measure(
+                                "readout",
+                                tc,
+                                None,
+                                demod.full("cos", I[i], "out1"),
+                                demod.full("sin", Q[i], "out1"),
+                            )
 
-                    # wait((duration_init >> 2) + (sequence_time >> 1) + (RB_delay >> 2), tank_circuit)  # Includes calculated RB duration as well as RB sequence processing time
-                    # measure(
-                    #     "readout",
-                    #     tank_circuit,
-                    #     None,
-                    #     demod.full("cos", I, "out1"),
-                    #     demod.full("sin", Q, "out1"),
-                    # )
+                    # Make sure you updated the ge_threshold and angle if you want to use state discrimination
+                    # Save the results to their respective streams
+                    for i in range(2):
+                        save(I[i], I_st[i])
+                        save(Q[i], Q_st[i])
+                        if state_discrimination:
+                            save(state[i], state_st[i])
 
-                # Make sure you updated the ge_threshold and angle if you want to use state discrimination
-                # Save the results to their respective streams
-                if state_discrimination:
-                    save(state, state_st)
-                else:
-                    save(I, I_st)
-                    save(Q, Q_st)
+                    seq.ramp_to_zero()
 
-                seq.ramp_to_zero()
-
-            # Go to the next depth
-            assign(depth_target, depth_target + delta_clifford)
+                # Go to the next depth
+                assign(depth_target, depth_target + delta_clifford)
             # Reset the last gate of the sequence back to the original Clifford gate
             # (that was replaced by the recovery gate at the beginning)
-            # assign(sequence_list[depth], saved_gate)
+            assign(sequence_list[depth], saved_gate)
         # Save the counter for the progress bar
         save(m, m_st)
 
     with stream_processing():
         m_st.save("iteration")
-        if state_discrimination:
-            # saves a 2D array of depth and random pulse sequences in order to get error bars along the random sequences
-            state_st.boolean_to_int().buffer(n_avg).map(FUNCTIONS.average()).buffer(
-                max_circuit_depth / delta_clifford
-            ).buffer(num_of_sequences).save("state")
-            # returns a 1D array of averaged random pulse sequences vs depth of circuit for live plotting
-            state_st.boolean_to_int().buffer(n_avg).map(FUNCTIONS.average()).buffer(
-                max_circuit_depth / delta_clifford
-            ).average().save("state_avg")
-        else:
-            I_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(
-                max_circuit_depth / delta_clifford
-            ).buffer(num_of_sequences).save("I")
-            Q_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(
-                max_circuit_depth / delta_clifford
-            ).buffer(num_of_sequences).save("Q")
-            I_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(
-                max_circuit_depth / delta_clifford
-            ).average().save("I_avg")
-            Q_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(
-                max_circuit_depth / delta_clifford
-            ).average().save("Q_avg")
+        for i, tc in enumerate(tank_circuits):
+            I_st[i].buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford).buffer(num_of_sequences).save(f"I_{tc}")
+            Q_st[i].buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford).buffer(num_of_sequences).save(f"Q_{tc}")
+            I_st[i].buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford).average().save(f"I_avg_{tc}")
+            Q_st[i].buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford).average().save(f"Q_avg_{tc}")
+            if state_discrimination:
+                # saves a 2D array of depth and random pulse sequences in order to get error bars along the random sequences
+                state_st[i].boolean_to_int().buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford).buffer(num_of_sequences).save(f"state_{tc}")
+                # returns a 1D array of averaged random pulse sequences vs depth of circuit for live plotting
+                state_st[i].boolean_to_int().buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford).average().save(f"state_avg_{tc}")
 
 
 #####################################
@@ -447,39 +418,39 @@ else:
     job = qm.execute(
         rb, compiler_options=CompilerOptionArguments(flags=["not-strict-timing"])
     )
-    # Get results from QUA program
-    if state_discrimination:
-        results = fetching_tool(job, data_list=["state_avg", "iteration"], mode="live")
-    else:
-        results = fetching_tool(
-            job, data_list=["I_avg", "Q_avg", "iteration"], mode="live"
-        )
-    # Live plotting
-    fig = plt.figure()
-    interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-    # data analysis
-    x = np.arange(1, max_circuit_depth + 0.1, delta_clifford)
-    while results.is_processing():
-        # data analysis
-        if state_discrimination:
-            state_avg, iteration = results.fetch_all()
-            value_avg = state_avg
-        else:
-            I, Q, iteration = results.fetch_all()
-            value_avg = I
+    # # Get results from QUA program
+    # if state_discrimination:
+    #     results = fetching_tool(job, data_list=["state_avg", "iteration"], mode="live")
+    # else:
+    #     results = fetching_tool(
+    #         job, data_list=["I_avg", "Q_avg", "iteration"], mode="live"
+    #     )
+    # # Live plotting
+    # fig = plt.figure()
+    # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+    # # data analysis
+    # x = np.arange(1, max_circuit_depth + 0.1, delta_clifford)
+    # while results.is_processing():
+    #     # data analysis
+    #     if state_discrimination:
+    #         state_avg, iteration = results.fetch_all()
+    #         value_avg = state_avg
+    #     else:
+    #         I, Q, iteration = results.fetch_all()
+    #         value_avg = I
 
-        print(job.execution_report())
-        # Progress bar
-        progress_counter(
-            iteration, num_of_sequences, start_time=results.get_start_time()
-        )
-        # Plot averaged values
-        plt.cla()
-        plt.plot(x, value_avg, marker=".")
-        plt.xlabel("Number of Clifford gates")
-        plt.ylabel("Sequence Fidelity")
-        plt.title("Single qubit RB")
-        plt.pause(0.1)
+    #     print(job.execution_report())
+    #     # Progress bar
+    #     progress_counter(
+    #         iteration, num_of_sequences, start_time=results.get_start_time()
+    #     )
+    #     # Plot averaged values
+    #     plt.cla()
+    #     plt.plot(x, value_avg, marker=".")
+    #     plt.xlabel("Number of Clifford gates")
+    #     plt.ylabel("Sequence Fidelity")
+    #     plt.title("Single qubit RB")
+    #     plt.pause(0.1)
 
 #     # At the end of the program, fetch the non-averaged results to get the error-bars
 #     if state_discrimination:
