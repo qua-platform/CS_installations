@@ -83,24 +83,6 @@ STEP_LEN = 1000
 STEP_AMP = 0.25
 
 
-######################
-#      DC GATES      #
-######################
-
-## Section defining the points from the charge stability map - can be done in the config
-# Relevant points in the charge stability map as ["P1", "P2"] in V
-level_init = [-0.1, 0.1]
-level_readout = [0.12, -0.12]
-
-# Duration of each step in ns
-duration_init = 400
-duration_readout = 400  # reflectometry_readout_len + 100
-duration_compensation_pulse = 4 * u.us
-
-# Time to ramp down to zero for sticky elements in ns
-hold_offset_duration = 4  # in ns
-bias_tee_cut_off_frequency = 10 * u.kHz
-
 
 ######################
 #    QUBIT PULSES    #
@@ -116,10 +98,11 @@ SQUARE_MINUS_X90_AMP = -0.35
 SQUARE_Y180_AMP = 0.3
 SQUARE_Y90_AMP = 0.25
 SQUARE_MINUS_Y90_AMP = -0.25
-SQUARE_LEN = 48
+SQUARE_LEN = 52
 
 PI_AMP = 0.1
 PI_LEN = 52
+PI_HALF_LEN = PI_LEN
 PI_SIGMA = PI_LEN / 5
 
 
@@ -129,6 +112,25 @@ PI_SIGMA = PI_LEN / 5
 
 REFLECTOMETRY_READOUT_AMP = 0.1
 REFLECTOMETRY_READOUT_LEN = 400 # 10_000
+
+
+######################
+#      DC GATES      #
+######################
+
+## Section defining the points from the charge stability map - can be done in the config
+# Relevant points in the charge stability map as ["P1", "P2"] in V
+level_init = [-0.1, 0.1]
+level_readout = [0.12, -0.12]
+
+# Duration of each step in ns
+duration_init = 400
+duration_readout = REFLECTOMETRY_READOUT_LEN + 100
+duration_compensation_pulse = 4 * u.us
+
+# Time to ramp down to zero for sticky elements in ns
+hold_offset_duration = 4  # in ns
+bias_tee_cut_off_frequency = 10 * u.kHz
 
 
 #################
