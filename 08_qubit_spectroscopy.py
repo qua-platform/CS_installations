@@ -1,3 +1,4 @@
+# %%
 """
         QUBIT SPECTROSCOPY
 The goal of the script is to find the qubit transition by sweeping both the qubit pulse frequency and the magnetic field.
@@ -34,7 +35,9 @@ from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import (fetching_tool, progress_counter,
                                    wait_until_job_is_paused)
+from qualang_tools.results.data_handler import DataHandler
 from qualang_tools.voltage_gates import VoltageGateSequence
+from scipy import signal
 
 from configuration_with_lffem import *
 from macros import RF_reflectometry_macro
@@ -95,7 +98,7 @@ with program() as qubit_spectroscopy_prog:
                 play("const", qubit)
 
                 # Measure the dot right after the qubit manipulation
-                wait(duration_init * u.ns, "tank_circuit")
+                wait(duration_init * u.ns, *tank_circuits)
                 # Measure the dot right after the qubit manipulation
                 for j, tc in enumerate(tank_circuits):
                     measure(
@@ -117,8 +120,8 @@ with program() as qubit_spectroscopy_prog:
         n_st.save("iteration")
         # RF reflectometry
         for j, tc in enumerate(tank_circuits):
-            I_st[j].buffer(len(frequencies)).save_all(f"I_{tc}")
-            Q_st[j].buffer(len(frequencies)).save_all(f"Q_{tc}")
+            I_st[j].buffer(len(frequencies)).average().save(f"I_{tc}")
+            Q_st[j].buffer(len(frequencies)).average().save(f"Q_{tc}")
 
 
 #####################################
@@ -172,66 +175,60 @@ else:
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(qubit_spectroscopy_prog)
+
+
+    # Get results from QUA program
+    fetch_names = ["iteration"]
+    for tc in tank_circuits:
+        fetch_names.append(f"I_{tc}")
+        fetch_names.append(f"Q_{tc}")
+    results = fetching_tool(job, data_list=fetch_names, mode="live")
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-    for i in range(len(B_fields)):  # Loop over y-voltages
-        # TODO Update the magnetic field
-        for j in range(len(lo_frequencies)):
-            # TODO update the lo frequency
-            # Resume the QUA program (escape the 'pause' statement)
-            job.resume()
-            # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
-            wait_until_job_is_paused(job)
-        if i == 0:
-            # Get results from QUA program and initialize live plotting
-            results = fetching_tool(
-                job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live"
-            )
-        # Fetch the data from the last OPX run corresponding to the current slow axis iteration
-        I, Q, DC_signal, iteration = results.fetch_all()
-        # Convert results into Volts
-        S = u.demod2volts(I + 1j * Q, reflectometry_readout_length)
-        R = np.abs(S)  # Amplitude
-        phase = np.angle(S)  # Phase
-        DC_signal = u.demod2volts(DC_signal, readout_len)
+    while results.is_processing():
+        # Fetch results
+        res = results.fetch_all()
         # Progress bar
-        progress_counter(iteration, len(B_fields))
-        # Plot data
-        if len(B_fields) > 1:
-            plt.subplot(121)
+        progress_counter(res[0], n_avg, start_time=results.get_start_time())
+        # Plot results
+        plt.suptitle("RF-reflectometry spectroscopy")
+        for ind, tc in enumerate(tank_circuits):
+            S = res[2 * ind + 1] + 1j * res[2 * ind + 2]
+            R = np.abs(S)  # np.unwarp(np.angle(S))
+            phase = signal.detrend(np.unwrap(np.angle(S)))
+            # Plot results
+            plt.subplot(2, 2, ind + 1)
             plt.cla()
-            plt.title(r"$R=\sqrt{I^2 + Q^2}$ [V]")
-            plt.pcolor(
-                frequencies / u.MHz,
-                B_fields[: iteration + 1],
-                np.reshape(R, (iteration + 1, len(frequencies))),
-            )
-            plt.xlabel("Qubit pulse frequency [MHz]")
-            plt.ylabel("B [mT]")
-            plt.subplot(122)
-            plt.cla()
-            plt.title("Phase [rad]")
-            plt.pcolor(
-                frequencies / u.MHz,
-                B_fields[: iteration + 1],
-                np.reshape(phase, (iteration + 1, len(frequencies))),
-            )
-            plt.xlabel("Qubit pulse frequency [MHz]")
-            plt.ylabel("B [mT]")
-            plt.tight_layout()
-            plt.pause(0.1)
-        else:
-            plt.suptitle(f"B = {B_fields[0]} mT")
-            plt.subplot(121)
-            plt.cla()
-            plt.plot(frequencies / u.MHz, np.reshape(R, len(frequencies)))
-            plt.xlabel("Qubit pulse frequency [MHz]")
+            plt.plot(frequencies / u.MHz, R)
+            plt.xlabel("Readout frequency [MHz]")
             plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
-            plt.subplot(122)
+            plt.title(tc)
+            plt.subplot(2, 2, ind + 3)
             plt.cla()
-            plt.plot(frequencies / u.MHz, np.reshape(phase, len(frequencies)))
-            plt.xlabel("Qubit pulse frequency [MHz]")
+            plt.plot(frequencies / u.MHz, signal.detrend(np.unwrap(phase)))
+            plt.xlabel("Readout frequency [MHz]")
             plt.ylabel("Phase [rad]")
-            plt.tight_layout()
-            plt.pause(0.1)
+        plt.tight_layout()
+        plt.pause(0.1)
+
+    # Fetch results
+    res = results.fetch_all()
+    for ind, tc in enumerate(tank_circuits):
+        save_data_dict[f"I_{tc}"] = res[2 * ind + 1]
+        save_data_dict[f"Q_{tc}"] = res[2 * ind + 2]
+
+    # Save results
+    script_name = Path(__file__).name
+    data_handler = DataHandler(root_data_folder=save_dir)
+    save_data_dict.update({"fig_live": fig})
+    data_handler.additional_files = {
+        script_name: script_name,
+        **default_additional_files,
+    }
+    data_handler.save_data(data=save_data_dict, name="08_qubit_spectroscopy")
+
+    qm.close()
+
+# %%
+
