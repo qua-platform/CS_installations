@@ -265,4 +265,5 @@ else:
 
     idx_history = res_handles.get("idx_history").fetch_all()
 
+    qm.close()
 # %%

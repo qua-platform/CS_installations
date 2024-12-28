@@ -28,67 +28,75 @@ num_tank_circuits = len(TANK_CIRCUIT_CONSTANTS)
 
 # Points in the charge stability map [V1, V2]
 level_inits = {
-    "P1-P2": [-0.2, -0.3],
-    "P4-P5": [-0.2, -0.3],
+    "P1-P2": [-0.05, 0.05, 0.0],
+    "P3": [0.00, 0.00, -0.05],
+    "P4-P5": [-0.06, 0.04, 0.0],
 }
-level_readout = [0.05, 0.15]
-duration_init = 200
-duration_manip = 300
-duration_readout = 500
-delay_before_readout = 16
-Ps_sticky = ["P1_sticky", "P2_sticky"]
+level_readout = {
+    "P1-P2": [0.0, 0.0, 0.0],
+    "P3": [0.0, 0.0, 0.0],
+    "P4-P5": [0.0, 0.0, 0.0],
+}
 
-seq = VoltageGateSequence(config, Ps_sticky)
+duration_init = 200
+duration_readout = 500
+
+sweap_gates = ["P1_sticky", "P2_sticky", "P3_sticky"] # TODO: 
+# sweap_gates = ["P1_sticky", "P2_sticky", "P3_sticky", "P4_sticky", "P5_sticky"]
+
+seq = VoltageGateSequence(config, sweap_gates)
 seq.add_points("initialization_P1-P2", level_init["P1-P2"], duration_init)
 seq.add_points("initialization_P4-P5", level_init["P4-P5"], duration_init)
 seq.add_points("initialization_P3", level_init["P3"], duration_init)
-seq.add_points("readout_12", level_readout, duration_readout)
-seq.add_points("readout_45", level_readout, duration_readout)
+seq.add_points("readout_12", level_readout["P1-P2"], duration_readout)
+seq.add_points("readout_45", level_readout["P4-P5"], duration_readout)
 
 
 def initialization(I, Q, P, I_st, Q_st, P_st):
-    read_init12(I[0], Q[0], P[0], I_st[0], Q_st[0], P_st[0])  # save_count = 1
+    res1_1 = read_init12(I[0], Q[0], P[0], I_st[0], Q_st[0], P_st[0])  # save_count = 1
 
     # 1st
-    read_init3(I[0], Q[0], P[0], I_st[0], Q_st[0], P_st[0])  # save_count = 2
-    read_init12(I[0], Q[0], P[0], I_st[0], Q_st[0], P_st[0])  # save_count = 3
+    res1_2 = read_init3(I[0], Q[0], P[0], I_st[0], Q_st[0], P_st[0])  # save_count = 2
+    res1_3 = read_init12(I[0], Q[0], P[0], I_st[0], Q_st[0], P_st[0])  # save_count = 3
     # 2nd
-    read_init3(I[0], Q[0], P[0], I_st[0], Q_st[0], P_st[0])  # save_count = 4
-    read_init12(I[0], Q[0], P[0], I_st[0], Q_st[0], P_st[0])  # save_count = 5
+    res1_4 = read_init3(I[0], Q[0], P[0], I_st[0], Q_st[0], P_st[0])  # save_count = 4
+    res1_5 = read_init12(I[0], Q[0], P[0], I_st[0], Q_st[0], P_st[0])  # save_count = 5
 
-    read_init45(I[1], Q[1], P[1], I_st[1], Q_st[1], P_st[1])  # save_count = 1
+    res2_1 = read_init45(I[1], Q[1], P[1], I_st[1], Q_st[1], P_st[1])  # save_count = 1
 
 
 def readout(I, Q, P, I_st, Q_st, P_st):
-    read_init12(I[0], Q[0], P[0], I_st[0], Q_st[0], P_st[0])  # save_count = 6
-    read_init3(I[0], Q[0], P[0], I_st[0], Q_st[0], P_st[0])  # save_count = 7
-    read_init45(I[1], Q[1], P[1], I_st[1], Q_st[1], P_st[1])  # save_count = 2
+    res1_6 = read_init12(I[0], Q[0], P[0], I_st[0], Q_st[0], P_st[0])  # save_count = 6
+    res1_7 = read_init3(I[0], Q[0], P[0], I_st[0], Q_st[0], P_st[0])  # save_count = 7
+    res2_2 = read_init45(I[1], Q[1], P[1], I_st[1], Q_st[1], P_st[1])  # save_count = 2
 
 
 def read_init12(I, Q, P, I_st, Q_st, P_st):
-    measure_parity(
-        I, Q, P, I_st, Q_st, P_st, qp="P1-P2", elem="tank_circuit1", threshold=0.0
-    )
+    P = measure_parity(I, Q, P, I_st, Q_st, P_st, qp="P1-P2", elem="tank_circuit1", threshold=0.0)
+    play("x180", "qubit1", condition=P)
+    P = measure_parity(I, Q, P, I_st, Q_st, P_st, qp="P1-P2", elem="tank_circuit1", threshold=0.0)
+    return P
 
 
 def read_init45(I, Q, P, I_st, Q_st, P_st):
-    measure_parity(
-        I, Q, P, I_st, Q_st, P_st, qp="P4-P5", elem="tank_circuit2", threshold=0.0
-    )
+    P = measure_parity(I, Q, P, I_st, Q_st, P_st, qp="P4-P5", elem="tank_circuit2", threshold=0.0)
+    play("x180", "qubit5", condition=P)
+    P = measure_parity(I, Q, P, I_st, Q_st, P_st, qp="P4-P5", elem="tank_circuit2", threshold=0.0)
+    return P
 
 
 def read_init3(I, Q, P, I_st, Q_st, P_st):
     play_CNOT23()
-    P = measure_parity(
-        I, Q, P, I_st, Q_st, P_st, qp="P1-P2", elem="tank_circuit1", threshold=0.0
-    )
+    P = measure_parity(I, Q, P, I_st, Q_st, P_st, qp="P1-P2", elem="tank_circuit1", threshold=0.0)
     play("x180", "P3", condition=P)
+    return P
 
 
 def play_CNOT23():
     play("step" * amp(0.1), "B2", duration=100 * u.ns)
     wait(4, "P3")
     play("cnot", "P3", duration=100 * u.ns)
+    play("x180", "qp_c2t3")
 
 
 def measure_parity(
