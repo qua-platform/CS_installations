@@ -120,8 +120,8 @@ REFLECTOMETRY_READOUT_LEN = 400 # 10_000
 
 ## Section defining the points from the charge stability map - can be done in the config
 # Relevant points in the charge stability map as ["P1", "P2"] in V
-level_init = [-0.1, 0.1]
-level_readout = [0.12, -0.12]
+level_init = [-0.02, 0.02]
+level_readout = [0.0, -0.0]
 
 # Duration of each step in ns
 duration_init = 400
