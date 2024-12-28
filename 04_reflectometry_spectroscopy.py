@@ -113,6 +113,7 @@ else:
     while results.is_processing():
         # Fetch results
         I, Q, iteration = results.fetch_all()
+        S = I + 1j * Q
         # Convert results into Volts
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
