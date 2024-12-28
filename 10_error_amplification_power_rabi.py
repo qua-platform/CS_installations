@@ -41,24 +41,27 @@ from configuration_with_lffem import *
 ###################
 
 qubit = "qubit3"
+qubit_dummy = f"{qubit}_dummy"
 tank_circuit = "tank_circuit1"
 measure_init = True
 sweep_gates = ["P1_sticky", "P2_sticky"]
 
-n_avg = 3
+n_avg = 10
+
+# Number of applied Rabi pulses sweep
+max_n_pulses = 10  # Maximum number of qubit pulses
+max_tau_pulse = max_n_pulses * PI_LEN
+n_pulses = np.arange(4, max_n_pulses, 2)  # Always play an odd/even number of pulses to end up in the same state
+duration_init = max_tau_pulse + 16
+
 # Pulse duration sweep in ns - must be larger than 4 clock cycles
 a_min = 0.05
 a_max = 1.95
 a_step = 0.05
 amp_scalilngs = np.arange(a_min, a_max, a_step)
-delay_before_readout = 16
-qubit_delay = duration_init - delay_before_readout - PI_LEN
+qubit_delay = duration_init - max_tau_pulse
 assert qubit_delay >= 16
 
-# Pulse frequency sweep in Hz
-frequencies = np.arange(0 * u.MHz, 100 * u.MHz, 100 * u.kHz)
-
-# Add the relevant voltage points describing the "slow" sequence (no qubit pulse)
 seq = VoltageGateSequence(config, sweep_gates)
 seq.add_points("initialization", level_init, duration_init)
 seq.add_points("readout", level_readout, duration_readout)
@@ -68,7 +71,7 @@ save_data_dict = {
     "sweep_gates": sweep_gates,
     "qubit": qubit,
     "tank_circuit": tank_circuit,
-    "frequencies": frequencies,
+    "n_pulses": n_pulses,
     "amp_scalilngs": amp_scalilngs,
     "n_avg": n_avg,
     "config": config,
@@ -77,7 +80,9 @@ save_data_dict = {
 
 with program() as rabi_chevron:
     a = declare(fixed)  # QUA variable for the qubit pulse duration
-    f = declare(int)  # QUA variable for the qubit drive amplitude
+    m = declare(int)  # QUA variable for the qubit drive amplitude
+    n_rabi = declare(int)
+    d = declare(int)
     n = declare(int)  # QUA integer used as an index for the averaging loop
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
 
@@ -90,8 +95,8 @@ with program() as rabi_chevron:
 
     with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
         save(n, n_st)
-        with for_(*from_array(f, frequencies)):  # Loop over the qubit pulse amplitude
-            update_frequency(qubit, f)
+        with for_(*from_array(n_rabi, n_pulses)):  # Loop over the qubit pulse amplitude
+            assign(d, max_tau_pulse - n_rabi * PI_LEN)
             with for_(*from_array(a, amp_scalilngs)):  # Loop over the qubit pulse duration
                 with strict_timing_():  # Ensure that the sequence will be played without gap
                     play("square_x180", qubit)
@@ -105,8 +110,11 @@ with program() as rabi_chevron:
                     # Drive the qubit by playing the MW pulse at the end of the manipulation step
                     # wait((duration_init - delay_before_readout) // 4 - (t >> 2) - 4, qubit)  # Need -4 cycles to compensate the gap
                     # wait(4, qubit)  # Need 4 additional cycles because of a gap
-                    wait(qubit_delay * u.ns, qubit)
-                    play("square_x180" * amp(a), qubit)
+                    wait(qubit_delay * u.ns, qubit, qubit_dummy)
+                    wait(d >> 2, qubit, qubit_dummy)
+
+                    with for_(m, 0, m < n_rabi, m + 1):
+                        play("x180" * amp(a), qubit)
 
                     # Measure the dot right after the qubit manipulation
                     wait(duration_init * u.ns, tank_circuit)
@@ -122,8 +130,8 @@ with program() as rabi_chevron:
     with stream_processing():
         n_st.save("iteration")
         # RF reflectometry
-        I_st.buffer(len(amp_scalilngs)).buffer(len(frequencies)).average().save("I")
-        Q_st.buffer(len(amp_scalilngs)).buffer(len(frequencies)).average().save("Q")
+        I_st.buffer(len(amp_scalilngs)).buffer(len(n_pulses)).average().save("I")
+        Q_st.buffer(len(amp_scalilngs)).buffer(len(n_pulses)).average().save("Q")
 
 
 #####################################
@@ -203,14 +211,14 @@ else:
         plt.subplot(2, 1, 1)
         plt.cla()
         plt.title(r"$R=\sqrt{I^2 + Q^2}$ [V]")
-        plt.pcolor(amp_scalilngs * PI_AMP, frequencies / u.MHz, R)
-        plt.ylabel("Detuning [MHz]")
+        plt.pcolor(amp_scalilngs * PI_AMP, n_pulses, R)
+        plt.ylabel("Nb of pulses")
         plt.subplot(2, 1, 2)
         plt.cla()
         plt.title("Phase [rad]")
-        plt.pcolor(amp_scalilngs * PI_AMP, frequencies / u.MHz, phase)
+        plt.pcolor(amp_scalilngs * PI_AMP, n_pulses, phase)
         plt.xlabel("Qubit pulse amplitude [V]")
-        plt.ylabel("Detuning [MHz]")
+        plt.ylabel("Nb of pulses")
         plt.tight_layout()
         plt.pause(1)
 
@@ -227,7 +235,7 @@ else:
         script_name: script_name,
         **default_additional_files,
     }
-    data_handler.save_data(data=save_data_dict, name="09_rabi_chevron")
+    data_handler.save_data(data=save_data_dict, name=Path(__name__).stem)
 
     qm.close()
 

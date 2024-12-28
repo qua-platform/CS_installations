@@ -187,7 +187,7 @@ else:
         script_name: script_name,
         **default_additional_files,
     }
-    data_handler.save_data(data=save_data_dict, name="05_sensor_gate_sweep_opx")
+    data_handler.save_data(data=save_data_dict, name=Path(__name__).stem)
 
     qm.close()
 
