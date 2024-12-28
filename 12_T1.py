@@ -115,44 +115,41 @@ with program() as rabi_chevron:
 
     with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
         save(n, n_st)
-        with for_(*from_array(f, frequencies)):  # Loop over the qubit pulse amplitude
-            update_frequency(qubit, f)
-            with for_(*from_array(t, durations)):  # Loop over the qubit pulse duration
-                assign(d, tau_max - t)
-                with strict_timing_():  # Ensure that the sequence will be played without gap
-                    play("square_x180", qubit)
-                    wait(PI_LEN * u.us, *sweep_gates)
+        with for_(*from_array(t, durations)):  # Loop over the qubit pulse duration
+            assign(d, tau_max - t)
+            with strict_timing_():  # Ensure that the sequence will be played without gap
+                play("square_x180", qubit)
+                wait(PI_LEN * u.us, *sweep_gates)
 
-                    # Navigate through the charge stability map
-                    seq.add_step(voltage_point_name="initialization")  # includes manipulation
-                    seq.add_step(voltage_point_name="readout")
-                    seq.add_compensation_pulse(duration=duration_compensation_pulse)
+                # Navigate through the charge stability map
+                seq.add_step(voltage_point_name="initialization")  # includes manipulation
+                seq.add_step(voltage_point_name="readout")
+                seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
-                    # Drive the qubit by playing the MW pulse at the end of the manipulation step
-                    # wait((duration_init - delay_before_readout) // 4 - (t >> 2) - 4, qubit)  # Need -4 cycles to compensate the gap
-                    # wait(4, qubit)  # Need 4 additional cycles because of a gap
-                    wait(qubit_delay * u.ns, qubit)
-                    wait(d >> 2, qubit)
-                    play("square_x180", qubit)
-                    wait(t >> 2, qubit)
-                    play("square_x180", qubit)
-                    
-                    # Measure the dot right after the qubit manipulation
-                    wait(duration_init * u.ns, tank_circuit)
-                    # Measure the dot right after the qubit manipulation
-                    measure("readout", tank_circuit, None, demod.full("cos", I, "out1"), demod.full("sin", Q, "out1"))
-                    save(I, I_st)
-                    save(Q, Q_st)
+                # Drive the qubit by playing the MW pulse at the end of the manipulation step
+                # wait((duration_init - delay_before_readout) // 4 - (t >> 2) - 4, qubit)  # Need -4 cycles to compensate the gap
+                # wait(4, qubit)  # Need 4 additional cycles because of a gap
+                wait(qubit_delay * u.ns, qubit)
+                wait(d >> 2, qubit)
+                play("square_x180", qubit)
+                wait(t >> 2, qubit)
 
-                seq.ramp_to_zero()
-                wait(1 * u.us)
+                # Measure the dot right after the qubit manipulation
+                wait(duration_init * u.ns, tank_circuit)
+                # Measure the dot right after the qubit manipulation
+                measure("readout", tank_circuit, None, demod.full("cos", I, "out1"), demod.full("sin", Q, "out1"))
+                save(I, I_st)
+                save(Q, Q_st)
+
+            seq.ramp_to_zero()
+            wait(1 * u.us)
 
     # Stream processing section used to process the data before saving it.
     with stream_processing():
         n_st.save("iteration")
         # RF reflectometry
-        I_st.buffer(len(durations)).buffer(len(frequencies)).average().save("I")
-        Q_st.buffer(len(durations)).buffer(len(frequencies)).average().save("Q")
+        I_st.buffer(len(durations)).average().save("I")
+        Q_st.buffer(len(durations)).average().save("Q")
 
 
 #####################################
@@ -227,22 +224,17 @@ else:
         # Progress bar
         progress_counter(iterations, n_avg, start_time=results.get_start_time())
         # Plot results
-        plt.suptitle(f"Rabi Chevron {tank_circuit}")
-        S = I + 1j * Q
-        R = np.abs(S)  # np.unwarp(np.angle(S))
-        phase = signal.detrend(np.unwrap(np.angle(S)))
+        plt.suptitle(f"T1 {tank_circuit}")
         # Plot results
         plt.subplot(2, 1, 1)
         plt.cla()
-        plt.title(r"$R=\sqrt{I^2 + Q^2}$ [V]")
-        plt.pcolor(durations, frequencies / u.MHz, R)
-        plt.ylabel("Detuning [MHz]")
+        plt.plot(durations, I)
+        plt.ylabel("I [V]")
         plt.subplot(2, 1, 2)
         plt.cla()
-        plt.title("Phase [rad]")
-        plt.pcolor(durations, frequencies / u.MHz, phase)
-        plt.xlabel("Qubit pulse duration [ns]")
-        plt.ylabel("Detuning [MHz]")
+        plt.plot(durations, Q)
+        plt.xlabel("Idle duration [ns]")
+        plt.ylabel("Q [V]")
         plt.tight_layout()
         plt.pause(1)
 
@@ -262,199 +254,5 @@ else:
     data_handler.save_data(data=save_data_dict, name="12_T1")
 
     qm.close()
-
-# %%
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import matplotlib.pyplot as plt
-from qm import QuantumMachinesManager, SimulationConfig
-from qm.qua import *
-from qualang_tools.addons.variables import assign_variables_to_element
-from qualang_tools.loops import from_array
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import fetching_tool, progress_counter
-from qualang_tools.voltage_gates import VoltageGateSequence
-
-from configuration_with_lffem import *
-
-###################
-# The QUA program #
-###################
-
-n_avg = 100
-# Wait time sweep in ns - must be larger than 4 clock cycles
-durations = np.arange(16, 2000, 100)
-
-# Add the relevant voltage points describing the "slow" sequence (no qubit pulse)
-seq = VoltageGateSequence(config, sweep_gates)
-seq.add_points("initialization", level_init, duration_init)
-seq.add_points("idle", level_manip, duration_manip)
-seq.add_points("readout", level_readout, readout_len)
-
-with program() as T1_prog:
-    n = declare(int)  # QUA integer used as an index for the averaging loop
-    t = declare(int)  # QUA variable for the qubit pulse duration
-    Vpi = declare(fixed)  # QUA variable for the qubit drive amplitude
-    n_st = declare_stream()  # Stream for the iteration number (progress bar)
-    I = declare(fixed)  # QUA variable for the measured 'I' quadrature
-    Q = declare(fixed)  # QUA variable for the measured 'Q' quadrature
-    dc_signal = declare(fixed)  # QUA variable for the measured dc signal
-
-    # Ensure that the result variables are assigned to the measurement elements
-    assign_variables_to_element("tank_circuit", I, Q)
-    assign_variables_to_element("TIA", dc_signal)
-    # seq.add_step(voltage_point_name="readout", duration=16)
-    with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
-        save(n, n_st)
-        with for_(*from_array(t, durations)):  # Loop over the qubit pulse duration
-            with strict_timing_():  # Ensure that the sequence will be played without gap
-                # Navigate through the charge stability map
-                seq.add_step(voltage_point_name="initialization")
-                seq.add_step(voltage_point_name="idle", duration=pi_length)
-                seq.add_step(voltage_point_name="readout", duration=t + readout_len)
-                seq.add_compensation_pulse(duration=duration_compensation_pulse)
-
-                # Drive the singlet-triplet qubit using an exchange pulse at the end of the manipulation step
-                wait(
-                    duration_init * u.ns, "qubit"
-                )  # Need -4 cycles to compensate the gap
-                play("pi", "qubit")
-
-                # Measure the dot right after the qubit manipulation
-                wait(
-                    (duration_init + pi_length) * u.ns + (t >> 2), "tank_circuit", "TIA"
-                )
-                I, Q, I_st, Q_st = RF_reflectometry_macro(I=I, Q=Q)
-                dc_signal, dc_signal_st = DC_current_sensing_macro(dc_signal=dc_signal)
-            # Ramp the background voltage to zero to avoid propagating floating point errors
-            seq.ramp_to_zero()
-
-    # Stream processing section used to process the data before saving it.
-    with stream_processing():
-        n_st.save("iteration")
-        # Cast the data into a 1D vector and performs a global averaging of the received 1D vectors together.
-        # RF reflectometry
-        I_st.buffer(len(durations)).average().save("I")
-        Q_st.buffer(len(durations)).average().save("Q")
-        # DC current sensing
-        dc_signal_st.buffer(len(durations)).average().save("dc_signal")
-
-#####################################
-#  Open Communication with the QOP  #
-#####################################
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
-
-###########################
-# Run or Simulate Program #
-###########################
-simulate = True
-
-if simulate:
-    # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-    # Simulate blocks python until the simulation is done
-    job = qmm.simulate(config, T1_prog, simulation_config)
-    # Plot the simulated samples
-    plt.figure()
-    plt.subplot(211)
-    job.get_simulated_samples().con1.plot()
-    plt.axhline(level_init[0], color="k", linestyle="--")
-    plt.axhline(level_readout[0], color="k", linestyle="--")
-    plt.axhline(level_init[1], color="k", linestyle="--")
-    plt.axhline(level_readout[1], color="k", linestyle="--")
-    plt.yticks(
-        [
-            level_readout[1],
-            level_init[1],
-            0.0,
-            level_init[0],
-            level_readout[0],
-        ],
-        ["readout", "init", "0", "init", "readout"],
-    )
-    plt.legend("")
-    from macros import get_filtered_voltage
-
-    plt.subplot(212)
-    get_filtered_voltage(
-        job.get_simulated_samples().con1.analog["1"],
-        1e-9,
-        bias_tee_cut_off_frequency,
-        True,
-    )
-
-else:
-    # Open the quantum machine
-    qm = qmm.open_qm(config)
-    # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(T1_prog)
-    # Get results from QUA program and initialize live plotting
-    results = fetching_tool(
-        job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live"
-    )
-    # Live plotting
-    fig = plt.figure()
-    interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-    while results.is_processing():
-        # Fetch the data from the last OPX run corresponding to the current slow axis iteration
-        I, Q, DC_signal, iteration = results.fetch_all()
-        # Convert results into Volts
-        S = u.demod2volts(I + 1j * Q, reflectometry_readout_length)
-        R = np.abs(S)  # Amplitude
-        phase = np.angle(S)  # Phase
-        DC_signal = u.demod2volts(DC_signal, readout_len)
-        # Progress bar
-        progress_counter(iteration, n_avg)
-        # Plot data
-        plt.subplot(121)
-        plt.cla()
-        plt.plot(durations, R)
-        plt.xlabel("Wait time [ns]")
-        plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
-        plt.subplot(122)
-        plt.cla()
-        plt.plot(durations, phase)
-        plt.xlabel("Wait time [ns]")
-        plt.ylabel("Phase [rad]")
-        plt.tight_layout()
-        plt.pause(0.1)
 
 # %%
