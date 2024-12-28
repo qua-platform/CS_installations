@@ -75,8 +75,13 @@ tau_min = 16
 tau_max = 200
 tau_step = 4
 durations = np.arange(tau_min, tau_max, tau_step)
-qubit_delay = duration_init - tau_max - 2 * PI_HALF_LEN
-assert qubit_delay >= 16
+
+# duration_init includes the manipulation
+delay_init_qubit = 16
+delay_qubit_read = 16
+duration_init = delay_init_qubit + tau_max + 2 * PI_HALF_LEN + delay_qubit_read
+assert delay_init_qubit == 0 or delay_init_qubit >= 16
+assert delay_qubit_read == 0 or delay_qubit_read >= 16
 
 # Pulse frequency sweep in Hz
 frequencies = np.arange(0 * u.MHz, 100 * u.MHz, 100 * u.kHz)
@@ -120,8 +125,8 @@ with program() as rabi_chevron:
             with for_(*from_array(t, durations)):  # Loop over the qubit pulse duration
                 assign(d, tau_max - t)
                 with strict_timing_():  # Ensure that the sequence will be played without gap
-                    play("square_x180", qubit)
-                    wait(PI_LEN * u.us, *sweep_gates)
+                    # play("square_x180", qubit)
+                    # wait(PI_LEN * u.us, *sweep_gates)
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name="initialization")  # includes manipulation
@@ -129,9 +134,7 @@ with program() as rabi_chevron:
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
                     # Drive the qubit by playing the MW pulse at the end of the manipulation step
-                    # wait((duration_init - delay_before_readout) // 4 - (t >> 2) - 4, qubit)  # Need -4 cycles to compensate the gap
-                    # wait(4, qubit)  # Need 4 additional cycles because of a gap
-                    wait(qubit_delay * u.ns, qubit)
+                    wait(delay_init_qubit * u.ns, qubit) if delay_init_qubit >= 16 else None
                     wait(d >> 2, qubit)
                     
                     # Play the 1st pi half pulse
@@ -140,6 +143,8 @@ with program() as rabi_chevron:
                     wait(t >> 2, qubit)
                     # Play the 2nd pi half pulse
                     play("square_x90", qubit)
+
+                    wait(delay_qubit_read * u.ns, qubit) if delay_qubit_read >= 16 else None
 
                     # Measure the dot right after the qubit manipulation
                     wait(duration_init * u.ns, tank_circuit)

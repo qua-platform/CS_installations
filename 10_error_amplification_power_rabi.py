@@ -41,7 +41,6 @@ from configuration_with_lffem import *
 ###################
 
 qubit = "qubit3"
-qubit_dummy = f"{qubit}_dummy"
 tank_circuit = "tank_circuit1"
 measure_init = True
 sweep_gates = ["P1_sticky", "P2_sticky"]
@@ -59,9 +58,15 @@ a_min = 0.05
 a_max = 1.95
 a_step = 0.05
 amp_scalilngs = np.arange(a_min, a_max, a_step)
-qubit_delay = duration_init - max_tau_pulse
-assert qubit_delay >= 16
 
+# duration_init includes the manipulation
+delay_init_qubit = 16
+delay_qubit_read = 16
+duration_init = delay_init_qubit + PI_LEN + delay_qubit_read
+assert delay_init_qubit == 0 or delay_init_qubit >= 16
+assert delay_qubit_read == 0 or delay_qubit_read >= 16
+
+# Define voltage points
 seq = VoltageGateSequence(config, sweep_gates)
 seq.add_points("initialization", level_init, duration_init)
 seq.add_points("readout", level_readout, duration_readout)
@@ -99,8 +104,8 @@ with program() as rabi_chevron:
             assign(d, max_tau_pulse - n_rabi * PI_LEN)
             with for_(*from_array(a, amp_scalilngs)):  # Loop over the qubit pulse duration
                 with strict_timing_():  # Ensure that the sequence will be played without gap
-                    play("square_x180", qubit)
-                    wait(PI_LEN * u.us, *sweep_gates)
+                    # play("square_x180", qubit)
+                    # wait(PI_LEN * u.us, *sweep_gates)
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name="initialization")  # includes manipulation
@@ -108,13 +113,13 @@ with program() as rabi_chevron:
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
                     # Drive the qubit by playing the MW pulse at the end of the manipulation step
-                    # wait((duration_init - delay_before_readout) // 4 - (t >> 2) - 4, qubit)  # Need -4 cycles to compensate the gap
-                    # wait(4, qubit)  # Need 4 additional cycles because of a gap
-                    wait(qubit_delay * u.ns, qubit, qubit_dummy)
-                    wait(d >> 2, qubit, qubit_dummy)
+                    wait(delay_init_qubit * u.ns, qubit) if delay_init_qubit >= 16 else None
+                    wait(d >> 2, qubit)
 
                     with for_(m, 0, m < n_rabi, m + 1):
                         play("x180" * amp(a), qubit)
+
+                    wait(delay_qubit_read * u.ns, qubit) if delay_qubit_read >= 16 else None
 
                     # Measure the dot right after the qubit manipulation
                     wait(duration_init * u.ns, tank_circuit)
