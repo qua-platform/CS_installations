@@ -84,9 +84,9 @@ STEP_AMP = 0.25
 
 
 
-######################
-#    QUBIT PULSES    #
-######################
+#########################
+#    1Q QUBIT PULSES    #
+#########################
 
 # CW pulse
 CONST_AMP = 0.1  # in V
@@ -104,6 +104,21 @@ PI_AMP = 0.1
 PI_LEN = 52
 PI_HALF_LEN = PI_LEN
 PI_SIGMA = PI_LEN / 5
+
+
+#########################
+#    @Q QUBIT PULSES    #
+#########################
+
+qubit_pairs = [
+    ["3", "2"],
+]
+
+CROT_DC_AMP = 0.1
+CROT_DC_LEN = 100
+CROT_RF_AMP = 0.1
+CROT_RF_LEN = CROT_DC_LEN
+CROT_RF_SIGMA = CROT_RF_LEN / 5
 
 
 ########################
@@ -258,7 +273,7 @@ PLUNGER_CONSTANTS = {
     "P4": {
         "con": con1,
         "fem": fem2, # TODO: Fix
-        "ao": 3, # TODO: Fix
+        "ao": 4, # TODO: Fix
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
@@ -266,7 +281,7 @@ PLUNGER_CONSTANTS = {
     "P5": {
         "con": con1,
         "fem": fem2, # TODO: Fix
-        "ao": 3, # TODO: Fix
+        "ao": 6, # TODO: Fix
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
@@ -356,13 +371,6 @@ TANK_CIRCUIT_CONSTANTS = {
 
 # MARK: TWO QUBIT
 
-qubit_pairs = [
-    ["3", "2"],
-]
-
-CROT_AMP = 0.1
-CROT_LEN = 100
-CROT_SIGMA = CROT_LEN / 5
 
 # Constants for each qubit for CR DRIVE
 CROT_CONSTANTS = {
@@ -376,9 +384,9 @@ CROT_CONSTANTS = {
         "IF": QUBIT_CONSTANTS[f"qubit{c}"]["IF"],
         "mixer_g": QUBIT_CONSTANTS[f"qubit{c}"]["mixer_g"],
         "mixer_phi": QUBIT_CONSTANTS[f"qubit{c}"]["mixer_phi"],
-        "crot_amp": CROT_AMP,
-        "crot_len": CROT_LEN,
-        "crot_sigma": CROT_SIGMA,
+        "crot_amp": CROT_RF_AMP,
+        "crot_len": CROT_RF_LEN,
+        "crot_sigma": CROT_RF_SIGMA,
     } for c, t in qubit_pairs}
 }
 # # update after findng the optimal parameters
