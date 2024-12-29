@@ -194,6 +194,40 @@ QUBIT_CONSTANTS = {
         "delay": 0,
         "digital_delay": 0,
     },
+    "qubit4": {
+        "con": con1,
+        "fem": fem1,
+        "ao_I": 5, # TODO: Fix
+        "ao_Q": 6, # TODO: Fix
+        "do": 3,
+        "LO": 16.3 * u.GHz,
+        "IF": 0 * u.MHz,
+        "mixer_g": 0,
+        "mixer_phi": 0,
+        "pi_amp": PI_AMP,
+        "pi_len": PI_LEN,
+        "pi_sigma": PI_SIGMA,
+        "midcircuit_parity_threshold": 0.0,
+        "delay": 0,
+        "digital_delay": 0,
+    },
+    "qubit5": {
+        "con": con1,
+        "fem": fem1,
+        "ao_I": 5, # TODO: Fix
+        "ao_Q": 6, # TODO: Fix
+        "do": 3,
+        "LO": 16.3 * u.GHz,
+        "IF": 0 * u.MHz,
+        "mixer_g": 0,
+        "mixer_phi": 0,
+        "pi_amp": PI_AMP,
+        "pi_len": PI_LEN,
+        "pi_sigma": PI_SIGMA,
+        "midcircuit_parity_threshold": 0.0,
+        "delay": 0,
+        "digital_delay": 0,
+    },
 }
 
 PLUNGER_CONSTANTS = {
@@ -221,6 +255,22 @@ PLUNGER_CONSTANTS = {
         "step_len": STEP_LEN,
         "delay": 0,
     },
+    "P4": {
+        "con": con1,
+        "fem": fem2, # TODO: Fix
+        "ao": 3, # TODO: Fix
+        "step_amp": STEP_AMP,
+        "step_len": STEP_LEN,
+        "delay": 0,
+    },
+    "P5": {
+        "con": con1,
+        "fem": fem2, # TODO: Fix
+        "ao": 3, # TODO: Fix
+        "step_amp": STEP_AMP,
+        "step_len": STEP_LEN,
+        "delay": 0,
+    },
 }
 
 BARRIER_CONSTANTS = {
@@ -244,6 +294,14 @@ BARRIER_CONSTANTS = {
         "con": con1,
         "fem": fem2,
         "ao": 6,
+        "step_amp": STEP_AMP,
+        "step_len": STEP_LEN,
+        "delay": 0,
+    },
+    "B4": {
+        "con": con1,
+        "fem": fem2, # TODO: Fix
+        "ao": 6, # TODO: Fix
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
