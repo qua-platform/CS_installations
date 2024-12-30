@@ -237,10 +237,10 @@ def play_feedback(plungers, qubit, parity):
     wait(delay_init_qubit_start * u.ns, qubit) if delay_init_qubit_start >= 16 else None
     # TODO:
     if do_feedback:
-        play("x180", qubit, condition=parity)
+        play("kaiser_x180", qubit, condition=parity)
     else:
         wait(delay_feedback * u.ns, qubit)
-        play("x180", qubit)
+        play("kaiser_x180", qubit)
     wait(delay_init_qubit_end * u.ns, qubit) if delay_init_qubit_end >= 16 else None
 
 
@@ -249,7 +249,7 @@ def play_CNOT_c3t2(plungers):
 
     wait(delay_init_qubit_start * u.ns, "B2", "qp_control_c3t2") if delay_init_qubit_start >= 16 else None
     play("step" * amp(0.1), "B2", duration=CROT_DC_LEN * u.ns)
-    play("x180", "qp_control_c3t2")
+    play("kaiser_x180", "qp_control_c3t2")
     wait(delay_init_qubit_end * u.ns, "B2", "qp_control_c3t2") if delay_init_qubit_end >= 16 else None
 
 
@@ -319,8 +319,8 @@ with program() as PROGRAM_GST:
 
             with for_(n, 0, n < n_shots, n + 1):
                 
-                # play("square_const", qubit)
-                # play("square_step", "P1", duration=const_len * u.ns)
+                # play("kaiser_const", qubit)
+                # play("kaiser_step", "P1", duration=const_len * u.ns)
 
                 with strict_timing_():
 
@@ -361,32 +361,32 @@ with program() as PROGRAM_GST:
                             
                             # prep & meas fiducials and germs
                             with case_(4): #   I = XXXX
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
+                                play("kaiser_x90", qubit)
+                                play("kaiser_x90", qubit)
+                                play("kaiser_x90", qubit)
+                                play("kaiser_x90", qubit)
                             with case_(5):
-                                play("square_x90", qubit)
+                                play("kaiser_x90", qubit)
                             with case_(6):
-                                play("square_y90", qubit)
+                                play("kaiser_y90", qubit)
                             with case_(7):
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
+                                play("kaiser_x90", qubit)
+                                play("kaiser_x90", qubit)
                             with case_(8):
-                                play("square_x90", qubit)
-                                play("square_y90", qubit)
+                                play("kaiser_x90", qubit)
+                                play("kaiser_y90", qubit)
                             with case_(9):
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
+                                play("kaiser_x90", qubit)
+                                play("kaiser_x90", qubit)
+                                play("kaiser_x90", qubit)
                             with case_(10):
-                                play("square_y90", qubit)
-                                play("square_y90", qubit)
-                                play("square_y90", qubit)
+                                play("kaiser_y90", qubit)
+                                play("kaiser_y90", qubit)
+                                play("kaiser_y90", qubit)
                             with case_(11):
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
-                                play("square_y90", qubit)
+                                play("kaiser_x90", qubit)
+                                play("kaiser_x90", qubit)
+                                play("kaiser_y90", qubit)
 
                     wait(delay_init_qubit_end * u.ns, qubit) if delay_init_qubit_start >= 16 else None
 
