@@ -3,6 +3,7 @@
         Readout & Init
 """
 
+import matplotlib
 import matplotlib.pyplot as plt
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
@@ -10,11 +11,10 @@ from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.voltage_gates import VoltageGateSequence
-import copy 
 
 from configuration_with_lffem import *
+from macros import get_other_elements
 
-import matplotlib
 matplotlib.use('TkAgg')
 
 
@@ -31,11 +31,6 @@ tank_circuits = ['tank_circuit1', 'tank_circuit2']
 num_tank_circuits = len(TANK_CIRCUIT_CONSTANTS)
 all_elements = qubits + sweep_gates + barrier_gates + qp_controls + tank_circuits
 
-def get_other_elements(elements_in_use, all_elements=all_elements):
-    _all_elements = copy.deepcopy(all_elements)
-    for elem in elements_in_use:
-        _all_elements.remove(elem)
-    return _all_elements
 
 # Points in the charge stability map [V1, V2]
 level_inits = {

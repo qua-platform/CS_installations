@@ -2,6 +2,7 @@
         CHARGE STABILITY DIAGRAM
 """
 
+import copy
 from typing import Union
 
 import matplotlib.pyplot as plt
@@ -98,3 +99,10 @@ def get_filtered_voltage(
         plt.legend()
     print(f"Error: {np.mean(np.abs((y-y_filtered)/(max(y)-min(y))))*100:.2f} %")
     return y, y_filtered
+
+
+def get_other_elements(elements_in_use, all_elements):
+    _all_elements = copy.deepcopy(all_elements)
+    for elem in elements_in_use:
+        _all_elements.remove(elem)
+    return _all_elements
