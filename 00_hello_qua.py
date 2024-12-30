@@ -19,6 +19,7 @@ level_readout = [0.1, -0.1]
 duration_init = 200
 duration_manip = 800
 duration_readout = 500
+sweep_gates = ["P1_sticky", "P2_sticky"]
 
 # Add the relevant voltage points describing the "slow" sequence (no qubit pulse)
 seq = VoltageGateSequence(config, sweep_gates)
@@ -44,6 +45,8 @@ with program() as hello_qua:
 qmm = QuantumMachinesManager(
     host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
 )
+qmm.clear_all_job_results()
+qmm.close_all_qms()
 
 ###########################
 # Run or Simulate Program #
@@ -53,7 +56,7 @@ simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=1_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, hello_qua, simulation_config)
     # Plot the simulated samples
