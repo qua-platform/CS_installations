@@ -136,15 +136,15 @@ PARITY_THRESHOLD2 = 0.0
 #      DC GATES      #
 ######################
 
-## Section defining the points from the charge stability map - can be done in the config
-# Relevant points in the charge stability map as ["P1", "P2"] in V
-level_init = [-0.02, 0.02]
-level_readout = [0.0, -0.0]
+# ## Section defining the points from the charge stability map - can be done in the config
+# # Relevant points in the charge stability map as ["P1", "P2"] in V
+# level_init = [-0.02, 0.02]
+# level_readout = [0.0, -0.0]
 
-# Duration of each step in ns
-duration_init = 400
-duration_readout = REFLECTOMETRY_READOUT_LEN + 100
-duration_compensation_pulse = 4 * u.us
+# # Duration of each step in ns
+# duration_init = 400
+# duration_readout = REFLECTOMETRY_READOUT_LEN + 100
+# duration_compensation_pulse = 4 * u.us
 
 # Time to ramp down to zero for sticky elements in ns
 hold_offset_duration = 4  # in ns

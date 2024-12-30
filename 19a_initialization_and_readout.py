@@ -87,11 +87,6 @@ seq.add_points("wait_P3", level_waits["P3"], duration_wait)
 seq.add_points("wait_P4-P5", level_waits["P4-P5"], duration_wait)
 
 
-def zero_average_power(seq):
-    for i, gate in enumerate(sweep_gates):
-        seq.average_power[i] = 0
-    return seq
-
 
 def initialization(I, Q, P, I_st, Q_st, P_st):
     qua_vars0 = I[0], Q[0], P[0], I_st, Q_st, P_st
@@ -125,8 +120,13 @@ def readout(I, Q, P, I_st, Q_st, P_st):
     other_elements = get_other_elements(sweep_gates)
 
     res1_6 = read_init12(*qua_vars0)  # save_count = 2 -> 12
+    # wait_after_read_init(qp="P1-P2")
+
     res1_7 = read_init3(*qua_vars0)  # save_count = 1 -> 13
+    # wait_after_read_init(qp="P1-P2")
+
     res2_2 = read_init45(*qua_vars1)  # save_count = 2 -> 15
+    # wait_after_read_init(qp="P4-P5")
 
 
 def read_init12(I, Q, P, I_st, Q_st, P_st):
@@ -193,19 +193,19 @@ def read_init3(I, Q, P, I_st, Q_st, P_st):
 def play_feedback(qp, qubit, parity):
     seq.add_step(voltage_point_name=f"initialization_1q_{qp}")
 
-    wait(delay_init_qubit_start * u.ns, qubit)
+    wait(delay_init_qubit_start * u.ns, qubit) if delay_init_qubit_start >= 16 else None
     # play("x180", qubit, condition=parity)
     play("x180", qubit)
-    wait(delay_init_qubit_end * u.ns, qubit)
+    wait(delay_init_qubit_end * u.ns, qubit) if delay_init_qubit_end >= 16 else None
 
 
 def play_CNOT_c3t2(qp):
     seq.add_step(voltage_point_name=f"initialization_2q_{qp}")
 
-    wait(delay_init_qubit_start * u.ns, "B2", "qp_control_c3t2")
+    wait(delay_init_qubit_start * u.ns, "B2", "qp_control_c3t2") if delay_init_qubit_start >= 16 else None
     play("step" * amp(0.1), "B2", duration=CROT_DC_LEN * u.ns)
     play("x180", "qp_control_c3t2")
-    wait(delay_init_qubit_end * u.ns, "B2", "qp_control_c3t2")
+    wait(delay_init_qubit_end * u.ns, "B2", "qp_control_c3t2") if delay_init_qubit_end >= 16 else None
 
 
 def wait_after_read_init(qp):
@@ -220,7 +220,7 @@ def measure_parity(I, Q, P, I_st, Q_st, P_st, qp, tank_circuit, threshold):
     # seq.add_step(voltage_point_name=f"initialization_1q_{qp}")
     seq.add_step(voltage_point_name=f"readout_{qp}")
     # Measure the dot right after the qubit manipulation
-    wait(delay_read_reflec_start * u.ns, tank_circuit)
+    wait(delay_read_reflec_start * u.ns, tank_circuit) if delay_read_reflec_start >= 16 else None
     measure(
         "readout",
         tank_circuit,
@@ -228,7 +228,7 @@ def measure_parity(I, Q, P, I_st, Q_st, P_st, qp, tank_circuit, threshold):
         demod.full("cos", I, "out1"),
         demod.full("sin", Q, "out1"),
     )
-    wait(delay_read_reflec_end * u.ns, tank_circuit)
+    wait(delay_read_reflec_end * u.ns, tank_circuit) if delay_read_reflec_end >= 16 else None
 
     assign(P, I > threshold)  # TODO: I > threashold is even?
     save(I, I_st)
