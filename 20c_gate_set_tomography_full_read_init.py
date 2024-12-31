@@ -165,7 +165,7 @@ seq.add_points("wait_P4-P5", level_waits["P4-P5"], duration_wait)
 
 
 
-def perform_initialization(I, Q, P, I_st):
+def perform_initialization(I, Q, P, I1_st, I2_st, I3_st):
     qua_vars1 = I[0], Q[0], P[0] # tank_circuit1
     qua_vars2 = I[1], Q[1], P[1] # tank_circuit2
 
@@ -180,27 +180,27 @@ def perform_initialization(I, Q, P, I_st):
     # wait_after_read_init(plungers="P1-P2")
 
     # 2nd
-    read_init3(*qua_vars1, I_st[0], do_save=True)  # save_count = 1 -> 6
+    read_init3(*qua_vars1, I1_st, do_save=True)  # save_count = 1 -> 6
     # wait_after_read_init(plungers="P3")
 
-    read_init12(*qua_vars1, None, I_st[1], do_save=[False, True])  # save_count = 2 -> 8
+    read_init12(*qua_vars1, None, I2_st, do_save=[False, True])  # save_count = 2 -> 8
     # wait_after_read_init(plungers="P1-P2")
 
-    read_init45(*qua_vars2, None, I_st[2], do_save=[False, True])  # save_count = 2 -> 10
+    read_init45(*qua_vars2, None, I3_st, do_save=[False, True])  # save_count = 2 -> 10
     # wait_after_read_init(plungers="P4-P5")
 
 
-def perform_readout(I, Q, P, I_st):
+def perform_readout(I, Q, P, I1_st, I2_st, I3_st):
     qua_vars1 = I[0], Q[0], P[0] # tank_circuit1
     qua_vars2 = I[1], Q[1], P[1] # tank_circuit2
 
-    read_init12(*qua_vars1, None, I_st[3], do_save=[False, True])  # save_count = 2 -> 12
+    read_init12(*qua_vars1, I1_st, None, do_save=[True, False])  # save_count = 2 -> 12
     # wait_after_read_init(plungers="P1-P2")
 
-    read_init3(*qua_vars1, I_st[4], do_save=True)  # save_count = 1 -> 13
+    read_init3(*qua_vars1, I2_st, do_save=True)  # save_count = 1 -> 13
     # wait_after_read_init(plungers="P1-P2")
 
-    read_init45(*qua_vars2, None, I_st[5], do_save=[False, True])  # save_count = 2 -> 15
+    read_init45(*qua_vars2, I3_st, None, do_save=[True, False])  # save_count = 2 -> 15
     # wait_after_read_init(plungers="P4-P5")
 
 
@@ -344,9 +344,9 @@ with program() as PROGRAM_GST:
     I = [declare(fixed) for _ in range(num_tank_circuits)]
     Q = [declare(fixed) for _ in range(num_tank_circuits)]
     P = [declare(bool) for _ in range(num_tank_circuits)]  # true if even parity
-    I_st = [declare_stream() for _ in range(15)]
-    Q_st = [declare_stream() for _ in range(15)]
-    P_st = [declare_stream() for _ in range(15)]
+    I_st = [declare_stream() for _ in range(6)]
+    # Q_st = [declare_stream() for _ in range(15)]
+    # P_st = [declare_stream() for _ in range(15)]
 
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("tank_circuit1", I[0], Q[0], P[0])
@@ -365,8 +365,8 @@ with program() as PROGRAM_GST:
 
                 with strict_timing_():
 
-                    # TODO:
-                    perform_initialization(I, Q, P, I_st)
+                    # RI12 -> 2 x (R3 -> R12) -> RI45
+                    perform_initialization((I, Q, P, I_st[0], I_st[1], I_st[2]))
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}")
@@ -431,8 +431,8 @@ with program() as PROGRAM_GST:
 
                     wait(delay_init_qubit_end * u.ns, qubit) if delay_init_qubit_start >= 16 else None
 
-                    # TODO:
-                    perform_readout(I, Q, P, I_st)
+                    # RI12 -> R3 -> RI45
+                    perform_readout(I, Q, P, I_st[3], I_st[4], I_st[5])
 
                     seq.add_compensation_pulse(duration=duration_compensation_pulse_full)
                 
