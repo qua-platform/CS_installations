@@ -1,5 +1,7 @@
 # %%
 
+import math
+from datetime import datetime
 import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -8,13 +10,13 @@ from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import fetching_tool, progress_counter
+from qualang_tools.results import fetching_tool, progress_counter, wait_until_job_is_paused
 from qualang_tools.voltage_gates import VoltageGateSequence
 from macros import get_other_elements
 
 from configuration_with_lffem import *
 
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 ###################
 #  Util funciton  #
@@ -26,9 +28,43 @@ def get_dataframe_encoded_sequence():
     df = pd.read_csv(path, header=0)  # Use header=0 to indicate the first row is the header
     df["full_gate_sequence_duration"] = PI_HALF_LEN * df["full_native_gate_count"]
     df.reset_index(inplace=True)
-    # df = df.tail(60)
+    # df = df.head(3)
     # df = df.head(10)
     return df
+
+
+def get_encoded_circuit(row):
+    C = int(row["circ_idx"])
+    P = int(row["P_enc"])
+    G = int(row["G_enc"])
+    d = int(row["d_enc"])
+    M = int(row["M_enc"])
+    D = int(row["full_gate_sequence_duration"])
+    Ph4 = int(row["remaining_wait_num_4-pihalf"])
+    Ph = int(row["remaining_wait_num_pihalf"])
+
+    seq_len = 0
+    _encoded_circuit = [C]
+    if P != -1:
+        _encoded_circuit.append(P)
+        seq_len += 1
+    if G != -1:
+        _encoded_circuit.extend([G] * d)
+        seq_len += d
+    if M != -1:
+        _encoded_circuit.append(M)
+        seq_len += 1
+    if Ph4 > 0:
+        _encoded_circuit.extend([0] * Ph4)
+        seq_len += Ph4
+    if Ph > 0:
+        _encoded_circuit.append(Ph)
+        seq_len += 1
+
+    # sequence length
+    _encoded_circuit.insert(1, seq_len)
+
+    return _encoded_circuit, C, P, G, d, M
 
 
 ###################
@@ -37,6 +73,7 @@ def get_dataframe_encoded_sequence():
 
 qubit = "qubit1"
 plungers = "P1-P2"
+do_feedback = False # False for test. True for actual.
 
 qubits = ["qubit1", "qubit2", "qubit3", "qubit4", "qubit5"]
 sweep_gates = ["P1_sticky", "P2_sticky", "P3_sticky", "P4_sticky", "P5_sticky"]
@@ -51,20 +88,26 @@ list_n_shots = [10, 100]
 df_enc_seqs = get_dataframe_encoded_sequence()
 sequence_max_len = 1 + 8192 + 1
 num_cicuits = len(df_enc_seqs)
-
+batch_size = max(list_n_shots)
+result_array_len = num_cicuits * sum(list_n_shots)
+result_array_len = batch_size * math.ceil(result_array_len / batch_size)
 
 delay_init_qubit_start = 16
+delay_feedback = 240
 delay_init_qubit_end = 16
-duration_init_1q = delay_init_qubit_start + PI_LEN + delay_init_qubit_end
+duration_init_1q = delay_init_qubit_start + delay_feedback + PI_LEN + delay_init_qubit_end
 duration_init_2q = delay_init_qubit_start + CROT_RF_LEN + delay_init_qubit_end
 assert delay_init_qubit_start == 0 or delay_init_qubit_start >= 16
 assert delay_init_qubit_end == 0 or delay_init_qubit_end >= 16
 
+
 delay_read_reflec_start = 16
 delay_read_reflec_end = 16
-duration_readout = delay_read_reflec_start + REFLECTOMETRY_READOUT_LEN + delay_read_reflec_end
+delay_stream = 1000
+duration_readout = delay_read_reflec_start + REFLECTOMETRY_READOUT_LEN + delay_read_reflec_end + delay_stream
 assert delay_read_reflec_start == 0 or delay_read_reflec_start >= 16
 assert delay_read_reflec_end == 0 or delay_read_reflec_end >= 16
+
 
 # duration_init includes the manipulation
 max_gate_counts = 4 + int(df_enc_seqs["full_native_gate_count"].max())
@@ -73,12 +116,14 @@ delay_gst_start = 16
 delay_gst_end = 16
 duration_gst = delay_init_qubit_start + max_gate_duration + delay_init_qubit_end
 
+
 duration_wait = 200
 duration_compensation_pulse_initialization = 4 * (duration_init_1q + 2 * duration_readout) + 2 * (duration_init_2q + duration_readout + duration_init_1q)
 duration_compensation_pulse_readout = 2 * (duration_init_1q + 2 * duration_readout) + 1 * (duration_init_2q + duration_readout + duration_init_1q)
 duration_compensation_pulse_gst = duration_gst
 duration_compensation_pulse_full = int(0.3 * duration_compensation_pulse_initialization + duration_compensation_pulse_gst + duration_compensation_pulse_readout)
 duration_compensation_pulse_full = 100 * (duration_compensation_pulse_full // 100)
+
 
 
 # Points in the charge stability map [V1, V2]
@@ -120,58 +165,59 @@ seq.add_points("wait_P4-P5", level_waits["P4-P5"], duration_wait)
 
 
 
-def perform_initialization(I, Q, P, I_st, Q_st, P_st):
-    qua_vars0 = I[0], Q[0], P[0], I_st, Q_st, P_st
-    qua_vars1 = I[1], Q[1], P[1], I_st, Q_st, P_st
+def perform_initialization(I, Q, P, I_st):
+    qua_vars1 = I[0], Q[0], P[0] # tank_circuit1
+    qua_vars2 = I[1], Q[1], P[1] # tank_circuit2
 
-    res1_1 = read_init12(*qua_vars0)  # save_count = 2 -> 2
+    read_init12(*qua_vars1, None, None, do_save=[False, False])  # save_count = 2 -> 2
     # wait_after_read_init(plungers="P1-P2")
 
     # 1st
-    res1_2 = read_init3(*qua_vars0)  # save_count = 1 -> 3
+    read_init3(*qua_vars1, None, do_save=False)  # save_count = 1 -> 3
     # wait_after_read_init(plungers="P3")
 
-    res1_3 = read_init12(*qua_vars0)  # save_count = 2 -> 5
+    read_init12(*qua_vars1, None, None, do_save=[False, False])  # save_count = 2 -> 5
     # wait_after_read_init(plungers="P1-P2")
 
     # 2nd
-    res1_4 = read_init3(*qua_vars0)  # save_count = 1 -> 6
+    read_init3(*qua_vars1, I_st[0], do_save=True)  # save_count = 1 -> 6
     # wait_after_read_init(plungers="P3")
 
-    res1_5 = read_init12(*qua_vars0)  # save_count = 2 -> 8
+    read_init12(*qua_vars1, None, I_st[1], do_save=[False, True])  # save_count = 2 -> 8
     # wait_after_read_init(plungers="P1-P2")
 
-    res2_1 = read_init45(*qua_vars1)  # save_count = 2 -> 10
+    read_init45(*qua_vars2, None, I_st[2], do_save=[False, True])  # save_count = 2 -> 10
     # wait_after_read_init(plungers="P4-P5")
 
 
-def perform_readout(I, Q, P, I_st, Q_st, P_st):
-    qua_vars0 = I[0], Q[0], P[0], I_st, Q_st, P_st
-    qua_vars1 = I[1], Q[1], P[1], I_st, Q_st, P_st
+def perform_readout(I, Q, P, I_st):
+    qua_vars1 = I[0], Q[0], P[0] # tank_circuit1
+    qua_vars2 = I[1], Q[1], P[1] # tank_circuit2
 
-    res1_6 = read_init12(*qua_vars0)  # save_count = 2 -> 12
+    read_init12(*qua_vars1, None, I_st[3], do_save=[False, True])  # save_count = 2 -> 12
     # wait_after_read_init(plungers="P1-P2")
 
-    res1_7 = read_init3(*qua_vars0)  # save_count = 1 -> 13
+    read_init3(*qua_vars1, I_st[4], do_save=True)  # save_count = 1 -> 13
     # wait_after_read_init(plungers="P1-P2")
 
-    res2_2 = read_init45(*qua_vars1)  # save_count = 2 -> 15
+    read_init45(*qua_vars2, None, I_st[5], do_save=[False, True])  # save_count = 2 -> 15
     # wait_after_read_init(plungers="P4-P5")
 
 
-def read_init12(I, Q, P, I_st, Q_st, P_st):
-    qua_vars = I, Q, P, I_st, Q_st, P_st
+def read_init12(I, Q, P, I1_st, I2_st, do_save=[False, False]):
+    qua_vars = I, Q, P
+
     plungers = "P1-P2"
     threshold = TANK_CIRCUIT_CONSTANTS["tank_circuit1"]["threshold"]
     other_elements = get_other_elements(elements_in_use=["qubit1", "tank_circuit1"] + sweep_gates, all_elements=all_elements)
 
-    P = measure_parity(*qua_vars, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold)
+    P = measure_parity(*qua_vars, I1_st, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold, do_save=do_save[0])
     wait(duration_readout * u.ns, "qubit1")
 
     play_feedback(plungers=plungers, qubit="qubit1", parity=P)    
     wait(duration_init_1q * u.ns, "tank_circuit1")
 
-    P = measure_parity(*qua_vars, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold)
+    P = measure_parity(*qua_vars, I2_st, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold, do_save=do_save[1])
     wait(duration_readout * u.ns, "qubit1")
 
     wait((duration_init_1q + 2 * duration_readout) * u.ns, *other_elements)
@@ -179,20 +225,21 @@ def read_init12(I, Q, P, I_st, Q_st, P_st):
     return P
 
 
-def read_init45(I, Q, P, I_st, Q_st, P_st):
-    qua_vars = I, Q, P, I_st, Q_st, P_st
+def read_init45(I, Q, P, I1_st, I2_st, do_save=[False, False]):
+    qua_vars = I, Q, P
+
     plungers = "P4-P5"
     tank_circuit = "tank_circuit2"
     threshold = TANK_CIRCUIT_CONSTANTS["tank_circuit2"]["threshold"]
     other_elements = get_other_elements(elements_in_use=["qubit5", "tank_circuit2"] + sweep_gates, all_elements=all_elements)
 
-    P = measure_parity(*qua_vars, plungers=plungers, tank_circuit=tank_circuit, threshold=threshold)
+    P = measure_parity(*qua_vars, I1_st, plungers=plungers, tank_circuit=tank_circuit, threshold=threshold, do_save=do_save[0])
     wait(duration_readout * u.ns, "qubit5")
 
     play_feedback(plungers=plungers, qubit="qubit5", parity=P)
     wait(duration_init_1q * u.ns, "tank_circuit2")
 
-    P = measure_parity(*qua_vars, plungers=plungers, tank_circuit=tank_circuit, threshold=threshold)
+    P = measure_parity(*qua_vars, I2_st, plungers=plungers, tank_circuit=tank_circuit, threshold=threshold, do_save=do_save[1])
     wait(duration_readout * u.ns, "qubit5")
 
     wait((duration_init_1q + 2 * duration_readout) * u.ns, *other_elements)
@@ -200,8 +247,9 @@ def read_init45(I, Q, P, I_st, Q_st, P_st):
     return P
 
 
-def read_init3(I, Q, P, I_st, Q_st, P_st):
-    qua_vars = I, Q, P, I_st, Q_st, P_st
+def read_init3(I, Q, P, I_st, do_save=False):
+    qua_vars = I, Q, P
+
     plungers = "P3"
     threshold = TANK_CIRCUIT_CONSTANTS["tank_circuit1"]["threshold"]
     other_elements = get_other_elements(elements_in_use=["B2", "qp_control_c3t2", "qubit3", "tank_circuit1"] + sweep_gates, all_elements=all_elements)
@@ -209,7 +257,7 @@ def read_init3(I, Q, P, I_st, Q_st, P_st):
     play_CNOT_c3t2(plungers=plungers)
     wait(duration_init_2q * u.ns, "tank_circuit1", "qubit3")
 
-    P = measure_parity(*qua_vars, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold)
+    P = measure_parity(*qua_vars, I_st, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold, do_save=do_save)
     wait(duration_readout * u.ns, "B2", "qp_control_c3t2", "qubit3")
 
     play_feedback(plungers=plungers, qubit="qubit3", parity=P)
@@ -224,8 +272,12 @@ def play_feedback(plungers, qubit, parity):
     seq.add_step(voltage_point_name=f"initialization_1q_{plungers}")
 
     wait(delay_init_qubit_start * u.ns, qubit) if delay_init_qubit_start >= 16 else None
-    # play("x180", qubit, condition=parity)
-    play("x180", qubit)
+    # TODO:
+    if do_feedback:
+        play("x180_kaiser", qubit, condition=parity)
+    else:
+        wait(delay_feedback * u.ns, qubit)
+        play("x180_kaiser", qubit)
     wait(delay_init_qubit_end * u.ns, qubit) if delay_init_qubit_end >= 16 else None
 
 
@@ -234,7 +286,7 @@ def play_CNOT_c3t2(plungers):
 
     wait(delay_init_qubit_start * u.ns, "B2", "qp_control_c3t2") if delay_init_qubit_start >= 16 else None
     play("step" * amp(0.1), "B2", duration=CROT_DC_LEN * u.ns)
-    play("x180", "qp_control_c3t2")
+    play("x180_kaiser", "qp_control_c3t2")
     wait(delay_init_qubit_end * u.ns, "B2", "qp_control_c3t2") if delay_init_qubit_end >= 16 else None
 
 
@@ -245,7 +297,7 @@ def wait_after_read_init(plungers):
     wait(duration_wait * u.ns, *other_elements)
 
 
-def measure_parity(I, Q, P, I_st, Q_st, P_st, plungers, tank_circuit, threshold):
+def measure_parity(I, Q, P, I_st, plungers, tank_circuit, threshold, do_save=False):
     # Play the triangle
     # seq.add_step(voltage_point_name=f"initialization_1q_{plungers}")
     seq.add_step(voltage_point_name=f"readout_{plungers}")
@@ -261,9 +313,12 @@ def measure_parity(I, Q, P, I_st, Q_st, P_st, plungers, tank_circuit, threshold)
     wait(delay_read_reflec_end * u.ns, tank_circuit) if delay_read_reflec_end >= 16 else None
 
     assign(P, I > threshold)  # TODO: I > threashold is even?
-    save(I, I_st)
-    save(Q, Q_st)
-    save(P, P_st)
+
+    if do_save:
+        save(I, I_st)
+        # save(Q, Q_st)
+        # save(P, P_st)
+
     return P
 
 
@@ -272,26 +327,30 @@ with program() as PROGRAM_GST:
     n_shots = declare(int)
     circ = declare(int)
     idx = declare(int)
+    count = declare(int, value=0)
+    division = declare(int, value=1)
+    # encoded_circuit = declare(int, value=[52, 4, 5, 7, 16, 18])
     encoded_circuit = declare_input_stream(
         int,
-        name="_encoded_circuit_input_stream",
+        name="_encoded_circuit",
         size=sequence_max_len + 3, # 2 to account for [circ_idx, seq_len, remaining_duraiton_case]
     )  # input stream the sequence
-    idx_st = declare_stream()
 
-    n = declare(int)  # QUA integer used as an index for the averaging loop
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
+    n_shots_st = declare_stream()
+    circ_idx_st = declare_stream()
+    circ_len_st = declare_stream()
+    
     I = [declare(fixed) for _ in range(num_tank_circuits)]
     Q = [declare(fixed) for _ in range(num_tank_circuits)]
     P = [declare(bool) for _ in range(num_tank_circuits)]  # true if even parity
-    I_st = declare_stream()
-    Q_st = declare_stream()
-    P_st = declare_stream()
+    I_st = [declare_stream() for _ in range(15)]
+    Q_st = [declare_stream() for _ in range(15)]
+    P_st = [declare_stream() for _ in range(15)]
 
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("tank_circuit1", I[0], Q[0], P[0])
     assign_variables_to_element("tank_circuit2", I[1], Q[1], P[1])
-
 
     with for_each_(n_shots, list_n_shots):
 
@@ -302,14 +361,12 @@ with program() as PROGRAM_GST:
             circ_len = encoded_circuit[1] # gate sequence length for this circuit
 
             with for_(n, 0, n < n_shots, n + 1):
-                
-                # play("square_const", qubit)
-                # play("square_step", "P1", duration=const_len * u.ns)
+                assign(count, count + 1)
 
                 with strict_timing_():
 
                     # TODO:
-                    perform_initialization(I, Q, P, I_st, Q_st, P_st)
+                    perform_initialization(I, Q, P, I_st)
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}")
@@ -326,97 +383,78 @@ with program() as PROGRAM_GST:
                             # option: adjust the length accoridngly
 
                             with case_(0):
-                                # TODO: initialization step
+                                wait(4 * PI_HALF_LEN * u.ns, qubit)
+                            with case_(1):
                                 wait(PI_HALF_LEN * u.ns, qubit)
-
-                            # prep fiducials
-                            with case_(1): #   I = XXXX
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
                             with case_(2):
-                                play("square_x90", qubit)
+                                wait(2 * PI_HALF_LEN * u.ns, qubit)
                             with case_(3):
-                                play("square_y90", qubit)
-                            with case_(4):
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
+                                wait(3 * PI_HALF_LEN * u.ns, qubit)
+                            
+                            # '{}': 4, # I
+                            # 'Gxpi2:0': 5,
+                            # 'Gypi2:0': 6,
+                            # 'Gxpi2:0Gxpi2:0': 7,
+                            # 'Gxpi2:0Gxpi2:0Gxpi2:0': 9,
+                            # 'Gypi2:0Gypi2:0Gypi2:0': 10,
+                            # 'Gxpi2:0Gypi2:0': 8,
+                            # 'Gxpi2:0Gxpi2:0Gypi2:0': 11
+                            
+                            # prep & meas fiducials and germs
+                            with case_(4): #   I = XXXX
+                                play("x90_kaiser", qubit)
+                                play("x90_kaiser", qubit)
+                                play("x90_kaiser", qubit)
+                                play("x90_kaiser", qubit)
                             with case_(5):
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
+                                play("x90_kaiser", qubit)
                             with case_(6):
-                                play("square_y90", qubit)
-                                play("square_y90", qubit)
-                                play("square_y90", qubit)
-
-                            # germs
-                            with case_(7): #   I = XXXX
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
+                                play("y90_kaiser", qubit)
+                            with case_(7):
+                                play("x90_kaiser", qubit)
+                                play("x90_kaiser", qubit)
                             with case_(8):
-                                play("square_x90", qubit)
+                                play("x90_kaiser", qubit)
+                                play("y90_kaiser", qubit)
                             with case_(9):
-                                play("square_y90", qubit)
+                                play("x90_kaiser", qubit)
+                                play("x90_kaiser", qubit)
+                                play("x90_kaiser", qubit)
                             with case_(10):
-                                play("square_x90", qubit)
-                                play("square_y90", qubit)
+                                play("y90_kaiser", qubit)
+                                play("y90_kaiser", qubit)
+                                play("y90_kaiser", qubit)
                             with case_(11):
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
-                                play("square_y90", qubit)
-
-                            # meas fiducial
-                            with case_(12): #   I = XXXX
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
-                            with case_(13):
-                                play("square_x90", qubit)
-                            with case_(14):
-                                play("square_y90", qubit)
-                            with case_(15):
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
-                            with case_(16):
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
-                                play("square_x90", qubit)
-                            with case_(17):
-                                play("square_y90", qubit)
-                                play("square_y90", qubit)
-                                play("square_y90", qubit)
-
-                            for c_, row in df_enc_seqs.iterrows():
-                                with case_(17 + int(row["circ_idx"])):
-                                    wait((max_gate_duration - int(row["full_gate_sequence_duration"])) * u.ns, qubit)
+                                play("x90_kaiser", qubit)
+                                play("x90_kaiser", qubit)
+                                play("y90_kaiser", qubit)
 
                     wait(delay_init_qubit_end * u.ns, qubit) if delay_init_qubit_start >= 16 else None
 
                     # TODO:
-                    perform_readout(I, Q, P, I_st, Q_st, P_st)
+                    perform_readout(I, Q, P, I_st)
 
                     seq.add_compensation_pulse(duration=duration_compensation_pulse_full)
+                
+                save(n, n_st)
+                save(n_shots, n_shots_st)
+                save(circ_idx, circ_idx_st)
 
                 seq.ramp_to_zero()
                 wait(1000 * u.ns)
-                
-                save(n, idx_st)
-                save(n_shots, idx_st)
-                save(circ_idx, idx_st)
-                save(circ_len, idx_st)
+
+            with if_(count == division * batch_size):
+                assign(division, division + 1)
+                # pause to outstream the data
+                pause()
 
 
     with stream_processing():
-        idx_st.buffer(4).save_all("circuit_history")
-        I_st.buffer(15).save_all("I12")
-        Q_st.buffer(15).save_all("Q12")
-        P_st.boolean_to_int().buffer(15).save_all("P12")
-
+        n_st.buffer(batch_size).save("n_history")
+        n_shots_st.buffer(batch_size).save("n_shots_history")
+        circ_idx_st.buffer(batch_size).save("circ_idx_history")
+        for k in range(6):
+            I_st[k].buffer(batch_size).save(f"I{k:d}")
 
 
 #####################################
@@ -433,6 +471,7 @@ qmm.close_all_qms()
 # Run or Simulate Program #
 ###########################
 simulate = False
+save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -446,7 +485,7 @@ if simulate:
 else:
     from qm import generate_qua_script
 
-    sourceFile = open("debug08.py", "w")
+    sourceFile = open("debug_20_gate_set_tomography.py", "w")
     print(generate_qua_script(PROGRAM_GST, config), file=sourceFile)
     sourceFile.close()
 
@@ -454,54 +493,51 @@ else:
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(PROGRAM_GST, compiler_options=CompilerOptionArguments(flags=["not-strict-timing"]))
-    # job = qm.execute(PROGRAM_GST)
 
-    results = fetching_tool(
-        job, data_list=["idx_history", "I12", "Q12", "P12"], mode="live"
-    )
-    # Waits (blocks the Python console) until all results have been acquired
-    # results = fetching_tool(job, data_list=["circuit_history"], mode="live")
 
-    record = []
+    fetch_names = ["n_history", "n_shots_history", "circ_idx_history"]
+    fetch_names.extend([f"I{k:d}" for k in range(6)])
+
+    if save_data:
+        from qualang_tools.results.data_handler import DataHandler
+        script_name = Path(__file__).name
+        data_handler = DataHandler(root_data_folder=save_dir)
+        data_handler.create_data_folder(name=Path(__file__).stem)
+
+    
+    head_idx = 0
+    ress = []
     for _n_shots in list_n_shots:
-        encoded_circuit_batch = df_enc_seqs[
-            ["index", "P_enc_seq", "G_enc_seq", "d_enc_seq", "M_enc_seq", "full_gate_sequence_duration"]
-            ].sample(frac=1, random_state=_n_shots)
+        this_df = df_enc_seqs.sample(frac=1, random_state=_n_shots)
 
-        for i, row in encoded_circuit_batch.iterrows():
-            C = int(row["circ_idx"])
-            P = int(row["P_enc_seq"])
-            G = int(row["G_enc_seq"])
-            d = int(row["d_enc_seq"])
-            M = int(row["M_enc_seq"])
-            D = int(row["full_gate_sequence_duration"])
+        for i_row, row in this_df.iterrows():
+            _encoded_circuit, C, P, G, d, M = get_encoded_circuit(row)
 
-            seq_len = 0
-            _encoded_circuit_input_stream = [C]
-            if P != -1:
-                _encoded_circuit_input_stream.append(P)
-                seq_len += 1
-            if G != -1:
-                _encoded_circuit_input_stream.extend([G] * d)
-                seq_len += d
-            if M != -1:
-                _encoded_circuit_input_stream.append(M)
-                seq_len += 1
+            current_datetime = datetime.now().strftime("%Y/%m/%d-%H:%M:%S")
+            _log_this = f"{current_datetime}, n_shots: {_n_shots}, circ_idx = {C}, n_circuits: P={P}, G={G}, d={d}, M={M}"
+            print(_log_this)
+            job.push_to_input_stream("_encoded_circuit", _encoded_circuit)
+            
+            if job.is_paused():
 
-            # sequence duration
-            _encoded_circuit_input_stream.append(C + 17)
-            seq_len += 1
+                # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
+                if head_idx == 0:
+                    print("fetching tools")
+                    results = fetching_tool(job, data_list=fetch_names, mode="live")
+                head_idx +=1
 
-            # sequence length
-            _encoded_circuit_input_stream.insert(1, seq_len)
+                # Fetch results
+                print("fetch result!")
+                res = results.fetch_all()
+                ress.append(res)
+                data_dict = {name: arr for name, arr in zip(fetch_names, res)}
 
-            record.append([_n_shots] + _encoded_circuit_input_stream)
-
-            print(f"n_shots: {_n_shots}, circ_idx = {i}, n_circuits: P={P}, G={G}, d={d}, M={M}")
-            job.push_to_input_stream("_encoded_circuit_input_stream", _encoded_circuit_input_stream)
-            print("    ---> success!")
-
-    circuit_history, I12, Q12, P12 = results.fetch_all()
+                # Data to save
+                print("save result!")
+                np.savez(file = data_handler.path / f"data_{head_idx:08d}.npz", **data_dict)
+                break
+                job.resume()
 
     qm.close()
+
 # %%

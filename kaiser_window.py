@@ -1,3 +1,4 @@
+# %%
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.special import \
@@ -13,8 +14,8 @@ def kaiser_window(T: int, alpha: float) -> np.ndarray:
     :return: A numpy array of the Kaiser window values.
     """
     # Compute the normalized indices
-    t = np.arange(0, T + 1)
-    x = (2 * t / T) - 1
+    t = np.arange(T)
+    x = (2 * t / (T - 1)) - 1
 
     # Calculate the Kaiser window using the zeroth-order modified Bessel function
     window = i0(np.pi * alpha * np.sqrt(1 - x**2)) / i0(np.pi * alpha)

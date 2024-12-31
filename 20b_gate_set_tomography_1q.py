@@ -103,7 +103,7 @@ assert delay_init_qubit_end == 0 or delay_init_qubit_end >= 16
 
 delay_read_reflec_start = 16
 delay_read_reflec_end = 16
-delay_stream = 5000
+delay_stream = 1000
 duration_readout = delay_read_reflec_start + REFLECTOMETRY_READOUT_LEN + delay_read_reflec_end + delay_stream
 assert delay_read_reflec_start == 0 or delay_read_reflec_start >= 16
 assert delay_read_reflec_end == 0 or delay_read_reflec_end >= 16
@@ -167,58 +167,59 @@ seq.add_points("wait_P4-P5", level_waits["P4-P5"], duration_wait)
 
 def perform_initialization(I, Q, P, I_st, Q_st, P_st):
     qua_vars = [[i, q, p] for i, q, p in zip(I, Q, P)]
-    qua_st_vars = [I_st, Q_st, P_st]
+    qua_st_vars = [[i, q, p] for i, q, p in zip(I_st, Q_st, P_st)]
 
-    res1_1 = read_init12(*qua_vars[0], *qua_st_vars)  # save_count = 2 -> 2
+    res1_1 = read_init12(*qua_vars[0], *qua_st_vars[0], *qua_st_vars[1])  # save_count = 2 -> 2
     # wait_after_read_init(plungers="P1-P2")
 
     # 1st
-    res1_2 = read_init3(*qua_vars[0], *qua_st_vars)  # save_count = 1 -> 3
+    res1_2 = read_init3(*qua_vars[0], *qua_st_vars[2])  # save_count = 1 -> 3
     # wait_after_read_init(plungers="P3")
 
-    res1_3 = read_init12(*qua_vars[0], *qua_st_vars)  # save_count = 2 -> 5
+    res1_3 = read_init12(*qua_vars[0], *qua_st_vars[3], *qua_st_vars[4])  # save_count = 2 -> 5
     # wait_after_read_init(plungers="P1-P2")
 
     # 2nd
-    res1_4 = read_init3(*qua_vars[0], *qua_st_vars)  # save_count = 1 -> 6
+    res1_4 = read_init3(*qua_vars[0], *qua_st_vars[5])  # save_count = 1 -> 6
     # wait_after_read_init(plungers="P3")
 
-    res1_5 = read_init12(*qua_vars[0], *qua_st_vars)  # save_count = 2 -> 8
+    res1_5 = read_init12(*qua_vars[0], *qua_st_vars[6], *qua_st_vars[7])  # save_count = 2 -> 8
     # wait_after_read_init(plungers="P1-P2")
 
-    res2_1 = read_init45(*qua_vars[1], *qua_st_vars)  # save_count = 2 -> 10
+    res2_1 = read_init45(*qua_vars[1], *qua_st_vars[8], *qua_st_vars[9])  # save_count = 2 -> 10
     # wait_after_read_init(plungers="P4-P5")
 
 
 def perform_readout(I, Q, P, I_st, Q_st, P_st):
     qua_vars = [[i, q, p] for i, q, p in zip(I, Q, P)]
-    qua_st_vars = [I_st, Q_st, P_st]
+    qua_st_vars = [[i, q, p] for i, q, p in zip(I_st, Q_st, P_st)]
 
-    res1_6 = read_init12(*qua_vars[0], *qua_st_vars)  # save_count = 2 -> 12
+    res1_6 = read_init12(*qua_vars[0], *qua_st_vars[10], *qua_st_vars[11])  # save_count = 2 -> 12
     # wait_after_read_init(plungers="P1-P2")
 
-    res1_7 = read_init3(*qua_vars[0], *qua_st_vars)  # save_count = 1 -> 13
+    res1_7 = read_init3(*qua_vars[0], *qua_st_vars[12])  # save_count = 1 -> 13
     # wait_after_read_init(plungers="P1-P2")
 
-    res2_2 = read_init45(*qua_vars[1], *qua_st_vars)  # save_count = 2 -> 15
+    res2_2 = read_init45(*qua_vars[1], *qua_st_vars[13], *qua_st_vars[14])  # save_count = 2 -> 15
     # wait_after_read_init(plungers="P4-P5")
 
 
-def read_init12(I, Q, P, I_st, Q_st, P_st):
+def read_init12(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st):
     qua_vars = I, Q, P
-    qua_st_vars = I_st, Q_st, P_st
+    qua_st_vars1 = I1_st, Q1_st, P1_st
+    qua_st_vars2 = I2_st, Q2_st, P2_st
 
     plungers = "P1-P2"
     threshold = TANK_CIRCUIT_CONSTANTS["tank_circuit1"]["threshold"]
     other_elements = get_other_elements(elements_in_use=["qubit1", "tank_circuit1"] + sweep_gates, all_elements=all_elements)
 
-    P = measure_parity(*qua_vars, *qua_st_vars, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold)
+    P = measure_parity(*qua_vars, *qua_st_vars1, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold)
     wait(duration_readout * u.ns, "qubit1")
 
     play_feedback(plungers=plungers, qubit="qubit1", parity=P)    
     wait(duration_init_1q * u.ns, "tank_circuit1")
 
-    P = measure_parity(*qua_vars, *qua_st_vars, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold)
+    P = measure_parity(*qua_vars, *qua_st_vars2, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold)
     wait(duration_readout * u.ns, "qubit1")
 
     wait((duration_init_1q + 2 * duration_readout) * u.ns, *other_elements)
@@ -226,22 +227,23 @@ def read_init12(I, Q, P, I_st, Q_st, P_st):
     return P
 
 
-def read_init45(I, Q, P, I_st, Q_st, P_st):
+def read_init45(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st):
     qua_vars = I, Q, P
-    qua_st_vars = I_st, Q_st, P_st
+    qua_st_vars1 = I1_st, Q1_st, P1_st
+    qua_st_vars2 = I2_st, Q2_st, P2_st
 
     plungers = "P4-P5"
     tank_circuit = "tank_circuit2"
     threshold = TANK_CIRCUIT_CONSTANTS["tank_circuit2"]["threshold"]
     other_elements = get_other_elements(elements_in_use=["qubit5", "tank_circuit2"] + sweep_gates, all_elements=all_elements)
 
-    P = measure_parity(*qua_vars, *qua_st_vars, plungers=plungers, tank_circuit=tank_circuit, threshold=threshold)
+    P = measure_parity(*qua_vars, *qua_st_vars1, plungers=plungers, tank_circuit=tank_circuit, threshold=threshold)
     wait(duration_readout * u.ns, "qubit5")
 
     play_feedback(plungers=plungers, qubit="qubit5", parity=P)
     wait(duration_init_1q * u.ns, "tank_circuit2")
 
-    P = measure_parity(*qua_vars, *qua_st_vars, plungers=plungers, tank_circuit=tank_circuit, threshold=threshold)
+    P = measure_parity(*qua_vars, *qua_st_vars2, plungers=plungers, tank_circuit=tank_circuit, threshold=threshold)
     wait(duration_readout * u.ns, "qubit5")
 
     wait((duration_init_1q + 2 * duration_readout) * u.ns, *other_elements)
@@ -327,8 +329,6 @@ with program() as PROGRAM_GST:
     n_shots = declare(int)
     circ = declare(int)
     idx = declare(int)
-    count = declare(int, value=0)
-    division = declare(int, value=1)
     # encoded_circuit = declare(int, value=[52, 4, 5, 7, 16, 18])
     encoded_circuit = declare_input_stream(
         int,
@@ -336,18 +336,22 @@ with program() as PROGRAM_GST:
         size=sequence_max_len + 3, # 2 to account for [circ_idx, seq_len, remaining_duraiton_case]
     )  # input stream the sequence
 
-    record_st = declare_stream()  # Stream for the iteration number (progress bar)
-
+    n_st = declare_stream()  # Stream for the iteration number (progress bar)
+    n_shots_st = declare_stream()
+    circ_idx_st = declare_stream()
+    circ_len_st = declare_stream()
+    
     I = [declare(fixed) for _ in range(num_tank_circuits)]
     Q = [declare(fixed) for _ in range(num_tank_circuits)]
     P = [declare(bool) for _ in range(num_tank_circuits)]  # true if even parity
-    I_st = declare_stream()
-    Q_st = declare_stream()
-    P_st = declare_stream()
+    I_st = [declare_stream() for _ in range(15)]
+    Q_st = [declare_stream() for _ in range(15)]
+    P_st = [declare_stream() for _ in range(15)]
 
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("tank_circuit1", I[0], Q[0], P[0])
     assign_variables_to_element("tank_circuit2", I[1], Q[1], P[1])
+
 
     with for_each_(n_shots, list_n_shots):
 
@@ -358,7 +362,6 @@ with program() as PROGRAM_GST:
             circ_len = encoded_circuit[1] # gate sequence length for this circuit
 
             with for_(n, 0, n < n_shots, n + 1):
-                assign(count, count + 1)
 
                 with strict_timing_():
 
@@ -433,28 +436,27 @@ with program() as PROGRAM_GST:
 
                     seq.add_compensation_pulse(duration=duration_compensation_pulse_full)
                 
-                save(n_shots, record_st)
-                save(n, record_st)
-                save(circ_idx, record_st)
-
+                save(n, n_st)
+                save(n_shots, n_shots_st)
+                save(circ_idx, circ_idx_st)
+                save(circ_len, circ_len_st)
+            
                 seq.ramp_to_zero()
                 wait(1000 * u.ns)
 
-            with if_(count == division * batch_size):
-                assign(division, division + 1)
-                # pause to outstream the data
-                pause()
+            # pause to outstream the data
+            pause()
 
 
     with stream_processing():
-        # record_st.buffer(3).buffer(batch_size).save("record")
-        # I_st.buffer(15).buffer(batch_size).save("I")
-        # Q_st.buffer(15).buffer(batch_size).save("Q")
-        # P_st.boolean_to_int().buffer(15).buffer(batch_size).save("P")
-        record_st.buffer(3).save_all("record")
-        I_st.buffer(15).save_all("I")
-        Q_st.buffer(15).save_all("Q")
-        P_st.boolean_to_int().buffer(15).save_all("P")
+        n_st.buffer(batch_size).save("n_history")
+        n_shots_st.buffer(batch_size).save("n_shots_history")
+        circ_idx_st.buffer(batch_size).save("circ_idx_history")
+        circ_len_st.buffer(batch_size).save("circ_len_history")
+        for k in range(15):
+            I_st[k].buffer(batch_size).save(f"I{k:02d}")
+            Q_st[k].buffer(batch_size).save(f"Q{k:02d}")
+            P_st[k].boolean_to_int().buffer(batch_size).save(f"P{k:02d}")
 
 
 
@@ -464,8 +466,8 @@ with program() as PROGRAM_GST:
 qmm = QuantumMachinesManager(
     host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
 )
-qmm.clear_all_job_results()
-qmm.close_all_qms()
+# qmm.clear_all_job_results()
+# qmm.close_all_qms()
 
 
 ###########################
@@ -494,7 +496,11 @@ else:
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(PROGRAM_GST, compiler_options=CompilerOptionArguments(flags=["not-strict-timing"]))
-    fetch_names = ["record", "I", "Q", "P"]
+
+
+    fetch_names = ["n_history", "n_shots_history", "circ_idx_history", "circ_len_history"]
+    for k in range(15):
+        fetch_names.extend([f"I{k:02d}", f"Q{k:02d}", f"P{k:02d}"])
 
     if save_data:
         from qualang_tools.results.data_handler import DataHandler
@@ -514,25 +520,21 @@ else:
             _log_this = f"{current_datetime}, n_shots: {_n_shots}, circ_idx = {C}, n_circuits: P={P}, G={G}, d={d}, M={M}"
             print(_log_this)
             job.push_to_input_stream("_encoded_circuit", _encoded_circuit)
+
+            if _n_shots == list_n_shots[0] and i_row == 0:
+                results = fetching_tool(job, data_list=fetch_names, mode="live")
+
+            # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
+            wait_until_job_is_paused(job)
             
-            if job.is_paused():
+            # Fetch results
+            res = results.fetch_all()
+            data_dict = {name: arr for name, arr in zip(fetch_names, res)}
 
-                # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
-                if head_idx == 0:
-                    print("fetching tools")
-                    results = fetching_tool(job, data_list=fetch_names, mode="live")
-                head_idx +=1
-
-                # Fetch results
-                print("fetch result!")
-                res = results.fetch_all()
-                data_dict = {name: arr for name, arr in zip(fetch_names, res)}
-
-                # Data to save
-                print("save result!")
-                np.savez(file = data_handler.path / f"data_{head_idx:08d}.npz", **data_dict)
-                break
-                job.resume()
+            # Data to save
+            head_idx +=1
+            np.savez(file = data_handler.path / f"data_{head_idx:08d}.npz", **data_dict)
+            job.resume()
 
     qm.close()
 

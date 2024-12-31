@@ -32,20 +32,32 @@ from scipy.optimize import curve_fit
 
 from configuration_with_lffem import *
 
+
 ##############################
 # Program-specific variables #
 ##############################
 
-qubits = ["qubit3", "qubit1"]
+qubits = ["qubit1", "qubit2"]
 tank_circuits = ["tank_circuit1", "tank_circuit2"]
+
+RB_delay = 92
+
+x180_len = PI_LEN
+x90_len = PI_HALF_LEN
+minus_x90_len = PI_HALF_LEN
+y180_len = PI_LEN
+y90_len = PI_HALF_LEN
+minus_y90_len = PI_HALF_LEN
+
 
 # Number of of averages for each random sequence
 n_avg = 2
-num_of_sequences = 1  # Number of random sequences
+num_of_sequences = 3  # Number of random sequences
 max_circuit_depth = 100  # Maximum circuit depth
-delta_clifford = (
-    10  #  Play each sequence with a depth step equals to 'delta_clifford - Must be > 0
-)
+delay_init_start = 16
+delta_clifford = 10  #  Play each sequence with a depth step equals to 'delta_clifford - Must be > 0
+duration_init_wo_rb = delay_init_start + RB_delay
+duration_compensation_pulse = max_circuit_depth * PI_LEN
 assert max_circuit_depth % delta_clifford == 0, "max_circuit_depth / delta_clifford must be an integer."
 
 seed = 123  # Pseudo-random number generator seed
@@ -53,26 +65,15 @@ seed = 123  # Pseudo-random number generator seed
 # Flag to enable state discrimination if the readout has been calibrated (rotated blobs and threshold)
 state_discrimination = False
 
-ge_threshold = 0.155  # arbitrary atm, in V
-
 
 # seq = VoltageGateSequence(config, sweep_gates)
 seq = VoltageGateSequence(config, sweep_gates)
 seq.add_points("initialization", level_init, duration_init)
-# Idle is when RB sequence takes place, duration is overridden with calculated sequence timing
 seq.add_points("idle", level_manip, duration_manip)
 seq.add_points("readout", level_readout, duration_readout)
 
 # Time in ns for RB sequence to execute play_sequence(), will be buffer after ramping to idle
 # Note, with low max_circuit_depth, the delay before readout will increase slightly
-RB_delay = 92
-
-minus_x90_len = PI_LEN
-minus_y90_len = PI_LEN
-x180_len = PI_LEN
-x90_len = PI_LEN
-y180_len = PI_LEN
-y90_len = PI_LEN
 
 
 ###################################
@@ -180,6 +181,104 @@ def play_clifford(c_idx, qb):
             play("square_-x90", qb)
 
 
+def add_clifford_duration(c_idx, duration):
+
+    with switch_(c_idx, unsafe=True):
+        with case_(0):
+            # wait(x180_len // 4, qb)
+            assign(duration, duration + x180_len)
+        with case_(1):
+            # play("x180", qb)
+            assign(duration, duration + x180_len)
+        with case_(2):
+            # play("y180", qb)
+            assign(duration, duration + y180_len)
+        with case_(3):
+            # play("y180", qb)
+            # play("x180", qb)
+            assign(duration, duration + y180_len + x180_len)
+        with case_(4):
+            # play("x90", qb)
+            # play("y90", qb)
+            assign(duration, duration + x90_len + y90_len)
+        with case_(5):
+            # play("x90", qb)
+            # play("-y90", qb)
+            assign(duration, duration + x90_len + minus_y90_len)
+        with case_(6):
+            # play("-x90", qb)
+            # play("y90", qb)
+            assign(duration, duration + minus_x90_len + y90_len)
+        with case_(7):
+            # play("-x90", qb)
+            # play("-y90", qb)
+            assign(duration, duration + minus_x90_len + minus_y90_len)
+        with case_(8):
+            # play("y90", qb)
+            # play("x90", qb)
+            assign(duration, duration + y90_len + x90_len)
+        with case_(9):
+            # play("y90", qb)
+            # play("-x90", qb)
+            assign(duration, duration + y90_len + minus_x90_len)
+        with case_(10):
+            # play("-y90", qb)
+            # play("x90", qb)
+            assign(duration, duration + minus_y90_len + x90_len)
+        with case_(11):
+            # play("-y90", qb)
+            # play("-x90", qb)
+            assign(duration, duration + minus_y90_len + minus_x90_len)
+        with case_(12):
+            # play("x90", qb)
+            assign(duration, duration + x90_len)
+        with case_(13):
+            # play("-x90", qb)
+            assign(duration, duration + minus_x90_len)
+        with case_(14):
+            # play("y90", qb)
+            assign(duration, duration + y90_len)
+        with case_(15):
+            # play("-y90", qb)
+            assign(duration, duration + minus_y90_len)
+        with case_(16):
+            # play("-x90", qb)
+            # play("y90", qb)
+            # play("x90", qb)
+            assign(duration, duration + minus_x90_len + y90_len + x90_len)
+        with case_(17):
+            # play("-x90", qb)
+            # play("-y90", qb)
+            # play("x90", qb)
+            assign(duration, duration + minus_x90_len + minus_y90_len + x90_len)
+        with case_(18):
+            # play("x180", qb)
+            # play("y90", qb)
+            assign(duration, duration + x180_len + y90_len)
+        with case_(19):
+            # play("x180", qb)
+            # play("-y90", qb)
+            assign(duration, duration + x180_len + minus_y90_len)
+        with case_(20):
+            # play("y180", qb)
+            # play("x90", qb)
+            assign(duration, duration + y180_len + x90_len)
+        with case_(21):
+            # play("y180", qb)
+            # play("-x90", qb)
+            assign(duration, duration + y180_len + minus_x90_len)
+        with case_(22):
+            # play("x90", qb)
+            # play("y90", qb)
+            # play("x90", qb)
+            assign(duration, duration + x90_len + y90_len + x90_len)
+        with case_(23):
+            # play("-x90", qb)
+            # play("y90", qb)
+            # play("-x90", qb)
+            assign(duration, duration + minus_x90_len + y90_len + minus_x90_len)
+
+
 def play_sequence(sequence_list, depth, qb):
     i = declare(int)
     with for_(i, 0, i <= depth, i + 1):
@@ -192,100 +291,7 @@ def generate_sequence_time(sequence_list, depth):
     duration = declare(int)
     assign(duration, 0)  # Ensures duration is reset to 0 for every depth calculated
     with for_(j, 0, j <= depth, j + 1):
-        with switch_(sequence_list[j], unsafe=True):
-            with case_(0):
-                # wait(x180_len // 4, qb)
-                assign(duration, duration + x180_len)
-            with case_(1):
-                # play("x180", qb)
-                assign(duration, duration + x180_len)
-            with case_(2):
-                # play("y180", qb)
-                assign(duration, duration + y180_len)
-            with case_(3):
-                # play("y180", qb)
-                # play("x180", qb)
-                assign(duration, duration + y180_len + x180_len)
-            with case_(4):
-                # play("x90", qb)
-                # play("y90", qb)
-                assign(duration, duration + x90_len + y90_len)
-            with case_(5):
-                # play("x90", qb)
-                # play("-y90", qb)
-                assign(duration, duration + x90_len + minus_y90_len)
-            with case_(6):
-                # play("-x90", qb)
-                # play("y90", qb)
-                assign(duration, duration + minus_x90_len + y90_len)
-            with case_(7):
-                # play("-x90", qb)
-                # play("-y90", qb)
-                assign(duration, duration + minus_x90_len + minus_y90_len)
-            with case_(8):
-                # play("y90", qb)
-                # play("x90", qb)
-                assign(duration, duration + y90_len + x90_len)
-            with case_(9):
-                # play("y90", qb)
-                # play("-x90", qb)
-                assign(duration, duration + y90_len + minus_x90_len)
-            with case_(10):
-                # play("-y90", qb)
-                # play("x90", qb)
-                assign(duration, duration + minus_y90_len + x90_len)
-            with case_(11):
-                # play("-y90", qb)
-                # play("-x90", qb)
-                assign(duration, duration + minus_y90_len + minus_x90_len)
-            with case_(12):
-                # play("x90", qb)
-                assign(duration, duration + x90_len)
-            with case_(13):
-                # play("-x90", qb)
-                assign(duration, duration + minus_x90_len)
-            with case_(14):
-                # play("y90", qb)
-                assign(duration, duration + y90_len)
-            with case_(15):
-                # play("-y90", qb)
-                assign(duration, duration + minus_y90_len)
-            with case_(16):
-                # play("-x90", qb)
-                # play("y90", qb)
-                # play("x90", qb)
-                assign(duration, duration + minus_x90_len + y90_len + x90_len)
-            with case_(17):
-                # play("-x90", qb)
-                # play("-y90", qb)
-                # play("x90", qb)
-                assign(duration, duration + minus_x90_len + minus_y90_len + x90_len)
-            with case_(18):
-                # play("x180", qb)
-                # play("y90", qb)
-                assign(duration, duration + x180_len + y90_len)
-            with case_(19):
-                # play("x180", qb)
-                # play("-y90", qb)
-                assign(duration, duration + x180_len + minus_y90_len)
-            with case_(20):
-                # play("y180", qb)
-                # play("x90", qb)
-                assign(duration, duration + y180_len + x90_len)
-            with case_(21):
-                # play("y180", qb)
-                # play("-x90", qb)
-                assign(duration, duration + y180_len + minus_x90_len)
-            with case_(22):
-                # play("x90", qb)
-                # play("y90", qb)
-                # play("x90", qb)
-                assign(duration, duration + x90_len + y90_len + x90_len)
-            with case_(23):
-                # play("-x90", qb)
-                # play("y90", qb)
-                # play("-x90", qb)
-                assign(duration, duration + minus_x90_len + y90_len + minus_x90_len)
+        add_clifford_duration(sequence_list[j], duration)
     return duration
 
 
@@ -334,8 +340,7 @@ with program() as rb:
                     with strict_timing_():
                     
                         # Define voltage steps
-                        seq.add_step(voltage_point_name="initialization")
-                        seq.add_step(voltage_point_name="idle", duration=sequence_time + RB_delay)  # Includes processing time for RB sequence
+                        seq.add_step(voltage_point_name="initialization", duration=sequence_time + duration_init_wo_rb) 
                         seq.add_step(voltage_point_name="readout", duration=REFLECTOMETRY_READOUT_LEN)
                         seq.add_compensation_pulse(duration=duration_compensation_pulse)
 

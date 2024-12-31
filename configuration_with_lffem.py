@@ -472,8 +472,8 @@ def kaiser_window(T: int, alpha: float) -> np.ndarray:
     :return: A numpy array of the Kaiser window values.
     """
     # Compute the normalized indices
-    t = np.arange(0, T + 1)
-    x = (2 * t / T) - 1
+    t = np.arange(T)
+    x = (2 * t / (T - 1)) - 1
 
     # Calculate the Kaiser window using the zeroth-order modified Bessel function
     window = i0(np.pi * alpha * np.sqrt(1 - x**2)) / i0(np.pi * alpha)
@@ -856,7 +856,24 @@ config = {
                 "intermediate_frequency": val["IF"],
                 "operations": {
                     "const": "const_pulse",
-                    "x180": f"x180_gaussian_pulse_{qp}",
+                    "x180_kaiser": f"x180_kaiser_pulse_{qp}",
+                    "x90_kaiser": f"x90_kaiser_pulse_{qp}",
+                    "-x90_kaiser": f"minus_x90_kaiser_pulse_{qp}",
+                    "y180_kaiser": f"y180_kaiser_pulse_{qp}",
+                    "y90_kaiser": f"y90_kaiser_pulse_{qp}",
+                    "-y90_kaiser": f"minus_y90_kaiser_pulse_{qp}",
+                    "x180_gauss": f"x180_gaussian_pulse_{qp}",
+                    "x90_gauss": f"x90_gaussian_pulse_{qp}",
+                    "-x90_gauss": f"minus_x90_gaussian_pulse_{qp}",
+                    "y180_gauss": f"y180_gaussian_pulse_{qp}",
+                    "y90_gauss": f"y90_gaussian_pulse_{qp}",
+                    "-y90_gauss": f"minus_y90_gaussian_pulse_{qp}",
+                    "x180_square": f"square_x180_pulse",
+                    "x90_square": f"square_x90_pulse",
+                    "-x90_square": f"square_minus_x90_pulse",
+                    "y180_square": f"square_y180_pulse",
+                    "y90_square": f"square_y90_pulse",
+                    "-y90_square": f"square_minus_y90_pulse",
                 },
                 # "thread": qb,
             }
