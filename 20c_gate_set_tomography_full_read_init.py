@@ -28,7 +28,7 @@ def get_dataframe_encoded_sequence():
     df = pd.read_csv(path, header=0)  # Use header=0 to indicate the first row is the header
     df["full_gate_sequence_duration"] = PI_HALF_LEN * df["full_native_gate_count"]
     df.reset_index(inplace=True)
-    # df = df.head(3)
+    df = df.head(20)
     # df = df.head(10)
     return df
 
@@ -39,7 +39,6 @@ def get_encoded_circuit(row):
     G = int(row["G_enc"])
     d = int(row["d_enc"])
     M = int(row["M_enc"])
-    D = int(row["full_gate_sequence_duration"])
     Ph4 = int(row["remaining_wait_num_4-pihalf"])
     Ph = int(row["remaining_wait_num_pihalf"])
 
@@ -64,7 +63,7 @@ def get_encoded_circuit(row):
     # sequence length
     _encoded_circuit.insert(1, seq_len)
 
-    return _encoded_circuit, C, P, G, d, M
+    return _encoded_circuit, C, P, G, d, M, Ph4, Ph
 
 
 ###################
@@ -91,6 +90,7 @@ num_cicuits = len(df_enc_seqs)
 batch_size = max(list_n_shots)
 result_array_len = num_cicuits * sum(list_n_shots)
 result_array_len = batch_size * math.ceil(result_array_len / batch_size)
+num_batches = math.ceil(result_array_len / batch_size)
 
 delay_init_qubit_start = 16
 delay_feedback = 240
@@ -314,7 +314,7 @@ def measure_parity(I, Q, P, I_st, plungers, tank_circuit, threshold, do_save=Fal
 
     assign(P, I > threshold)  # TODO: I > threashold is even?
 
-    if do_save:
+    if do_save and I_st is not None:
         save(I, I_st)
         # save(Q, Q_st)
         # save(P, P_st)
@@ -366,7 +366,7 @@ with program() as PROGRAM_GST:
                 with strict_timing_():
 
                     # RI12 -> 2 x (R3 -> R12) -> RI45
-                    perform_initialization((I, Q, P, I_st[0], I_st[1], I_st[2]))
+                    perform_initialization(I, Q, P, I_st[0], I_st[1], I_st[2])
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}")
@@ -504,27 +504,33 @@ else:
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
 
-    
-    head_idx = 0
+
+    batch_idx = 1
     ress = []
+    start_time = datetime.now()
     for _n_shots in list_n_shots:
         this_df = df_enc_seqs.sample(frac=1, random_state=_n_shots)
 
-        for i_row, row in this_df.iterrows():
-            _encoded_circuit, C, P, G, d, M = get_encoded_circuit(row)
+        for i_row, (_, row) in enumerate(this_df.iterrows()):
+            _encoded_circuit, C, P, G, d, M, Ph4, Ph = get_encoded_circuit(row)
 
-            current_datetime = datetime.now().strftime("%Y/%m/%d-%H:%M:%S")
-            _log_this = f"{current_datetime}, n_shots: {_n_shots}, circ_idx = {C}, n_circuits: P={P}, G={G}, d={d}, M={M}"
+            current_datetime = datetime.now()
+            current_datetime_str = current_datetime.strftime("%Y/%m/%d-%H:%M:%S")
+            elapsed_time = current_datetime - start_time
+            elapsed_time_secs = int(elapsed_time.total_seconds())
+            _log_this = f"{current_datetime_str}, batch_idx: {batch_idx} / {num_batches}, no: {i_row + 1}, n_shots: {_n_shots}, circ_idx = {C}, n_circuits: P={P}, G={G}, d={d}, M={M}, Ph4={Ph4}, Ph={Ph}, elapsed_secs: {elapsed_time_secs}"
             print(_log_this)
+            with open(data_handler.path / "log.txt", encoding="utf8", mode="a") as f:
+                f.write(_log_this.replace("_", "") + "\n")  # Append the log message to the file
+
             job.push_to_input_stream("_encoded_circuit", _encoded_circuit)
-            
+
             if job.is_paused():
 
                 # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
-                if head_idx == 0:
-                    print("fetching tools")
+                if batch_idx == 1:
+                    print("get a fetching tool")
                     results = fetching_tool(job, data_list=fetch_names, mode="live")
-                head_idx +=1
 
                 # Fetch results
                 print("fetch result!")
@@ -534,10 +540,9 @@ else:
 
                 # Data to save
                 print("save result!")
-                np.savez(file = data_handler.path / f"data_{head_idx:08d}.npz", **data_dict)
-                break
+                np.savez(file = data_handler.path / f"data_{batch_idx:08d}.npz", **data_dict)
+                batch_idx +=1
                 job.resume()
 
     qm.close()
-
 # %%

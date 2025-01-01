@@ -28,7 +28,7 @@ def get_dataframe_encoded_sequence():
     df = pd.read_csv(path, header=0)  # Use header=0 to indicate the first row is the header
     df["full_gate_sequence_duration"] = PI_HALF_LEN * df["full_native_gate_count"]
     df.reset_index(inplace=True)
-    # df = df.head(3)
+    df = df.head(50)
     # df = df.head(10)
     return df
 
@@ -64,7 +64,7 @@ def get_encoded_circuit(row):
     # sequence length
     _encoded_circuit.insert(1, seq_len)
 
-    return _encoded_circuit, C, P, G, d, M
+    return _encoded_circuit, C, P, G, d, M, Ph4, Ph
 
 
 ###################
@@ -91,6 +91,7 @@ num_cicuits = len(df_enc_seqs)
 batch_size = max(list_n_shots)
 result_array_len = num_cicuits * sum(list_n_shots)
 result_array_len = batch_size * math.ceil(result_array_len / batch_size)
+num_batches = math.ceil(result_array_len / batch_size)
 
 delay_init_qubit_start = 16
 delay_feedback = 240
@@ -344,7 +345,7 @@ with program() as PROGRAM_GST:
     I = [declare(fixed) for _ in range(num_tank_circuits)]
     Q = [declare(fixed) for _ in range(num_tank_circuits)]
     P = [declare(bool) for _ in range(num_tank_circuits)]  # true if even parity
-    I_st = [declare_stream() for _ in range(6)]
+    I_st = [declare_stream() for _ in range(2)]
     # Q_st = [declare_stream() for _ in range(15)]
     # P_st = [declare_stream() for _ in range(15)]
 
@@ -367,7 +368,7 @@ with program() as PROGRAM_GST:
 
                     # RI12 -> 2 x (R3 -> R12) -> RI45
                     # perform_initialization((I, Q, P, I_st[0], I_st[1], I_st[2]))
-                    read_init12(I, Q, P, None, I_st[0], do_save=[False, True])
+                    read_init12(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}")
@@ -434,7 +435,7 @@ with program() as PROGRAM_GST:
 
                     # RI12 -> R3 -> RI45
                     # perform_readout(I, Q, P, I_st[3], I_st[4], I_st[5])
-                    read_init12(I, Q, P, I_st[1], None, do_save=[True, False])
+                    read_init12(I[0], Q[0], P[0], I_st[1], None, do_save=[True, False])
 
                     seq.add_compensation_pulse(duration=duration_compensation_pulse_full)
                 
@@ -455,7 +456,7 @@ with program() as PROGRAM_GST:
         n_st.buffer(batch_size).save("n_history")
         n_shots_st.buffer(batch_size).save("n_shots_history")
         circ_idx_st.buffer(batch_size).save("circ_idx_history")
-        for k in range(6):
+        for k in range(2):
             I_st[k].buffer(batch_size).save(f"I{k:d}")
 
 
@@ -498,7 +499,7 @@ else:
 
 
     fetch_names = ["n_history", "n_shots_history", "circ_idx_history"]
-    fetch_names.extend([f"I{k:d}" for k in range(6)])
+    fetch_names.extend([f"I{k:d}" for k in range(2)])
 
     if save_data:
         from qualang_tools.results.data_handler import DataHandler
@@ -506,27 +507,33 @@ else:
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
 
-    
-    head_idx = 0
+
+    batch_idx = 1
     ress = []
+    start_time = datetime.now()
     for _n_shots in list_n_shots:
         this_df = df_enc_seqs.sample(frac=1, random_state=_n_shots)
 
-        for i_row, row in this_df.iterrows():
-            _encoded_circuit, C, P, G, d, M = get_encoded_circuit(row)
+        for i_row, (_, row) in enumerate(this_df.iterrows()):
+            _encoded_circuit, C, P, G, d, M, Ph4, Ph = get_encoded_circuit(row)
 
-            current_datetime = datetime.now().strftime("%Y/%m/%d-%H:%M:%S")
-            _log_this = f"{current_datetime}, n_shots: {_n_shots}, circ_idx = {C}, n_circuits: P={P}, G={G}, d={d}, M={M}"
+            current_datetime = datetime.now()
+            current_datetime_str = current_datetime.strftime("%Y/%m/%d-%H:%M:%S")
+            elapsed_time = current_datetime - start_time
+            elapsed_time_secs = int(elapsed_time.total_seconds())
+            _log_this = f"{current_datetime_str}, batch_idx: {batch_idx} / {num_batches}, no: {i_row + 1}, n_shots: {_n_shots}, circ_idx = {C}, n_circuits: P={P}, G={G}, d={d}, M={M}, Ph4={Ph4}, Ph={Ph}, elapsed_secs: {elapsed_time_secs}"
             print(_log_this)
+            with open(data_handler.path / "log.txt", encoding="utf8", mode="a") as f:
+                f.write(_log_this.replace("_", "") + "\n")  # Append the log message to the file
+
             job.push_to_input_stream("_encoded_circuit", _encoded_circuit)
-            
+
             if job.is_paused():
 
                 # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
-                if head_idx == 0:
-                    print("fetching tools")
+                if batch_idx == 1:
+                    print("get a fetching tool")
                     results = fetching_tool(job, data_list=fetch_names, mode="live")
-                head_idx +=1
 
                 # Fetch results
                 print("fetch result!")
@@ -536,8 +543,8 @@ else:
 
                 # Data to save
                 print("save result!")
-                np.savez(file = data_handler.path / f"data_{head_idx:08d}.npz", **data_dict)
-                break
+                np.savez(file = data_handler.path / f"data_{batch_idx:08d}.npz", **data_dict)
+                batch_idx +=1
                 job.resume()
 
     qm.close()
