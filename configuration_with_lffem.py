@@ -161,9 +161,9 @@ QUBIT_CONSTANTS = {
     "qubit1": {
         "con": con1,
         "fem": fem1,
-        "ao_I": 1,
-        "ao_Q": 2,
-        "do": 1,
+        "aout_I": 1,
+        "aout_Q": 2,
+        "dout": 1,
         "LO": 16 * u.GHz,
         "IF": 50 * u.MHz,
         "mixer_g": 0,
@@ -172,14 +172,14 @@ QUBIT_CONSTANTS = {
         "pi_len": PI_LEN,
         "midcircuit_parity_threshold": 0.0,
         "delay": 0,
-        "digital_delay": 0,
+        "rf_switch_delay": 40,
     },
     "qubit2": {
         "con": con1,
         "fem": fem1,
-        "ao_I": 3,
-        "ao_Q": 4,
-        "do": 2,
+        "aout_I": 1,
+        "aout_Q": 2,
+        "dout": 1,
         "LO": 16 * u.GHz,
         "IF": 200 * u.MHz,
         "mixer_g": 0,
@@ -188,14 +188,14 @@ QUBIT_CONSTANTS = {
         "pi_len": PI_LEN,
         "midcircuit_parity_threshold": 0.0,
         "delay": 0,
-        "digital_delay": 0,
+        "rf_switch_delay": 40,
     },
     "qubit3": {
         "con": con1,
         "fem": fem1,
-        "ao_I": 5,
-        "ao_Q": 6,
-        "do": 3,
+        "aout_I": 3,
+        "aout_Q": 4,
+        "dout": 3,
         "LO": 16.3 * u.GHz,
         "IF": 0 * u.MHz,
         "mixer_g": 0,
@@ -204,14 +204,14 @@ QUBIT_CONSTANTS = {
         "pi_len": PI_LEN,
         "midcircuit_parity_threshold": 0.0,
         "delay": 0,
-        "digital_delay": 0,
+        "rf_switch_delay": 40,
     },
     "qubit4": {
         "con": con1,
         "fem": fem1,
-        "ao_I": 5, # TODO: Fix
-        "ao_Q": 6, # TODO: Fix
-        "do": 3,
+        "aout_I": 3, # TODO: Fix
+        "aout_Q": 4, # TODO: Fix
+        "dout": 3,
         "LO": 16.3 * u.GHz,
         "IF": 0 * u.MHz,
         "mixer_g": 0,
@@ -220,14 +220,14 @@ QUBIT_CONSTANTS = {
         "pi_len": PI_LEN,
         "midcircuit_parity_threshold": 0.0,
         "delay": 0,
-        "digital_delay": 0,
+        "rf_switch_delay": 40,
     },
     "qubit5": {
         "con": con1,
         "fem": fem1,
-        "ao_I": 5, # TODO: Fix
-        "ao_Q": 6, # TODO: Fix
-        "do": 3,
+        "aout_I": 5, # TODO: Fix
+        "aout_Q": 6, # TODO: Fix
+        "dout": 5,
         "LO": 16.3 * u.GHz,
         "IF": 0 * u.MHz,
         "mixer_g": 0,
@@ -236,7 +236,7 @@ QUBIT_CONSTANTS = {
         "pi_len": PI_LEN,
         "midcircuit_parity_threshold": 0.0,
         "delay": 0,
-        "digital_delay": 0,
+        "rf_switch_delay": 40,
     },
 }
 
@@ -372,15 +372,16 @@ CROT_CONSTANTS = {
     **{f"qp_control_c{c}t{t}": {
         "con": QUBIT_CONSTANTS[f"qubit{c}"]["con"],
         "fem": QUBIT_CONSTANTS[f"qubit{c}"]["fem"],
-        "ao_I": QUBIT_CONSTANTS[f"qubit{c}"]["ao_I"],
-        "ao_Q": QUBIT_CONSTANTS[f"qubit{c}"]["ao_Q"],
-        "do": QUBIT_CONSTANTS[f"qubit{c}"]["do"],
+        "aout_I": QUBIT_CONSTANTS[f"qubit{c}"]["aout_I"],
+        "aout_Q": QUBIT_CONSTANTS[f"qubit{c}"]["aout_Q"],
+        "dout": QUBIT_CONSTANTS[f"qubit{c}"]["dout"],
         "LO": QUBIT_CONSTANTS[f"qubit{c}"]["LO"],
         "IF": QUBIT_CONSTANTS[f"qubit{c}"]["IF"],
         "mixer_g": QUBIT_CONSTANTS[f"qubit{c}"]["mixer_g"],
         "mixer_phi": QUBIT_CONSTANTS[f"qubit{c}"]["mixer_phi"],
         "pi_amp": CROT_RF_AMP,
         "pi_len": CROT_RF_LEN,
+        "rf_switch_delay": 40,
     } for c, t in qubit_pairs}
 }
 # # update after findng the optimal parameters
@@ -620,8 +621,8 @@ config = {
                     },
                     "digital_outputs": {
                         1: {},  # TTL for RF1
-                        2: {},  # TTL for RF2
-                        3: {},  # TTL for RF3
+                        3: {},  # TTL for RF2
+                        5: {},  # TTL for RF3
                     },
                     "analog_inputs": {
                         # 1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},  # RF reflectometry input
@@ -778,10 +779,17 @@ config = {
         **{
             qb: {
                 "mixInputs": {
-                    "I": (val["con"], val["fem"], val["ao_I"]),
-                    "Q": (val["con"], val["fem"], val["ao_Q"]),
+                    "I": (val["con"], val["fem"], val["aout_I"]),
+                    "Q": (val["con"], val["fem"], val["aout_Q"]),
                     "lo_frequency": val["LO"],
                     "mixer": f"mixer_{qb}",
+                },
+                "digitalInputs": {
+                    "marker": {
+                        "port": (val["con"], val["fem"], val["dout"]),
+                        "delay": val["rf_switch_delay"],
+                        "buffer": 0,
+                    },
                 },
                 "intermediate_frequency": val["IF"],
                 "operations": {
@@ -811,12 +819,61 @@ config = {
         },
         # qubits (qubit1, ...)
         **{
-            f"{qb}_dummy": {
+            f"{qb}_trio1": {
                 "mixInputs": {
-                    "I": (val["con"], val["fem"], val["ao_I"]),
-                    "Q": (val["con"], val["fem"], val["ao_Q"]),
+                    "I": (val["con"], val["fem"], val["aout_I"]),
+                    "Q": (val["con"], val["fem"], val["aout_Q"]),
                     "lo_frequency": val["LO"],
                     "mixer": f"mixer_{qb}",
+                },
+                "digitalInputs": {
+                    "marker": {
+                        "port": (val["con"], val["fem"], val["dout"]),
+                        "delay": val["rf_switch_delay"],
+                        "buffer": 0,
+                    },
+                },
+                "intermediate_frequency": val["IF"],
+                "operations": {
+                    "const": "const_pulse",
+                    "x180_kaiser": f"x180_kaiser_pulse_{qb}",
+                    "x90_kaiser": f"x90_kaiser_pulse_{qb}",
+                    "-x90_kaiser": f"minus_x90_kaiser_pulse_{qb}",
+                    "y180_kaiser": f"y180_kaiser_pulse_{qb}",
+                    "y90_kaiser": f"y90_kaiser_pulse_{qb}",
+                    "-y90_kaiser": f"minus_y90_kaiser_pulse_{qb}",
+                    "x180_gauss": f"x180_gaussian_pulse_{qb}",
+                    "x90_gauss": f"x90_gaussian_pulse_{qb}",
+                    "-x90_gauss": f"minus_x90_gaussian_pulse_{qb}",
+                    "y180_gauss": f"y180_gaussian_pulse_{qb}",
+                    "y90_gauss": f"y90_gaussian_pulse_{qb}",
+                    "-y90_gauss": f"minus_y90_gaussian_pulse_{qb}",
+                    "x180_square": f"square_x180_pulse_trio1",
+                    "x90_square": f"square_x90_pulse_trio1",
+                    "-x90_square": f"square_minus_x90_pulse_trio1",
+                    "y180_square": f"square_y180_pulse_trio1",
+                    "y90_square": f"square_y90_pulse_trio1",
+                    "-y90_square": f"square_minus_y90_pulse_trio1",
+                },
+                # "thread": qb,
+            }
+            for qb, val in QUBIT_CONSTANTS.items()
+        },
+        # qubits (qubit1, ...)
+        **{
+            f"{qb}_trio2": {
+                "mixInputs": {
+                    "I": (val["con"], val["fem"], val["aout_I"]),
+                    "Q": (val["con"], val["fem"], val["aout_Q"]),
+                    "lo_frequency": val["LO"],
+                    "mixer": f"mixer_{qb}",
+                },
+                "digitalInputs": {
+                    "marker": {
+                        "port": (val["con"], val["fem"], val["dout"]),
+                        "delay": val["rf_switch_delay"],
+                        "buffer": 0,
+                    },
                 },
                 "intermediate_frequency": val["IF"],
                 "operations": {
@@ -840,18 +897,25 @@ config = {
                     "y90_square": f"square_y90_pulse",
                     "-y90_square": f"square_minus_y90_pulse",
                 },
-                # "thread": f"{qb}_dummy",
+                # "thread": qb,
             }
             for qb, val in QUBIT_CONSTANTS.items()
         },
-        # qubits (qubit1, ...)
+        # cnots
         **{
             qp: {
                 "mixInputs": {
-                    "I": (val["con"], val["fem"], val["ao_I"]),
-                    "Q": (val["con"], val["fem"], val["ao_Q"]),
+                    "I": (val["con"], val["fem"], val["aout_I"]),
+                    "Q": (val["con"], val["fem"], val["aout_Q"]),
                     "lo_frequency": val["LO"],
                     "mixer": f"mixer_{qp}",
+                },
+                "digitalInputs": {
+                    "marker": {
+                        "port": (val["con"], val["fem"], val["dout"]),
+                        "delay": val["rf_switch_delay"],
+                        "buffer": 0,
+                    },
                 },
                 "intermediate_frequency": val["IF"],
                 "operations": {
@@ -884,7 +948,7 @@ config = {
             f"{qb}_trigger": {
                 "digitalInputs": {
                     "trigger": {
-                        "port": (val["con"], val["fem"], val["do"]),
+                        "port": (val["con"], val["fem"], val["dout"]),
                         "delay": 0,
                         "buffer": 0,
                     }
@@ -1281,6 +1345,54 @@ config = {
                 "Q": "zero_wf",
             },
         },
+        "square_x180_pulse_trio1": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_x180_I_wf_trio1",
+                "Q": "zero_wf",
+            },
+        },
+        "square_x90_pulse_trio1": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_x90_I_wf_trio1",
+                "Q": "zero_wf",
+            },
+        },
+        "square_minus_x90_pulse_trio1": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_minus_x90_I_wf_trio1",
+                "Q": "zero_wf",
+            },
+        },
+        "square_y180_pulse_trio1": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_y180_I_wf_trio1",
+                "Q": "zero_wf",
+            },
+        },
+        "square_y90_pulse_trio1": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_y90_I_wf_trio1",
+                "Q": "zero_wf",
+            },
+        },
+        "square_minus_y90_pulse_trio1": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_minus_y90_I_wf_trio1",
+                "Q": "zero_wf",
+            },
+        },
         "trigger_pulse": {
             "operation": "control",
             "length": 1000,
@@ -1290,12 +1402,21 @@ config = {
     "waveforms": {
         "zero_wf": {"type": "constant", "sample": 0.0},
         "const_wf": {"type": "constant", "sample": CONST_AMP},
+        
         "square_x180_I_wf": {"type": "constant", "sample": SQUARE_X180_AMP},
         "square_x90_I_wf": {"type": "constant", "sample": SQUARE_X90_AMP},
         "square_minus_x90_I_wf": {"type": "constant", "sample": SQUARE_MINUS_X90_AMP},
         "square_y180_I_wf": {"type": "constant", "sample": SQUARE_Y180_AMP},
         "square_y90_I_wf": {"type": "constant", "sample": SQUARE_Y90_AMP},
         "square_minus_y90_I_wf": {"type": "constant", "sample": SQUARE_MINUS_Y90_AMP},
+        
+        "square_x180_I_wf_trio1": {"type": "constant", "sample": SQUARE_X180_AMP / 2},
+        "square_x90_I_wf_trio1": {"type": "constant", "sample": SQUARE_X90_AMP / 2},
+        "square_minus_x90_I_wf_trio1": {"type": "constant", "sample": SQUARE_MINUS_X90_AMP / 2},
+        "square_y180_I_wf_trio1": {"type": "constant", "sample": SQUARE_Y180_AMP / 2},
+        "square_y90_I_wf_trio1": {"type": "constant", "sample": SQUARE_Y90_AMP / 2},
+        "square_minus_y90_I_wf_trio1": {"type": "constant", "sample": SQUARE_MINUS_Y90_AMP / 2},
+        
         **{f"reflectometry_readout_wf_{key}": {"type": "constant", "sample": val["readout_amp"]} for key, val in TANK_CIRCUIT_CONSTANTS.items()},
         **{f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]} for key, val in PLUNGER_CONSTANTS.items()},
         **{f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]} for key, val in BARRIER_CONSTANTS.items()},
