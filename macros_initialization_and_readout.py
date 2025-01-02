@@ -29,7 +29,7 @@ def get_dataframe_encoded_sequence():
     df = pd.read_csv(path, header=0)  # Use header=0 to indicate the first row is the header
     df["full_gate_sequence_duration"] = PI_HALF_LEN * df["full_native_gate_count"]
     df.reset_index(inplace=True)
-    df = df.head(50)
+    # df = df.head(50)
     # df = df.head(10)
     return df
 
@@ -65,7 +65,7 @@ def get_encoded_circuit(row):
     # sequence length
     _encoded_circuit.insert(1, seq_len)
 
-    return _encoded_circuit, C, P, G, d, M, Ph4, Ph
+    return _encoded_circuit, seq_len, C, P, G, d, M, Ph4, Ph
 
 
 

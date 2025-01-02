@@ -33,7 +33,7 @@ do_simulate = True
 
 list_n_shots = [10, 100]
 df_enc_seqs = get_dataframe_encoded_sequence()
-sequence_max_len = 1 + 8192 + 1
+sequence_max_len = 2 + df_enc_seqs["full_sequence_length"].max() # 2 for circ_idx and circ_len
 num_cicuits = len(df_enc_seqs)
 batch_size = max(list_n_shots)
 result_array_len = num_cicuits * sum(list_n_shots)
@@ -80,7 +80,7 @@ with program() as PROGRAM_GST:
     assign_variables_to_element("tank_circuit2", I[1], Q[1], P[1])
 
     if do_simulate:
-        encoded_circuit = declare(int, value=[52, 4, 5, 7, 11, 2])
+        encoded_circuit = declare(int, value=[112, 8195, 9, 4, 4, 4, 4, 5] + [0] * 8188 + [1])
     else:
         encoded_circuit = declare_input_stream(
             int,
@@ -259,13 +259,13 @@ else:
         this_df = df_enc_seqs.sample(frac=1, random_state=_n_shots)
 
         for i_row, (_, row) in enumerate(this_df.iterrows()):
-            _encoded_circuit, C, P, G, d, M, Ph4, Ph = get_encoded_circuit(row)
+            _encoded_circuit, seq_len, C, P, G, d, M, Ph4, Ph = get_encoded_circuit(row)
 
             current_datetime = datetime.now()
             current_datetime_str = current_datetime.strftime("%Y/%m/%d-%H:%M:%S")
             elapsed_time = current_datetime - start_time
             elapsed_time_secs = int(elapsed_time.total_seconds())
-            _log_this = f"{current_datetime_str}, batch_idx: {batch_idx} / {num_batches}, no: {i_row + 1}, n_shots: {_n_shots}, circ_idx = {C}, n_circuits: P={P}, G={G}, d={d}, M={M}, Ph4={Ph4}, Ph={Ph}, elapsed_secs: {elapsed_time_secs}"
+            _log_this = f"{current_datetime_str}, batch_idx: {batch_idx} / {num_batches}, no: {i_row + 1}, n_shots: {_n_shots}, seq_len: {seq_len}, circ_idx = {C}, n_circuits: P={P}, G={G}, d={d}, M={M}, Ph4={Ph4}, Ph={Ph}, elapsed_secs: {elapsed_time_secs}"
             print(_log_this)
             with open(data_handler.path / "log.txt", encoding="utf8", mode="a") as f:
                 f.write(_log_this.replace("_", "") + "\n")  # Append the log message to the file
