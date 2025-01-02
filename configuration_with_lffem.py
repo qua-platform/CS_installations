@@ -92,12 +92,12 @@ STEP_AMP = 0.25
 CONST_AMP = 0.1  # in V
 CONST_LEN = 100  # in ns
 
-SQUARE_X180_AMP = 0.45
-SQUARE_X90_AMP = 0.40
-SQUARE_MINUS_X90_AMP = -0.40
-SQUARE_Y180_AMP = 0.35
-SQUARE_Y90_AMP = 0.30
-SQUARE_MINUS_Y90_AMP = -0.30
+SQUARE_X180_AMP = 0.20
+SQUARE_X90_AMP = 0.10
+SQUARE_MINUS_X90_AMP = -0.10
+SQUARE_Y180_AMP = 0.15
+SQUARE_Y90_AMP = 0.075
+SQUARE_MINUS_Y90_AMP = -0.075
 SQUARE_LEN = 52
 
 PI_AMP = 0.1
@@ -165,7 +165,7 @@ QUBIT_CONSTANTS = {
         "aout_Q": 2,
         "dout": 1,
         "LO": 16 * u.GHz,
-        "IF": 50 * u.MHz,
+        "IF": 200 * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0,
         "pi_amp": PI_AMP,
@@ -181,7 +181,7 @@ QUBIT_CONSTANTS = {
         "aout_Q": 2,
         "dout": 1,
         "LO": 16 * u.GHz,
-        "IF": 200 * u.MHz,
+        "IF": 150 * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0,
         "pi_amp": PI_AMP,
@@ -209,8 +209,8 @@ QUBIT_CONSTANTS = {
     "qubit4": {
         "con": con1,
         "fem": fem1,
-        "aout_I": 3, # TODO: Fix
-        "aout_Q": 4, # TODO: Fix
+        "aout_I": 5, # TODO: Fix
+        "aout_Q": 6, # TODO: Fix
         "dout": 3,
         "LO": 16.3 * u.GHz,
         "IF": 0 * u.MHz,
@@ -343,7 +343,7 @@ TANK_CIRCUIT_CONSTANTS = {
         "fem": fem1,
         "ao": 8,
         "ai": 2,
-        "IF": 150 * u.MHz,
+        "IF": 50 * u.MHz,
         "readout_amp": REFLECTOMETRY_READOUT_AMP,
         "readout_len": REFLECTOMETRY_READOUT_LEN,
         "threshold": PARITY_THRESHOLD1,
@@ -355,7 +355,7 @@ TANK_CIRCUIT_CONSTANTS = {
         "fem": fem1,
         "ao": 8,
         "ai": 2,
-        "IF": 200 * u.MHz,
+        "IF": 100 * u.MHz,
         "readout_amp": REFLECTOMETRY_READOUT_AMP,
         "readout_len": REFLECTOMETRY_READOUT_LEN,
         "threshold": PARITY_THRESHOLD2,
