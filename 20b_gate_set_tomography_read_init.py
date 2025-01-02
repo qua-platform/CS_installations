@@ -55,6 +55,12 @@ seq.add_points("operation_P1-P2", level_ops["P1-P2"], duration_gst)
 seq.add_points("operation_P4-P5", level_ops["P4-P5"], duration_gst)
 seq.add_points("operation_P3", level_ops["P3"], duration_gst)
 
+save_data_dict = {
+    "sweep_gates": sweep_gates,
+    "qubit": qubit,
+    "config": config,
+}
+
 
 with program() as PROGRAM_GST:
     n = declare(int)
@@ -113,7 +119,7 @@ with program() as PROGRAM_GST:
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}")
-                    wait(delay_init_qubit_start * u.ns, qubit) if delay_init_qubit_start >= 16 else None
+                    wait(delay_gst_start * u.ns, qubit) if delay_gst_start >= 16 else None
 
                     other_elements = get_other_elements(elements_in_use=[qubit] + sweep_gates, all_elements=all_elements)
                     wait(duration_gst * u.ns, *other_elements)
@@ -172,7 +178,7 @@ with program() as PROGRAM_GST:
                                 play("x90_kaiser", qubit)
                                 play("y90_kaiser", qubit)
 
-                    wait(delay_init_qubit_end * u.ns, qubit) if delay_init_qubit_start >= 16 else None
+                    wait(delay_gst_end * u.ns, qubit) if delay_gst_end >= 16 else None
 
                     if full_read_init:
                         # RI12 -> R3 -> RI45
@@ -290,6 +296,16 @@ else:
                 np.savez(file = data_handler.path / f"data_{batch_idx:08d}.npz", **data_dict)
                 batch_idx +=1
                 job.resume()
+
+    # Save results
+    script_name = Path(__file__).name
+    data_handler = DataHandler(root_data_folder=save_dir)
+    data_handler.additional_files = {
+        script_name: script_name,
+        "macros_initialization_and_readout.py": "macros_initialization_and_readout.py"
+        **default_additional_files,
+    }
+    data_handler.save_data(data=save_data_dict, name=Path(__name__).stem)
 
     qm.close()
 
