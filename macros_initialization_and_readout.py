@@ -95,7 +95,7 @@ assert delay_init_qubit_end == 0 or delay_init_qubit_end >= 16
 
 delay_read_reflec_start = 16
 delay_read_reflec_end = 16
-delay_stream = 1000
+delay_stream = 100
 duration_readout = delay_read_reflec_start + REFLECTOMETRY_READOUT_LEN + delay_read_reflec_end + delay_stream
 assert delay_read_reflec_start == 0 or delay_read_reflec_start >= 16
 assert delay_read_reflec_end == 0 or delay_read_reflec_end >= 16
@@ -287,6 +287,7 @@ def measure_parity(I, Q, P, I_st, plungers, tank_circuit, threshold, do_save=Fal
         demod.full("sin", Q, "out1"),
     )
     wait(delay_read_reflec_end * u.ns, tank_circuit) if delay_read_reflec_end >= 16 else None
+    wait(delay_stream * u.ns, tank_circuit) if delay_read_reflec_end >= 16 else None
 
     assign(P, I > threshold)  # TODO: I > threashold is even?
 

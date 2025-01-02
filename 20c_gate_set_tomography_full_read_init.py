@@ -73,6 +73,7 @@ def get_encoded_circuit(row):
 qubit = "qubit1"
 plungers = "P1-P2"
 do_feedback = False # False for test. True for actual.
+full_read_init = False
 
 qubits = ["qubit1", "qubit2", "qubit3", "qubit4", "qubit5"]
 sweep_gates = ["P1_sticky", "P2_sticky", "P3_sticky", "P4_sticky", "P5_sticky"]
@@ -365,8 +366,12 @@ with program() as PROGRAM_GST:
 
                 with strict_timing_():
 
-                    # RI12 -> 2 x (R3 -> R12) -> RI45
-                    perform_initialization(I, Q, P, I_st[0], I_st[1], I_st[2])
+                    if full_read_init:
+                        # RI12 -> 2 x (R3 -> R12) -> RI45
+                        perform_initialization(I, Q, P, I_st[0], I_st[1], I_st[2])
+                    else:                    # RI12 -> 2 x (R3 -> R12) -> RI45
+                        read_init12(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
+                        
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}")

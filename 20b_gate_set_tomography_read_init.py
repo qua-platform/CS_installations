@@ -17,7 +17,7 @@ from macros import get_other_elements
 from macros_initialization_and_readout import *
 from configuration_with_lffem import *
 
-# matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')
 
 
 ###################
@@ -27,7 +27,9 @@ from configuration_with_lffem import *
 qubit = "qubit1"
 plungers = "P1-P2"
 do_feedback = False # False for test. True for actual.
-
+full_read_init = False
+num_output_streams = 6 if full_read_init else 2
+do_simulate = True
 
 list_n_shots = [10, 100]
 df_enc_seqs = get_dataframe_encoded_sequence()
@@ -46,7 +48,7 @@ delay_gst_end = 16
 duration_gst = delay_init_qubit_start + max_gate_duration + delay_init_qubit_end
 
 duration_compensation_pulse_gst = duration_gst
-duration_compensation_pulse_full = int(0.3 * duration_compensation_pulse_initialization + duration_compensation_pulse_gst + duration_compensation_pulse_readout)
+duration_compensation_pulse_full = int(0.7 * duration_compensation_pulse_initialization + duration_compensation_pulse_gst + duration_compensation_pulse_readout)
 duration_compensation_pulse_full = 100 * (duration_compensation_pulse_full // 100)
 
 seq.add_points("operation_P1-P2", level_ops["P1-P2"], duration_gst)
@@ -58,15 +60,9 @@ with program() as PROGRAM_GST:
     n = declare(int)
     n_shots = declare(int)
     circ = declare(int)
-    idx = declare(int)
+    case_idx = declare(int)
     count = declare(int, value=0)
     division = declare(int, value=1)
-    # encoded_circuit = declare(int, value=[52, 4, 5, 7, 16, 18])
-    encoded_circuit = declare_input_stream(
-        int,
-        name="_encoded_circuit",
-        size=sequence_max_len + 3, # 2 to account for [circ_idx, seq_len, remaining_duraiton_case]
-    )  # input stream the sequence
 
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
     n_shots_st = declare_stream()
@@ -76,18 +72,29 @@ with program() as PROGRAM_GST:
     I = [declare(fixed) for _ in range(num_tank_circuits)]
     Q = [declare(fixed) for _ in range(num_tank_circuits)]
     P = [declare(bool) for _ in range(num_tank_circuits)]  # true if even parity
-    I_st = [declare_stream() for _ in range(2)]
-    # Q_st = [declare_stream() for _ in range(15)]
-    # P_st = [declare_stream() for _ in range(15)]
-
+    I_st = [declare_stream() for _ in range(num_output_streams)]
+    # Q_st = [declare_stream() for _ in range(num_output_streams)]
+    # P_st = [declare_stream() for _ in range(num_output_streams)]
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("tank_circuit1", I[0], Q[0], P[0])
     assign_variables_to_element("tank_circuit2", I[1], Q[1], P[1])
 
+    if do_simulate:
+        encoded_circuit = declare(int, value=[52, 4, 5, 7, 11, 2])
+    else:
+        encoded_circuit = declare_input_stream(
+            int,
+            name="_encoded_circuit",
+            size=sequence_max_len + 3, # 2 to account for [circ_idx, seq_len, remaining_duraiton_case]
+        )  # input stream the sequence
+
+
     with for_each_(n_shots, list_n_shots):
 
         with for_(circ, 0, circ < num_cicuits, circ + 1):
-            advance_input_stream(encoded_circuit)  # ordered or randomized
+            
+            if not do_simulate:
+                advance_input_stream(encoded_circuit)  # ordered or randomized
 
             circ_idx = encoded_circuit[0] # just a sequential index for this circuit 
             circ_len = encoded_circuit[1] # gate sequence length for this circuit
@@ -97,9 +104,12 @@ with program() as PROGRAM_GST:
 
                 with strict_timing_():
 
-                    # RI12 -> 2 x (R3 -> R12) -> RI45
-                    # perform_initialization((I, Q, P, I_st[0], I_st[1], I_st[2]))
-                    read_init12(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
+                    if full_read_init:
+                        # RI12 -> 2 x (R3 -> R12) -> RI45
+                        perform_initialization(I, Q, P, I_st[0], I_st[1], I_st[2])
+                    else:                    # RI12 -> 2 x (R3 -> R12) -> RI45
+                        # RI12
+                        read_init12(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}")
@@ -108,9 +118,9 @@ with program() as PROGRAM_GST:
                     other_elements = get_other_elements(elements_in_use=[qubit] + sweep_gates, all_elements=all_elements)
                     wait(duration_gst * u.ns, *other_elements)
 
-                    with for_(idx, 2, idx < circ_len + 2, idx + 1):
+                    with for_(case_idx, 2, case_idx < circ_len + 2, case_idx + 1):
 
-                        with switch_(encoded_circuit[idx], unsafe=True):
+                        with switch_(encoded_circuit[case_idx], unsafe=True):
                             # baseband operation is fixed regardless L
                             # normal:just run till the end with Null
                             # option: adjust the length accoridngly
@@ -164,9 +174,12 @@ with program() as PROGRAM_GST:
 
                     wait(delay_init_qubit_end * u.ns, qubit) if delay_init_qubit_start >= 16 else None
 
-                    # RI12 -> R3 -> RI45
-                    # perform_readout(I, Q, P, I_st[3], I_st[4], I_st[5])
-                    read_init12(I[0], Q[0], P[0], I_st[1], None, do_save=[True, False])
+                    if full_read_init:
+                        # RI12 -> R3 -> RI45
+                        perform_readout(I, Q, P, I_st[3], I_st[4], I_st[5])
+                    else:
+                        # RI12
+                        read_init12(I[0], Q[0], P[0], I_st[1], None, do_save=[True, False])
 
                     seq.add_compensation_pulse(duration=duration_compensation_pulse_full)
                 
@@ -187,7 +200,7 @@ with program() as PROGRAM_GST:
         n_st.buffer(batch_size).save("n_history")
         n_shots_st.buffer(batch_size).save("n_shots_history")
         circ_idx_st.buffer(batch_size).save("circ_idx_history")
-        for k in range(2):
+        for k in range(num_output_streams):
             I_st[k].buffer(batch_size).save(f"I{k:d}")
 
 
@@ -204,7 +217,7 @@ qmm.close_all_qms()
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = False
+simulate = do_simulate
 save_data = True
 
 if simulate:
@@ -219,7 +232,7 @@ if simulate:
 else:
     from qm import generate_qua_script
 
-    sourceFile = open("debug_20_gate_set_tomography.py", "w")
+    sourceFile = open("debug_20b_gate_set_tomography.py", "w")
     print(generate_qua_script(PROGRAM_GST, config), file=sourceFile)
     sourceFile.close()
 
@@ -230,7 +243,7 @@ else:
 
 
     fetch_names = ["n_history", "n_shots_history", "circ_idx_history"]
-    fetch_names.extend([f"I{k:d}" for k in range(2)])
+    fetch_names.extend([f"I{k:d}" for k in range(num_output_streams)])
 
     if save_data:
         from qualang_tools.results.data_handler import DataHandler
