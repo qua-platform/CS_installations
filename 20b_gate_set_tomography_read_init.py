@@ -17,7 +17,7 @@ from macros import get_other_elements
 from macros_initialization_and_readout import *
 from configuration_with_lffem import *
 
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 ###################

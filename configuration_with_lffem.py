@@ -92,12 +92,12 @@ STEP_AMP = 0.25
 CONST_AMP = 0.1  # in V
 CONST_LEN = 100  # in ns
 
-SQUARE_X180_AMP = 0.20
-SQUARE_X90_AMP = 0.10
-SQUARE_MINUS_X90_AMP = -0.10
-SQUARE_Y180_AMP = 0.15
-SQUARE_Y90_AMP = 0.075
-SQUARE_MINUS_Y90_AMP = -0.075
+SQUARE_X180_AMP = 0.40 / 2
+SQUARE_X90_AMP = 0.20 / 2
+SQUARE_MINUS_X90_AMP = -0.20 / 2
+SQUARE_Y180_AMP = 0.35 / 2
+SQUARE_Y90_AMP = 0.175 / 2
+SQUARE_MINUS_Y90_AMP = -0.175 / 2
 SQUARE_LEN = 52
 
 PI_AMP = 0.1
@@ -173,6 +173,7 @@ QUBIT_CONSTANTS = {
         "midcircuit_parity_threshold": 0.0,
         "delay": 0,
         "rf_switch_delay": 40,
+        "rf_switch_buffer": 40,
     },
     "qubit2": {
         "con": con1,
@@ -189,6 +190,7 @@ QUBIT_CONSTANTS = {
         "midcircuit_parity_threshold": 0.0,
         "delay": 0,
         "rf_switch_delay": 40,
+        "rf_switch_buffer": 40,
     },
     "qubit3": {
         "con": con1,
@@ -205,6 +207,7 @@ QUBIT_CONSTANTS = {
         "midcircuit_parity_threshold": 0.0,
         "delay": 0,
         "rf_switch_delay": 40,
+        "rf_switch_buffer": 40,
     },
     "qubit4": {
         "con": con1,
@@ -221,6 +224,7 @@ QUBIT_CONSTANTS = {
         "midcircuit_parity_threshold": 0.0,
         "delay": 0,
         "rf_switch_delay": 40,
+        "rf_switch_buffer": 40,
     },
     "qubit5": {
         "con": con1,
@@ -237,6 +241,7 @@ QUBIT_CONSTANTS = {
         "midcircuit_parity_threshold": 0.0,
         "delay": 0,
         "rf_switch_delay": 40,
+        "rf_switch_buffer": 40,
     },
 }
 
@@ -785,7 +790,7 @@ config = {
                     "mixer": f"mixer_{qb}",
                 },
                 "digitalInputs": {
-                    "marker": {
+                    "output_switch": {
                         "port": (val["con"], val["fem"], val["dout"]),
                         "delay": val["rf_switch_delay"],
                         "buffer": 0,
@@ -813,7 +818,7 @@ config = {
                     "y90_square": f"square_y90_pulse",
                     "-y90_square": f"square_minus_y90_pulse",
                 },
-                # "thread": qb,
+                "thread": qb,
             }
             for qb, val in QUBIT_CONSTANTS.items()
         },
@@ -855,7 +860,7 @@ config = {
                     "y90_square": f"square_y90_pulse_trio1",
                     "-y90_square": f"square_minus_y90_pulse_trio1",
                 },
-                # "thread": qb,
+                "thread": f"{qb}_trio1",
             }
             for qb, val in QUBIT_CONSTANTS.items()
         },
