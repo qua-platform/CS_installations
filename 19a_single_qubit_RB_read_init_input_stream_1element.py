@@ -27,19 +27,32 @@ from configuration_with_lffem import *
 ###################
 
 qubit = "qubit5"
-plungers = "P1-P2"
+qubit_trio1 = f"{qubit}_trio1"
+plungers = "P4-P5"
 do_feedback = False # False for test. True for actual.
 full_read_init = False
 num_output_streams = 6 if full_read_init else 2
 do_simulate = False
+target_qubits = [qubit, qubit_trio1]
+num_target_qubits = len(target_qubits)
 
+try:
+    all_elements.remove("qubit1")
+    all_elements.remove("qubit2")
+    all_elements.remove("qubit3")
+    # all_elements.remove("tank_circuit1")
+    all_elements.append(qubit_trio1)
+except:
+    pass
 
 n_avg = 5
-num_of_sequences = 3  # Number of random sequences
-circuit_depth_min = 1000
-circuit_depth_max = 12000
+num_of_sequences = 2  # Number of random sequences
+circuit_depth_min = 10000
+circuit_depth_max = 16000 # works up to 16_000
 delta_clifford = 1000
 circuit_depths = np.arange(circuit_depth_min, circuit_depth_max + 1, delta_clifford).astype(int)
+actual_circuit_depths = num_target_qubits * circuit_depths
+
 num_gates_total_max = int(1000 * math.ceil(circuit_depth_max * (46 / 24) // 1000))
 # circuit_depths = [int(_) for _ in circuit_depths]
 duration_compensation_pulse = circuit_depth_max * PI_LEN
@@ -47,10 +60,10 @@ assert circuit_depth_max % delta_clifford == 0, "circuit_depth_max / delta_cliff
 
 
 # duration_init includes the manipulation
-delay_rb_start = 92
+delay_rb_start_loop = 16
 # duration_rb = PI_LEN * circuit_depth_max * 2 # 2 is a bit bigger than 1.875 (or)
 duration_rb = PI_LEN * 10 * 2
-delay_rb_end = 16
+delay_rb_end_loop = 0
 # duration_ops = delay_rb_start + duration_rb + delay_rb_end
 
 
@@ -59,9 +72,9 @@ duration_compensation_pulse_full = int(0.7 * duration_compensation_pulse_initial
 duration_compensation_pulse_full = 100 * (duration_compensation_pulse_full // 100)
 
 
-seq.add_points("operation_P1-P2", level_ops["P1-P2"], duration_rb)
-seq.add_points("operation_P4-P5", level_ops["P4-P5"], duration_rb)
-seq.add_points("operation_P3", level_ops["P3"], duration_rb)
+seq.add_points("operation_P1-P2", level_ops["P1-P2"], delay_rb_start_loop + delay_rb_end_loop)
+seq.add_points("operation_P4-P5", level_ops["P4-P5"], delay_rb_start_loop + delay_rb_end_loop)
+seq.add_points("operation_P3", level_ops["P3"], delay_rb_start_loop + delay_rb_end_loop)
 
 
 save_data_dict = {
@@ -74,9 +87,9 @@ save_data_dict = {
 def generate_encoded_sequence(N, current_state=0, ends_with_inv_gate=True, num_gates_total_max=num_gates_total_max, seed=0):
 
     np.random.seed(seed)
-    clifford_arr = np.random.randint(low=0, high=23, size=N + 1).astype(int)
-    state_arr = np.zeros(N + 1).astype(int)
-    inv_gate_arr = np.zeros(N + 1).astype(int)
+    clifford_arr = np.random.randint(low=0, high=23, size=N).astype(int)
+    state_arr = np.zeros(N).astype(int)
+    inv_gate_arr = np.zeros(N).astype(int)
 
     for i, step in enumerate(clifford_arr):
         next_state = c1_table[current_state, step]
@@ -85,20 +98,15 @@ def generate_encoded_sequence(N, current_state=0, ends_with_inv_gate=True, num_g
         inv_gate_arr[i] = inv_gates[current_state]
     
     if ends_with_inv_gate:
-        inv_gate = inv_gate_arr[N - 1]
-        clifford_arr[N] = inv_gate
-        state_arr[N] = c1_table[state_arr[N - 1], inv_gate]
+        inv_gate = inv_gate_arr[-2]
+        clifford_arr[-1] = inv_gate
+        state_arr[-1] = c1_table[state_arr[-2], inv_gate]
     
-    if ends_with_inv_gate:
-        clifford_list = clifford_arr.tolist()
-        state_list = state_arr.tolist()
-        inv_gate_list = inv_gate_arr.tolist()
-    else:
-        clifford_list = clifford_arr.tolist()[:-1]
-        state_list = state_arr.tolist()[:-1]
-        inv_gate_list = inv_gate_arr.tolist()[:-1]
-    
-    num_gates_total = int(np.array([map_clifford_to_num_gates[s] for s in state_list]).sum())
+    clifford_list = clifford_arr.tolist()
+    state_list = state_arr.tolist()
+    inv_gate_list = inv_gate_arr.tolist()
+
+    num_gates_total = int(np.array([map_clifford_to_num_gates[s] for s in clifford_list]).sum())
     num_gates_total_rest = num_gates_total_max - num_gates_total 
     duration_rb_total = num_gates_total * PI_LEN
     _encoded_circuit = [duration_rb_total] + clifford_list
@@ -210,18 +218,17 @@ map_clifford_to_num_gates = {
 }
 
 
-with program() as PROGRAM_GST:
+with program() as PROGRAM_RB:
     m = declare(int)
     n = declare(int)
-    depth1 = declare(int)
-    depth2 = declare(int)
-    duration_rb = declare(int)
+    depth = declare(int)
     duration_ops = declare(int)
     seq_idx = declare(int)
 
     m_st = declare_stream()  # Stream for the iteration number (progress bar)
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
-
+    depth_st = declare_stream()
+    
     I = [declare(fixed) for _ in range(num_tank_circuits)]
     Q = [declare(fixed) for _ in range(num_tank_circuits)]
     P = [declare(bool) for _ in range(num_tank_circuits)]  # true if even parity
@@ -242,8 +249,7 @@ with program() as PROGRAM_GST:
         )  # input stream the sequence
 
 
-    with for_(*from_array(depth1, circuit_depths)):  # Loop over the depths
-        assign(depth2, depth1)
+    with for_(*from_array(depth, circuit_depths)):  # Loop over the depths
 
         with for_(m, 0, m < num_of_sequences, m + 1):
             
@@ -251,7 +257,7 @@ with program() as PROGRAM_GST:
                 advance_input_stream(encoded_circuit)  # ordered or randomized
 
             duration_rb = encoded_circuit[0] # just a sequential index for this circuit
-            assign(duration_ops, delay_rb_start + duration_rb + delay_rb_end)
+            assign(duration_ops, delay_rb_start_loop + duration_rb + delay_rb_end_loop)
 
             with for_(n, 0, n < n_avg, n + 1):
 
@@ -262,35 +268,37 @@ with program() as PROGRAM_GST:
                         perform_initialization(I, Q, P, I_st[0], I_st[1], I_st[2])
                     else:                    # RI12 -> 2 x (R3 -> R12) -> RI45
                         # RI12
-                        read_init12(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
+                        read_init45(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops * u.ns)
-
                     other_elements = get_other_elements(elements_in_use=[qubit] + sweep_gates, all_elements=all_elements)
                     wait(duration_ops >> 2, *other_elements)
 
-                    wait(delay_rb_start * u.ns, qubit) if delay_rb_start >= 16 else None
-                    play_sequence(encoded_circuit, depth1, qubit)
-                    wait(delay_rb_end * u.ns, qubit) if delay_rb_end >= 16 else None
+                    wait(delay_rb_start_loop * u.ns, qubit) if delay_rb_start_loop >= 16 else None
+                    play_sequence(encoded_circuit, depth, qubit)
+                    # wait(duration_rb12 >> 2, qubit)
+                    wait(delay_rb_end_loop * u.ns, qubit) if delay_rb_end_loop >= 16 else None
 
                     if full_read_init:
                         # RI12 -> R3 -> RI45
                         perform_readout(I, Q, P, I_st[3], I_st[4], I_st[5])
                     else:
                         # RI12
-                        read_init12(I[0], Q[0], P[0], I_st[1], None, do_save=[True, False])
+                        read_init45(I[0], Q[0], P[0], I_st[1], None, do_save=[True, False])
 
                     seq.add_compensation_pulse(duration=duration_compensation_pulse_full)
                 
+                # save(depth, depth)
                 # save(m, m_st)
                 # save(n, n_st)
                 seq.ramp_to_zero()
                 wait(1000 * u.ns)
 
     with stream_processing():
-        m_st.buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save("num_sequence")
-        n_st.buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save("iterations")
+        # depth_st.buffer(num_of_sequences).buffer(len(circuit_depths)).save("actual_circuit_depths")
+        # m_st.buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save("num_sequence")
+        # n_st.buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save("iterations")
         for k in range(num_output_streams):
             I_st[k].buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save(f"I{k:d}")
 
@@ -315,7 +323,7 @@ if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=4_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
-    job = qmm.simulate(config, PROGRAM_GST, simulation_config)
+    job = qmm.simulate(config, PROGRAM_RB, simulation_config)
     # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
     plt.show()
@@ -323,16 +331,17 @@ if simulate:
 else:
     from qm import generate_qua_script
     sourceFile = open("debug_19b_single_qubit_RB_read_init.py", "w")
-    print(generate_qua_script(PROGRAM_GST, config), file=sourceFile)
+    print(generate_qua_script(PROGRAM_RB, config), file=sourceFile)
     sourceFile.close()
 
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(PROGRAM_GST, compiler_options=CompilerOptionArguments(flags=["not-strict-timing"]))
+    job = qm.execute(PROGRAM_RB, compiler_options=CompilerOptionArguments(flags=["not-strict-timing"]))
 
-    fetch_names = ["num_sequence", "iterations"]
-    fetch_names.extend([f"I{k:d}" for k in range(num_output_streams)])
+    # fetch_names = ["num_sequence", "iterations"]
+    # fetch_names.extend([f"I{k:d}" for k in range(num_output_streams)])
+    fetch_names = [f"I{k:d}" for k in range(num_output_streams)]
 
     if save_data:
         from qualang_tools.results.data_handler import DataHandler
@@ -343,12 +352,17 @@ else:
 
     ress = []
     start_time = datetime.now()
+    clifford_lists = []
     for i_depth, _circuit_depth in enumerate(circuit_depths):
 
         for num_seq in range(num_of_sequences):
             _seed = i_depth * num_of_sequences + num_seq
 
             _encoded_circuit, clifford_list, state_list, inv_gate_list, num_gates_total = generate_encoded_sequence(_circuit_depth, seed=_seed)
+
+            clifford_lists.append(clifford_list)
+            print(_encoded_circuit[:10])
+            print(_encoded_circuit[-10:])
 
             current_datetime = datetime.now()
             current_datetime_str = current_datetime.strftime("%Y/%m/%d-%H:%M:%S")
@@ -360,7 +374,6 @@ else:
                 f.write(_log_this.replace("_", "") + "\n")  # Append the log message to the file
 
             job.push_to_input_stream("_encoded_circuit", _encoded_circuit)
-
 
     # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
     print("get a fetching tool")
@@ -385,11 +398,12 @@ else:
         save_data_dict.update(**data_dict)
         data_handler.additional_files = {
             script_name: script_name,
-            "macros_initialization_and_readout.py": "macros_initialization_and_readout.py"
+            "macros_initialization_and_readout.py": "macros_initialization_and_readout.py",
             **default_additional_files,
         }
         data_handler.save_data(data=save_data_dict, name=Path(__name__).stem)
 
     qm.close()
+
 
 # %%
