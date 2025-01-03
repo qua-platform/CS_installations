@@ -9,7 +9,7 @@ from qm.qua import *
 # from configuration_with_lffem import *
 from qualang_tools.voltage_gates import VoltageGateSequence
 
-from configuration_with_lffem_full import *
+from configuration_with_lffem import *
 
 # from qm import generate_qua_script
 # import matplotlib
@@ -27,19 +27,19 @@ with program() as hello_qua:
     n = declare(int)
 
     with for_(n, 0, n < n_avg, n + 1):
-        play("const", "qubit1")
-        play("const", "qubit2")
-        play("const", "qubit3")
-        # play("const", "qubit4")
-        # play("const", "qubit5")
-        align()
-        play("step", "P1", duration=100*u.ns)
-        play("step", "P2", duration=100*u.ns)
-        play("step", "P3", duration=100*u.ns)
+        play("x180_square", "qubit1")
+        play("x180_square", "qubit2")
+        play("x180_square", "qubit3")
+        play("x180_square", "qubit4")
+        play("x180_square", "qubit5")
+        # align()
+        # play("step", "P1", duration=100*u.ns)
+        # play("step", "P2", duration=100*u.ns)
+        # play("step", "P3", duration=100*u.ns)
         # play("step", "P4", duration=100*u.ns)
         # play("step", "P5", duration=100*u.ns)
-        align()
-        play("step", "B1", duration=100*u.ns)
+        # align()
+        # play("step", "B1", duration=100*u.ns)
         # play("step", "B2", duration=100*u.ns)
         # play("step", "B3", duration=100*u.ns)
         # play("step", "B4", duration=100*u.ns)
@@ -69,7 +69,7 @@ qmm = QuantumMachinesManager(
 # Run or Simulate Program #
 ###########################
 
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
