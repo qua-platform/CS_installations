@@ -32,26 +32,31 @@ from qualang_tools.loops import from_array
 from scipy.optimize import curve_fit
 
 from macros import get_other_elements
+
 from macros_initialization_and_readout import *
 from configuration_with_lffem import *
+# from configuration_with_opxplus import *
+
+# matplotlib.use('TkAgg')
 
 
 ##############################
 # Program-specific variables #
 ##############################
 
-target_qubits = ["qubit1", "qubit2"]
+target_qubits = ["qubit4", "qubit5"]
 target_tank_circuit = "tank_circuit1"
-plungers = "P1-P2"
+plungers = "P4-P5"
 do_feedback = False # False for test. True for actual.
 seed = 123  # Pseudo-random number generator seed
-
+full_read_init = False
+num_output_streams = 6 if full_read_init else 2
 
 n_avg = 2
 num_of_sequences = 3  # Number of random sequences
-circuit_depth_min = 1
-circuit_depth_max = 16000
-delta_clifford = 10
+circuit_depth_min = 1000
+circuit_depth_max = 7800 # worked up to 7800 
+delta_clifford = 100
 circuit_depths = np.arange(circuit_depth_min, circuit_depth_max + 1, delta_clifford) * u.ns
 # circuit_depths = [int(_) for _ in circuit_depths]
 duration_compensation_pulse = circuit_depth_max * PI_LEN
@@ -59,8 +64,11 @@ assert circuit_depth_max % delta_clifford == 0, "circuit_depth_max / delta_cliff
 
 
 # duration_init includes the manipulation
-delay_rb_start = 16
-delay_rb_end = 16
+delay_rb_start_loop = 68
+# duration_rb = PI_LEN * circuit_depth_max * 2 # 2 is a bit bigger than 1.875 (or)
+duration_rb = PI_LEN * 10 * 2
+delay_rb_end_loop = 60 # 108
+# duration_ops = delay_rb_start + duration_rb + delay_rb_end
 
 
 duration_compensation_pulse_rb = 800_000 # duration_rb
@@ -68,9 +76,9 @@ duration_compensation_pulse_full = int(0.3 * duration_compensation_pulse_initial
 duration_compensation_pulse_full = 100 * (duration_compensation_pulse_full // 100)
 
 
-seq.add_points("operation_P1-P2", level_ops["P1-P2"], delay_rb_start + delay_rb_end)
-seq.add_points("operation_P4-P5", level_ops["P4-P5"], delay_rb_start + delay_rb_end)
-seq.add_points("operation_P3", level_ops["P3"], delay_rb_start + delay_rb_end)
+seq.add_points("operation_P1-P2", level_ops["P1-P2"], delay_rb_start_loop + delay_rb_end_loop)
+seq.add_points("operation_P4-P5", level_ops["P4-P5"], delay_rb_start_loop + delay_rb_end_loop)
+seq.add_points("operation_P3", level_ops["P3"], delay_rb_start_loop + delay_rb_end_loop)
 
 
 ###################################
@@ -94,7 +102,7 @@ def power_law(power, a, b, p):
     return a * (p**power) + b
 
 
-def generate_sequence(depth):
+def generate_sequence(depth, seed=seed):
     cayley = declare(int, value=c1_table.flatten().tolist())
     inv_list = declare(int, value=inv_gates)
     step = declare(int)
@@ -122,6 +130,8 @@ def play_sequence(sequence_list, depth, qb):
         with switch_(sequence_list[i], unsafe=True):
             with case_(0):
                 wait(x180_len // 4, qb)
+                # play("x180_square", qb)
+                # play("x180_square", qb)
             with case_(1):
                 play("x180_square", qb)
             with case_(2):
@@ -200,7 +210,7 @@ def generate_sequence_time(sequence_list, depth):
         with switch_(sequence_list[j], unsafe=True):
             with case_(0):
                 # wait(x180_len // 4, qb)
-                assign(duration, duration + x180_len)
+                assign(duration, duration + 2 * x180_len)
             with case_(1):
                 # play("x180", qb)
                 assign(duration, duration + x180_len)
@@ -298,58 +308,87 @@ def generate_sequence_time(sequence_list, depth):
 # The QUA program #
 ###################
 with program() as rb:
-    depth = declare(int)  # QUA variable for the varying depth
+    depth1 = declare(int)  # QUA variable for the varying depth
+    depth2 = declare(int)  # QUA variable for the varying depth
     duration_ops = declare(int)
+    duration_q5 = declare(int)
 
     m = declare(int)  # QUA variable for the loop over random sequences
     n = declare(int)  # QUA variable for the averaging loop
     I = [declare(fixed) for _ in range(2)]  # QUA variable for the 'I' quadrature
     Q = [declare(fixed) for _ in range(2)]  # QUA variable for the 'Q' quadrature
     P = [declare(bool) for _ in range(2)]  # QUA variable for state discrimination
-    sequence_time = declare(int) # QUA variable for RB sequence duration for a given depth
+    sequence_time1 = declare(int) # QUA variable for RB sequence duration for a given depth
+    sequence_time2 = declare(int) # QUA variable for RB sequence duration for a given depth
     # Ensure that the result variables are assigned to the measurement elements
     assign_variables_to_element(tank_circuits[0], I[0], Q[0])
     assign_variables_to_element(tank_circuits[1], I[1], Q[1])
 
     # The relevant streams
     m_st = declare_stream()
-    I_st = [declare_stream() for _ in range(2)]
-    Q_st = [declare_stream() for _ in range(2)]
-    state_st = [declare_stream() for _ in range(2)]
+    I_st = [declare_stream() for _ in range(num_output_streams)]
+    Q_st = [declare_stream() for _ in range(num_output_streams)]
+    state_st = [declare_stream() for _ in range(num_output_streams)]
 
-    with for_(*from_array(depth, circuit_depths)):  # Loop over the depths
+    with for_(*from_array(depth1, circuit_depths)):  # Loop over the depths
+        assign(depth2, depth1)
     
         with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
 
-            # sequence_lists[0] == sequence_lists[1]
-            sequence_list = generate_sequence(depth) # Generate the random sequence of length circuit_depth_max
+            # # sequence_lists[0] == sequence_lists[1]
+            sequence_list1 = generate_sequence(depth1) # Generate the random sequence of length circuit_depth_max
+            sequence_list2 = generate_sequence(depth2) # Generate the random sequence of length circuit_depth_max
 
+            # sequence_list1 = declare(int, value=[ 6, 11, 18,  1, 17, 12, 16,  8, 11,  6])
+            # sequence_list2 = declare(int, value=[ 6, 11, 18,  1, 17, 12, 16,  8, 11,  6])
+            
             # Assign sequence_time to duration of idle step for generated sequence "m" at a given depth
-            assign(sequence_time, generate_sequence_time(sequence_list, depth))
-            assign(duration_ops, delay_rb_start + sequence_time + delay_rb_end)
+            assign(sequence_time1, generate_sequence_time(sequence_list1, depth1))
+            assign(sequence_time2, generate_sequence_time(sequence_list2, depth2))
+            assign(duration_ops, delay_rb_start_loop + sequence_time1 + delay_rb_end_loop)
 
             with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
                 
+                play("x180_square", "qubit5")
+                other_elements = get_other_elements(elements_in_use=["qubit5"], all_elements=all_elements)
+                wait(PI_LEN * u.ns, *other_elements)
+
                 with strict_timing_():
 
-                    # RI12 -> 2 x (R3 -> R12) -> RI45
-                    # perform_initialization((I, Q, P, I_st[0], I_st[1], I_st[2]))
-                    read_init12(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
+                    if full_read_init:
+                        # RI12 -> 2 x (R3 -> R12) -> RI45
+                        perform_initialization(I, Q, P, I_st[0], I_st[1], I_st[2])
+                    else:
+                        # RI12
+                        read_init45(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
+
+                    play("x180_square", "qubit5")
+                    other_elements = get_other_elements(elements_in_use=["qubit5"], all_elements=all_elements)
+                    wait(PI_LEN * u.ns, *other_elements)
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops)
-                    wait(delay_init_qubit_start * u.ns, *target_qubits) if delay_init_qubit_start >= 16 else None
 
                     other_elements = get_other_elements(elements_in_use=target_qubits + sweep_gates, all_elements=all_elements)
                     wait(duration_ops >> 2, *other_elements)
 
-                    wait(delay_rb_start // 4, *target_qubits)
-                    for qb in target_qubits:
-                        play_sequence(sequence_list, depth, qb=qb)
+                    play_sequence(sequence_list1, depth1, qb=target_qubits[0])
+                    play_sequence(sequence_list2, depth2, qb=target_qubits[1])
 
-                    # RI12 -> R3 -> RI45
-                    # perform_readout(I, Q, P, I_st[3], I_st[4], I_st[5])
-                    read_init12(I[0], Q[0], P[0], I_st[1], None, do_save=[True, False])
+                    play("x180_square", "qubit5")
+                    other_elements = get_other_elements(elements_in_use=["qubit5"], all_elements=all_elements)
+                    wait(PI_LEN * u.ns, *other_elements)
+
+                    if full_read_init:
+                        # RI12 -> R3 -> RI45
+                        perform_readout(I, Q, P, I_st[3], I_st[4], I_st[5])
+                    else:
+                        # RI12
+                        read_init45(I[0], Q[0], P[0], I_st[1], None, do_save=[True, False])
+
+                    play("x180_square", "qubit5")
+                    other_elements = get_other_elements(elements_in_use=["qubit5"], all_elements=all_elements)
+                    wait(PI_LEN * u.ns, *other_elements)
 
                     seq.add_compensation_pulse(duration=duration_compensation_pulse_full)
 
@@ -361,7 +400,7 @@ with program() as rb:
 
     with stream_processing():
         m_st.save("iteration")
-        for k in range(2):
+        for k in range(num_output_streams):
             I_st[k].buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save(f"I{k + 1:d}")
             # Q_st[k].buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save(f"Q{k + 1:d}")
             # P_st[k].buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save(f"P{k + 1:d}")
@@ -383,26 +422,32 @@ qmm = QuantumMachinesManager(
 simulate = False
 
 if simulate:
-    # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=40_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, rb, simulation_config)
+    # # Simulates the QUA program for the specified duration
+    # simulation_config = SimulationConfig(duration=4_000)  # In clock cycles = 4ns
+    # job = qmm.simulate(config, rb, simulation_config)
 
-    plt.figure()
+    # plt.figure()
+    # job.get_simulated_samples().con1.plot()
+    # # Get the waveform report
+    # samples = job.get_simulated_samples()
+    # waveform_report = job.get_simulated_waveform_report()
+    # waveform_report.create_plot(samples, plot=True, save_path=None)
+    # plt.legend("")
+    # plt.show()
+    # Simulates the QUA program for the specified duration
+    simulation_config = SimulationConfig(duration=4_000)  # In clock cycles = 4ns
+    # Simulate blocks python until the simulation is done
+    job = qmm.simulate(config, rb, simulation_config)
+    # Plot the simulated samples
     job.get_simulated_samples().con1.plot()
-    # Get the waveform report
-    samples = job.get_simulated_samples()
-    waveform_report = job.get_simulated_waveform_report()
-    waveform_report.create_plot(samples, plot=True, save_path=None)
-    plt.legend("")
     plt.show()
 
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(
-        rb, compiler_options=CompilerOptionArguments(flags=["not-strict-timing"])
-    )
+    job = qm.execute(rb, compiler_options=CompilerOptionArguments(flags=["not-strict-timing"]))
+    # job = qm.execute(rb)
     # Get results from QUA program
     results = fetching_tool(job, data_list=["I1", "I2", "iteration"], mode="live")
     # Live plotting
