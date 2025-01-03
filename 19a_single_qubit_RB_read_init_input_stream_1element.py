@@ -46,7 +46,7 @@ except:
     pass
 
 n_avg = 5
-num_of_sequences = 2  # Number of random sequences
+num_of_sequences = 3  # Number of random sequences
 circuit_depth_min = 10000
 circuit_depth_max = 16000 # works up to 16_000
 delta_clifford = 1000
