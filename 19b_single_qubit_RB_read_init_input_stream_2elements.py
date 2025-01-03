@@ -276,7 +276,6 @@ with program() as PROGRAM_RB:
             assign(duration_rb21, duration_rb1)
             assign(duration_rb12, duration_rb2)
             assign(duration_ops, delay_rb_start_loop + duration_rb1 + duration_rb2 + delay_rb_end_loop)
-            # assign(duration_ops, delay_rb_start + duration_rb1 + delay_rb_end)
 
             with for_(n, 0, n < n_avg, n + 1):
 
@@ -295,9 +294,11 @@ with program() as PROGRAM_RB:
                     wait(duration_ops >> 2, *other_elements)
 
                     wait(delay_rb_start_loop * u.ns, *target_qubits) if delay_rb_start_loop >= 16 else None
-                    play_sequence(encoded_circuit1, depth1, qubit)
+                    play_sequence(encoded_circuit1, depth1, qubit, i_from=1)
+                    # play_sequence(encoded_circuit1, depth1, qubit)
                     wait(duration_rb21 >> 2, qubit_trio1)
-                    play_sequence(encoded_circuit2, depth2, qubit_trio1)
+                    play_sequence(encoded_circuit1, depth1, qubit_trio1, i_from=1)
+                    # play_sequence(encoded_circuit2, depth2, qubit_trio1)
                     wait(duration_rb12 >> 2, qubit)
                     wait(delay_rb_end_loop * u.ns, *target_qubits) if delay_rb_end_loop >= 16 else None
 
