@@ -34,48 +34,57 @@ from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy import signal
 
+from macros_initialization_and_readout import *
 from configuration_with_lffem import *
+
 
 ###################
 # The QUA program #
 ###################
 
-qubit = "qubit3"
+qubit = "qubit1"
+plungers = "P1-P2"
 tank_circuit = "tank_circuit1"
-measure_init = True
-sweep_gates = ["P1_sticky", "P2_sticky"]
+do_feedback = False # False for test. True for actual.
+full_read_init = False
+num_output_streams = 6 if full_read_init else 2
+do_simulate = True
+all_elements = adjust_all_elements(removes=["qubit3", "qubit4", "qubit5"])
 
-n_avg = 10
 
-# Number of applied Rabi pulses sweep
-max_n_pulses = 10  # Maximum number of qubit pulses
-max_tau_pulse = max_n_pulses * PI_LEN
-n_pulses = np.arange(4, max_n_pulses, 2)  # Always play an odd/even number of pulses to end up in the same state
-duration_init = max_tau_pulse + 16
-
+n_avg = 3
 # Pulse duration sweep in ns - must be larger than 4 clock cycles
 a_min = 0.05
 a_max = 1.95
 a_step = 0.05
 amp_scalilngs = np.arange(a_min, a_max, a_step)
+# Number of applied Rabi pulses sweep
+max_n_pulses = 10  # Maximum number of qubit pulses
+max_tau_pulse = max_n_pulses * PI_LEN
+n_pulses = np.arange(0, max_n_pulses, 2)  # Always play an odd/even number of pulses to end up in the same state
 
 # duration_init includes the manipulation
-delay_init_qubit = 16
-delay_qubit_read = 16
-duration_init = delay_init_qubit + PI_LEN + delay_qubit_read
-assert delay_init_qubit == 0 or delay_init_qubit >= 16
-assert delay_qubit_read == 0 or delay_qubit_read >= 16
+delay_ops_start = 16
+delay_ops_end = 16
+duration_ops = delay_ops_start + PI_LEN * max_n_pulses + delay_ops_end
+assert delay_ops_start == 0 or delay_ops_start >= 16
+assert delay_ops_end == 0 or delay_ops_end >= 16
 
-# Define voltage points
-seq = VoltageGateSequence(config, sweep_gates)
-seq.add_points("initialization", level_init, duration_init)
-seq.add_points("readout", level_readout, duration_readout)
+
+duration_compensation_pulse_ops = duration_ops
+duration_compensation_pulse = int(0.7 * duration_compensation_pulse_full_initialization + duration_compensation_pulse_ops + duration_compensation_pulse_full_readout)
+duration_compensation_pulse = 100 * (duration_compensation_pulse // 100)
+
+
+seq.add_points("operation_P1-P2", level_ops["P1-P2"], duration_ops)
+seq.add_points("operation_P4-P5", level_ops["P4-P5"], duration_ops)
+seq.add_points("operation_P3", level_ops["P3"], duration_ops)
 
 
 save_data_dict = {
     "sweep_gates": sweep_gates,
     "qubit": qubit,
-    "tank_circuit": tank_circuit,
+    "plungers": plungers,
     "n_pulses": n_pulses,
     "amp_scalilngs": amp_scalilngs,
     "n_avg": n_avg,
@@ -91,42 +100,52 @@ with program() as rabi_chevron:
     n = declare(int)  # QUA integer used as an index for the averaging loop
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
 
-    I = declare(fixed)
-    Q = declare(fixed)
-    I_st = declare_stream()
-    Q_st = declare_stream()
+    I = [declare(fixed) for _ in range(2)]  # QUA variable for the 'I' quadrature
+    Q = [declare(fixed) for _ in range(2)]  # QUA variable for the 'Q' quadrature
+    P = [declare(bool) for _ in range(2)]  # QUA variable for state discrimination
+    I_st = [declare_stream() for _ in range(num_output_streams)]
+    Q_st = [declare_stream() for _ in range(num_output_streams)]
+    P_st = [declare_stream() for _ in range(num_output_streams)]
 
-    assign_variables_to_element(tank_circuit, I, Q)
+    assign_variables_to_element(tank_circuits[0], I[0], Q[0])
+    assign_variables_to_element(tank_circuits[1], I[1], Q[1])
 
     with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
         save(n, n_st)
         with for_(*from_array(n_rabi, n_pulses)):  # Loop over the qubit pulse amplitude
             assign(d, max_tau_pulse - n_rabi * PI_LEN)
+
             with for_(*from_array(a, amp_scalilngs)):  # Loop over the qubit pulse duration
+
                 with strict_timing_():  # Ensure that the sequence will be played without gap
-                    # play("square_x180", qubit)
-                    # wait(PI_LEN * u.us, *sweep_gates)
+
+                    if full_read_init:
+                        # RI12 -> 2 x (R3 -> R12) -> RI45
+                        perform_initialization(I, Q, P, I_st[0], I_st[1], I_st[2])
+                    else:
+                        # RI12
+                        read_init12(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
 
                     # Navigate through the charge stability map
-                    seq.add_step(voltage_point_name="initialization")  # includes manipulation
-                    seq.add_step(voltage_point_name="readout")
-                    seq.add_compensation_pulse(duration=duration_compensation_pulse)
+                    seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops)
+                    other_elements = get_other_elements(elements_in_use=[qubit] + sweep_gates, all_elements=all_elements)
+                    wait(duration_ops >> 2, *other_elements)
 
                     # Drive the qubit by playing the MW pulse at the end of the manipulation step
-                    wait(delay_init_qubit * u.ns, qubit) if delay_init_qubit >= 16 else None
+                    wait(delay_ops_start * u.ns, qubit) if delay_ops_start >= 16 else None
                     wait(d >> 2, qubit)
-
                     with for_(m, 0, m < n_rabi, m + 1):
                         play("x180" * amp(a), qubit)
+                    wait(delay_ops_end * u.ns, qubit) if delay_ops_end >= 16 else None
 
-                    wait(delay_qubit_read * u.ns, qubit) if delay_qubit_read >= 16 else None
+                    if full_read_init:
+                        # RI12 -> R3 -> RI45
+                        perform_readout(I, Q, P, I_st[3], I_st[4], I_st[5])
+                    else:
+                        # RI12
+                        read_init12(I[0], Q[0], P[0], I_st[1], None, do_save=[True, False])
 
-                    # Measure the dot right after the qubit manipulation
-                    wait(duration_init * u.ns, tank_circuit)
-                    # Measure the dot right after the qubit manipulation
-                    measure("readout", tank_circuit, None, demod.full("cos", I, "out1"), demod.full("sin", Q, "out1"))
-                    save(I, I_st)
-                    save(Q, Q_st)
+                    seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
                 seq.ramp_to_zero()
                 wait(1 * u.us)
@@ -134,9 +153,11 @@ with program() as rabi_chevron:
     # Stream processing section used to process the data before saving it.
     with stream_processing():
         n_st.save("iteration")
-        # RF reflectometry
-        I_st.buffer(len(amp_scalilngs)).buffer(len(n_pulses)).average().save("I")
-        Q_st.buffer(len(amp_scalilngs)).buffer(len(n_pulses)).average().save("Q")
+        for k in range(num_output_streams):
+            I_st[k].buffer(len(amp_scalilngs)).buffer(len(n_pulses)).average().save(f"I{k + 1:d}")
+            # Q_st[k].buffer(len(amp_scalilngs)).buffer(len(n_pulses)).average().save(f"Q{k + 1:d}")
+            # P_st[k].buffer(len(amp_scalilngs)).buffer(len(n_pulses)).average().save(f"P{k + 1:d}")
+
 
 
 #####################################
@@ -197,7 +218,8 @@ else:
     )
 
     # Get results from QUA program
-    fetch_names = ["iteration", "I", "Q"]
+    fetch_names = ["iteration"]
+    fetch_names.extend([f"I{k + 1:d}" for k in range(num_output_streams)])
     results = fetching_tool(job, data_list=fetch_names, mode="live")
     # Live plotting
     fig = plt.figure()
