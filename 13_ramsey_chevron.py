@@ -121,10 +121,10 @@ with program() as rabi_chevron:
 
                     if full_read_init:
                         # RI12 -> 2 x (R3 -> R12) -> RI45
-                        perform_initialization(I, Q, P, I_st[0], I_st[1], I_st[2])
+                        perform_initialization(I, Q, P, I_st, Q_st, P_st)
                     else:
                         # RI12
-                        read_init12(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
+                        read_init12(I[0], Q[0], P[0], None, None, None, I_st[0], None, None, do_save=[False, True])
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops)
@@ -144,10 +144,10 @@ with program() as rabi_chevron:
 
                     if full_read_init:
                         # RI12 -> R3 -> RI45
-                        perform_readout(I, Q, P, I_st[3], I_st[4], I_st[5])
+                        perform_readout(I, Q, P, I_st, Q_st, P_st)
                     else:
                         # RI12
-                        read_init12(I[0], Q[0], P[0], I_st[1], None, do_save=[True, False])
+                        read_init12(I[0], Q[0], P[0], I_st[1], None, None, None, None, None, do_save=[True, False])
 
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
@@ -230,33 +230,31 @@ else:
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch results
-        iterations, I, Q = results.fetch_all()
+        iteration, I1, I2 = results.fetch_all()
         # Progress bar
-        progress_counter(iterations, n_avg, start_time=results.get_start_time())
+        progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle(f"Rabi Chevron {tank_circuit}")
-        S = I + 1j * Q
-        R = np.abs(S)  # np.unwarp(np.angle(S))
-        phase = signal.detrend(np.unwrap(np.angle(S)))
         # Plot results
         plt.subplot(2, 1, 1)
         plt.cla()
-        plt.title(r"$R=\sqrt{I^2 + Q^2}$ [V]")
-        plt.pcolor(durations, frequencies / u.MHz, R)
-        plt.ylabel("Detuning [MHz]")
+        plt.title("I (init) [V]")
+        plt.pcolor(durations, frequencies / u.MHz, I1)
+        plt.ylabel("Frequency [MHz]")
         plt.subplot(2, 1, 2)
         plt.cla()
-        plt.title("Phase [rad]")
-        plt.pcolor(durations, frequencies / u.MHz, phase)
-        plt.xlabel("Qubit pulse duration [ns]")
-        plt.ylabel("Detuning [MHz]")
+        plt.title("I (readout) [V]")
+        plt.pcolor(durations, frequencies / u.MHz, I2)
+        plt.xlabel("Idle duration [ns]")
+        plt.ylabel("Frequency [MHz]")
         plt.tight_layout()
         plt.pause(1)
 
     # Fetch results
-    _, I, Q = results.fetch_all()
-    save_data_dict["I"] = I
-    save_data_dict["Q"] = Q
+    iteration, I1, I2 = results.fetch_all()
+    save_data_dict["I1"] = I1
+    save_data_dict["I2"] = I2
+
 
     # Save results
     script_name = Path(__file__).name

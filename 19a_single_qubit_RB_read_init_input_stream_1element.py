@@ -37,14 +37,7 @@ do_simulate = False
 target_qubits = [qubit, qubit_trio1]
 num_target_qubits = len(target_qubits)
 
-try:
-    all_elements.remove("qubit1")
-    all_elements.remove("qubit2")
-    all_elements.remove("qubit3")
-    # all_elements.remove("tank_circuit1")
-    all_elements.append(qubit_trio1)
-except:
-    pass
+all_elements = adjust_all_elements(removes=["qubit1", "qubit2", "qubit3"], adds=qubit_trio1)
 
 n_avg = 5
 num_of_sequences = 3  # Number of random sequences
@@ -69,8 +62,8 @@ delay_rb_end_loop = 0
 
 
 duration_compensation_pulse_rb = 800_000 # duration_rb
-duration_compensation_pulse_full = int(0.7 * duration_compensation_pulse_initialization + duration_compensation_pulse_rb + duration_compensation_pulse_readout)
-duration_compensation_pulse_full = 100 * (duration_compensation_pulse_full // 100)
+duration_compensation_pulse = int(0.7 * duration_compensation_pulse_full_initialization + duration_compensation_pulse_rb + duration_compensation_pulse_full_readout)
+duration_compensation_pulse = 100 * (duration_compensation_pulse_full // 100)
 
 
 seq.add_points("operation_P1-P2", level_ops["P1-P2"], delay_rb_start_loop + delay_rb_end_loop)
@@ -132,8 +125,8 @@ with program() as PROGRAM_RB:
 
                     if full_read_init:
                         # RI12 -> 2 x (R3 -> R12) -> RI45
-                        perform_initialization(I, Q, P, I_st[0], I_st[1], I_st[2])
-                    else:                    # RI12 -> 2 x (R3 -> R12) -> RI45
+                        perform_initialization(I, Q, P, I_st, Q_st, P_st)
+                    else:
                         # RI12
                         read_init45(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
 
@@ -148,12 +141,12 @@ with program() as PROGRAM_RB:
 
                     if full_read_init:
                         # RI12 -> R3 -> RI45
-                        perform_readout(I, Q, P, I_st[3], I_st[4], I_st[5])
+                        perform_readout(I, Q, P, I_st, Q_st, P_st)
                     else:
                         # RI12
                         read_init45(I[0], Q[0], P[0], I_st[1], None, do_save=[True, False])
 
-                    seq.add_compensation_pulse(duration=duration_compensation_pulse_full)
+                    seq.add_compensation_pulse(duration=duration_compensation_pulse)
                 
                 # save(depth, depth)
                 # save(m, m_st)
@@ -164,7 +157,7 @@ with program() as PROGRAM_RB:
     with stream_processing():
         # depth_st.buffer(num_of_sequences).buffer(len(circuit_depths)).save("actual_circuit_depths")
         # m_st.buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save("num_sequence")
-        # n_st.buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save("iterations")
+        # n_st.buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save("iteration")
         for k in range(num_output_streams):
             I_st[k].buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save(f"I{k:d}")
 
@@ -205,7 +198,7 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(PROGRAM_RB, compiler_options=CompilerOptionArguments(flags=["not-strict-timing"]))
 
-    # fetch_names = ["num_sequence", "iterations"]
+    # fetch_names = ["num_sequence", "iteration"]
     # fetch_names.extend([f"I{k:d}" for k in range(num_output_streams)])
     fetch_names = [f"I{k:d}" for k in range(num_output_streams)]
 

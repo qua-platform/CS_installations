@@ -19,6 +19,80 @@ from macros import get_other_elements
 
 from configuration_with_lffem import *
 
+
+##################
+#   Parameters   #
+##################
+
+qubits = ["qubit1", "qubit2", "qubit3", "qubit4", "qubit5"]
+sweep_gates = ["P1_sticky", "P2_sticky", "P3_sticky", "P4_sticky", "P5_sticky"]
+barrier_gates = ["B2"]
+qp_controls = ["qp_control_c3t2"]
+tank_circuits = ['tank_circuit1', 'tank_circuit2']
+num_tank_circuits = len(TANK_CIRCUIT_CONSTANTS)
+all_elements = qubits + sweep_gates + barrier_gates + qp_controls + tank_circuits
+do_feedback = False # False for test. True for actual.
+
+
+delay_init_qubit_start = 16
+delay_feedback = 240
+delay_init_qubit_end = 16
+duration_init_1q = delay_init_qubit_start + delay_feedback + PI_LEN + delay_init_qubit_end
+duration_init_2q = delay_init_qubit_start + CROT_RF_LEN + delay_init_qubit_end
+assert delay_init_qubit_start == 0 or delay_init_qubit_start >= 16
+assert delay_init_qubit_end == 0 or delay_init_qubit_end >= 16
+
+
+delay_read_reflec_start = 16
+delay_read_reflec_end = 16
+delay_stream = 100
+duration_readout = delay_read_reflec_start + REFLECTOMETRY_READOUT_LEN + delay_read_reflec_end + delay_stream
+assert delay_read_reflec_start == 0 or delay_read_reflec_start >= 16
+assert delay_read_reflec_end == 0 or delay_read_reflec_end >= 16
+
+
+duration_wait = 200
+duration_compensation_pulse_readinit12 = duration_init_1q + 2 * duration_readout
+duration_compensation_pulse_readinit45 = duration_init_1q + 2 * duration_readout
+duration_compensation_pulse_readinit3 = duration_init_2q + duration_readout + duration_init_1q
+duration_compensation_pulse_full_initialization = 4 * duration_compensation_pulse_readinit12 + 2 * duration_compensation_pulse_readinit45
+duration_compensation_pulse_full_readout = 2 * duration_compensation_pulse_readinit12 + 1 * duration_compensation_pulse_readinit45
+
+
+# Points in the charge stability map [V1, V2]
+
+level_inits = {
+    "P1-P2": [-0.05, 0.05, 0.0, 0.0, 0.0],
+    "P3": [0.0, 0.0, -0.05, 0.0, 0.0],
+    "P4-P5": [0.0, 0.0, 0.0, -0.06, 0.04],
+}
+level_readouts = {
+    "P1-P2": [-0.01, 0.01, 0.0, 0.0, 0.0],
+    "P3": [-0.01, 0.01, 0.0, 0.0, 0.0],
+    "P4-P5": [0.0, 0.0, 0.0, -0.01, 0.01],
+}
+level_ops = level_inits
+level_waits = level_readouts
+
+
+seq = VoltageGateSequence(config, sweep_gates)
+seq.add_points("initialization_1q_P1-P2", level_inits["P1-P2"], duration_init_1q)
+seq.add_points("initialization_1q_P4-P5", level_inits["P4-P5"], duration_init_1q)
+seq.add_points("initialization_1q_P3", level_inits["P3"], duration_init_1q)
+
+seq.add_points("initialization_2q_P1-P2", level_inits["P1-P2"], duration_init_2q)
+seq.add_points("initialization_2q_P4-P5", level_inits["P4-P5"], duration_init_2q)
+seq.add_points("initialization_2q_P3", level_inits["P3"], duration_init_2q)
+
+seq.add_points("readout_P1-P2", level_readouts["P1-P2"], duration_readout)
+seq.add_points("readout_P3", level_readouts["P3"], duration_readout)
+seq.add_points("readout_P4-P5", level_readouts["P4-P5"], duration_readout)
+
+seq.add_points("wait_P1-P2", level_waits["P1-P2"], duration_wait)
+seq.add_points("wait_P3", level_waits["P3"], duration_wait)
+seq.add_points("wait_P4-P5", level_waits["P4-P5"], duration_wait)
+
+
 ###################
 #  Util funciton  #
 ###################
@@ -68,132 +142,97 @@ def get_encoded_circuit(row):
     return _encoded_circuit, seq_len, C, P, G, d, M, Ph4, Ph
 
 
+def adjust_all_elements(removes=[], adds=[], all_elements=all_elements):
+    
+    if isinstance(removes, str):
+        removes = [removes]
 
-##################
-#   Parameters   #
-##################
-n_shots = 2  # Number of averages
+    if isinstance(adds, str):
+        adds = [adds]    
+    
+    try:
+        if len(removes) >= 1:
+            for r in removes:
+                all_elements.remove(r)
 
-qubits = ["qubit1", "qubit2", "qubit3", "qubit4", "qubit5"]
-sweep_gates = ["P1_sticky", "P2_sticky", "P3_sticky", "P4_sticky", "P5_sticky"]
-barrier_gates = ["B2"]
-qp_controls = ["qp_control_c3t2"]
-tank_circuits = ['tank_circuit1', 'tank_circuit2']
-num_tank_circuits = len(TANK_CIRCUIT_CONSTANTS)
-all_elements = qubits + sweep_gates + barrier_gates + qp_controls + tank_circuits
-do_feedback = False # False for test. True for actual.
-
-
-delay_init_qubit_start = 16
-delay_feedback = 240
-delay_init_qubit_end = 16
-duration_init_1q = delay_init_qubit_start + delay_feedback + PI_LEN + delay_init_qubit_end
-duration_init_2q = delay_init_qubit_start + CROT_RF_LEN + delay_init_qubit_end
-assert delay_init_qubit_start == 0 or delay_init_qubit_start >= 16
-assert delay_init_qubit_end == 0 or delay_init_qubit_end >= 16
+        if len(adds) >= 1:
+            for a in adds:
+                all_elements.append(a)
+    except:
+        pass
+    
+    print("all_elements = ", all_elements)
+    return all_elements
 
 
-delay_read_reflec_start = 16
-delay_read_reflec_end = 16
-delay_stream = 100
-duration_readout = delay_read_reflec_start + REFLECTOMETRY_READOUT_LEN + delay_read_reflec_end + delay_stream
-assert delay_read_reflec_start == 0 or delay_read_reflec_start >= 16
-assert delay_read_reflec_end == 0 or delay_read_reflec_end >= 16
+###################
+#   Read & Init   #
+###################
 
 
-duration_wait = 200
-duration_compensation_pulse_initialization = 4 * (duration_init_1q + 2 * duration_readout) + 2 * (duration_init_2q + duration_readout + duration_init_1q)
-duration_compensation_pulse_readout = 2 * (duration_init_1q + 2 * duration_readout) + 1 * (duration_init_2q + duration_readout + duration_init_1q)
-
-
-# Points in the charge stability map [V1, V2]
-
-level_inits = {
-    "P1-P2": [-0.05, 0.05, 0.0, 0.0, 0.0],
-    "P3": [0.0, 0.0, -0.05, 0.0, 0.0],
-    "P4-P5": [0.0, 0.0, 0.0, -0.06, 0.04],
-}
-level_readouts = {
-    "P1-P2": [-0.01, 0.01, 0.0, 0.0, 0.0],
-    "P3": [-0.01, 0.01, 0.0, 0.0, 0.0],
-    "P4-P5": [0.0, 0.0, 0.0, -0.01, 0.01],
-}
-level_ops = level_inits
-level_waits = level_readouts
-
-
-seq = VoltageGateSequence(config, sweep_gates)
-seq.add_points("initialization_1q_P1-P2", level_inits["P1-P2"], duration_init_1q)
-seq.add_points("initialization_1q_P4-P5", level_inits["P4-P5"], duration_init_1q)
-seq.add_points("initialization_1q_P3", level_inits["P3"], duration_init_1q)
-
-seq.add_points("initialization_2q_P1-P2", level_inits["P1-P2"], duration_init_2q)
-seq.add_points("initialization_2q_P4-P5", level_inits["P4-P5"], duration_init_2q)
-seq.add_points("initialization_2q_P3", level_inits["P3"], duration_init_2q)
-
-seq.add_points("readout_P1-P2", level_readouts["P1-P2"], duration_readout)
-seq.add_points("readout_P3", level_readouts["P3"], duration_readout)
-seq.add_points("readout_P4-P5", level_readouts["P4-P5"], duration_readout)
-
-seq.add_points("wait_P1-P2", level_waits["P1-P2"], duration_wait)
-seq.add_points("wait_P3", level_waits["P3"], duration_wait)
-seq.add_points("wait_P4-P5", level_waits["P4-P5"], duration_wait)
-
-
-
-def perform_initialization(I, Q, P, I1_st, I2_st, I3_st):
+def perform_initialization(I, Q, P, I_st, Q_st, P_st):
     qua_vars1 = I[0], Q[0], P[0] # tank_circuit1
     qua_vars2 = I[1], Q[1], P[1] # tank_circuit2
+    qua_st_vars1 = I_st[0], Q_st[0], P_st[0]
+    qua_st_vars2 = I_st[1], Q_st[1], P_st[1]
+    qua_st_vars3 = I_st[2], Q_st[2], P_st[2]
+    Nones = [None, None, None]
 
-    read_init12(*qua_vars1, None, None, do_save=[False, False])  # save_count = 2 -> 2
+    read_init12(*qua_vars1, *Nones, *Nones, do_save=[False, False])  # save_count = 2 -> 2
     # wait_after_read_init(plungers="P1-P2")
 
     # 1st
-    read_init3(*qua_vars1, None, do_save=False)  # save_count = 1 -> 3
+    read_init3(*qua_vars1, *Nones, do_save=False)  # save_count = 1 -> 3
     # wait_after_read_init(plungers="P3")
 
-    read_init12(*qua_vars1, None, None, do_save=[False, False])  # save_count = 2 -> 5
+    read_init12(*qua_vars1, *Nones, *Nones, do_save=[False, False])  # save_count = 2 -> 5
     # wait_after_read_init(plungers="P1-P2")
 
     # 2nd
-    read_init3(*qua_vars1, I1_st, do_save=True)  # save_count = 1 -> 6
+    read_init3(*qua_vars1, *qua_st_vars1, do_save=True)  # save_count = 1 -> 6
     # wait_after_read_init(plungers="P3")
 
-    read_init12(*qua_vars1, None, I2_st, do_save=[False, True])  # save_count = 2 -> 8
+    read_init12(*qua_vars1, *Nones, *qua_st_vars2, do_save=[False, True])  # save_count = 2 -> 8
     # wait_after_read_init(plungers="P1-P2")
 
-    read_init45(*qua_vars2, None, I3_st, do_save=[False, True])  # save_count = 2 -> 10
+    read_init45(*qua_vars2, *Nones, *qua_st_vars3, do_save=[False, True])  # save_count = 2 -> 10
     # wait_after_read_init(plungers="P4-P5")
 
 
-def perform_readout(I, Q, P, I1_st, I2_st, I3_st):
+def perform_readout(I, Q, P, I_st, Q_st, P_st):
     qua_vars1 = I[0], Q[0], P[0] # tank_circuit1
     qua_vars2 = I[1], Q[1], P[1] # tank_circuit2
+    qua_st_vars1 = I_st[3], Q_st[3], P_st[3]
+    qua_st_vars2 = I_st[4], Q_st[4], P_st[4]
+    qua_st_vars3 = I_st[5], Q_st[5], P_st[5]
+    Nones = [None, None, None]
 
-    read_init12(*qua_vars1, I1_st, None, do_save=[True, False])  # save_count = 2 -> 12
+    read_init12(*qua_vars1, *qua_st_vars1, *Nones, do_save=[True, False])  # save_count = 2 -> 12
     # wait_after_read_init(plungers="P1-P2")
 
-    read_init3(*qua_vars1, I2_st, do_save=True)  # save_count = 1 -> 13
+    read_init3(*qua_vars1, *qua_st_vars2, do_save=True)  # save_count = 1 -> 13
     # wait_after_read_init(plungers="P1-P2")
 
-    read_init45(*qua_vars2, I3_st, None, do_save=[True, False])  # save_count = 2 -> 15
+    read_init45(*qua_vars2, *qua_st_vars3, *Nones, do_save=[True, False])  # save_count = 2 -> 15
     # wait_after_read_init(plungers="P4-P5")
 
 
-def read_init12(I, Q, P, I1_st, I2_st, do_save=[False, False]):
+def read_init12(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st, do_save=[False, False]):
     qua_vars = I, Q, P
+    qua_st_vars1 = I1_st, Q1_st, P1_st
+    qua_st_vars2 = I2_st, Q2_st, P2_st
 
     plungers = "P1-P2"
     threshold = TANK_CIRCUIT_CONSTANTS["tank_circuit1"]["threshold"]
     other_elements = get_other_elements(elements_in_use=["qubit1", "tank_circuit1"] + sweep_gates, all_elements=all_elements)
 
-    P = measure_parity(*qua_vars, I1_st, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold, do_save=do_save[0])
+    P = measure_parity(*qua_vars, *qua_st_vars1, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold, do_save=do_save[0])
     wait(duration_readout * u.ns, "qubit1")
 
     play_feedback(plungers=plungers, qubit="qubit1", parity=P)    
     wait(duration_init_1q * u.ns, "tank_circuit1")
 
-    P = measure_parity(*qua_vars, I2_st, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold, do_save=do_save[1])
+    P = measure_parity(*qua_vars, *qua_st_vars2, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold, do_save=do_save[1])
     wait(duration_readout * u.ns, "qubit1")
 
     wait((duration_init_1q + 2 * duration_readout) * u.ns, *other_elements)
@@ -201,21 +240,23 @@ def read_init12(I, Q, P, I1_st, I2_st, do_save=[False, False]):
     return P
 
 
-def read_init45(I, Q, P, I1_st, I2_st, do_save=[False, False]):
+def read_init45(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st, do_save=[False, False]):
     qua_vars = I, Q, P
+    qua_st_vars1 = I1_st, Q1_st, P1_st
+    qua_st_vars2 = I2_st, Q2_st, P2_st
 
     plungers = "P4-P5"
     tank_circuit = "tank_circuit2"
     threshold = TANK_CIRCUIT_CONSTANTS["tank_circuit2"]["threshold"]
     other_elements = get_other_elements(elements_in_use=["qubit5", "tank_circuit2"] + sweep_gates, all_elements=all_elements)
 
-    P = measure_parity(*qua_vars, I1_st, plungers=plungers, tank_circuit=tank_circuit, threshold=threshold, do_save=do_save[0])
+    P = measure_parity(*qua_vars, *qua_st_vars1, plungers=plungers, tank_circuit=tank_circuit, threshold=threshold, do_save=do_save[0])
     wait(duration_readout * u.ns, "qubit5")
 
     play_feedback(plungers=plungers, qubit="qubit5", parity=P)
     wait(duration_init_1q * u.ns, "tank_circuit2")
 
-    P = measure_parity(*qua_vars, I2_st, plungers=plungers, tank_circuit=tank_circuit, threshold=threshold, do_save=do_save[1])
+    P = measure_parity(*qua_vars, *qua_st_vars2, plungers=plungers, tank_circuit=tank_circuit, threshold=threshold, do_save=do_save[1])
     wait(duration_readout * u.ns, "qubit5")
 
     wait((duration_init_1q + 2 * duration_readout) * u.ns, *other_elements)
@@ -223,8 +264,9 @@ def read_init45(I, Q, P, I1_st, I2_st, do_save=[False, False]):
     return P
 
 
-def read_init3(I, Q, P, I_st, do_save=False):
+def read_init3(I, Q, P, I_st, Q_st, P_st, do_save=False):
     qua_vars = I, Q, P
+    qua_st_vars = I_st, Q_st, P_st
 
     plungers = "P3"
     threshold = TANK_CIRCUIT_CONSTANTS["tank_circuit1"]["threshold"]
@@ -233,7 +275,7 @@ def read_init3(I, Q, P, I_st, do_save=False):
     play_CNOT_c3t2(plungers=plungers)
     wait(duration_init_2q * u.ns, "tank_circuit1", "qubit3")
 
-    P = measure_parity(*qua_vars, I_st, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold, do_save=do_save)
+    P = measure_parity(*qua_vars, *qua_st_vars, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold, do_save=do_save)
     wait(duration_readout * u.ns, "B2", "qp_control_c3t2", "qubit3")
 
     play_feedback(plungers=plungers, qubit="qubit3", parity=P)
@@ -273,7 +315,7 @@ def wait_after_read_init(plungers):
     wait(duration_wait * u.ns, *other_elements)
 
 
-def measure_parity(I, Q, P, I_st, plungers, tank_circuit, threshold, do_save=False):
+def measure_parity(I, Q, P, I_st, Q_st, P_st, plungers, tank_circuit, threshold, do_save=False):
     # Play the triangle
     # seq.add_step(voltage_point_name=f"initialization_1q_{plungers}")
     seq.add_step(voltage_point_name=f"readout_{plungers}")
@@ -293,7 +335,9 @@ def measure_parity(I, Q, P, I_st, plungers, tank_circuit, threshold, do_save=Fal
 
     if do_save and I_st is not None:
         save(I, I_st)
-        # save(Q, Q_st)
-        # save(P, P_st)
+    if do_save and Q_st is not None:
+        save(Q, Q_st)
+    if do_save and P_st is not None:
+        save(P, P_st)
 
     return P

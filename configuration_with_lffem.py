@@ -92,12 +92,16 @@ STEP_AMP = 0.25
 CONST_AMP = 0.1  # in V
 CONST_LEN = 100  # in ns
 
-SQUARE_X180_AMP = 0.40 / 2
-SQUARE_X90_AMP = 0.20 / 2
-SQUARE_MINUS_X90_AMP = -0.20 / 2
-SQUARE_Y180_AMP = 0.35 / 2
-SQUARE_Y90_AMP = 0.175 / 2
-SQUARE_MINUS_Y90_AMP = -0.175 / 2
+# Saturation pulse
+SATURATION_AMP = 0.1
+SATURATION_LEN = 10_000
+
+SQUARE_X180_AMP = 0.40 
+SQUARE_X90_AMP = 0.20 
+SQUARE_MINUS_X90_AMP = -0.20 
+SQUARE_Y180_AMP = 0.35 
+SQUARE_Y90_AMP = 0.175 
+SQUARE_MINUS_Y90_AMP = -0.175 
 SQUARE_LEN = 52
 
 PI_AMP = 0.1
@@ -799,6 +803,7 @@ config = {
                 "intermediate_frequency": val["IF"],
                 "operations": {
                     "const": "const_pulse",
+                    "saturation": "saturation_pulse",
                     "x180_kaiser": f"x180_kaiser_pulse_{qb}",
                     "x90_kaiser": f"x90_kaiser_pulse_{qb}",
                     "-x90_kaiser": f"minus_x90_kaiser_pulse_{qb}",
@@ -841,6 +846,7 @@ config = {
                 "intermediate_frequency": val["IF"],
                 "operations": {
                     "const": "const_pulse",
+                    "saturation": "saturation_pulse",
                     "x180_kaiser": f"x180_kaiser_pulse_{qb}",
                     "x90_kaiser": f"x90_kaiser_pulse_{qb}",
                     "-x90_kaiser": f"minus_x90_kaiser_pulse_{qb}",
@@ -883,6 +889,7 @@ config = {
                 "intermediate_frequency": val["IF"],
                 "operations": {
                     "const": "const_pulse",
+                    "saturation": "saturation_pulse",
                     "x180_kaiser": f"x180_kaiser_pulse_{qb}",
                     "x90_kaiser": f"x90_kaiser_pulse_{qb}",
                     "-x90_kaiser": f"minus_x90_kaiser_pulse_{qb}",
@@ -895,12 +902,12 @@ config = {
                     "y180_gauss": f"y180_gaussian_pulse_{qb}",
                     "y90_gauss": f"y90_gaussian_pulse_{qb}",
                     "-y90_gauss": f"minus_y90_gaussian_pulse_{qb}",
-                    "x180_square": f"square_x180_pulse",
-                    "x90_square": f"square_x90_pulse",
-                    "-x90_square": f"square_minus_x90_pulse",
-                    "y180_square": f"square_y180_pulse",
-                    "y90_square": f"square_y90_pulse",
-                    "-y90_square": f"square_minus_y90_pulse",
+                    "x180_square": f"square_x180_pulse_trio2",
+                    "x90_square": f"square_x90_pulse_trio2",
+                    "-x90_square": f"square_minus_x90_pulse_trio2",
+                    "y180_square": f"square_y180_pulse_trio2",
+                    "y90_square": f"square_y90_pulse_trio2",
+                    "-y90_square": f"square_minus_y90_pulse_trio2",
                 },
                 # "thread": qb,
             }
@@ -1302,6 +1309,14 @@ config = {
                 "Q": "zero_wf",
             },
         },
+        "saturation_pulse": {
+            "operation": "control",
+            "length": SATURATION_LEN,
+            "waveforms": {
+                "I": "saturation_wf",
+                "Q": "zero_wf",
+            },
+        },
         "square_x180_pulse": {
             "operation": "control",
             "length": SQUARE_LEN,
@@ -1398,6 +1413,54 @@ config = {
                 "Q": "zero_wf",
             },
         },
+        "square_x180_pulse_trio2": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_x180_I_wf_trio2",
+                "Q": "zero_wf",
+            },
+        },
+        "square_x90_pulse_trio2": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_x90_I_wf_trio2",
+                "Q": "zero_wf",
+            },
+        },
+        "square_minus_x90_pulse_trio2": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_minus_x90_I_wf_trio2",
+                "Q": "zero_wf",
+            },
+        },
+        "square_y180_pulse_trio2": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_y180_I_wf_trio2",
+                "Q": "zero_wf",
+            },
+        },
+        "square_y90_pulse_trio2": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_y90_I_wf_trio2",
+                "Q": "zero_wf",
+            },
+        },
+        "square_minus_y90_pulse_trio2": {
+            "operation": "control",
+            "length": SQUARE_LEN,
+            "waveforms": {
+                "I": "square_minus_y90_I_wf_trio2",
+                "Q": "zero_wf",
+            },
+        },
         "trigger_pulse": {
             "operation": "control",
             "length": 1000,
@@ -1407,6 +1470,7 @@ config = {
     "waveforms": {
         "zero_wf": {"type": "constant", "sample": 0.0},
         "const_wf": {"type": "constant", "sample": CONST_AMP},
+        "saturation_wf": {"type": "constant", "sample": SATURATION_AMP},
         
         "square_x180_I_wf": {"type": "constant", "sample": SQUARE_X180_AMP},
         "square_x90_I_wf": {"type": "constant", "sample": SQUARE_X90_AMP},
@@ -1415,12 +1479,19 @@ config = {
         "square_y90_I_wf": {"type": "constant", "sample": SQUARE_Y90_AMP},
         "square_minus_y90_I_wf": {"type": "constant", "sample": SQUARE_MINUS_Y90_AMP},
         
-        "square_x180_I_wf_trio1": {"type": "constant", "sample": SQUARE_X180_AMP / 2},
-        "square_x90_I_wf_trio1": {"type": "constant", "sample": SQUARE_X90_AMP / 2},
-        "square_minus_x90_I_wf_trio1": {"type": "constant", "sample": SQUARE_MINUS_X90_AMP / 2},
-        "square_y180_I_wf_trio1": {"type": "constant", "sample": SQUARE_Y180_AMP / 2},
-        "square_y90_I_wf_trio1": {"type": "constant", "sample": SQUARE_Y90_AMP / 2},
-        "square_minus_y90_I_wf_trio1": {"type": "constant", "sample": SQUARE_MINUS_Y90_AMP / 2},
+        "square_x180_I_wf_trio1": {"type": "constant", "sample": 2 * SQUARE_X180_AMP / 3},
+        "square_x90_I_wf_trio1": {"type": "constant", "sample": 2 * SQUARE_X90_AMP / 3},
+        "square_minus_x90_I_wf_trio1": {"type": "constant", "sample": 2 * SQUARE_MINUS_X90_AMP / 3},
+        "square_y180_I_wf_trio1": {"type": "constant", "sample": 2 * SQUARE_Y180_AMP / 3},
+        "square_y90_I_wf_trio1": {"type": "constant", "sample": 2 * SQUARE_Y90_AMP / 3},
+        "square_minus_y90_I_wf_trio1": {"type": "constant", "sample": 2 * SQUARE_MINUS_Y90_AMP / 3},
+        
+        "square_x180_I_wf_trio2": {"type": "constant", "sample": SQUARE_X180_AMP / 3},
+        "square_x90_I_wf_trio2": {"type": "constant", "sample": SQUARE_X90_AMP / 3},
+        "square_minus_x90_I_wf_trio2": {"type": "constant", "sample": SQUARE_MINUS_X90_AMP / 3},
+        "square_y180_I_wf_trio2": {"type": "constant", "sample": SQUARE_Y180_AMP / 3},
+        "square_y90_I_wf_trio2": {"type": "constant", "sample": SQUARE_Y90_AMP / 3},
+        "square_minus_y90_I_wf_trio2": {"type": "constant", "sample": SQUARE_MINUS_Y90_AMP / 3},
         
         **{f"reflectometry_readout_wf_{key}": {"type": "constant", "sample": val["readout_amp"]} for key, val in TANK_CIRCUIT_CONSTANTS.items()},
         **{f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]} for key, val in PLUNGER_CONSTANTS.items()},

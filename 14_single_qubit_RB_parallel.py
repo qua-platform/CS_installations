@@ -72,8 +72,8 @@ delay_rb_end_loop = 60 # 108
 
 
 duration_compensation_pulse_rb = 800_000 # duration_rb
-duration_compensation_pulse_full = int(0.3 * duration_compensation_pulse_initialization + duration_compensation_pulse_rb + duration_compensation_pulse_readout)
-duration_compensation_pulse_full = 100 * (duration_compensation_pulse_full // 100)
+duration_compensation_pulse = int(0.3 * duration_compensation_pulse_full_initialization + duration_compensation_pulse_rb + duration_compensation_pulse_full_readout)
+duration_compensation_pulse = 100 * (duration_compensation_pulse_full // 100)
 
 
 seq.add_points("operation_P1-P2", level_ops["P1-P2"], delay_rb_start_loop + delay_rb_end_loop)
@@ -328,7 +328,7 @@ with program() as rb:
     m_st = declare_stream()
     I_st = [declare_stream() for _ in range(num_output_streams)]
     Q_st = [declare_stream() for _ in range(num_output_streams)]
-    state_st = [declare_stream() for _ in range(num_output_streams)]
+    P_st = [declare_stream() for _ in range(num_output_streams)]
 
     with for_(*from_array(depth1, circuit_depths)):  # Loop over the depths
         assign(depth2, depth1)
@@ -349,48 +349,47 @@ with program() as rb:
 
             with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
                 
-                play("x180_square", "qubit5")
-                other_elements = get_other_elements(elements_in_use=["qubit5"], all_elements=all_elements)
-                wait(PI_LEN * u.ns, *other_elements)
+                # play("x180_square", "qubit5")
+                # other_elements = get_other_elements(elements_in_use=["qubit5"], all_elements=all_elements)
+                # wait(PI_LEN * u.ns, *other_elements)
 
                 with strict_timing_():
 
                     if full_read_init:
                         # RI12 -> 2 x (R3 -> R12) -> RI45
-                        perform_initialization(I, Q, P, I_st[0], I_st[1], I_st[2])
+                        perform_initialization(I, Q, P, I_st, Q_st, P_st)
                     else:
                         # RI12
                         read_init45(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
 
-                    play("x180_square", "qubit5")
-                    other_elements = get_other_elements(elements_in_use=["qubit5"], all_elements=all_elements)
-                    wait(PI_LEN * u.ns, *other_elements)
+                    # play("x180_square", "qubit5")
+                    # other_elements = get_other_elements(elements_in_use=["qubit5"], all_elements=all_elements)
+                    # wait(PI_LEN * u.ns, *other_elements)
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops)
-
                     other_elements = get_other_elements(elements_in_use=target_qubits + sweep_gates, all_elements=all_elements)
                     wait(duration_ops >> 2, *other_elements)
 
                     play_sequence(sequence_list1, depth1, qb=target_qubits[0])
                     play_sequence(sequence_list2, depth2, qb=target_qubits[1])
 
-                    play("x180_square", "qubit5")
-                    other_elements = get_other_elements(elements_in_use=["qubit5"], all_elements=all_elements)
-                    wait(PI_LEN * u.ns, *other_elements)
+                    # play("x180_square", "qubit5")
+                    # other_elements = get_other_elements(elements_in_use=["qubit5"], all_elements=all_elements)
+                    # wait(PI_LEN * u.ns, *other_elements)
 
                     if full_read_init:
                         # RI12 -> R3 -> RI45
-                        perform_readout(I, Q, P, I_st[3], I_st[4], I_st[5])
+                        perform_readout(I, Q, P, I_st, Q_st, P_st)
                     else:
                         # RI12
                         read_init45(I[0], Q[0], P[0], I_st[1], None, do_save=[True, False])
 
-                    play("x180_square", "qubit5")
-                    other_elements = get_other_elements(elements_in_use=["qubit5"], all_elements=all_elements)
-                    wait(PI_LEN * u.ns, *other_elements)
+                    # play("x180_square", "qubit5")
+                    # other_elements = get_other_elements(elements_in_use=["qubit5"], all_elements=all_elements)
+                    # wait(PI_LEN * u.ns, *other_elements)
 
-                    seq.add_compensation_pulse(duration=duration_compensation_pulse_full)
+                    seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
                 seq.ramp_to_zero()
                 wait(1000 * u.ns)

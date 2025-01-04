@@ -29,41 +29,58 @@ Before proceeding to the next node:
 """
 
 import matplotlib.pyplot as plt
-from qm import QuantumMachinesManager, SimulationConfig
+from qm import CompilerOptionArguments, QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import (fetching_tool, progress_counter,
-                                   wait_until_job_is_paused)
+from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.results.data_handler import DataHandler
+from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy import signal
 
+from macros_initialization_and_readout import *
 from configuration_with_lffem import *
 
 ###################
 # The QUA program #
 ###################
 
-qubit = "qubit3"
+qubit = "qubit1"
+plungers = "P1-P2"
+tank_circuit = "tank_circuit1"
+do_feedback = False # False for test. True for actual.
+full_read_init = False
+num_output_streams = 1
+do_simulate = True
+all_elements = adjust_all_elements(removes=["qubit3", "qubit4", "qubit5"])
+
 n_avg = 100
 # The frequency axis
 frequencies = np.linspace(50 * u.MHz, 350 * u.MHz, 101)
 
-# Delay in ns before stepping to the readout point after playing the qubit pulse - must be a multiple of 4ns and >= 16ns
-delay_before_readout = 16
 
-sweep_gates = ["P1_sticky", "P2_sticky"]
-seq = VoltageGateSequence(config, sweep_gates)
-seq.add_points("initialization", level_init, duration_init)
-seq.add_points("readout", level_readout, duration_readout)
+# duration_init includes the manipulation
+delay_ops_start = 16
+delay_ops_end = 16
+duration_ops = delay_ops_start + CONST_LEN + delay_ops_end
+assert delay_ops_start == 0 or delay_ops_start >= 16
+assert delay_ops_end == 0 or delay_ops_end >= 16
 
-tank_circuits = ["tank_circuit1", "tank_circuit2"]
-num_tank_circuits = len(tank_circuits)
+
+duration_compensation_pulse_ops = duration_ops
+duration_compensation_pulse = int(0.7 * duration_compensation_pulse_full_initialization + duration_compensation_pulse_ops + duration_compensation_pulse_full_readout)
+duration_compensation_pulse = 100 * (duration_compensation_pulse // 100)
+
+
+seq.add_points("operation_P1-P2", level_ops["P1-P2"], duration_ops)
+seq.add_points("operation_P4-P5", level_ops["P4-P5"], duration_ops)
+seq.add_points("operation_P3", level_ops["P3"], duration_ops)
 
 save_data_dict = {
     "sweep_gates": sweep_gates,
-    "tank_circuits": tank_circuits,
+    "qubit": qubit,
+    "plungers": plungers,
     "frequencies": frequencies,
     "n_avg": n_avg,
     "config": config,
@@ -71,62 +88,67 @@ save_data_dict = {
 
 
 with program() as qubit_spectroscopy_prog:
+    f = declare(int)  # QUA variable for the qubit drive amplitude
     n = declare(int)  # QUA integer used as an index for the averaging loop
-    f = declare(int)  # QUA variable for the qubit pulse duration
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
-    I = [declare(fixed) for _ in range(num_tank_circuits)]
-    Q = [declare(fixed) for _ in range(num_tank_circuits)]
-    I_st = [declare_stream() for _ in range(num_tank_circuits)]
-    Q_st = [declare_stream() for _ in range(num_tank_circuits)]
+
+    I = [declare(fixed) for _ in range(2)]  # QUA variable for the 'I' quadrature
+    Q = [declare(fixed) for _ in range(2)]  # QUA variable for the 'Q' quadrature
+    P = [declare(bool) for _ in range(2)]  # QUA variable for state discrimination
+    I_st = [declare_stream() for _ in range(num_output_streams)]
+    Q_st = [declare_stream() for _ in range(num_output_streams)]
+    P_st = [declare_stream() for _ in range(num_output_streams)]
+
+    assign_variables_to_element(tank_circuits[0], I[0], Q[0])
+    assign_variables_to_element(tank_circuits[1], I[1], Q[1])
 
     with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
+        save(n, n_st)
 
         with for_(*from_array(f, frequencies)):  # Loop over the qubit pulse amplitude
             update_frequency(qubit, f)
-
+            
             with strict_timing_():  # Ensure that the sequence will be played without gap
+
                 # Navigate through the charge stability map
-                seq.add_step(voltage_point_name="initialization")
-                seq.add_step(voltage_point_name="readout")
-                seq.add_compensation_pulse(duration=duration_compensation_pulse)
+                seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops)
+                other_elements = get_other_elements(elements_in_use=[qubit] + sweep_gates, all_elements=all_elements)
+                wait(duration_ops >> 2, *other_elements)
 
                 # Drive the qubit by playing the MW pulse at the end of the manipulation step
-                wait((duration_init - delay_before_readout - CONST_LEN) * u.ns, qubit)
+                wait(delay_ops_start * u.ns, qubit) if delay_ops_start >= 16 else None
                 play("const", qubit)
+                wait(delay_ops_end * u.ns, qubit) if delay_ops_end >= 16 else None
 
-                # Measure the dot right after the qubit manipulation
-                wait(duration_init * u.ns, *tank_circuits)
-                # Measure the dot right after the qubit manipulation
-                for j, tc in enumerate(tank_circuits):
-                    measure(
-                        "readout",
-                        tc,
-                        None,
-                        demod.full("cos", I[j], "out1"),
-                        demod.full("sin", Q[j], "out1"),
-                    )
-                    save(I[j], I_st[j])
-                    save(Q[j], Q_st[j])
+                if full_read_init:
+                    # RI12 -> R3 -> RI45
+                    perform_readout(I, Q, P, I_st, Q_st, P_st)
+                else:
+                    # RI12
+                    read_init12(I[0], Q[0], P[0], I_st[0], Q_st[0], P_st[0], None, None, None, do_save=[True, False])
+
+                seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
             seq.ramp_to_zero()
-
-        save(n, n_st)
+            wait(1 * u.us)
 
     # Stream processing section used to process the data before saving it.
     with stream_processing():
         n_st.save("iteration")
-        # RF reflectometry
-        for j, tc in enumerate(tank_circuits):
-            I_st[j].buffer(len(frequencies)).average().save(f"I_{tc}")
-            Q_st[j].buffer(len(frequencies)).average().save(f"Q_{tc}")
-
-
+        for k in range(num_output_streams):
+            I_st[k].buffer(len(frequencies)).average().save(f"I{k + 1:d}")
+            Q_st[k].buffer(len(frequencies)).average().save(f"Q{k + 1:d}")
+            P_st[k].buffer(len(frequencies)).average().save(f"P{k + 1:d}")
+            
+            
+            
 #####################################
 #  Open Communication with the QOP  #
 #####################################
 qmm = QuantumMachinesManager(
     host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
 )
+
 
 ###########################
 # Run or Simulate Program #
@@ -171,48 +193,54 @@ else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(qubit_spectroscopy_prog)
+    job = qm.execute(
+        qubit_spectroscopy_prog,
+        compiler_options=CompilerOptionArguments(flags=["not-strict-timing"]),
+    )
 
     # Get results from QUA program
     fetch_names = ["iteration"]
-    for tc in tank_circuits:
-        fetch_names.append(f"I_{tc}")
-        fetch_names.append(f"Q_{tc}")
+    fetch_names.extend([f"I{k + 1:d}" for k in range(num_output_streams)])
     results = fetching_tool(job, data_list=fetch_names, mode="live")
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch results
-        res = results.fetch_all()
+        iteration, I1, Q1, P1 = results.fetch_all()
         # Progress bar
-        progress_counter(res[0], n_avg, start_time=results.get_start_time())
+        progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle("RF-reflectometry spectroscopy")
-        for ind, tc in enumerate(tank_circuits):
-            S = res[2 * ind + 1] + 1j * res[2 * ind + 2]
-            R = np.abs(S)  # np.unwarp(np.angle(S))
-            phase = signal.detrend(np.unwrap(np.angle(S)))
-            # Plot results
-            plt.subplot(2, 2, ind + 1)
-            plt.cla()
-            plt.plot(frequencies / u.MHz, R)
-            plt.xlabel("Readout frequency [MHz]")
-            plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
-            plt.title(tc)
-            plt.subplot(2, 2, ind + 3)
-            plt.cla()
-            plt.plot(frequencies / u.MHz, signal.detrend(np.unwrap(phase)))
-            plt.xlabel("Readout frequency [MHz]")
-            plt.ylabel("Phase [rad]")
+        S = I1 + 1j * Q1
+        R = np.abs(S)  # np.unwarp(np.angle(S))
+        phase = signal.detrend(np.unwrap(np.angle(S)))
+        # Plot results
+        plt.subplot(3, 1, 1)
+        plt.cla()
+        plt.plot(frequencies / u.MHz, R)
+        plt.xlabel("Readout frequency [MHz]")
+        plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
+        plt.title(tank_circuit)
+        plt.subplot(3, 1, 2)
+        plt.cla()
+        plt.plot(frequencies / u.MHz, signal.detrend(np.unwrap(phase)))
+        plt.xlabel("Readout frequency [MHz]")
+        plt.ylabel("Phase [rad]")
+        plt.subplot(3, 1, 3)
+        plt.cla()
+        plt.plot(frequencies / u.MHz, P1)
+        plt.xlabel("Readout frequency [MHz]")
+        plt.ylabel("Parity")
         plt.tight_layout()
-        plt.pause(0.1)
+        plt.pause(1)
 
     # Fetch results
-    res = results.fetch_all()
+    iteration, I1, Q1, P1 = results.fetch_all()
     for ind, tc in enumerate(tank_circuits):
-        save_data_dict[f"I_{tc}"] = res[2 * ind + 1]
-        save_data_dict[f"Q_{tc}"] = res[2 * ind + 2]
+        save_data_dict["I"] = I1
+        save_data_dict["Q"] = Q1
+        save_data_dict["P"] = P1
 
     # Save results
     script_name = Path(__file__).name

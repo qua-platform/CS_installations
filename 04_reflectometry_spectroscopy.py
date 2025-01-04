@@ -132,7 +132,7 @@ else:
         plt.xlabel("Readout frequency [MHz]")
         plt.ylabel("Phase [rad]")
         plt.tight_layout()
-        plt.pause(0.1)
+        plt.pause(1)
 
     # Fetch results
     res = results.fetch_all()

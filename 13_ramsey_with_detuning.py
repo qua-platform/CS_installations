@@ -114,15 +114,16 @@ with program() as rabi_chevron:
         with for_(*from_array(df, detunings)):  # Loop over the qubit pulse amplitude
             update_frequency(qubit, intermediate_frequency + df)
             with for_(*from_array(t, durations)):  # Loop over the qubit pulse duration
+                assign(phase, phase + delta_phase)
                 assign(d, tau_max - t)
                 with strict_timing_():  # Ensure that the sequence will be played without gap
 
                     if full_read_init:
                         # RI12 -> 2 x (R3 -> R12) -> RI45
-                        perform_initialization(I, Q, P, I_st[0], I_st[1], I_st[2])
+                        perform_initialization(I, Q, P, I_st, Q_st, P_st)
                     else:
                         # RI12
-                        read_init12(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
+                        read_init12(I[0], Q[0], P[0], None, None, None, I_st[0], None, None, do_save=[False, True])
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops)
@@ -142,10 +143,10 @@ with program() as rabi_chevron:
 
                     if full_read_init:
                         # RI12 -> R3 -> RI45
-                        perform_readout(I, Q, P, I_st[3], I_st[4], I_st[5])
+                        perform_readout(I, Q, P, I_st, Q_st, P_st)
                     else:
                         # RI12
-                        read_init12(I[0], Q[0], P[0], I_st[1], None, do_save=[True, False])
+                        read_init12(I[0], Q[0], P[0], I_st[1], None, None, None, None, None, do_save=[True, False])
 
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
@@ -228,33 +229,56 @@ else:
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch results
-        iterations, I, Q = results.fetch_all()
+        iteration, I1, I2 = results.fetch_all()
         # Progress bar
-        progress_counter(iterations, n_avg, start_time=results.get_start_time())
+        progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle(f"Rabi Chevron {tank_circuit}")
         # Plot results
         plt.subplot(2, 1, 1)
         plt.cla()
-        plt.title(r"$R=\sqrt{I^2 + Q^2}$ [V]")
-        plt.plot(durations, I[0, :])
-        plt.plot(durations, I[1, :])
+        plt.plot(durations, I1[0, :])
+        plt.plot(durations, I1[1, :])
         plt.legend([f"detuning = {d / u.MHz} MHz"for d in detunings])
-        plt.ylabel("I [V]")
+        plt.ylabel("I (init) [V]")
         plt.subplot(2, 1, 2)
         plt.cla()
-        plt.plot(durations, Q[0, :])
-        plt.plot(durations, Q[1, :])
-        plt.xlabel("Qubit pulse duration [ns]")
-        plt.ylabel("Q [V]")
+        plt.plot(durations, I2[0, :])
+        plt.plot(durations, I2[1, :])
+        plt.xlabel("Idle duration [ns]")
+        plt.ylabel("I (readout) [V]")
         plt.legend([f"detuning = {d / u.MHz} MHz"for d in detunings])
         plt.tight_layout()
         plt.pause(1)
 
     # Fetch results
-    _, I, Q = results.fetch_all()
-    save_data_dict["I"] = I
-    save_data_dict["Q"] = Q
+    iteration, I1, I2 = results.fetch_all()
+    save_data_dict["I1"] = I1
+    save_data_dict["I2"] = I2
+
+
+    # Fit the data
+    try:
+        from qualang_tools.plot.fitting import Fit
+        fig_analyses = []
+        for i, sgn in enumerate([-1, 1]):
+            fit = Fit()
+            fig_analyses[0] = plt.figure(figsize=(6,6))
+            ramsey_fit = fit.ramsey(durations, I2[i, :], plot=True)
+            qubit_T2 = np.abs(ramsey_fit["T2"][0])
+            qubit_detuning = ramsey_fit["f"][0] * u.GHz - sgn * detuning
+            plt.xlabell("Idle duration [ns]")
+            plt.ylabel("I (readout) [V]")
+            print(f"Qubit detuning to update in the config: qubit_IF += {-qubit_detuning:.0f} Hz")
+            print(f"T2* = {qubit_T2:.0f} ns")
+            plt.legend((f"detuning = {-qubit_detuning / u.kHz:.3f} kHz", f"T2* = {qubit_T2:.0f} ns"))
+            plt.title(f"Ramsey measurement for {qubit}, {tank_circuit}")
+            save_data_dict.update({f"fig_analysis{i}": fig_analyses[0]})
+    except:
+        pass
+    finally:
+        plt.show()
+
 
     # Save results
     script_name = Path(__file__).name

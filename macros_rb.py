@@ -9,12 +9,49 @@ from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy.optimize import curve_fit
 
-# from configuration_with_lffem import *
-from configuration_with_opxplus import *
+from configuration_with_lffem import *
+# from configuration_with_opxplus import *
+
+
+x180_len = PI_LEN
+x90_len = PI_HALF_LEN
+minus_x90_len = PI_HALF_LEN
+y180_len = PI_LEN
+y90_len = PI_HALF_LEN
+minus_y90_len = PI_HALF_LEN
+
+
+inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
+map_clifford_to_num_gates = {
+    0: 1,
+    1: 1,
+    2: 1,
+    3: 2,
+    4: 2,
+    5: 2,
+    6: 2,
+    7: 2,
+    8: 2,
+    9: 2,
+    10: 2,
+    11: 2,
+    12: 1,
+    13: 1,
+    14: 1,
+    15: 1,
+    16: 3,
+    17: 3,
+    18: 2,
+    19: 2,
+    20: 2,
+    21: 2,
+    22: 3,
+    23: 3,
+}
 
 
 
-def generate_encoded_sequence(N, current_state=0, ends_with_inv_gate=True, num_gates_total_max=num_gates_total_max, seed=0):
+def generate_encoded_sequence(N, current_state=0, ends_with_inv_gate=True, num_gates_total_max=0, seed=0):
 
     np.random.seed(seed)
     clifford_arr = np.random.randint(low=0, high=23, size=N).astype(int)
@@ -119,37 +156,7 @@ def play_sequence(sequence_list, depth, qb, i_from=0):
                 play("-x90_square", qb)
 
 
-inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
-map_clifford_to_num_gates = {
-    0: 1,
-    1: 1,
-    2: 1,
-    3: 2,
-    4: 2,
-    5: 2,
-    6: 2,
-    7: 2,
-    8: 2,
-    9: 2,
-    10: 2,
-    11: 2,
-    12: 1,
-    13: 1,
-    14: 1,
-    15: 1,
-    16: 3,
-    17: 3,
-    18: 2,
-    19: 2,
-    20: 2,
-    21: 2,
-    22: 3,
-    23: 3,
-}
-
-
-
-def generate_sequence():
+def generate_sequence(current_state, ends_with_inv_gate=False, max_circuit_depth=0, seed=0):
     cayley = declare(int, value=c1_table.flatten().tolist())
     inv_list = declare(int, value=inv_gates)
     step = declare(int)
@@ -163,11 +170,15 @@ def generate_sequence():
         assign(current_state, cayley[current_state * 24 + step])
         assign(sequence[i], step)
     
-    # step = 0
-    assign(inv_gate, inv_list[current_state])
-    assign(sequence[max_circuit_depth - 1], inv_gate)
+    if ends_with_inv_gate:
+        assign(inv_gate, inv_list[current_state])
+        assign(sequence[max_circuit_depth - 1], inv_gate)
+    else:
+        assign(step, rand.rand_int(24))
+        assign(current_state, cayley[current_state * 24 + step])
+        assign(sequence[max_circuit_depth - 1], step)
 
-    return sequence
+    return sequence, current_state
 
 
 def play_clifford(c_idx, qb):

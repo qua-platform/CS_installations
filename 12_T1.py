@@ -112,10 +112,10 @@ with program() as rabi_chevron:
 
                 if full_read_init:
                     # RI12 -> 2 x (R3 -> R12) -> RI45
-                    perform_initialization(I, Q, P, I_st[0], I_st[1], I_st[2])
+                    perform_initialization(I, Q, P, I_st, Q_st, P_st)
                 else:
                     # RI12
-                    read_init12(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
+                    read_init12(I[0], Q[0], P[0], None, None, None, I_st[0], None, None, do_save=[False, True])
 
                 # Navigate through the charge stability map
                 seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops)
@@ -131,10 +131,10 @@ with program() as rabi_chevron:
 
                 if full_read_init:
                     # RI12 -> R3 -> RI45
-                    perform_readout(I, Q, P, I_st[3], I_st[4], I_st[5])
+                    perform_readout(I, Q, P, I_st, Q_st, P_st)
                 else:
                     # RI12
-                    read_init12(I[0], Q[0], P[0], I_st[1], None, do_save=[True, False])
+                    read_init12(I[0], Q[0], P[0], I_st[1], None, None, None, None, None, do_save=[True, False])
 
                 seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
@@ -216,28 +216,48 @@ else:
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch results
-        iterations, I, Q = results.fetch_all()
+        iteration, I1, I2 = results.fetch_all()
         # Progress bar
-        progress_counter(iterations, n_avg, start_time=results.get_start_time())
+        progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle(f"T1 {tank_circuit}")
         # Plot results
         plt.subplot(2, 1, 1)
         plt.cla()
-        plt.plot(durations, I)
-        plt.ylabel("I [V]")
+        plt.plot(durations, I1)
+        plt.ylabel("I (init) [V]")
         plt.subplot(2, 1, 2)
         plt.cla()
-        plt.plot(durations, Q)
+        plt.plot(durations, I2)
         plt.xlabel("Idle duration [ns]")
-        plt.ylabel("Q [V]")
+        plt.ylabel("I (readout) [V]")
         plt.tight_layout()
         plt.pause(1)
 
     # Fetch results
-    _, I, Q = results.fetch_all()
-    save_data_dict["I"] = I
-    save_data_dict["Q"] = Q
+    iteration, I1, I2 = results.fetch_all()
+    save_data_dict["I1"] = I1
+    save_data_dict["I2"] = I2
+
+
+    # Fit the data
+    try:
+        from qualang_tools.plot.fitting import Fit
+        fit = Fit()
+        fig_analysis = plt.figure(figsize=(6,6))
+        decay_fit = fit.T1(durations, I2, plot=True)
+        qubit_T1 = np.round(np.abs(decay_fit["T1"][0]) / 4) * 4
+        plt.xlabell("Idle duration [ns]")
+        plt.ylabel("I (readout) [V]")
+        print(f"Qubit decay time ({qubit}, {tank_circuit}): T1 = {qubit_T1:.0f} ns")
+        plt.legend((f"Relaxation time T1 = {qubit_T1:.0f} ns",))
+        plt.title(f"T1 measurement of {qubit}, {tank_circuit}")
+        save_data_dict.update({f"fig_analysis": fig_analysis})
+    except:
+        pass
+    finally:
+        plt.show()
+
 
     # Save results
     script_name = Path(__file__).name

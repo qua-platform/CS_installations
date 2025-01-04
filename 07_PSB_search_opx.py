@@ -38,8 +38,6 @@ from scipy import signal
 
 from configuration_with_lffem import *
 
-, get_filtered_voltage
-
 matplotlib.use('TkAgg')
 
 
@@ -100,7 +98,6 @@ with program() as PSB_search_prog:
     with for_(n, 0, n < n_shots, n + 1):
         
         with for_each_((Vx, Vy), (voltages_Px.tolist(), voltages_Py.tolist())):
-            align()
 
             # Play the triangle
             seq.add_step(voltage_point_name="initialization")

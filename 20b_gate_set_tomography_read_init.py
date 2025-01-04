@@ -48,8 +48,8 @@ delay_gst_end = 16
 duration_gst = delay_init_qubit_start + max_gate_duration + delay_init_qubit_end
 
 duration_compensation_pulse_gst = duration_gst
-duration_compensation_pulse_full = int(0.7 * duration_compensation_pulse_initialization + duration_compensation_pulse_gst + duration_compensation_pulse_readout)
-duration_compensation_pulse_full = 100 * (duration_compensation_pulse_full // 100)
+duration_compensation_pulse = int(0.3 * duration_compensation_pulse_full_initialization + duration_compensation_pulse_gst + duration_compensation_pulse_full_readout)
+duration_compensation_pulse = 100 * (duration_compensation_pulse // 100)
 
 seq.add_points("operation_P1-P2", level_ops["P1-P2"], duration_gst)
 seq.add_points("operation_P4-P5", level_ops["P4-P5"], duration_gst)
@@ -79,8 +79,8 @@ with program() as PROGRAM_GST:
     Q = [declare(fixed) for _ in range(num_tank_circuits)]
     P = [declare(bool) for _ in range(num_tank_circuits)]  # true if even parity
     I_st = [declare_stream() for _ in range(num_output_streams)]
-    # Q_st = [declare_stream() for _ in range(num_output_streams)]
-    # P_st = [declare_stream() for _ in range(num_output_streams)]
+    Q_st = [None for _ in range(num_output_streams)]
+    P_st = [None for _ in range(num_output_streams)]
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("tank_circuit1", I[0], Q[0], P[0])
     assign_variables_to_element("tank_circuit2", I[1], Q[1], P[1])
@@ -112,10 +112,10 @@ with program() as PROGRAM_GST:
 
                     if full_read_init:
                         # RI12 -> 2 x (R3 -> R12) -> RI45
-                        perform_initialization(I, Q, P, I_st[0], I_st[1], I_st[2])
-                    else:                    # RI12 -> 2 x (R3 -> R12) -> RI45
+                        perform_initialization(I, Q, P, I_st, Q_st, P_st)
+                    else:
                         # RI12
-                        read_init12(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
+                        read_init12(I[0], Q[0], P[0], None, None, None, I_st[0], None, None, do_save=[False, True])
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}")
@@ -182,12 +182,12 @@ with program() as PROGRAM_GST:
 
                     if full_read_init:
                         # RI12 -> R3 -> RI45
-                        perform_readout(I, Q, P, I_st[3], I_st[4], I_st[5])
+                        perform_readout(I, Q, P, I_st, Q_st, P_st)
                     else:
                         # RI12
-                        read_init12(I[0], Q[0], P[0], I_st[1], None, do_save=[True, False])
+                        read_init12(I[0], Q[0], P[0], I_st[1], None, None, None, None, None, do_save=[True, False])
 
-                    seq.add_compensation_pulse(duration=duration_compensation_pulse_full)
+                    seq.add_compensation_pulse(duration=duration_compensation_pulse)
                 
                 save(n, n_st)
                 save(n_shots, n_shots_st)
@@ -208,6 +208,8 @@ with program() as PROGRAM_GST:
         circ_idx_st.buffer(batch_size).save("circ_idx_history")
         for k in range(num_output_streams):
             I_st[k].buffer(batch_size).save(f"I{k:d}")
+            # Q_st[k].buffer(batch_size).save(f"Q{k:d}")
+            # P_st[k].buffer(batch_size).save(f"P{k:d}")
 
 
 #####################################
@@ -250,6 +252,8 @@ else:
 
     fetch_names = ["n_history", "n_shots_history", "circ_idx_history"]
     fetch_names.extend([f"I{k:d}" for k in range(num_output_streams)])
+    # fetch_names.extend([f"Q{k:d}" for k in range(num_output_streams)])
+    # fetch_names.extend([f"P{k:d}" for k in range(num_output_streams)])
 
     if save_data:
         from qualang_tools.results.data_handler import DataHandler
