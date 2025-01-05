@@ -46,11 +46,10 @@ from macros_rb import *
 
 target_qubits = ["qubit4", "qubit5"]
 target_tank_circuit = "tank_circuit2"
-plungers = "P4-P5" # "full", "P1-P2", "P4-P5"
+plungers = "P4-P5"  # "full", "P1-P2", "P4-P5"
 do_feedback = False  # False for test. True for actual.
 seed = 123  # Pseudo-random number generator seed
-full_read_init = False
-num_output_streams = 6 if full_read_init else 2
+num_output_streams = 6 if plungers == "full" else 2
 
 n_avg = 2
 seed = 0
@@ -60,19 +59,15 @@ circuit_depth_max = 7800  # worked up to 7800
 delta_clifford = 100
 circuit_depths = np.arange(circuit_depth_min, circuit_depth_max + 1, delta_clifford) * u.ns
 # circuit_depths = [int(_) for _ in circuit_depths]
-duration_compensation_pulse = circuit_depth_max * PI_LEN
+duration_compensation_pulse_rb = circuit_depth_max * PI_LEN
 assert circuit_depth_max % delta_clifford == 0, "circuit_depth_max / delta_clifford must be an integer."
 
 
 # duration_init includes the manipulation
 delay_rb_start_loop = 68
-# duration_rb = PI_LEN * circuit_depth_max * 2 # 2 is a bit bigger than 1.875 (or)
-duration_rb = PI_LEN * 10 * 2
 delay_rb_end_loop = 60  # 108
-# duration_ops = delay_rb_start + duration_rb + delay_rb_end
 
 
-duration_compensation_pulse_rb = 800_000  # duration_rb
 duration_compensation_pulse = int(0.3 * duration_compensation_pulse_full_initialization + duration_compensation_pulse_rb + duration_compensation_pulse_full_readout)
 duration_compensation_pulse = 100 * (duration_compensation_pulse // 100)
 
@@ -128,7 +123,7 @@ with program() as rb:
 
             with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
                 with strict_timing_():
-                    # Perform specified initialization 
+                    # Perform specified initialization
                     perform_initialization(I, Q, P, I_st, Q_st, P_st, kind=plungers)
 
                     # Navigate through the charge stability map
