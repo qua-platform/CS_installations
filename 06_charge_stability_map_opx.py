@@ -32,8 +32,6 @@ from scipy import signal
 
 from configuration_with_lffem import *
 
-, get_filtered_voltage
-
 # matplotlib.use('TkAgg')
 
 
