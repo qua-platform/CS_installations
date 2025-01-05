@@ -41,9 +41,9 @@ all_elements = adjust_all_elements(removes=["qubit1", "qubit2", "qubit3"], adds=
 
 n_avg = 5
 num_of_sequences = 2  # Number of random sequences
-circuit_depth_min = 50
-circuit_depth_max = 70
-delta_clifford = 10
+circuit_depth_min = 400
+circuit_depth_max = 500
+delta_clifford = 100
 circuit_depths = np.arange(circuit_depth_min, circuit_depth_max + 1, delta_clifford).astype(int)
 actual_circuit_depths = num_target_qubits * circuit_depths
 
@@ -122,7 +122,6 @@ with program() as PROGRAM_RB:
                 advance_input_stream(encoded_circuit1)  # ordered or randomized
                 pause()
                 advance_input_stream(encoded_circuit2)  # ordered or randomized
-                pause()
 
             duration_rb1 = encoded_circuit1[0]  # just a sequential index for this circuit
             duration_rb2 = encoded_circuit2[0]  # just a sequential index for this circuit
@@ -141,10 +140,10 @@ with program() as PROGRAM_RB:
                     wait(duration_ops >> 2, *other_elements)
 
                     wait(delay_rb_start_loop * u.ns, *target_qubits) if delay_rb_start_loop >= 16 else None
-                    play_sequence(encoded_circuit1, depth1, qubit, i_from=1)
-                    wait(duration_rb21 >> 2, qubit_trio1)
-                    play_sequence(encoded_circuit1, depth1, qubit_trio1, i_from=1)
-                    wait(duration_rb12 >> 2, qubit)
+                    play_sequence(encoded_circuit1, depth1, target_qubits[0], i_from=1)
+                    # wait(duration_rb21 >> 2, target_qubits[1])
+                    play_sequence(encoded_circuit2, depth2, target_qubits[1], i_from=1)
+                    # wait(duration_rb12 >> 2, target_qubits[0])
                     wait(delay_rb_end_loop * u.ns, *target_qubits) if delay_rb_end_loop >= 16 else None
 
                     # Perform specified readout
@@ -160,19 +159,19 @@ with program() as PROGRAM_RB:
                 wait(1000 * u.ns)
 
     with stream_processing():
+        # n_st.save("iteration")
         # depth_st.buffer(num_of_sequences).buffer(len(circuit_depths)).save("actual_circuit_depths")
         # m_st.buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save("num_sequence")
         # n_st.buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save("iteration")
         for k in range(num_output_streams):
-            # I_st[k].buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save(f"I{k:d}")
-            I_st[k].save_all(f"I{k:d}")
+            I_st[k].buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save(f"I{k:d}")
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
-qmm.clear_all_job_results()
-qmm.close_all_qms()
+# qmm.clear_all_job_results()
+# qmm.close_all_qms()
 
 
 ###########################
@@ -205,6 +204,7 @@ else:
     # fetch_names = ["num_sequence", "iteration"]
     # fetch_names.extend([f"I{k:d}" for k in range(num_output_streams)])
     fetch_names = [f"I{k:d}" for k in range(num_output_streams)]
+    # fetch_names = ["iteration", "I0"]
 
     if save_data:
         from qualang_tools.results.data_handler import DataHandler
@@ -213,6 +213,8 @@ else:
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
 
+    import time 
+    
     ress = []
     start_time = datetime.now()
     clifford_lists1 = []
@@ -252,13 +254,14 @@ else:
             with open(data_handler.path / "log.txt", encoding="utf8", mode="a") as f:
                 f.write(_log_this.replace("_", "") + "\n")  # Append the log message to the file
 
+            # if job.is_paused():
+            job.push_to_input_stream("_encoded_circuit1", _encoded_circuit1)
             if job.is_paused():
-                job.push_to_input_stream("_encoded_circuit1", _encoded_circuit1)
+                time.sleep(1)
                 job.resume()
-
-            if job.is_paused():
-                job.push_to_input_stream("_encoded_circuit2", _encoded_circuit2)
-                job.resume()
+            job.push_to_input_stream("_encoded_circuit2", _encoded_circuit2)
+            
+            print("input stream success!")
 
     # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
     print("get a fetching tool")

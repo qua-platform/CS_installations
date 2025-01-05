@@ -181,7 +181,7 @@ def perform_initialization(I, Q, P, I_st, Q_st, P_st, kind: Literal["full", "P1-
         read_init12(I[0], Q[0], P[0], None, None, None, I_st[0], None, None, do_save=[False, True])
     elif kind == "P4-P5":
         # RI45
-        read_init45(I[0], Q[0], P[0], None, None, None, I_st[0], None, None, do_save=[False, True])
+        read_init45(I[1], Q[1], P[1], None, None, None, I_st[0], None, None, do_save=[False, True])
     else:
         raise ValueError("kind must be from 'full', 'P1-P2', 'P4-P5'")
 
@@ -201,7 +201,7 @@ def perform_readout(I, Q, P, I_st, Q_st, P_st, kind: Literal["full", "P1-P2", "P
         read_init12(I[0], Q[0], P[0], I_st[1], None, None, None, None, None, do_save=[True, False])
     elif kind == "P4-P5":
         # RI45
-        read_init45(I[0], Q[0], P[0], I_st[1], None, None, None, None, None, do_save=[True, False])
+        read_init45(I[1], Q[1], P[1], I_st[1], None, None, None, None, None, do_save=[True, False])
     else:
         raise ValueError("kind must be from 'full', 'P1-P2', 'P4-P5'")
 

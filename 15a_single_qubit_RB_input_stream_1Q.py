@@ -29,19 +29,18 @@ from macros_rb import *
 ###################
 
 qubit = "qubit5"
-qubit_trio1 = f"{qubit}_trio1"
 plungers = "P4-P5"  # "full", "P1-P2", "P4-P5"
 do_feedback = False  # False for test. True for actual.
 num_output_streams = 6 if plungers == "full" else 2
 do_simulate = False
-target_qubits = [qubit, qubit_trio1]
+target_qubits = [qubit]
 num_target_qubits = len(target_qubits)
 
-all_elements = adjust_all_elements(removes=["qubit1", "qubit2", "qubit3"], adds=qubit_trio1)
+all_elements = adjust_all_elements(removes=["qubit1", "qubit2", "qubit3"])
 
 n_avg = 5
 num_of_sequences = 3  # Number of random sequences
-circuit_depth_min = 10000
+circuit_depth_min = 15000
 circuit_depth_max = 16000  # works up to 16_000
 delta_clifford = 1000
 circuit_depths = np.arange(circuit_depth_min, circuit_depth_max + 1, delta_clifford).astype(int)
@@ -127,7 +126,6 @@ with program() as PROGRAM_RB:
                     play_sequence(encoded_circuit, depth, qubit, i_from=1)
                     wait(delay_rb_end_loop * u.ns, qubit) if delay_rb_end_loop >= 16 else None
 
-                    # Perform specified readout
                     # Perform specified readout
                     perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
 

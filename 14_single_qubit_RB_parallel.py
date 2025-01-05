@@ -195,7 +195,7 @@ else:
     job = qm.execute(rb, compiler_options=CompilerOptionArguments(flags=["not-strict-timing"]))
     # job = qm.execute(rb)
     # Get results from QUA program
-    results = fetching_tool(job, data_list=["I1", "I2", "iteration"], mode="live")
+    results = fetching_tool(job, data_list=["iteration", "I1", "I2"], mode="live")
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
@@ -203,7 +203,7 @@ else:
     threshold = TANK_CIRCUIT_CONSTANTS[target_tank_circuit]["threshold"]
     while results.is_processing():
         # data analysis
-        I1, I2, iteration = results.fetch_all()
+        iteration, I1, I2 = results.fetch_all()
         P1 = I1 > threshold
         P2 = I2 > threshold
 
@@ -222,7 +222,7 @@ else:
         plt.pause(1)
 
     # At the end of the program, fetch the non-averaged results to get the error-bars
-    I1, I2, iteration = results.fetch_all()
+    iteration, I1, I2 = results.fetch_all()
     P1 = I1 > threshold
     P2 = I2 > threshold
     value_avg = P2.astype(int).mean(axis=2).mean(axis=1)
