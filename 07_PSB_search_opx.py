@@ -65,7 +65,7 @@ seq.add_points("initialization", level_init, duration_init)
 for m, (v1, v2) in enumerate(zip(voltages_Px, voltages_Py)):
     # print(f"readout_{m}", v1, v2)
     seq.add_points(f"readout_{m}", [v1, v2], duration_readout)
-    
+
 
 tank_circuits = ["tank_circuit1", "tank_circuit2"]
 num_tank_circuits = len(tank_circuits)
@@ -96,9 +96,7 @@ with program() as PSB_search_prog:
     assign_variables_to_element("tank_circuit2", I[1], Q[1])
 
     with for_(n, 0, n < n_shots, n + 1):
-        
         with for_each_((Vx, Vy), (voltages_Px.tolist(), voltages_Py.tolist())):
-
             # Play the triangle
             seq.add_step(voltage_point_name="initialization")
             seq.add_step(level=[Vx, Vy], duration=duration_readout)

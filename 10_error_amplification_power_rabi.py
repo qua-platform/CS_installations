@@ -24,8 +24,7 @@ Before proceeding to the next node:
 """
 
 import matplotlib.pyplot as plt
-from qm import (CompilerOptionArguments, QuantumMachinesManager,
-                SimulationConfig)
+from qm import CompilerOptionArguments, QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.loops import from_array
@@ -45,7 +44,7 @@ from macros_initialization_and_readout import *
 qubit = "qubit1"
 plungers = "P1-P2"
 tank_circuit = "tank_circuit1"
-do_feedback = False # False for test. True for actual.
+do_feedback = False  # False for test. True for actual.
 full_read_init = False
 num_output_streams = 6 if full_read_init else 2
 do_simulate = True
@@ -116,12 +115,9 @@ with program() as rabi_chevron:
             assign(d, max_tau_pulse - n_rabi * PI_LEN)
 
             with for_(*from_array(a, amp_scalilngs)):  # Loop over the qubit pulse duration
-
                 with strict_timing_():  # Ensure that the sequence will be played without gap
-
-
+                    # Perform specified initialization 
                     perform_initialization(I, Q, P, I_st, Q_st, P_st, kind=plungers)
-
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops)
@@ -135,9 +131,8 @@ with program() as rabi_chevron:
                         play("x180_kaiser" * amp(a), qubit)
                     wait(delay_ops_end * u.ns, qubit) if delay_ops_end >= 16 else None
 
-
+                    # Perform specified readout
                     perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
-
 
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
@@ -153,14 +148,11 @@ with program() as rabi_chevron:
             # P_st[k].boolean_to_int().buffer(len(amp_scalilngs)).buffer(len(n_pulses)).average().save(f"P{k + 1:d}")
 
 
-
 #####################################
 #  Open Communication with the QOP  #
 #####################################
 
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 
 ###########################

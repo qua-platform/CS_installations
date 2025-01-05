@@ -33,9 +33,7 @@ from scipy import signal
 
 from configuration_with_lffem import *
 
-, get_filtered_voltage
-
-# # matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 ###################
@@ -92,7 +90,7 @@ with program() as charge_stability_prog:
     Vs_virtual = [declare(fixed) for _ in range(gver.num_vgs)]
     n = declare(int)  # QUA integer used as an index for the averaging loop
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
-    
+
     I = [declare(fixed) for _ in range(num_tank_circuits)]
     Q = [declare(fixed) for _ in range(num_tank_circuits)]
     I_st = [declare_stream() for _ in range(num_tank_circuits)]
@@ -143,9 +141,7 @@ with program() as charge_stability_prog:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 
 ###########################

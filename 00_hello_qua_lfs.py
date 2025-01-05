@@ -6,6 +6,7 @@ A simple sandbox to showcase different QUA functionalities during the installati
 import matplotlib.pyplot as plt
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
+
 # from configuration_with_lffem import *
 from qualang_tools.voltage_gates import VoltageGateSequence
 
@@ -61,9 +62,7 @@ with program() as hello_qua:
 # print(generate_qua_script(hello_qua, config), file=sourceFile)
 # sourceFile.close()
 
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 ###########################
 # Run or Simulate Program #

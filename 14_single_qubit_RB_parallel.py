@@ -20,8 +20,7 @@ Prerequisites:
 """
 
 import matplotlib.pyplot as plt
-from qm import (CompilerOptionArguments, QuantumMachinesManager,
-                SimulationConfig)
+from qm import CompilerOptionArguments, QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
@@ -48,7 +47,7 @@ from macros_rb import *
 target_qubits = ["qubit4", "qubit5"]
 target_tank_circuit = "tank_circuit2"
 plungers = "P4-P5"
-do_feedback = False # False for test. True for actual.
+do_feedback = False  # False for test. True for actual.
 seed = 123  # Pseudo-random number generator seed
 full_read_init = False
 num_output_streams = 6 if full_read_init else 2
@@ -57,7 +56,7 @@ n_avg = 2
 seed = 0
 num_of_sequences = 3  # Number of random sequences
 circuit_depth_min = 1000
-circuit_depth_max = 7800 # worked up to 7800 
+circuit_depth_max = 7800  # worked up to 7800
 delta_clifford = 100
 circuit_depths = np.arange(circuit_depth_min, circuit_depth_max + 1, delta_clifford) * u.ns
 # circuit_depths = [int(_) for _ in circuit_depths]
@@ -69,11 +68,11 @@ assert circuit_depth_max % delta_clifford == 0, "circuit_depth_max / delta_cliff
 delay_rb_start_loop = 68
 # duration_rb = PI_LEN * circuit_depth_max * 2 # 2 is a bit bigger than 1.875 (or)
 duration_rb = PI_LEN * 10 * 2
-delay_rb_end_loop = 60 # 108
+delay_rb_end_loop = 60  # 108
 # duration_ops = delay_rb_start + duration_rb + delay_rb_end
 
 
-duration_compensation_pulse_rb = 800_000 # duration_rb
+duration_compensation_pulse_rb = 800_000  # duration_rb
 duration_compensation_pulse = int(0.3 * duration_compensation_pulse_full_initialization + duration_compensation_pulse_rb + duration_compensation_pulse_full_readout)
 duration_compensation_pulse = 100 * (duration_compensation_pulse // 100)
 
@@ -102,7 +101,7 @@ seq.add_points("operation_P3", level_ops["P3"], delay_rb_start_loop + delay_rb_e
 #         assign(step, rand.rand_int(24))
 #         assign(current_state, cayley[current_state * 24 + step])
 #         assign(sequence[i], step)
-    
+
 #     # set inverse gate for the last element
 #     assign(inv_gate, inv_list[current_state])
 #     assign(sequence[depth], inv_gate)
@@ -203,8 +202,8 @@ with program() as rb:
 
     current_state1 = declare(int, value=0)
     current_state2 = declare(int, value=0)
-    sequence_time1 = declare(int) # QUA variable for RB sequence duration for a given depth
-    sequence_time2 = declare(int) # QUA variable for RB sequence duration for a given depth
+    sequence_time1 = declare(int)  # QUA variable for RB sequence duration for a given depth
+    sequence_time2 = declare(int)  # QUA variable for RB sequence duration for a given depth
     # Ensure that the result variables are assigned to the measurement elements
     assign_variables_to_element(tank_circuits[0], I[0], Q[0])
     assign_variables_to_element(tank_circuits[1], I[1], Q[1])
@@ -217,27 +216,23 @@ with program() as rb:
 
     with for_(*from_array(depth1, circuit_depths)):  # Loop over the depths
         assign(depth2, depth1)
-    
-        with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
 
+        with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
             sequence_list1, _ = generate_sequence(current_state1, depth=depth1, max_circuit_depth=circuit_depth_max, ends_with_inv_gate=True, seed=seed)
             sequence_list2, _ = generate_sequence(current_state2, depth=depth2, max_circuit_depth=circuit_depth_max, ends_with_inv_gate=True, seed=seed)
 
             # sequence_list1 = declare(int, value=[ 6, 11, 18,  1, 17, 12, 16,  8, 11,  6])
             # sequence_list2 = declare(int, value=[ 6, 11, 18,  1, 17, 12, 16,  8, 11,  6])
-            
+
             # Assign sequence_time to duration of idle step for generated sequence "m" at a given depth
             assign(sequence_time1, generate_sequence_time(sequence_list1, depth1))
             assign(sequence_time2, generate_sequence_time(sequence_list2, depth2))
             assign(duration_ops, delay_rb_start_loop + sequence_time1 + delay_rb_end_loop)
 
             with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
-
                 with strict_timing_():
-
-
+                    # Perform specified initialization 
                     perform_initialization(I, Q, P, I_st, Q_st, P_st, kind=plungers)
-
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops)
@@ -247,9 +242,8 @@ with program() as rb:
                     play_sequence(sequence_list1, depth1, qb=target_qubits[0])
                     play_sequence(sequence_list2, depth2, qb=target_qubits[1])
 
-
+                    # Perform specified readout
                     perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
-
 
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
@@ -273,9 +267,7 @@ with program() as rb:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 ###########################
 # Run or Simulate Program #
@@ -321,7 +313,7 @@ else:
         I1, I2, iteration = results.fetch_all()
         P1 = I1 > threshold
         P2 = I2 > threshold
-        
+
         P2_avg = P2.astype(int).mean(axis=2).mean(axis=1)
 
         print(job.execution_report())
@@ -358,9 +350,7 @@ else:
     print("#########################")
     print("### Fitted Parameters ###")
     print("#########################")
-    print(
-        f"A = {pars[0]:.3} ({stdevs[0]:.1}), B = {pars[1]:.3} ({stdevs[1]:.1}), p = {pars[2]:.3} ({stdevs[2]:.1})"
-    )
+    print(f"A = {pars[0]:.3} ({stdevs[0]:.1}), B = {pars[1]:.3} ({stdevs[1]:.1}), p = {pars[2]:.3} ({stdevs[2]:.1})")
     print("Covariance Matrix")
     print(cov)
 
@@ -373,11 +363,7 @@ else:
     print("#########################")
     print("### Useful Parameters ###")
     print("#########################")
-    print(
-        f"Error rate: 1-p = {np.format_float_scientific(one_minus_p, precision=2)} ({stdevs[2]:.1})\n"
-        f"Clifford set infidelity: r_c = {np.format_float_scientific(r_c, precision=2)} ({r_c_std:.1})\n"
-        f"Gate infidelity: r_g = {np.format_float_scientific(r_g, precision=2)}  ({r_g_std:.1})"
-    )
+    print(f"Error rate: 1-p = {np.format_float_scientific(one_minus_p, precision=2)} ({stdevs[2]:.1})\n" f"Clifford set infidelity: r_c = {np.format_float_scientific(r_c, precision=2)} ({r_c_std:.1})\n" f"Gate infidelity: r_g = {np.format_float_scientific(r_g, precision=2)}  ({r_g_std:.1})")
 
     # Plots
     plt.figure()

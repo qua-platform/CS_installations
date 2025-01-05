@@ -35,7 +35,7 @@ def IQ_imbalance(g, phi):
 # qop_ip = "192.168.88.253"  # Write the QM router IP address
 # cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_ip = "172.16.33.107"  # Write the QM router IP address
-cluster_name = "Cluster_1" # "Beta_8"  # Write your cluster_name if version >= QOP220
+cluster_name = "Cluster_1"  # "Beta_8"  # Write your cluster_name if version >= QOP220
 # qop_ip = "192.168.88.253"  # Write the QM router IP address
 # cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = 9510  # Write the QOP port if version < QOP220
@@ -83,7 +83,6 @@ STEP_LEN = 1000
 STEP_AMP = 0.25
 
 
-
 #########################
 #    1Q QUBIT PULSES    #
 #########################
@@ -96,12 +95,12 @@ CONST_LEN = 100  # in ns
 SATURATION_AMP = 0.1
 SATURATION_LEN = 10_000
 
-SQUARE_X180_AMP = 0.40 
-SQUARE_X90_AMP = 0.20 
-SQUARE_MINUS_X90_AMP = -0.20 
-SQUARE_Y180_AMP = 0.35 
-SQUARE_Y90_AMP = 0.175 
-SQUARE_MINUS_Y90_AMP = -0.175 
+SQUARE_X180_AMP = 0.40
+SQUARE_X90_AMP = 0.20
+SQUARE_MINUS_X90_AMP = -0.20
+SQUARE_Y180_AMP = 0.35
+SQUARE_Y90_AMP = 0.175
+SQUARE_MINUS_Y90_AMP = -0.175
 SQUARE_LEN = 52
 
 PI_AMP = 0.1
@@ -130,7 +129,7 @@ CROT_RF_SIGMA = CROT_RF_LEN / 5
 ########################
 
 REFLECTOMETRY_READOUT_AMP = 0.1
-REFLECTOMETRY_READOUT_LEN = 400 # 10_000
+REFLECTOMETRY_READOUT_LEN = 400  # 10_000
 
 PARITY_THRESHOLD1 = 0.0
 PARITY_THRESHOLD2 = 0.0
@@ -216,8 +215,8 @@ QUBIT_CONSTANTS = {
     "qubit4": {
         "con": con1,
         "fem": fem1,
-        "aout_I": 5, # TODO: Fix
-        "aout_Q": 6, # TODO: Fix
+        "aout_I": 5,  # TODO: Fix
+        "aout_Q": 6,  # TODO: Fix
         "dout": 3,
         "LO": 16.3 * u.GHz,
         "IF": 0 * u.MHz,
@@ -233,8 +232,8 @@ QUBIT_CONSTANTS = {
     "qubit5": {
         "con": con1,
         "fem": fem1,
-        "aout_I": 5, # TODO: Fix
-        "aout_Q": 6, # TODO: Fix
+        "aout_I": 5,  # TODO: Fix
+        "aout_Q": 6,  # TODO: Fix
         "dout": 5,
         "LO": 16.3 * u.GHz,
         "IF": 0 * u.MHz,
@@ -276,16 +275,16 @@ PLUNGER_CONSTANTS = {
     },
     "P4": {
         "con": con1,
-        "fem": fem2, # TODO: Fix
-        "ao": 4, # TODO: Fix
+        "fem": fem2,  # TODO: Fix
+        "ao": 4,  # TODO: Fix
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
     },
     "P5": {
         "con": con1,
-        "fem": fem2, # TODO: Fix
-        "ao": 6, # TODO: Fix
+        "fem": fem2,  # TODO: Fix
+        "ao": 6,  # TODO: Fix
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
@@ -319,8 +318,8 @@ BARRIER_CONSTANTS = {
     },
     "B4": {
         "con": con1,
-        "fem": fem2, # TODO: Fix
-        "ao": 6, # TODO: Fix
+        "fem": fem2,  # TODO: Fix
+        "ao": 6,  # TODO: Fix
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
@@ -378,24 +377,26 @@ TANK_CIRCUIT_CONSTANTS = {
 
 # Constants for each qubit for CR DRIVE
 CROT_CONSTANTS = {
-    **{f"qp_control_c{c}t{t}": {
-        "con": QUBIT_CONSTANTS[f"qubit{c}"]["con"],
-        "fem": QUBIT_CONSTANTS[f"qubit{c}"]["fem"],
-        "aout_I": QUBIT_CONSTANTS[f"qubit{c}"]["aout_I"],
-        "aout_Q": QUBIT_CONSTANTS[f"qubit{c}"]["aout_Q"],
-        "dout": QUBIT_CONSTANTS[f"qubit{c}"]["dout"],
-        "LO": QUBIT_CONSTANTS[f"qubit{c}"]["LO"],
-        "IF": QUBIT_CONSTANTS[f"qubit{c}"]["IF"],
-        "mixer_g": QUBIT_CONSTANTS[f"qubit{c}"]["mixer_g"],
-        "mixer_phi": QUBIT_CONSTANTS[f"qubit{c}"]["mixer_phi"],
-        "pi_amp": CROT_RF_AMP,
-        "pi_len": CROT_RF_LEN,
-        "rf_switch_delay": 40,
-    } for c, t in qubit_pairs}
+    **{
+        f"qp_control_c{c}t{t}": {
+            "con": QUBIT_CONSTANTS[f"qubit{c}"]["con"],
+            "fem": QUBIT_CONSTANTS[f"qubit{c}"]["fem"],
+            "aout_I": QUBIT_CONSTANTS[f"qubit{c}"]["aout_I"],
+            "aout_Q": QUBIT_CONSTANTS[f"qubit{c}"]["aout_Q"],
+            "dout": QUBIT_CONSTANTS[f"qubit{c}"]["dout"],
+            "LO": QUBIT_CONSTANTS[f"qubit{c}"]["LO"],
+            "IF": QUBIT_CONSTANTS[f"qubit{c}"]["IF"],
+            "mixer_g": QUBIT_CONSTANTS[f"qubit{c}"]["mixer_g"],
+            "mixer_phi": QUBIT_CONSTANTS[f"qubit{c}"]["mixer_phi"],
+            "pi_amp": CROT_RF_AMP,
+            "pi_len": CROT_RF_LEN,
+            "rf_switch_delay": 40,
+        }
+        for c, t in qubit_pairs
+    }
 }
 # # update after findng the optimal parameters
 # CR_DRIVE_CONSTANTS["qp_control_c3t2"].update({"pi_amp": 0.1, "pi_len": 100, "IF": -100 * u.MHz})
-
 
 
 #########################
@@ -404,16 +405,18 @@ CROT_CONSTANTS = {
 
 from collections import OrderedDict
 
-MAP_GATE_TO_IDX = OrderedDict([
-    ("P1", 0),
-    ("P2", 1),
-    ("P3", 2),
-    ("B1", 3),
-    ("B2", 4),
-    ("B3", 5),
-    ("Psd1", 6),
-    ("Psd2", 7), 
-])
+MAP_GATE_TO_IDX = OrderedDict(
+    [
+        ("P1", 0),
+        ("P2", 1),
+        ("P3", 2),
+        ("B1", 3),
+        ("B2", 4),
+        ("B3", 5),
+        ("Psd1", 6),
+        ("Psd2", 7),
+    ]
+)
 
 NUM_VGs = len(MAP_GATE_TO_IDX)
 A = np.random.rand(NUM_VGs, NUM_VGs)
@@ -421,19 +424,21 @@ CROSSTALK_MATRIX = 0.1 * (A + A.T) / 2
 np.fill_diagonal(CROSSTALK_MATRIX, 1)
 INV_CROSSTALK_MATARIX = np.linalg.inv(CROSSTALK_MATRIX)
 
-INV_CROSSTALK_MATARIX = np.array([
-    [ 1.03, -0.03, -0.06, -0.06, -0.05, -0.07, -0.03, -0.02, -0.05, -0.07, -0.03],
-    [-0.03,  1.03, -0.06, -0.05,  0.01, -0.05, -0.05, -0.03, -0.06, -0.01, -0.04],
-    [-0.06, -0.06,  1.02, -0.03, -0.03,  0.01, -0.01, -0.05, -0.02, -0.06,  0.00],
-    [-0.06, -0.05, -0.03,  1.03, -0.03, -0.07, -0.01,  0.00, -0.03, -0.05, -0.06],
-    [-0.05,  0.01, -0.03, -0.03,  1.02, -0.04, -0.00, -0.05, -0.04, -0.02, -0.03],
-    [-0.07, -0.05,  0.01, -0.07, -0.04,  1.03,  0.00, -0.02, -0.03, -0.06, -0.03],
-    [-0.03, -0.05, -0.01, -0.01, -0.00,  0.00,  1.02, -0.05, -0.03, -0.05, -0.06],
-    [-0.02, -0.03, -0.05,  0.00, -0.05, -0.02, -0.05,  1.03, -0.07, -0.06, -0.05],
-    [-0.05, -0.06, -0.02, -0.03, -0.04, -0.03, -0.03, -0.07,  1.02, -0.02, -0.02],
-    [-0.07, -0.01, -0.06, -0.05, -0.02, -0.06, -0.05, -0.06, -0.02,  1.03, -0.01],
-    [-0.03, -0.04,  0.00, -0.06, -0.03, -0.03, -0.06, -0.05, -0.02, -0.01,  1.02],
-])
+INV_CROSSTALK_MATARIX = np.array(
+    [
+        [1.03, -0.03, -0.06, -0.06, -0.05, -0.07, -0.03, -0.02, -0.05, -0.07, -0.03],
+        [-0.03, 1.03, -0.06, -0.05, 0.01, -0.05, -0.05, -0.03, -0.06, -0.01, -0.04],
+        [-0.06, -0.06, 1.02, -0.03, -0.03, 0.01, -0.01, -0.05, -0.02, -0.06, 0.00],
+        [-0.06, -0.05, -0.03, 1.03, -0.03, -0.07, -0.01, 0.00, -0.03, -0.05, -0.06],
+        [-0.05, 0.01, -0.03, -0.03, 1.02, -0.04, -0.00, -0.05, -0.04, -0.02, -0.03],
+        [-0.07, -0.05, 0.01, -0.07, -0.04, 1.03, 0.00, -0.02, -0.03, -0.06, -0.03],
+        [-0.03, -0.05, -0.01, -0.01, -0.00, 0.00, 1.02, -0.05, -0.03, -0.05, -0.06],
+        [-0.02, -0.03, -0.05, 0.00, -0.05, -0.02, -0.05, 1.03, -0.07, -0.06, -0.05],
+        [-0.05, -0.06, -0.02, -0.03, -0.04, -0.03, -0.03, -0.07, 1.02, -0.02, -0.02],
+        [-0.07, -0.01, -0.06, -0.05, -0.02, -0.06, -0.05, -0.06, -0.02, 1.03, -0.01],
+        [-0.03, -0.04, 0.00, -0.06, -0.03, -0.03, -0.06, -0.05, -0.02, -0.01, 1.02],
+    ]
+)
 
 
 import copy
@@ -445,7 +450,7 @@ from qm.qua._expressions import QuaVariable
 class GateVirtualizer:
     MAP_GATE_TO_IDX = MAP_GATE_TO_IDX
     INV_CROSSTALK_MATARIX = INV_CROSSTALK_MATARIX
-    
+
     def __init__(self):
         # Initialize the mapping of gates to indices
         self.num_vgs = len(MAP_GATE_TO_IDX)
@@ -471,8 +476,7 @@ class GateVirtualizer:
 #  Pi pulse waveforms  #
 ########################
 
-from scipy.special import \
-    i0  # Zeroth-order modified Bessel function of the first kind
+from scipy.special import i0  # Zeroth-order modified Bessel function of the first kind
 
 
 def kaiser_window(T: int, alpha: float) -> np.ndarray:
@@ -498,7 +502,6 @@ def generate_waveforms(rotation_keys):
     """Generate all necessary waveforms for a set of rotation types across all qubits."""
 
     def compute_and_update_waveform(waveforms, qubit, _name, _amp, _len):
-        
         zero_len = 2
         for rotation_key in rotation_keys:
             if rotation_key in ["x180", "y180"]:
@@ -511,12 +514,8 @@ def generate_waveforms(rotation_keys):
                 continue
 
             if _name == "gaussian":
-                _sigma =  (_len - zero_len) / 5
-                wf, der_wf = np.array(
-                    drag_gaussian_pulse_waveforms(
-                        wf_amp, _len - zero_len, _sigma, alpha=0, anharmonicity=0
-                    )
-                )
+                _sigma = (_len - zero_len) / 5
+                wf, der_wf = np.array(drag_gaussian_pulse_waveforms(wf_amp, _len - zero_len, _sigma, alpha=0, anharmonicity=0))
             elif _name == "kaiser":
                 wf = wf_amp * kaiser_window(_len - zero_len, alpha=3.0)
                 der_wf = np.array([0] * (_len - zero_len))
@@ -528,9 +527,7 @@ def generate_waveforms(rotation_keys):
                 I_wf = (-1) * der_wf
                 Q_wf = wf
             else:
-                raise ValueError(
-                    f'{rotation_key} is passed. rotation_key must be one of ["x180", "x90", "minus_x90", "y180", "y90", "minus_y90"]'
-                )
+                raise ValueError(f'{rotation_key} is passed. rotation_key must be one of ["x180", "x90", "minus_x90", "y180", "y90", "minus_y90"]')
 
             waveforms[f"{qubit}_{_name}_{rotation_key}_I"] = I_wf.tolist() + [0] * zero_len
             waveforms[f"{qubit}_{_name}_{rotation_key}_Q"] = Q_wf.tolist() + [0] * zero_len
@@ -550,6 +547,7 @@ def generate_waveforms(rotation_keys):
         waveforms = compute_and_update_waveform(waveforms, qubit_pair, "kaiser", constants["pi_amp"], constants["pi_len"])
 
     return waveforms
+
 
 rotation_keys = ["x180", "x90", "minus_x90", "y180", "y90", "minus_y90"]
 waveforms = generate_waveforms(rotation_keys)
@@ -1473,33 +1471,28 @@ config = {
         "zero_wf": {"type": "constant", "sample": 0.0},
         "const_wf": {"type": "constant", "sample": CONST_AMP},
         "saturation_wf": {"type": "constant", "sample": SATURATION_AMP},
-        
         "square_x180_I_wf": {"type": "constant", "sample": SQUARE_X180_AMP},
         "square_x90_I_wf": {"type": "constant", "sample": SQUARE_X90_AMP},
         "square_minus_x90_I_wf": {"type": "constant", "sample": SQUARE_MINUS_X90_AMP},
         "square_y180_I_wf": {"type": "constant", "sample": SQUARE_Y180_AMP},
         "square_y90_I_wf": {"type": "constant", "sample": SQUARE_Y90_AMP},
         "square_minus_y90_I_wf": {"type": "constant", "sample": SQUARE_MINUS_Y90_AMP},
-        
         "square_x180_I_wf_trio1": {"type": "constant", "sample": 2 * SQUARE_X180_AMP / 3},
         "square_x90_I_wf_trio1": {"type": "constant", "sample": 2 * SQUARE_X90_AMP / 3},
         "square_minus_x90_I_wf_trio1": {"type": "constant", "sample": 2 * SQUARE_MINUS_X90_AMP / 3},
         "square_y180_I_wf_trio1": {"type": "constant", "sample": 2 * SQUARE_Y180_AMP / 3},
         "square_y90_I_wf_trio1": {"type": "constant", "sample": 2 * SQUARE_Y90_AMP / 3},
         "square_minus_y90_I_wf_trio1": {"type": "constant", "sample": 2 * SQUARE_MINUS_Y90_AMP / 3},
-        
         "square_x180_I_wf_trio2": {"type": "constant", "sample": SQUARE_X180_AMP / 3},
         "square_x90_I_wf_trio2": {"type": "constant", "sample": SQUARE_X90_AMP / 3},
         "square_minus_x90_I_wf_trio2": {"type": "constant", "sample": SQUARE_MINUS_X90_AMP / 3},
         "square_y180_I_wf_trio2": {"type": "constant", "sample": SQUARE_Y180_AMP / 3},
         "square_y90_I_wf_trio2": {"type": "constant", "sample": SQUARE_Y90_AMP / 3},
         "square_minus_y90_I_wf_trio2": {"type": "constant", "sample": SQUARE_MINUS_Y90_AMP / 3},
-        
         **{f"reflectometry_readout_wf_{key}": {"type": "constant", "sample": val["readout_amp"]} for key, val in TANK_CIRCUIT_CONSTANTS.items()},
         **{f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]} for key, val in PLUNGER_CONSTANTS.items()},
         **{f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]} for key, val in BARRIER_CONSTANTS.items()},
         **{f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]} for key, val in PLUNGER_SD_CONSTANTS.items()},
-        
         **{f"x180_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_x180_I"]} for key in QUBIT_CONSTANTS.keys()},
         **{f"x180_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_x180_Q"]} for key in QUBIT_CONSTANTS.keys()},
         **{f"x90_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_x90_I"]} for key in QUBIT_CONSTANTS.keys()},
@@ -1512,7 +1505,6 @@ config = {
         **{f"y90_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_y90_Q"]} for key in QUBIT_CONSTANTS.keys()},
         **{f"minus_y90_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_minus_y90_I"]} for key in QUBIT_CONSTANTS.keys()},
         **{f"minus_y90_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_minus_y90_Q"]} for key in QUBIT_CONSTANTS.keys()},
-        
         **{f"x180_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_x180_I"]} for key in CROT_CONSTANTS.keys()},
         **{f"x180_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_x180_Q"]} for key in CROT_CONSTANTS.keys()},
         **{f"x90_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_x90_I"]} for key in CROT_CONSTANTS.keys()},
@@ -1525,7 +1517,6 @@ config = {
         **{f"y90_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_y90_Q"]} for key in CROT_CONSTANTS.keys()},
         **{f"minus_y90_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_minus_y90_I"]} for key in CROT_CONSTANTS.keys()},
         **{f"minus_y90_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_minus_y90_Q"]} for key in CROT_CONSTANTS.keys()},
-        
         **{f"x180_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x180_I"]} for key in QUBIT_CONSTANTS.keys()},
         **{f"x180_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x180_Q"]} for key in QUBIT_CONSTANTS.keys()},
         **{f"x90_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x90_I"]} for key in QUBIT_CONSTANTS.keys()},
@@ -1538,7 +1529,6 @@ config = {
         **{f"y90_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_y90_Q"]} for key in QUBIT_CONSTANTS.keys()},
         **{f"minus_y90_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_minus_y90_I"]} for key in QUBIT_CONSTANTS.keys()},
         **{f"minus_y90_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_minus_y90_Q"]} for key in QUBIT_CONSTANTS.keys()},
-        
         **{f"x180_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x180_I"]} for key in CROT_CONSTANTS.keys()},
         **{f"x180_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x180_Q"]} for key in CROT_CONSTANTS.keys()},
         **{f"x90_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x90_I"]} for key in CROT_CONSTANTS.keys()},

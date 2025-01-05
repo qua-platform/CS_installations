@@ -22,12 +22,8 @@ n_avg = 100  # The number of averages
 
 with program() as raw_trace_prog:
     n = declare(int)  # QUA variable for the averaging loop
-    adc_dc_st = declare_stream(
-        adc_trace=True
-    )  # The stream to store the raw ADC trace for the DC line
-    adc_rf_st = declare_stream(
-        adc_trace=True
-    )  # The stream to store the raw ADC trace for the RF line
+    adc_dc_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace for the DC line
+    adc_rf_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace for the RF line
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         # Make sure that the readout pulse is sent with the same phase so that the acquired signal does not average out
@@ -52,9 +48,7 @@ with program() as raw_trace_prog:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 ###########################
 # Run or Simulate Program #

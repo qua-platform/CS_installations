@@ -24,8 +24,7 @@ Before proceeding to the next node:
 """
 
 import matplotlib.pyplot as plt
-from qm import (CompilerOptionArguments, QuantumMachinesManager,
-                SimulationConfig)
+from qm import CompilerOptionArguments, QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.loops import from_array
@@ -45,7 +44,7 @@ from macros_initialization_and_readout import *
 qubit = "qubit1"
 plungers = "P1-P2"
 tank_circuit = "tank_circuit1"
-do_feedback = False # False for test. True for actual.
+do_feedback = False  # False for test. True for actual.
 full_read_init = False
 num_output_streams = 6 if full_read_init else 2
 do_simulate = True
@@ -108,12 +107,10 @@ with program() as rabi_chevron:
         save(n, n_st)
         with for_(*from_array(t, durations)):  # Loop over the qubit pulse duration
             assign(d, tau_max - t)
- 
+
             with strict_timing_():  # Ensure that the sequence will be played without gap
-
-
-                perform_initialization(I, Q, P, I_st, Q_st, P_st, kind=plungers)
-
+                # Perform specified initialization 
+perform_initialization(I, Q, P, I_st, Q_st, P_st, kind=plungers)
 
                 # Navigate through the charge stability map
                 seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops)
@@ -127,9 +124,7 @@ with program() as rabi_chevron:
                 wait(t >> 2, qubit)
                 wait(delay_ops_end * u.ns, qubit) if delay_ops_end >= 16 else None
 
-
                 perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
-
 
                 seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
@@ -149,9 +144,7 @@ with program() as rabi_chevron:
 #  Open Communication with the QOP  #
 #####################################
 
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 
 ###########################
@@ -218,12 +211,12 @@ else:
     save_data_dict["I1"] = I1
     save_data_dict["I2"] = I2
 
-
     # Fit the data
     try:
         from qualang_tools.plot.fitting import Fit
+
         fit = Fit()
-        fig_analysis = plt.figure(figsize=(6,6))
+        fig_analysis = plt.figure(figsize=(6, 6))
         decay_fit = fit.T1(durations, I2, plot=True)
         qubit_T1 = np.round(np.abs(decay_fit["T1"][0]) / 4) * 4
         plt.xlabell("Idle duration [ns]")
@@ -236,7 +229,6 @@ else:
         pass
     finally:
         plt.show()
-
 
     # Save results
     script_name = Path(__file__).name

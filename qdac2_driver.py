@@ -95,6 +95,4 @@ def load_voltage_list(
     # Set the channel output filter
     qdac.write(f"sour{channel}:filt {output_filter}")
     sleep(1)
-    print(
-        f"Set-up QDAC2 channel {channel} to step voltages from a list of {len(voltage_list)} items on trigger events from the {trigger_port} port with a {qdac.query(f'sour{channel}:dc:list:dwell?')} s dwell time."
-    )
+    print(f"Set-up QDAC2 channel {channel} to step voltages from a list of {len(voltage_list)} items on trigger events from the {trigger_port} port with a {qdac.query(f'sour{channel}:dc:list:dwell?')} s dwell time.")

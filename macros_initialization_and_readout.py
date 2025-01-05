@@ -14,8 +14,7 @@ from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import (fetching_tool, progress_counter,
-                                   wait_until_job_is_paused)
+from qualang_tools.results import fetching_tool, progress_counter, wait_until_job_is_paused
 from qualang_tools.voltage_gates import VoltageGateSequence
 
 from configuration_with_lffem import *
@@ -29,10 +28,10 @@ qubits = ["qubit1", "qubit2", "qubit3", "qubit4", "qubit5"]
 sweep_gates = ["P1_sticky", "P2_sticky", "P3_sticky", "P4_sticky", "P5_sticky"]
 barrier_gates = ["B2"]
 qp_controls = ["qp_control_c3t2"]
-tank_circuits = ['tank_circuit1', 'tank_circuit2']
+tank_circuits = ["tank_circuit1", "tank_circuit2"]
 num_tank_circuits = len(TANK_CIRCUIT_CONSTANTS)
 all_elements = qubits + sweep_gates + barrier_gates + qp_controls + tank_circuits
-do_feedback = False # False for test. True for actual.
+do_feedback = False  # False for test. True for actual.
 
 
 delay_init_qubit_start = 16
@@ -144,13 +143,12 @@ def get_encoded_circuit(row):
 
 
 def adjust_all_elements(removes=[], adds=[], all_elements=all_elements):
-    
     if isinstance(removes, str):
         removes = [removes]
 
     if isinstance(adds, str):
-        adds = [adds]    
-    
+        adds = [adds]
+
     try:
         if len(removes) >= 1:
             for r in removes:
@@ -161,7 +159,7 @@ def adjust_all_elements(removes=[], adds=[], all_elements=all_elements):
                 all_elements.append(a)
     except:
         pass
-    
+
     print("all_elements = ", all_elements)
     return all_elements
 
@@ -172,7 +170,6 @@ def adjust_all_elements(removes=[], adds=[], all_elements=all_elements):
 
 
 def perform_initialization(I, Q, P, I_st, Q_st, P_st, kind: Literal["full", "P1-P2", "P4-P5"], add_checkpoints=False, checkpoint_element=None):
-
     if add_checkpoints and checkpoint_element is not None:
         add_checkpoint_for_scope_test(checkpoint_element, all_elements=all_elements)
 
@@ -193,7 +190,6 @@ def perform_initialization(I, Q, P, I_st, Q_st, P_st, kind: Literal["full", "P1-
 
 
 def perform_readout(I, Q, P, I_st, Q_st, P_st, kind: Literal["full", "P1-P2", "P4-P5"], add_checkpoints=False, checkpoint_element=None):
-
     if add_checkpoints and checkpoint_element is not None:
         add_checkpoint_for_scope_test(checkpoint_element, all_elements=all_elements)
 
@@ -220,8 +216,8 @@ def add_checkpoint_for_scope_test(qubit, all_elements=all_elements):
 
 
 def perform_full_initialization(I, Q, P, I_st, Q_st, P_st):
-    qua_vars1 = I[0], Q[0], P[0] # tank_circuit1
-    qua_vars2 = I[1], Q[1], P[1] # tank_circuit2
+    qua_vars1 = I[0], Q[0], P[0]  # tank_circuit1
+    qua_vars2 = I[1], Q[1], P[1]  # tank_circuit2
     qua_st_vars1 = I_st[0], Q_st[0], P_st[0]
     qua_st_vars2 = I_st[1], Q_st[1], P_st[1]
     qua_st_vars3 = I_st[2], Q_st[2], P_st[2]
@@ -249,8 +245,8 @@ def perform_full_initialization(I, Q, P, I_st, Q_st, P_st):
 
 
 def perform_full_readout(I, Q, P, I_st, Q_st, P_st):
-    qua_vars1 = I[0], Q[0], P[0] # tank_circuit1
-    qua_vars2 = I[1], Q[1], P[1] # tank_circuit2
+    qua_vars1 = I[0], Q[0], P[0]  # tank_circuit1
+    qua_vars2 = I[1], Q[1], P[1]  # tank_circuit2
     qua_st_vars1 = I_st[3], Q_st[3], P_st[3]
     qua_st_vars2 = I_st[4], Q_st[4], P_st[4]
     qua_st_vars3 = I_st[5], Q_st[5], P_st[5]
@@ -278,7 +274,7 @@ def read_init12(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st, do_save=[Fals
     P = measure_parity(*qua_vars, *qua_st_vars1, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold, do_save=do_save[0])
     wait(duration_readout * u.ns, "qubit1")
 
-    play_feedback(plungers=plungers, qubit="qubit1", parity=P)    
+    play_feedback(plungers=plungers, qubit="qubit1", parity=P)
     wait(duration_init_1q * u.ns, "tank_circuit1")
 
     P = measure_parity(*qua_vars, *qua_st_vars2, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold, do_save=do_save[1])

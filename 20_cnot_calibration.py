@@ -48,8 +48,7 @@ Before proceeding to the next node:
 """
 
 import matplotlib.pyplot as plt
-from qm import (CompilerOptionArguments, QuantumMachinesManager,
-                SimulationConfig)
+from qm import CompilerOptionArguments, QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.loops import from_array
@@ -75,7 +74,7 @@ n_avg = 3
 tau_min = 16
 tau_max = 200
 tau_step = 4
-duration_init = tau_max 
+duration_init = tau_max
 durations = np.arange(tau_min, tau_max, tau_step)
 delay_init_qubit = duration_init - tau_max - 2 * PI_HALF_LEN
 assert delay_init_qubit >= 16
@@ -135,7 +134,7 @@ with program() as rabi_chevron:
                     # wait(4, qubit)  # Need 4 additional cycles because of a gap
                     wait(delay_init_qubit * u.ns, qubit)
                     wait(d >> 2, qubit)
-                    
+
                     # Play the 1st pi half pulse
                     play("square_x90", qubit)
                     # Wait a varying idle time
@@ -165,9 +164,7 @@ with program() as rabi_chevron:
 #  Open Communication with the QOP  #
 #####################################
 
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 qmm.clear_all_job_results()
 qmm.close_all_qms()
 

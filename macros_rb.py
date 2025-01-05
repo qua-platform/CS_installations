@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
-from qm import (CompilerOptionArguments, QuantumMachinesManager,
-                SimulationConfig)
+from qm import CompilerOptionArguments, QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
@@ -56,7 +55,6 @@ def power_law(power, a, b, p):
 
 
 def generate_encoded_sequence(N, current_state=0, ends_with_inv_gate=True, num_gates_total_max=0, seed=0):
-
     np.random.seed(seed)
     clifford_arr = np.random.randint(low=0, high=23, size=N).astype(int)
     state_arr = np.zeros(N).astype(int)
@@ -67,18 +65,18 @@ def generate_encoded_sequence(N, current_state=0, ends_with_inv_gate=True, num_g
         state_arr[i] = next_state
         current_state = next_state
         inv_gate_arr[i] = inv_gates[current_state]
-    
+
     if ends_with_inv_gate:
         inv_gate = inv_gate_arr[-2]
         clifford_arr[-1] = inv_gate
         state_arr[-1] = c1_table[state_arr[-2], inv_gate]
-    
+
     clifford_list = clifford_arr.tolist()
     state_list = state_arr.tolist()
     inv_gate_list = inv_gate_arr.tolist()
 
     num_gates_total = int(np.array([map_clifford_to_num_gates[s] for s in clifford_list]).sum())
-    num_gates_total_rest = num_gates_total_max - num_gates_total 
+    num_gates_total_rest = num_gates_total_max - num_gates_total
     duration_rb_total = num_gates_total * PI_LEN
     _encoded_circuit = [duration_rb_total] + clifford_list
 
@@ -90,7 +88,7 @@ def play_sequence(sequence_list, depth, qb, i_from=0):
     with for_(i, i_from, i <= depth + i_from, i + 1):
         with switch_(sequence_list[i], unsafe=True):
             with case_(0):
-                wait(PI_LEN // 4, qb) # I
+                wait(PI_LEN // 4, qb)  # I
             with case_(1):
                 play("x180_square", qb)
             with case_(2):
@@ -173,7 +171,7 @@ def generate_sequence(current_state, depth, max_circuit_depth=0, ends_with_inv_g
         assign(step, rand.rand_int(24))
         assign(current_state, cayley[current_state * 24 + step])
         assign(sequence[i], step)
-    
+
     if ends_with_inv_gate:
         assign(inv_gate, inv_list[current_state])
         assign(sequence[depth - 1], inv_gate)
@@ -365,5 +363,3 @@ def generate_sequence_time(sequence_list, depth):
                 # play("-x90", qb)
                 assign(duration, duration + minus_x90_len + y90_len + minus_x90_len)
     return duration
-
-

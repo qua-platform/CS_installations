@@ -29,8 +29,7 @@ Before proceeding to the next node:
 """
 
 import matplotlib.pyplot as plt
-from qm import (CompilerOptionArguments, QuantumMachinesManager,
-                SimulationConfig)
+from qm import CompilerOptionArguments, QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.loops import from_array
@@ -50,7 +49,7 @@ from macros_initialization_and_readout import *
 qubit = "qubit1"
 plungers = "P1-P2"
 tank_circuit = "tank_circuit1"
-do_feedback = False # False for test. True for actual.
+do_feedback = False  # False for test. True for actual.
 full_read_init = False
 num_output_streams = 1
 do_simulate = True
@@ -108,9 +107,8 @@ with program() as qubit_spectroscopy_prog:
 
         with for_(*from_array(f, frequencies)):  # Loop over the qubit pulse amplitude
             update_frequency(qubit, f)
-            
-            with strict_timing_():  # Ensure that the sequence will be played without gap
 
+            with strict_timing_():  # Ensure that the sequence will be played without gap
                 # Navigate through the charge stability map
                 seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops)
                 other_elements = get_other_elements(elements_in_use=[qubit] + sweep_gates, all_elements=all_elements)
@@ -140,15 +138,12 @@ with program() as qubit_spectroscopy_prog:
             I_st[k].buffer(len(frequencies)).average().save(f"I{k + 1:d}")
             Q_st[k].buffer(len(frequencies)).average().save(f"Q{k + 1:d}")
             P_st[k].boolean_to_int().buffer(len(frequencies)).average().save(f"P{k + 1:d}")
-            
-            
-            
+
+
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 
 ###########################
@@ -258,4 +253,3 @@ else:
     qm.close()
 
 # %%
-

@@ -13,8 +13,7 @@ from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
 from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import (fetching_tool, progress_counter,
-                                   wait_until_job_is_paused)
+from qualang_tools.results import fetching_tool, progress_counter, wait_until_job_is_paused
 from qualang_tools.voltage_gates import VoltageGateSequence
 
 from configuration_with_lffem import *
@@ -32,7 +31,7 @@ from macros_rb import *
 qubit = "qubit5"
 qubit_trio1 = f"{qubit}_trio1"
 plungers = "P4-P5"
-do_feedback = False # False for test. True for actual.
+do_feedback = False  # False for test. True for actual.
 full_read_init = False
 num_output_streams = 6 if full_read_init else 2
 do_simulate = False
@@ -44,7 +43,7 @@ all_elements = adjust_all_elements(removes=["qubit1", "qubit2", "qubit3"], adds=
 n_avg = 5
 num_of_sequences = 3  # Number of random sequences
 circuit_depth_min = 10000
-circuit_depth_max = 16000 # works up to 16_000
+circuit_depth_max = 16000  # works up to 16_000
 delta_clifford = 1000
 circuit_depths = np.arange(circuit_depth_min, circuit_depth_max + 1, delta_clifford).astype(int)
 actual_circuit_depths = num_target_qubits * circuit_depths
@@ -63,7 +62,7 @@ delay_rb_end_loop = 0
 # duration_ops = delay_rb_start + duration_rb + delay_rb_end
 
 
-duration_compensation_pulse_rb = 800_000 # duration_rb
+duration_compensation_pulse_rb = 800_000  # duration_rb
 duration_compensation_pulse = int(0.7 * duration_compensation_pulse_full_initialization + duration_compensation_pulse_rb + duration_compensation_pulse_full_readout)
 duration_compensation_pulse = 100 * (duration_compensation_pulse // 100)
 
@@ -90,13 +89,13 @@ with program() as PROGRAM_RB:
     m_st = declare_stream()  # Stream for the iteration number (progress bar)
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
     depth_st = declare_stream()
-    
+
     I = [declare(fixed) for _ in range(num_tank_circuits)]
     Q = [declare(fixed) for _ in range(num_tank_circuits)]
     P = [declare(bool) for _ in range(num_tank_circuits)]  # true if even parity
     I_st = [declare_stream() for _ in range(num_output_streams)]
-    Q_st = [None for _ in range(num_output_streams)] # [declare_stream() for _ in range(num_output_streams)]
-    P_st = [None for _ in range(num_output_streams)] # [declare_stream() for _ in range(num_output_streams)]
+    Q_st = [None for _ in range(num_output_streams)]  # [declare_stream() for _ in range(num_output_streams)]
+    P_st = [None for _ in range(num_output_streams)]  # [declare_stream() for _ in range(num_output_streams)]
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("tank_circuit1", I[0], Q[0], P[0])
     assign_variables_to_element("tank_circuit2", I[1], Q[1], P[1])
@@ -107,27 +106,21 @@ with program() as PROGRAM_RB:
         encoded_circuit = declare_input_stream(
             int,
             name="_encoded_circuit",
-            size=circuit_depth_max + 1, # 2 to account for [circ_idx, seq_len, remaining_duraiton_case]
+            size=circuit_depth_max + 1,  # 2 to account for [circ_idx, seq_len, remaining_duraiton_case]
         )  # input stream the sequence
 
-
     with for_(*from_array(depth, circuit_depths)):  # Loop over the depths
-
         with for_(m, 0, m < num_of_sequences, m + 1):
-            
             if not do_simulate:
                 advance_input_stream(encoded_circuit)  # ordered or randomized
 
-            duration_rb = encoded_circuit[0] # just a sequential index for this circuit
+            duration_rb = encoded_circuit[0]  # just a sequential index for this circuit
             assign(duration_ops, delay_rb_start_loop + duration_rb + delay_rb_end_loop)
 
             with for_(n, 0, n < n_avg, n + 1):
-
                 with strict_timing_():
-
-
+                    # Perform specified initialization 
                     perform_initialization(I, Q, P, I_st, Q_st, P_st, kind=plungers)
-
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops * u.ns)
@@ -138,12 +131,12 @@ with program() as PROGRAM_RB:
                     play_sequence(encoded_circuit, depth, qubit, i_from=1)
                     wait(delay_rb_end_loop * u.ns, qubit) if delay_rb_end_loop >= 16 else None
 
-
+                    # Perform specified readout
+                    # Perform specified readout
                     perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
 
-
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
-                
+
                 # save(depth, depth)
                 # save(m, m_st)
                 # save(n, n_st)
@@ -161,9 +154,7 @@ with program() as PROGRAM_RB:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 qmm.clear_all_job_results()
 qmm.close_all_qms()
 
@@ -185,6 +176,7 @@ if simulate:
 
 else:
     from qm import generate_qua_script
+
     sourceFile = open("debug_19b_single_qubit_RB_read_init.py", "w")
     print(generate_qua_script(PROGRAM_RB, config), file=sourceFile)
     sourceFile.close()
@@ -200,16 +192,15 @@ else:
 
     if save_data:
         from qualang_tools.results.data_handler import DataHandler
+
         script_name = Path(__file__).name
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
-
 
     ress = []
     start_time = datetime.now()
     clifford_lists = []
     for i_depth, _circuit_depth in enumerate(circuit_depths):
-
         for num_seq in range(num_of_sequences):
             _seed = i_depth * num_of_sequences + num_seq
 
@@ -242,8 +233,7 @@ else:
 
     # Data to save
     print("save result!")
-    np.savez(file = data_handler.path / f"data_circuit_depth_{_circuit_depth:08d}.npz", **data_dict)
-
+    np.savez(file=data_handler.path / f"data_circuit_depth_{_circuit_depth:08d}.npz", **data_dict)
 
     if save_data:
         # Save results

@@ -19,8 +19,7 @@ Prerequisites:
 """
 
 import matplotlib.pyplot as plt
-from qm import (CompilerOptionArguments, QuantumMachinesManager,
-                SimulationConfig)
+from qm import CompilerOptionArguments, QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
@@ -40,7 +39,7 @@ from macros_rb import *
 # Program-specific variables #
 ##############################
 
-qubit = "qubit5" # choose "qubit5" for LFFEM. this is to validate the code with the scope.
+qubit = "qubit5"  # choose "qubit5" for LFFEM. this is to validate the code with the scope.
 qubit_trio1 = f"{qubit}_trio1"
 qubit_trio2 = f"{qubit}_trio2"
 
@@ -58,6 +57,7 @@ seed = 0  # Pseudo-random number generator seed
 # Helper functions and QUA macros #
 ###################################
 
+
 def power_law(power, a, b, p):
     return a * (p**power) + b
 
@@ -68,7 +68,7 @@ def power_law(power, a, b, p):
 with program() as PROG_RB:
     m = declare(int)  # QUA variable for the loop over random sequences
     n = declare(int)  # QUA variable for the averaging loop
-    
+
     m_st = declare_stream()
     n_st = declare_stream()
 
@@ -93,11 +93,8 @@ with program() as PROG_RB:
     # assign_variables_to_element(qubit_trio2, *[rep3, current_state3, depth3, sequence_time3])
 
     with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
-
         with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
-
             with strict_timing_():
-                
                 ## elem 1
                 sequence_list1, current_state1 = generate_sequence(current_state=current_state1, ends_with_inv_gate=False, max_circuit_depth=max_circuit_depth, seed=seed)
                 play_sequence(sequence_list1, depth1, qubit)
@@ -109,7 +106,6 @@ with program() as PROG_RB:
                 sequence_list1, current_state1 = generate_sequence(current_state=current_state1, ends_with_inv_gate=False, max_circuit_depth=max_circuit_depth, seed=seed)
                 assign(sequence_time1, generate_sequence_time(sequence_list1, depth1) - 60_000)
                 wait(sequence_time1 >> 2, qubit)
-
 
                 ## elem 2
                 sequence_list2, current_state2 = generate_sequence(current_state=current_state2, ends_with_inv_gate=False, max_circuit_depth=max_circuit_depth, seed=seed)
@@ -123,7 +119,6 @@ with program() as PROG_RB:
                 assign(sequence_time2, generate_sequence_time(sequence_list2, depth2) - 60_000)
                 wait(sequence_time2 >> 2, qubit_trio1)
 
-
                 # ## elem 3
                 # sequence_list3, current_state3 = generate_sequence(current_state=current_state3, ends_with_inv_gate=False, max_circuit_depth=max_circuit_depth, seed=seed)
                 # assign(sequence_time3, generate_sequence_time(sequence_list3, depth3) - 60_000)
@@ -136,9 +131,7 @@ with program() as PROG_RB:
                 # sequence_list3, current_state3 = generate_sequence(current_state=current_state3, ends_with_inv_gate=False, max_circuit_depth=max_circuit_depth, seed=seed)
                 # play_sequence(sequence_list3, depth3, qubit_trio2)
 
-
             wait(10_000)
-
 
         # Save the counter for the progress bar
         save(m, m_st)
@@ -147,9 +140,7 @@ with program() as PROG_RB:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 qmm.clear_all_job_results()
 qmm.close_all_qms()
 
@@ -174,6 +165,7 @@ if simulate:
 
 else:
     from qm import generate_qua_script
+
     sourceFile = open("debug_14a_single_qubit_RB_read_init_online_1element.py", "w")
     print(generate_qua_script(PROG_RB, config), file=sourceFile)
     sourceFile.close()

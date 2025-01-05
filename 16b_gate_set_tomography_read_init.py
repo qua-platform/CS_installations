@@ -11,8 +11,7 @@ from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import (fetching_tool, progress_counter,
-                                   wait_until_job_is_paused)
+from qualang_tools.results import fetching_tool, progress_counter, wait_until_job_is_paused
 from qualang_tools.voltage_gates import VoltageGateSequence
 
 from configuration_with_lffem import *
@@ -28,14 +27,14 @@ from macros_initialization_and_readout import *
 
 qubit = "qubit1"
 plungers = "P1-P2"
-do_feedback = False # False for test. True for actual.
+do_feedback = False  # False for test. True for actual.
 full_read_init = False
 num_output_streams = 6 if full_read_init else 2
 do_simulate = True
 
 list_n_shots = [10, 100]
 df_enc_seqs = get_dataframe_encoded_sequence()
-sequence_max_len = 2 + df_enc_seqs["full_sequence_length"].max() # 2 for circ_idx and circ_len
+sequence_max_len = 2 + df_enc_seqs["full_sequence_length"].max()  # 2 for circ_idx and circ_len
 num_cicuits = len(df_enc_seqs)
 batch_size = max(list_n_shots)
 result_array_len = num_cicuits * sum(list_n_shots)
@@ -76,7 +75,7 @@ with program() as PROGRAM_GST:
     n_shots_st = declare_stream()
     circ_idx_st = declare_stream()
     circ_len_st = declare_stream()
-    
+
     I = [declare(fixed) for _ in range(num_tank_circuits)]
     Q = [declare(fixed) for _ in range(num_tank_circuits)]
     P = [declare(bool) for _ in range(num_tank_circuits)]  # true if even parity
@@ -93,28 +92,23 @@ with program() as PROGRAM_GST:
         encoded_circuit = declare_input_stream(
             int,
             name="_encoded_circuit",
-            size=sequence_max_len + 3, # 2 to account for [circ_idx, seq_len, remaining_duraiton_case]
+            size=sequence_max_len + 3,  # 2 to account for [circ_idx, seq_len, remaining_duraiton_case]
         )  # input stream the sequence
 
-
     with for_each_(n_shots, list_n_shots):
-
         with for_(circ, 0, circ < num_cicuits, circ + 1):
-            
             if not do_simulate:
                 advance_input_stream(encoded_circuit)  # ordered or randomized
 
-            circ_idx = encoded_circuit[0] # just a sequential index for this circuit 
-            circ_len = encoded_circuit[1] # gate sequence length for this circuit
+            circ_idx = encoded_circuit[0]  # just a sequential index for this circuit
+            circ_len = encoded_circuit[1]  # gate sequence length for this circuit
 
             with for_(n, 0, n < n_shots, n + 1):
                 assign(count, count + 1)
 
-                with strict_timing_():                    
-
-
+                with strict_timing_():
+                    # Perform specified initialization 
                     perform_initialization(I, Q, P, I_st, Q_st, P_st, kind=plungers)
-
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}")
@@ -124,7 +118,6 @@ with program() as PROGRAM_GST:
                     wait(duration_gst * u.ns, *other_elements)
 
                     with for_(case_idx, 2, case_idx < circ_len + 2, case_idx + 1):
-
                         with switch_(encoded_circuit[case_idx], unsafe=True):
                             # baseband operation is fixed regardless L
                             # normal:just run till the end with Null
@@ -138,7 +131,7 @@ with program() as PROGRAM_GST:
                                 wait(2 * PI_HALF_LEN * u.ns, qubit)
                             with case_(3):
                                 wait(3 * PI_HALF_LEN * u.ns, qubit)
-                            
+
                             # '{}': 4, # I
                             # 'Gxpi2:0': 5,
                             # 'Gypi2:0': 6,
@@ -147,9 +140,9 @@ with program() as PROGRAM_GST:
                             # 'Gypi2:0Gypi2:0Gypi2:0': 10,
                             # 'Gxpi2:0Gypi2:0': 8,
                             # 'Gxpi2:0Gxpi2:0Gypi2:0': 11
-                            
+
                             # prep & meas fiducials and germs
-                            with case_(4): #   I = XXXX
+                            with case_(4):  #   I = XXXX
                                 play("x90_kaiser", qubit)
                                 play("x90_kaiser", qubit)
                                 play("x90_kaiser", qubit)
@@ -178,13 +171,12 @@ with program() as PROGRAM_GST:
                                 play("y90_kaiser", qubit)
 
                     wait(delay_gst_end * u.ns, qubit) if delay_gst_end >= 16 else None
-                    
 
+                    # Perform specified readout
                     perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
 
-
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
-                
+
                 save(n, n_st)
                 save(n_shots, n_shots_st)
                 save(circ_idx, circ_idx_st)
@@ -196,7 +188,6 @@ with program() as PROGRAM_GST:
                 assign(division, division + 1)
                 # pause to outstream the data
                 pause()
-
 
     with stream_processing():
         n_st.buffer(batch_size).save("n_history")
@@ -211,9 +202,7 @@ with program() as PROGRAM_GST:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 qmm.clear_all_job_results()
 qmm.close_all_qms()
 
@@ -245,7 +234,6 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(PROGRAM_GST, compiler_options=CompilerOptionArguments(flags=["not-strict-timing"]))
 
-
     fetch_names = ["n_history", "n_shots_history", "circ_idx_history"]
     fetch_names.extend([f"I{k:d}" for k in range(num_output_streams)])
     # fetch_names.extend([f"Q{k:d}" for k in range(num_output_streams)])
@@ -253,10 +241,10 @@ else:
 
     if save_data:
         from qualang_tools.results.data_handler import DataHandler
+
         script_name = Path(__file__).name
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
-
 
     batch_idx = 1
     ress = []
@@ -279,7 +267,6 @@ else:
             job.push_to_input_stream("_encoded_circuit", _encoded_circuit)
 
             if job.is_paused():
-
                 # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
                 if batch_idx == 1:
                     print("get a fetching tool")
@@ -293,8 +280,8 @@ else:
 
                 # Data to save
                 print("save result!")
-                np.savez(file = data_handler.path / f"data_{batch_idx:08d}.npz", **data_dict)
-                batch_idx +=1
+                np.savez(file=data_handler.path / f"data_{batch_idx:08d}.npz", **data_dict)
+                batch_idx += 1
                 job.resume()
 
     # Save results
@@ -302,8 +289,7 @@ else:
     data_handler = DataHandler(root_data_folder=save_dir)
     data_handler.additional_files = {
         script_name: script_name,
-        "macros_initialization_and_readout.py": "macros_initialization_and_readout.py"
-        **default_additional_files,
+        "macros_initialization_and_readout.py": "macros_initialization_and_readout.py" ** default_additional_files,
     }
     data_handler.save_data(data=save_data_dict, name=Path(__name__).stem)
 
