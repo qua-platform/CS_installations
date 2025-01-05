@@ -3,8 +3,9 @@
         Readout & Init
 """
 
-from typing import Literal
 from datetime import datetime
+from typing import Literal
+
 import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -13,12 +14,12 @@ from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import fetching_tool, progress_counter, wait_until_job_is_paused
+from qualang_tools.results import (fetching_tool, progress_counter,
+                                   wait_until_job_is_paused)
 from qualang_tools.voltage_gates import VoltageGateSequence
-from macros import get_other_elements
 
 from configuration_with_lffem import *
-
+from macros import get_other_elements
 
 ##################
 #   Parameters   #

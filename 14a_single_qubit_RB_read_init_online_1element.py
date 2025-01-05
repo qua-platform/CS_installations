@@ -29,9 +29,10 @@ from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy.optimize import curve_fit
 
-from macros_rb import *
-from macros_initialization_and_readout import *
 from configuration_with_lffem import *
+from macros_initialization_and_readout import *
+from macros_rb import *
+
 # from configuration_with_opxplus import *
 
 

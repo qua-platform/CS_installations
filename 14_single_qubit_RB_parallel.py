@@ -25,17 +25,17 @@ from qm import (CompilerOptionArguments, QuantumMachinesManager,
 from qm.qua import *
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
+from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.voltage_gates import VoltageGateSequence
-from qualang_tools.loops import from_array
 from scipy.optimize import curve_fit
 
-from macros import get_other_elements
-
-from macros_rb import *
-from macros_initialization_and_readout import *
 from configuration_with_lffem import *
+from macros import get_other_elements
+from macros_initialization_and_readout import *
+from macros_rb import *
+
 # from configuration_with_opxplus import *
 
 # matplotlib.use('TkAgg')
