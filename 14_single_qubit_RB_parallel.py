@@ -33,11 +33,12 @@ from scipy.optimize import curve_fit
 
 from macros import get_other_elements
 
+from macros_rb import *
 from macros_initialization_and_readout import *
 from configuration_with_lffem import *
 # from configuration_with_opxplus import *
 
-# # matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 ##############################
@@ -45,7 +46,7 @@ from configuration_with_lffem import *
 ##############################
 
 target_qubits = ["qubit4", "qubit5"]
-target_tank_circuit = "tank_circuit1"
+target_tank_circuit = "tank_circuit2"
 plungers = "P4-P5"
 do_feedback = False # False for test. True for actual.
 seed = 123  # Pseudo-random number generator seed
@@ -53,6 +54,7 @@ full_read_init = False
 num_output_streams = 6 if full_read_init else 2
 
 n_avg = 2
+seed = 0
 num_of_sequences = 3  # Number of random sequences
 circuit_depth_min = 1000
 circuit_depth_max = 7800 # worked up to 7800 
@@ -86,223 +88,103 @@ seq.add_points("operation_P3", level_ops["P3"], delay_rb_start_loop + delay_rb_e
 ###################################
 
 
-x180_len = PI_LEN
-x90_len = PI_HALF_LEN
-minus_x90_len = PI_HALF_LEN
-y180_len = PI_LEN
-y90_len = PI_HALF_LEN
-minus_y90_len = PI_HALF_LEN
+# def generate_sequence(depth, seed=seed):
+#     cayley = declare(int, value=c1_table.flatten().tolist())
+#     inv_list = declare(int, value=inv_gates)
+#     step = declare(int)
+#     current_state = declare(int, value=0)
+#     sequence = declare(int, size=circuit_depth_max + 1)
+#     inv_gate = declare(int)
+#     i = declare(int)
+#     rand = Random(seed=seed)
 
-
-# List of recovery gates from the lookup table
-inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
-
-
-def power_law(power, a, b, p):
-    return a * (p**power) + b
-
-
-def generate_sequence(depth, seed=seed):
-    cayley = declare(int, value=c1_table.flatten().tolist())
-    inv_list = declare(int, value=inv_gates)
-    step = declare(int)
-    current_state = declare(int, value=0)
-    sequence = declare(int, size=circuit_depth_max + 1)
-    inv_gate = declare(int)
-    i = declare(int)
-    rand = Random(seed=seed)
-
-    with for_(i, 0, i < depth, i + 1):
-        assign(step, rand.rand_int(24))
-        assign(current_state, cayley[current_state * 24 + step])
-        assign(sequence[i], step)
+#     with for_(i, 0, i < depth, i + 1):
+#         assign(step, rand.rand_int(24))
+#         assign(current_state, cayley[current_state * 24 + step])
+#         assign(sequence[i], step)
     
-    # set inverse gate for the last element
-    assign(inv_gate, inv_list[current_state])
-    assign(sequence[depth], inv_gate)
+#     # set inverse gate for the last element
+#     assign(inv_gate, inv_list[current_state])
+#     assign(sequence[depth], inv_gate)
 
-    return sequence
-
-
-def play_sequence(sequence_list, depth, qb):
-    i = declare(int)
-    with for_(i, 0, i <= depth, i + 1):
-        with switch_(sequence_list[i], unsafe=True):
-            with case_(0):
-                wait(x180_len // 4, qb)
-                # play("x180_square", qb)
-                # play("x180_square", qb)
-            with case_(1):
-                play("x180_square", qb)
-            with case_(2):
-                play("y180_square", qb)
-            with case_(3):
-                play("y180_square", qb)
-                play("x180_square", qb)
-            with case_(4):
-                play("x90_square", qb)
-                play("y90_square", qb)
-            with case_(5):
-                play("x90_square", qb)
-                play("-y90_square", qb)
-            with case_(6):
-                play("-x90_square", qb)
-                play("y90_square", qb)
-            with case_(7):
-                play("-x90_square", qb)
-                play("-y90_square", qb)
-            with case_(8):
-                play("y90_square", qb)
-                play("x90_square", qb)
-            with case_(9):
-                play("y90_square", qb)
-                play("-x90_square", qb)
-            with case_(10):
-                play("-y90_square", qb)
-                play("x90_square", qb)
-            with case_(11):
-                play("-y90_square", qb)
-                play("-x90_square", qb)
-            with case_(12):
-                play("x90_square", qb)
-            with case_(13):
-                play("-x90_square", qb)
-            with case_(14):
-                play("y90_square", qb)
-            with case_(15):
-                play("-y90_square", qb)
-            with case_(16):
-                play("-x90_square", qb)
-                play("y90_square", qb)
-                play("x90_square", qb)
-            with case_(17):
-                play("-x90_square", qb)
-                play("-y90_square", qb)
-                play("x90_square", qb)
-            with case_(18):
-                play("x180_square", qb)
-                play("y90_square", qb)
-            with case_(19):
-                play("x180_square", qb)
-                play("-y90_square", qb)
-            with case_(20):
-                play("y180_square", qb)
-                play("x90_square", qb)
-            with case_(21):
-                play("y180_square", qb)
-                play("-x90_square", qb)
-            with case_(22):
-                play("x90_square", qb)
-                play("y90_square", qb)
-                play("x90_square", qb)
-            with case_(23):
-                play("-x90_square", qb)
-                play("y90_square", qb)
-                play("-x90_square", qb)
+#     return sequence
 
 
-# Macro to calculate exact duration of generated sequence at a given depth
-def generate_sequence_time(sequence_list, depth):
-    j = declare(int)
-    duration = declare(int)
-    assign(duration, 0)  # Ensures duration is reset to 0 for every depth calculated
-    with for_(j, 0, j <= depth, j + 1):
-        with switch_(sequence_list[j], unsafe=True):
-            with case_(0):
-                # wait(x180_len // 4, qb)
-                assign(duration, duration + 2 * x180_len)
-            with case_(1):
-                # play("x180", qb)
-                assign(duration, duration + x180_len)
-            with case_(2):
-                # play("y180", qb)
-                assign(duration, duration + y180_len)
-            with case_(3):
-                # play("y180", qb)
-                # play("x180", qb)
-                assign(duration, duration + y180_len + x180_len)
-            with case_(4):
-                # play("x90", qb)
-                # play("y90", qb)
-                assign(duration, duration + x90_len + y90_len)
-            with case_(5):
-                # play("x90", qb)
-                # play("-y90", qb)
-                assign(duration, duration + x90_len + minus_y90_len)
-            with case_(6):
-                # play("-x90", qb)
-                # play("y90", qb)
-                assign(duration, duration + minus_x90_len + y90_len)
-            with case_(7):
-                # play("-x90", qb)
-                # play("-y90", qb)
-                assign(duration, duration + minus_x90_len + minus_y90_len)
-            with case_(8):
-                # play("y90", qb)
-                # play("x90", qb)
-                assign(duration, duration + y90_len + x90_len)
-            with case_(9):
-                # play("y90", qb)
-                # play("-x90", qb)
-                assign(duration, duration + y90_len + minus_x90_len)
-            with case_(10):
-                # play("-y90", qb)
-                # play("x90", qb)
-                assign(duration, duration + minus_y90_len + x90_len)
-            with case_(11):
-                # play("-y90", qb)
-                # play("-x90", qb)
-                assign(duration, duration + minus_y90_len + minus_x90_len)
-            with case_(12):
-                # play("x90", qb)
-                assign(duration, duration + x90_len)
-            with case_(13):
-                # play("-x90", qb)
-                assign(duration, duration + minus_x90_len)
-            with case_(14):
-                # play("y90", qb)
-                assign(duration, duration + y90_len)
-            with case_(15):
-                # play("-y90", qb)
-                assign(duration, duration + minus_y90_len)
-            with case_(16):
-                # play("-x90", qb)
-                # play("y90", qb)
-                # play("x90", qb)
-                assign(duration, duration + minus_x90_len + y90_len + x90_len)
-            with case_(17):
-                # play("-x90", qb)
-                # play("-y90", qb)
-                # play("x90", qb)
-                assign(duration, duration + minus_x90_len + minus_y90_len + x90_len)
-            with case_(18):
-                # play("x180", qb)
-                # play("y90", qb)
-                assign(duration, duration + x180_len + y90_len)
-            with case_(19):
-                # play("x180", qb)
-                # play("-y90", qb)
-                assign(duration, duration + x180_len + minus_y90_len)
-            with case_(20):
-                # play("y180", qb)
-                # play("x90", qb)
-                assign(duration, duration + y180_len + x90_len)
-            with case_(21):
-                # play("y180", qb)
-                # play("-x90", qb)
-                assign(duration, duration + y180_len + minus_x90_len)
-            with case_(22):
-                # play("x90", qb)
-                # play("y90", qb)
-                # play("x90", qb)
-                assign(duration, duration + x90_len + y90_len + x90_len)
-            with case_(23):
-                # play("-x90", qb)
-                # play("y90", qb)
-                # play("-x90", qb)
-                assign(duration, duration + minus_x90_len + y90_len + minus_x90_len)
-    return duration
-
+# def play_sequence(sequence_list, depth, qb):
+#     i = declare(int)
+#     with for_(i, 0, i <= depth, i + 1):
+#         with switch_(sequence_list[i], unsafe=True):
+#             with case_(0):
+#                 wait(x180_len // 4, qb)
+#                 # play("x180_square", qb)
+#                 # play("x180_square", qb)
+#             with case_(1):
+#                 play("x180_square", qb)
+#             with case_(2):
+#                 play("y180_square", qb)
+#             with case_(3):
+#                 play("y180_square", qb)
+#                 play("x180_square", qb)
+#             with case_(4):
+#                 play("x90_square", qb)
+#                 play("y90_square", qb)
+#             with case_(5):
+#                 play("x90_square", qb)
+#                 play("-y90_square", qb)
+#             with case_(6):
+#                 play("-x90_square", qb)
+#                 play("y90_square", qb)
+#             with case_(7):
+#                 play("-x90_square", qb)
+#                 play("-y90_square", qb)
+#             with case_(8):
+#                 play("y90_square", qb)
+#                 play("x90_square", qb)
+#             with case_(9):
+#                 play("y90_square", qb)
+#                 play("-x90_square", qb)
+#             with case_(10):
+#                 play("-y90_square", qb)
+#                 play("x90_square", qb)
+#             with case_(11):
+#                 play("-y90_square", qb)
+#                 play("-x90_square", qb)
+#             with case_(12):
+#                 play("x90_square", qb)
+#             with case_(13):
+#                 play("-x90_square", qb)
+#             with case_(14):
+#                 play("y90_square", qb)
+#             with case_(15):
+#                 play("-y90_square", qb)
+#             with case_(16):
+#                 play("-x90_square", qb)
+#                 play("y90_square", qb)
+#                 play("x90_square", qb)
+#             with case_(17):
+#                 play("-x90_square", qb)
+#                 play("-y90_square", qb)
+#                 play("x90_square", qb)
+#             with case_(18):
+#                 play("x180_square", qb)
+#                 play("y90_square", qb)
+#             with case_(19):
+#                 play("x180_square", qb)
+#                 play("-y90_square", qb)
+#             with case_(20):
+#                 play("y180_square", qb)
+#                 play("x90_square", qb)
+#             with case_(21):
+#                 play("y180_square", qb)
+#                 play("-x90_square", qb)
+#             with case_(22):
+#                 play("x90_square", qb)
+#                 play("y90_square", qb)
+#                 play("x90_square", qb)
+#             with case_(23):
+#                 play("-x90_square", qb)
+#                 play("y90_square", qb)
+#                 play("-x90_square", qb)
 
 ###################
 # The QUA program #
@@ -318,6 +200,9 @@ with program() as rb:
     I = [declare(fixed) for _ in range(2)]  # QUA variable for the 'I' quadrature
     Q = [declare(fixed) for _ in range(2)]  # QUA variable for the 'Q' quadrature
     P = [declare(bool) for _ in range(2)]  # QUA variable for state discrimination
+
+    current_state1 = declare(int, value=0)
+    current_state2 = declare(int, value=0)
     sequence_time1 = declare(int) # QUA variable for RB sequence duration for a given depth
     sequence_time2 = declare(int) # QUA variable for RB sequence duration for a given depth
     # Ensure that the result variables are assigned to the measurement elements
@@ -335,9 +220,8 @@ with program() as rb:
     
         with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
 
-            # # sequence_lists[0] == sequence_lists[1]
-            sequence_list1 = generate_sequence(depth1) # Generate the random sequence of length circuit_depth_max
-            sequence_list2 = generate_sequence(depth2) # Generate the random sequence of length circuit_depth_max
+            sequence_list1, _ = generate_sequence(current_state1, depth=depth1, max_circuit_depth=circuit_depth_max, ends_with_inv_gate=True, seed=seed)
+            sequence_list2, _ = generate_sequence(current_state2, depth=depth2, max_circuit_depth=circuit_depth_max, ends_with_inv_gate=True, seed=seed)
 
             # sequence_list1 = declare(int, value=[ 6, 11, 18,  1, 17, 12, 16,  8, 11,  6])
             # sequence_list2 = declare(int, value=[ 6, 11, 18,  1, 17, 12, 16,  8, 11,  6])
@@ -348,23 +232,12 @@ with program() as rb:
             assign(duration_ops, delay_rb_start_loop + sequence_time1 + delay_rb_end_loop)
 
             with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
-                
-                # play("x180_square", "qubit5")
-                # other_elements = get_other_elements(elements_in_use=["qubit5"], all_elements=all_elements)
-                # wait(PI_LEN * u.ns, *other_elements)
 
                 with strict_timing_():
 
-                    if full_read_init:
-                        # RI12 -> 2 x (R3 -> R12) -> RI45
-                        perform_initialization(I, Q, P, I_st, Q_st, P_st)
-                    else:
-                        # RI12
-                        read_init45(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
 
-                    # play("x180_square", "qubit5")
-                    # other_elements = get_other_elements(elements_in_use=["qubit5"], all_elements=all_elements)
-                    # wait(PI_LEN * u.ns, *other_elements)
+                    perform_initialization(I, Q, P, I_st, Q_st, P_st, kind=plungers)
+
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops)
@@ -374,20 +247,9 @@ with program() as rb:
                     play_sequence(sequence_list1, depth1, qb=target_qubits[0])
                     play_sequence(sequence_list2, depth2, qb=target_qubits[1])
 
-                    # play("x180_square", "qubit5")
-                    # other_elements = get_other_elements(elements_in_use=["qubit5"], all_elements=all_elements)
-                    # wait(PI_LEN * u.ns, *other_elements)
 
-                    if full_read_init:
-                        # RI12 -> R3 -> RI45
-                        perform_readout(I, Q, P, I_st, Q_st, P_st)
-                    else:
-                        # RI12
-                        read_init45(I[0], Q[0], P[0], I_st[1], None, do_save=[True, False])
+                    perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
 
-                    # play("x180_square", "qubit5")
-                    # other_elements = get_other_elements(elements_in_use=["qubit5"], all_elements=all_elements)
-                    # wait(PI_LEN * u.ns, *other_elements)
 
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 

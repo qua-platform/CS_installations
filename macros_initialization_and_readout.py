@@ -3,7 +3,7 @@
         Readout & Init
 """
 
-import math
+from typing import Literal
 from datetime import datetime
 import matplotlib
 import matplotlib.pyplot as plt
@@ -170,7 +170,55 @@ def adjust_all_elements(removes=[], adds=[], all_elements=all_elements):
 ###################
 
 
-def perform_initialization(I, Q, P, I_st, Q_st, P_st):
+def perform_initialization(I, Q, P, I_st, Q_st, P_st, kind: Literal["full", "P1-P2", "P4-P5"], add_checkpoints=False, checkpoint_element=None):
+
+    if add_checkpoints and checkpoint_element is not None:
+        add_checkpoint_for_scope_test(checkpoint_element, all_elements=all_elements)
+
+    if kind == "full":
+        # RI12 -> 2 x (R3 -> R12) -> RI45
+        perform_initialization(I, Q, P, I_st, Q_st, P_st)
+    elif kind == "P1-P2":
+        # RI12
+        read_init12(I[0], Q[0], P[0], None, None, None, I_st[0], None, None, do_save=[False, True])
+    elif kind == "P4-P5":
+        # RI45
+        read_init12(I[0], Q[0], P[0], None, None, None, I_st[0], None, None, do_save=[False, True])
+    else:
+        raise ValueError("kind must be from 'full', 'P1-P2', 'P4-P5'")
+
+    if add_checkpoints and checkpoint_element is not None:
+        add_checkpoint_for_scope_test(checkpoint_element, all_elements=all_elements)
+
+
+def perform_readout(I, Q, P, I_st, Q_st, P_st, kind: Literal["full", "P1-P2", "P4-P5"], add_checkpoints=False, checkpoint_element=None):
+
+    if add_checkpoints and checkpoint_element is not None:
+        add_checkpoint_for_scope_test(checkpoint_element, all_elements=all_elements)
+
+    if kind == "full":
+        # RI12 -> R3 -> RI45
+        perform_full_readout(I, Q, P, I_st, Q_st, P_st)
+    elif kind == "P1-P2":
+        # RI12
+        read_init12(I[0], Q[0], P[0], I_st[1], None, None, None, None, None, do_save=[True, False])
+    elif kind == "P4-P5":
+        # RI45
+        read_init45(I[0], Q[0], P[0], I_st[1], None, None, None, None, None, do_save=[True, False])
+    else:
+        raise ValueError("kind must be from 'full', 'P1-P2', 'P4-P5'")
+
+    if add_checkpoints and checkpoint_element is not None:
+        add_checkpoint_for_scope_test(checkpoint_element, all_elements=all_elements)
+
+
+def add_checkpoint_for_scope_test(qubit, all_elements=all_elements):
+    play("x180_square", qubit)
+    other_elements = get_other_elements(elements_in_use=[qubit], all_elements=all_elements)
+    wait(PI_LEN * u.ns, *other_elements)
+
+
+def perform_full_initialization(I, Q, P, I_st, Q_st, P_st):
     qua_vars1 = I[0], Q[0], P[0] # tank_circuit1
     qua_vars2 = I[1], Q[1], P[1] # tank_circuit2
     qua_st_vars1 = I_st[0], Q_st[0], P_st[0]
@@ -199,7 +247,7 @@ def perform_initialization(I, Q, P, I_st, Q_st, P_st):
     # wait_after_read_init(plungers="P4-P5")
 
 
-def perform_readout(I, Q, P, I_st, Q_st, P_st):
+def perform_full_readout(I, Q, P, I_st, Q_st, P_st):
     qua_vars1 = I[0], Q[0], P[0] # tank_circuit1
     qua_vars2 = I[1], Q[1], P[1] # tank_circuit2
     qua_st_vars1 = I_st[3], Q_st[3], P_st[3]

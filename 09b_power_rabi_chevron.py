@@ -37,6 +37,7 @@ from scipy import signal
 from macros_initialization_and_readout import *
 from configuration_with_lffem import *
 
+
 ###################
 # The QUA program #
 ###################
@@ -53,10 +54,10 @@ all_elements = adjust_all_elements(removes=["qubit3", "qubit4", "qubit5"])
 
 n_avg = 3
 # Pulse duration sweep in ns - must be larger than 4 clock cycles
-tau_min = 16
-tau_max = 200
-tau_step = 4
-durations = np.arange(tau_min, tau_max, tau_step)
+a_min = 0.05
+a_max = 1.95
+a_step = 0.05
+amp_scalilngs = np.arange(a_min, a_max, a_step)
 # Pulse frequency sweep in Hz
 frequencies = np.arange(0 * u.MHz, 100 * u.MHz, 100 * u.kHz)
 
@@ -64,7 +65,7 @@ frequencies = np.arange(0 * u.MHz, 100 * u.MHz, 100 * u.kHz)
 # duration_init includes the manipulation
 delay_ops_start = 16
 delay_ops_end = 16
-duration_ops = delay_ops_start + tau_max + delay_ops_end
+duration_ops = delay_ops_start + PI_LEN + delay_ops_end
 assert delay_ops_start == 0 or delay_ops_start >= 16
 assert delay_ops_end == 0 or delay_ops_end >= 16
 
@@ -84,7 +85,7 @@ save_data_dict = {
     "qubit": qubit,
     "plungers": plungers,
     "frequencies": frequencies,
-    "durations": durations,
+    "amp_scalilngs": amp_scalilngs,
     "n_avg": n_avg,
     "config": config,
 }
@@ -92,8 +93,7 @@ save_data_dict = {
 
 
 with program() as rabi_chevron:
-    t = declare(int)
-    d = declare(int)
+    a = declare(fixed)  # QUA variable for the qubit pulse duration
     f = declare(int)  # QUA variable for the qubit drive amplitude
     n = declare(int)  # QUA integer used as an index for the averaging loop
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
@@ -114,17 +114,13 @@ with program() as rabi_chevron:
         with for_(*from_array(f, frequencies)):  # Loop over the qubit pulse amplitude
             update_frequency(qubit, f)
 
-            with for_(*from_array(t, durations)):  # Loop over the qubit pulse duration
-                assign(d, tau_max - t)
- 
+            with for_(*from_array(a, amp_scalilngs)):  # Loop over the qubit pulse duration
+
                 with strict_timing_():  # Ensure that the sequence will be played without gap
 
-                    if full_read_init:
-                        # RI12 -> 2 x (R3 -> R12) -> RI45
-                        perform_initialization(I, Q, P, I_st, Q_st, P_st)
-                    else:
-                        # RI12
-                        read_init12(I[0], Q[0], P[0], None, None, None, I_st[0], None, None, do_save=[False, True])
+
+                    perform_initialization(I, Q, P, I_st, Q_st, P_st, kind=plungers)
+
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops)
@@ -133,16 +129,12 @@ with program() as rabi_chevron:
 
                     # Drive the qubit by playing the MW pulse at the end of the manipulation step
                     wait(delay_ops_start * u.ns, qubit) if delay_ops_start >= 16 else None
-                    wait(d >> 2, qubit)
-                    play("x180_kaiser", qubit, duration=t >> 2)
+                    play("x180_kaiser" * amp(a), qubit)
                     wait(delay_ops_end * u.ns, qubit) if delay_ops_end >= 16 else None
 
-                    if full_read_init:
-                        # RI12 -> R3 -> RI45
-                        perform_readout(I, Q, P, I_st, Q_st, P_st)
-                    else:
-                        # RI12
-                        read_init12(I[0], Q[0], P[0], I_st[1], None, None, None, None, None, do_save=[True, False])
+
+                    perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
+
 
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
@@ -153,9 +145,9 @@ with program() as rabi_chevron:
     with stream_processing():
         n_st.save("iteration")
         for k in range(num_output_streams):
-            I_st[k].buffer(len(durations)).buffer(len(frequencies)).average().save(f"I{k + 1:d}")
-            # Q_st[k].buffer(len(durations)).buffer(len(frequencies)).average().save(f"Q{k + 1:d}")
-            # P_st[k].boolean_to_int().buffer(len(durations)).buffer(len(frequencies)).average().save(f"P{k + 1:d}")
+            I_st[k].buffer(len(amp_scalilngs)).buffer(len(frequencies)).average().save(f"I{k + 1:d}")
+            # Q_st[k].buffer(len(amp_scalilngs)).buffer(len(frequencies)).average().save(f"Q{k + 1:d}")
+            # P_st[k].boolean_to_int().buffer(len(amp_scalilngs)).buffer(len(frequencies)).average().save(f"P{k + 1:d}")
 
 
 
@@ -171,7 +163,7 @@ qmm = QuantumMachinesManager(
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -218,13 +210,13 @@ else:
         plt.subplot(2, 1, 1)
         plt.cla()
         plt.title("I (init) [V]")
-        plt.pcolor(durations, frequencies / u.MHz, I1)
+        plt.pcolor(amp_scalilngs * PI_AMP, frequencies / u.MHz, I1)
         plt.ylabel("Frequency [MHz]")
         plt.subplot(2, 1, 2)
         plt.cla()
         plt.title("I (readout) [V]")
-        plt.pcolor(durations, frequencies / u.MHz, I2)
-        plt.xlabel("Qubit pulse duration [ns]")
+        plt.pcolor(amp_scalilngs * PI_AMP, frequencies / u.MHz, I2)
+        plt.xlabel("Qubit pulse amplitude [V]")
         plt.ylabel("Frequency [MHz]")
         plt.tight_layout()
         plt.pause(1)

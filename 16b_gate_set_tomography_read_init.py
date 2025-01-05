@@ -108,14 +108,11 @@ with program() as PROGRAM_GST:
             with for_(n, 0, n < n_shots, n + 1):
                 assign(count, count + 1)
 
-                with strict_timing_():
+                with strict_timing_():                    
 
-                    if full_read_init:
-                        # RI12 -> 2 x (R3 -> R12) -> RI45
-                        perform_initialization(I, Q, P, I_st, Q_st, P_st)
-                    else:
-                        # RI12
-                        read_init12(I[0], Q[0], P[0], None, None, None, I_st[0], None, None, do_save=[False, True])
+
+                    perform_initialization(I, Q, P, I_st, Q_st, P_st, kind=plungers)
+
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}")
@@ -179,13 +176,10 @@ with program() as PROGRAM_GST:
                                 play("y90_kaiser", qubit)
 
                     wait(delay_gst_end * u.ns, qubit) if delay_gst_end >= 16 else None
+                    
 
-                    if full_read_init:
-                        # RI12 -> R3 -> RI45
-                        perform_readout(I, Q, P, I_st, Q_st, P_st)
-                    else:
-                        # RI12
-                        read_init12(I[0], Q[0], P[0], I_st[1], None, None, None, None, None, do_save=[True, False])
+                    perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
+
 
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
                 

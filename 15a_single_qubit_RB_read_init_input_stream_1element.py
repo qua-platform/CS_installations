@@ -37,20 +37,13 @@ do_simulate = False
 target_qubits = [qubit, qubit_trio1]
 num_target_qubits = len(target_qubits)
 
-try:
-    all_elements.remove("qubit1")
-    all_elements.remove("qubit2")
-    all_elements.remove("qubit3")
-    # all_elements.remove("tank_circuit1")
-    all_elements.append(qubit_trio1)
-except:
-    pass
+all_elements = adjust_all_elements(removes=["qubit1", "qubit2", "qubit3"], adds=qubit_trio1)
 
 n_avg = 5
-num_of_sequences = 2  # Number of random sequences
-circuit_depth_min = 50
-circuit_depth_max = 60
-delta_clifford = 10
+num_of_sequences = 3  # Number of random sequences
+circuit_depth_min = 10000
+circuit_depth_max = 16000 # works up to 16_000
+delta_clifford = 1000
 circuit_depths = np.arange(circuit_depth_min, circuit_depth_max + 1, delta_clifford).astype(int)
 actual_circuit_depths = num_target_qubits * circuit_depths
 
@@ -89,10 +82,6 @@ with program() as PROGRAM_RB:
     m = declare(int)
     n = declare(int)
     depth = declare(int)
-    depth1 = declare(int)
-    depth2 = declare(int)
-    duration_rb21 = declare(int)
-    duration_rb12 = declare(int)
     duration_ops = declare(int)
     seq_idx = declare(int)
 
@@ -100,13 +89,12 @@ with program() as PROGRAM_RB:
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
     depth_st = declare_stream()
     
-    
     I = [declare(fixed) for _ in range(num_tank_circuits)]
     Q = [declare(fixed) for _ in range(num_tank_circuits)]
     P = [declare(bool) for _ in range(num_tank_circuits)]  # true if even parity
     I_st = [declare_stream() for _ in range(num_output_streams)]
-    # Q_st = [declare_stream() for _ in range(num_output_streams)]
-    # P_st = [declare_stream() for _ in range(num_output_streams)]
+    Q_st = [None for _ in range(num_output_streams)] # [declare_stream() for _ in range(num_output_streams)]
+    P_st = [None for _ in range(num_output_streams)] # [declare_stream() for _ in range(num_output_streams)]
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("tank_circuit1", I[0], Q[0], P[0])
     assign_variables_to_element("tank_circuit2", I[1], Q[1], P[1])
@@ -114,67 +102,43 @@ with program() as PROGRAM_RB:
     if do_simulate:
         encoded_circuit = declare(int, value=[112, 8195, 9, 4, 4, 4, 4, 5] + [0] * 8188 + [1])
     else:
-        encoded_circuit1 = declare_input_stream(
+        encoded_circuit = declare_input_stream(
             int,
-            name="_encoded_circuit1",
-            size=circuit_depth_max + 1, # 2 to account for [circ_idx, seq_len, remaining_duraiton_case]
-        )  # input stream the sequence
-        encoded_circuit2 = declare_input_stream(
-            int,
-            name="_encoded_circuit2",
+            name="_encoded_circuit",
             size=circuit_depth_max + 1, # 2 to account for [circ_idx, seq_len, remaining_duraiton_case]
         )  # input stream the sequence
 
 
-    with for_(*from_array(depth1, circuit_depths)):  # Loop over the depths
-        assign(depth2, depth1)
-        assign(depth, depth1 + depth2)
+    with for_(*from_array(depth, circuit_depths)):  # Loop over the depths
 
         with for_(m, 0, m < num_of_sequences, m + 1):
             
             if not do_simulate:
-                pause()
-                advance_input_stream(encoded_circuit1)  # ordered or randomized
-                pause()
-                advance_input_stream(encoded_circuit2)  # ordered or randomized
+                advance_input_stream(encoded_circuit)  # ordered or randomized
 
-            duration_rb1 = encoded_circuit1[0] # just a sequential index for this circuit
-            duration_rb2 = encoded_circuit2[0] # just a sequential index for this circuit
-            assign(duration_rb21, duration_rb1)
-            assign(duration_rb12, duration_rb2)
-            assign(duration_ops, delay_rb_start_loop + duration_rb1 + duration_rb2 + delay_rb_end_loop)
+            duration_rb = encoded_circuit[0] # just a sequential index for this circuit
+            assign(duration_ops, delay_rb_start_loop + duration_rb + delay_rb_end_loop)
 
             with for_(n, 0, n < n_avg, n + 1):
 
                 with strict_timing_():
 
-                    if full_read_init:
-                        # RI12 -> 2 x (R3 -> R12) -> RI45
-                        perform_initialization(I, Q, P, I_st, Q_st, P_st)
-                    else:
-                        # RI12
-                        read_init45(I[0], Q[0], P[0], None, I_st[0], do_save=[False, True])
+
+                    perform_initialization(I, Q, P, I_st, Q_st, P_st, kind=plungers)
+
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops * u.ns)
-                    other_elements = get_other_elements(elements_in_use=target_qubits + sweep_gates, all_elements=all_elements)
+                    other_elements = get_other_elements(elements_in_use=[qubit] + sweep_gates, all_elements=all_elements)
                     wait(duration_ops >> 2, *other_elements)
 
-                    wait(delay_rb_start_loop * u.ns, *target_qubits) if delay_rb_start_loop >= 16 else None
-                    play_sequence(encoded_circuit1, depth1, qubit, i_from=1)
-                    # play_sequence(encoded_circuit1, depth1, qubit)
-                    wait(duration_rb21 >> 2, qubit_trio1)
-                    play_sequence(encoded_circuit1, depth1, qubit_trio1, i_from=1)
-                    # play_sequence(encoded_circuit2, depth2, qubit_trio1)
-                    wait(duration_rb12 >> 2, qubit)
-                    wait(delay_rb_end_loop * u.ns, *target_qubits) if delay_rb_end_loop >= 16 else None
+                    wait(delay_rb_start_loop * u.ns, qubit) if delay_rb_start_loop >= 16 else None
+                    play_sequence(encoded_circuit, depth, qubit, i_from=1)
+                    wait(delay_rb_end_loop * u.ns, qubit) if delay_rb_end_loop >= 16 else None
 
-                    if full_read_init:
-                        # RI12 -> R3 -> RI45
-                        perform_readout(I, Q, P, I_st, Q_st, P_st)
-                    else:
-                        # RI12
-                        read_init45(I[0], Q[0], P[0], I_st[1], None, do_save=[True, False])
+
+                    perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
+
 
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
                 
@@ -241,39 +205,28 @@ else:
 
     ress = []
     start_time = datetime.now()
-    clifford_lists1 = []
-    clifford_lists2 = []
+    clifford_lists = []
     for i_depth, _circuit_depth in enumerate(circuit_depths):
 
         for num_seq in range(num_of_sequences):
-            _seed = i_depth * num_of_sequences + num_seq + 100
+            _seed = i_depth * num_of_sequences + num_seq
 
-            _encoded_circuit1, clifford_list1, state_list1, inv_gate_list1, num_gates_total1, = generate_encoded_sequence(_circuit_depth, ends_with_inv_gate=False, seed=_seed)
-            _encoded_circuit2, clifford_list2, state_list2, inv_gate_list2, num_gates_total2, = generate_encoded_sequence(_circuit_depth, current_state=state_list1[-1], seed=_seed + 1234567890)
+            _encoded_circuit, clifford_list, state_list, inv_gate_list, num_gates_total = generate_encoded_sequence(_circuit_depth, seed=_seed)
 
-            clifford_lists1.append(clifford_list1)
-            clifford_lists2.append(clifford_list2)
-            print(_encoded_circuit1[:10])
-            print(_encoded_circuit1[-10:])
-            print(_encoded_circuit2[:10])
-            print(_encoded_circuit2[-10:])
+            clifford_lists.append(clifford_list)
+            print(_encoded_circuit[:10])
+            print(_encoded_circuit[-10:])
 
             current_datetime = datetime.now()
             current_datetime_str = current_datetime.strftime("%Y/%m/%d-%H:%M:%S")
             elapsed_time = current_datetime - start_time
             elapsed_time_secs = int(elapsed_time.total_seconds())
-            _log_this = f"{current_datetime_str}, circuit_depth: {_circuit_depth}, num_sequence: {num_seq} / {num_of_sequences}, num_gates_total1: {num_gates_total1}, num_gates_total2: {num_gates_total2}, seed: {_seed}, elapsed_secs: {elapsed_time_secs}"
+            _log_this = f"{current_datetime_str}, circuit_depth: {_circuit_depth}, num_sequence: {num_seq} / {num_of_sequences}, num_gates_total: {num_gates_total}, seed: {_seed}, elapsed_secs: {elapsed_time_secs}"
             print(_log_this)
             with open(data_handler.path / "log.txt", encoding="utf8", mode="a") as f:
                 f.write(_log_this.replace("_", "") + "\n")  # Append the log message to the file
 
-            if job.is_paused():
-                job.push_to_input_stream("_encoded_circuit1", _encoded_circuit1)
-                job.resume()
-
-            if job.is_paused():
-                job.push_to_input_stream("_encoded_circuit2", _encoded_circuit2)
-                job.resume()
+            job.push_to_input_stream("_encoded_circuit", _encoded_circuit)
 
     # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
     print("get a fetching tool")

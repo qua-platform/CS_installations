@@ -50,6 +50,9 @@ map_clifford_to_num_gates = {
 }
 
 
+def power_law(power, a, b, p):
+    return a * (p**power) + b
+
 
 def generate_encoded_sequence(N, current_state=0, ends_with_inv_gate=True, num_gates_total_max=0, seed=0):
 
@@ -156,7 +159,7 @@ def play_sequence(sequence_list, depth, qb, i_from=0):
                 play("-x90_square", qb)
 
 
-def generate_sequence(current_state, ends_with_inv_gate=False, max_circuit_depth=0, seed=0):
+def generate_sequence(current_state, depth, max_circuit_depth=0, ends_with_inv_gate=False, seed=0):
     cayley = declare(int, value=c1_table.flatten().tolist())
     inv_list = declare(int, value=inv_gates)
     step = declare(int)
@@ -165,18 +168,18 @@ def generate_sequence(current_state, ends_with_inv_gate=False, max_circuit_depth
     i = declare(int)
     rand = Random(seed=seed)
 
-    with for_(i, 0, i < max_circuit_depth - 1, i + 1):
+    with for_(i, 0, i < depth - 1, i + 1):
         assign(step, rand.rand_int(24))
         assign(current_state, cayley[current_state * 24 + step])
         assign(sequence[i], step)
     
     if ends_with_inv_gate:
         assign(inv_gate, inv_list[current_state])
-        assign(sequence[max_circuit_depth - 1], inv_gate)
+        assign(sequence[depth - 1], inv_gate)
     else:
         assign(step, rand.rand_int(24))
         assign(current_state, cayley[current_state * 24 + step])
-        assign(sequence[max_circuit_depth - 1], step)
+        assign(sequence[depth - 1], step)
 
     return sequence, current_state
 

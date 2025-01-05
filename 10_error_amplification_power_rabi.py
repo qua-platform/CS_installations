@@ -119,12 +119,9 @@ with program() as rabi_chevron:
 
                 with strict_timing_():  # Ensure that the sequence will be played without gap
 
-                    if full_read_init:
-                        # RI12 -> 2 x (R3 -> R12) -> RI45
-                        perform_initialization(I, Q, P, I_st, Q_st, P_st)
-                    else:
-                        # RI12
-                        read_init12(I[0], Q[0], P[0], None, None, None, I_st[0], None, None, do_save=[False, True])
+
+                    perform_initialization(I, Q, P, I_st, Q_st, P_st, kind=plungers)
+
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops)
@@ -138,12 +135,9 @@ with program() as rabi_chevron:
                         play("x180_kaiser" * amp(a), qubit)
                     wait(delay_ops_end * u.ns, qubit) if delay_ops_end >= 16 else None
 
-                    if full_read_init:
-                        # RI12 -> R3 -> RI45
-                        perform_readout(I, Q, P, I_st, Q_st, P_st)
-                    else:
-                        # RI12
-                        read_init12(I[0], Q[0], P[0], I_st[1], None, None, None, None, None, do_save=[True, False])
+
+                    perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
+
 
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
