@@ -42,7 +42,7 @@ from macros_initialization_and_readout import *
 ###################
 
 qubit = "qubit1"
-plungers = "P1-P2"
+plungers = "P1-P2" # "full", "P1-P2", "P4-P5"
 tank_circuit = "tank_circuit1"
 do_feedback = False  # False for test. True for actual.
 full_read_init = False
@@ -130,6 +130,7 @@ with program() as rabi_chevron:
                     # Perform specified readout
                     perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
 
+                    # Play compensatin pulse
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
                 seq.ramp_to_zero()
@@ -154,7 +155,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration

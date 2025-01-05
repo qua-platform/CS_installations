@@ -26,11 +26,11 @@ from macros_initialization_and_readout import *
 ###################
 
 qubit = "qubit1"
-plungers = "P1-P2"
+plungers = "P1-P2" # "full", "P1-P2", "P4-P5"
 do_feedback = False  # False for test. True for actual.
 full_read_init = False
 num_output_streams = 6 if full_read_init else 2
-do_simulate = True
+do_simulate = False
 
 list_n_shots = [10, 100]
 df_enc_seqs = get_dataframe_encoded_sequence()
@@ -175,6 +175,7 @@ with program() as PROGRAM_GST:
                     # Perform specified readout
                     perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
 
+                    # Play compensatin pulse
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
                 save(n, n_st)
@@ -225,7 +226,7 @@ if simulate:
 else:
     from qm import generate_qua_script
 
-    sourceFile = open("debug_20b_gate_set_tomography.py", "w")
+    sourceFile = open(f"debug_{Path(__file__).stem}.py", "w")
     print(generate_qua_script(PROGRAM_GST, config), file=sourceFile)
     sourceFile.close()
 

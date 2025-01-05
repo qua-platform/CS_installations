@@ -1,3 +1,4 @@
+# %%
 """
         RAW ADC TRACES
 This script aims to measure data captured within a specific window defined by the measure() function.

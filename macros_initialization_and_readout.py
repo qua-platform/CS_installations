@@ -181,7 +181,7 @@ def perform_initialization(I, Q, P, I_st, Q_st, P_st, kind: Literal["full", "P1-
         read_init12(I[0], Q[0], P[0], None, None, None, I_st[0], None, None, do_save=[False, True])
     elif kind == "P4-P5":
         # RI45
-        read_init12(I[0], Q[0], P[0], None, None, None, I_st[0], None, None, do_save=[False, True])
+        read_init45(I[0], Q[0], P[0], None, None, None, I_st[0], None, None, do_save=[False, True])
     else:
         raise ValueError("kind must be from 'full', 'P1-P2', 'P4-P5'")
 
@@ -267,7 +267,7 @@ def read_init12(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st, do_save=[Fals
     qua_st_vars1 = I1_st, Q1_st, P1_st
     qua_st_vars2 = I2_st, Q2_st, P2_st
 
-    plungers = "P1-P2"
+    plungers = "P1-P2" # "full", "P1-P2", "P4-P5"
     threshold = TANK_CIRCUIT_CONSTANTS["tank_circuit1"]["threshold"]
     other_elements = get_other_elements(elements_in_use=["qubit1", "tank_circuit1"] + sweep_gates, all_elements=all_elements)
 
@@ -290,7 +290,7 @@ def read_init45(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st, do_save=[Fals
     qua_st_vars1 = I1_st, Q1_st, P1_st
     qua_st_vars2 = I2_st, Q2_st, P2_st
 
-    plungers = "P4-P5"
+    plungers = "P4-P5" # "full", "P1-P2", "P4-P5"
     tank_circuit = "tank_circuit2"
     threshold = TANK_CIRCUIT_CONSTANTS["tank_circuit2"]["threshold"]
     other_elements = get_other_elements(elements_in_use=["qubit5", "tank_circuit2"] + sweep_gates, all_elements=all_elements)

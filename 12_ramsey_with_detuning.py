@@ -44,7 +44,7 @@ from macros_initialization_and_readout import *
 ###################
 
 qubit = "qubit1"
-plungers = "P1-P2"
+plungers = "P1-P2" # "full", "P1-P2", "P4-P5"
 tank_circuit = "tank_circuit1"
 do_feedback = False  # False for test. True for actual.
 full_read_init = False
@@ -142,6 +142,7 @@ with program() as rabi_chevron:
                     # Perform specified readout
                     perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
 
+                    # Play compensatin pulse
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
                 seq.ramp_to_zero()
@@ -235,20 +236,21 @@ else:
     try:
         from qualang_tools.plot.fitting import Fit
 
-        fig_analyses = []
+        fig_analyses = [] * 2
         for i, sgn in enumerate([-1, 1]):
             fit = Fit()
-            fig_analyses[0] = plt.figure(figsize=(6, 6))
+            fig_analysis = plt.figure(figsize=(6, 6))
             ramsey_fit = fit.ramsey(durations, I2[i, :], plot=True)
             qubit_T2 = np.abs(ramsey_fit["T2"][0])
             qubit_detuning = ramsey_fit["f"][0] * u.GHz - sgn * detuning
-            plt.xlabell("Idle duration [ns]")
+            plt.xlabel("Idle duration [ns]")
             plt.ylabel("I (readout) [V]")
             print(f"Qubit detuning to update in the config: qubit_IF += {-qubit_detuning:.0f} Hz")
             print(f"T2* = {qubit_T2:.0f} ns")
             plt.legend((f"detuning = {-qubit_detuning / u.kHz:.3f} kHz", f"T2* = {qubit_T2:.0f} ns"))
             plt.title(f"Ramsey measurement for {qubit}, {tank_circuit}")
-            save_data_dict.update({f"fig_analysis{i}": fig_analyses[0]})
+            fig_analyses.append(fig_analysis)
+            save_data_dict.update({f"fig_analysis{i}": fig_analysis})
     except:
         pass
     finally:

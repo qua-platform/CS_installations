@@ -127,6 +127,7 @@ with program() as rabi_chevron:
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name="initialization")  # includes manipulation
                     seq.add_step(voltage_point_name="readout")
+                    # Play compensatin pulse
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
                     # Drive the qubit by playing the MW pulse at the end of the manipulation step

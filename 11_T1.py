@@ -42,7 +42,7 @@ from macros_initialization_and_readout import *
 ###################
 
 qubit = "qubit1"
-plungers = "P1-P2"
+plungers = "P1-P2" # "full", "P1-P2", "P4-P5"
 tank_circuit = "tank_circuit1"
 do_feedback = False  # False for test. True for actual.
 full_read_init = False
@@ -109,8 +109,7 @@ with program() as rabi_chevron:
             assign(d, tau_max - t)
 
             with strict_timing_():  # Ensure that the sequence will be played without gap
-                # Perform specified initialization 
-perform_initialization(I, Q, P, I_st, Q_st, P_st, kind=plungers)
+                perform_initialization(I, Q, P, I_st, Q_st, P_st, kind=plungers)
 
                 # Navigate through the charge stability map
                 seq.add_step(voltage_point_name=f"operation_{plungers}", duration=duration_ops)

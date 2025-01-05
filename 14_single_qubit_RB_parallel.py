@@ -46,7 +46,7 @@ from macros_rb import *
 
 target_qubits = ["qubit4", "qubit5"]
 target_tank_circuit = "tank_circuit2"
-plungers = "P4-P5"
+plungers = "P4-P5" # "full", "P1-P2", "P4-P5"
 do_feedback = False  # False for test. True for actual.
 seed = 123  # Pseudo-random number generator seed
 full_read_init = False
@@ -81,109 +81,6 @@ seq.add_points("operation_P1-P2", level_ops["P1-P2"], delay_rb_start_loop + dela
 seq.add_points("operation_P4-P5", level_ops["P4-P5"], delay_rb_start_loop + delay_rb_end_loop)
 seq.add_points("operation_P3", level_ops["P3"], delay_rb_start_loop + delay_rb_end_loop)
 
-
-###################################
-# Helper functions and QUA macros #
-###################################
-
-
-# def generate_sequence(depth, seed=seed):
-#     cayley = declare(int, value=c1_table.flatten().tolist())
-#     inv_list = declare(int, value=inv_gates)
-#     step = declare(int)
-#     current_state = declare(int, value=0)
-#     sequence = declare(int, size=circuit_depth_max + 1)
-#     inv_gate = declare(int)
-#     i = declare(int)
-#     rand = Random(seed=seed)
-
-#     with for_(i, 0, i < depth, i + 1):
-#         assign(step, rand.rand_int(24))
-#         assign(current_state, cayley[current_state * 24 + step])
-#         assign(sequence[i], step)
-
-#     # set inverse gate for the last element
-#     assign(inv_gate, inv_list[current_state])
-#     assign(sequence[depth], inv_gate)
-
-#     return sequence
-
-
-# def play_sequence(sequence_list, depth, qb):
-#     i = declare(int)
-#     with for_(i, 0, i <= depth, i + 1):
-#         with switch_(sequence_list[i], unsafe=True):
-#             with case_(0):
-#                 wait(x180_len // 4, qb)
-#                 # play("x180_square", qb)
-#                 # play("x180_square", qb)
-#             with case_(1):
-#                 play("x180_square", qb)
-#             with case_(2):
-#                 play("y180_square", qb)
-#             with case_(3):
-#                 play("y180_square", qb)
-#                 play("x180_square", qb)
-#             with case_(4):
-#                 play("x90_square", qb)
-#                 play("y90_square", qb)
-#             with case_(5):
-#                 play("x90_square", qb)
-#                 play("-y90_square", qb)
-#             with case_(6):
-#                 play("-x90_square", qb)
-#                 play("y90_square", qb)
-#             with case_(7):
-#                 play("-x90_square", qb)
-#                 play("-y90_square", qb)
-#             with case_(8):
-#                 play("y90_square", qb)
-#                 play("x90_square", qb)
-#             with case_(9):
-#                 play("y90_square", qb)
-#                 play("-x90_square", qb)
-#             with case_(10):
-#                 play("-y90_square", qb)
-#                 play("x90_square", qb)
-#             with case_(11):
-#                 play("-y90_square", qb)
-#                 play("-x90_square", qb)
-#             with case_(12):
-#                 play("x90_square", qb)
-#             with case_(13):
-#                 play("-x90_square", qb)
-#             with case_(14):
-#                 play("y90_square", qb)
-#             with case_(15):
-#                 play("-y90_square", qb)
-#             with case_(16):
-#                 play("-x90_square", qb)
-#                 play("y90_square", qb)
-#                 play("x90_square", qb)
-#             with case_(17):
-#                 play("-x90_square", qb)
-#                 play("-y90_square", qb)
-#                 play("x90_square", qb)
-#             with case_(18):
-#                 play("x180_square", qb)
-#                 play("y90_square", qb)
-#             with case_(19):
-#                 play("x180_square", qb)
-#                 play("-y90_square", qb)
-#             with case_(20):
-#                 play("y180_square", qb)
-#                 play("x90_square", qb)
-#             with case_(21):
-#                 play("y180_square", qb)
-#                 play("-x90_square", qb)
-#             with case_(22):
-#                 play("x90_square", qb)
-#                 play("y90_square", qb)
-#                 play("x90_square", qb)
-#             with case_(23):
-#                 play("-x90_square", qb)
-#                 play("y90_square", qb)
-#                 play("-x90_square", qb)
 
 ###################
 # The QUA program #
@@ -245,6 +142,7 @@ with program() as rb:
                     # Perform specified readout
                     perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
 
+                    # Play compensatin pulse
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
                 seq.ramp_to_zero()

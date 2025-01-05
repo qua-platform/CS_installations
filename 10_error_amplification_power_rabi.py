@@ -42,7 +42,7 @@ from macros_initialization_and_readout import *
 ###################
 
 qubit = "qubit1"
-plungers = "P1-P2"
+plungers = "P1-P2" # "full", "P1-P2", "P4-P5"
 tank_circuit = "tank_circuit1"
 do_feedback = False  # False for test. True for actual.
 full_read_init = False
@@ -60,7 +60,7 @@ amp_scalilngs = np.arange(a_min, a_max, a_step)
 # Number of applied Rabi pulses sweep
 max_n_pulses = 10  # Maximum number of qubit pulses
 max_tau_pulse = max_n_pulses * PI_LEN
-n_pulses = np.arange(0, max_n_pulses, 2)  # Always play an odd/even number of pulses to end up in the same state
+n_pulses = np.arange(6, max_n_pulses, 2)  # Always play an odd/even number of pulses to end up in the same state
 
 # duration_init includes the manipulation
 delay_ops_start = 16
@@ -134,6 +134,7 @@ with program() as rabi_chevron:
                     # Perform specified readout
                     perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
 
+                    # Play compensatin pulse
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
                 seq.ramp_to_zero()

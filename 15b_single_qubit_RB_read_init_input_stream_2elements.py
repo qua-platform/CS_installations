@@ -21,7 +21,7 @@ from macros import get_other_elements
 from macros_initialization_and_readout import *
 from macros_rb import *
 
-# # matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 ###################
@@ -30,7 +30,7 @@ from macros_rb import *
 
 qubit = "qubit5"
 qubit_trio1 = f"{qubit}_trio1"
-plungers = "P4-P5"
+plungers = "P4-P5" # "full", "P1-P2", "P4-P5"
 do_feedback = False  # False for test. True for actual.
 full_read_init = False
 num_output_streams = 6 if full_read_init else 2
@@ -38,19 +38,12 @@ do_simulate = False
 target_qubits = [qubit, qubit_trio1]
 num_target_qubits = len(target_qubits)
 
-try:
-    all_elements.remove("qubit1")
-    all_elements.remove("qubit2")
-    all_elements.remove("qubit3")
-    # all_elements.remove("tank_circuit1")
-    all_elements.append(qubit_trio1)
-except:
-    pass
+all_elements = adjust_all_elements(removes=["qubit1", "qubit2", "qubit3"], adds=qubit_trio1)
 
 n_avg = 5
 num_of_sequences = 2  # Number of random sequences
 circuit_depth_min = 50
-circuit_depth_max = 60
+circuit_depth_max = 100
 delta_clifford = 10
 circuit_depths = np.arange(circuit_depth_min, circuit_depth_max + 1, delta_clifford).astype(int)
 actual_circuit_depths = num_target_qubits * circuit_depths
@@ -131,10 +124,10 @@ with program() as PROGRAM_RB:
 
         with for_(m, 0, m < num_of_sequences, m + 1):
             if not do_simulate:
-                pause()
                 advance_input_stream(encoded_circuit1)  # ordered or randomized
                 pause()
                 advance_input_stream(encoded_circuit2)  # ordered or randomized
+                pause()
 
             duration_rb1 = encoded_circuit1[0]  # just a sequential index for this circuit
             duration_rb2 = encoded_circuit2[0]  # just a sequential index for this circuit
@@ -164,6 +157,7 @@ with program() as PROGRAM_RB:
                     # Perform specified readout
                     perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
 
+                    # Play compensatin pulse
                     seq.add_compensation_pulse(duration=duration_compensation_pulse)
 
                 # save(depth, depth)
@@ -177,8 +171,8 @@ with program() as PROGRAM_RB:
         # m_st.buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save("num_sequence")
         # n_st.buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save("iteration")
         for k in range(num_output_streams):
-            I_st[k].buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save(f"I{k:d}")
-
+            # I_st[k].buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save(f"I{k:d}")
+            I_st[k].save_all(f"I{k:d}")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -206,7 +200,7 @@ if simulate:
 else:
     from qm import generate_qua_script
 
-    sourceFile = open("debug_19b_single_qubit_RB_read_init.py", "w")
+    sourceFile = open(f"debug_{Path(__file__).stem}.py", "w")
     print(generate_qua_script(PROGRAM_RB, config), file=sourceFile)
     sourceFile.close()
 
@@ -260,7 +254,7 @@ else:
             current_datetime_str = current_datetime.strftime("%Y/%m/%d-%H:%M:%S")
             elapsed_time = current_datetime - start_time
             elapsed_time_secs = int(elapsed_time.total_seconds())
-            _log_this = f"{current_datetime_str}, circuit_depth: {_circuit_depth}, num_sequence: {num_seq} / {num_of_sequences}, num_gates_total1: {num_gates_total1}, num_gates_total2: {num_gates_total2}, seed: {_seed}, elapsed_secs: {elapsed_time_secs}"
+            _log_this = f"{current_datetime_str}, circuit_depth: {_circuit_depth}, num_sequence: {num_seq + 1} / {num_of_sequences}, num_gates_total1: {num_gates_total1}, num_gates_total2: {num_gates_total2}, seed: {_seed}, elapsed_secs: {elapsed_time_secs}"
             print(_log_this)
             with open(data_handler.path / "log.txt", encoding="utf8", mode="a") as f:
                 f.write(_log_this.replace("_", "") + "\n")  # Append the log message to the file

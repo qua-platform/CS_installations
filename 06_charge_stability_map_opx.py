@@ -55,9 +55,9 @@ voltages_Px = np.linspace(-0.1, 0.1, n_voltages_Px)
 voltages_Py = np.linspace(-0.2, 0.2, n_voltages_Py)
 # TODO: set DC offset on the external source for the fast gate
 # One can check the expected voltage levels after the bias-tee using the following function:
-_, _ = get_filtered_voltage(
-    voltages_Py, step_duration=1e-6, bias_tee_cut_off_frequency=1e3, plot=True
-)
+# _, _ = get_filtered_voltage(
+#     voltages_Py, step_duration=1e-6, bias_tee_cut_off_frequency=1e3, plot=True
+# )
 
 save_data_dict = {
     "Px": Px,

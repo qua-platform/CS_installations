@@ -47,7 +47,7 @@ from macros_initialization_and_readout import *
 ###################
 
 qubit = "qubit1"
-plungers = "P1-P2"
+plungers = "P1-P2" # "full", "P1-P2", "P4-P5"
 tank_circuit = "tank_circuit1"
 do_feedback = False  # False for test. True for actual.
 full_read_init = False
