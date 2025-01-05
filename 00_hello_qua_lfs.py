@@ -14,7 +14,7 @@ from configuration_with_lffem import *
 # from qm import generate_qua_script
 # import matplotlib
 
-# matplotlib.use('TkAgg')
+# # matplotlib.use('TkAgg')
 
 
 ###################

@@ -155,7 +155,7 @@ with program() as rabi_chevron:
         for k in range(num_output_streams):
             I_st[k].buffer(len(durations)).buffer(len(frequencies)).average().save(f"I{k + 1:d}")
             # Q_st[k].buffer(len(durations)).buffer(len(frequencies)).average().save(f"Q{k + 1:d}")
-            # P_st[k].buffer(len(durations)).buffer(len(frequencies)).average().save(f"P{k + 1:d}")
+            # P_st[k].boolean_to_int().buffer(len(durations)).buffer(len(frequencies)).average().save(f"P{k + 1:d}")
 
 
 
@@ -175,37 +175,21 @@ simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=1_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, rabi_chevron, simulation_config)
     # Plot the simulated samples
     plt.figure()
-    plt.subplot(211)
     job.get_simulated_samples().con1.plot()
-    plt.axhline(level_init[0], color="k", linestyle="--")
-    plt.axhline(level_readout[0], color="k", linestyle="--")
-    plt.axhline(level_init[1], color="k", linestyle="--")
-    plt.axhline(level_readout[1], color="k", linestyle="--")
-    plt.yticks(
-        [
-            level_readout[1],
-            level_init[1],
-            0.0,
-            level_init[0],
-            level_readout[0],
-        ],
-        ["readout", "init", "0", "init", "readout"],
-    )
-    plt.legend("")
-    from macros import get_filtered_voltage
-
-    plt.subplot(212)
-    get_filtered_voltage(
-        job.get_simulated_samples().con1.analog["1"],
-        1e-9,
-        bias_tee_cut_off_frequency,
-        True,
-    )
+    plt.show()
+    # from macros import get_filtered_voltage
+    # plt.figure()
+    # get_filtered_voltage(
+    #     job.get_simulated_samples().con1.analog["1"],
+    #     1e-9,
+    #     bias_tee_cut_off_frequency,
+    #     True,
+    # )
 
 else:
     # Open the quantum machine

@@ -20,7 +20,7 @@ from macros_rb import *
 from macros_initialization_and_readout import *
 from configuration_with_lffem import *
 
-# matplotlib.use('TkAgg')
+# # matplotlib.use('TkAgg')
 
 
 ###################
@@ -70,7 +70,7 @@ delay_rb_end_loop = 0
 
 duration_compensation_pulse_rb = 800_000 # duration_rb
 duration_compensation_pulse = int(0.7 * duration_compensation_pulse_full_initialization + duration_compensation_pulse_rb + duration_compensation_pulse_full_readout)
-duration_compensation_pulse = 100 * (duration_compensation_pulse_full // 100)
+duration_compensation_pulse = 100 * (duration_compensation_pulse // 100)
 
 
 seq.add_points("operation_P1-P2", level_ops["P1-P2"], delay_rb_start_loop + delay_rb_end_loop)

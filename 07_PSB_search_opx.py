@@ -38,7 +38,7 @@ from scipy import signal
 
 from configuration_with_lffem import *
 
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 ###################

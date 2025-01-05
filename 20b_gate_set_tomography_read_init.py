@@ -17,7 +17,7 @@ from macros import get_other_elements
 from macros_initialization_and_readout import *
 from configuration_with_lffem import *
 
-# matplotlib.use('TkAgg')
+# # matplotlib.use('TkAgg')
 
 
 ###################
@@ -209,7 +209,7 @@ with program() as PROGRAM_GST:
         for k in range(num_output_streams):
             I_st[k].buffer(batch_size).save(f"I{k:d}")
             # Q_st[k].buffer(batch_size).save(f"Q{k:d}")
-            # P_st[k].buffer(batch_size).save(f"P{k:d}")
+            # P_st[k].boolean_to_int().buffer(batch_size).save(f"P{k:d}")
 
 
 #####################################

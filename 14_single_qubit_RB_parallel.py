@@ -37,7 +37,7 @@ from macros_initialization_and_readout import *
 from configuration_with_lffem import *
 # from configuration_with_opxplus import *
 
-# matplotlib.use('TkAgg')
+# # matplotlib.use('TkAgg')
 
 
 ##############################
@@ -73,7 +73,7 @@ delay_rb_end_loop = 60 # 108
 
 duration_compensation_pulse_rb = 800_000 # duration_rb
 duration_compensation_pulse = int(0.3 * duration_compensation_pulse_full_initialization + duration_compensation_pulse_rb + duration_compensation_pulse_full_readout)
-duration_compensation_pulse = 100 * (duration_compensation_pulse_full // 100)
+duration_compensation_pulse = 100 * (duration_compensation_pulse // 100)
 
 
 seq.add_points("operation_P1-P2", level_ops["P1-P2"], delay_rb_start_loop + delay_rb_end_loop)
@@ -402,10 +402,10 @@ with program() as rb:
         for k in range(num_output_streams):
             I_st[k].buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save(f"I{k + 1:d}")
             # Q_st[k].buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save(f"Q{k + 1:d}")
-            # P_st[k].buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save(f"P{k + 1:d}")
+            # P_st[k].boolean_to_int().buffer(n_avg).buffer(num_of_sequences).buffer(len(circuit_depths)).save(f"P{k + 1:d}")
             # I_st[k].buffer(n_avg).map(FUNCTIONS.average()).buffer(len(circuit_depths)).average().save(f"I{k + 1:d}_avg")
             # Q_st[k].buffer(n_avg).map(FUNCTIONS.average()).buffer(len(circuit_depths)).average().save(f"Q{k + 1:d}_avg")
-            # P_st[k].buffer(n_avg).map(FUNCTIONS.average()).buffer(len(circuit_depths)).average().save(f"P{k + 1:d}_avg")
+            # P_st[k].boolean_to_int().buffer(n_avg).map(FUNCTIONS.average()).buffer(len(circuit_depths)).average().save(f"P{k + 1:d}_avg")
 
 
 #####################################

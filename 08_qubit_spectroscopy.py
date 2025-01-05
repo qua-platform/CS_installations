@@ -138,7 +138,7 @@ with program() as qubit_spectroscopy_prog:
         for k in range(num_output_streams):
             I_st[k].buffer(len(frequencies)).average().save(f"I{k + 1:d}")
             Q_st[k].buffer(len(frequencies)).average().save(f"Q{k + 1:d}")
-            P_st[k].buffer(len(frequencies)).average().save(f"P{k + 1:d}")
+            P_st[k].boolean_to_int().buffer(len(frequencies)).average().save(f"P{k + 1:d}")
             
             
             
@@ -201,6 +201,8 @@ else:
     # Get results from QUA program
     fetch_names = ["iteration"]
     fetch_names.extend([f"I{k + 1:d}" for k in range(num_output_streams)])
+    fetch_names.extend([f"Q{k + 1:d}" for k in range(num_output_streams)])
+    fetch_names.extend([f"P{k + 1:d}" for k in range(num_output_streams)])
     results = fetching_tool(job, data_list=fetch_names, mode="live")
     # Live plotting
     fig = plt.figure()
