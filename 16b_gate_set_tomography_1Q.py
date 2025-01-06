@@ -62,6 +62,59 @@ save_data_dict = {
 }
 
 
+###################
+#  Util funciton  #
+###################
+
+def get_dataframe_encoded_sequence():
+    path = "./encoded_parsed_dataset.csv"
+    df = pd.read_csv(path, header=0)  # Use header=0 to indicate the first row is the header
+    df["full_gate_sequence_duration"] = PI_HALF_LEN * df["full_native_gate_count"]
+    df.reset_index(inplace=True)
+    # df = df.head(50)
+    # df = df.head(10)
+    return df
+
+
+def get_encoded_circuit(row):
+    C = int(row["circ_idx"])
+    P = int(row["P_enc"])
+    G = int(row["G_enc"])
+    d = int(row["d_enc"])
+    M = int(row["M_enc"])
+    D = int(row["full_gate_sequence_duration"])
+    Ph4 = int(row["remaining_wait_num_4-pihalf"])
+    Ph = int(row["remaining_wait_num_pihalf"])
+
+    seq_len = 0
+    _encoded_circuit = [C]
+    if P != -1:
+        _encoded_circuit.append(P)
+        seq_len += 1
+    if G != -1:
+        _encoded_circuit.extend([G] * d)
+        seq_len += d
+    if M != -1:
+        _encoded_circuit.append(M)
+        seq_len += 1
+    if Ph4 > 0:
+        _encoded_circuit.extend([0] * Ph4)
+        seq_len += Ph4
+    if Ph > 0:
+        _encoded_circuit.append(Ph)
+        seq_len += 1
+
+    # sequence length
+    _encoded_circuit.insert(1, seq_len)
+
+    return _encoded_circuit, seq_len, C, P, G, d, M, Ph4, Ph
+
+
+###################
+# The QUA program #
+###################
+
+
 with program() as PROGRAM_GST:
     n = declare(int)
     n_shots = declare(int)
