@@ -54,13 +54,13 @@ num_output_streams = 6 if full_read_init else 2
 num_of_sequences = 3  # Number of random sequences
 # circuit_depth_min = 0
 # target = 100_000
-local_depth_max = 100  # ~16k should work
+local_depth_max = 10_000  # ~16k should work
 print(f"local_depth_max = {local_depth_max}")
 
 # Override for development
 n_avg = 3
 seed = 1
-target = 350
+target = 40_000
 print(f"target = {target}")
 
 # circuit_depths = [int(_) for _ in circuit_depths]
@@ -112,7 +112,7 @@ def calc_sequence_offline(seq_seed, target):
     return _seq, _seq_names
 
 
-def generate_sequence(seq_seed, target, start, end):
+def generate_sequence_yoav(seq_seed, target, start, end):
     end = target if end > target else end
     delta = end - start
     if delta <= 0:
@@ -142,14 +142,14 @@ def generate_sequence(seq_seed, target, start, end):
         assign(step, rand.rand_int(24))
         assign(current_state, cayley[current_state * 24 + step])
         assign(sequence[i-start], step)
-    # if end < target: # then, compute the total time after end till target
-    #     with for_(i, end, i < target, i + 1):
-    #         assign(step, rand.rand_int(24))
-    #         assign(current_state, cayley[current_state * 24 + step])
-    #         assign(sequence_time_after, sequence_time_after + time_table[step])
+    if end < target: # then, compute the total time after end till target
+        with for_(i, end, i < target, i + 1):
+            assign(step, rand.rand_int(24))
+            assign(current_state, cayley[current_state * 24 + step])
+            assign(sequence_time_after, sequence_time_after + time_table[step])
     assign(sequence[delta], inv_list[current_state])
-    # if end < target:
-    #     assign(sequence_time_after, sequence_time_after + time_table[inv_list[current_state]])
+    if end < target:
+        assign(sequence_time_after, sequence_time_after + time_table[inv_list[current_state]])
 
     return sequence, sequence_time_before, sequence_time_after
 
@@ -178,25 +178,18 @@ with program() as PROG_RB:
         
         align(*target_qubits)
         for i, qb in enumerate(target_qubits):
-            sequence, sequence_time_before, sequence_time_after = generate_sequence(
+            sequence, sequence_time_before, sequence_time_after = generate_sequence_yoav(
                 seed,
                 target=target, # target depth
                 start=i*local_depth_max, # start depth for this element
                 end=(i+1)*local_depth_max, # end depth for this element
             )
-            # with for_(n[i], 0, n[i] < n_avg, n[i] + 1):  # QUA for_ loop for averages
-            # wait(4+sequence_time_before+i*10, qb) # Calibrated for pi=52ns, local_depth_max=10, target=11, n_avg=3
-            # wait(25+sequence_time_before, qb) # Calibrated for pi=52ns, local_depth_max=10, target=15,19, n_avg=3
             # wait((250 + 3 * (i == 0) + 9 * (i == 2)) + sequence_time_before, qb)  # Calibrated for pi=52ns, local_depth_max=10, target=25, n_avg=3
-            # wait(250 + sequence_time_before, qb)
             # wait(200 - 0 * (i == 1) - 0 * (i == 2) - 0 * (i == 3) + sequence_time_before, qb)
-            wait(sequence_time_before, qb)
+            wait(100 - 4 * (i == 1) - 4 * (i == 2) - (131 + 1_250 + 12_500 + 118 + 125_000 + 21_000 - 8) * (i == 3) + sequence_time_before, qb)
             play_sequence_yoav(sequence, target, qb=qb, start=i * local_depth_max, end=(i + 1) * local_depth_max)
-            # wait(4+sequence_time_after+i*9, qb) # Calibrated for pi=52ns, local_depth_max=10, target=11, n_avg=3
-            # wait(25+sequence_time_after-i*13, qb) # Calibrated for pi=52ns, local_depth_max=10, target=15,19, n_avg=3
-            # wait(200 - 0 * (i == 1) - 0 * (i == 2) - 0 * (i == 3) + sequence_time_after, qb) # Calibrated for pi=52ns, local_depth_max=10, target=25, n_avg=3
-            # wait(250 + seq_time_after, qb)
-            wait(sequence_time_after, qb)
+            # wait(200 - 16 * (i == 1) - 0 * (i == 2) - 0 * (i == 3) + sequence_time_after, qb) # Calibrated for pi=52ns, local_depth_max=10, target=25, n_avg=3
+            wait(100 + sequence_time_after, qb)
 
 
 #####################################
@@ -207,7 +200,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = True
+simulate = False
 
 if simulate:
     # # Simulates the QUA program for the specified duration

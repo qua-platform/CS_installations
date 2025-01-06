@@ -80,34 +80,34 @@ config = {
                 "-y90_square": f"square_minus_y90_pulse",
             },
         },
-        "qubit1_trio1": {
+        "qubit1_dup1": {
             "singleInput": {
                 "port": ("con1", 1),
             },
             "intermediate_frequency": qubit_IF,
             "operations": {
                 "const": "const_pulse",
-                "x180_square": f"square_x180_pulse_trio1",
-                "x90_square": f"square_x90_pulse_trio1",
-                "-x90_square": f"square_minus_x90_pulse_trio1",
-                "y180_square": f"square_y180_pulse_trio1",
-                "y90_square": f"square_y90_pulse_trio1",
-                "-y90_square": f"square_minus_y90_pulse_trio1",
+                "x180_square": f"square_x180_pulse_dup1",
+                "x90_square": f"square_x90_pulse_dup1",
+                "-x90_square": f"square_minus_x90_pulse_dup1",
+                "y180_square": f"square_y180_pulse_dup1",
+                "y90_square": f"square_y90_pulse_dup1",
+                "-y90_square": f"square_minus_y90_pulse_dup1",
             },
         },
-        "qubit1_trio2": {
+        "qubit1_dup2": {
             "singleInput": {
                 "port": ("con1", 1),
             },
             "intermediate_frequency": qubit_IF,
             "operations": {
                 "const": "const_pulse",
-                "x180_square": f"square_x180_pulse_trio2",
-                "x90_square": f"square_x90_pulse_trio2",
-                "-x90_square": f"square_minus_x90_pulse_trio2",
-                "y180_square": f"square_y180_pulse_trio2",
-                "y90_square": f"square_y90_pulse_trio2",
-                "-y90_square": f"square_minus_y90_pulse_trio2",
+                "x180_square": f"square_x180_pulse_dup2",
+                "x90_square": f"square_x90_pulse_dup2",
+                "-x90_square": f"square_minus_x90_pulse_dup2",
+                "y180_square": f"square_y180_pulse_dup2",
+                "y90_square": f"square_y90_pulse_dup2",
+                "-y90_square": f"square_minus_y90_pulse_dup2",
             },
         },
         "tank_circuit1": {
@@ -176,88 +176,88 @@ config = {
                 "single": "minus_y90_wf",
             },
         },
-        "square_x180_pulse_trio1": {
+        "square_x180_pulse_dup1": {
             "operation": "control",
             "length": const_len,
             "waveforms": {
-                "single": "x180_wf_trio1",
+                "single": "x180_wf_dup1",
             },
         },
-        "square_y180_pulse_trio1": {
+        "square_y180_pulse_dup1": {
             "operation": "control",
             "length": const_len,
             "waveforms": {
-                "single": "y180_wf_trio1",
+                "single": "y180_wf_dup1",
             },
         },
-        "square_x90_pulse_trio1": {
+        "square_x90_pulse_dup1": {
             "operation": "control",
             "length": const_len,
             "waveforms": {
-                "single": "x90_wf_trio1",
+                "single": "x90_wf_dup1",
             },
         },
-        "square_y90_pulse_trio1": {
+        "square_y90_pulse_dup1": {
             "operation": "control",
             "length": const_len,
             "waveforms": {
-                "single": "y90_wf_trio1",
+                "single": "y90_wf_dup1",
             },
         },
-        "square_minus_x90_pulse_trio1": {
+        "square_minus_x90_pulse_dup1": {
             "operation": "control",
             "length": const_len,
             "waveforms": {
-                "single": "minus_x90_wf_trio1",
+                "single": "minus_x90_wf_dup1",
             },
         },
-        "square_minus_y90_pulse_trio1": {
+        "square_minus_y90_pulse_dup1": {
             "operation": "control",
             "length": const_len,
             "waveforms": {
-                "single": "minus_y90_wf_trio1",
+                "single": "minus_y90_wf_dup1",
             },
         },
-        "square_x180_pulse_trio2": {
+        "square_x180_pulse_dup2": {
             "operation": "control",
             "length": const_len,
             "waveforms": {
-                "single": "x180_wf_trio2",
+                "single": "x180_wf_dup2",
             },
         },
-        "square_y180_pulse_trio2": {
+        "square_y180_pulse_dup2": {
             "operation": "control",
             "length": const_len,
             "waveforms": {
-                "single": "y180_wf_trio2",
+                "single": "y180_wf_dup2",
             },
         },
-        "square_x90_pulse_trio2": {
+        "square_x90_pulse_dup2": {
             "operation": "control",
             "length": const_len,
             "waveforms": {
-                "single": "x90_wf_trio2",
+                "single": "x90_wf_dup2",
             },
         },
-        "square_y90_pulse_trio2": {
+        "square_y90_pulse_dup2": {
             "operation": "control",
             "length": const_len,
             "waveforms": {
-                "single": "y90_wf_trio2",
+                "single": "y90_wf_dup2",
             },
         },
-        "square_minus_x90_pulse_trio2": {
+        "square_minus_x90_pulse_dup2": {
             "operation": "control",
             "length": const_len,
             "waveforms": {
-                "single": "minus_x90_wf_trio2",
+                "single": "minus_x90_wf_dup2",
             },
         },
-        "square_minus_y90_pulse_trio2": {
+        "square_minus_y90_pulse_dup2": {
             "operation": "control",
             "length": const_len,
             "waveforms": {
-                "single": "minus_y90_wf_trio2",
+                "single": "minus_y90_wf_dup2",
             },
         },
         "reflectometry_readout_pulse": {
@@ -282,18 +282,18 @@ config = {
         "y90_wf": {"type": "constant", "sample": PI_AMP},
         "minus_x90_wf": {"type": "constant", "sample": PI_AMP},
         "minus_y90_wf": {"type": "constant", "sample": PI_AMP},
-        "x180_wf_trio1": {"type": "constant", "sample": 0.6 * PI_AMP},
-        "y180_wf_trio1": {"type": "constant", "sample": 0.6 * PI_AMP},
-        "x90_wf_trio1": {"type": "constant", "sample": 0.6 * PI_AMP},
-        "y90_wf_trio1": {"type": "constant", "sample": 0.6 * PI_AMP},
-        "minus_x90_wf_trio1": {"type": "constant", "sample": 0.6 * PI_AMP},
-        "minus_y90_wf_trio1": {"type": "constant", "sample": 0.6 * PI_AMP},
-        "x180_wf_trio2": {"type": "constant", "sample": 0.3 * PI_AMP},
-        "y180_wf_trio2": {"type": "constant", "sample": 0.3 * PI_AMP},
-        "x90_wf_trio2": {"type": "constant", "sample": 0.3 * PI_AMP},
-        "y90_wf_trio2": {"type": "constant", "sample": 0.3 * PI_AMP},
-        "minus_x90_wf_trio2": {"type": "constant", "sample": 0.3 * PI_AMP},
-        "minus_y90_wf_trio2": {"type": "constant", "sample": 0.3 * PI_AMP},
+        "x180_wf_dup1": {"type": "constant", "sample": 0.6 * PI_AMP},
+        "y180_wf_dup1": {"type": "constant", "sample": 0.6 * PI_AMP},
+        "x90_wf_dup1": {"type": "constant", "sample": 0.6 * PI_AMP},
+        "y90_wf_dup1": {"type": "constant", "sample": 0.6 * PI_AMP},
+        "minus_x90_wf_dup1": {"type": "constant", "sample": 0.6 * PI_AMP},
+        "minus_y90_wf_dup1": {"type": "constant", "sample": 0.6 * PI_AMP},
+        "x180_wf_dup2": {"type": "constant", "sample": 0.3 * PI_AMP},
+        "y180_wf_dup2": {"type": "constant", "sample": 0.3 * PI_AMP},
+        "x90_wf_dup2": {"type": "constant", "sample": 0.3 * PI_AMP},
+        "y90_wf_dup2": {"type": "constant", "sample": 0.3 * PI_AMP},
+        "minus_x90_wf_dup2": {"type": "constant", "sample": 0.3 * PI_AMP},
+        "minus_y90_wf_dup2": {"type": "constant", "sample": 0.3 * PI_AMP},
         "readout_pulse_wf": {"type": "constant", "sample": reflectometry_readout_amp},
     },
     "digital_waveforms": {

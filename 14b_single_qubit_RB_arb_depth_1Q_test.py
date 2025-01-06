@@ -40,8 +40,8 @@ from macros_rb import *
 ##############################
 
 qubit = "qubit5"  # choose "qubit5" for LFFEM. this is to validate the code with the scope.
-qubit_trio1 = f"{qubit}_trio1"
-qubit_trio2 = f"{qubit}_trio2"
+qubit_dup1 = f"{qubit}_dup1"
+qubit_dup2 = f"{qubit}_dup2"
 
 # Number of of averages for each random sequence
 n_avg = 1
@@ -89,8 +89,8 @@ with program() as PROG_RB:
     # sequence_time3 = declare(int, value=0)
 
     assign_variables_to_element(qubit, *[rep1, current_state1, depth1, sequence_time1])
-    assign_variables_to_element(qubit_trio1, *[rep2, current_state2, depth2, sequence_time2])
-    # assign_variables_to_element(qubit_trio2, *[rep3, current_state3, depth3, sequence_time3])
+    assign_variables_to_element(qubit_dup1, *[rep2, current_state2, depth2, sequence_time2])
+    # assign_variables_to_element(qubit_dup2, *[rep3, current_state3, depth3, sequence_time3])
 
     with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
         with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
@@ -110,26 +110,26 @@ with program() as PROG_RB:
                 ## elem 2
                 sequence_list2, current_state2 = generate_sequence(current_state=current_state2, ends_with_inv_gate=False, max_circuit_depth=max_circuit_depth, seed=seed)
                 assign(sequence_time2, generate_sequence_time(sequence_list2, depth2) - 60_000)
-                wait(sequence_time2 >> 2, qubit_trio1)
+                wait(sequence_time2 >> 2, qubit_dup1)
                 ##
                 sequence_list2, current_state2 = generate_sequence(current_state=current_state2, ends_with_inv_gate=False, max_circuit_depth=max_circuit_depth, seed=seed)
-                play_sequence(sequence_list2, depth2, qubit_trio1)
+                play_sequence(sequence_list2, depth2, qubit_dup1)
                 ##
                 sequence_list2, current_state2 = generate_sequence(current_state=current_state2, ends_with_inv_gate=False, max_circuit_depth=max_circuit_depth, seed=seed)
                 assign(sequence_time2, generate_sequence_time(sequence_list2, depth2) - 60_000)
-                wait(sequence_time2 >> 2, qubit_trio1)
+                wait(sequence_time2 >> 2, qubit_dup1)
 
                 # ## elem 3
                 # sequence_list3, current_state3 = generate_sequence(current_state=current_state3, ends_with_inv_gate=False, max_circuit_depth=max_circuit_depth, seed=seed)
                 # assign(sequence_time3, generate_sequence_time(sequence_list3, depth3) - 60_000)
-                # wait(sequence_time3 >> 2, qubit_trio2)
+                # wait(sequence_time3 >> 2, qubit_dup2)
                 # ##
                 # sequence_list3, current_state3 = generate_sequence(current_state=current_state3, ends_with_inv_gate=False, max_circuit_depth=max_circuit_depth, seed=seed)
                 # assign(sequence_time3, generate_sequence_time(sequence_list3, depth3) - 60_000)
-                # wait(sequence_time3 >> 2, qubit_trio2)
+                # wait(sequence_time3 >> 2, qubit_dup2)
                 # ##
                 # sequence_list3, current_state3 = generate_sequence(current_state=current_state3, ends_with_inv_gate=False, max_circuit_depth=max_circuit_depth, seed=seed)
-                # play_sequence(sequence_list3, depth3, qubit_trio2)
+                # play_sequence(sequence_list3, depth3, qubit_dup2)
 
             wait(10_000)
 
