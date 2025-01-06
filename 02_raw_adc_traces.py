@@ -20,6 +20,7 @@ from configuration_with_lffem import *
 # The QUA program #
 ###################
 n_avg = 100  # The number of averages
+tank_circuit = tank_circuit
 
 with program() as raw_trace_prog:
     n = declare(int)  # QUA variable for the averaging loop
@@ -28,22 +29,17 @@ with program() as raw_trace_prog:
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         # Make sure that the readout pulse is sent with the same phase so that the acquired signal does not average out
-        reset_phase("tank_circuit")
-        # *amp(0) sets the amplitude to zero, thus the collected trace is the digitization of the analog input
-        # in the majority of cases the DC bias to the sensor is applied with an external DC source.
-        measure("readout" * amp(0), "TIA", adc_dc_st)
+        reset_phase(tank_circuit)
         # Measure the tank circuit (send a readout pulse and record the raw ADC trace)
-        measure("readout", "tank_circuit", adc_rf_st)
+        measure("readout", tank_circuit, adc_rf_st)
         # Wait for the resonator to deplete
-        wait(1_000 * u.ns, "TIA", "tank_circuit")
+        wait(1_000 * u.ns, tank_circuit)
 
     with stream_processing():
         # Please adjust the analog inputs according to the connectivity (input1/2 -> dc or rf)
         # Will save average:
-        adc_dc_st.input1().average().save("adc_dc")
         adc_rf_st.input2().average().save("adc_rf")
         # Will save only last run:
-        adc_dc_st.input1().save("adc_dc_single_run")
         adc_rf_st.input2().save("adc_rf_single_run")
 
 #####################################
@@ -75,15 +71,12 @@ else:
     # Waits (blocks the Python console) until all results have been acquired
     res_handles.wait_for_all_values()
     # Fetch the raw ADC traces and convert them into Volts
-    adc_dc = u.raw2volts(res_handles.get("adc_dc").fetch_all())
     adc_rf = u.raw2volts(res_handles.get("adc_rf").fetch_all())
-    adc_dc_single_run = u.raw2volts(res_handles.get("adc_dc_single_run").fetch_all())
     adc_rf_single_run = u.raw2volts(res_handles.get("adc_rf_single_run").fetch_all())
     # Plot data
     plt.figure()
     plt.subplot(121)
     plt.title("Single run")
-    plt.plot(adc_dc_single_run, label="DC input")
     plt.plot(adc_rf_single_run, label="RF input")
     plt.xlabel("Time [ns]")
     plt.ylabel("Signal amplitude [V]")
@@ -91,11 +84,11 @@ else:
 
     plt.subplot(122)
     plt.title("Averaged run")
-    plt.plot(adc_dc, label="DC input")
     plt.plot(adc_rf, label="RF input")
     plt.xlabel("Time [ns]")
     plt.legend()
     plt.tight_layout()
 
-    print(f"\nDC input mean: {np.mean(adc_dc)} V")
     print(f"RF input mean: {np.mean(adc_rf)} V\n")
+
+# %%

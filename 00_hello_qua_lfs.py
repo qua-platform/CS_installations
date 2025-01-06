@@ -7,15 +7,9 @@ import matplotlib.pyplot as plt
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 
-# from configuration_with_lffem import *
 from qualang_tools.voltage_gates import VoltageGateSequence
 
 from configuration_with_lffem import *
-
-# from qm import generate_qua_script
-# import matplotlib
-
-# # matplotlib.use('TkAgg')
 
 
 ###################
@@ -56,11 +50,6 @@ with program() as hello_qua:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-
-# from qm import generate_qua_script
-# sourceFile = open('debug.py', 'w')
-# print(generate_qua_script(hello_qua, config), file=sourceFile)
-# sourceFile.close()
 
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
