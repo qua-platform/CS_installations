@@ -9,7 +9,7 @@ from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy.optimize import curve_fit
 
 from configuration_with_lffem import *
-
+# from configuration_with_lffem_saas import *
 # from configuration_with_opxplus import *
 
 
@@ -282,7 +282,7 @@ def play_clifford(c_idx, qb):
 #             play("-x90_square", qb)
 
 
-def play_sequence_yoav(sequence_list, target, qb, start, end):
+def play_sequence_by_section(sequence_list, target, qb, start, end):
     i = declare(int)
     number_of_cliffords = -1 if target < start else\
         (end - start - 1 if target > end else target - start)

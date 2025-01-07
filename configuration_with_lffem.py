@@ -95,12 +95,12 @@ CONST_LEN = 100  # in ns
 SATURATION_AMP = 0.1
 SATURATION_LEN = 10_000
 
-SQUARE_X180_AMP = 0.40
-SQUARE_X90_AMP = 0.20
-SQUARE_MINUS_X90_AMP = -0.20
-SQUARE_Y180_AMP = 0.35
-SQUARE_Y90_AMP = 0.175
-SQUARE_MINUS_Y90_AMP = -0.175
+SQUARE_X180_AMP = 0.20
+SQUARE_X90_AMP = 0.10
+SQUARE_MINUS_X90_AMP = -0.10
+SQUARE_Y180_AMP = 0.15
+SQUARE_Y90_AMP = 0.075
+SQUARE_MINUS_Y90_AMP = -0.075
 SQUARE_LEN = 52
 
 PI_AMP = 0.1
@@ -219,7 +219,7 @@ QUBIT_CONSTANTS = {
         "aout_Q": 6,  # TODO: Fix
         "dout": 3,
         "LO": 16.3 * u.GHz,
-        "IF": 0 * u.MHz,
+        "IF": 50 * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0,
         "pi_amp": PI_AMP,
@@ -908,135 +908,6 @@ config = {
                     "y180_square": f"square_y180_pulse_dup2",
                     "y90_square": f"square_y90_pulse_dup2",
                     "-y90_square": f"square_minus_y90_pulse_dup2",
-                },
-                # "thread": qb,
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        # qubits (qubit1, ...)
-        **{
-            f"{qb}_dup3": {
-                "mixInputs": {
-                    "I": (val["con"], val["fem"], val["aout_I"]),
-                    "Q": (val["con"], val["fem"], val["aout_Q"]),
-                    "lo_frequency": val["LO"],
-                    "mixer": f"mixer_{qb}",
-                },
-                "digitalInputs": {
-                    "marker": {
-                        "port": (val["con"], val["fem"], val["dout"]),
-                        "delay": val["rf_switch_delay"],
-                        "buffer": val["rf_switch_buffer"],
-                    },
-                },
-                "intermediate_frequency": val["IF"],
-                "operations": {
-                    "const": "const_pulse",
-                    "saturation": "saturation_pulse",
-                    "x180_kaiser": f"x180_kaiser_pulse_{qb}",
-                    "x90_kaiser": f"x90_kaiser_pulse_{qb}",
-                    "-x90_kaiser": f"minus_x90_kaiser_pulse_{qb}",
-                    "y180_kaiser": f"y180_kaiser_pulse_{qb}",
-                    "y90_kaiser": f"y90_kaiser_pulse_{qb}",
-                    "-y90_kaiser": f"minus_y90_kaiser_pulse_{qb}",
-                    "x180_gauss": f"x180_gaussian_pulse_{qb}",
-                    "x90_gauss": f"x90_gaussian_pulse_{qb}",
-                    "-x90_gauss": f"minus_x90_gaussian_pulse_{qb}",
-                    "y180_gauss": f"y180_gaussian_pulse_{qb}",
-                    "y90_gauss": f"y90_gaussian_pulse_{qb}",
-                    "-y90_gauss": f"minus_y90_gaussian_pulse_{qb}",
-                    "x180_square": f"square_x180_pulse_dup1",
-                    "x90_square": f"square_x90_pulse_dup1",
-                    "-x90_square": f"square_minus_x90_pulse_dup1",
-                    "y180_square": f"square_y180_pulse_dup1",
-                    "y90_square": f"square_y90_pulse_dup1",
-                    "-y90_square": f"square_minus_y90_pulse_dup1",
-                },
-                # "thread": f"{qb}_dup1",
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        # qubits (qubit1, ...)
-        **{
-            f"{qb}_dup4": {
-                "mixInputs": {
-                    "I": (val["con"], val["fem"], val["aout_I"]),
-                    "Q": (val["con"], val["fem"], val["aout_Q"]),
-                    "lo_frequency": val["LO"],
-                    "mixer": f"mixer_{qb}",
-                },
-                "digitalInputs": {
-                    "marker": {
-                        "port": (val["con"], val["fem"], val["dout"]),
-                        "delay": val["rf_switch_delay"],
-                        "buffer": val["rf_switch_buffer"],
-                    },
-                },
-                "intermediate_frequency": val["IF"],
-                "operations": {
-                    "const": "const_pulse",
-                    "saturation": "saturation_pulse",
-                    "x180_kaiser": f"x180_kaiser_pulse_{qb}",
-                    "x90_kaiser": f"x90_kaiser_pulse_{qb}",
-                    "-x90_kaiser": f"minus_x90_kaiser_pulse_{qb}",
-                    "y180_kaiser": f"y180_kaiser_pulse_{qb}",
-                    "y90_kaiser": f"y90_kaiser_pulse_{qb}",
-                    "-y90_kaiser": f"minus_y90_kaiser_pulse_{qb}",
-                    "x180_gauss": f"x180_gaussian_pulse_{qb}",
-                    "x90_gauss": f"x90_gaussian_pulse_{qb}",
-                    "-x90_gauss": f"minus_x90_gaussian_pulse_{qb}",
-                    "y180_gauss": f"y180_gaussian_pulse_{qb}",
-                    "y90_gauss": f"y90_gaussian_pulse_{qb}",
-                    "-y90_gauss": f"minus_y90_gaussian_pulse_{qb}",
-                    "x180_square": f"square_x180_pulse_dup2",
-                    "x90_square": f"square_x90_pulse_dup2",
-                    "-x90_square": f"square_minus_x90_pulse_dup2",
-                    "y180_square": f"square_y180_pulse_dup2",
-                    "y90_square": f"square_y90_pulse_dup2",
-                    "-y90_square": f"square_minus_y90_pulse_dup2",
-                },
-                # "thread": qb,
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        # qubits (qubit1, ...)
-        **{
-            f"{qb}_dup5": {
-                "mixInputs": {
-                    "I": (val["con"], val["fem"], val["aout_I"]),
-                    "Q": (val["con"], val["fem"], val["aout_Q"]),
-                    "lo_frequency": val["LO"],
-                    "mixer": f"mixer_{qb}",
-                },
-                "digitalInputs": {
-                    "marker": {
-                        "port": (val["con"], val["fem"], val["dout"]),
-                        "delay": val["rf_switch_delay"],
-                        "buffer": val["rf_switch_buffer"],
-                    },
-                },
-                "intermediate_frequency": val["IF"],
-                "operations": {
-                    "const": "const_pulse",
-                    "saturation": "saturation_pulse",
-                    "x180_kaiser": f"x180_kaiser_pulse_{qb}",
-                    "x90_kaiser": f"x90_kaiser_pulse_{qb}",
-                    "-x90_kaiser": f"minus_x90_kaiser_pulse_{qb}",
-                    "y180_kaiser": f"y180_kaiser_pulse_{qb}",
-                    "y90_kaiser": f"y90_kaiser_pulse_{qb}",
-                    "-y90_kaiser": f"minus_y90_kaiser_pulse_{qb}",
-                    "x180_gauss": f"x180_gaussian_pulse_{qb}",
-                    "x90_gauss": f"x90_gaussian_pulse_{qb}",
-                    "-x90_gauss": f"minus_x90_gaussian_pulse_{qb}",
-                    "y180_gauss": f"y180_gaussian_pulse_{qb}",
-                    "y90_gauss": f"y90_gaussian_pulse_{qb}",
-                    "-y90_gauss": f"minus_y90_gaussian_pulse_{qb}",
-                    "x180_square": f"square_x180_pulse_dup1",
-                    "x90_square": f"square_x90_pulse_dup1",
-                    "-x90_square": f"square_minus_x90_pulse_dup1",
-                    "y180_square": f"square_y180_pulse_dup1",
-                    "y90_square": f"square_y90_pulse_dup1",
-                    "-y90_square": f"square_minus_y90_pulse_dup1",
                 },
                 # "thread": qb,
             }

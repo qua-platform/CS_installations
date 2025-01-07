@@ -112,7 +112,7 @@ def calc_sequence_offline(seq_seed, target):
     return _seq, _seq_names
 
 
-def generate_sequence_yoav(seq_seed, target, start, end):
+def generate_sequence_by_section(seq_seed, target, start, end):
     end = target if end > target else end
     delta = end - start
     if delta <= 0:
@@ -178,7 +178,7 @@ with program() as PROG_RB:
         
         align(*target_qubits)
         for i, qb in enumerate(target_qubits):
-            sequence, sequence_time_before, sequence_time_after = generate_sequence_yoav(
+            sequence, sequence_time_before, sequence_time_after = generate_sequence_by_section(
                 seed,
                 target=target, # target depth
                 start=i*local_depth_max, # start depth for this element
@@ -187,7 +187,7 @@ with program() as PROG_RB:
             # wait((250 + 3 * (i == 0) + 9 * (i == 2)) + sequence_time_before, qb)  # Calibrated for pi=52ns, local_depth_max=10, target=25, n_avg=3
             # wait(200 - 0 * (i == 1) - 0 * (i == 2) - 0 * (i == 3) + sequence_time_before, qb)
             wait(100 - 4 * (i == 1) - 4 * (i == 2) - (131 + 1_250 + 12_500 + 118 + 125_000 + 21_000 - 8) * (i == 3) + sequence_time_before, qb)
-            play_sequence_yoav(sequence, target, qb=qb, start=i * local_depth_max, end=(i + 1) * local_depth_max)
+            play_sequence_by_section(sequence, target, qb=qb, start=i * local_depth_max, end=(i + 1) * local_depth_max)
             # wait(200 - 16 * (i == 1) - 0 * (i == 2) - 0 * (i == 3) + sequence_time_after, qb) # Calibrated for pi=52ns, local_depth_max=10, target=25, n_avg=3
             wait(100 + sequence_time_after, qb)
 
@@ -216,11 +216,11 @@ if simulate:
     # plt.legend("")
     # plt.show()
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=3_500)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=1_000_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, PROG_RB, simulation_config, compiler_options=CompilerOptionArguments(flags=["not-strict-timing"]))
     # Plot the simulated samples
-    job.plot_waveform_report_without_samples()
+    waveform_report = job.plot_waveform_report_without_samples()
     # job.get_simulated_samples().con1.plot()
     # plt.show()
 
