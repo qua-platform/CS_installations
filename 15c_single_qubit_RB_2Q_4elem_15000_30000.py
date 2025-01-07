@@ -190,7 +190,7 @@ with program() as PROG_RB:
             wait(1000 + 240_015 * (i == 0) + 16 * (i == 1) + sequence_time_before1, qb1)
             play_sequence_by_section(sequence1, target, qb=qb1, start=i * local_depth_max, end=(i + 1) * local_depth_max)
 
-        for i, (qb1, qb2) in enumerate(zip(target_qubits1, target_qubits2)):
+        for i, qb2 in enumerate(target_qubits2):
 
             sequence2, sequence_time_before2, _ = generate_sequence_by_section(
                 rand2,
