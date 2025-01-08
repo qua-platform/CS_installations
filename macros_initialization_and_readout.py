@@ -28,7 +28,7 @@ qp_controls = ["qp_control_c3t2"]
 tank_circuits = ["tank_circuit1", "tank_circuit2"]
 num_tank_circuits = len(TANK_CIRCUIT_CONSTANTS)
 all_elements = qubits + sweep_gates + barrier_gates + qp_controls + tank_circuits
-do_feedback = False  # False for test. True for actual.
+do_feedback = True  # False for test. True for actual.
 
 
 delay_init_qubit_start = 16
@@ -221,7 +221,7 @@ def perform_full_readout(I, Q, P, I_st, Q_st, P_st):
     # wait_after_read_init(plungers="P4-P5")
 
 
-def read_init12(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st):
+def read_init12(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st, init_singlet=True):
     qua_vars = I, Q, P
     qua_st_vars1 = I1_st, Q1_st, P1_st
     qua_st_vars2 = I2_st, Q2_st, P2_st
@@ -235,7 +235,7 @@ def read_init12(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st):
     P = measure_parity(*qua_vars, *qua_st_vars1, plungers=plungers, tank_circuit=tank_circuit, threshold=threshold)
     wait(duration_readout * u.ns, qubit)
 
-    play_feedback(plungers=plungers, qubit=qubit, parity=P)
+    play_feedback(plungers=plungers, qubit=qubit, parity=P, init_singlet=init_singlet)
     wait(duration_init_1q * u.ns, tank_circuit)
 
     P = measure_parity(*qua_vars, *qua_st_vars2, plungers=plungers, tank_circuit=tank_circuit, threshold=threshold)
@@ -246,7 +246,7 @@ def read_init12(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st):
     return P
 
 
-def read_init45(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st):
+def read_init45(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st, init_singlet=True):
     qua_vars = I, Q, P
     qua_st_vars1 = I1_st, Q1_st, P1_st
     qua_st_vars2 = I2_st, Q2_st, P2_st
@@ -260,7 +260,7 @@ def read_init45(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st):
     P = measure_parity(*qua_vars, *qua_st_vars1, plungers=plungers, tank_circuit=tank_circuit, threshold=threshold)
     wait(duration_readout * u.ns, qubit)
 
-    play_feedback(plungers=plungers, qubit=qubit, parity=P)
+    play_feedback(plungers=plungers, qubit=qubit, parity=P, init_singlet=init_singlet)
     wait(duration_init_1q * u.ns, tank_circuit)
 
     P = measure_parity(*qua_vars, *qua_st_vars2, plungers=plungers, tank_circuit=tank_circuit, threshold=threshold)
@@ -271,7 +271,7 @@ def read_init45(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st):
     return P
 
 
-def read_init3(I, Q, P, I_st, Q_st, P_st):
+def read_init3(I, Q, P, I_st, Q_st, P_st, init_singlet=True):
     qua_vars = I, Q, P
     qua_st_vars = I_st, Q_st, P_st
 
@@ -285,7 +285,7 @@ def read_init3(I, Q, P, I_st, Q_st, P_st):
     P = measure_parity(*qua_vars, *qua_st_vars, plungers=plungers, tank_circuit="tank_circuit1", threshold=threshold)
     wait(duration_readout * u.ns, "B2", "qp_control_c3t2", "qubit3")
 
-    play_feedback(plungers=plungers, qubit="qubit3", parity=P)
+    play_feedback(plungers=plungers, qubit="qubit3", parity=P, init_singlet=init_singlet)
     wait(duration_init_1q * u.ns, "B2", "qp_control_c3t2", "tank_circuit1")
 
     wait((duration_init_2q + duration_readout + duration_init_1q) * u.ns, *other_elements)
@@ -293,14 +293,17 @@ def read_init3(I, Q, P, I_st, Q_st, P_st):
     return P
 
 
-def play_feedback(plungers, qubit, parity):
+def play_feedback(plungers, qubit, parity, init_singlet=True):
     seq.add_step(voltage_point_name=f"initialization_1q_{plungers}", ramp_duration=duration_ramp_init_1q)
 
     wait(duration_ramp_init_1q * u.ns, qubit) if delay_init_qubit_start >= 16 else None
     wait(delay_init_qubit_start * u.ns, qubit) if delay_init_qubit_start >= 16 else None
     # TODO:
     if do_feedback:
-        play("x180_kaiser", qubit, condition=parity)
+        if init_singlet:
+            play("x180_kaiser", qubit, condition=parity)
+        else:
+            play("x180_kaiser", qubit, condition=~parity)
     else:
         wait(delay_feedback * u.ns, qubit)
         play("x180_kaiser", qubit)

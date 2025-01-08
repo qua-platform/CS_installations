@@ -20,7 +20,7 @@ from configuration_with_lffem import *
 # The QUA program #
 ###################
 n_avg = 100  # The number of averages
-tank_circuit = tank_circuit
+tank_circuit = "tank_circuit1"
 
 with program() as raw_trace_prog:
     n = declare(int)  # QUA variable for the averaging loop

@@ -40,30 +40,21 @@ from configuration_with_lffem import *
 
 sd = "Psd1"
 sd_sticky = f"{sd}_sticky"
-tank_circuit = "tank_circuit1"
-step_amp = PLUNGER_SD_CONSTANTS[sd]["step_amp"]
+sd_constants = PLUNGER_SD_CONSTANTS[sd]
+step_amp = sd_constants["step_amp"]
+tank_circuits = ["tank_circuit1", "tank_circuit2"]
+num_tank_circuits = len(tank_circuits)
 
 n_avg = 100  # Number of averaging loops
 offset_max = +0.2
 offset_min = -offset_max
 offset_step = 0.02
 offsets = np.arange(offset_min, offset_max + offset_step, offset_step)
-duration_after_step = 1 * u.ms
 num_offsets = len(offsets)
-
-sweep_gates = ["P1_sticky", "P2_sticky"]
-level_readout = [0.0, 0.0]
-duration_ramp_readout = 1 * u.us
-duration_buffer = 10 * u.us
-duration_readout = duration_after_step + REFLECTOMETRY_READOUT_LEN + duration_buffer
-
-seq = VoltageGateSequence(config, sweep_gates)
-seq.add_points("readout", level_readout, duration_readout)
-
 
 save_data_dict = {
     "sensor_dot": sd,
-    "tank_circuit": tank_circuit,
+    "tank_circuits": tank_circuits,
     "n_avg": n_avg,
     "offsets": offsets,
     "config": config,
@@ -71,55 +62,50 @@ save_data_dict = {
 
 
 with program() as charge_sensor_sweep:
-    Vx = declare(fixed)
-    Vy = declare(fixed)
     i = declare(fixed)  # QUA variable for the voltage sweep
     n = declare(int)  # QUA variable for the averaging loop
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
-    
-    I = declare(fixed)
-    Q = declare(fixed)
-    I_st = declare_stream()
-    Q_st = declare_stream()
+    I = [declare(fixed) for _ in range(num_tank_circuits)]
+    Q = [declare(fixed) for _ in range(num_tank_circuits)]
+    I_st = [declare_stream() for _ in range(num_tank_circuits)]
+    Q_st = [declare_stream() for _ in range(num_tank_circuits)]
 
     with for_(n, 0, n < n_avg, n + 1):
-
-        # Pause the OPX to update the external DC voltages in Python
-        seq.add_step(voltage_point_name="readout", ramp_duration=duration_ramp_readout)
-
         # Set the voltage to the 1st point of the sweep
         play("step" * amp(offset_min / step_amp), sd_sticky)
         # Wait for the voltage to settle (depends on the bias-tee cut-off frequency)
         wait(1 * u.ms, sd_sticky)
-
         with for_(i, 0, i < num_offsets, i + 1):
             # Play only from the second iteration
-
             with if_(i > 0):
                 play("step" * amp(offset_step / step_amp), sd_sticky)
                 # Wait for the voltage to settle (depends on the bias-tee cut-off frequency)
                 wait(1 * u.ms, sd_sticky)
-
             align()
             # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
             # frequency and the integrated quadratures are stored in "I" and "Q"
-            measure("readout", tank_circuit, None, demod.full("cos", I, "out1"), demod.full("sin", Q, "out1"))
-            save(I, I_st)
-            save(Q, Q_st)
-            
+            for j, tc in enumerate(tank_circuits):
+                measure(
+                    "readout",
+                    tc,
+                    None,
+                    demod.full("cos", I[j], "out1"),
+                    demod.full("sin", Q[j], "out1"),
+                )
+                save(I[j], I_st[j])
+                save(Q[j], Q_st[j])
             # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
             # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
             # process them which can cause the OPX to crash.
             wait(1_000 * u.ns)  # in ns
-
         ramp_to_zero(sd_sticky)
-        seq.ramp_to_zero()
         save(n, n_st)
 
     with stream_processing():
         n_st.save("iteration")
-        I_st.buffer(len(offsets)).average().save("I")
-        Q_st.buffer(len(offsets)).average().save("Q")
+        for j, tc in enumerate(tank_circuits):
+            I_st[j].buffer(len(offsets)).average().save(f"I_{tc}")
+            Q_st[j].buffer(len(offsets)).average().save(f"Q_{tc}")
 
 
 #####################################
@@ -148,35 +134,48 @@ else:
     job = qm.execute(charge_sensor_sweep)
 
     # Get results from QUA program
-    fetch_names = ["iteration", "I", "Q"]
+    fetch_names = ["iteration"]
+    for tc in tank_circuits:
+        fetch_names.append(f"I_{tc}")
+        fetch_names.append(f"Q_{tc}")
     results = fetching_tool(job, data_list=fetch_names, mode="live")
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch results
-        iteration, I, Q = results.fetch_all()
+        res = results.fetch_all()
         # Progress bar
-        progress_counter(iteration, n_avg, start_time=results.get_start_time())
+        progress_counter(res[0], n_avg, start_time=results.get_start_time())
 
-        plt.suptitle(f"Charge sensor gate sweep on {tank_circuit}")
-        plt.subplot(2, 1, 1)
-        plt.cla()
-        plt.plot(offsets, I)
-        # plt.xlabel("Sensor gate voltage [V]")
-        plt.ylabel("demod reflectometry signal I [V]")
-        plt.subplot(2, 1, 2)
-        plt.cla()
-        plt.plot(offsets, Q)
-        plt.xlabel("Sensor gate voltage [V]")
-        plt.ylabel("demod reflectometry signal Q [V]")
+        plt.suptitle("Charge sensor gate sweep")
+        for ind, tc in enumerate(tank_circuits):
+            S = res[2 * ind + 1] + 1j * res[2 * ind + 2]
+            R = np.abs(S)  # np.unwarp(np.angle(S))
+            phase = signal.detrend(np.unwrap(np.angle(S)))
+
+            # Plot results
+            plt.suptitle("Charge sensor gate sweep")
+            plt.subplot(2, 2, ind + 1)
+            plt.cla()
+            plt.plot(offsets, R)
+            # plt.xlabel("Sensor gate voltage [V]")
+            plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
+            plt.title(tc)
+            plt.subplot(2, 2, ind + 3)
+            plt.cla()
+            plt.plot(offsets, phase)
+            plt.xlabel("Sensor gate voltage [V]")
+            plt.ylabel("Phase [rad]")
+
         plt.tight_layout()
         plt.pause(1)
 
     # Fetch results
     res = results.fetch_all()
-    save_data_dict["I"] = res[0]
-    save_data_dict["Q"] = res[1]
+    for ind, tc in enumerate(tank_circuits):
+        save_data_dict[f"I_{tc}"] = res[2 * ind + 1]
+        save_data_dict[f"Q_{tc}"] = res[2 * ind + 2]
 
     # Save results
     script_name = Path(__file__).name
@@ -187,7 +186,5 @@ else:
         **default_additional_files,
     }
     data_handler.save_data(data=save_data_dict, name=Path(__name__).stem)
-
-    qm.close()
 
 # %%

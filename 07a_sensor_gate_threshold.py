@@ -40,6 +40,7 @@ from configuration_with_lffem import *
 
 sd = "Psd1"
 sd_sticky = f"{sd}_sticky"
+plungers = ["P1", "P2"]
 tank_circuit = "tank_circuit1"
 step_amp = PLUNGER_SD_CONSTANTS[sd]["step_amp"]
 
@@ -48,18 +49,13 @@ offset_max = +0.2
 offset_min = -offset_max
 offset_step = 0.02
 offsets = np.arange(offset_min, offset_max + offset_step, offset_step)
-duration_after_step = 1 * u.ms
 num_offsets = len(offsets)
 
-sweep_gates = ["P1_sticky", "P2_sticky"]
-level_readout = [0.0, 0.0]
-duration_ramp_readout = 1 * u.us
-duration_buffer = 10 * u.us
-duration_readout = duration_after_step + REFLECTOMETRY_READOUT_LEN + duration_buffer
-
-seq = VoltageGateSequence(config, sweep_gates)
-seq.add_points("readout", level_readout, duration_readout)
-
+voltages_Px = np.array([0.0, -0.05])  # e.g., pick (3,1), (4,0) or (1,1), (2,0)
+voltages_Py = np.array([0.0, +0.05])  # e.g., pick (3,1), (4,0) or (1,1), (2,0)
+n_voltages_Ps = len(voltages_Px)
+assert len(voltages_Px) == len(voltages_Py)
+assert n_voltages_Ps == 2
 
 save_data_dict = {
     "sensor_dot": sd,
@@ -81,45 +77,48 @@ with program() as charge_sensor_sweep:
     Q = declare(fixed)
     I_st = declare_stream()
     Q_st = declare_stream()
+    P_st = declare_stream()
 
     with for_(n, 0, n < n_avg, n + 1):
 
-        # Pause the OPX to update the external DC voltages in Python
-        seq.add_step(voltage_point_name="readout", ramp_duration=duration_ramp_readout)
+        with for_each_((Vx, Vy), (voltages_Px.tolist(), voltages_Py.tolist())):
+            # Pause the OPX to update the external DC voltages in Python
+            set_dc_offset(plungers[0], "single", Vx)
+            set_dc_offset(plungers[1], "single", Vy)
 
-        # Set the voltage to the 1st point of the sweep
-        play("step" * amp(offset_min / step_amp), sd_sticky)
-        # Wait for the voltage to settle (depends on the bias-tee cut-off frequency)
-        wait(1 * u.ms, sd_sticky)
+            # Set the voltage to the 1st point of the sweep
+            play("step" * amp(offset_min / step_amp), sd_sticky)
+            # Wait for the voltage to settle (depends on the bias-tee cut-off frequency)
+            wait(1 * u.ms, sd_sticky)
 
-        with for_(i, 0, i < num_offsets, i + 1):
-            # Play only from the second iteration
+            with for_(i, 0, i < num_offsets, i + 1):
+                # Play only from the second iteration
 
-            with if_(i > 0):
-                play("step" * amp(offset_step / step_amp), sd_sticky)
-                # Wait for the voltage to settle (depends on the bias-tee cut-off frequency)
-                wait(1 * u.ms, sd_sticky)
+                with if_(i > 0):
+                    play("step" * amp(offset_step / step_amp), sd_sticky)
+                    # Wait for the voltage to settle (depends on the bias-tee cut-off frequency)
+                    wait(1 * u.ms, sd_sticky)
 
-            align()
-            # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
-            # frequency and the integrated quadratures are stored in "I" and "Q"
-            measure("readout", tank_circuit, None, demod.full("cos", I, "out1"), demod.full("sin", Q, "out1"))
-            save(I, I_st)
-            save(Q, Q_st)
-            
-            # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
-            # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
-            # process them which can cause the OPX to crash.
-            wait(1_000 * u.ns)  # in ns
+                align()
+                # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
+                # frequency and the integrated quadratures are stored in "I" and "Q"
+                measure("readout", tank_circuit, None, demod.full("cos", I, "out1"), demod.full("sin", Q, "out1"))
+                save(I, I_st)
+                save(Q, Q_st)
+                
+                # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
+                # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
+                # process them which can cause the OPX to crash.
+                wait(1_000 * u.ns)  # in ns
 
-        ramp_to_zero(sd_sticky)
-        seq.ramp_to_zero()
-        save(n, n_st)
+            ramp_to_zero(sd_sticky)
+            save(n, n_st)
 
     with stream_processing():
         n_st.save("iteration")
-        I_st.buffer(len(offsets)).average().save("I")
-        Q_st.buffer(len(offsets)).average().save("Q")
+        I_st.buffer(len(offsets)).buffer(n_voltages_Ps).average().save("I")
+        Q_st.buffer(len(offsets)).buffer(n_voltages_Ps).average().save("Q")
+        P_st.boolean_to_int().buffer(len(offsets)).buffer(n_voltages_Ps).average().save("P")
 
 
 #####################################
@@ -162,14 +161,32 @@ else:
         plt.suptitle(f"Charge sensor gate sweep on {tank_circuit}")
         plt.subplot(2, 1, 1)
         plt.cla()
-        plt.plot(offsets, I)
+        plt.plot(offsets, I[0, :])
+        plt.plot(offsets, I[1, :])
+        plt.plot(offsets, I[1, :] - I[0, :])
+        plt.plot(offsets, (I[1, :] + I[0, :]) / 2)
+        plt.legend([
+            f"{plungers[0]}={voltages_Px[0]} V, {plungers[1]}={voltages_Py[0]} V",
+            f"{plungers[0]}={voltages_Px[1]} V, {plungers[1]}={voltages_Py[1]} V",
+            "diff",
+            "threshold",
+        ])
         # plt.xlabel("Sensor gate voltage [V]")
         plt.ylabel("demod reflectometry signal I [V]")
         plt.subplot(2, 1, 2)
         plt.cla()
-        plt.plot(offsets, Q)
+        plt.plot(offsets, Q[0, :])
+        plt.plot(offsets, Q[1, :])
+        plt.plot(offsets, Q[1, :] - Q[0, :])
+        plt.plot(offsets, (Q[1, :] + Q[0, :]) / 2)
         plt.xlabel("Sensor gate voltage [V]")
         plt.ylabel("demod reflectometry signal Q [V]")
+        plt.legend([
+            f"{plungers[0]}={voltages_Px[0]} V, {plungers[1]}={voltages_Py[0]} V",
+            f"{plungers[0]}={voltages_Px[1]} V, {plungers[1]}={voltages_Py[1]} V",
+            "diff",
+            "threshold",
+        ])
         plt.tight_layout()
         plt.pause(1)
 

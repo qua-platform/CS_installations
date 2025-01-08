@@ -45,19 +45,17 @@ tank_circuits = ["tank_circuit1", "tank_circuit2"]
 num_tank_circuits = len(tank_circuits)
 
 n_avg = 3
-n_voltages_Px = 11
-n_voltages_Py = 21
+n_voltages_Px = 51
+n_voltages_Py = 101
 
 # Voltages in Volt
-voltages_Px = np.linspace(-0.05, 0.05, n_voltages_Px)
+voltages_Px = np.linspace(-0.1, 0.1, n_voltages_Px)
 # Because of the bias-tee, it is important that the voltages swept along the fast axis are centered around 0.
 # Also, since the OPX dynamic range is [-0.5, 0.5)V, one may need to add a voltage offset on the DC part of the bias-tee.
-voltages_Py = np.linspace(-0.1, 0.1, n_voltages_Py)
+voltages_Py = np.linspace(-0.2, 0.2, n_voltages_Py)
 # TODO: set DC offset on the external source for the fast gate
 # One can check the expected voltage levels after the bias-tee using the following function:
-# _, _ = get_filtered_voltage(
-#     voltages_Py, step_duration=1e-6, bias_tee_cut_off_frequency=1e3, plot=True
-# )
+# _, _ = get_filtered_voltage(voltages_Py, step_duration=1e-6, bias_tee_cut_off_frequency=1e3, plot=True)
 
 save_data_dict = {
     "Px": Px,
@@ -120,9 +118,7 @@ with program() as charge_stability_prog:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 
 ###########################
@@ -198,7 +194,5 @@ else:
         **default_additional_files,
     }
     data_handler.save_data(data=save_data_dict, name=Path(__name__).stem)
-
-    qm.close()
 
 # %%

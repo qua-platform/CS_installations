@@ -48,8 +48,8 @@ qubit = "qubit1"
 switch_delay = 116
 switch_buffer = 20
 
-config["element"][qubit]["digitalInputs"]["output_switch"]["delay"] = switch_delay
-config["element"][qubit]["digitalInputs"]["output_switch"]["buffer"] = switch_buffer
+config["elements"][qubit]["digitalInputs"]["output_switch"]["delay"] = switch_delay
+config["elements"][qubit]["digitalInputs"]["output_switch"]["buffer"] = switch_buffer
 
 
 with program() as rf_swtich_calib:
@@ -81,7 +81,7 @@ else:
     # Open a quantum machine to execute the QUA program
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it - Execute does not block python!
-    job = qm.execute(hello_qua)
+    job = qm.execute(rf_swtich_calib)
 
 
 # %%

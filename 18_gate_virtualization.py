@@ -23,6 +23,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
+from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
@@ -38,6 +39,18 @@ from configuration_with_lffem import *
 ###################
 # The QUA program #
 ###################
+"""
+# n_voltages_Px = 51
+# n_voltages_Py = 101
+# C = np.array([[1.1, -0.2], [-0.2, 1.1]])
+# Vx = np.linspace(-0.1, 0.1, n_voltages_Px)
+# Vy = np.linspace(-0.2, 0.2, n_voltages_Py)
+
+# Vs = np.meshgrid(Vx, Vy)
+# Vs_xy = np.vstack((Vs[0].ravel(), Vs[1].ravel()))
+# kaka = C @ Vs_xy
+# plt.pcolor(kaka);plt.show()
+"""
 
 Px = "P1"
 Py = "P2"
@@ -49,10 +62,10 @@ n_voltages_Px = 11
 n_voltages_Py = 21
 
 # Voltages in Volt
-voltages_Px = np.linspace(-0.05, 0.05, n_voltages_Px)
+voltages_Px = np.linspace(-0.1, 0.1, n_voltages_Px)
 # Because of the bias-tee, it is important that the voltages swept along the fast axis are centered around 0.
 # Also, since the OPX dynamic range is [-0.5, 0.5)V, one may need to add a voltage offset on the DC part of the bias-tee.
-voltages_Py = np.linspace(-0.1, 0.1, n_voltages_Py)
+voltages_Py = np.linspace(-0.2, 0.2, n_voltages_Py)
 # TODO: set DC offset on the external source for the fast gate
 # One can check the expected voltage levels after the bias-tee using the following function:
 # _, _ = get_filtered_voltage(
@@ -69,27 +82,35 @@ save_data_dict = {
     "config": config,
 }
 
+gver = GateVirtualizer()
 
 with program() as charge_stability_prog:
     Vx = declare(fixed)
     Vy = declare(fixed)
+    Vs_virtual = [declare(fixed) for _ in range(gver.num_vgs)]
     n = declare(int)  # QUA integer used as an index for the averaging loop
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
+
     I = [declare(fixed) for _ in range(num_tank_circuits)]
     Q = [declare(fixed) for _ in range(num_tank_circuits)]
     I_st = [declare_stream() for _ in range(num_tank_circuits)]
     Q_st = [declare_stream() for _ in range(num_tank_circuits)]
 
+    for g, idx in gver.g2i.items():
+        assign_variables_to_element(g, Vs_virtual[idx])
+
     with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
         with for_(*from_array(Vy, voltages_Py)):
-            # Pause the OPX to update the external DC voltages in Python
-            set_dc_offset(Py, "single", Vy)
-            # Wait for the voltages to settle (depends on the voltage source bandwidth)
-            wait(5 * u.ms)
             with for_(*from_array(Vx, voltages_Px)):
-                # Update the dc offset of the specified element
-                set_dc_offset(Px, "single", Vx)
+                Vs_virtual = gver.generate_virtual_voltages(
+                    gates=[Px, Py],
+                    Vs_real=[Vx, Vy],
+                    Vs_virtual=Vs_virtual,
+                )
+                for g, idx in gver.g2i.items():
+                    set_dc_offset(g, "single", Vs_virtual[idx])
                 wait(1 * u.ms)
+
                 # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
                 # frequency and the integrated quadratures are stored in "I" and "Q"
                 for j, tc in enumerate(tank_circuits):
@@ -120,19 +141,17 @@ with program() as charge_stability_prog:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=1_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, charge_stability_prog, simulation_config)
     plt.figure()
     job.get_simulated_samples().con1.plot()
@@ -198,7 +217,5 @@ else:
         **default_additional_files,
     }
     data_handler.save_data(data=save_data_dict, name=Path(__name__).stem)
-
-    qm.close()
 
 # %%

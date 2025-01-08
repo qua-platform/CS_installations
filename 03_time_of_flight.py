@@ -1,3 +1,4 @@
+# %%
 """
         TIME OF FLIGHT
 This sequence involves sending a readout pulse and capturing the raw ADC traces.
@@ -26,6 +27,7 @@ from configuration_with_lffem import *
 # The QUA program #
 ###################
 n_avg = 100  # Number of averaging loops
+tank_circuit = "tank_circuit1"
 
 with program() as tof_prog:
     n = declare(int)  # QUA variable for the averaging loop
@@ -33,19 +35,21 @@ with program() as tof_prog:
 
     with for_(n, 0, n < n_avg, n + 1):
         # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
-        reset_phase("tank_circuit")
+        reset_phase(tank_circuit)
         # Sends the readout pulse and stores the raw ADC traces in the stream called "adc_st"
         # measure("readout", "TIA", adc_st)
-        measure("readout", "tank_circuit", adc_st)
+        measure("readout", tank_circuit, adc_st)
         # Wait for the resonator to deplete
-        wait(1_000 * u.ns, "tank_circuit")
+        wait(1_000 * u.ns, tank_circuit)
 
     with stream_processing():
         # Please adjust the analog inputs according to the connectivity (input1/2 -> rf)
         # Will save average:
-        adc_st.input1().average().save("adc1")
+        # adc_st.input1().average().save("adc1")
+        adc_st.input2().average().save("adc1")
         # Will save only last run:
-        adc_st.input1().save("adc1_single_run")
+        # adc_st.input1().save("adc1_single_run")
+        adc_st.input2().save("adc1_single_run")
 
 
 #####################################
@@ -119,3 +123,5 @@ else:
     # Update the config
     print(f"DC offset to add to Q in the config: {-adc1_mean:.6f} V")
     print(f"Time Of Flight to add in the config: {delay} ns")
+
+# %%
