@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 
-from qualang_tools.voltage_gates import VoltageGateSequence
 
 from configuration_with_lffem import *
 
@@ -22,11 +21,12 @@ with program() as hello_qua:
     n = declare(int)
 
     with for_(n, 0, n < n_avg, n + 1):
-        play("x180_square", "qubit1")
-        play("x180_square", "qubit2")
-        play("x180_square", "qubit3")
-        play("x180_square", "qubit4")
-        play("x180_square", "qubit5")
+        play("step", "P1")
+        # play("x180_square", "qubit1")
+        # play("x180_square", "qubit2")
+        # play("x180_square", "qubit3")
+        # play("x180_square", "qubit4")
+        # play("x180_square", "qubit5")
         # align()
         # play("step", "P1", duration=100*u.ns)
         # play("step", "P2", duration=100*u.ns)

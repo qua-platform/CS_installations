@@ -32,9 +32,9 @@ def IQ_imbalance(g, phi):
 ######################
 # Network parameters #
 ######################
-# qop_ip = "192.168.88.253"  # Write the QM router IP address
+qop_ip = "192.168.88.253"  # Write the QM router IP address
 # cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
-qop_ip = "172.16.33.107"  # Write the QM router IP address
+# qop_ip = "172.16.33.107"  # Write the QM router IP address
 cluster_name = "Cluster_1"  # "Beta_8"  # Write your cluster_name if version >= QOP220
 # qop_ip = "192.168.88.253"  # Write the QM router IP address
 # cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
@@ -58,9 +58,9 @@ default_additional_files = {
 # OPX configuration #
 #####################
 con1 = "con1"
-fem1 = 5  # Should be the LF-FEM index, e.g., 1
-fem2 = 3  # Should be the LF-FEM index, e.g., 1
-# fem3 = 3  # Should be the LF-FEM index, e.g., 1
+lffem1 = 4  # Should be the LF-FEM index, e.g., 1
+lffem2 = 2  # Should be the LF-FEM index, e.g., 1
+lffem3 = 3  # Should be the LF-FEM index, e.g., 1
 
 
 #############################################
@@ -80,7 +80,7 @@ VIRTUALIZATION_MATRIX = np.array(
     ]
 )
 STEP_LEN = 1000
-STEP_AMP = 0.25
+STEP_AMP = 2.0
 
 
 #########################
@@ -95,16 +95,16 @@ CONST_LEN = 100  # in ns
 SATURATION_AMP = 0.1
 SATURATION_LEN = 10_000
 
-SQUARE_X180_AMP = 0.20
-SQUARE_X90_AMP = 0.10
-SQUARE_MINUS_X90_AMP = -0.10
-SQUARE_Y180_AMP = 0.15
-SQUARE_Y90_AMP = 0.075
-SQUARE_MINUS_Y90_AMP = -0.075
-SQUARE_LEN = 52
+SQUARE_X180_AMP = 0.40
+SQUARE_X90_AMP = 0.20
+SQUARE_MINUS_X90_AMP = -0.20
+SQUARE_Y180_AMP = 0.3
+SQUARE_Y90_AMP = 0.15
+SQUARE_MINUS_Y90_AMP = -0.15
+SQUARE_LEN = 1000 # 52
 
 PI_AMP = 0.1
-PI_LEN = 52
+PI_LEN = 1000 # 52
 PI_HALF_LEN = PI_LEN
 # PI_SIGMA = PI_LEN / 5
 
@@ -163,9 +163,9 @@ bias_tee_cut_off_frequency = 10 * u.kHz
 QUBIT_CONSTANTS = {
     "qubit1": {
         "con": con1,
-        "fem": fem1,
-        "aout_I": 5,
-        "aout_Q": 6,
+        "fem": lffem1,
+        "aout_I": 1,
+        "aout_Q": 2,
         "dout": 1,
         "LO": 16 * u.GHz,
         "IF": 0 * u.MHz,
@@ -180,9 +180,9 @@ QUBIT_CONSTANTS = {
     },
     "qubit2": {
         "con": con1,
-        "fem": fem1,
-        "aout_I": 5,
-        "aout_Q": 6,
+        "fem": lffem1,
+        "aout_I": 1,
+        "aout_Q": 2,
         "dout": 1,
         "LO": 16 * u.GHz,
         "IF": 0 * u.MHz,
@@ -197,9 +197,9 @@ QUBIT_CONSTANTS = {
     },
     "qubit3": {
         "con": con1,
-        "fem": fem1,
-        "aout_I": 5,
-        "aout_Q": 6,
+        "fem": lffem1,
+        "aout_I": 3,
+        "aout_Q": 4,
         "dout": 3,
         "LO": 16.3 * u.GHz,
         "IF": 0 * u.MHz,
@@ -214,9 +214,9 @@ QUBIT_CONSTANTS = {
     },
     "qubit4": {
         "con": con1,
-        "fem": fem1,
-        "aout_I": 5,  # TODO: Fix
-        "aout_Q": 6,  # TODO: Fix
+        "fem": lffem1,
+        "aout_I": 3,  # TODO: Fix
+        "aout_Q": 4,  # TODO: Fix
         "dout": 3,
         "LO": 16.3 * u.GHz,
         "IF": 50 * u.MHz,
@@ -231,7 +231,7 @@ QUBIT_CONSTANTS = {
     },
     "qubit5": {
         "con": con1,
-        "fem": fem1,
+        "fem": lffem1,
         "aout_I": 5,  # TODO: Fix
         "aout_Q": 6,  # TODO: Fix
         "dout": 5,
@@ -251,7 +251,7 @@ QUBIT_CONSTANTS = {
 PLUNGER_CONSTANTS = {
     "P1": {
         "con": con1,
-        "fem": fem2,
+        "fem": lffem2,
         "ao": 1,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
@@ -259,32 +259,32 @@ PLUNGER_CONSTANTS = {
     },
     "P2": {
         "con": con1,
-        "fem": fem2,
-        "ao": 2,
+        "fem": lffem2,
+        "ao": 3,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
     },
     "P3": {
         "con": con1,
-        "fem": fem2,
-        "ao": 3,
+        "fem": lffem2,
+        "ao": 5,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
     },
     "P4": {
         "con": con1,
-        "fem": fem2,  # TODO: Fix
-        "ao": 4,  # TODO: Fix
+        "fem": lffem2,  # TODO: Fix
+        "ao": 7,  # TODO: Fix
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
     },
     "P5": {
         "con": con1,
-        "fem": fem2,  # TODO: Fix
-        "ao": 6,  # TODO: Fix
+        "fem": lffem3,  # TODO: Fix
+        "ao": 1,  # TODO: Fix
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
@@ -294,23 +294,23 @@ PLUNGER_CONSTANTS = {
 BARRIER_CONSTANTS = {
     "B1": {
         "con": con1,
-        "fem": fem2,
-        "ao": 4,
+        "fem": lffem2,
+        "ao": 2,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
     },
     "B2": {
         "con": con1,
-        "fem": fem2,
-        "ao": 5,
+        "fem": lffem2,
+        "ao": 4,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
     },
     "B3": {
         "con": con1,
-        "fem": fem2,
+        "fem": lffem2,
         "ao": 6,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
@@ -318,8 +318,8 @@ BARRIER_CONSTANTS = {
     },
     "B4": {
         "con": con1,
-        "fem": fem2,  # TODO: Fix
-        "ao": 6,  # TODO: Fix
+        "fem": lffem2,  # TODO: Fix
+        "ao": 8,  # TODO: Fix
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
@@ -329,16 +329,16 @@ BARRIER_CONSTANTS = {
 PLUNGER_SD_CONSTANTS = {
     "Psd1": {
         "con": con1,
-        "fem": fem2,
-        "ao": 7,
+        "fem": lffem3,
+        "ao": 2,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
     },
     "Psd2": {
         "con": con1,
-        "fem": fem2,
-        "ao": 8,
+        "fem": lffem3,
+        "ao": 3,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
@@ -348,7 +348,7 @@ PLUNGER_SD_CONSTANTS = {
 TANK_CIRCUIT_CONSTANTS = {
     "tank_circuit1": {
         "con": con1,
-        "fem": fem1,
+        "fem": lffem3,
         "ao": 8,
         "ai": 2,
         "IF": 50 * u.MHz,
@@ -360,7 +360,7 @@ TANK_CIRCUIT_CONSTANTS = {
     },
     "tank_circuit2": {
         "con": con1,
-        "fem": fem1,
+        "fem": lffem3,
         "ao": 8,
         "ai": 2,
         "IF": 100 * u.MHz,
@@ -563,7 +563,7 @@ config = {
         con1: {
             "type": "opx1000",
             "fems": {
-                fem1: {
+                lffem1: {
                     "type": "LF",
                     "analog_outputs": {
                         # EDSR I1 (q1)
@@ -642,7 +642,70 @@ config = {
                         },  # DC readout input
                     },
                 },
-                fem2: {
+                lffem2: {
+                    "type": "LF",
+                    "analog_outputs": {
+                        # P1
+                        1: {
+                            "offset": 0.0,
+                            "output_mode": "amplified",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "pulse",
+                        },
+                        # P2
+                        2: {
+                            "offset": 0.0,
+                            "output_mode": "amplified",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "pulse",
+                        },
+                        # P3
+                        3: {
+                            "offset": 0.0,
+                            "output_mode": "amplified",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "pulse",
+                        },
+                        # B1
+                        4: {
+                            "offset": 0.0,
+                            "output_mode": "amplified",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "pulse",
+                        },
+                        # B2
+                        5: {
+                            "offset": 0.0,
+                            "output_mode": "amplified",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "pulse",
+                        },
+                        # B3
+                        6: {
+                            "offset": 0.0,
+                            "output_mode": "amplified",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "pulse",
+                        },
+                        # Psd1
+                        7: {
+                            "offset": 0.0,
+                            "output_mode": "amplified",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "pulse",
+                        },
+                        # Psd2
+                        8: {
+                            "offset": 0.0,
+                            "output_mode": "amplified",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "pulse",
+                        },
+                    },
+                    "digital_outputs": {},
+                    "analog_inputs": {},
+                },
+                lffem3: {
                     "type": "LF",
                     "analog_outputs": {
                         # P1

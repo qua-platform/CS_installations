@@ -213,7 +213,7 @@ else:
             ax3.set_ylabel(f"Q [V]")
             
             ax4 = plt.subplot(3, 2, ind + 5)
-            ax4.plot(x_data, P.mean(axis=0))
+            ax4.plot(voltages_Px, P.mean(axis=0))
             ax3.set_xlabel(f"{sweep_gates[0]} [V]")
             ax3.set_ylabel(f"even parity fraction")
 
@@ -246,7 +246,7 @@ else:
         ax.tick_params(axis='both', which='major', labelsize=8)
 
     # Set common x-axis label
-    for ax in axes:
+    for ax in axes[-nrows:]:
         ax.set_xlabel("demod reflectometry signal I [V]", fontsize=12)
 
     # Hide unused subplots if n_detunings < total panels
