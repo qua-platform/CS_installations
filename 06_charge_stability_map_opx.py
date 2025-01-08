@@ -41,8 +41,7 @@ from configuration_with_lffem import *
 
 Px = "P1"
 Py = "P2"
-tank_circuits = ["tank_circuit1", "tank_circuit2"]
-num_tank_circuits = len(tank_circuits)
+tank_circuit = "tank_circuit1"
 
 n_avg = 3
 n_voltages_Px = 11
@@ -62,7 +61,7 @@ voltages_Py = np.linspace(-0.1, 0.1, n_voltages_Py)
 save_data_dict = {
     "Px": Px,
     "Py": Py,
-    "tank_circuits": tank_circuits,
+    "tank_circuit": tank_circuit,
     "n_avg": n_avg,
     "voltages_Px": voltages_Px,
     "voltages_Py": voltages_Py,
@@ -75,33 +74,32 @@ with program() as charge_stability_prog:
     Vy = declare(fixed)
     n = declare(int)  # QUA integer used as an index for the averaging loop
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
-    I = [declare(fixed) for _ in range(num_tank_circuits)]
-    Q = [declare(fixed) for _ in range(num_tank_circuits)]
-    I_st = [declare_stream() for _ in range(num_tank_circuits)]
-    Q_st = [declare_stream() for _ in range(num_tank_circuits)]
+    I = declare(fixed)
+    Q = declare(fixed)
+    I_st = declare_stream()
+    Q_st = declare_stream()
 
     with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
         with for_(*from_array(Vy, voltages_Py)):
             # Pause the OPX to update the external DC voltages in Python
             set_dc_offset(Py, "single", Vy)
             # Wait for the voltages to settle (depends on the voltage source bandwidth)
-            wait(5 * u.ms)
+            wait(1 * u.ms)
             with for_(*from_array(Vx, voltages_Px)):
                 # Update the dc offset of the specified element
                 set_dc_offset(Px, "single", Vx)
                 wait(1 * u.ms)
                 # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
                 # frequency and the integrated quadratures are stored in "I" and "Q"
-                for j, tc in enumerate(tank_circuits):
-                    measure(
-                        "readout",
-                        tc,
-                        None,
-                        demod.full("cos", I[j], "out1"),
-                        demod.full("sin", Q[j], "out1"),
-                    )
-                    save(I[j], I_st[j])
-                    save(Q[j], Q_st[j])
+                measure(
+                    "readout",
+                    tank_circuit,
+                    None,
+                    demod.full("cos", I, "out1"),
+                    demod.full("sin", Q, "out1"),
+                )
+                save(I, I_st)
+                save(Q, Q_st)
                 # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
                 # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
                 # process them which can cause the OPX to crash.
@@ -112,9 +110,8 @@ with program() as charge_stability_prog:
     # Stream processing section used to process the data before saving it
     with stream_processing():
         n_st.save("iteration")
-        for j, tc in enumerate(tank_circuits):
-            I_st[j].buffer(n_voltages_Px).buffer(n_voltages_Py).average().save(f"I_{tc}")
-            Q_st[j].buffer(n_voltages_Px).buffer(n_voltages_Py).average().save(f"Q_{tc}")
+        I_st.buffer(n_voltages_Px).buffer(n_voltages_Py).average().save(f"I_{tank_circuit}")
+        Q_st.buffer(n_voltages_Px).buffer(n_voltages_Py).average().save(f"Q_{tank_circuit}")
 
 
 #####################################
@@ -145,49 +142,44 @@ else:
     job = qm.execute(charge_stability_prog)
 
     # Get results from QUA program
-    fetch_names = ["iteration"]
-    for tc in tank_circuits:
-        fetch_names.append(f"I_{tc}")
-        fetch_names.append(f"Q_{tc}")
+    fetch_names = ["iteration", f"I_{tank_circuit}", f"Q_{tank_circuit}"]
     results = fetching_tool(job, data_list=fetch_names, mode="live")
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch results
-        res = results.fetch_all()
+        iteration, I, Q = results.fetch_all()
         # Progress bar
-        progress_counter(res[0], n_avg, start_time=results.get_start_time())
+        progress_counter(iteration, n_avg, start_time=results.get_start_time())
 
         plt.suptitle("Charge sensor gate sweep")
-        for ind, tc in enumerate(tank_circuits):
-            S = res[2 * ind + 1] + 1j * res[2 * ind + 2]
-            R = np.abs(S)  # np.unwarp(np.angle(S))
-            phase = signal.detrend(np.unwrap(np.angle(S)))
+        S = I + 1j * Q
+        R = np.abs(S)  # np.unwarp(np.angle(S))
+        phase = signal.detrend(np.unwrap(np.angle(S)))
 
-            # Plot results
-            plt.suptitle("Charge stability diagram")
-            plt.subplot(2, 2, ind + 1)
-            plt.cla()
-            plt.title(r"$\sqrt{I^2 + Q^2}$ [V]" + f" {tc}")
-            plt.pcolor(voltages_Px, voltages_Py, R)
-            # plt.xlabel(f"{Px} voltage [V]")
-            plt.ylabel(f"{Py} voltage [V]")
-            plt.subplot(2, 2, ind + 3)
-            plt.cla()
-            plt.title("Phase [rad]")
-            plt.pcolor(voltages_Px, voltages_Py, phase)
-            plt.xlabel(f"{Px} voltage [V]")
-            plt.ylabel(f"{Py} voltage [V]")
+        # Plot results
+        plt.suptitle(f"Charge stability diagram {tank_circuit}")
+        plt.subplot(2, 1, 1)
+        plt.cla()
+        plt.title(r"$\sqrt{I^2 + Q^2}$ [V]")
+        plt.pcolor(voltages_Px, voltages_Py, R)
+        # plt.xlabel(f"{Px} voltage [V]")
+        plt.ylabel(f"{Py} voltage [V]")
+        plt.subplot(2, 1, 2)
+        plt.cla()
+        plt.title("Phase [rad]")
+        plt.pcolor(voltages_Px, voltages_Py, phase)
+        plt.xlabel(f"{Px} voltage [V]")
+        plt.ylabel(f"{Py} voltage [V]")
 
         plt.tight_layout()
         plt.pause(1)
 
     # Fetch results
-    res = results.fetch_all()
-    for ind, tc in enumerate(tank_circuits):
-        save_data_dict[f"I_{tc}"] = res[2 * ind + 1]
-        save_data_dict[f"Q_{tc}"] = res[2 * ind + 2]
+    iteration, I, Q = results.fetch_all()
+    save_data_dict[f"I"] = I
+    save_data_dict[f"Q"] = Q
 
     # Save results
     script_name = Path(__file__).name
