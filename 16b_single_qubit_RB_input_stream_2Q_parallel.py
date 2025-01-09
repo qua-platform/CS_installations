@@ -54,17 +54,17 @@ assert circuit_depth_max % delta_clifford == 0, "circuit_depth_max / delta_cliff
 
 
 # duration_init includes the manipulation
-delay_rb_start_loop = 16
-delay_rb_end_loop = 0
+delay_ops_start = 16
+delay_ops_end = 0
 
 
 duration_compensation_pulse = int(0.7 * duration_compensation_pulse_full_initialization + duration_compensation_pulse_rb + duration_compensation_pulse_full_readout)
 duration_compensation_pulse = 100 * (duration_compensation_pulse // 100)
 
 
-seq.add_points("operation_P1-P2", level_ops["P1-P2"], delay_rb_start_loop + delay_rb_end_loop)
-seq.add_points("operation_P4-P5", level_ops["P4-P5"], delay_rb_start_loop + delay_rb_end_loop)
-seq.add_points("operation_P3", level_ops["P3"], delay_rb_start_loop + delay_rb_end_loop)
+seq.add_points("operation_P1-P2", level_ops["P1-P2"], delay_ops_start + delay_ops_end)
+seq.add_points("operation_P4-P5", level_ops["P4-P5"], delay_ops_start + delay_ops_end)
+seq.add_points("operation_P3", level_ops["P3"], delay_ops_start + delay_ops_end)
 
 
 save_data_dict = {
@@ -126,7 +126,7 @@ with program() as PROGRAM_RB:
             duration_rb1 = encoded_circuit1[0]  # just a sequential index for this circuit
             duration_rb2 = encoded_circuit2[0]  # just a sequential index for this circuit
 
-            assign(duration_ops, delay_rb_start_loop + duration_rb1 + duration_rb2 + delay_rb_end_loop)
+            assign(duration_ops, delay_ops_start + duration_rb1 + duration_rb2 + delay_ops_end)
 
             with for_(n, 0, n < n_avg, n + 1):
                 with strict_timing_():
@@ -138,10 +138,10 @@ with program() as PROGRAM_RB:
                     other_elements = get_other_elements(elements_in_use=target_qubits + sweep_gates, all_elements=all_elements)
                     wait(duration_ops >> 2, *other_elements)
 
-                    wait(delay_rb_start_loop * u.ns, *target_qubits) if delay_rb_start_loop >= 16 else None
+                    wait(delay_ops_start * u.ns, *target_qubits) if delay_ops_start >= 16 else None
                     play_sequence(encoded_circuit1, depth1, target_qubits[0], i_from=1)
                     play_sequence(encoded_circuit2, depth2, target_qubits[1], i_from=1)
-                    wait(delay_rb_end_loop * u.ns, *target_qubits) if delay_rb_end_loop >= 16 else None
+                    wait(delay_ops_end * u.ns, *target_qubits) if delay_ops_end >= 16 else None
 
                     # Perform specified readout
                     perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)

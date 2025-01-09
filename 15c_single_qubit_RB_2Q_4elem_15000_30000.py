@@ -68,10 +68,10 @@ duration_compensation_pulse = target * PI_LEN
 
 
 # duration_init includes the manipulation
-delay_rb_start_loop = 68
+delay_ops_start = 68
 # duration_rb = PI_LEN * circuit_depth_max * 2 # 2 is a bit bigger than 1.875 (or)
 duration_rb = PI_LEN * 10 * 2
-delay_rb_end_loop = 60
+delay_ops_end = 60
 # duration_ops = delay_rb_start + duration_rb + delay_rb_end
 
 
@@ -80,9 +80,9 @@ duration_compensation_pulse = int(0.3 * duration_compensation_pulse_full_initial
 duration_compensation_pulse = 100 * (duration_compensation_pulse // 100)
 
 
-seq.add_points("operation_P1-P2", level_ops["P1-P2"], delay_rb_start_loop + delay_rb_end_loop)
-seq.add_points("operation_P4-P5", level_ops["P4-P5"], delay_rb_start_loop + delay_rb_end_loop)
-seq.add_points("operation_P3", level_ops["P3"], delay_rb_start_loop + delay_rb_end_loop)
+seq.add_points("operation_P1-P2", level_ops["P1-P2"], delay_ops_start + delay_ops_end)
+seq.add_points("operation_P4-P5", level_ops["P4-P5"], delay_ops_start + delay_ops_end)
+seq.add_points("operation_P3", level_ops["P3"], delay_ops_start + delay_ops_end)
 
 
 ###################################

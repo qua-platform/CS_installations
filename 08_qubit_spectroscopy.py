@@ -61,7 +61,8 @@ frequencies = np.linspace(50 * u.MHz, 350 * u.MHz, 101)
 
 
 # duration_init includes the manipulation
-delay_ops_start = 16
+RF_SWITCH_DELAY = 100
+delay_ops_start = 16 + RF_SWITCH_DELAY
 delay_ops_end = 16
 duration_ops = delay_ops_start + CONST_LEN + delay_ops_end
 assert delay_ops_start == 0 or delay_ops_start >= 16
@@ -114,6 +115,7 @@ with program() as qubit_spectroscopy_prog:
                 other_elements = get_other_elements(elements_in_use=[qubit] + sweep_gates, all_elements=all_elements)
                 wait(duration_ops >> 2, *other_elements)
 
+                play("trigger_on", "rf_switch", duration=duration_ops)
                 # Drive the qubit by playing the MW pulse at the end of the manipulation step
                 wait(delay_ops_start * u.ns, qubit) if delay_ops_start >= 16 else None
                 play("const", qubit)

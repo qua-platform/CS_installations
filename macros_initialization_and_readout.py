@@ -31,7 +31,7 @@ all_elements = qubits + sweep_gates + barrier_gates + qp_controls + tank_circuit
 do_feedback = True  # False for test. True for actual.
 
 
-delay_init_qubit_start = 16
+delay_init_qubit_start = 16 + RF_SWITCH_DELAY
 delay_feedback = 240
 delay_init_qubit_end = 16
 duration_ramp_init_1q = 1000

@@ -64,17 +64,17 @@ assert circuit_depth_max % delta_clifford == 0, "circuit_depth_max / delta_cliff
 
 
 # duration_init includes the manipulation
-delay_rb_start_loop = 68
-delay_rb_end_loop = 60  # 108
+delay_ops_start = 68
+delay_ops_end = 60  # 108
 
 
 duration_compensation_pulse = int(0.3 * duration_compensation_pulse_full_initialization + duration_compensation_pulse_rb + duration_compensation_pulse_full_readout)
 duration_compensation_pulse = 100 * (duration_compensation_pulse // 100)
 
 
-seq.add_points("operation_P1-P2", level_ops["P1-P2"], delay_rb_start_loop + delay_rb_end_loop)
-seq.add_points("operation_P4-P5", level_ops["P4-P5"], delay_rb_start_loop + delay_rb_end_loop)
-seq.add_points("operation_P3", level_ops["P3"], delay_rb_start_loop + delay_rb_end_loop)
+seq.add_points("operation_P1-P2", level_ops["P1-P2"], delay_ops_start + delay_ops_end)
+seq.add_points("operation_P4-P5", level_ops["P4-P5"], delay_ops_start + delay_ops_end)
+seq.add_points("operation_P3", level_ops["P3"], delay_ops_start + delay_ops_end)
 
 
 ###################
@@ -119,7 +119,7 @@ with program() as rb:
             # Assign sequence_time to duration of idle step for generated sequence "m" at a given depth
             assign(sequence_time1, generate_sequence_time(sequence_list1, depth1))
             assign(sequence_time2, generate_sequence_time(sequence_list2, depth2))
-            assign(duration_ops, delay_rb_start_loop + sequence_time1 + delay_rb_end_loop)
+            assign(duration_ops, delay_ops_start + sequence_time1 + delay_ops_end)
 
             with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
                 with strict_timing_():

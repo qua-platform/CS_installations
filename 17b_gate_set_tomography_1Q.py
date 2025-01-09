@@ -90,17 +90,17 @@ num_batches = math.ceil(result_array_len / batch_size)
 # duration_init includes the manipulation
 max_gate_counts = 4 + int(df_enc_seqs["full_native_gate_count"].max())
 max_gate_duration = max_gate_counts * PI_HALF_LEN
-delay_gst_start = 16
-delay_gst_end = 16
-duration_gst = delay_init_qubit_start + max_gate_duration + delay_init_qubit_end
+delay_ops_start = 16
+delay_ops_end = 16
+duration_ops = delay_init_qubit_start + max_gate_duration + delay_init_qubit_end
 
-duration_compensation_pulse_gst = duration_gst
+duration_compensation_pulse_gst = duration_ops
 duration_compensation_pulse = int(0.3 * duration_compensation_pulse_full_initialization + duration_compensation_pulse_gst + duration_compensation_pulse_full_readout)
 duration_compensation_pulse = 100 * (duration_compensation_pulse // 100)
 
-seq.add_points("operation_P1-P2", level_ops["P1-P2"], duration_gst)
-seq.add_points("operation_P4-P5", level_ops["P4-P5"], duration_gst)
-seq.add_points("operation_P3", level_ops["P3"], duration_gst)
+seq.add_points("operation_P1-P2", level_ops["P1-P2"], duration_ops)
+seq.add_points("operation_P4-P5", level_ops["P4-P5"], duration_ops)
+seq.add_points("operation_P3", level_ops["P3"], duration_ops)
 
 save_data_dict = {
     "sweep_gates": sweep_gates,
@@ -164,10 +164,10 @@ with program() as PROGRAM_GST:
 
                     # Navigate through the charge stability map
                     seq.add_step(voltage_point_name=f"operation_{plungers}")
-                    wait(delay_gst_start * u.ns, qubit) if delay_gst_start >= 16 else None
+                    wait(delay_ops_start * u.ns, qubit) if delay_ops_start >= 16 else None
 
                     other_elements = get_other_elements(elements_in_use=[qubit] + sweep_gates, all_elements=all_elements)
-                    wait(duration_gst * u.ns, *other_elements)
+                    wait(duration_ops * u.ns, *other_elements)
 
                     with for_(case_idx, 2, case_idx < circ_len + 2, case_idx + 1):
                         with switch_(encoded_circuit[case_idx], unsafe=True):
@@ -222,7 +222,7 @@ with program() as PROGRAM_GST:
                                 play("x90_kaiser", qubit)
                                 play("y90_kaiser", qubit)
 
-                    wait(delay_gst_end * u.ns, qubit) if delay_gst_end >= 16 else None
+                    wait(delay_ops_end * u.ns, qubit) if delay_ops_end >= 16 else None
 
                     # Perform specified readout
                     perform_readout(I, Q, P, I_st, Q_st, P_st, kind=plungers)
