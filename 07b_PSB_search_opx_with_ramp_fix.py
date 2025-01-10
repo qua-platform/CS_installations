@@ -36,6 +36,7 @@ from qualang_tools.results.data_handler import DataHandler
 from voltage_gate_sequence import VoltageGateSequence
 from scipy import signal
 
+from macros_voltage_gate_sequence import VoltageGateSequence
 from configuration_with_lffem_csrack import *
 
 matplotlib.use('TkAgg')
