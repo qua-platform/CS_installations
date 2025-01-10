@@ -33,9 +33,9 @@ from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.results.data_handler import DataHandler
-from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy import signal
 
+from macros_voltage_gate_sequence import VoltageGateSequence
 from configuration_with_lffem_csrack import *
 
 # matplotlib.use('TkAgg')
