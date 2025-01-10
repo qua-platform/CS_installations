@@ -33,19 +33,19 @@ from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.results.data_handler import DataHandler
-from qualang_tools.voltage_gates import VoltageGateSequence
+from voltage_gate_sequence import VoltageGateSequence
 from scipy import signal
 
 from configuration_with_lffem_csrack import *
 
-# matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')
 
 
 ###################
 # The QUA program #
 ###################
 n_shots = 200  # Number of averages
-n_detunings = 10
+n_detunings = 5
 
 sweep_gates = ["P1_sticky", "P2_sticky"]
 tank_circuit = "tank_circuit1"
@@ -81,7 +81,7 @@ print(voltages_Py)
 
 
 seq = VoltageGateSequence(config, sweep_gates)
-seq.add_points("initialization", [0,0], duration_init)
+seq.add_points("initialization", level_init, duration_init)
 # for m, (v1, v2) in enumerate(zip(voltages_Px, voltages_Py)):
 #     # print(f"readout_{m}", v1, v2)
 #     seq.add_points(f"readout_{m}", [v1, v2], duration_readout)
@@ -115,12 +115,13 @@ with program() as PSB_search_prog:
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("tank_circuit1", I, Q, P)
 
-    set_dc_offset(sweep_gates[0], "single", level_init[0])
-    set_dc_offset(sweep_gates[1], "single", level_init[1])
+    # set_dc_offset(sweep_gates[0], "single", level_init[0])
+    # set_dc_offset(sweep_gates[1], "single", level_init[1])
+
     with for_(n, 0, n < n_shots, n + 1):
         with for_each_((Vx, Vy), (voltages_Px.tolist(), voltages_Py.tolist())):
             # Play the triangle
-            # seq.add_step(voltage_point_name="initialization") #1* u.us)
+            seq.add_step(voltage_point_name="initialization") #1* u.us)
             seq.add_step(level=[Vx, Vy], duration=duration_readout, ramp_duration=duration_ramp_readout)
             # seq.add_step(level=[Vx, Vy], duration=duration_readout, ramp_duration=0)
             # seq.add_step(level=[Vx, Vy], duration=duration_readout)
@@ -143,7 +144,7 @@ with program() as PSB_search_prog:
             # process them which can cause the OPX to crash.
             # wait(1_000 * u.ns)  # in ns
             # # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
-            seq.ramp_to_zero()
+            # seq.ramp_to_zero()
 
         # Save the LO iteration to get the progress bar
         save(n, n_st)
