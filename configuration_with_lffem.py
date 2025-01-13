@@ -82,6 +82,8 @@ VIRTUALIZATION_MATRIX = np.array(
 STEP_LEN = 1000
 STEP_AMP = 0.25
 
+amplitude_scaling = 4.7
+LEVEL_INIT = [-0.094, +0.094] # [-0.02, 0.02] * amplitude_scaling
 LEVEL_READOUT = [-0.00254, +0.00249]
 
 
@@ -89,7 +91,7 @@ LEVEL_READOUT = [-0.00254, +0.00249]
 #    DIGITAL TRIGGER    #
 #########################
 
-RF_SWITCH_DELAY = 100
+RF_SWITCH_DELAY = 200
 rf_switch_delay = 0
 rf_switch_buffer = 0
 
