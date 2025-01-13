@@ -16,9 +16,10 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 from scipy import signal
 
 from configuration_with_lffem_csrack import *
+# from configuration_with_lffem import *
 from macros_initialization_and_readout_2q import *
 
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 ###################
@@ -53,9 +54,9 @@ level_readout_offset_list = level_readout_offset_arr.tolist()
 level_init_offset_list = level_init_offset_arr.tolist()
 
 
-seq = VoltageGateSequence(config, sweep_gates)
-seq.add_points("initialization", level_init_offset_list, duration_init)
-seq.add_points("readout", level_readout_offset_list, duration_readout)
+# seq = VoltageGateSequence(config, sweep_gates)
+# seq.add_points("initialization", level_init_offset_list, duration_init)
+# seq.add_points("readout", level_readout_offset_list, duration_readout)
 
 
 save_data_dict = {
@@ -89,13 +90,13 @@ with program() as QUBIT_CHIRP:
 
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(f, freqs)):
-            update_frequency("qubit1", f)
+            update_frequency(qubit, f)
 
             P = measure_parity(I, Q, P, I_st[0], Q_st[0], P_st[0], tank_circuit, threshold)
             
             # Play the triangle
             align()
-            seq.add_step(voltage_point_name="initialization", ramp_duration=duration_ramp_init) # NEVER u.ns
+            seq.add_step(voltage_point_name="initialization_1q", ramp_duration=duration_ramp_init) # NEVER u.ns
 
             wait(duration_ramp_init // 4, "rf_switch", qubit)
             play("trigger", "rf_switch", duration=(RF_SWITCH_DELAY + CONST_LEN) // 4)

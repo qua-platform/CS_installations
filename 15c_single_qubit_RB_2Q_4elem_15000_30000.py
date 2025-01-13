@@ -32,7 +32,7 @@ from scipy.optimize import curve_fit
 
 from configuration_with_lffem import *
 from macros import get_other_elements
-from macros_initialization_and_readout import *
+from macros_initialization_and_readout_2q import *
 from macros_rb import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 

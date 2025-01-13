@@ -40,7 +40,7 @@ from qualang_tools.results.data_handler import DataHandler
 from scipy import signal
 
 from configuration_with_lffem import *
-from macros_initialization_and_readout import *
+from macros_initialization_and_readout_2q import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 
 ###################
@@ -62,7 +62,6 @@ frequencies = np.linspace(50 * u.MHz, 350 * u.MHz, 101)
 
 
 # duration_init includes the manipulation
-RF_SWITCH_DELAY = 100
 delay_ops_start = 16 + RF_SWITCH_DELAY
 delay_ops_end = 16
 duration_ops = delay_ops_start + CONST_LEN + delay_ops_end
