@@ -27,31 +27,32 @@ from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.results.data_handler import DataHandler
-from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy import signal
 
 from configuration_with_lffem import *
+from macros_voltage_gate_sequence import VoltageGateSequence
 
-# matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')
 
 
 ###################
 # The QUA program #
 ###################
 
-Px = "P1"
-Py = "P2"
+run_live = True
+Px = "P0"
+Py = "P1"
 tank_circuit = "tank_circuit1"
 
-n_avg = 3
-n_voltages_Px = 11
-n_voltages_Py = 21
+n_avg = 1# 0000
+n_voltages_Px = 201
+n_voltages_Py = 201
 
 # Voltages in Volt
-voltages_Px = np.linspace(-0.05, 0.05, n_voltages_Px)
+voltages_Px = np.linspace(-0.08, 0.08, n_voltages_Px)
 # Because of the bias-tee, it is important that the voltages swept along the fast axis are centered around 0.
 # Also, since the OPX dynamic range is [-0.5, 0.5)V, one may need to add a voltage offset on the DC part of the bias-tee.
-voltages_Py = np.linspace(-0.1, 0.1, n_voltages_Py)
+voltages_Py = np.linspace(-0.08, 0.08, n_voltages_Py)
 # TODO: set DC offset on the external source for the fast gate
 # One can check the expected voltage levels after the bias-tee using the following function:
 # _, _ = get_filtered_voltage(
@@ -84,11 +85,11 @@ with program() as charge_stability_prog:
             # Pause the OPX to update the external DC voltages in Python
             set_dc_offset(Py, "single", Vy)
             # Wait for the voltages to settle (depends on the voltage source bandwidth)
-            wait(1 * u.ms)
+            wait(2 * u.ms, tank_circuit)
             with for_(*from_array(Vx, voltages_Px)):
                 # Update the dc offset of the specified element
                 set_dc_offset(Px, "single", Vx)
-                wait(1 * u.ms)
+                wait(10 * u.us, tank_circuit)
                 # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
                 # frequency and the integrated quadratures are stored in "I" and "Q"
                 measure(
@@ -110,8 +111,12 @@ with program() as charge_stability_prog:
     # Stream processing section used to process the data before saving it
     with stream_processing():
         n_st.save("iteration")
-        I_st.buffer(n_voltages_Px).buffer(n_voltages_Py).average().save(f"I_{tank_circuit}")
-        Q_st.buffer(n_voltages_Px).buffer(n_voltages_Py).average().save(f"Q_{tank_circuit}")
+        if run_live:
+            I_st.buffer(n_voltages_Px).buffer(n_voltages_Py).save(f"I_{tank_circuit}")
+            Q_st.buffer(n_voltages_Px).buffer(n_voltages_Py).save(f"Q_{tank_circuit}")
+        else:
+            I_st.buffer(n_voltages_Px).buffer(n_voltages_Py).average().save(f"I_{tank_circuit}")
+            Q_st.buffer(n_voltages_Px).buffer(n_voltages_Py).average().save(f"Q_{tank_circuit}")
 
 
 #####################################
@@ -159,20 +164,15 @@ else:
         phase = signal.detrend(np.unwrap(np.angle(S)))
 
         # Plot results
+        plt.clf()
         plt.suptitle(f"Charge stability diagram {tank_circuit}")
-        plt.subplot(2, 1, 1)
         plt.cla()
         plt.title(r"$\sqrt{I^2 + Q^2}$ [V]")
         plt.pcolor(voltages_Px, voltages_Py, R)
         # plt.xlabel(f"{Px} voltage [V]")
-        plt.ylabel(f"{Py} voltage [V]")
-        plt.subplot(2, 1, 2)
-        plt.cla()
-        plt.title("Phase [rad]")
-        plt.pcolor(voltages_Px, voltages_Py, phase)
         plt.xlabel(f"{Px} voltage [V]")
         plt.ylabel(f"{Py} voltage [V]")
-
+        plt.colorbar()
         plt.tight_layout()
         plt.pause(1)
 
@@ -189,7 +189,7 @@ else:
         script_name: script_name,
         **default_additional_files,
     }
-    data_handler.save_data(data=save_data_dict, name=Path(__name__).stem)
+    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py",""))
 
     qm.close()
 

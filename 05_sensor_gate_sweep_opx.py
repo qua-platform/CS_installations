@@ -26,24 +26,24 @@ from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.results.data_handler import DataHandler
-from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy import signal
 
 from configuration_with_lffem import *
+from macros_voltage_gate_sequence import VoltageGateSequence
 
-# matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')
 
 
 ###################
 # The QUA program #
 ###################
 
-sd = "Psd1"
-sd_sticky = f"{sd}_sticky"
+run_live = True 
+sd_sticky = "Psd1_sticky"
 tank_circuit = "tank_circuit1"
-step_amp = PLUNGER_SD_CONSTANTS[sd]["step_amp"]
+step_amp = PLUNGER_SD_CONSTANTS[sd_sticky.replace("_sticky", "")]["step_amp"]
 
-n_avg = 100  # Number of averaging loops
+n_avg = 1000000 if run_live else 100 # Number of averaging loops
 offset_max = +0.2
 offset_min = -offset_max
 offset_step = 0.02
@@ -51,18 +51,10 @@ offsets = np.arange(offset_min, offset_max + offset_step, offset_step)
 duration_after_step = 1 * u.ms
 num_offsets = len(offsets)
 
-sweep_gates = ["P1_sticky", "P2_sticky"]
-level_readout = [0.0, 0.0]
-duration_ramp_readout = 1 * u.us
-duration_buffer = 10 * u.us
-duration_readout = duration_after_step + REFLECTOMETRY_READOUT_LEN + duration_buffer
-
-seq = VoltageGateSequence(config, sweep_gates)
-seq.add_points("readout", level_readout, duration_readout)
-
+assert ((offsets / step_amp) < 2.0).all(), "offsets too high relative to step amp"
 
 save_data_dict = {
-    "sensor_dot": sd,
+    "sensor_dot": sd_sticky,
     "tank_circuit": tank_circuit,
     "n_avg": n_avg,
     "offsets": offsets,
@@ -71,9 +63,7 @@ save_data_dict = {
 
 
 with program() as charge_sensor_sweep:
-    Vx = declare(fixed)
-    Vy = declare(fixed)
-    i = declare(fixed)  # QUA variable for the voltage sweep
+    i = declare(int)  # QUA variable for the voltage sweep
     n = declare(int)  # QUA variable for the averaging loop
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
     
@@ -83,9 +73,6 @@ with program() as charge_sensor_sweep:
     Q_st = declare_stream()
 
     with for_(n, 0, n < n_avg, n + 1):
-
-        # Pause the OPX to update the external DC voltages in Python
-        seq.add_step(voltage_point_name="readout", ramp_duration=duration_ramp_readout)
 
         # Set the voltage to the 1st point of the sweep
         play("step" * amp(offset_min / step_amp), sd_sticky)
@@ -110,22 +97,26 @@ with program() as charge_sensor_sweep:
             # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
             # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
             # process them which can cause the OPX to crash.
-            wait(1_000 * u.ns)  # in ns
+            wait(1 * u.us)  # in ns
 
         ramp_to_zero(sd_sticky)
-        seq.ramp_to_zero()
         save(n, n_st)
 
     with stream_processing():
         n_st.save("iteration")
-        I_st.buffer(len(offsets)).average().save("I")
-        Q_st.buffer(len(offsets)).average().save("Q")
+        if run_live:
+            I_st.buffer(len(offsets)).save("I")
+            Q_st.buffer(len(offsets)).save("Q")
+        else:
+            I_st.buffer(len(offsets)).average().save("I")
+            Q_st.buffer(len(offsets)).average().save("Q")
 
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+
 
 #######################
 # Simulate or execute #
@@ -134,7 +125,7 @@ simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=2_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, charge_sensor_sweep, simulation_config)
     # Plot the simulated samples
@@ -171,12 +162,12 @@ else:
         plt.xlabel("Sensor gate voltage [V]")
         plt.ylabel("demod reflectometry signal Q [V]")
         plt.tight_layout()
-        plt.pause(1)
+        plt.pause(0.5)
 
     # Fetch results
-    res = results.fetch_all()
-    save_data_dict["I"] = res[0]
-    save_data_dict["Q"] = res[1]
+    iteration, I, Q = results.fetch_all()
+    save_data_dict["I"] = I
+    save_data_dict["Q"] = Q
 
     # Save results
     script_name = Path(__file__).name
@@ -186,7 +177,7 @@ else:
         script_name: script_name,
         **default_additional_files,
     }
-    data_handler.save_data(data=save_data_dict, name=Path(__name__).stem)
+    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py",""))
 
     qm.close()
 

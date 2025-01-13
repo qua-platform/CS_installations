@@ -13,13 +13,14 @@ from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
 from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import fetching_tool, progress_counter, wait_until_job_is_paused
-from qualang_tools.voltage_gates import VoltageGateSequence
+from qualang_tools.results import (fetching_tool, progress_counter,
+                                   wait_until_job_is_paused)
 
 from configuration_with_lffem import *
 from macros import get_other_elements
 from macros_initialization_and_readout import *
 from macros_rb import *
+from macros_voltage_gate_sequence import VoltageGateSequence
 
 # # matplotlib.use('TkAgg')
 
@@ -241,7 +242,7 @@ else:
             "macros_initialization_and_readout.py": "macros_initialization_and_readout.py",
             **default_additional_files,
         }
-        data_handler.save_data(data=save_data_dict, name=Path(__name__).stem)
+        data_handler.save_data(data=save_data_dict, name=script_name.replace(".py",""))
 
     qm.close()
 

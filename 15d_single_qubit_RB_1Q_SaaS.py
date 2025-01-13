@@ -19,23 +19,24 @@ Prerequisites:
     - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
 """
 
+import os
+
 import matplotlib.pyplot as plt
-from qm import CompilerOptionArguments, QuantumMachinesManager, SimulationConfig
+from dotenv import load_dotenv
+from qm import (CompilerOptionArguments, QuantumMachinesManager,
+                SimulationConfig)
 from qm.qua import *
+from qm_saas import QoPSaaS, QoPVersion
 from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
 from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
-from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy.optimize import curve_fit
 
 from configuration_with_lffem_saas import *
 from macros_rb import *
-
-from qm_saas import QoPSaaS, QoPVersion
-from dotenv import load_dotenv
-import os
+from macros_voltage_gate_sequence import VoltageGateSequence
 
 ##############################
 # Program-specific variables #

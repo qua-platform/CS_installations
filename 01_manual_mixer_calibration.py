@@ -14,9 +14,9 @@ Before proceeding to the next node, take the following steps:
 
 from qm import QuantumMachinesManager
 from qm.qua import *
-from qualang_tools.voltage_gates import VoltageGateSequence
 
 from configuration_with_lffem import *
+from macros_voltage_gate_sequence import VoltageGateSequence
 
 ###################
 # The QUA program #

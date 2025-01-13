@@ -7,9 +7,7 @@ import matplotlib.pyplot as plt
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 
-
 from configuration_with_lffem import *
-
 
 ###################
 # The QUA program #

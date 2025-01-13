@@ -80,7 +80,18 @@ VIRTUALIZATION_MATRIX = np.array(
     ]
 )
 STEP_LEN = 1000
-STEP_AMP = 2.0
+STEP_AMP = 0.25
+
+LEVEL_READOUT = [-0.00254, +0.00249]
+
+
+#########################
+#    DIGITAL TRIGGER    #
+#########################
+
+RF_SWITCH_DELAY = 100
+rf_switch_delay = 0
+rf_switch_buffer = 0
 
 
 #########################
@@ -88,8 +99,8 @@ STEP_AMP = 2.0
 #########################
 
 # CW pulse
-CONST_AMP = 0.1  # in V
-CONST_LEN = 100  # in ns
+CONST_AMP = 0.313  # in V
+CONST_LEN = 252  # in ns
 
 # Saturation pulse
 SATURATION_AMP = 0.1
@@ -128,10 +139,10 @@ CROT_RF_SIGMA = CROT_RF_LEN / 5
 #    REFELECTOMETRY    #
 ########################
 
-REFLECTOMETRY_READOUT_AMP = 0.1
-REFLECTOMETRY_READOUT_LEN = 400  # 10_000
+REFLECTOMETRY_READOUT_AMP = 0.15
+REFLECTOMETRY_READOUT_LEN = 100_000
 
-PARITY_THRESHOLD1 = 0.0
+PARITY_THRESHOLD1 = 0.31
 PARITY_THRESHOLD2 = 0.0
 
 
@@ -140,7 +151,7 @@ PARITY_THRESHOLD2 = 0.0
 ######################
 
 # ## Section defining the points from the charge stability map - can be done in the config
-# # Relevant points in the charge stability map as ["P1", "P2"] in V
+# # Relevant points in the charge stability map as ["P0", "P1"] in V
 # level_init = [-0.02, 0.02]
 # level_readout = [0.0, -0.0]
 
@@ -166,90 +177,80 @@ QUBIT_CONSTANTS = {
         "fem": lffem1,
         "aout_I": 1,
         "aout_Q": 2,
-        "dout": 1,
         "LO": 16 * u.GHz,
         "IF": 0 * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
-        "midcircuit_parity_threshold": 0.0,
         "delay": 0,
-        "rf_switch_delay": 40,
-        "rf_switch_buffer": 40,
     },
     "qubit2": {
         "con": con1,
         "fem": lffem1,
         "aout_I": 1,
         "aout_Q": 2,
-        "dout": 1,
         "LO": 16 * u.GHz,
         "IF": 0 * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
-        "midcircuit_parity_threshold": 0.0,
         "delay": 0,
-        "rf_switch_delay": 40,
-        "rf_switch_buffer": 40,
     },
     "qubit3": {
         "con": con1,
         "fem": lffem1,
         "aout_I": 3,
         "aout_Q": 4,
-        "dout": 3,
         "LO": 16.3 * u.GHz,
         "IF": 0 * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
-        "midcircuit_parity_threshold": 0.0,
         "delay": 0,
-        "rf_switch_delay": 40,
-        "rf_switch_buffer": 40,
     },
     "qubit4": {
         "con": con1,
         "fem": lffem1,
         "aout_I": 3,  # TODO: Fix
         "aout_Q": 4,  # TODO: Fix
-        "dout": 3,
         "LO": 16.3 * u.GHz,
         "IF": 50 * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
-        "midcircuit_parity_threshold": 0.0,
         "delay": 0,
-        "rf_switch_delay": 40,
-        "rf_switch_buffer": 40,
     },
     "qubit5": {
         "con": con1,
         "fem": lffem1,
         "aout_I": 5,  # TODO: Fix
         "aout_Q": 6,  # TODO: Fix
-        "dout": 5,
         "LO": 16.3 * u.GHz,
         "IF": 0 * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
-        "midcircuit_parity_threshold": 0.0,
         "delay": 0,
-        "rf_switch_delay": 40,
-        "rf_switch_buffer": 40,
+    },
+}
+
+DO_CONSTANTS = {
+    "rf_switch": {
+        "con": con1,
+        "fem": lffem1,
+        "dout": 1,
+        "delay": rf_switch_delay,
+        "buffer": rf_switch_buffer,
     },
 }
 
 PLUNGER_CONSTANTS = {
-    "P1": {
+    "P0": {
         "con": con1,
         "fem": lffem2,
         "ao": 1,
@@ -257,7 +258,7 @@ PLUNGER_CONSTANTS = {
         "step_len": STEP_LEN,
         "delay": 0,
     },
-    "P2": {
+    "P1": {
         "con": con1,
         "fem": lffem2,
         "ao": 3,
@@ -265,7 +266,7 @@ PLUNGER_CONSTANTS = {
         "step_len": STEP_LEN,
         "delay": 0,
     },
-    "P3": {
+    "P2": {
         "con": con1,
         "fem": lffem2,
         "ao": 5,
@@ -273,7 +274,7 @@ PLUNGER_CONSTANTS = {
         "step_len": STEP_LEN,
         "delay": 0,
     },
-    "P4": {
+    "P3": {
         "con": con1,
         "fem": lffem2,  # TODO: Fix
         "ao": 7,  # TODO: Fix
@@ -281,7 +282,7 @@ PLUNGER_CONSTANTS = {
         "step_len": STEP_LEN,
         "delay": 0,
     },
-    "P5": {
+    "P4": {
         "con": con1,
         "fem": lffem3,  # TODO: Fix
         "ao": 1,  # TODO: Fix
@@ -351,11 +352,11 @@ TANK_CIRCUIT_CONSTANTS = {
         "fem": lffem3,
         "ao": 8,
         "ai": 2,
-        "IF": 50 * u.MHz,
+        "IF": 181.02 * u.MHz,
         "readout_amp": REFLECTOMETRY_READOUT_AMP,
         "readout_len": REFLECTOMETRY_READOUT_LEN,
         "threshold": PARITY_THRESHOLD1,
-        "time_of_flight": 24,
+        "time_of_flight": 24 + 180,
         "delay": 0,
     },
     "tank_circuit2": {
@@ -363,11 +364,11 @@ TANK_CIRCUIT_CONSTANTS = {
         "fem": lffem3,
         "ao": 8,
         "ai": 2,
-        "IF": 100 * u.MHz,
+        "IF": 139.534 * u.MHz,
         "readout_amp": REFLECTOMETRY_READOUT_AMP,
         "readout_len": REFLECTOMETRY_READOUT_LEN,
         "threshold": PARITY_THRESHOLD2,
-        "time_of_flight": 24,
+        "time_of_flight": 24 + 180,
         "delay": 0,
     },
 }
@@ -383,20 +384,17 @@ CROT_CONSTANTS = {
             "fem": QUBIT_CONSTANTS[f"qubit{c}"]["fem"],
             "aout_I": QUBIT_CONSTANTS[f"qubit{c}"]["aout_I"],
             "aout_Q": QUBIT_CONSTANTS[f"qubit{c}"]["aout_Q"],
-            "dout": QUBIT_CONSTANTS[f"qubit{c}"]["dout"],
             "LO": QUBIT_CONSTANTS[f"qubit{c}"]["LO"],
             "IF": QUBIT_CONSTANTS[f"qubit{c}"]["IF"],
             "mixer_g": QUBIT_CONSTANTS[f"qubit{c}"]["mixer_g"],
             "mixer_phi": QUBIT_CONSTANTS[f"qubit{c}"]["mixer_phi"],
             "pi_amp": CROT_RF_AMP,
             "pi_len": CROT_RF_LEN,
-            "rf_switch_delay": 40,
         }
         for c, t in qubit_pairs
     }
 }
 # # update after findng the optimal parameters
-# CR_DRIVE_CONSTANTS["qp_control_c3t2"].update({"pi_amp": 0.1, "pi_len": 100, "IF": -100 * u.MHz})
 
 
 #########################
@@ -407,9 +405,9 @@ from collections import OrderedDict
 
 MAP_GATE_TO_IDX = OrderedDict(
     [
-        ("P1", 0),
-        ("P2", 1),
-        ("P3", 2),
+        ("P0", 0),
+        ("P1", 1),
+        ("P2", 2),
         ("B1", 3),
         ("B2", 4),
         ("B3", 5),
@@ -476,7 +474,8 @@ class GateVirtualizer:
 #  Pi pulse waveforms  #
 ########################
 
-from scipy.special import i0  # Zeroth-order modified Bessel function of the first kind
+from scipy.special import \
+    i0  # Zeroth-order modified Bessel function of the first kind
 
 
 def kaiser_window(T: int, alpha: float) -> np.ndarray:
@@ -572,7 +571,7 @@ config = {
                             "offset": 0.0,
                             # The "output_mode" can be used to tailor the max voltage and frequency bandwidth, i.e.,
                             #   "direct":    1Vpp (-0.5V to 0.5V), 750MHz bandwidth (default)
-                            #   "amplified": 5Vpp (-2.5V to 2.5V), 330MHz bandwidth
+                            #   "direct": 5Vpp (-2.5V to 2.5V), 330MHz bandwidth
                             "output_mode": "direct",
                             # The "sampling_rate" can be adjusted by using more FEM cores, i.e.,
                             #   1 GS/s: uses one core per output (default)
@@ -620,84 +619,76 @@ config = {
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "mw",
                         },
-                        # RF Reflectometry
-                        8: {
+                        # Psd2
+                        7: {
                             "offset": 0.0,
                             "output_mode": "direct",
                             "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
+                            "upsampling_mode": "pulse",
                         },
                     },
                     "digital_outputs": {
-                        1: {},  # TTL for RF1
-                        3: {},  # TTL for RF2
-                        5: {},  # TTL for RF3
+                        1: {},  # TTL for RF
                     },
                     "analog_inputs": {
-                        # 1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},  # RF reflectometry input
-                        2: {
-                            "offset": 0.0,
-                            "gain_db": 0,
-                            "sampling_rate": sampling_rate,
-                        },  # DC readout input
                     },
                 },
                 lffem2: {
                     "type": "LF",
                     "analog_outputs": {
-                        # P1
+                        # P0
                         1: {
                             "offset": 0.0,
-                            "output_mode": "amplified",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "pulse",
-                        },
-                        # P2
-                        2: {
-                            "offset": 0.0,
-                            "output_mode": "amplified",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "pulse",
-                        },
-                        # P3
-                        3: {
-                            "offset": 0.0,
-                            "output_mode": "amplified",
+                            "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
                         # B1
-                        4: {
+                        2: {
                             "offset": 0.0,
-                            "output_mode": "amplified",
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "pulse",
+                        },
+                        # P1
+                        3: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
                         # B2
+                        4: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "pulse",
+                        },
+                        # P2
                         5: {
                             "offset": 0.0,
-                            "output_mode": "amplified",
+                            "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
                         # B3
                         6: {
                             "offset": 0.0,
-                            "output_mode": "amplified",
+                            "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
-                        # Psd1
+                        # P3
                         7: {
                             "offset": 0.0,
-                            "output_mode": "amplified",
+                            "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
-                        # Psd2
+                        # B4
                         8: {
                             "offset": 0.0,
-                            "output_mode": "amplified",
+                            "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
@@ -708,65 +699,44 @@ config = {
                 lffem3: {
                     "type": "LF",
                     "analog_outputs": {
-                        # P1
+                        # P4
                         1: {
                             "offset": 0.0,
-                            "output_mode": "amplified",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "pulse",
-                        },
-                        # P2
-                        2: {
-                            "offset": 0.0,
-                            "output_mode": "amplified",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "pulse",
-                        },
-                        # P3
-                        3: {
-                            "offset": 0.0,
-                            "output_mode": "amplified",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "pulse",
-                        },
-                        # B1
-                        4: {
-                            "offset": 0.0,
-                            "output_mode": "amplified",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "pulse",
-                        },
-                        # B2
-                        5: {
-                            "offset": 0.0,
-                            "output_mode": "amplified",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "pulse",
-                        },
-                        # B3
-                        6: {
-                            "offset": 0.0,
-                            "output_mode": "amplified",
+                            "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
                         # Psd1
-                        7: {
+                        2: {
                             "offset": 0.0,
-                            "output_mode": "amplified",
+                            "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
                         # Psd2
+                        3: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "pulse",
+                        },
+                        # Reflectometry out
                         8: {
                             "offset": 0.0,
-                            "output_mode": "amplified",
+                            "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
                     },
                     "digital_outputs": {},
-                    "analog_inputs": {},
+                    "analog_inputs": {
+                        # Reflectometry in
+                        2: {
+                            "offset": -0.007773877929687499,
+                            "gain_db": 0,
+                            "sampling_rate": sampling_rate,
+                        },  # DC readout input
+                    },
                 },
             },
         }
@@ -856,13 +826,6 @@ config = {
                     "lo_frequency": val["LO"],
                     "mixer": f"mixer_{qb}",
                 },
-                "digitalInputs": {
-                    "output_switch": {
-                        "port": (val["con"], val["fem"], val["dout"]),
-                        "delay": val["rf_switch_delay"],
-                        "buffer": val["rf_switch_buffer"],
-                    },
-                },
                 "intermediate_frequency": val["IF"],
                 "operations": {
                     "const": "const_pulse",
@@ -898,13 +861,6 @@ config = {
                     "Q": (val["con"], val["fem"], val["aout_Q"]),
                     "lo_frequency": val["LO"],
                     "mixer": f"mixer_{qb}",
-                },
-                "digitalInputs": {
-                    "marker": {
-                        "port": (val["con"], val["fem"], val["dout"]),
-                        "delay": val["rf_switch_delay"],
-                        "buffer": val["rf_switch_buffer"],
-                    },
                 },
                 "intermediate_frequency": val["IF"],
                 "operations": {
@@ -942,13 +898,6 @@ config = {
                     "lo_frequency": val["LO"],
                     "mixer": f"mixer_{qb}",
                 },
-                "digitalInputs": {
-                    "marker": {
-                        "port": (val["con"], val["fem"], val["dout"]),
-                        "delay": val["rf_switch_delay"],
-                        "buffer": val["rf_switch_buffer"],
-                    },
-                },
                 "intermediate_frequency": val["IF"],
                 "operations": {
                     "const": "const_pulse",
@@ -985,13 +934,6 @@ config = {
                     "lo_frequency": val["LO"],
                     "mixer": f"mixer_{qp}",
                 },
-                "digitalInputs": {
-                    "marker": {
-                        "port": (val["con"], val["fem"], val["dout"]),
-                        "delay": val["rf_switch_delay"],
-                        "buffer": 0,
-                    },
-                },
                 "intermediate_frequency": val["IF"],
                 "operations": {
                     "const": "const_pulse",
@@ -1018,21 +960,21 @@ config = {
             }
             for qp, val in CROT_CONSTANTS.items()
         },
-        # qubit_triggers (qubit1_trigger, ...)
+        # 
         **{
-            f"{qb}_trigger": {
+            dm: {
                 "digitalInputs": {
                     "trigger": {
                         "port": (val["con"], val["fem"], val["dout"]),
-                        "delay": 0,
-                        "buffer": 0,
+                        "delay": val["delay"],
+                        "buffer": val["buffer"],
                     }
                 },
                 "operations": {
                     "trigger": "trigger_pulse",
                 },
             }
-            for qb, val in QUBIT_CONSTANTS.items()
+            for dm, val in DO_CONSTANTS.items()
         },
         # reflectometry (qubit1, ...)
         **{

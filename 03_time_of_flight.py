@@ -18,10 +18,10 @@ The data undergoes post-processing to calibrate three distinct parameters:
 import matplotlib.pyplot as plt
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
-from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy.signal import savgol_filter
 
 from configuration_with_lffem import *
+from macros_voltage_gate_sequence import VoltageGateSequence
 
 ###################
 # The QUA program #

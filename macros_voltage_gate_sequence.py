@@ -1,8 +1,9 @@
-import numpy as np
+from typing import Dict, List, Union
 
-from qm.qua._dsl import QuaVariable, QuaExpression
-from qm.qua import declare, assign, play, fixed, Cast, amp, wait, ramp, ramp_to_zero
-from typing import Union, List, Dict
+import numpy as np
+from qm.qua import (Cast, amp, assign, declare, fixed, play, ramp,
+                    ramp_to_zero, wait)
+from qm.qua._dsl import QuaExpression, QuaVariable
 
 
 class VoltageGateSequence:
