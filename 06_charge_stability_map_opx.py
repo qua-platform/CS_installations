@@ -44,7 +44,7 @@ Px = "P0"
 Py = "P1"
 tank_circuit = "tank_circuit1"
 
-n_avg = 1# 0000
+n_avg = 10000
 n_voltages_Px = 201
 n_voltages_Py = 201
 

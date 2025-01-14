@@ -15,18 +15,17 @@ from qualang_tools.results.data_handler import DataHandler
 from macros_voltage_gate_sequence import VoltageGateSequence
 from scipy import signal
 
-from configuration_with_lffem_csrack import *
-# from configuration_with_lffem import *
+from configuration_with_lffem import *
 from macros_initialization_and_readout_2q import *
 
-# matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')
 
 
 ###################
 # The QUA program #
 ###################
 
-n_avg = 200  # Number of averages
+n_avg = 1000  # Number of averages
 
 qubit = "qubit1"
 sweep_gates = ["P0_sticky", "P1_sticky"]
@@ -34,7 +33,7 @@ tank_circuit = "tank_circuit1"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 num_output_streams = 2
 
-freqs = np.arange(-120e6, 120e6, 0.5e6)
+freqs = np.arange(0e6, 300e6, 1e6)
 
 save_data_dict = {
     "sweep_gates": sweep_gates,
@@ -50,7 +49,8 @@ with program() as QUBIT_CHIRP:
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
     I = declare(fixed)
     Q = declare(fixed)
-    # P = declare(bool)
+    P1 = declare(bool)
+    P2 = declare(bool)
     I_st = [declare_stream() for _ in range(num_output_streams)]
     Q_st = [declare_stream() for _ in range(num_output_streams)]
     P_st = [declare_stream() for _ in range(num_output_streams)]
@@ -60,7 +60,7 @@ with program() as QUBIT_CHIRP:
     seq.current_level = current_level
 
     # Ensure that the result variables are assign to the pulse processor used for readout
-    assign_variables_to_element("tank_circuit1", I, Q, P)
+    assign_variables_to_element("tank_circuit1", I, Q, P1, P2)
 
     if set_init_as_dc_offset:
         for sg, lvl_init in zip(sweep_gates, level_init_list):
@@ -70,7 +70,7 @@ with program() as QUBIT_CHIRP:
         with for_(*from_array(f, freqs)):
             update_frequency(qubit, f)
 
-            P1 = measure_parity(I, Q, None, I_st[0], Q_st[0], P_st[0], tank_circuit, threshold)
+            P1 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
             
             # Play the triangle
             align()
@@ -79,10 +79,12 @@ with program() as QUBIT_CHIRP:
             wait(duration_ramp_init // 4, "rf_switch", qubit)
             play("trigger", "rf_switch", duration=(RF_SWITCH_DELAY + CONST_LEN) // 4)
             wait(RF_SWITCH_DELAY // 4, qubit)
-            play("const", qubit, chirp=(19841,"Hz/nsec"))
+            # play("const", qubit, chirp=(19841,"Hz/nsec"))
+            play("const", qubit)
+            # play("x180_kaiser", qubit)
 
             align()
-            P2 = measure_parity(I, Q, None, I_st[1], Q_st[1], P_st[1], tank_circuit, threshold)
+            P2 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
 
             # DO NOT REMOVE: bring the voltage back to dc_offset level.
             # Without this, it can accumulate a precision error that leads to unwanted large voltage (max of the range).
@@ -103,16 +105,16 @@ with program() as QUBIT_CHIRP:
     # Stream processing section used to process the data before saving it
     with stream_processing():
         n_st.save("iteration")
-        for idx in range(num_output_streams):
-            I_st[idx].buffer(len(freqs)).save_all(f"I{idx}_{tank_circuit}")
-            Q_st[idx].buffer(len(freqs)).save_all(f"Q{idx}_{tank_circuit}")
-            P_st[idx].boolean_to_int().buffer(len(freqs)).save_all(f"P{idx}_{tank_circuit}")
-        P_diff_st.buffer(len(freqs)).save_all(f"P_diff_{tank_circuit}")
+        # for idx in range(num_output_streams):
+        #     I_st[idx].buffer(len(freqs)).save_all(f"I{idx}_{tank_circuit}")
+        #     Q_st[idx].buffer(len(freqs)).save_all(f"Q{idx}_{tank_circuit}")
+        #     P_st[idx].boolean_to_int().buffer(len(freqs)).save_all(f"P{idx}_{tank_circuit}")
+        # P_diff_st.buffer(len(freqs)).save_all(f"P_diff_{tank_circuit}")
 
-        for idx in range(num_output_streams):
-            I_st[idx].buffer(len(freqs)).average().save(f"I{idx}_avg_{tank_circuit}")
-            Q_st[idx].buffer(len(freqs)).average().save(f"Q{idx}_avg_{tank_circuit}")
-            P_st[idx].boolean_to_int().buffer(len(freqs)).average().save(f"P{idx}_avg_{tank_circuit}")
+        # for idx in range(num_output_streams):
+        #     I_st[idx].buffer(len(freqs)).average().save(f"I{idx}_avg_{tank_circuit}")
+        #     Q_st[idx].buffer(len(freqs)).average().save(f"Q{idx}_avg_{tank_circuit}")
+        #     P_st[idx].boolean_to_int().buffer(len(freqs)).average().save(f"P{idx}_avg_{tank_circuit}")
         P_diff_st.buffer(len(freqs)).average().save(f"P_diff_avg_{tank_circuit}")
 
 
@@ -142,10 +144,8 @@ else:
     job = qm.execute(QUBIT_CHIRP)
 
     # Get results from QUA program
-    fetch_names = ["iteration"]
-    for idx in range(num_output_streams):
-        fetch_names.extend([f"I{idx}_avg_{tank_circuit}", f"Q{idx}_avg_{tank_circuit}", f"P{idx}_avg_{tank_circuit}"])
-    fetch_names.append(f"P_diff_avg_{tank_circuit}")
+    # fetch_names = ["iteration", f"P_diff_{tank_circuit}", f"P_diff_avg_{tank_circuit}"]
+    fetch_names = ["iteration", f"P_diff_avg_{tank_circuit}"]
 
     results = fetching_tool(job, data_list=fetch_names, mode="live")
 
@@ -154,104 +154,95 @@ else:
     
     while results.is_processing():
         # Fetch results
-        iteration, I1, Q1, P1, I2, Q2, P2, Pdiff = results.fetch_all()
+        iteration, P_diff_avg = results.fetch_all()
 
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
 
-        S1 = I1 + 1j * Q1
-        S2 = I2 + 1j * Q2
-
         plt.suptitle("Qubit Chirp Spectroscopy")
         plt.clf()
 
-        ax = plt.subplot(4, 2, 1)
-        ax.plot(freqs / u.MHz, np.abs(S1))
-        plt.xlabel("Freq [MHz]")
-        plt.ylabel("R1 [V]")
-
-        ax = plt.subplot(4, 2, 3)
-        ax.plot(freqs / u.MHz, np.unwrap(np.angle(S1)))
-        plt.xlabel("Freq [MHz]")
-        plt.ylabel("Phase1 [rad]")
-
-        ax = plt.subplot(4, 2, 5)
-        ax.plot(freqs / u.MHz, P1)
-        plt.xlabel("Freq [MHz]")
-        plt.ylabel("Average Parity1")
-
-        ax = plt.subplot(4, 2, 2)
-        ax.plot(freqs / u.MHz, np.abs(S2))
-        plt.xlabel("Freq [MHz]")
-        plt.ylabel("R2 [V]")
-
-        ax = plt.subplot(4, 2, 4)
-        ax.plot(freqs / u.MHz, np.unwrap(np.angle(S2)))
-        plt.xlabel("Freq [MHz]")
-        plt.ylabel("Phase2 [rad]")
-
-        ax = plt.subplot(4, 2, 6)
-        ax.plot(freqs / u.MHz, P2)
-        plt.xlabel("Freq [MHz]")
-        plt.ylabel("Average Parity2")
-
-        ax = plt.subplot(4, 2, 7)
-        ax.plot(freqs / u.MHz, Pdiff)
+        plt.plot(freqs / u.MHz, P_diff_avg)
         plt.xlabel("Freq [MHz]")
         plt.ylabel("Average Parity Diff")
+
+
+        # ax = plt.subplot(4, 2, 1)
+        # ax.plot(freqs / u.MHz, np.abs(S1))
+        # plt.xlabel("Freq [MHz]")
+        # plt.ylabel("R1 [V]")
+
+        # ax = plt.subplot(4, 2, 3)
+        # ax.plot(freqs / u.MHz, np.unwrap(np.angle(S1)))
+        # plt.xlabel("Freq [MHz]")
+        # plt.ylabel("Phase1 [rad]")
+
+        # ax = plt.subplot(4, 2, 5)
+        # ax.plot(freqs / u.MHz, P1)
+        # plt.xlabel("Freq [MHz]")
+        # plt.ylabel("Average Parity1")
+
+        # ax = plt.subplot(4, 2, 2)
+        # ax.plot(freqs / u.MHz, np.abs(S2))
+        # plt.xlabel("Freq [MHz]")
+        # plt.ylabel("R2 [V]")
+
+        # ax = plt.subplot(4, 2, 4)
+        # ax.plot(freqs / u.MHz, np.unwrap(np.angle(S2)))
+        # plt.xlabel("Freq [MHz]")
+        # plt.ylabel("Phase2 [rad]")
+
+        # ax = plt.subplot(4, 2, 6)
+        # ax.plot(freqs / u.MHz, P2)
+        # plt.xlabel("Freq [MHz]")
+        # plt.ylabel("Average Parity2")
+
+        # ax = plt.subplot(4, 2, 7)
+        # ax.plot(freqs / u.MHz, Pdiff)
+        # plt.xlabel("Freq [MHz]")
+        # plt.ylabel("Average Parity Diff")
 
         plt.tight_layout()
         plt.pause(1)
 
     # Fetch results
-    iteration, I1, Q1, P1, I2, Q2, P2, Pdiff = results.fetch_all()
-    save_data_dict["I1"] = I1
-    save_data_dict["Q1"] = Q1
-    save_data_dict["P1"] = P1
-    save_data_dict["I2"] = I2
-    save_data_dict["Q2"] = Q2
-    save_data_dict["P2"] = P2
-    save_data_dict["Pdiff"] = Pdiff
+    iteration, P_diff_avg = results.fetch_all()
+    # save_data_dict["P_diff"] = P_diff
+    save_data_dict["P_diff_avg"] = P_diff_avg 
 
-    # Get results from QUA program
-    fetch_names = []
-    for idx in range(num_output_streams):
-        fetch_names.extend([f"I{idx}_{tank_circuit}", f"Q{idx}_{tank_circuit}", f"P{idx}_{tank_circuit}"])
-    fetch_names.append(f"P_diff_{tank_circuit}")
+    # # Get results from QUA program
+    # fetch_names = []
+    # for idx in range(num_output_streams):
+    #     fetch_names.extend([f"I{idx}_{tank_circuit}", f"Q{idx}_{tank_circuit}", f"P{idx}_{tank_circuit}"])
+    # fetch_names.append(f"P_diff_{tank_circuit}")
 
-    results = fetching_tool(job, data_list=fetch_names)
+    # results = fetching_tool(job, data_list=fetch_names)
     
-    I1, Q1, P1, I2, Q2, P2 = results.fetch_all()
-    S1 = I1 + 1j * Q1
-    S2 = I2 + 1j * Q2
+    #     "(0, 0)": (P1 == 0) & (P2 == 0),
+    #     "(1, 0)": (P1 == 1) & (P2 == 0),
+    #     "(0, 1)": (P1 == 0) & (P2 == 1),
+    #     "(1, 1)": (P1 == 1) & (P2 == 1),
+    # }
 
-    # Conditions for (P1, P2)
-    conditions = {
-        "(0, 0)": (P1 == 0) & (P2 == 0),
-        "(1, 0)": (P1 == 1) & (P2 == 0),
-        "(0, 1)": (P1 == 0) & (P2 == 1),
-        "(1, 1)": (P1 == 1) & (P2 == 1),
-    }
+    # # Prepare the plot
+    # fig_analysis, axes = plt.subplots(2, 2, figsize=(10, 8))
+    # axes = axes.flatten()
+    # # Plot for each condition
+    # for idx, (label, condition) in enumerate(conditions.items()):
+    #     # Apply condition and calculate mean over axis 0
+    #     masked_dR = np.where(condition, np.abs(S2) - np.abs(S1), np.nan)
+    #     mean_dR = np.nanmean(masked_dR, axis=0)
 
-    # Prepare the plot
-    fig_analysis, axes = plt.subplots(2, 2, figsize=(10, 8))
-    axes = axes.flatten()
-    # Plot for each condition
-    for idx, (label, condition) in enumerate(conditions.items()):
-        # Apply condition and calculate mean over axis 0
-        masked_dR = np.where(condition, np.abs(S2) - np.abs(S1), np.nan)
-        mean_dR = np.nanmean(masked_dR, axis=0)
+    #     # Plot the result
+    #     ax = axes[idx]
+    #     ax.plot(mean_dR, marker='o', label=f"(P1, P2): {label}")
+    #     ax.set_title(f"(P1, P2): {label}")
+    #     ax.set_xlabel("Freq [MHz]")
+    #     ax.set_ylabel("Mean R values")
+    #     ax.legend()
 
-        # Plot the result
-        ax = axes[idx]
-        ax.plot(mean_dR, marker='o', label=f"(P1, P2): {label}")
-        ax.set_title(f"(P1, P2): {label}")
-        ax.set_xlabel("Freq [MHz]")
-        ax.set_ylabel("Mean R values")
-        ax.legend()
-
-    plt.tight_layout()
-    plt.show()
+    # plt.tight_layout()
+    # plt.show()
 
 
     # Save results

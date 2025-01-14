@@ -33,10 +33,13 @@ def IQ_imbalance(g, phi):
 # Network parameters #
 ######################
 qop_ip = "192.168.1.41"  # Write the QM router IP address
+# cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
+# qop_ip = "172.16.33.107"  # Write the QM router IP address
 cluster_name = "Cluster_1"  # "Beta_8"  # Write your cluster_name if version >= QOP220
+# qop_ip = "192.168.88.253"  # Write the QM router IP address
+# cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = 9510  # Write the QOP port if version < QOP220
 octave_config = None
-
 
 
 #############
@@ -81,7 +84,7 @@ STEP_AMP = 0.25
 
 amplitude_scaling = 4.7
 LEVEL_INIT = [-0.094, +0.094] # [-0.02, 0.02] * amplitude_scaling
-LEVEL_READOUT = [-0.00254, +0.00249]
+LEVEL_READOUT = [-0.00169, +0.00166]
 
 
 #########################
@@ -98,8 +101,8 @@ rf_switch_buffer = 0
 #########################
 
 # CW pulse
-CONST_AMP = 0.313  # in V
-CONST_LEN = 252  # in ns
+CONST_AMP = 0.3  # in V
+CONST_LEN = 320  # in ns
 
 # Saturation pulse
 SATURATION_AMP = 0.1
@@ -113,8 +116,8 @@ SQUARE_Y90_AMP = 0.15
 SQUARE_MINUS_Y90_AMP = -0.15
 SQUARE_LEN = 1000 # 52
 
-PI_AMP = 0.1
-PI_LEN = 1000 # 52
+PI_AMP = 0.3
+PI_LEN = 160 # 52
 PI_HALF_LEN = PI_LEN
 # PI_SIGMA = PI_LEN / 5
 
@@ -139,9 +142,9 @@ CROT_RF_SIGMA = CROT_RF_LEN / 5
 ########################
 
 REFLECTOMETRY_READOUT_AMP = 0.15
-REFLECTOMETRY_READOUT_LEN = 100_000
+REFLECTOMETRY_READOUT_LEN = 20_000
 
-PARITY_THRESHOLD1 = 0.31
+PARITY_THRESHOLD1 = 0.033
 PARITY_THRESHOLD2 = 0.0
 
 
@@ -177,9 +180,11 @@ QUBIT_CONSTANTS = {
         "aout_I": 1,
         "aout_Q": 2,
         "LO": 16 * u.GHz,
-        "IF": 0 * u.MHz,
+        "IF": (167.5 - 0.139) * u.MHz,
         "mixer_g": 0,
-        "mixer_phi": 0,
+        "mixer_phi": 0.201,
+        "square_pi_amp": 0.30351,
+        "square_pi_len": 252,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
         "delay": 0,
@@ -190,9 +195,11 @@ QUBIT_CONSTANTS = {
         "aout_I": 1,
         "aout_Q": 2,
         "LO": 16 * u.GHz,
-        "IF": 0 * u.MHz,
+        "IF": 31.5 * u.MHz,
         "mixer_g": 0,
-        "mixer_phi": 0,
+        "mixer_phi": 1.365,
+        "square_pi_amp": 0.1567 * 252 / 250,
+        "square_pi_len": 252,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
         "delay": 0,
@@ -206,6 +213,8 @@ QUBIT_CONSTANTS = {
         "IF": 0 * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0,
+        "square_pi_amp": PI_AMP,
+        "square_pi_len": PI_LEN,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
         "delay": 0,
@@ -219,6 +228,8 @@ QUBIT_CONSTANTS = {
         "IF": 50 * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0,
+        "square_pi_amp": PI_AMP,
+        "square_pi_len": PI_LEN,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
         "delay": 0,
@@ -232,6 +243,8 @@ QUBIT_CONSTANTS = {
         "IF": 0 * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0,
+        "square_pi_amp": PI_AMP,
+        "square_pi_len": PI_LEN,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
         "delay": 0,
@@ -243,6 +256,7 @@ DO_CONSTANTS = {
         "con": con1,
         "fem": lffem1,
         "dout": 1,
+        "aout": 1,
         "delay": rf_switch_delay,
         "buffer": rf_switch_buffer,
     },
@@ -841,12 +855,12 @@ config = {
                     "y180_gauss": f"y180_gaussian_pulse_{qb}",
                     "y90_gauss": f"y90_gaussian_pulse_{qb}",
                     "-y90_gauss": f"minus_y90_gaussian_pulse_{qb}",
-                    "x180_square": f"square_x180_pulse",
-                    "x90_square": f"square_x90_pulse",
-                    "-x90_square": f"square_minus_x90_pulse",
-                    "y180_square": f"square_y180_pulse",
-                    "y90_square": f"square_y90_pulse",
-                    "-y90_square": f"square_minus_y90_pulse",
+                    "x180_square": f"square_x180_pulse_{qb}",
+                    "x90_square": f"square_x90_pulse_{qb}",
+                    "-x90_square": f"square_minus_x90_pulse_{qb}",
+                    "y180_square": f"square_y180_pulse_{qb}",
+                    "y90_square": f"square_y90_pulse_{qb}",
+                    "-y90_square": f"square_minus_y90_pulse_{qb}",
                 },
                 # "thread": qb,
             }
@@ -962,6 +976,9 @@ config = {
         # 
         **{
             dm: {
+                "singleInput": {
+                    "port": (val["con"], val["fem"], val["aout"]),
+                },
                 "digitalInputs": {
                     "trigger": {
                         "port": (val["con"], val["fem"], val["dout"]),
@@ -971,6 +988,7 @@ config = {
                 },
                 "operations": {
                     "trigger": "trigger_pulse",
+                    
                 },
             }
             for dm, val in DO_CONSTANTS.items()
@@ -1321,6 +1339,72 @@ config = {
                 "Q": "zero_wf",
             },
         },
+        **{
+            f"square_x180_pulse_{qb}": {
+                "operation": "control",
+                "length": val["square_pi_len"],
+                "waveforms": {
+                    "I": f"square_x180_I_wf_{qb}",
+                    "Q": "zero_wf",
+                },
+            }
+            for qb, val in QUBIT_CONSTANTS.items()
+        },
+        **{
+            f"square_x90_pulse_{qb}": {
+                "operation": "control",
+                "length": val["square_pi_len"],
+                "waveforms": {
+                    "I": f"square_x90_I_wf_{qb}",
+                    "Q": "zero_wf",
+                },
+            }
+            for qb, val in QUBIT_CONSTANTS.items()
+        },
+        **{
+            f"square_minus_x90_pulse_{qb}": {
+                "operation": "control",
+                "length": val["square_pi_len"],
+                "waveforms": {
+                    "I": f"square_minus_x90_I_wf_{qb}",
+                    "Q": "zero_wf",
+                },
+            }
+            for qb, val in QUBIT_CONSTANTS.items()
+        },
+        **{
+            f"square_y180_pulse_{qb}": {
+                "operation": "control",
+                "length": val["square_pi_len"],
+                "waveforms": {
+                    "I": "zero_wf",
+                    "Q": f"square_y180_I_wf_{qb}",
+                },
+            }
+            for qb, val in QUBIT_CONSTANTS.items()
+        },
+        **{
+            f"square_y90_pulse_{qb}": {
+                "operation": "control",
+                "length": val["square_pi_len"],
+                "waveforms": {
+                    "I": "zero_wf",
+                    "Q": f"square_y90_I_wf_{qb}",
+                },
+            }
+            for qb, val in QUBIT_CONSTANTS.items()
+        },
+        **{
+            f"square_minus_y90_pulse_{qb}": {
+                "operation": "control",
+                "length": val["square_pi_len"],
+                "waveforms": {
+                    "I": "zero_wf",
+                    "Q": f"square_minus_y90_I_wf_{qb}",
+                },
+            }
+            for qb, val in QUBIT_CONSTANTS.items()
+        },
         "square_x180_pulse": {
             "operation": "control",
             "length": SQUARE_LEN,
@@ -1349,24 +1433,24 @@ config = {
             "operation": "control",
             "length": SQUARE_LEN,
             "waveforms": {
-                "I": "square_y180_I_wf",
-                "Q": "zero_wf",
+                "I": "zero_wf",
+                "Q": "square_y180_I_wf",
             },
         },
         "square_y90_pulse": {
             "operation": "control",
             "length": SQUARE_LEN,
             "waveforms": {
-                "I": "square_y90_I_wf",
-                "Q": "zero_wf",
+                "I": "zero_wf",
+                "Q": "square_y90_I_wf",
             },
         },
         "square_minus_y90_pulse": {
             "operation": "control",
             "length": SQUARE_LEN,
             "waveforms": {
-                "I": "square_minus_y90_I_wf",
-                "Q": "zero_wf",
+                "I": "zero_wf",
+                "Q": "square_minus_y90_I_wf",
             },
         },
         "square_x180_pulse_dup1": {
@@ -1469,12 +1553,27 @@ config = {
             "operation": "control",
             "length": 1000,
             "digital_marker": "ON",
+            "waveforms": {
+                "single": "zero_wf",
+            },
         },
     },
     "waveforms": {
         "zero_wf": {"type": "constant", "sample": 0.0},
         "const_wf": {"type": "constant", "sample": CONST_AMP},
         "saturation_wf": {"type": "constant", "sample": SATURATION_AMP},
+        # **{f"square_x180_I_wf_{key}": {"type": "constant", "sample": val["square_pi_amp"]} for key, val in QUBIT_CONSTANTS.items()},
+        # **{f"square_x90_I_wf_{key}": {"type": "constant", "sample": val["square_pi_amp"] / 2} for key, val in QUBIT_CONSTANTS.items()},
+        # **{f"square_minus_x90_I_wf_{key}": {"type": "constant", "sample": -val["square_pi_amp"] / 2} for key, val in QUBIT_CONSTANTS.items()},
+        # **{f"square_y180_I_wf_{key}": {"type": "constant", "sample": val["square_pi_amp"]} for key, val in QUBIT_CONSTANTS.items()},
+        # **{f"square_y90_I_wf_{key}": {"type": "constant", "sample": val["square_pi_amp"] / 2} for key, val in QUBIT_CONSTANTS.items()},
+        # **{f"square_minus_y90_I_wf_{key}": {"type": "constant", "sample": -val["square_pi_amp"] / 2} for key, val in QUBIT_CONSTANTS.items()},
+        **{f"square_x180_I_wf_{key}": {"type": "arbitrary", "samples": [val["square_pi_amp"]] * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
+        **{f"square_x90_I_wf_{key}": {"type": "arbitrary", "samples": [val["square_pi_amp"] / 2] * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
+        **{f"square_minus_x90_I_wf_{key}": {"type": "arbitrary", "samples": [-1 * val["square_pi_amp"] / 2] * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
+        **{f"square_y180_I_wf_{key}": {"type": "arbitrary", "samples": [val["square_pi_amp"]] * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
+        **{f"square_y90_I_wf_{key}": {"type": "arbitrary", "samples": [val["square_pi_amp"] / 2] * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
+        **{f"square_minus_y90_I_wf_{key}": {"type": "arbitrary", "samples": [-1 * val["square_pi_amp"] / 2] * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
         "square_x180_I_wf": {"type": "constant", "sample": SQUARE_X180_AMP},
         "square_x90_I_wf": {"type": "constant", "sample": SQUARE_X90_AMP},
         "square_minus_x90_I_wf": {"type": "constant", "sample": SQUARE_MINUS_X90_AMP},

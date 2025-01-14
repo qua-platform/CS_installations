@@ -23,13 +23,10 @@ do_feedback = True  # False for test. True for actual.
 set_init_as_dc_offset = True
 
 
-
-
 duration_init = 10_000 # DO NOT USE * u.ns
 duration_ramp_init = 200 # DO NOT USE * u.ns
 duration_readout = 1_000 + REFLECTOMETRY_READOUT_LEN # DO NOT USE * u.ns
 duration_ramp_readout = 52 # DO NOT USE * u.ns
-
 
 
 delay_init_qubit_start = 16 + RF_SWITCH_DELAY

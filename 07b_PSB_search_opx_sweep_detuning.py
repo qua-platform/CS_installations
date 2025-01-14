@@ -35,11 +35,10 @@ from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.results.data_handler import DataHandler
 from scipy import signal
 
-# from configuration_with_lffem_csrack import *
 from configuration_with_lffem import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 
-# matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')
 
 
 ###################
@@ -51,9 +50,9 @@ set_init_as_dc_offset = True
 amplitude_scaling = 4.7 # (DC port / AC port) of bias tee 
 
 level_init_arr = np.array([-0.02, 0.02]) * amplitude_scaling
-level_readout_center_arr = np.array([-0.00254, +0.00249]) * amplitude_scaling
-level_readout_from_arr = np.array([-0.0025, +0.0025]) * amplitude_scaling + level_readout_center_arr
-level_readout_to_arr = np.array([+0.0025, -0.0025]) * amplitude_scaling + level_readout_center_arr
+level_readout_center_arr = np.array([-0.00, +0.00]) * amplitude_scaling
+level_readout_from_arr = np.array([-0.003, +0.003]) * amplitude_scaling + level_readout_center_arr
+level_readout_to_arr = np.array([+0.003, -0.003]) * amplitude_scaling + level_readout_center_arr
 
 n_shots = 1000
 n_detunings = 100
@@ -62,7 +61,7 @@ tank_circuit = "tank_circuit1"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 
 duration_init = 10_000 # DO NOT USE * u.ns
-duration_ramp_init = 200 # DO NOT USE * u.ns
+duration_ramp_init = 200
 duration_readout = 1_000 + REFLECTOMETRY_READOUT_LEN # DO NOT USE * u.ns
 duration_ramp_readout = 52 # DO NOT USE * u.ns
 
@@ -154,7 +153,6 @@ with program() as PSB_search_prog:
             seq.ramp_to_zero()
 
             # Save the LO iteration to get the progress bar
-            save(n, n_st)
             wait(250)
 
         # Save the LO iteration to get the progress bar
@@ -211,15 +209,25 @@ else:
 
         plt.suptitle("PSB Search")
         # Plot I
-        ax = plt.subplot(2, 1, 1)
+        ax = plt.subplot(2, 2, 1)
         ax.scatter(x_data_Px, I, alpha=0.1, s=3)
         ax.set_xlabel(f"{sweep_gates[0]} [V]")
-        ax.set_ylabel(f"R [V]")
+        ax.set_ylabel(f"I [V]")
 
-        ax = plt.subplot(2, 1, 2)
+        ax = plt.subplot(2, 2, 3)
         ax.scatter(x_data_Py, I, alpha=0.1, s=3)
         ax.set_xlabel(f"{sweep_gates[1]} [V]")
-        ax.set_ylabel(f"R [V]")
+        ax.set_ylabel(f"I [V]")
+
+        ax = plt.subplot(2, 2, 2)
+        ax.scatter(x_data_Px, Q, alpha=0.1, s=3)
+        ax.set_xlabel(f"{sweep_gates[0]} [V]")
+        ax.set_ylabel(f"Q [V]")
+
+        ax = plt.subplot(2, 2, 4)
+        ax.scatter(x_data_Py, Q, alpha=0.1, s=3)
+        ax.set_xlabel(f"{sweep_gates[1]} [V]")
+        ax.set_ylabel(f"Q [V]")
 
         plt.tight_layout()
         plt.pause(1)

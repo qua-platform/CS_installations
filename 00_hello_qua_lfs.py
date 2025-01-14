@@ -16,33 +16,36 @@ n_avg = 10
 
 
 with program() as hello_qua:
-    n = declare(int)
 
-    with for_(n, 0, n < n_avg, n + 1):
-        play("step", "P1")
-        # play("x180_square", "qubit1")
-        # play("x180_square", "qubit2")
-        # play("x180_square", "qubit3")
-        # play("x180_square", "qubit4")
-        # play("x180_square", "qubit5")
-        # align()
-        # play("step", "P1", duration=100*u.ns)
-        # play("step", "P2", duration=100*u.ns)
-        # play("step", "P3", duration=100*u.ns)
-        # play("step", "P4", duration=100*u.ns)
-        # play("step", "P5", duration=100*u.ns)
-        # align()
-        # play("step", "B1", duration=100*u.ns)
-        # play("step", "B2", duration=100*u.ns)
-        # play("step", "B3", duration=100*u.ns)
-        # play("step", "B4", duration=100*u.ns)
-        # align()
-        # play("step", "Psd1", duration=100*u.ns)
-        # play("step", "Psd2", duration=100*u.ns)
-        # align()
-        # play("readout", "tank_circuit1", duration=200*u.ns)
-        # play("readout", "tank_circuit2", duration=200*u.ns)
-        wait(250)
+    with infinite_loop_():
+        play("const", "qubit2")
+    # n = declare(int)
+
+    # with for_(n, 0, n < n_avg, n + 1):
+    #     play("step", "P1")
+    #     # play("x180_square", "qubit1")
+    #     # play("x180_square", "qubit2")
+    #     # play("x180_square", "qubit3")
+    #     # play("x180_square", "qubit4")
+    #     # play("x180_square", "qubit5")
+    #     # align()
+    #     # play("step", "P1", duration=100*u.ns)
+    #     # play("step", "P2", duration=100*u.ns)
+    #     # play("step", "P3", duration=100*u.ns)
+    #     # play("step", "P4", duration=100*u.ns)
+    #     # play("step", "P5", duration=100*u.ns)
+    #     # align()
+    #     # play("step", "B1", duration=100*u.ns)
+    #     # play("step", "B2", duration=100*u.ns)
+    #     # play("step", "B3", duration=100*u.ns)
+    #     # play("step", "B4", duration=100*u.ns)
+    #     # align()
+    #     # play("step", "Psd1", duration=100*u.ns)
+    #     # play("step", "Psd2", duration=100*u.ns)
+    #     # align()
+    #     # play("readout", "tank_circuit1", duration=200*u.ns)
+    #     # play("readout", "tank_circuit2", duration=200*u.ns)
+    #     wait(250)
 
 
 #####################################
