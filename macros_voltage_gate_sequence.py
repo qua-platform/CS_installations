@@ -201,7 +201,7 @@ class VoltageGateSequence:
 
                 if not self.is_QUA(ramp_duration):
                     ramp_rate = 1 / ramp_duration
-                    play(ramp((voltage_level - self.current_level[i]) * ramp_rate / 5), gate, duration=ramp_duration >> 2)
+                    play(ramp((voltage_level - self.current_level[i]) * ramp_rate), gate, duration=ramp_duration >> 2)
                     wait(_duration >> 2, gate)
 
             # self.current_level[i] = voltage_level
