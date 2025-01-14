@@ -3,20 +3,12 @@
         Readout & Init
 """
 
-from typing import Literal
-
-import matplotlib.pyplot as plt
-import pandas as pd
 from qm import *
 from qm.qua import *
-from qualang_tools.addons.variables import assign_variables_to_element
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import (fetching_tool, progress_counter,
-                                   wait_until_job_is_paused)
 
-from configuration_with_lffem_csrack import *
-from macros import get_other_elements
+from configuration_with_lffem import *
 from macros_voltage_gate_sequence import VoltageGateSequence
+
 
 ##################
 #   Parameters   #
@@ -28,6 +20,16 @@ tank_circuits = ["tank_circuit1"]
 num_tank_circuits = len(TANK_CIRCUIT_CONSTANTS)
 all_elements = qubits + sweep_gates + tank_circuits
 do_feedback = True  # False for test. True for actual.
+set_init_as_dc_offset = True
+
+
+
+
+duration_init = 10_000 # DO NOT USE * u.ns
+duration_ramp_init = 200 # DO NOT USE * u.ns
+duration_readout = 1_000 + REFLECTOMETRY_READOUT_LEN # DO NOT USE * u.ns
+duration_ramp_readout = 52 # DO NOT USE * u.ns
+
 
 
 delay_init_qubit_start = 16 + RF_SWITCH_DELAY
@@ -49,19 +51,27 @@ assert delay_read_reflec_end == 0 or delay_read_reflec_end >= 16
 
 
 # Points in the charge stability map [V1, V2]
-level_inits = {
-    "P1-P2": LEVEL_INIT,
-}
-level_readouts = {
-    "P1-P2": LEVEL_READOUT,
-}
-level_ops = level_inits
-level_waits = level_readouts
+level_init_arr = np.array(LEVEL_INIT)
+level_readout_arr = np.array(LEVEL_READOUT)
+level_init_list = level_init_arr.tolist()
+level_readout_list = level_readout_arr.tolist()
+
+
+if set_init_as_dc_offset:
+    level_readout_offset_arr = level_readout_arr - level_init_arr
+    level_init_offset_arr = np.array([0.0, 0.0]) # level_init_arr - level_init_arr
+
+    level_readout_offset_list = level_readout_offset_arr.tolist()
+    level_init_offset_list = level_init_offset_arr.tolist()
 
 
 seq = VoltageGateSequence(config, sweep_gates)
-seq.add_points("initialization_1q", level_inits["P1-P2"], duration_init_1q)
-seq.add_points("readout", level_readouts["P1-P2"], duration_readout)
+if set_init_as_dc_offset:
+    seq.add_points("initialization_1q", level_init_offset_list, duration_init_1q)
+    seq.add_points("readout", level_readout_offset_list, duration_readout)
+else:
+    seq.add_points("initialization_1q", level_init_list, duration_init_1q)
+    seq.add_points("readout", level_readout_list, duration_readout)
 
 
 
@@ -70,36 +80,39 @@ seq.add_points("readout", level_readouts["P1-P2"], duration_readout)
 ###################
 
 
-def play_feedback(plungers, qubit, parity, init_singlet=True):
-    seq.add_step(voltage_point_name=f"initialization_1q_{plungers}", ramp_duration=duration_ramp_init_1q)
+def play_feedback(qubit, parity):
+    seq.add_step(voltage_point_name=f"initialization_1q", ramp_duration=duration_ramp_init_1q)
 
-    wait((duration_ramp_init_1q + delay_init_qubit_start) * u.ns, qubit) if delay_init_qubit_start >= 16 else None
+    wait((duration_ramp_init_1q + delay_init_qubit_start) * u.ns, qubit)
+    wait(duration_ramp_init // 4, "rf_switch", qubit)
+    play("trigger", "rf_switch", duration=(RF_SWITCH_DELAY + PI_LEN) // 4)
+    wait(RF_SWITCH_DELAY // 4, qubit)
     if do_feedback:
-        if init_singlet:
-            play("x180_kaiser", qubit, condition=parity)
-        else:
-            play("x180_kaiser", qubit, condition=~parity)
+        play("x180_kaiser", qubit, condition=parity)
     else:
         wait(delay_feedback * u.ns, qubit)
         play("x180_kaiser", qubit)
-    wait(delay_init_qubit_end * u.ns, qubit) if delay_init_qubit_end >= 16 else None
+    wait(delay_init_qubit_end * u.ns, qubit)
 
 
 
 def measure_parity(I, Q, P, I_st, Q_st, P_st, tank_circuit, threshold):
+    P0 = declare(bool)
+
     # move to readout level
     seq.add_step(voltage_point_name="readout", ramp_duration=duration_ramp_readout)
     # measure
     wait((duration_ramp_readout + delay_read_reflec_start) * u.ns, tank_circuit)
     measure("readout", tank_circuit, None, demod.full("cos", I, "out1"), demod.full("sin", Q, "out1"))
-    wait((delay_read_reflec_end + delay_stream) * u.ns, tank_circuit)
+    wait(delay_read_reflec_end * u.ns, tank_circuit)
 
-    assign(P, I > threshold)  # TODO: I > threashold is even?
+    assign(P0, I > threshold)  # TODO: I > threashold is even?
+    # assign(P0, P)
     if I_st is not None:
         save(I, I_st)
     if Q_st is not None:
         save(Q, Q_st)
     if P_st is not None:
-        save(P, P_st)
+        save(P0, P_st)
 
-    return P
+    return P0
