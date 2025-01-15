@@ -5,8 +5,10 @@
 
 from qm import *
 from qm.qua import *
+from qualang_tools.addons.variables import assign_variables_to_element
 
-from configuration_with_lffem import *
+from configuration_with_lffem_csrack import *
+# from configuration_with_lffem import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 
 
@@ -95,6 +97,7 @@ def play_feedback(qubit, parity):
 
 def measure_parity(I, Q, P, I_st, Q_st, P_st, tank_circuit, threshold):
     P0 = declare(bool)
+    assign_variables_to_element(tank_circuit, P0)
 
     # move to readout level
     seq.add_step(voltage_point_name="readout", ramp_duration=duration_ramp_readout)

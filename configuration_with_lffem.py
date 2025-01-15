@@ -118,6 +118,7 @@ SQUARE_LEN = 1000 # 52
 
 PI_AMP = 0.3
 PI_LEN = 160 # 52
+PI_HALF_AMP = PI_AMP / 2
 PI_HALF_LEN = PI_LEN
 # PI_SIGMA = PI_LEN / 5
 
@@ -185,6 +186,8 @@ QUBIT_CONSTANTS = {
         "mixer_phi": 0.201,
         "square_pi_amp": 0.30351,
         "square_pi_len": 252,
+        "square_pi_half_amp": PI_HALF_AMP,
+        "square_pi_half_len": PI_HALF_LEN,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
         "delay": 0,
@@ -200,6 +203,8 @@ QUBIT_CONSTANTS = {
         "mixer_phi": 1.365,
         "square_pi_amp": 0.1567 * 252 / 250,
         "square_pi_len": 252,
+        "square_pi_half_amp": PI_HALF_AMP,
+        "square_pi_half_len": PI_HALF_LEN,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
         "delay": 0,
@@ -215,6 +220,8 @@ QUBIT_CONSTANTS = {
         "mixer_phi": 0,
         "square_pi_amp": PI_AMP,
         "square_pi_len": PI_LEN,
+        "square_pi_half_amp": PI_HALF_AMP,
+        "square_pi_half_len": PI_HALF_LEN,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
         "delay": 0,
@@ -230,6 +237,8 @@ QUBIT_CONSTANTS = {
         "mixer_phi": 0,
         "square_pi_amp": PI_AMP,
         "square_pi_len": PI_LEN,
+        "square_pi_half_amp": PI_HALF_AMP,
+        "square_pi_half_len": PI_HALF_LEN,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
         "delay": 0,
@@ -245,6 +254,8 @@ QUBIT_CONSTANTS = {
         "mixer_phi": 0,
         "square_pi_amp": PI_AMP,
         "square_pi_len": PI_LEN,
+        "square_pi_half_amp": PI_HALF_AMP,
+        "square_pi_half_len": PI_HALF_LEN,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
         "delay": 0,
