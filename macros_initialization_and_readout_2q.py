@@ -5,10 +5,8 @@
 
 from qm import *
 from qm.qua import *
-from qualang_tools.addons.variables import assign_variables_to_element
 
-from configuration_with_lffem_csrack import *
-# from configuration_with_lffem import *
+from configuration_with_lffem import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 
 
@@ -40,7 +38,7 @@ assert delay_init_qubit_start == 0 or delay_init_qubit_start >= 16
 assert delay_init_qubit_end == 0 or delay_init_qubit_end >= 16
 
 
-delay_read_reflec_start = 16
+delay_read_reflec_start = 400
 delay_read_reflec_end = 16
 delay_stream = 1000
 duration_ramp_readout = 1000
@@ -97,7 +95,6 @@ def play_feedback(qubit, parity):
 
 def measure_parity(I, Q, P, I_st, Q_st, P_st, tank_circuit, threshold):
     P0 = declare(bool)
-    assign_variables_to_element(tank_circuit, P0)
 
     # move to readout level
     seq.add_step(voltage_point_name="readout", ramp_duration=duration_ramp_readout)
@@ -106,7 +103,7 @@ def measure_parity(I, Q, P, I_st, Q_st, P_st, tank_circuit, threshold):
     measure("readout", tank_circuit, None, demod.full("cos", I, "out1"), demod.full("sin", Q, "out1"))
     wait(delay_read_reflec_end * u.ns, tank_circuit)
 
-    assign(P0, I > threshold)  # TODO: I > threashold is even?
+    assign(P0, I < threshold)  # TODO: I > threashold is even?
     # assign(P0, P)
     if I_st is not None:
         save(I, I_st)

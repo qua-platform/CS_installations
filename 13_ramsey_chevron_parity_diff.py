@@ -41,8 +41,10 @@ durations = np.arange(tau_min, tau_max, tau_step)
 # Pulse frequency sweep in Hz
 detunings = np.arange(-0.5 * u.MHz, 0.51 * u.MHz, 0.01 * u.MHz)
 frequencies = detunings + QUBIT_CONSTANTS[qubit]["IF"]
-pi_len = QUBIT_CONSTANTS[qubit]["square_pi_len"]
-pi_amp = QUBIT_CONSTANTS[qubit]["square_pi_amp"]
+# pi_len = QUBIT_CONSTANTS[qubit]["square_pi_len"]
+# pi_amp = QUBIT_CONSTANTS[qubit]["square_pi_amp"]
+pi_len = QUBIT_CONSTANTS[qubit]["pi_len"]
+pi_amp = QUBIT_CONSTANTS[qubit]["pi_amp"]
 
 save_data_dict = {
     "sweep_gates": sweep_gates,
@@ -56,7 +58,7 @@ save_data_dict = {
 
 with program() as QUBIT_CHIRP:
     d = declare(int)  # QUA variable for the qubit pulse duration
-    dwell = declare(int)  # QUA variable for the qubit pulse duration
+    d_ops = declare(int)  # QUA variable for the qubit pulse duration
     f = declare(int)
     n = declare(int)  # QUA integer used as an index for the averaging loop
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
@@ -83,16 +85,16 @@ with program() as QUBIT_CHIRP:
             update_frequency(qubit, f)
 
             with for_(*from_array(d, durations)):  # Loop over the qubit pulse duration
-                assign(dwell, RF_SWITCH_DELAY + pi_len + d + pi_len + RF_SWITCH_DELAY)
+                assign(d_ops, RF_SWITCH_DELAY + pi_len + d + pi_len + RF_SWITCH_DELAY)
             
                 P1 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
                 
                 # Play the triangle
                 align()
-                seq.add_step(voltage_point_name="initialization_1q", duration=dwell, ramp_duration=duration_ramp_init) # NEVER u.ns
+                seq.add_step(voltage_point_name="initialization_1q", duration=d_ops, ramp_duration=duration_ramp_init) # NEVER u.ns
 
                 wait(duration_ramp_init // 4, "rf_switch", qubit)
-                play("trigger", "rf_switch", duration=dwell >> 2)
+                play("trigger", "rf_switch", duration=d_ops >> 2)
                 wait(RF_SWITCH_DELAY // 4, qubit)
                 play("x90_square", qubit)
                 wait(d >> 2, qubit)

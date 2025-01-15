@@ -18,7 +18,7 @@ n_avg = 10
 with program() as hello_qua:
 
     with infinite_loop_():
-        play("const", "qubit2")
+        play("const", "qubit1")
     # n = declare(int)
 
     # with for_(n, 0, n < n_avg, n + 1):

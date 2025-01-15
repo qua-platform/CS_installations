@@ -1,6 +1,27 @@
 # %%
 """
-        CHIRP spectroscopy
+        RAMSEY-LIKE CHEVRON - using standard QUA (pulse > 16ns and 4ns granularity)
+The goal of the script is to acquire exchange driven coherent oscillations by sweeping the idle time and detuning.
+The QUA program is divided into three sections:
+    1) step between the initialization, idle and measurement points using sticky elements (long timescale).
+    2) apply two delta-g driven pi-half pulses separated by a low detuning pulse to increase J, using non-sticky elements (short timescale).
+    3) measure the state of the qubit using either RF reflectometry or dc current sensing via PSB or Elzerman readout.
+A compensation pulse can be added to the long timescale sequence in order to ensure 0 DC voltage on the fast line of
+the bias-tee. Alternatively one can obtain the same result by changing the offset of the slow line of the bias-tee.
+
+In the current implementation, the qubit pulses are played using the real-time pulse manipulation of the OPX, which is
+fast and can be arbitrarily long. However, the minimum pulse length is 16ns and the sweep step must be larger than 4ns.
+Also note that the qubit pulses are played at the end of the global "idle" level whose duration is fixed.
+
+Prerequisites:
+    - Readout calibration (resonance frequency for RF reflectometry and sensor operating point for DC current sensing).
+    - Setting the DC offsets of the external DC voltage source.
+    - Connecting the OPX to the fast line of the plunger gates.
+    - Having calibrated the initialization and readout point from the charge stability map and updated the configuration.
+    - Having calibrated the delta-g driven pi-half parameters (detuning level and duration).
+
+Before proceeding to the next node:
+    - Extract the qubit frequency and T2*...
 """
 
 import matplotlib
@@ -25,7 +46,7 @@ matplotlib.use('TkAgg')
 # The QUA program #
 ###################
 
-n_avg = 20  # Number of averages
+n_avg = 1000  # Number of averages
 
 qubit = "qubit1"
 sweep_gates = ["P0_sticky", "P1_sticky"]
@@ -35,29 +56,34 @@ num_output_streams = 2
 
 # Pulse duration sweep in ns - must be larger than 4 clock cycles
 tau_min = 16
-tau_max = 100_000
-tau_step = 52
+tau_max = 35_000
+tau_step = 100
 durations = np.arange(tau_min, tau_max, tau_step)
 # Pulse frequency sweep in Hz
-frequencies = np.arange(-0.5 * u.MHz, 0.525 * u.MHz, 0.025 * u.MHz)
+detuning = 1 * u.MHz
+detunings = [-detuning, +detuning]
+intermediate_frequency = QUBIT_CONSTANTS[qubit]["IF"]
 
+pi_len = QUBIT_CONSTANTS[qubit]["square_pi_len"]
+pi_amp = QUBIT_CONSTANTS[qubit]["square_pi_amp"]
 
 save_data_dict = {
     "sweep_gates": sweep_gates,
     "tank_circuit": tank_circuit,
-    "frequencies": frequencies,
+    "frequencies": detunings,
     "durations": durations,
     "n_avg": n_avg,
     "config": config,
 }
 
 
-with program() as QUBIT_CHIRP:
-    d = declare(int)  # QUA variable for the qubit pulse duration
+with program() as ramsey_with_detuning:
+    d = declare(int)
     d_ops = declare(int)  # QUA variable for the qubit pulse duration
-    df = declare(int)
+    df = declare(int)  # QUA variable for the qubit drive amplitude
     n = declare(int)  # QUA integer used as an index for the averaging loop
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
+
     I = declare(fixed)
     Q = declare(fixed)
     P1 = declare(bool)
@@ -77,11 +103,11 @@ with program() as QUBIT_CHIRP:
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
 
-        with for_(*from_array(df, frequencies)):  # Loop over the qubit pulse amplitude
-            update_frequency(qubit, df + QUBIT_CONSTANTS[qubit]["IF"])
+        with for_(*from_array(df, detunings)):  # Loop over the qubit pulse amplitude
+            update_frequency(qubit, intermediate_frequency + df)
 
             with for_(*from_array(d, durations)):  # Loop over the qubit pulse duration
-                assign(d_ops, (RF_SWITCH_DELAY + d + RF_SWITCH_DELAY) >> 2)
+                assign(d_ops, RF_SWITCH_DELAY + pi_len + d + pi_len + RF_SWITCH_DELAY)
             
                 P1 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
                 
@@ -90,9 +116,12 @@ with program() as QUBIT_CHIRP:
                 seq.add_step(voltage_point_name="initialization_1q", duration=d_ops, ramp_duration=duration_ramp_init) # NEVER u.ns
 
                 wait(duration_ramp_init // 4, "rf_switch", qubit)
-                play("trigger", "rf_switch", duration=d_ops)
+                play("trigger", "rf_switch", duration=d_ops >> 2)
                 wait(RF_SWITCH_DELAY // 4, qubit)
-                play("x180_square", qubit, duration=d >> 2)
+
+                play("x90_square", qubit)
+                wait(d >> 2, qubit)
+                play("x90_square", qubit)
 
                 align()
                 P2 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
@@ -108,20 +137,21 @@ with program() as QUBIT_CHIRP:
                     save(1, P_diff_st)
                     
                 # Save the LO iteration to get the progress bar
-                wait(125_000)
+                wait(250)
 
         # Save the LO iteration to get the progress bar
         save(n, n_st)
 
-    # Stream processing section used to process the data before saving it
+    # Stream processing section used to process the dat[0, :]a before saving it.
     with stream_processing():
         n_st.save("iteration")
-        P_diff_st.buffer(len(durations)).buffer(len(frequencies)).average().save(f"P_diff_avg_{tank_circuit}")
+        P_diff_st.buffer(len(durations)).buffer(len(detunings)).average().save(f"P_diff_avg_{tank_circuit}")
 
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
+
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 
@@ -132,17 +162,30 @@ simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=2_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, QUBIT_CHIRP, simulation_config)
+    simulation_config = SimulationConfig(duration=1_000)  # In clock cycles = 4ns
+    # Simulate blocks python until the simulation is done
+    job = qmm.simulate(config, ramsey_with_detuning, simulation_config)
+    # Plot the simulated samples
     plt.figure()
     job.get_simulated_samples().con1.plot()
     plt.show()
+    # from macros import get_filtered_voltage
+    # plt.figure()
+    # get_filtered_voltage(
+    #     job.get_simulated_samples().con1.analog["1"],
+    #     1e-9,
+    #     bias_tee_cut_off_frequency,
+    #     True,
+    # )
 
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(QUBIT_CHIRP)
+    job = qm.execute(
+        ramsey_with_detuning,
+        compiler_options=CompilerOptionArguments(flags=["not-strict-timing"]),
+    )
 
     # Get results from QUA program
     # fetch_names = ["iteration", f"P_diff_{tank_circuit}", f"P_diff_avg_{tank_circuit}"]
@@ -150,40 +193,54 @@ else:
 
     results = fetching_tool(job, data_list=fetch_names, mode="live")
 
+    # Live plotting
     fig = plt.figure()
     # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-    
     while results.is_processing():
         # Fetch results
         iteration, P_diff_avg = results.fetch_all()
-
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
-
-        plt.suptitle("Qubit Chirp Spectroscopy")
-
-        plt.clf()
         # Plot results
-        ax = plt.subplot(2, 1, 1)
-        ax.set_title(f"Average Parity Diff: {qubit}")
-        ax.pcolor(durations, frequencies / u.MHz, P_diff_avg)
-        ax.set_xlabel("Rabi duration [nsec]")
-        ax.set_ylabel("Frequency [MHz]")
-        xlim = ax.get_xlim()
-        ax.hlines(y=0, xmin=xlim[0], xmax=xlim[1], alpha=0.3)
-        # plt.colorbar()
-        
-        ax = plt.subplot(2, 1, 2)
-        idx0 = np.where(frequencies == 0)[0][0]
-        ax.plot(durations, P_diff_avg[idx0, :])
-        ax.set_xlim(xlim)
-
+        plt.suptitle(f"Ramsey with detuning: {tank_circuit}")
+        # Plot results
+        plt.clf()
+        plt.plot(durations, P_diff_avg[0, :])
+        plt.plot(durations, P_diff_avg[1, :])
+        plt.legend([f"detuning = {d / u.MHz} MHz" for d in detunings])
+        plt.xlabel("Idle duration [ns]")
+        plt.ylabel("Average Parity Diff")
+        plt.legend([f"detuning = {d / u.MHz} MHz" for d in detunings])
         plt.tight_layout()
         plt.pause(1)
 
     # Fetch results
     iteration, P_diff_avg = results.fetch_all()
     save_data_dict["P_diff_avg"] = P_diff_avg
+
+    # Fit the data
+    try:
+        from qualang_tools.plot.fitting import Fit
+
+        fig_analyses = [] * 2
+        for i, sgn in enumerate([-1, 1]):
+            fit = Fit()
+            fig_analysis = plt.figure(figsize=(6, 6))
+            ramsey_fit = fit.ramsey(durations, P_diff_avg[i, :], plot=True)
+            qubit_T2 = np.abs(ramsey_fit["T2"][0])
+            qubit_detuning = ramsey_fit["f"][0] * u.GHz - sgn * detuning
+            plt.xlabel("Idle duration [ns]")
+            plt.ylabel("Average Parity Diff")
+            print(f"Qubit detuning to update in the config: qubit_IF += {-qubit_detuning:.0f} Hz")
+            print(f"T2* = {qubit_T2:.0f} ns")
+            plt.legend((f"detuning = {-qubit_detuning / u.kHz:.3f} kHz", f"T2* = {qubit_T2:.0f} ns"))
+            plt.title(f"Ramsey measurement for {qubit}, {tank_circuit}")
+            fig_analyses.append(fig_analysis)
+            save_data_dict.update({f"fig_analysis{i}": fig_analysis})
+    except:
+        pass
+    finally:
+        plt.show()
 
     # Save results
     script_name = Path(__file__).name

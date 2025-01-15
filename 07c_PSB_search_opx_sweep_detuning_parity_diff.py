@@ -52,8 +52,8 @@ amplitude_scaling = 4.7 # (DC port / AC port) of bias tee
 
 level_init_arr = np.array([-0.02, 0.02]) * amplitude_scaling
 level_readout_center_arr = np.array([-0.00, +0.00]) * amplitude_scaling
-level_readout_from_arr = np.array([-0.005, +0.005]) * amplitude_scaling + level_readout_center_arr
-level_readout_to_arr = np.array([+0.005, -0.005]) * amplitude_scaling + level_readout_center_arr
+level_readout_from_arr = np.array([-0.003, +0.003]) * amplitude_scaling + level_readout_center_arr
+level_readout_to_arr = np.array([+0.003, -0.003]) * amplitude_scaling + level_readout_center_arr
 
 n_shots = 1000
 n_detunings = 100

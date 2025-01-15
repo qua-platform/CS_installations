@@ -1,6 +1,6 @@
 # %%
 """
-        CHIRP spectroscopy
+        spectroscopy
 """
 
 import matplotlib
@@ -25,7 +25,7 @@ matplotlib.use('TkAgg')
 # The QUA program #
 ###################
 
-n_avg = 20  # Number of averages
+n_avg = 10  # Number of averages
 
 qubit = "qubit1"
 sweep_gates = ["P0_sticky", "P1_sticky"]
@@ -34,28 +34,34 @@ threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 num_output_streams = 2
 
 # Pulse duration sweep in ns - must be larger than 4 clock cycles
-tau_min = 16
-tau_max = 100_000
-tau_step = 52
-durations = np.arange(tau_min, tau_max, tau_step)
-# Pulse frequency sweep in Hz
-frequencies = np.arange(-0.5 * u.MHz, 0.525 * u.MHz, 0.025 * u.MHz)
+a_min = 0.8
+a_max = 1.2
+a_step = 0.001
+amp_scalilngs = np.arange(a_min, a_max, a_step)
+# Number of applied Rabi pulses sweep
+max_n_pulses = 400  # Maximum number of qubit pulses
+pi_len = QUBIT_CONSTANTS[qubit]["square_pi_len"]
+pi_amp = QUBIT_CONSTANTS[qubit]["square_pi_amp"]
+max_tau_pulse = max_n_pulses * pi_len
+repeated_pulses = 20
+# n_pulses = np.arange(2, max_n_pulses, 2)  # Always play an odd/even number of pulses to end up in the same state
 
 
 save_data_dict = {
     "sweep_gates": sweep_gates,
     "tank_circuit": tank_circuit,
-    "frequencies": frequencies,
-    "durations": durations,
+    # "n_pulses": n_pulses,
+    "amp_scalilngs": amp_scalilngs,
     "n_avg": n_avg,
     "config": config,
 }
 
 
-with program() as QUBIT_CHIRP:
-    d = declare(int)  # QUA variable for the qubit pulse duration
-    d_ops = declare(int)  # QUA variable for the qubit pulse duration
-    df = declare(int)
+with program() as ERROR_AMP_RABI:
+    a = declare(fixed)  # QUA variable for the qubit pulse duration
+    m = declare(int)  # QUA variable for the qubit drive amplitude
+    n_rabi = declare(int)
+    d_ops = declare(int)
     n = declare(int)  # QUA integer used as an index for the averaging loop
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
     I = declare(fixed)
@@ -63,7 +69,7 @@ with program() as QUBIT_CHIRP:
     P1 = declare(bool)
     P2 = declare(bool)
     P_diff_st = declare_stream()
-    
+    r = declare(int)
     current_level = declare(fixed, value=[0.0 for _ in sweep_gates])
     seq.current_level = current_level
 
@@ -74,25 +80,30 @@ with program() as QUBIT_CHIRP:
         for sg, lvl_init in zip(sweep_gates, level_init_list):
             set_dc_offset(sg, "single", lvl_init)
 
-    with for_(n, 0, n < n_avg, n + 1):
-        save(n, n_st)
+    with for_(r, 0, r < 16_000 * 10, r+1): # approx 10h
 
-        with for_(*from_array(df, frequencies)):  # Loop over the qubit pulse amplitude
-            update_frequency(qubit, df + QUBIT_CONSTANTS[qubit]["IF"])
+        with for_(n, 0, n < n_avg, n + 1):
 
-            with for_(*from_array(d, durations)):  # Loop over the qubit pulse duration
-                assign(d_ops, (RF_SWITCH_DELAY + d + RF_SWITCH_DELAY) >> 2)
-            
+            # save(n, n_st)
+
+            # with for_(*from_array(n_rabi, n_pulses)):  # Loop over the qubit pulse amplitude
+            assign(d_ops, (RF_SWITCH_DELAY + (repeated_pulses * int(pi_len)) + RF_SWITCH_DELAY) >> 2)
+            # play("x180_square" * amp(0), qubit, duration=d_ops)
+
+            with for_(*from_array(a, amp_scalilngs)):  # Loop over the qubit pulse duration
+
                 P1 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
                 
                 # Play the triangle
                 align()
-                seq.add_step(voltage_point_name="initialization_1q", duration=d_ops, ramp_duration=duration_ramp_init) # NEVER u.ns
+                seq.add_step(voltage_point_name="initialization_1q", ramp_duration=duration_ramp_init) # NEVER u.ns
 
                 wait(duration_ramp_init // 4, "rf_switch", qubit)
                 play("trigger", "rf_switch", duration=d_ops)
                 wait(RF_SWITCH_DELAY // 4, qubit)
-                play("x180_square", qubit, duration=d >> 2)
+                with strict_timing_():
+                    with for_(m, 0, m < repeated_pulses, m + 1):
+                        play("x180_square" * amp(a), qubit)
 
                 align()
                 P2 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
@@ -108,15 +119,17 @@ with program() as QUBIT_CHIRP:
                     save(1, P_diff_st)
                     
                 # Save the LO iteration to get the progress bar
-                wait(125_000)
+                wait(250)
+
+            wait(250_000)
 
         # Save the LO iteration to get the progress bar
-        save(n, n_st)
+        save(r, n_st)
 
     # Stream processing section used to process the data before saving it
     with stream_processing():
         n_st.save("iteration")
-        P_diff_st.buffer(len(durations)).buffer(len(frequencies)).average().save(f"P_diff_avg_{tank_circuit}")
+        P_diff_st.buffer(len(amp_scalilngs)).buffer(n_avg).map(FUNCTIONS.average()).save(f"P_diff_avg_{tank_circuit}")
 
 
 #####################################
@@ -133,7 +146,7 @@ simulate = False
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=2_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, QUBIT_CHIRP, simulation_config)
+    job = qmm.simulate(config, ERROR_AMP_RABI, simulation_config)
     plt.figure()
     job.get_simulated_samples().con1.plot()
     plt.show()
@@ -142,7 +155,7 @@ else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(QUBIT_CHIRP)
+    job = qm.execute(ERROR_AMP_RABI)
 
     # Get results from QUA program
     # fetch_names = ["iteration", f"P_diff_{tank_circuit}", f"P_diff_avg_{tank_circuit}"]
@@ -152,34 +165,28 @@ else:
 
     fig = plt.figure()
     # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-    
+    collected_data = []
+
     while results.is_processing():
         # Fetch results
         iteration, P_diff_avg = results.fetch_all()
 
+        collected_data.append(P_diff_avg)
+
         # Progress bar
-        progress_counter(iteration, n_avg, start_time=results.get_start_time())
+        progress_counter(iteration, 16_000, start_time=results.get_start_time())
 
-        plt.suptitle("Qubit Chirp Spectroscopy")
-
-        plt.clf()
+        plt.suptitle(f"Error Amplification Power Rabi: {qubit}")
         # Plot results
-        ax = plt.subplot(2, 1, 1)
-        ax.set_title(f"Average Parity Diff: {qubit}")
-        ax.pcolor(durations, frequencies / u.MHz, P_diff_avg)
-        ax.set_xlabel("Rabi duration [nsec]")
-        ax.set_ylabel("Frequency [MHz]")
-        xlim = ax.get_xlim()
-        ax.hlines(y=0, xmin=xlim[0], xmax=xlim[1], alpha=0.3)
-        # plt.colorbar()
-        
-        ax = plt.subplot(2, 1, 2)
-        idx0 = np.where(frequencies == 0)[0][0]
-        ax.plot(durations, P_diff_avg[idx0, :])
-        ax.set_xlim(xlim)
+        plt.clf()
+        plt.title(f"Average Parity Diff: {qubit}")
+        plt.pcolor(amp_scalilngs * pi_amp, np.arange(len(collected_data))*5/60, collected_data)
+        plt.xlabel("Qubit pulse amplitude [V]")
+        plt.ylabel("time (mins)")
 
+        plt.colorbar()
         plt.tight_layout()
-        plt.pause(1)
+        plt.pause(5)
 
     # Fetch results
     iteration, P_diff_avg = results.fetch_all()

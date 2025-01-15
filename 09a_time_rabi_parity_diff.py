@@ -25,7 +25,7 @@ matplotlib.use('TkAgg')
 # The QUA program #
 ###################
 
-n_avg = 20  # Number of averages
+n_avg = 200  # Number of averages
 
 qubit = "qubit1"
 sweep_gates = ["P0_sticky", "P1_sticky"]
@@ -38,14 +38,11 @@ tau_min = 16
 tau_max = 100_000
 tau_step = 52
 durations = np.arange(tau_min, tau_max, tau_step)
-# Pulse frequency sweep in Hz
-frequencies = np.arange(-0.5 * u.MHz, 0.525 * u.MHz, 0.025 * u.MHz)
 
 
 save_data_dict = {
     "sweep_gates": sweep_gates,
     "tank_circuit": tank_circuit,
-    "frequencies": frequencies,
     "durations": durations,
     "n_avg": n_avg,
     "config": config,
@@ -55,7 +52,6 @@ save_data_dict = {
 with program() as QUBIT_CHIRP:
     d = declare(int)  # QUA variable for the qubit pulse duration
     d_ops = declare(int)  # QUA variable for the qubit pulse duration
-    df = declare(int)
     n = declare(int)  # QUA integer used as an index for the averaging loop
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
     I = declare(fixed)
@@ -77,38 +73,35 @@ with program() as QUBIT_CHIRP:
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
 
-        with for_(*from_array(df, frequencies)):  # Loop over the qubit pulse amplitude
-            update_frequency(qubit, df + QUBIT_CONSTANTS[qubit]["IF"])
-
-            with for_(*from_array(d, durations)):  # Loop over the qubit pulse duration
-                assign(d_ops, (RF_SWITCH_DELAY + d + RF_SWITCH_DELAY) >> 2)
+        with for_(*from_array(d, durations)):  # Loop over the qubit pulse duration
+            assign(d_ops, (RF_SWITCH_DELAY + d + RF_SWITCH_DELAY) >> 2)
+        
+            P1 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
             
-                P1 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
+            # Play the triangle
+            align()
+            seq.add_step(voltage_point_name="initialization_1q", duration=d_ops, ramp_duration=duration_ramp_init) # NEVER u.ns
+
+            wait(duration_ramp_init // 4, "rf_switch", qubit)
+            play("trigger", "rf_switch", duration=d_ops)
+            wait(RF_SWITCH_DELAY // 4, qubit)
+            play("x180_square", qubit, duration=d >> 2)
+
+            align()
+            P2 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
+
+            # DO NOT REMOVE: bring the voltage back to dc_offset level.
+            # Without this, it can accumulate a precision error that leads to unwanted large voltage (max of the range).
+            align()
+            seq.ramp_to_zero()
+
+            with if_(P1 == P2):
+                save(0, P_diff_st)
+            with else_():
+                save(1, P_diff_st)
                 
-                # Play the triangle
-                align()
-                seq.add_step(voltage_point_name="initialization_1q", duration=d_ops, ramp_duration=duration_ramp_init) # NEVER u.ns
-
-                wait(duration_ramp_init // 4, "rf_switch", qubit)
-                play("trigger", "rf_switch", duration=d_ops)
-                wait(RF_SWITCH_DELAY // 4, qubit)
-                play("x180_square", qubit, duration=d >> 2)
-
-                align()
-                P2 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
-
-                # DO NOT REMOVE: bring the voltage back to dc_offset level.
-                # Without this, it can accumulate a precision error that leads to unwanted large voltage (max of the range).
-                align()
-                seq.ramp_to_zero()
-
-                with if_(P1 == P2):
-                    save(0, P_diff_st)
-                with else_():
-                    save(1, P_diff_st)
-                    
-                # Save the LO iteration to get the progress bar
-                wait(125_000)
+            # Save the LO iteration to get the progress bar
+            wait(1000)
 
         # Save the LO iteration to get the progress bar
         save(n, n_st)
@@ -116,7 +109,7 @@ with program() as QUBIT_CHIRP:
     # Stream processing section used to process the data before saving it
     with stream_processing():
         n_st.save("iteration")
-        P_diff_st.buffer(len(durations)).buffer(len(frequencies)).average().save(f"P_diff_avg_{tank_circuit}")
+        P_diff_st.buffer(len(durations)).average().save(f"P_diff_avg_{tank_circuit}")
 
 
 #####################################
@@ -164,20 +157,9 @@ else:
 
         plt.clf()
         # Plot results
-        ax = plt.subplot(2, 1, 1)
-        ax.set_title(f"Average Parity Diff: {qubit}")
-        ax.pcolor(durations, frequencies / u.MHz, P_diff_avg)
-        ax.set_xlabel("Rabi duration [nsec]")
-        ax.set_ylabel("Frequency [MHz]")
-        xlim = ax.get_xlim()
-        ax.hlines(y=0, xmin=xlim[0], xmax=xlim[1], alpha=0.3)
-        # plt.colorbar()
-        
-        ax = plt.subplot(2, 1, 2)
-        idx0 = np.where(frequencies == 0)[0][0]
-        ax.plot(durations, P_diff_avg[idx0, :])
-        ax.set_xlim(xlim)
-
+        plt.plot(durations, P_diff_avg)
+        plt.xlabel("Rabi duration [nsec]")
+        plt.ylabel(f"Average Parity Diff: {qubit}")
         plt.tight_layout()
         plt.pause(1)
 

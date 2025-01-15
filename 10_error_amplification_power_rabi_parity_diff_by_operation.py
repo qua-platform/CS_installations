@@ -28,19 +28,19 @@ matplotlib.use('TkAgg')
 n_avg = 10  # Number of averages
 
 qubit = "qubit1"
-operation = "-y90_square"
+operation = "-x90_square"
 sweep_gates = ["P0_sticky", "P1_sticky"]
 tank_circuit = "tank_circuit1"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 num_output_streams = 2
 
 # Pulse duration sweep in ns - must be larger than 4 clock cycles
-a_min = 0.0
-a_max = 1.5
-a_step = 0.01
+a_min = 0.9
+a_max = 1.1
+a_step = 0.002
 amp_scalilngs = np.arange(a_min, a_max, a_step)
 # Number of applied Rabi pulses sweep
-max_n_pulses = 800  # Maximum number of qubit pulses
+max_n_pulses = 60  # Maximum number of qubit pulses
 pi_len = QUBIT_CONSTANTS[qubit]["square_pi_len"]
 pi_amp = QUBIT_CONSTANTS[qubit]["square_pi_amp"]
 max_tau_pulse = max_n_pulses * pi_len
@@ -61,7 +61,7 @@ with program() as QUBIT_CHIRP:
     a = declare(fixed)  # QUA variable for the qubit pulse duration
     m = declare(int)  # QUA variable for the qubit drive amplitude
     n_rabi = declare(int)
-    dwell = declare(int)
+    d_ops = declare(int)
     n = declare(int)  # QUA integer used as an index for the averaging loop
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
     I = declare(fixed)
@@ -84,8 +84,8 @@ with program() as QUBIT_CHIRP:
         save(n, n_st)
 
         with for_(*from_array(n_rabi, n_pulses)):  # Loop over the qubit pulse amplitude
-            assign(dwell, (RF_SWITCH_DELAY + (n_rabi * int(pi_len)) + RF_SWITCH_DELAY) >> 2)
-            # play("x180_square" * amp(0), qubit, duration=dwell)
+            assign(d_ops, (RF_SWITCH_DELAY + (n_rabi * int(pi_len)) + RF_SWITCH_DELAY) >> 2)
+            # play("x180_square" * amp(0), qubit, duration=d_ops)
 
             with for_(*from_array(a, amp_scalilngs)):  # Loop over the qubit pulse duration
 
@@ -96,7 +96,7 @@ with program() as QUBIT_CHIRP:
                 seq.add_step(voltage_point_name="initialization_1q", ramp_duration=duration_ramp_init) # NEVER u.ns
 
                 wait(duration_ramp_init // 4, "rf_switch", qubit)
-                play("trigger", "rf_switch", duration=dwell)
+                play("trigger", "rf_switch", duration=d_ops)
                 wait(RF_SWITCH_DELAY // 4, qubit)
                 with strict_timing_():
                     with for_(m, 0, m < n_rabi, m + 1):
@@ -116,8 +116,7 @@ with program() as QUBIT_CHIRP:
                     save(1, P_diff_st)
                     
                 # Save the LO iteration to get the progress bar
-                wait(250)
-
+                wait(100_000)
         # Save the LO iteration to get the progress bar
         save(n, n_st)
 
@@ -172,7 +171,7 @@ else:
         # Plot results
         plt.clf()
         plt.title(f"Average Parity Diff: {qubit}, {operation}")
-        plt.pcolor(amp_scalilngs * pi_amp / 2, n_pulses, P_diff_avg)
+        plt.pcolor(amp_scalilngs * pi_amp, n_pulses, P_diff_avg)
         plt.xlabel("Qubit pulse amplitude [V]")
         plt.ylabel("No. of pi pulses")
 
