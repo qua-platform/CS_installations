@@ -84,7 +84,7 @@ STEP_AMP = 0.25
 
 amplitude_scaling = 4.7
 LEVEL_INIT = [-0.094, +0.094] # [-0.02, 0.02] * amplitude_scaling
-LEVEL_READOUT = [-0.00169, +0.00166]
+LEVEL_READOUT = [0.00161, -0.0018]
 
 
 #########################
@@ -118,7 +118,6 @@ SQUARE_LEN = 1000 # 52
 
 PI_AMP = 0.3
 PI_LEN = 160 # 52
-PI_HALF_AMP = PI_AMP / 2
 PI_HALF_LEN = PI_LEN
 # PI_SIGMA = PI_LEN / 5
 
@@ -145,7 +144,7 @@ CROT_RF_SIGMA = CROT_RF_LEN / 5
 REFLECTOMETRY_READOUT_AMP = 0.15
 REFLECTOMETRY_READOUT_LEN = 20_000
 
-PARITY_THRESHOLD1 = 0.033
+PARITY_THRESHOLD1 = -0.0335
 PARITY_THRESHOLD2 = 0.0
 
 
@@ -181,15 +180,13 @@ QUBIT_CONSTANTS = {
         "aout_I": 1,
         "aout_Q": 2,
         "LO": 16 * u.GHz,
-        "IF": (167.5 - 0.139) * u.MHz,
+        "IF": (167.432) * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0.201,
-        "square_pi_amp": 0.30351,
-        "square_pi_len": 252,
-        "square_pi_half_amp": PI_HALF_AMP,
-        "square_pi_half_len": PI_HALF_LEN,
-        "pi_amp": PI_AMP,
-        "pi_len": PI_LEN,
+        "square_pi_amp": 0.30671,
+        "square_pi_len": 248,
+        "pi_amp": 0.446,
+        "pi_len": 280,
         "delay": 0,
     },
     "qubit2": {
@@ -202,9 +199,7 @@ QUBIT_CONSTANTS = {
         "mixer_g": 0,
         "mixer_phi": 1.365,
         "square_pi_amp": 0.1567 * 252 / 250,
-        "square_pi_len": 252,
-        "square_pi_half_amp": PI_HALF_AMP,
-        "square_pi_half_len": PI_HALF_LEN,
+        "square_pi_len": 248,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
         "delay": 0,
@@ -220,8 +215,6 @@ QUBIT_CONSTANTS = {
         "mixer_phi": 0,
         "square_pi_amp": PI_AMP,
         "square_pi_len": PI_LEN,
-        "square_pi_half_amp": PI_HALF_AMP,
-        "square_pi_half_len": PI_HALF_LEN,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
         "delay": 0,
@@ -237,8 +230,6 @@ QUBIT_CONSTANTS = {
         "mixer_phi": 0,
         "square_pi_amp": PI_AMP,
         "square_pi_len": PI_LEN,
-        "square_pi_half_amp": PI_HALF_AMP,
-        "square_pi_half_len": PI_HALF_LEN,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
         "delay": 0,
@@ -254,8 +245,6 @@ QUBIT_CONSTANTS = {
         "mixer_phi": 0,
         "square_pi_amp": PI_AMP,
         "square_pi_len": PI_LEN,
-        "square_pi_half_amp": PI_HALF_AMP,
-        "square_pi_half_len": PI_HALF_LEN,
         "pi_amp": PI_AMP,
         "pi_len": PI_LEN,
         "delay": 0,
@@ -498,26 +487,25 @@ class GateVirtualizer:
 #  Pi pulse waveforms  #
 ########################
 
-from scipy.special import \
-    i0  # Zeroth-order modified Bessel function of the first kind
+# from scipy.special import i0  # Zeroth-order modified Bessel function of the first kind
+from scipy.signal.windows import kaiser # Zeroth-order modified Bessel function of the first kind
 
+# def kaiser_window(T: int, alpha: float) -> np.ndarray:
+#     """
+#     Generate a Kaiser window for digital signal processing.
 
-def kaiser_window(T: int, alpha: float) -> np.ndarray:
-    """
-    Generate a Kaiser window for digital signal processing.
+#     :param T: Length of the window (number of points - 1).
+#     :param alpha: Shape parameter that determines the trade-off between main lobe width and side lobe level.
+#     :return: A numpy array of the Kaiser window values.
+#     """
+#     # Compute the normalized indices
+#     t = np.arange(T)
+#     x = (2 * t / (T - 1)) - 1
 
-    :param T: Length of the window (number of points - 1).
-    :param alpha: Shape parameter that determines the trade-off between main lobe width and side lobe level.
-    :return: A numpy array of the Kaiser window values.
-    """
-    # Compute the normalized indices
-    t = np.arange(T)
-    x = (2 * t / (T - 1)) - 1
+#     # Calculate the Kaiser window using the zeroth-order modified Bessel function
+#     window = 1.6 * kaiser(np.pi * alpha * np.sqrt(1 - x**2)) / (np.pi * alpha)
 
-    # Calculate the Kaiser window using the zeroth-order modified Bessel function
-    window = i0(np.pi * alpha * np.sqrt(1 - x**2)) / i0(np.pi * alpha)
-
-    return window
+#     return window
 
 
 # TODO: Implement Kaiser
@@ -540,7 +528,8 @@ def generate_waveforms(rotation_keys):
                 _sigma = (_len - zero_len) / 5
                 wf, der_wf = np.array(drag_gaussian_pulse_waveforms(wf_amp, _len - zero_len, _sigma, alpha=0, anharmonicity=0))
             elif _name == "kaiser":
-                wf = wf_amp * kaiser_window(_len - zero_len, alpha=3.0)
+                wf = wf_amp * kaiser(_len - zero_len, beta=8.0)
+                # wf = wf_amp * kaiser_window(_len - zero_len, alpha=4.0)
                 der_wf = np.array([0] * (_len - zero_len))
 
             if rotation_key in ["x180", "x90", "minus_x90"]:
@@ -1549,7 +1538,7 @@ config = {
         **{f"square_minus_x90_I_wf_{key}": {"type": "arbitrary", "samples": [-1 * val["square_pi_amp"] / 2] * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
         **{f"square_y180_I_wf_{key}": {"type": "arbitrary", "samples": [val["square_pi_amp"]] * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
         **{f"square_y90_I_wf_{key}": {"type": "arbitrary", "samples": [val["square_pi_amp"] / 2] * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
-        **{f"square_minus_y90_I_wf_{key}": {"type": "arbitrary", "samples": [-1 * val["square_pi_amp"] / 2] * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
+        **{f"square_minus_y90_I_wf_{key}": {"type": "arbitrary", "samples": [-1 * val["square_pi_amp"] / 2]  * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
         "square_x180_I_wf": {"type": "constant", "sample": SQUARE_X180_AMP},
         "square_x90_I_wf": {"type": "constant", "sample": SQUARE_X90_AMP},
         "square_minus_x90_I_wf": {"type": "constant", "sample": SQUARE_MINUS_X90_AMP},
