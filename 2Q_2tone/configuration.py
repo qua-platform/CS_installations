@@ -1,11 +1,13 @@
 """
-QUA-Config supporting OPX1000 w/ LF-FEM
+QUA-Config supporting OPX1000 w/ LF-FEM and Octave
 """
 
+from pathlib import Path
+
 import numpy as np
+from qm.octave import QmOctaveConfig
 from qualang_tools.units import unit
 from qualang_tools.voltage_gates import VoltageGateSequence
-
 
 ######################
 # Network parameters #
@@ -23,6 +25,12 @@ fem = 1  # Should be the LF-FEM index, e.g., 1
 # Set octave_config to None if no octave are present
 octave_config = None
 
+########################
+# Octave configuration #
+########################
+
+octave_config = QmOctaveConfig()
+octave_config.set_calibration_db(Path().absolute())
 
 #############################################
 #              OPX PARAMETERS               #
@@ -34,15 +42,11 @@ sampling_rate = int(1e9)  # or, int(2e9)
 ######################
 u = unit(coerce_to_integer=True)
 
-# DC readout parameters
-readout_len = 1 * u.us
-readout_amp = 0.0
-IV_scale_factor = 0.5e-9  # in A/V
-
 # Reflectometry
 resonator_IF = 151 * u.MHz
-reflectometry_readout_length = 1 * u.us
-reflectometry_readout_amp = 30 * u.mV
+readout_len = 1 * u.us
+readout_amp = 0.125
+resonator_LO = 5.5 * u.GHz
 
 # Time of flight
 time_of_flight = 24
@@ -74,9 +78,15 @@ hold_offset_duration = 4
 
 bias_tee_cut_off_frequency = 10 * u.kHz
 
-######################
-#    QUBIT PULSES    #
-######################
+#########################
+#    QUBIT MW PULSES    #
+#########################
+
+qubit_LO = 5.5 * u.GHz
+
+drive_amp = 0.125
+drive_len = 1 * u.us
+
 # Durations in ns
 pi_length = 32
 pi_half_length = 16
@@ -97,49 +107,36 @@ config = {
                 fem: {
                     "type": "LF",
                     "analog_outputs": {
-                        # P1
+                        # I readout
                         1: {
-                            # DC Offset applied to the analog output at the beginning of a program.
                             "offset": 0.0,
-                            # The "output_mode" can be used to tailor the max voltage and frequency bandwidth, i.e.,
-                            #   "direct":    1Vpp (-0.5V to 0.5V), 750MHz bandwidth (default)
-                            #   "amplified": 5Vpp (-2.5V to 2.5V), 330MHz bandwidth
-                            # Note, 'offset' takes absolute values, e.g., if in amplified mode and want to output 2.0 V, then set "offset": 2.0
-                            "output_mode": "amplified",
-                            # The "sampling_rate" can be adjusted by using more FEM cores, i.e.,
-                            #   1 GS/s: uses one core per output (default)
-                            #   2 GS/s: uses two cores per output
-                            # NOTE: duration parameterization of arb. waveforms, sticky elements and chirping
-                            #       aren't yet supported in 2 GS/s.
+                            "output_mode": "direct",
                             "sampling_rate": sampling_rate,
-                            # At 1 GS/s, use the "upsampling_mode" to optimize output for
-                            #   modulated pulses (optimized for modulated pulses):      "mw"    (default)
-                            #   unmodulated pulses (optimized for clean step response): "pulse"
-                            "upsampling_mode": "pulse",
+                            "upsampling_mode": "mw",
                         },
-                        # P2
+                        # Q readout
                         2: {
-                            "offset": 0.0,
-                            "output_mode": "amplified",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "pulse",
-                        },
-                        # Sensor gate
-                        3: {
-                            "offset": 0.0,
-                            "output_mode": "amplified",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "pulse",
-                        },
-                        # RF Reflectometry
-                        7: {
                             "offset": 0.0,
                             "output_mode": "amplified",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "mw",
                         },
-                        # DC readout
-                        8: {
+                        # I drive
+                        3: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "mw",
+                        },
+                        # Q drive
+                        4: {
+                            "offset": 0.0,
+                            "output_mode": "amplified",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "mw",
+                        },
+                        # Plunger gate
+                        5: {
                             "offset": 0.0,
                             "output_mode": "amplified",
                             "sampling_rate": sampling_rate,
@@ -151,8 +148,8 @@ config = {
                         2: {},  # TTL for QDAC
                     },
                     "analog_inputs": {
-                        1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},  # RF reflectometry input
-                        2: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},  # DC readout input
+                        1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},  # I readout input
+                        2: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},  # Q readout input
                     },
                 }
             },
@@ -161,7 +158,7 @@ config = {
     "elements": {
         "P1": {
             "singleInput": {
-                "port": (con, fem, 1),
+                "port": (con, fem, 5),
             },
             "operations": {
                 "step": "P1_step_pulse",
@@ -171,47 +168,28 @@ config = {
         },
         "P1_sticky": {
             "singleInput": {
-                "port": (con, fem, 1),
+                "port": (con, fem, 5),
             },
             "sticky": {"analog": True, "duration": hold_offset_duration},
             "operations": {
                 "step": "P1_step_pulse",
             },
         },
-        "P2": {
-            "singleInput": {
-                "port": (con, fem, 2),
-            },
+        "readout": {
+            "RF_inputs": {"port": ("oct1", 1)},
+            "RF_outputs": {"port": ("oct1", 1)},
+            "intermediate_frequency": resonator_IF,
             "operations": {
-                "step": "P2_step_pulse",
-                "pi": "P2_pi_pulse",
-                "pi_half": "P2_pi_half_pulse",
+                "readout": "readout_pulse",
             },
+            "time_of_flight": time_of_flight,
+            "smearing": 0,
         },
-        "P2_sticky": {
-            "singleInput": {
-                "port": (con, fem, 2),
-            },
-            "sticky": {"analog": True, "duration": hold_offset_duration},
+        "drive": {
+            "RF_inputs": {"port": ("oct1", 2)},
+            "intermediate_frequency": resonator_IF,
             "operations": {
-                "step": "P2_step_pulse",
-            },
-        },
-        "sensor_gate": {
-            "singleInput": {
-                "port": (con, fem, 3),
-            },
-            "operations": {
-                "step": "bias_charge_pulse",
-            },
-        },
-        "sensor_gate_sticky": {
-            "singleInput": {
-                "port": (con, fem, 3),
-            },
-            "sticky": {"analog": True, "duration": hold_offset_duration},
-            "operations": {
-                "step": "bias_charge_pulse",
+                "saturation": "saturation_pulse",
             },
         },
         "qdac_trigger1": {
@@ -238,35 +216,31 @@ config = {
                 "trigger": "trigger_pulse",
             },
         },
-        "tank_circuit": {
-            "singleInput": {
-                "port": (con, fem, 7),
+    },
+    "octaves": {
+        "oct1": {
+            "RF_outputs": {
+                1: {
+                    "LO_frequency": resonator_LO,
+                    "LO_source": "internal",
+                    "output_mode": "always_on",
+                    "gain": 0,
+                },
+                2: {
+                    "LO_frequency": qubit_LO,
+                    "LO_source": "internal",
+                    "output_mode": "always_on",
+                    "gain": 0,
+                },
             },
-            "intermediate_frequency": resonator_IF,
-            "operations": {
-                "readout": "reflectometry_readout_pulse",
+            "RF_inputs": {
+                1: {
+                    "LO_frequency": resonator_LO,
+                    "LO_source": "internal",
+                },
             },
-            "outputs": {
-                "out1": (con, fem, 1),
-                "out2": (con, fem, 2),
-            },
-            "time_of_flight": time_of_flight,
-            "smearing": 0,
-        },
-        "TIA": {
-            "singleInput": {
-                "port": (con, fem, 8),
-            },
-            "operations": {
-                "readout": "readout_pulse",
-            },
-            "outputs": {
-                "out1": (con, fem, 1),
-                "out2": (con, fem, 2),
-            },
-            "time_of_flight": time_of_flight,
-            "smearing": 0,
-        },
+            "connectivity": (con, fem),
+        }
     },
     "pulses": {
         "P1_pi_pulse": {
@@ -283,20 +257,6 @@ config = {
                 "single": "P1_pi_half_wf",
             },
         },
-        "P2_pi_pulse": {
-            "operation": "control",
-            "length": pi_length,
-            "waveforms": {
-                "single": "P2_pi_wf",
-            },
-        },
-        "P2_pi_half_pulse": {
-            "operation": "control",
-            "length": pi_half_length,
-            "waveforms": {
-                "single": "P2_pi_half_wf",
-            },
-        },
         "P1_step_pulse": {
             "operation": "control",
             "length": step_length,
@@ -304,76 +264,57 @@ config = {
                 "single": "P1_step_wf",
             },
         },
-        "P2_step_pulse": {
-            "operation": "control",
-            "length": step_length,
-            "waveforms": {
-                "single": "P2_step_wf",
-            },
-        },
-        "bias_charge_pulse": {
-            "operation": "control",
-            "length": step_length,
-            "waveforms": {
-                "single": "charge_sensor_step_wf",
-            },
-        },
         "trigger_pulse": {
             "operation": "control",
             "length": 1000,
-            "digital_marker": "ON",
-        },
-        "reflectometry_readout_pulse": {
-            "operation": "measurement",
-            "length": reflectometry_readout_length,
-            "waveforms": {
-                "single": "reflect_wf",
-            },
-            "integration_weights": {
-                "cos": "cosine_weights",
-                "sin": "sine_weights",
-            },
             "digital_marker": "ON",
         },
         "readout_pulse": {
             "operation": "measurement",
             "length": readout_len,
             "waveforms": {
-                "single": "readout_pulse_wf",
+                "I": "readout_wf",
+                "Q": "zero_wf",
             },
             "integration_weights": {
-                "constant": "constant_weights",
+                "cos": "cosine_weights",
+                "sin": "sine_weights",
+                "minus_sin": "minus_sine_weights",
             },
             "digital_marker": "ON",
+        },
+        "saturation_pulse": {
+            "operation": "control",
+            "length": 1000,
+            "waveforms": {
+                "I": "saturation_wf",
+                "Q": "zero_wf",
+            },
         },
     },
     "waveforms": {
         "P1_pi_wf": {"type": "constant", "sample": pi_amps[0] - level_manip[0]},
         "P1_pi_half_wf": {"type": "constant", "sample": pi_half_amps[0] - level_manip[0]},
-        "P2_pi_wf": {"type": "constant", "sample": pi_amps[1] - level_manip[1]},
-        "P2_pi_half_wf": {"type": "constant", "sample": pi_half_amps[1] - level_manip[1]},
         "P1_step_wf": {"type": "constant", "sample": P1_step_amp},
-        "P2_step_wf": {"type": "constant", "sample": P2_step_amp},
-        "charge_sensor_step_wf": {"type": "constant", "sample": charge_sensor_amp},
-        "readout_pulse_wf": {"type": "constant", "sample": readout_amp},
-        "reflect_wf": {"type": "constant", "sample": reflectometry_readout_amp},
+        "readout_wf": {"type": "constant", "sample": readout_amp},
+        "saturation_wf": {"type": "constant", "sample": drive_amp},
         "zero_wf": {"type": "constant", "sample": 0.0},
     },
     "digital_waveforms": {
         "ON": {"samples": [(1, 0)]},
     },
     "integration_weights": {
-        "constant_weights": {
-            "cosine": [(1, readout_len)],
+        "cosine_weights": {
+            "cosine": [(1.0, readout_len)],
             "sine": [(0.0, readout_len)],
         },
-        "cosine_weights": {
-            "cosine": [(1.0, reflectometry_readout_length)],
-            "sine": [(0.0, reflectometry_readout_length)],
-        },
         "sine_weights": {
-            "cosine": [(0.0, reflectometry_readout_length)],
-            "sine": [(1.0, reflectometry_readout_length)],
+            "cosine": [(0.0, readout_len)],
+            "sine": [(1.0, readout_len)],
+        },
+        "minus_sine_weights": {
+            "cosine": [(0.0, readout_len)],
+            "sine": [(-1.0, readout_len)],
         },
     },
 }
