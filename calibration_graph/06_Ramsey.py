@@ -40,20 +40,20 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = None
+    qubits: Optional[List[str]] = ["q2"]
     num_averages: int = 100
-    frequency_detuning_in_mhz: float = 1.0
+    frequency_detuning_in_mhz: float = 0.2
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 50000
-    num_time_points: int = 500
-    log_or_linear_sweep: Literal["log", "linear"] = "log"
+    max_wait_time_in_ns: int = 80000
+    num_time_points: int = 300
+    log_or_linear_sweep: Literal["log", "linear"] = "linear"
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     use_state_discrimination: bool = True
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = True
+    multiplexed: bool = False
 
 node = QualibrationNode(name="06_Ramsey", parameters=Parameters())
 
@@ -116,13 +116,13 @@ with program() as ramsey:
     for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the desired frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
-        
+        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_each_(t, idle_times):
                 #  with for_(*from_array(t, idle_times)):
                 with for_(*from_array(sign, [-1, 1])):
+
                     # Rotate the frame of the second x90 gate to implement a virtual Z-rotation
                     with if_(sign == 1):
                         assign(phi, Cast.mul_fixed_by_int(detuning * 1e-9, 4 * t))
@@ -153,7 +153,8 @@ with program() as ramsey:
                     reset_frame(qubit.xy.name)
         # Measure sequentially
         if not node.parameters.multiplexed:
-            align()
+            if i < num_qubits - 1:
+                align(qubit.xy.name, machine.qubits[f"q{i + 2}"].xy.name)
 
     with stream_processing():
         n_st.save("n")

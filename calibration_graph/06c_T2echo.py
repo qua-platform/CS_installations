@@ -5,11 +5,11 @@ from typing import Optional, Literal, List
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubits: Optional[List[str]] = None
-    num_averages: int = 1000
+    qubits: Optional[List[str]] = ["q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8"]
+    num_averages: int = 300
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 75000
-    wait_time_step_in_ns: int = 300
+    max_wait_time_in_ns: int = 100000
+    wait_time_step_in_ns: int = 500
     simulate: bool = False
     timeout: int = 100
     use_state_discrimination: bool = True
@@ -72,6 +72,7 @@ idle_times = np.arange(
     node.parameters.wait_time_step_in_ns // 4,
 )
 
+
 with program() as t1:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     t = declare(int)  # QUA variable for the idle time
@@ -106,8 +107,10 @@ with program() as t1:
                     # save data
                     save(I[i], I_st[i])
                     save(Q[i], Q_st[i])
+        if i < num_qubits - 1:
+            align(qubit.xy.name, machine.qubits[f"q{i+2}"].xy.name)
 
-        # align()
+
 
     with stream_processing():
         n_st.save("n")
@@ -216,7 +219,7 @@ if not node.parameters.simulate:
     # %% {Update_state}
     with node.record_state_updates():
         for q in qubits:
-            q.T2echo = float(tau.sel(qubit = qubit["qubit"]).values * 1e-6)
+            q.T2echo = float(tau.sel(qubit = q.name).values * 1e-6)
 
     # %% {Save_results}
     node.outcomes = {q.name: "successful" for q in qubits}

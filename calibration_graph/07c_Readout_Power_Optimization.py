@@ -43,7 +43,7 @@ from sklearn.mixture import GaussianMixture
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = None
+    qubits: Optional[List[str]] = ["q2"]
     num_runs: int = 6000
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
@@ -56,7 +56,7 @@ class Parameters(NodeParameters):
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = True
+    multiplexed: bool = False
 
 
 node = QualibrationNode(name="07c_Readout_Power_Optimization", parameters=Parameters())
@@ -95,13 +95,13 @@ with program() as iq_blobs:
 
         # Bring the active qubits to the desired frequency point
         # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
-         
 
-    with for_(n, 0, n < n_runs, n + 1):
-        # ground iq blobs for all qubits
-        save(n, n_st)
-        with for_(*from_array(a, amps)):
-            for i, qubit in enumerate(qubits):
+    for i, qubit in enumerate(qubits):
+
+        with for_(n, 0, n < n_runs, n + 1):
+            # ground iq blobs for all qubits
+            save(n, n_st)
+            with for_(*from_array(a, amps)):
                 if reset_type == "active":
                     active_reset(qubit, "readout")
                 elif reset_type == "thermal":
@@ -131,7 +131,8 @@ with program() as iq_blobs:
 
         # Measure sequentially
         if not node.parameters.multiplexed:
-            align()
+            if i < num_qubits - 1:
+                align(qubit.xy.name, machine.qubits[f"q{i + 2}"].xy.name)
 
     with stream_processing():
         n_st.save("n")

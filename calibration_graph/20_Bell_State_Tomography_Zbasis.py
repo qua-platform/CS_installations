@@ -161,6 +161,7 @@ with program() as CPhase_Oscillations:
             # qp.qubit_control.xy.play("x180")
             qp.align()
             CNOT(qp.cross_resonance, qp.qubit_target, qp.qubit_control)
+            qp.qubit_control.xy.frame_rotation_2pi(0.5)
             qp.align()
 
             # readout

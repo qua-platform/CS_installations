@@ -46,7 +46,7 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = None
+    qubits: Optional[List[str]] = ["q2"]
     num_averages: int = 500
     operation: str = "saturation"
     operation_amplitude_factor: Optional[float] = 0.01
@@ -347,10 +347,10 @@ if not node.parameters.simulate:
         node.results["ds"] = ds
 
     # %% {Save_results}
-    node.outcomes = {q.name: "successful" for q in qubits}
-    node.results["initial_parameters"] = node.parameters.model_dump()
-    node.machine = machine
-    node.save()
+    # node.outcomes = {q.name: "successful" for q in qubits}
+    # node.results["initial_parameters"] = node.parameters.model_dump()
+    # node.machine = machine
+    # node.save()
 
 
 # %%

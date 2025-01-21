@@ -38,7 +38,7 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = None
+    qubits: Optional[List[str]] = ["q3"]
     num_averages: int = 300
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.1
@@ -47,7 +47,7 @@ class Parameters(NodeParameters):
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = True
+    multiplexed: bool = False
 
 node = QualibrationNode(name="07a_Readout_Frequency_Optimization", parameters=Parameters())
 
@@ -95,11 +95,9 @@ with program() as ro_freq_opt:
 
     # Bring the active qubits to the desired frequency point
     # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
-
-    with for_(n, 0, n < n_avg, n + 1):
-        save(n, n_st)
-        for i, qubit in enumerate(qubits):
-
+    for i, qubit in enumerate(qubits):
+        with for_(n, 0, n < n_avg, n + 1):
+            save(n, n_st)
             with for_(*from_array(df, dfs)):
                 # Update the resonator frequencies
                 update_frequency(qubit.resonator.name, df + qubit.resonator.intermediate_frequency)
@@ -127,7 +125,8 @@ with program() as ro_freq_opt:
                 # align()
         # Measure sequentially
         if not node.parameters.multiplexed:
-            align()
+            if i < num_qubits - 1:
+                align(qubit.xy.name, machine.qubits[f"q{i + 2}"].xy.name)
 
     with stream_processing():
         n_st.save("n")
@@ -151,6 +150,7 @@ if node.parameters.simulate:
         samples[con].plot()
         plt.title(con)
     plt.tight_layout()
+    plt.show()
     # Save the figure
     node.results = {"figure": plt.gcf()}
     node.machine = machine

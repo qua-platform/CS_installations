@@ -40,8 +40,8 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = None
-    num_averages: int = 50
+    qubits: Optional[List[str]] = ["q2"]
+    num_averages: int = 10
     operation_x180_or_any_90: Literal["x180", "x90", "-x90", "y90", "-y90"] = "x180"
     min_amp_factor: float = 0.001*0 + 0.8
     max_amp_factor: float = 1.99*0 + 1.2
@@ -55,7 +55,7 @@ class Parameters(NodeParameters):
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = True
+    multiplexed: bool = False
 
 node = QualibrationNode(name="04_Power_Rabi", parameters=Parameters())
 
@@ -141,7 +141,8 @@ with program() as power_rabi:
                         save(Q[i], Q_st[i])
                         # align()
         if not node.parameters.multiplexed:
-            align()
+            if i < num_qubits - 1:
+                align(qubit.xy.name, machine.qubits[f"q{i + 2}"].xy.name)
 
     with stream_processing():
         n_st.save("iteration")

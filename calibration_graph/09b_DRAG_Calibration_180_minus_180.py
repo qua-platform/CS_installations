@@ -38,13 +38,13 @@ import numpy as np
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubits: Optional[List[str]] = ["q8"]
+    qubits: Optional[List[str]] =["q2"]
     num_averages: int = 10
     operation: str = "x180"
     min_amp_factor: float = 0.5
     max_amp_factor: float = 1.5
     amp_factor_step: float = 0.02
-    max_number_pulses_per_sweep: int = 100
+    max_number_pulses_per_sweep: int = 200
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
@@ -52,7 +52,7 @@ class Parameters(NodeParameters):
     timeout: int = 100
     alpha_setpoint: Optional[float] = None
     load_data_id: Optional[int] = None
-    multiplexed: bool = True
+    multiplexed: bool = False
 
 
 
@@ -146,7 +146,8 @@ with program() as drag_calibration:
                     save(state[i], state_stream[i])
         # Measure sequentially
         if not node.parameters.multiplexed:
-            align()
+            if i < num_qubits - 1:
+                align(qubit.xy.name, machine.qubits[f"q{i + 2}"].xy.name)
 
     with stream_processing():
         n_st.save("n")

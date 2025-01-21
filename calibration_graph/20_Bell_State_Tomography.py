@@ -54,6 +54,7 @@ from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 # %% {Node_parameters}
 class Parameters(NodeParameters):
     qubit_pairs: Optional[List[str]] = ['q3-4']
+    qubits: Optional[List[str]] = []
     num_shots: int = 2000
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     reset_type: Literal['active', 'thermal'] = "thermal"
@@ -273,14 +274,14 @@ with program() as CPhase_Oscillations:
                         qp.align()
                     # Bell state
                     # Hadamard on control: --Y/2--X-- or --Z/2--X/2--Z/2--
-                    qp.qubit_control.xy.frame_rotation_2pi(0.25)
-                    qp.qubit_control.xy.play("x90")
-                    qp.qubit_control.xy.frame_rotation_2pi(0.25)
-                    # qp.qubit_control.xy.play("y90")
-                    # qp.qubit_control.xy.play("x180")
+                    # qp.qubit_control.xy.frame_rotation_2pi(0.25)
+                    # qp.qubit_control.xy.play("x90")
+                    # qp.qubit_control.xy.frame_rotation_2pi(0.25)
+                    qp.qubit_control.xy.play("y90")
+                    qp.qubit_control.xy.play("x180")
                     qp.align()
                     CNOT(qp.cross_resonance, qp.qubit_target, qp.qubit_control)
-
+                    qp.qubit_control.xy.frame_rotation_2pi(0.5)
                     qp.align()
                     # tomography pulses
                     with switch_(tomo_axis_target):
@@ -456,6 +457,7 @@ if not node.parameters.simulate:
 
 # %% {Update_state}
 qp.cross_resonance.bell_state_fidelity = np.abs(((np.sqrt(np.sqrt(ideal_dat) * rhos[qp.name] * np.sqrt(ideal_dat))).trace()))**2
+node.results["Bell_state_fidelity"] = qp.cross_resonance.bell_state_fidelity
 # %% {Save_results}
 if not node.parameters.simulate:
     node.outcomes = {qp.name: "successful" for qp in qubit_pairs}

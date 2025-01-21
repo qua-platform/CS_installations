@@ -7,7 +7,7 @@ import xarray as xr
 import matplotlib
 matplotlib.use("TkAgg")
 from qm.qua import *
-from quam_libs.components import QuAM
+from quam_libs.components import QuAM, Transmon
 
 
 __all__ = [
@@ -119,13 +119,10 @@ def readout_state(qubit , state, pulse_name : str = 'readout', threshold : float
     
     
 def active_reset(
-    quam: QuAM,
-    name: str,
-    save_qua_var: Optional[StreamType] = None,
+    qubit: Transmon,
+    readout_pulse_name: str = "readout",
     pi_pulse_name: str = "x180",
-    readout_pulse_name: str = "readout"):
-    
-    qubit = quam.qubits[name]
+    save_qua_var: Optional[StreamType] = None):
     pulse = qubit.resonator.operations[readout_pulse_name]
 
     I = declare(fixed)
@@ -134,20 +131,24 @@ def active_reset(
     attempts = declare(int, value=1)
     assign(attempts, 1)
     qubit.align()
-    qubit.resonator.measure("readout", qua_vars=(I, Q))
+    qubit.resonator.measure(readout_pulse_name, qua_vars=(I, Q))
     assign(state, I > pulse.threshold)
-    wait(qubit.resonator.depletion_time // 4, qubit.resonator.name)
-    qubit.xy.play(pi_pulse_name, condition=state)
+    qubit.xy.wait(qubit.resonator.depletion_time // 4)
+    # qubit.xy.play(pi_pulse_name, condition=state)
+    with if_(state):
+        qubit.xy.play(pi_pulse_name)
     qubit.align()
-    with while_(I > pulse.rus_exit_threshold):
+    with while_((I > pulse.rus_exit_threshold) & (attempts < 10)):
         qubit.align()
-        qubit.resonator.measure("readout", qua_vars=(I, Q))
+        qubit.resonator.measure(readout_pulse_name, qua_vars=(I, Q))
         assign(state, I > pulse.threshold)
-        wait(qubit.resonator.depletion_time // 4, qubit.resonator.name)
-        qubit.xy.play(pi_pulse_name, condition=state)
+        qubit.xy.wait(qubit.resonator.depletion_time // 4)
+        # qubit.xy.play(pi_pulse_name, condition=state)
+        with if_(state):
+            qubit.xy.play(pi_pulse_name)
         qubit.align()
         assign(attempts, attempts + 1)
-    wait(500,qubit.xy.name)
+    # wait(500,qubit.xy.name)
     qubit.align()    
     if save_qua_var is not None:
         save(attempts, save_qua_var)

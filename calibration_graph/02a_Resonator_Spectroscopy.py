@@ -38,7 +38,7 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = ["q4"]
+    qubits: Optional[List[str]] = ["q1", "q2", "q3"]
     num_averages: int = 100
     frequency_span_in_mhz: float = 18.0
     frequency_step_in_mhz: float = 0.01
@@ -46,7 +46,7 @@ class Parameters(NodeParameters):
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None#217
-    multiplexed: bool = True
+    multiplexed: bool = False
 
 
 node = QualibrationNode(name="02a_Resonator_Spectroscopy", parameters=Parameters())
@@ -90,10 +90,10 @@ with program() as multi_res_spec:
     # Bring the active qubits to the minimum frequency point
     machine.apply_all_flux_to_min()
 
-    with for_(n, 0, n < n_avg, n + 1):
-        save(n, n_st)
-        with for_(*from_array(df, dfs)):
-            for i, rr in enumerate(resonators):
+    for i, rr in enumerate(resonators):
+        with for_(n, 0, n < n_avg, n + 1):
+            save(n, n_st)
+            with for_(*from_array(df, dfs)):
                 # Update the resonator frequencies for all resonators
                 update_frequency(rr.name, df + rr.intermediate_frequency)
                 # Measure the resonator
@@ -103,8 +103,8 @@ with program() as multi_res_spec:
                 # save data
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])
-    if not node.parameters.multiplexed:
-        align()
+        if not node.parameters.multiplexed:
+            align()
 
     with stream_processing():
         n_st.save("n")
@@ -230,17 +230,17 @@ if not node.parameters.simulate:
     plt.show()
 
     # %% {Update_state}
-    # if node.parameters.load_data_id is None:
-    #     with node.record_state_updates():
-    #         for index, q in enumerate(qubits):
-    #             q.resonator.intermediate_frequency += int(fits[q.name].params["omega_r"].value)
-    #
-    #     # %% {Save_results}
-    #     node.outcomes = {q.name: "successful" for q in qubits}
-    #     node.results["initial_parameters"] = node.parameters.model_dump()
-    #     node.machine = machine
-    #     node.save()
-    #     print("Results saved")
+    if node.parameters.load_data_id is None:
+        with node.record_state_updates():
+            for index, q in enumerate(qubits):
+                q.resonator.intermediate_frequency += int(fits[q.name].params["omega_r"].value)
+
+        # %% {Save_results}
+        node.outcomes = {q.name: "successful" for q in qubits}
+        node.results["initial_parameters"] = node.parameters.model_dump()
+        node.machine = machine
+        node.save()
+        print("Results saved")
 
 
 # %%

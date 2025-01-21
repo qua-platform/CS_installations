@@ -73,9 +73,9 @@ class Parameters(NodeParameters):
 
     qubit_pairs: Optional[List[str]] = ["q3-4"]
     num_averages: int = 2000
-    min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 1000
-    wait_time_step_in_ns: int = 8
+    min_wait_time_in_ns: int = 20
+    max_wait_time_in_ns: int = 500
+    wait_time_step_in_ns: int = 12
     cr_type: Literal["direct", "direct+echo", "direct+cancel", "direct+cancel+echo"] = "direct+echo"
     cr_drive_amp: List[float] = [0.0]
     cr_cancel_amp: List[float] = [0.0]
@@ -132,12 +132,12 @@ qmm = machine.connect()
 # %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 # Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
-idle_time_ns = np.arange(
-    node.parameters.min_wait_time_in_ns,
-    node.parameters.max_wait_time_in_ns,
-    node.parameters.wait_time_step_in_ns,
-) // 4 * 4
-idle_time_cycles = idle_time_ns // 4
+idle_time_cycles = np.arange(
+    16 // 4,
+    2*qubit_pairs[0].cross_resonance.operations["square"].length // 4,
+    2*qubit_pairs[0].cross_resonance.operations["square"].length // 101 // 4,
+)
+idle_time_ns = idle_time_cycles * 4
 
 N_pi_vec = np.arange(1, 15, 2).astype("int")
 ###################
@@ -191,8 +191,8 @@ with program() as cr_calib_unit_ham_tomo:
                             align(qc.xy.name, qt.xy.name)
                             # qc.xy.play("-x90")
                             # qc.xy.play("-y90")
-                            reset_frame(qp.qubit_control.xy.name)
-                        reset_frame(qp.cross_resonance.name)
+                        reset_frame(qc.xy.name)
+                        reset_frame(cr.name)
 
 
                         align(qt.xy.name, qc.resonator.name, qt.resonator.name)

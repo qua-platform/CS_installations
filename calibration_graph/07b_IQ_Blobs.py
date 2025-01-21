@@ -43,7 +43,7 @@ import xarray as xr
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = ["q3", "q4"]
+    qubits: Optional[List[str]] = ["q3"]
     num_runs: int = 2000
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
@@ -52,7 +52,7 @@ class Parameters(NodeParameters):
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = True
+    multiplexed: bool = False
 
 
 node = QualibrationNode(name="07b_IQ_Blobs", parameters=Parameters())
@@ -85,13 +85,10 @@ operation_name = node.parameters.operation_name
 with program() as iq_blobs:
     I_g, I_g_st, Q_g, Q_g_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     I_e, I_e_st, Q_e, Q_e_st, _, _ = qua_declaration(num_qubits=num_qubits)
-
-
-        # Bring the active qubits to the desired frequency point
-        # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
-
-    with for_(n, 0, n < n_runs, n + 1):
-        for i, qubit in enumerate(qubits):
+    # Bring the active qubits to the desired frequency point
+    # machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+    for i, qubit in enumerate(qubits):
+        with for_(n, 0, n < n_runs, n + 1):
             # ground iq blobs for all qubits
             save(n, n_st)
             if reset_type == "active":
@@ -129,7 +126,8 @@ with program() as iq_blobs:
 
         # Measure sequentially
         if not node.parameters.multiplexed:
-            align()
+            if i < num_qubits - 1:
+                align(qubit.xy.name, machine.qubits[f"q{i + 2}"].xy.name)
 
     with stream_processing():
         n_st.save("n")

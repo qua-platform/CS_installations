@@ -38,7 +38,7 @@ g = QualibrationGraph(
 #     print(f"\n---------- Measure qubit {i} ----------\n")
 #     g.run(qubits=[f"q{i}"])
 
-g.run(qubits=["q3", "q4"])
+g.run(qubits=["q5", "q6"])
 # g.run(qubits=["q4"])
 
 # Run the graph 4x4
