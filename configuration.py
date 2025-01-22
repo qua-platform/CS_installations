@@ -18,8 +18,8 @@ u = unit(coerce_to_integer=True)
 ######################
 # Network parameters #
 ######################
-qop_ip = "172.16.33.101"  # Write the QM router IP address
-cluster_name = "Cluster_81"  # Write your cluster_name if version >= QOP220
+qop_ip = "192.168.0.200"  # Write the QM router IP address
+cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 # Path to save data
@@ -53,13 +53,13 @@ square_pi_amp = 0.25
 #############################################
 #                Resonators                 #
 #############################################
-resonator_LO = 7 * u.GHz
+resonator_LO = 7.4 * u.GHz
 resonator_IF = 60 * u.MHz
 
 readout_len = 2000
 readout_amp = 0.1
 
-time_of_flight = 24
+time_of_flight = 192
 
 
 #############################################
@@ -77,10 +77,10 @@ config = {
             },
             "digital_outputs": {},
             "analog_inputs": {
-                1: {"offset": 0.0, "gain_db": 0},  # I from down-conversion
-                2: {"offset": 0.0, "gain_db": 0},  # Q from down-conversion
+                1: {"offset": 0.009342, "gain_db": -6},  # I from down-conversion
+                2: {"offset": 0.003681, "gain_db": -6},  # Q from down-conversion
             },
-        }
+        },
     },
     "elements": {
         "qubit": {
@@ -128,7 +128,7 @@ config = {
                 },
             },
             "connectivity": "con1",
-        }
+        },
     },
     "pulses": {
         "const_pulse": {

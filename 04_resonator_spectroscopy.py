@@ -29,10 +29,10 @@ from scipy import signal
 ###################
 # The QUA program #
 ###################
-n_avg = 1000  # The number of averages
+n_avg = 100  # The number of averages
 # The frequency sweep parameters
-f_min = 30 * u.MHz
-f_max = 70 * u.MHz
+f_min = 100 * u.MHz
+f_max = 300 * u.MHz
 df = 100 * u.kHz
 frequencies = np.arange(f_min, f_max + 0.1, df)  # The frequency vector (+ 0.1 to add f_max to frequencies)
 
@@ -94,6 +94,7 @@ else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
+    qm.calibrate_element('resonator')
     job = qm.execute(resonator_spec)
     # Get results from QUA program
     results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
@@ -122,6 +123,7 @@ else:
         plt.ylabel("Phase [rad]")
         plt.pause(0.1)
         plt.tight_layout()
+        plt.show()
     # Fit the results to extract the resonance frequency
     try:
         from qualang_tools.plot.fitting import Fit

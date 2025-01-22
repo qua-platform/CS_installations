@@ -10,6 +10,7 @@ from qm.qua import *
 ###################
 # The QUA program #
 ###################
+
 with program() as hello_qua:
     a = declare(fixed)
     with infinite_loop_():
@@ -26,7 +27,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
