@@ -14,6 +14,7 @@ from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.results.data_handler import DataHandler
 from macros_voltage_gate_sequence import VoltageGateSequence
 from scipy import signal
+import time 
 
 from configuration_with_lffem import *
 from macros_initialization_and_readout_2q import *
@@ -167,6 +168,7 @@ else:
     while results.is_processing():
         # Fetch results
         iteration, P_diff_avg = results.fetch_all()
+        elapsed_time = time.time() - results.get_start_time()
 
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())

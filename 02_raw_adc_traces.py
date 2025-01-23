@@ -24,7 +24,6 @@ tank_circuit = "tank_circuit1"
 
 with program() as raw_trace_prog:
     n = declare(int)  # QUA variable for the averaging loop
-    adc_dc_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace for the DC line
     adc_rf_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace for the RF line
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging

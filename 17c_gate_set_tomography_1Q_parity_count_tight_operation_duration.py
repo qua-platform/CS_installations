@@ -31,7 +31,7 @@ def get_dataframe_encoded_sequence(pi_half_len):
     df["full_gate_sequence_duration"] = pi_half_len * df["full_native_gate_count"]
     df.reset_index(inplace=True)
     # df = df.head(5)
-    # df = df.head(10)
+    df = df.head(100)
     return df
 
 
@@ -74,12 +74,12 @@ num_output_streams = 2
 seed = 345324  # Pseudo-random number generator seed
 do_simulate = False
 
-pi_half_len = QUBIT_CONSTANTS[qubit]["square_pi_half_len"]
-pi_half_amp = QUBIT_CONSTANTS[qubit]["square_pi_half_amp"]
+pi_half_len = QUBIT_CONSTANTS[qubit]["square_pi_len"]
+pi_half_amp = QUBIT_CONSTANTS[qubit]["square_pi_amp"]
 
 
 n_shots_max = 1000
-list_n_shots = [10, 100, n_shots_max]
+list_n_shots = [n_shots_max]
 df_enc_seqs = get_dataframe_encoded_sequence(pi_half_len=pi_half_len)
 sequence_max_len = 2 + df_enc_seqs["full_sequence_length"].max()  # 2 for circ_idx and circ_len
 num_cicuits = len(df_enc_seqs)
@@ -320,7 +320,8 @@ else:
     job = qm.execute(PROGRAM_GST, compiler_options=CompilerOptionArguments(flags=["not-strict-timing"]))
 
     # fetch_names = ["n_shots_history", "circ_idx_history", f"P0_count_{tank_circuit}", f"P1_count_{tank_circuit}"]
-    fetch_names = ["circ_idx_history", f"P0_count_{tank_circuit}", f"P1_count_{tank_circuit}"]
+    # fetch_names = ["circ_idx_history", f"P0_count_{tank_circuit}", f"P1_count_{tank_circuit}"]
+    fetch_names = ["circ_idx_history", f"P0_count_{tank_circuit}"]
 
     if save_data:
         from qualang_tools.results.data_handler import DataHandler
@@ -354,13 +355,14 @@ else:
 
     # Fetch results
     print("fetch result!")
-    circuit_idx_history, P0_count, P1_count = results.fetch_all()
+    # circuit_idx_history, P0_count, P1_count = results.fetch_all()
+    circuit_idx_history, P0_count = results.fetch_all()
 
     print("save result!")
     # save_data_dict["n_shots_history"] = res[0]
     save_data_dict["circ_idx_history"] = circuit_idx_history
     save_data_dict["P0_count"] = P0_count
-    save_data_dict["P1_count"] = P1_count
+    # save_data_dict["P1_count"] = P1_count
 
     # Save results
     script_name = Path(__file__).name

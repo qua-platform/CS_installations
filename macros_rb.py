@@ -8,7 +8,7 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from scipy.optimize import curve_fit
 
-from configuration_with_lffem import *
+from configuration_with_lffem_csrack import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 
 # from configuration_with_lffem_saas import *
@@ -163,85 +163,85 @@ def generate_sequence(depth, max_circuit_depth=0, seed=0):
 #     return sequence
 
 
-# def play_clifford(c_idx, qb):
-#     with switch_(c_idx, unsafe=True):
-#         with case_(0):
-#             play("x180_square", qb)
-#         with case_(1):
-#             play("x180_square", qb)
-#         with case_(2):
-#             play("x180_square", qb)
-#         with case_(3):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#         with case_(4):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#         with case_(5):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#         with case_(6):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#         with case_(7):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#         with case_(8):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#         with case_(9):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#         with case_(10):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#         with case_(11):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#         with case_(12):
-#             play("x180_square", qb)
-#         with case_(13):
-#             play("x180_square", qb)
-#         with case_(14):
-#             play("x180_square", qb)
-#         with case_(15):
-#             play("x180_square", qb)
-#         with case_(16):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#         with case_(17):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#         with case_(18):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#         with case_(19):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#         with case_(20):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#         with case_(21):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#         with case_(22):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#         with case_(23):
-#             play("x180_square", qb)
-#             play("x180_square", qb)
-#             play("x180_square", qb)
+def play_clifford(c_idx, qb):
+    with switch_(c_idx, unsafe=True):
+        with case_(0):
+            play("x180_square", qb)
+        with case_(1):
+            play("x180_square", qb)
+        with case_(2):
+            play("x180_square", qb)
+        with case_(3):
+            play("x180_square", qb)
+            play("x180_square", qb)
+        with case_(4):
+            play("x180_square", qb)
+            play("x180_square", qb)
+        with case_(5):
+            play("x180_square", qb)
+            play("x180_square", qb)
+        with case_(6):
+            play("x180_square", qb)
+            play("x180_square", qb)
+        with case_(7):
+            play("x180_square", qb)
+            play("x180_square", qb)
+        with case_(8):
+            play("x180_square", qb)
+            play("x180_square", qb)
+        with case_(9):
+            play("x180_square", qb)
+            play("x180_square", qb)
+        with case_(10):
+            play("x180_square", qb)
+            play("x180_square", qb)
+        with case_(11):
+            play("x180_square", qb)
+            play("x180_square", qb)
+        with case_(12):
+            play("x180_square", qb)
+        with case_(13):
+            play("x180_square", qb)
+        with case_(14):
+            play("x180_square", qb)
+        with case_(15):
+            play("x180_square", qb)
+        with case_(16):
+            play("x180_square", qb)
+            play("x180_square", qb)
+            play("x180_square", qb)
+        with case_(17):
+            play("x180_square", qb)
+            play("x180_square", qb)
+            play("x180_square", qb)
+        with case_(18):
+            play("x180_square", qb)
+            play("x180_square", qb)
+        with case_(19):
+            play("x180_square", qb)
+            play("x180_square", qb)
+        with case_(20):
+            play("x180_square", qb)
+            play("x180_square", qb)
+        with case_(21):
+            play("x180_square", qb)
+            play("x180_square", qb)
+        with case_(22):
+            play("x180_square", qb)
+            play("x180_square", qb)
+            play("x180_square", qb)
+        with case_(23):
+            play("x180_square", qb)
+            play("x180_square", qb)
+            play("x180_square", qb)
 
 
-# def play_sequence_by_section(sequence_list, target, qb, start, end):
-#     i = declare(int)
-#     number_of_cliffords = -1 if target < start else\
-#         (end - start - 1 if target > end else target - start)
-#     with for_(i, 0, i <= number_of_cliffords, i + 1):
-#         play_clifford(c_idx=sequence_list[i], qb=qb)
+def play_sequence_by_section(sequence_list, target, qb, start, end):
+    i = declare(int)
+    number_of_cliffords = -1 if target < start else\
+        (end - start - 1 if target > end else target - start)
+    with for_(i, 0, i <= number_of_cliffords, i + 1):
+        play_clifford(c_idx=sequence_list[i], qb=qb)
 
 
 def play_sequence(sequence_list, depth, qb, i_from=0):
