@@ -53,13 +53,13 @@ square_pi_amp = 0.25
 #############################################
 #                Resonators                 #
 #############################################
-resonator_LO = 7.4 * u.GHz
+resonator_LO = 10 * u.GHz
 resonator_IF = 60 * u.MHz
 
 readout_len = 2000
 readout_amp = 0.1
 
-time_of_flight = 192
+time_of_flight = 100
 
 
 #############################################

@@ -10,12 +10,16 @@ from qm.qua import *
 ###################
 # The QUA program #
 ###################
+
+
 with program() as hello_qua:
+
     a = declare(fixed)
+    assign(a, 0.4)
     with infinite_loop_():
-        with for_(a, 0, a < 1.1, a + 0.05):
-            play("pi" * amp(a), "qubit")
-        wait(25, "qubit")
+
+        play("cw" * amp(0.4), "resonator", duration=1000//4)
+        wait(250, "resonator")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -26,11 +30,11 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Run or Simulate Program #
 ###########################
 
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=2_000 >> 2)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=10000 >> 2)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, hello_qua, simulation_config)
     # Plot the simulated samples

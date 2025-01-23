@@ -11,6 +11,7 @@ from qm.qua import *
 # The QUA program #
 ###################
 
+
 with program() as hello_qua:
     a = declare(fixed)
     with infinite_loop_():
