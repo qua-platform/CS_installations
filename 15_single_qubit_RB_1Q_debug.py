@@ -35,6 +35,7 @@ from configuration_with_lffem_csrack import *
 # from configuration_with_lffem import *
 from macros_initialization_and_readout_2q import *
 from macros_rb import *
+from macros_voltage_gate_sequence import VoltageGateSequence
 
 
 # matplotlib.use('TkAgg')
@@ -54,8 +55,8 @@ seed = 1234  # Pseudo-random number generator seed
 
 n_avg = 2
 num_of_sequences = 3  # Number of random sequences
-circuit_depth_min = 1500
-circuit_depth_max = 15500 # worked up to 15500
+circuit_depth_min = 1
+circuit_depth_max = 8001 # worked up to 7800
 delta_clifford = 1000
 circuit_depths = np.arange(circuit_depth_min, circuit_depth_max + 1, delta_clifford)
 pi_len = QUBIT_CONSTANTS[qubit]["square_pi_len"]
@@ -88,6 +89,10 @@ with program() as rb:
     i_depth_st = declare_stream()
     P_diff_st = declare_stream()
 
+    ss = declare(int)
+    ss_st = declare_stream()
+    cs_st = declare_stream()
+
     current_level = declare(fixed, value=[0.0 for _ in sweep_gates])
     seq.current_level = current_level
 
@@ -101,11 +106,16 @@ with program() as rb:
         with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
             sequence_list = generate_sequence(depth=depth, max_circuit_depth=circuit_depth_max, seed=seed)
 
+            with for_(ss, 0, ss <= circuit_depth_max, ss + 1):
+                # save(current_states[ss], cs_st)
+                save(sequence_list[ss], ss_st)
+
             # Assign sequence_time to duration of idle step for generated sequence "m" at a given depth
             assign(sequence_time, generate_sequence_time(sequence_list, depth))
             assign(d_ops, (RF_SWITCH_DELAY + sequence_time + RF_SWITCH_DELAY))
 
             with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
+                # with strict_timing_():
                 # Perform specified initialization
                 P0 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
 
@@ -153,6 +163,8 @@ with program() as rb:
 
     with stream_processing():
         i_depth_st.save("iteration")
+        # cs_st.buffer(circuit_depth_max + 1).buffer(num_of_sequences).buffer(len(circuit_depths)).save("current_states")
+        ss_st.buffer(circuit_depth_max + 1).buffer(num_of_sequences).buffer(len(circuit_depths)).save("rb_sequences")
         P_diff_st.buffer(n_avg).map(FUNCTIONS.average())\
             .buffer(num_of_sequences).map(FUNCTIONS.average())\
             .buffer(len(circuit_depths)).save(f"P_diff_{tank_circuit}")
@@ -204,15 +216,16 @@ else:
     # data analysis
     while results.is_processing():
         iteration = results.fetch_all()
+        # data analysis
         # Progress bar
         progress_counter(iteration[0], len(circuit_depths), start_time=results.get_start_time())
         time.sleep(1)
 
-    fetch_names = ["iteration", f"P_diff_{tank_circuit}"]
+    fetch_names = ["iteration", f"P_diff_{tank_circuit}", "rb_sequences"]
     results = fetching_tool(job, data_list=fetch_names)
 
     # At the end of the program, fetch the non-averaged results to get the error-bars
-    iteration, P_diff = results.fetch_all()
+    iteration, P_diff, rb_sequences = results.fetch_all()
 
     # # data analysis
     # x = circuit_depths
