@@ -54,12 +54,13 @@ seed = 345324  # Pseudo-random number generator seed
 n_avg = 100
 num_of_sequences = 16  # Number of random sequences
 # circuit_depth_min = 1
-circuit_depth_max = 1000 # worked up to 7800
+circuit_depth_max = 1000  # worked up to 7800
 delta_clifford = 20
 circuit_depths = np.arange(1, circuit_depth_max + 0.1, delta_clifford)
 pi_len = QUBIT_CONSTANTS[qubit]["square_pi_len"]
 pi_amp = QUBIT_CONSTANTS[qubit]["square_pi_amp"]
 assert circuit_depth_max % delta_clifford == 0, "circuit_depth_max / delta_clifford must be an integer."
+
 
 def generate_sequence():
     cayley = declare(int, value=c1_table.flatten().tolist())
@@ -80,11 +81,11 @@ def generate_sequence():
 
     return sequence, inv_gate
 
+
 ###################
 # The QUA program #
 ###################
 with program() as rb:
-
     d_ops = declare(int)
     depth = declare(int)  # QUA variable for the varying depth
     duration_ops = declare(int)
@@ -115,7 +116,6 @@ with program() as rb:
             set_dc_offset(sg, "single", lvl_init)
 
     with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
-
         sequence_list, inv_gate_list = generate_sequence()
 
         # ss = declare(int)
@@ -127,7 +127,6 @@ with program() as rb:
         assign(depth_target, 1)  # Initialize the current depth to 1
 
         with for_(depth, 1, depth <= circuit_depth_max, depth + 1):  # Loop over the depths
-
             # assign(i_depth, i_depth + 1)
 
             # Assign sequence_time to duration of idle step for generated sequence "m" at a given depth
@@ -138,7 +137,6 @@ with program() as rb:
             assign(sequence_list[depth], inv_gate_list[depth - 1])
 
             with if_(depth == depth_target):
-
                 with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
                     # with strict_timing_():
                     # Perform specified initialization
@@ -152,14 +150,14 @@ with program() as rb:
                     #     play("trigger", "rf_switch", duration=(RF_SWITCH_DELAY + pi_len + RF_SWITCH_DELAY) // 4)
                     #     wait(RF_SWITCH_DELAY // 4, qubit)
                     #     play("x180_square", qubit)
-                    
+
                     P1 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
 
                     # Navigate through the charge stability map
                     align()
-                    seq.add_step(voltage_point_name="initialization_1q", duration=d_ops, ramp_duration=duration_ramp_init) # NEVER u.ns
+                    seq.add_step(voltage_point_name="initialization_1q", duration=d_ops, ramp_duration=duration_ramp_init)  # NEVER u.ns
                     # seq.add_step(voltage_point_name="initialization_1q", duration=(RF_SWITCH_DELAY + pi_len + RF_SWITCH_DELAY), ramp_duration=duration_ramp_init) # NEVER u.ns
-                    
+
                     wait(duration_ramp_init // 4, "rf_switch", qubit)
                     play("trigger", "rf_switch", duration=d_ops >> 2)
                     wait(RF_SWITCH_DELAY // 4, qubit)
@@ -179,7 +177,7 @@ with program() as rb:
                         save(0, P_diff_st)
                     with else_():
                         save(1, P_diff_st)
-                        
+
                     # Save the LO iteration to get the progress bar
                     wait(100_000)
                 assign(depth_target, depth_target + delta_clifford)
@@ -189,9 +187,7 @@ with program() as rb:
 
     with stream_processing():
         m_st.save("iteration")
-        P_diff_st.buffer(n_avg).map(FUNCTIONS.average())\
-            .buffer(circuit_depth_max / delta_clifford)\
-            .average().save(f"P_diff_avg_{tank_circuit}")
+        P_diff_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(circuit_depth_max / delta_clifford).average().save(f"P_diff_avg_{tank_circuit}")
 
 
 #####################################
@@ -276,14 +272,18 @@ else:
 
     one_minus_p = 1 - pars[2]
     r_c = one_minus_p * (1 - 1 / 2**1)
-    r_g = r_c / (44 / 24) # 1.875  # 1.875 is the average number of gates in clifford operation
+    r_g = r_c / (44 / 24)  # 1.875  # 1.875 is the average number of gates in clifford operation
     r_c_std = stdevs[2] * (1 - 1 / 2**1)
-    r_g_std = r_c_std / (44 / 24) # 1.875
+    r_g_std = r_c_std / (44 / 24)  # 1.875
 
     print("#########################")
     print("### Useful Parameters ###")
     print("#########################")
-    print(f"Error rate: 1-p = {np.format_float_scientific(one_minus_p, precision=2)} ({stdevs[2]:.1})\n" f"Clifford set infidelity: r_c = {np.format_float_scientific(r_c, precision=2)} ({r_c_std:.1})\n" f"Gate infidelity: r_g = {np.format_float_scientific(r_g, precision=2)}  ({r_g_std:.1})")
+    print(
+        f"Error rate: 1-p = {np.format_float_scientific(one_minus_p, precision=2)} ({stdevs[2]:.1})\n"
+        f"Clifford set infidelity: r_c = {np.format_float_scientific(r_c, precision=2)} ({r_c_std:.1})\n"
+        f"Gate infidelity: r_g = {np.format_float_scientific(r_g, precision=2)}  ({r_g_std:.1})"
+    )
 
     # Plots
     plt.figure()

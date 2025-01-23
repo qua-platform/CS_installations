@@ -6,7 +6,7 @@
 from qm import *
 from qm.qua import *
 
-# from configuration_with_lffem_csrack import *from configuration_with_lffem_csrack import *
+from configuration_with_lffem_csrack import *
 # from configuration_with_lffem import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 
@@ -27,12 +27,12 @@ do_feedback = True  # False for test. True for actual.
 
 
 # duration_init = 10_000 # DO NOT USE * u.ns
-duration_ramp_init = 200 # DO NOT USE * u.ns
-duration_ramp_readout = 52 # DO NOT USE * u.ns
+duration_ramp_init = 200  # DO NOT USE * u.ns
+duration_ramp_readout = 52  # DO NOT USE * u.ns
 duration_ramp_barrier = 100
 
 
-delay_init_start = 100 # + RF_SWITCH_DELAY
+delay_init_start = 100  # + RF_SWITCH_DELAY
 # delay_feedback = 240
 delay_init_end = 100
 duration_init_1q = delay_init_start + pi_len + delay_init_end
@@ -50,33 +50,13 @@ assert delay_read_reflec_end == 0 or delay_read_reflec_end >= 16
 delay_barrier_crot = 100
 delay_barrier_gate = 1000
 
-duration_ops = \
-    delay_init_start \
-    + delay_barrier_gate \
-    + duration_ramp_barrier \
-    + delay_barrier_crot \
-    + pi_len \
-    + delay_barrier_crot \
-    + duration_ramp_barrier \
-    + delay_init_end
+duration_ops = delay_init_start + delay_barrier_gate + duration_ramp_barrier + delay_barrier_crot + pi_len + delay_barrier_crot + duration_ramp_barrier + delay_init_end
 
-duration_ops_before_barrier = \
-    delay_init_start \
-    + delay_barrier_gate
+duration_ops_before_barrier = delay_init_start + delay_barrier_gate
 
-duration_ops_barrier = \
-    duration_ramp_barrier \
-    + delay_barrier_crot \
-    + pi_len \
-    + delay_barrier_crot \
-    + duration_ramp_barrier
+duration_ops_barrier = duration_ramp_barrier + delay_barrier_crot + pi_len + delay_barrier_crot + duration_ramp_barrier
 
-duration_ops_before_switch = \
-    delay_init_start \
-    + delay_barrier_gate \
-    + duration_ramp_barrier \
-    + delay_barrier_crot \
-    - RF_SWITCH_DELAY
+duration_ops_before_switch = delay_init_start + delay_barrier_gate + duration_ramp_barrier + delay_barrier_crot - RF_SWITCH_DELAY
 
 
 # Points in the charge stability map [V1, V2]
@@ -89,7 +69,7 @@ level_readout_list = level_readout_arr.tolist()
 set_init_as_dc_offset = True
 if set_init_as_dc_offset:
     level_readout_offset_arr = level_readout_arr - level_init_arr
-    level_init_offset_arr = np.array([0.0, 0.0, 0.0]) # level_init_arr - level_init_arr
+    level_init_offset_arr = np.array([0.0, 0.0, 0.0])  # level_init_arr - level_init_arr
 
     level_readout_offset_list = level_readout_offset_arr.tolist()
     level_init_offset_list = level_init_offset_arr.tolist()
@@ -97,18 +77,17 @@ if set_init_as_dc_offset:
 
 seq = VoltageGateSequence(config, sweep_gates)
 if set_init_as_dc_offset:
-    seq.add_points("initialization_1q", level_init_offset_list, duration_init_1q) #
-    seq.add_points("operation_before_crot", level_init_offset_list, duration_ops_before_barrier) #
-    seq.add_points("operation_crot", level_init_offset_list, duration_ops_barrier) #
-    seq.add_points("operation_after_crot", level_init_offset_list, delay_init_end) #
-    seq.add_points("readout", level_readout_offset_list, duration_readout) #
+    seq.add_points("initialization_1q", level_init_offset_list, duration_init_1q)  #
+    seq.add_points("operation_before_crot", level_init_offset_list, duration_ops_before_barrier)  #
+    seq.add_points("operation_crot", level_init_offset_list, duration_ops_barrier)  #
+    seq.add_points("operation_after_crot", level_init_offset_list, delay_init_end)  #
+    seq.add_points("readout", level_readout_offset_list, duration_readout)  #
 else:
-    seq.add_points("initialization_1q", level_init_list, duration_init_1q) #
-    seq.add_points("operation_before_crot", level_init_list, duration_ops_before_barrier) #
-    seq.add_points("operation_crot", level_init_list, duration_ops_barrier) #
-    seq.add_points("operation_after_crot", level_init_list, delay_init_end) #
-    seq.add_points("readout", level_readout_list, duration_readout) #
-
+    seq.add_points("initialization_1q", level_init_list, duration_init_1q)  #
+    seq.add_points("operation_before_crot", level_init_list, duration_ops_before_barrier)  #
+    seq.add_points("operation_crot", level_init_list, duration_ops_barrier)  #
+    seq.add_points("operation_after_crot", level_init_list, delay_init_end)  #
+    seq.add_points("readout", level_readout_list, duration_readout)  #
 
 
 ###################
@@ -130,7 +109,6 @@ else:
 #         wait(delay_feedback * u.ns, qubit)
 #         play("x180_kaiser", qubit)
 #     wait(delay_init_end * u.ns, qubit)
-
 
 
 def measure_parity(I, Q, P, I_st, Q_st, P_st, tank_circuit, threshold):

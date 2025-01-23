@@ -54,7 +54,7 @@ map_clifford_to_num_gates = {
     23: 3,
 }
 
-map_clifford_to_duration_cycles_list = (np.array([1, 1, 1, 2, 2, 2, 2, 2, 2, 2,  2,  2,  1,  1,  1,  1,  3,  3,  2,  2,  2,  2,  3,  3])*pi_len//4).tolist()
+map_clifford_to_duration_cycles_list = (np.array([1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 3, 3, 2, 2, 2, 2, 3, 3]) * pi_len // 4).tolist()
 
 map_clifford_numbers_to_string = {
     0: "I",
@@ -82,6 +82,7 @@ map_clifford_numbers_to_string = {
     22: "X90 Y90 X90",
     23: "-X90 Y90 -X90",
 }
+
 
 def power_law(power, a, b, p):
     return a * (p**power) + b
@@ -135,7 +136,6 @@ def generate_sequence(depth, max_circuit_depth=0, seed=0):
             assign(sequence[depth], inv_gate)
 
     return sequence
-
 
 
 # def generate_sequence(depth, max_circuit_depth=0, ends_with_inv_gate=True, seed=0):
@@ -239,8 +239,7 @@ def play_clifford(c_idx, qb, wf_type="square"):
 
 def play_sequence_by_section(sequence_list, target, qb, start, end):
     i = declare(int)
-    number_of_cliffords = -1 if target < start else\
-        (end - start - 1 if target > end else target - start)
+    number_of_cliffords = -1 if target < start else (end - start - 1 if target > end else target - start)
     with for_(i, 0, i <= number_of_cliffords, i + 1):
         play_clifford(c_idx=sequence_list[i], qb=qb)
 
@@ -248,7 +247,7 @@ def play_sequence_by_section(sequence_list, target, qb, start, end):
 def play_sequence(sequence_list, depth, qb, wf_type="square", i_from=0):
     i = declare(int)
     with for_(i, 0, i <= depth, i + 1):
-    # with for_(i, i_from, i <= depth + i_from, i + 1):
+        # with for_(i, i_from, i <= depth + i_from, i + 1):
         with switch_(sequence_list[i], unsafe=False):
             with case_(0):
                 wait(4, qb)  # I

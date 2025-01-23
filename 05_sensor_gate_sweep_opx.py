@@ -38,12 +38,12 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 # The QUA program #
 ###################
 
-run_live = False # True 
+run_live = False  # True
 sd_sticky = "Psd2_sticky"
 tank_circuit = "tank_circuit2"
 step_amp = PLUNGER_SD_CONSTANTS[sd_sticky.replace("_sticky", "")]["step_amp"]
 
-n_avg = 1000000 if run_live else 100 # Number of averaging loops
+n_avg = 1000000 if run_live else 100  # Number of averaging loops
 offset_max = +0.2
 offset_min = -offset_max
 offset_step = 0.005
@@ -66,14 +66,13 @@ with program() as charge_sensor_sweep:
     i = declare(int)  # QUA variable for the voltage sweep
     n = declare(int)  # QUA variable for the averaging loop
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
-    
+
     I = declare(fixed)
     Q = declare(fixed)
     I_st = declare_stream()
     Q_st = declare_stream()
 
     with for_(n, 0, n < n_avg, n + 1):
-
         # Set the voltage to the 1st point of the sweep
         play("step" * amp(offset_min / step_amp), sd_sticky)
         # Wait for the voltage to settle (depends on the bias-tee cut-off frequency)
@@ -93,7 +92,7 @@ with program() as charge_sensor_sweep:
             measure("readout", tank_circuit, None, demod.full("cos", I, "out1"), demod.full("sin", Q, "out1"))
             save(I, I_st)
             save(Q, Q_st)
-            
+
             # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
             # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
             # process them which can cause the OPX to crash.
@@ -177,7 +176,7 @@ else:
         script_name: script_name,
         **default_additional_files,
     }
-    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py",""))
+    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     qm.close()
 

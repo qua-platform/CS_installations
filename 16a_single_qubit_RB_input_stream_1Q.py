@@ -244,7 +244,7 @@ else:
             "macros_initialization_and_readout.py": "macros_initialization_and_readout.py",
             **default_additional_files,
         }
-        data_handler.save_data(data=save_data_dict, name=script_name.replace(".py",""))
+        data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     qm.close()
 

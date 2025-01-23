@@ -25,6 +25,7 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 #  Util funciton  #
 ###################
 
+
 def get_dataframe_encoded_sequence(pi_half_len):
     path = "./encoded_parsed_dataset.csv"
     df = pd.read_csv(path, header=0)  # Use header=0 to indicate the first row is the header
@@ -117,12 +118,11 @@ def perform_read_init(I, Q):
     #     play("trigger", "rf_switch", duration=(RF_SWITCH_DELAY + pi_len + RF_SWITCH_DELAY) // 4)
     #     wait(RF_SWITCH_DELAY // 4, qubit)
     #     play("x180_square", qubit)
-    
+
     align()
     P1 = measure_parity(I, Q, None, None, None, None, tank_circuit=tank_circuit, threshold=threshold)
-    
-    return P0, P1
 
+    return P0, P1
 
 
 with program() as PROGRAM_GST:
@@ -152,14 +152,12 @@ with program() as PROGRAM_GST:
     m_st = declare_stream()
     P_diff_st = declare_stream()
 
-
     current_level = declare(fixed, value=[0.0 for _ in sweep_gates])
     seq.current_level = current_level
 
     if set_init_as_dc_offset:
         for sg, lvl_init in zip(sweep_gates, level_init_list):
             set_dc_offset(sg, "single", lvl_init)
-
 
     if do_simulate:
         encoded_circuit = declare(int, value=[112, 8195, 9, 4, 4, 4, 4, 5] + [0] * 8188 + [1])
@@ -169,7 +167,6 @@ with program() as PROGRAM_GST:
             name="_encoded_circuit",
             size=sequence_max_len + 3,  # 2 to account for [circ_idx, seq_len, remaining_duraiton_case]
         )  # input stream the sequence
-
 
     with for_each_(n_shots, list_n_shots):
         with for_(circ, 0, circ < num_cicuits, circ + 1):
@@ -185,13 +182,12 @@ with program() as PROGRAM_GST:
             assign(duration_ops, RF_SWITCH_DELAY + circ_duration + RF_SWITCH_DELAY)
 
             with for_(n, 0, n < n_shots, n + 1):
-
                 # Perform initialization
                 _, _ = perform_read_init(I, Q)
 
                 # Navigate through the charge stability map
                 align()
-                seq.add_step(voltage_point_name="initialization_1q", duration=duration_ops, ramp_duration=duration_ramp_init) # NEVER u.ns
+                seq.add_step(voltage_point_name="initialization_1q", duration=duration_ops, ramp_duration=duration_ramp_init)  # NEVER u.ns
 
                 wait(duration_ramp_init // 4, "rf_switch", qubit)
                 play("trigger", "rf_switch", duration=duration_ops >> 2)
@@ -254,7 +250,7 @@ with program() as PROGRAM_GST:
                 # Perform readout
                 align()
                 P, _ = perform_read_init(I, Q)
-                
+
                 with if_(P):
                     assign(P1_count, P1_count + 1)
                 with else_():
@@ -264,7 +260,7 @@ with program() as PROGRAM_GST:
                 # Without this, it can accumulate a precision error that leads to unwanted large voltage (max of the range).
                 align()
                 seq.ramp_to_zero()
-                    
+
                 # Save the LO iteration to get the progress bar
                 wait(25_000)
 
@@ -330,7 +326,6 @@ else:
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
 
-
     ress = []
     start_time = datetime.now()
     for _n_shots in list_n_shots:
@@ -349,7 +344,6 @@ else:
                 f.write(_log_this.replace("_", "") + "\n")  # Append the log message to the file
 
             job.push_to_input_stream("_encoded_circuit", _encoded_circuit)
-
 
     results = fetching_tool(job, data_list=fetch_names)
 
@@ -370,9 +364,9 @@ else:
     data_handler.additional_files = {
         script_name: script_name,
         "macros_initialization_and_readout_2q.py": "macros_initialization_and_readout_2q.py",
-        ** default_additional_files,
+        **default_additional_files,
     }
-    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py",""))
+    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     qm.close()
 

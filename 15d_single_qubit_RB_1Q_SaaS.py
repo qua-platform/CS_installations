@@ -81,7 +81,7 @@ def calc_sequence_offline(seq_seed, target):
     cur_state = 0
     for i in range(target):
         x = (a * x + c) % m
-        step = np.floor((x / 2 ** 28) * 24).astype(int)
+        step = np.floor((x / 2**28) * 24).astype(int)
         # step = 12
         _seq.append(step)
         cur_state = cayley[cur_state * 24 + step]
@@ -113,7 +113,7 @@ def generate_sequence_yoav(seq_seed, target, start, end):
     assign(sequence_time_before, 0)
     # assign(sequence_time_after, 0)
 
-    if start > 0: # then, compute the total time before start
+    if start > 0:  # then, compute the total time before start
         with for_(i, 0, i < start, i + 1):
             assign(step, rand.rand_int(24))
             assign(current_state, cayley[current_state * 24 + step])
@@ -121,8 +121,8 @@ def generate_sequence_yoav(seq_seed, target, start, end):
     with for_(i, start, i < end, i + 1):
         assign(step, rand.rand_int(24))
         assign(current_state, cayley[current_state * 24 + step])
-        assign(sequence[i-start], step)
-    if end < target: # then, compute the total time after end till target
+        assign(sequence[i - start], step)
+    if end < target:  # then, compute the total time after end till target
         with for_(i, end, i < target, i + 1):
             assign(step, rand.rand_int(24))
             assign(current_state, cayley[current_state * 24 + step])
@@ -140,11 +140,11 @@ def generate_sequence_yoav(seq_seed, target, start, end):
 
 
 # Load environment variables from 'secret.env'
-load_dotenv('.env')
+load_dotenv(".env")
 
 # Retrieve credentials
-email = os.getenv('EMAIL')
-password = os.getenv('PASSWORD')
+email = os.getenv("EMAIL")
+password = os.getenv("PASSWORD")
 
 # Initialize QOP simulator client
 client = QoPSaaS(email=email, password=password)
@@ -155,16 +155,14 @@ version = QoPVersion.v3_1_0
 
 with client.simulator(version=version) as instance:  # Specify the QOP version
     # Initialize QuantumMachinesManager with the simulation instance details
-    qmm = QuantumMachinesManager(
-        host=instance.sim_host, port=instance.sim_port, connection_headers=instance.default_connection_headers
-    )
+    qmm = QuantumMachinesManager(host=instance.sim_host, port=instance.sim_port, connection_headers=instance.default_connection_headers)
 
     with program() as PROG_RB:
-        depth = [declare(int) for _ in range(len(target_qubits))] # QUA variable for the varying depth
+        depth = [declare(int) for _ in range(len(target_qubits))]  # QUA variable for the varying depth
         saved_gate = [declare(int) for _ in range(len(target_qubits))]  # QUA variable for the saved gate
 
         m = declare(int)  # QUA variable for the random sequence
-        n = [declare(int) for _ in range(len(target_qubits))]   # QUA variable for the averages
+        n = [declare(int) for _ in range(len(target_qubits))]  # QUA variable for the averages
         I = [declare(fixed) for _ in range(len(target_qubits))]  # QUA variable for the 'I' quadrature
         Q = [declare(fixed) for _ in range(len(target_qubits))]  # QUA variable for the 'Q' quadrature
         P = [declare(bool) for _ in range(len(target_qubits))]  # QUA variable for state discrimination
@@ -177,14 +175,13 @@ with client.simulator(version=version) as instance:  # Specify the QOP version
         print(calc_sequence_offline(seed, target))
 
         with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
-            
             align(*target_qubits)
             for i, qb in enumerate(target_qubits):
                 sequence, sequence_time_before, sequence_time_after = generate_sequence_yoav(
                     seed,
-                    target=target, # target depth
-                    start=i*local_depth_max, # start depth for this element
-                    end=(i+1)*local_depth_max, # end depth for this element
+                    target=target,  # target depth
+                    start=i * local_depth_max,  # start depth for this element
+                    end=(i + 1) * local_depth_max,  # end depth for this element
                 )
                 # wait((250 + 3 * (i == 0) + 9 * (i == 2)) + sequence_time_before, qb)  # Calibrated for pi=52ns, local_depth_max=10, target=25, n_avg=3
                 # wait(200 - 0 * (i == 1) - 0 * (i == 2) - 0 * (i == 3) + sequence_time_before, qb)
@@ -192,7 +189,6 @@ with client.simulator(version=version) as instance:  # Specify the QOP version
                 play_sequence_yoav(sequence, target, qb=qb, start=i * local_depth_max, end=(i + 1) * local_depth_max)
                 # wait(200 - 16 * (i == 1) - 0 * (i == 2) - 0 * (i == 3) + sequence_time_after, qb) # Calibrated for pi=52ns, local_depth_max=10, target=25, n_avg=3
                 wait(200 + sequence_time_after, qb)
-
 
     # Open quantum machine with the provided configuration and simulate the QUA program
     qm = qmm.open_qm(config)

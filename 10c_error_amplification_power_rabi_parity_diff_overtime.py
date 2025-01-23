@@ -81,10 +81,8 @@ with program() as ERROR_AMP_RABI:
         for sg, lvl_init in zip(sweep_gates, level_init_list):
             set_dc_offset(sg, "single", lvl_init)
 
-    with for_(r, 0, r < 16_000 * 10, r+1): # approx 10h
-
+    with for_(r, 0, r < 16_000 * 10, r + 1):  # approx 10h
         with for_(n, 0, n < n_avg, n + 1):
-
             # save(n, n_st)
 
             # with for_(*from_array(n_rabi, n_pulses)):  # Loop over the qubit pulse amplitude
@@ -92,12 +90,11 @@ with program() as ERROR_AMP_RABI:
             # play("x180_square" * amp(0), qubit, duration=d_ops)
 
             with for_(*from_array(a, amp_scalilngs)):  # Loop over the qubit pulse duration
-
                 P1 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
-                
+
                 # Play the triangle
                 align()
-                seq.add_step(voltage_point_name="initialization_1q", ramp_duration=duration_ramp_init) # NEVER u.ns
+                seq.add_step(voltage_point_name="initialization_1q", ramp_duration=duration_ramp_init)  # NEVER u.ns
 
                 wait(duration_ramp_init // 4, "rf_switch", qubit)
                 play("trigger", "rf_switch", duration=d_ops)
@@ -118,7 +115,7 @@ with program() as ERROR_AMP_RABI:
                     save(0, P_diff_st)
                 with else_():
                     save(1, P_diff_st)
-                    
+
                 # Save the LO iteration to get the progress bar
                 wait(250)
 
@@ -181,7 +178,7 @@ else:
         # Plot results
         plt.clf()
         plt.title(f"Average Parity Diff: {qubit}")
-        plt.pcolor(amp_scalilngs * pi_amp, np.arange(len(collected_data))*5/60, collected_data)
+        plt.pcolor(amp_scalilngs * pi_amp, np.arange(len(collected_data)) * 5 / 60, collected_data)
         plt.xlabel("Qubit pulse amplitude [V]")
         plt.ylabel("time (mins)")
 
@@ -201,7 +198,7 @@ else:
         script_name: script_name,
         **default_additional_files,
     }
-    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py",""))
+    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     qm.close()
 

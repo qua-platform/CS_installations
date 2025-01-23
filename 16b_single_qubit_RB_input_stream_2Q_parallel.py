@@ -213,8 +213,8 @@ else:
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
 
-    import time 
-    
+    import time
+
     ress = []
     start_time = datetime.now()
     clifford_lists1 = []
@@ -250,7 +250,7 @@ else:
                 time.sleep(1)
                 job.resume()
             job.push_to_input_stream("_encoded_circuit2", _encoded_circuit)
-            
+
             print("input stream success!")
 
     # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
@@ -278,7 +278,7 @@ else:
             "macros_initialization_and_readout.py": "macros_initialization_and_readout.py",
             **default_additional_files,
         }
-        data_handler.save_data(data=save_data_dict, name=script_name.replace(".py",""))
+        data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     qm.close()
 

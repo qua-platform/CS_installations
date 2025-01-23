@@ -102,7 +102,7 @@ def calc_sequence_offline(seq_seed, target):
     cur_state = 0
     for i in range(target):
         x = (a * x + c) % m
-        step = np.floor((x / 2 ** 28) * 24).astype(int)
+        step = np.floor((x / 2**28) * 24).astype(int)
         # step = 12
         _seq.append(step)
         cur_state = cayley[cur_state * 24 + step]
@@ -135,7 +135,7 @@ def generate_sequence_by_section(rand, target, start, end):
     assign(sequence_time_before, 0)
     # assign(sequence_time_after, 0)
 
-    if start > 0: # then, compute the total time before start
+    if start > 0:  # then, compute the total time before start
         with for_(i, 0, i < start, i + 1):
             assign(step, rand.rand_int(24))
             assign(current_state, cayley[current_state * 24 + step])
@@ -143,8 +143,8 @@ def generate_sequence_by_section(rand, target, start, end):
     with for_(i, start, i < end, i + 1):
         assign(step, rand.rand_int(24))
         assign(current_state, cayley[current_state * 24 + step])
-        assign(sequence[i-start], step)
-    if end < target: # then, compute the total time after end till target
+        assign(sequence[i - start], step)
+    if end < target:  # then, compute the total time after end till target
         with for_(i, end, i < target, i + 1):
             assign(step, rand.rand_int(24))
             assign(current_state, cayley[current_state * 24 + step])
@@ -171,33 +171,30 @@ with program() as PROG_RB:
     I_st = [declare_stream() for _ in range(num_output_streams)]
     Q_st = [declare_stream() for _ in range(num_output_streams)]
     P_st = [declare_stream() for _ in range(num_output_streams)]
-    
+
     rand1 = Random(seed=seed)
     rand2 = Random(seed=seed)
 
     print(calc_sequence_offline(seed, target))
 
     with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
-
         for i, qb1 in enumerate(target_qubits1):
-
             sequence1, sequence_time_before1, _ = generate_sequence_by_section(
                 rand1,
-                target=target, # target depth
-                start=i * local_depth_max, # start depth for this element
-                end=(i + 1) * local_depth_max, # end depth for this element
+                target=target,  # target depth
+                start=i * local_depth_max,  # start depth for this element
+                end=(i + 1) * local_depth_max,  # end depth for this element
             )
 
             wait(1000 + 240_015 * (i == 0) + 16 * (i == 1) + sequence_time_before1, qb1)
             play_sequence_by_section(sequence1, target, qb=qb1, start=i * local_depth_max, end=(i + 1) * local_depth_max)
 
         for i, qb2 in enumerate(target_qubits2):
-
             sequence2, sequence_time_before2, _ = generate_sequence_by_section(
                 rand2,
-                target=target, # target depth
-                start=i * local_depth_max, # start depth for this element
-                end=(i + 1) * local_depth_max, # end depth for this element
+                target=target,  # target depth
+                start=i * local_depth_max,  # start depth for this element
+                end=(i + 1) * local_depth_max,  # end depth for this element
             )
 
             wait(1000 + 0 * (i == 0) - (240_000 - 1) * (i == 1) + sequence_time_before2, qb2)

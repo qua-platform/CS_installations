@@ -130,18 +130,14 @@ class VoltageGateSequence:
         self._check_duration(ramp_duration)
         if level is not None:
             if type(level) is not list or len(level) != len(self._elements):
-                raise TypeError(
-                    "the provided level must be a list of same length as the number of elements involved in the virtual gate."
-                )
+                raise TypeError("the provided level must be a list of same length as the number of elements involved in the virtual gate.")
 
         if voltage_point_name is not None and duration is None:
             _duration = self._voltage_points[voltage_point_name]["duration"]
         elif duration is not None:
             _duration = duration
         else:
-            raise RuntimeError(
-                "Either the voltage_point_name or the duration and desired voltage level must be provided."
-            )
+            raise RuntimeError("Either the voltage_point_name or the duration and desired voltage level must be provided.")
 
         for i, gate in enumerate(self._elements):
             if voltage_point_name is not None and level is None:
@@ -150,9 +146,7 @@ class VoltageGateSequence:
                 voltage_point_name = "unregistered_value"
                 voltage_level = level[i]
             else:
-                raise RuntimeError(
-                    "Either the voltage_point_name or the duration and desired voltage level must be provided."
-                )
+                raise RuntimeError("Either the voltage_point_name or the duration and desired voltage level must be provided.")
             # Play a step
             if ramp_duration is None:
                 self.average_power[i] += self._update_averaged_power(voltage_level, _duration)
@@ -195,9 +189,7 @@ class VoltageGateSequence:
 
             # Play a ramp
             else:
-                self.average_power[i] += self._update_averaged_power(
-                    voltage_level, _duration, ramp_duration, self.current_level[i]
-                )
+                self.average_power[i] += self._update_averaged_power(voltage_level, _duration, ramp_duration, self.current_level[i])
 
                 if not self.is_QUA(ramp_duration):
                     ramp_rate = 1 / ramp_duration
@@ -216,9 +208,7 @@ class VoltageGateSequence:
         for i, gate in enumerate(self._elements):
             if not self.is_QUA(self.average_power[i]):
                 compensation_amp = -0.001 * self.average_power[i] / duration
-                operation = self._add_op_to_config(
-                    gate, "compensation", amplitude=compensation_amp - self.current_level[i], length=duration
-                )
+                operation = self._add_op_to_config(gate, "compensation", amplitude=compensation_amp - self.current_level[i], length=duration)
                 play(operation, gate)
             else:
                 operation = self._add_op_to_config(gate, "compensation", amplitude=0.25, length=duration)

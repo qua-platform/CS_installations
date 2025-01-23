@@ -104,6 +104,7 @@ seq.add_points("wait_P4-P5", level_waits["P4-P5"], duration_wait)
 #  Util funciton  #
 ###################
 
+
 def adjust_all_elements(removes=[], adds=[], all_elements=all_elements):
     if isinstance(removes, str):
         removes = [removes]

@@ -83,7 +83,7 @@ STEP_LEN = 1000
 STEP_AMP = 0.25
 
 amplitude_scaling = 4.7
-LEVEL_INIT = [-0.094, +0.094] # [-0.02, 0.02] * amplitude_scaling
+LEVEL_INIT = [-0.094, +0.094]  # [-0.02, 0.02] * amplitude_scaling
 LEVEL_READOUT = [0.00161, -0.0018]
 
 
@@ -114,10 +114,10 @@ SQUARE_MINUS_X90_AMP = -0.20
 SQUARE_Y180_AMP = 0.3
 SQUARE_Y90_AMP = 0.15
 SQUARE_MINUS_Y90_AMP = -0.15
-SQUARE_LEN = 1000 # 52
+SQUARE_LEN = 1000  # 52
 
 PI_AMP = 0.3
-PI_LEN = 160 # 52
+PI_LEN = 160  # 52
 PI_HALF_AMP = PI_AMP / 2
 PI_HALF_LEN = PI_LEN
 # PI_SIGMA = PI_LEN / 5
@@ -575,7 +575,6 @@ def generate_waveforms(rotation_keys):
         else:
             raise ValueError(f'{wf_name} is passed. wf_name must be one of ["gauss", "kaiser", "square]')
 
-
         if rotation_key in ["x180", "x90", "minus_x90"]:
             I_wf = wf
             Q_wf = der_wf
@@ -692,8 +691,7 @@ config = {
                     "digital_outputs": {
                         1: {},  # TTL for RF
                     },
-                    "analog_inputs": {
-                    },
+                    "analog_inputs": {},
                 },
                 lffem2: {
                     "type": "LF",
@@ -966,7 +964,6 @@ config = {
                 },
                 "operations": {
                     "trigger": "trigger_pulse",
-                    
                 },
             }
             for dm, val in DO_CONSTANTS.items()
@@ -1031,7 +1028,7 @@ config = {
                     "Q": f"{rk}_{wf}_Q_wf_{qb}",
                 },
             }
-            for rk in ["x180", "y180"]  # Loop over 
+            for rk in ["x180", "y180"]  # Loop over
             for wf in ["gauss", "kaiser", "square"]  # Loop over waveforms
             for qb, val in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.items()
         },
@@ -1044,7 +1041,7 @@ config = {
                     "Q": f"{rk}_{wf}_Q_wf_{qb}",
                 },
             }
-            for rk in ["x90", "minus_x90", "y90", "minus_y90"]  # Loop over 
+            for rk in ["x90", "minus_x90", "y90", "minus_y90"]  # Loop over
             for wf in ["gauss", "kaiser", "square"]  # Loop over waveforms
             for qb, val in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.items()
         },
@@ -1096,7 +1093,6 @@ config = {
         **{f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]} for key, val in PLUNGER_CONSTANTS.items()},
         **{f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]} for key, val in BARRIER_CONSTANTS.items()},
         **{f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]} for key, val in PLUNGER_SD_CONSTANTS.items()},
-
         **{f"x180_square_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_x180_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
         **{f"x180_square_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_x180_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
         **{f"x90_square_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_x90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
@@ -1109,7 +1105,6 @@ config = {
         **{f"y90_square_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_y90_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
         **{f"minus_y90_square_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_minus_y90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
         **{f"minus_y90_square_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_minus_y90_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
-        
         **{f"x180_gauss_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_x180_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
         **{f"x180_gauss_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_x180_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
         **{f"x90_gauss_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_x90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
@@ -1122,7 +1117,6 @@ config = {
         **{f"y90_gauss_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_y90_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
         **{f"minus_y90_gauss_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_minus_y90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
         **{f"minus_y90_gauss_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_minus_y90_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
-        
         **{f"x180_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x180_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
         **{f"x180_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x180_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
         **{f"x90_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},

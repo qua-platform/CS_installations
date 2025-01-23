@@ -46,23 +46,23 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 # Local Macros #
 ###################
 
+
 def perform_read_init(I, Q, P0_st, P1_st):
     P0 = measure_parity(I, Q, None, None, None, P0_st, tank_circuit=tank_circuit, threshold=threshold)
 
     # conditional pi pulse
     align()
     with if_(P0):
-        seq.add_step(voltage_point_name="initialization_1q", duration=(RF_SWITCH_DELAY + pi_len + RF_SWITCH_DELAY), ramp_duration=duration_ramp_init) # NEVER u.ns
+        seq.add_step(voltage_point_name="initialization_1q", duration=(RF_SWITCH_DELAY + pi_len + RF_SWITCH_DELAY), ramp_duration=duration_ramp_init)  # NEVER u.ns
         wait(duration_ramp_init // 4, "rf_switch", qubit)
         play("trigger", "rf_switch", duration=(RF_SWITCH_DELAY + pi_len + RF_SWITCH_DELAY) // 4)
         wait(RF_SWITCH_DELAY // 4, qubit)
         play("x180_square", qubit)
-    
+
     align()
     P1 = measure_parity(I, Q, None, None, None, P1_st, tank_circuit=tank_circuit, threshold=threshold)
-    
-    return P0, P1
 
+    return P0, P1
 
 
 ###################
@@ -107,7 +107,7 @@ with program() as ramsey_with_detuning:
 
     I_st = declare_stream()
     P_st = [declare_stream() for _ in range(num_output_streams)]
-    
+
     current_level = declare(fixed, value=[0.0 for _ in sweep_gates])
     seq.current_level = current_level
 
@@ -123,12 +123,12 @@ with program() as ramsey_with_detuning:
 
         with for_(*from_array(tau, durations)):  # Loop over the qubit pulse duration
             assign(d_ops, RF_SWITCH_DELAY + tau + pi_len + RF_SWITCH_DELAY)
-        
+
             P0, P1 = perform_read_init(I, Q, P_st[0], P_st[1])
-            
+
             # Play the triangle
             align()
-            seq.add_step(voltage_point_name="initialization_1q", duration=d_ops, ramp_duration=duration_ramp_init) # NEVER u.ns
+            seq.add_step(voltage_point_name="initialization_1q", duration=d_ops, ramp_duration=duration_ramp_init)  # NEVER u.ns
 
             wait(duration_ramp_init // 4, "rf_switch", qubit)
             play("trigger", "rf_switch", duration=d_ops >> 2)
@@ -144,7 +144,7 @@ with program() as ramsey_with_detuning:
             # Without this, it can accumulate a precision error that leads to unwanted large voltage (max of the range).
             align()
             seq.ramp_to_zero()
-                
+
             # Save the LO iteration to get the progress bar
             wait(25_000)
 
@@ -260,7 +260,7 @@ else:
         script_name: script_name,
         **default_additional_files,
     }
-    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py",""))
+    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     qm.close()
 

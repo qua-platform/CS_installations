@@ -48,7 +48,7 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 
 run_live = True
 set_init_as_dc_offset = True
-amplitude_scaling = 4.7 # (DC port / AC port) of bias tee 
+amplitude_scaling = 4.7  # (DC port / AC port) of bias tee
 
 level_init_arr = np.array([-0.02, 0.02]) * amplitude_scaling
 level_readout_center_arr = np.array([-0.00, +0.00]) * amplitude_scaling
@@ -61,16 +61,16 @@ sweep_gates = ["P4_sticky", "P3_sticky"]
 tank_circuit = "tank_circuit2"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 
-duration_init = 10_000 # DO NOT USE * u.ns
+duration_init = 10_000  # DO NOT USE * u.ns
 duration_ramp_init = 200
-duration_readout = 1_000 + REFLECTOMETRY_READOUT_LEN # DO NOT USE * u.ns
-duration_ramp_readout = 52 # DO NOT USE * u.ns
+duration_readout = 1_000 + REFLECTOMETRY_READOUT_LEN  # DO NOT USE * u.ns
+duration_ramp_readout = 52  # DO NOT USE * u.ns
 
 
 if set_init_as_dc_offset:
     level_readout_from_offset_arr = level_readout_from_arr - level_init_arr
     level_readout_to_offset_arr = level_readout_to_arr - level_init_arr
-    level_init_offset_arr = np.array([0.0, 0.0]) # level_init_arr - level_init_arr
+    level_init_offset_arr = np.array([0.0, 0.0])  # level_init_arr - level_init_arr
 
 level_readout_from_list = level_readout_from_arr.tolist()
 level_readout_to_list = level_readout_to_arr.tolist()
@@ -201,7 +201,7 @@ else:
     bins = np.arange(0.05, 0.30, 0.001)
     x_data_Px = np.tile(voltages_Px + level_init_list[0], (n_shots, 1)).ravel()
     x_data_Py = np.tile(voltages_Py + level_init_list[1], (n_shots, 1)).ravel()
- 
+
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
@@ -242,7 +242,6 @@ else:
     res = results.fetch_all()
     save_data_dict["Pdiff"] = res[1]
 
-
     # # Initialize figure
     # import math
     # nbins = 100
@@ -280,7 +279,7 @@ else:
         script_name: script_name,
         **default_additional_files,
     }
-    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py",""))
+    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     # qm.close()
 

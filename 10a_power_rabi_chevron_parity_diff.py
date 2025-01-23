@@ -62,7 +62,7 @@ with program() as QUBIT_CHIRP:
     P1 = declare(bool)
     P2 = declare(bool)
     P_diff_st = declare_stream()
-    
+
     current_level = declare(fixed, value=[0.0 for _ in sweep_gates])
     seq.current_level = current_level
 
@@ -80,15 +80,14 @@ with program() as QUBIT_CHIRP:
             update_frequency(qubit, f)
 
             with for_(*from_array(a, amp_scalilngs)):  # Loop over the qubit pulse duration
-
                 P1 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
-                
+
                 # Play the triangle
                 align()
-                seq.add_step(voltage_point_name="initialization_1q", ramp_duration=duration_ramp_init) # NEVER u.ns
+                seq.add_step(voltage_point_name="initialization_1q", ramp_duration=duration_ramp_init)  # NEVER u.ns
 
                 wait(duration_ramp_init // 4, "rf_switch", qubit)
-                play("trigger", "rf_switch", duration=(RF_SWITCH_DELAY + CONST_LEN + RF_SWITCH_DELAY ) // 4)
+                play("trigger", "rf_switch", duration=(RF_SWITCH_DELAY + CONST_LEN + RF_SWITCH_DELAY) // 4)
                 wait(RF_SWITCH_DELAY // 4, qubit)
                 play(x180 * amp(a), qubit)
 
@@ -104,7 +103,7 @@ with program() as QUBIT_CHIRP:
                     save(0, P_diff_st)
                 with else_():
                     save(1, P_diff_st)
-                    
+
                 # Save the LO iteration to get the progress bar
                 wait(250)
 
@@ -150,7 +149,7 @@ else:
 
     fig = plt.figure()
     # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-    
+
     while results.is_processing():
         # Fetch results
         iteration, P_diff_avg = results.fetch_all()
@@ -182,7 +181,7 @@ else:
         script_name: script_name,
         **default_additional_files,
     }
-    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py",""))
+    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     qm.close()
 

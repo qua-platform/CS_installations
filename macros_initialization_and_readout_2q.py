@@ -23,10 +23,10 @@ do_feedback = True  # False for test. True for actual.
 set_init_as_dc_offset = True
 
 
-duration_init = 10_000 # DO NOT USE * u.ns
-duration_ramp_init = 200 # DO NOT USE * u.ns
-duration_readout = 1_000 + REFLECTOMETRY_READOUT_LEN # DO NOT USE * u.ns
-duration_ramp_readout = 52 # DO NOT USE * u.ns
+duration_init = 10_000  # DO NOT USE * u.ns
+duration_ramp_init = 200  # DO NOT USE * u.ns
+duration_readout = 1_000 + REFLECTOMETRY_READOUT_LEN  # DO NOT USE * u.ns
+duration_ramp_readout = 52  # DO NOT USE * u.ns
 
 
 delay_init_qubit_start = 16 + RF_SWITCH_DELAY
@@ -56,7 +56,7 @@ level_readout_list = level_readout_arr.tolist()
 
 if set_init_as_dc_offset:
     level_readout_offset_arr = level_readout_arr - level_init_arr
-    level_init_offset_arr = np.array([0.0, 0.0]) # level_init_arr - level_init_arr
+    level_init_offset_arr = np.array([0.0, 0.0])  # level_init_arr - level_init_arr
 
     level_readout_offset_list = level_readout_offset_arr.tolist()
     level_init_offset_list = level_init_offset_arr.tolist()
@@ -69,7 +69,6 @@ if set_init_as_dc_offset:
 else:
     seq.add_points("initialization_1q", level_init_list, duration_init_1q)
     seq.add_points("readout", level_readout_list, duration_readout)
-
 
 
 ###################
@@ -90,7 +89,6 @@ def play_feedback(qubit, parity):
         wait(delay_feedback * u.ns, qubit)
         play("x180_kaiser", qubit)
     wait(delay_init_qubit_end * u.ns, qubit)
-
 
 
 def measure_parity(I, Q, P, I_st, Q_st, P_st, tank_circuit, threshold):

@@ -56,7 +56,7 @@ with program() as QUBIT_CHIRP:
     Q_st = [declare_stream() for _ in range(num_output_streams)]
     P_st = [declare_stream() for _ in range(num_output_streams)]
     P_diff_st = declare_stream()
-    
+
     current_level = declare(fixed, value=[0.0 for _ in sweep_gates])
     seq.current_level = current_level
 
@@ -72,10 +72,10 @@ with program() as QUBIT_CHIRP:
             update_frequency(qubit, f)
 
             P1 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
-            
+
             # Play the triangle
             align()
-            seq.add_step(voltage_point_name="initialization_1q", ramp_duration=duration_ramp_init) # NEVER u.ns
+            seq.add_step(voltage_point_name="initialization_1q", ramp_duration=duration_ramp_init)  # NEVER u.ns
 
             wait(duration_ramp_init // 4, "rf_switch", qubit)
             play("trigger", "rf_switch", duration=(RF_SWITCH_DELAY + CONST_LEN) // 4)
@@ -95,7 +95,7 @@ with program() as QUBIT_CHIRP:
                 save(0, P_diff_st)
             with else_():
                 save(1, P_diff_st)
-                
+
             # Save the LO iteration to get the progress bar
             wait(250)
 
@@ -141,7 +141,7 @@ else:
 
     fig = plt.figure()
     # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
-    
+
     while results.is_processing():
         # Fetch results
         iteration, P_diff_avg = results.fetch_all()
@@ -155,7 +155,6 @@ else:
         plt.plot(freqs / u.MHz, P_diff_avg)
         plt.xlabel("Freq [MHz]")
         plt.ylabel("Average Parity Diff")
-
 
         # ax = plt.subplot(4, 2, 1)
         # ax.plot(freqs / u.MHz, np.abs(S1))
@@ -198,7 +197,7 @@ else:
     # Fetch results
     iteration, P_diff_avg = results.fetch_all()
     # save_data_dict["P_diff"] = P_diff
-    save_data_dict["P_diff"] = P_diff_avg 
+    save_data_dict["P_diff"] = P_diff_avg
 
     # # Get results from QUA program
     # fetch_names = []
@@ -207,7 +206,7 @@ else:
     # fetch_names.append(f"P_diff_{tank_circuit}")
 
     # results = fetching_tool(job, data_list=fetch_names)
-    
+
     #     "(0, 0)": (P1 == 0) & (P2 == 0),
     #     "(1, 0)": (P1 == 1) & (P2 == 0),
     #     "(0, 1)": (P1 == 0) & (P2 == 1),
@@ -234,7 +233,6 @@ else:
     # plt.tight_layout()
     # plt.show()
 
-
     # Save results
     script_name = Path(__file__).name
     data_handler = DataHandler(root_data_folder=save_dir)
@@ -243,7 +241,7 @@ else:
         script_name: script_name,
         **default_additional_files,
     }
-    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py",""))
+    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     qm.close()
 

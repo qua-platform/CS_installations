@@ -68,7 +68,7 @@ detuning = 3 * u.MHz
 intermediate_frequency = QUBIT_CONSTANTS[qubit]["IF"]
 
 pi_len = QUBIT_CONSTANTS[qubit]["square_pi_len"]
-pi_half_len = pi_len #  = QUBIT_CONSTANTS[qubit]["square_pi_half_len"]
+pi_half_len = pi_len  #  = QUBIT_CONSTANTS[qubit]["square_pi_half_len"]
 pi_amp = QUBIT_CONSTANTS[qubit]["square_pi_amp"]
 
 save_data_dict = {
@@ -92,7 +92,7 @@ with program() as ramsey_with_detuning:
     P1 = declare(bool)
     P2 = declare(bool)
     P_diff_st = declare_stream()
-    
+
     current_level = declare(fixed, value=[0.0 for _ in sweep_gates])
     seq.current_level = current_level
 
@@ -108,12 +108,12 @@ with program() as ramsey_with_detuning:
 
         with for_(*from_array(tau, durations)):  # Loop over the qubit pulse duration
             assign(d_ops, RF_SWITCH_DELAY + pi_half_len + tau + pi_len + tau + pi_half_len + RF_SWITCH_DELAY)
-        
+
             P1 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
-            
+
             # Play the triangle
             align()
-            seq.add_step(voltage_point_name="initialization_1q", duration=d_ops, ramp_duration=duration_ramp_init) # NEVER u.ns
+            seq.add_step(voltage_point_name="initialization_1q", duration=d_ops, ramp_duration=duration_ramp_init)  # NEVER u.ns
 
             wait(duration_ramp_init // 4, "rf_switch", qubit)
             play("trigger", "rf_switch", duration=d_ops >> 2)
@@ -138,7 +138,7 @@ with program() as ramsey_with_detuning:
                 save(0, P_diff_st)
             with else_():
                 save(1, P_diff_st)
-                
+
             # Save the LO iteration to get the progress bar
             wait(25_000)
 
@@ -247,7 +247,7 @@ else:
         script_name: script_name,
         **default_additional_files,
     }
-    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py",""))
+    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     qm.close()
 

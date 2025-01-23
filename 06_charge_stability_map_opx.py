@@ -40,12 +40,12 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 # The QUA program #
 ###################
 
-run_live = False # True
+run_live = False  # True
 Px = "P5"
 Py = "P4"
 tank_circuit = "tank_circuit2"
 
-n_avg = 1000000 if run_live else 100 # Number of averaging loops
+n_avg = 1000000 if run_live else 100  # Number of averaging loops
 n_voltages_Px = 201
 n_voltages_Py = 201
 
@@ -123,9 +123,7 @@ with program() as charge_stability_prog:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 
 ###########################
@@ -190,7 +188,7 @@ else:
         script_name: script_name,
         **default_additional_files,
     }
-    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py",""))
+    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     qm.close()
 

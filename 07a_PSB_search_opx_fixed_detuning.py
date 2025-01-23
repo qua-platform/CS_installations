@@ -45,9 +45,9 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 # The QUA program #
 ###################
 
-run_live = False # True
+run_live = False  # True
 set_init_as_dc_offset = True
-amplitude_scaling = 4.7 # (DC port / AC port) of bias tee 
+amplitude_scaling = 4.7  # (DC port / AC port) of bias tee
 
 level_init_arr = np.array([-0.02, 0.02]) * amplitude_scaling
 level_readout_arr = np.array([-0.00, 0.00]) * amplitude_scaling
@@ -59,15 +59,15 @@ sweep_gates = ["P4_sticky", "P3_sticky"]
 tank_circuit = "tank_circuit2"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 
-duration_init = 10_000 # DO NOT USE * u.ns
-duration_ramp_init = 200 # DO NOT USE * u.ns
-duration_readout = 1_000 + REFLECTOMETRY_READOUT_LEN # DO NOT USE * u.ns
-duration_ramp_readout = 52 # DO NOT USE * u.ns
+duration_init = 10_000  # DO NOT USE * u.ns
+duration_ramp_init = 200  # DO NOT USE * u.ns
+duration_readout = 1_000 + REFLECTOMETRY_READOUT_LEN  # DO NOT USE * u.ns
+duration_ramp_readout = 52  # DO NOT USE * u.ns
 
 
 if set_init_as_dc_offset:
     level_readout_offset_arr = level_readout_arr - level_init_arr
-    level_init_offset_arr = np.array([0.0, 0.0]) # level_init_arr - level_init_arr
+    level_init_offset_arr = np.array([0.0, 0.0])  # level_init_arr - level_init_arr
 
 level_readout_list = level_readout_arr.tolist()
 level_init_list = level_init_arr.tolist()
@@ -185,7 +185,7 @@ else:
     results = fetching_tool(job, data_list=fetch_names, mode="live")
 
     fig = plt.figure()
-    # bins = np.arange(0.05, 0.30, 0.001) 
+    # bins = np.arange(0.05, 0.30, 0.001)
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch results
@@ -197,10 +197,9 @@ else:
         # Plot I
         plt.suptitle("PSB Search")
         plt.clf()
-        plt.hist(I, bins=201, color='skyblue', edgecolor='black')
+        plt.hist(I, bins=201, color="skyblue", edgecolor="black")
         plt.tight_layout()
         plt.pause(0.2)
-
 
     # Fetch results
     iteration, I, Q, P = results.fetch_all()
@@ -216,7 +215,7 @@ else:
         script_name: script_name,
         **default_additional_files,
     }
-    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py",""))
+    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     qm.close()
 
