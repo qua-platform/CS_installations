@@ -105,16 +105,6 @@ with program() as QUBIT_CHIRP:
     # Stream processing section used to process the data before saving it
     with stream_processing():
         n_st.save("iteration")
-        # for idx in range(num_output_streams):
-        #     I_st[idx].buffer(len(freqs)).save_all(f"I{idx}_{tank_circuit}")
-        #     Q_st[idx].buffer(len(freqs)).save_all(f"Q{idx}_{tank_circuit}")
-        #     P_st[idx].boolean_to_int().buffer(len(freqs)).save_all(f"P{idx}_{tank_circuit}")
-        # P_diff_st.buffer(len(freqs)).save_all(f"P_diff_{tank_circuit}")
-
-        # for idx in range(num_output_streams):
-        #     I_st[idx].buffer(len(freqs)).average().save(f"I{idx}_avg_{tank_circuit}")
-        #     Q_st[idx].buffer(len(freqs)).average().save(f"Q{idx}_avg_{tank_circuit}")
-        #     P_st[idx].boolean_to_int().buffer(len(freqs)).average().save(f"P{idx}_avg_{tank_circuit}")
         P_diff_st.buffer(len(freqs)).average().save(f"P_diff_avg_{tank_circuit}")
 
 

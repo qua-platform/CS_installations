@@ -33,7 +33,6 @@ from scipy.optimize import curve_fit
 
 from configuration_with_lffem_csrack import *
 # from configuration_with_lffem import *
-from macros import get_other_elements
 from macros_initialization_and_readout_2q import *
 from macros_rb import *
 from macros_voltage_gate_sequence import VoltageGateSequence
@@ -190,8 +189,6 @@ with program() as rb:
 
     with stream_processing():
         m_st.save("iteration")
-        # depth_st.buffer(num_of_sequences).buffer(len(circuit_depths)).save("depths")
-        # ss_st.buffer(len(circuit_depths)).buffer(num_of_sequences).save("rb_sequences")
         P_diff_st.buffer(n_avg).map(FUNCTIONS.average())\
             .buffer(circuit_depth_max / delta_clifford)\
             .average().save(f"P_diff_avg_{tank_circuit}")

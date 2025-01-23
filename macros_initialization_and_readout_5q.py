@@ -15,9 +15,10 @@ from qualang_tools.results import (fetching_tool, progress_counter,
                                    wait_until_job_is_paused)
 
 from configuration_with_lffem_csrack import *
-# from configuration_with_lffem import *
-from macros import get_other_elements
 from macros_voltage_gate_sequence import VoltageGateSequence
+
+# from configuration_with_lffem import *
+
 
 ##################
 #   Parameters   #

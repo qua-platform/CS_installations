@@ -164,77 +164,77 @@ def generate_sequence(depth, max_circuit_depth=0, seed=0):
 #     return sequence
 
 
-def play_clifford(c_idx, qb):
+def play_clifford(c_idx, qb, wf_type="square"):
     with switch_(c_idx, unsafe=True):
         with case_(0):
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(1):
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(2):
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(3):
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(4):
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(5):
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(6):
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(7):
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(8):
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(9):
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(10):
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(11):
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(12):
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(13):
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(14):
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(15):
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(16):
-            play("x180_square", qb)
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(17):
-            play("x180_square", qb)
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(18):
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(19):
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(20):
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(21):
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(22):
-            play("x180_square", qb)
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
         with case_(23):
-            play("x180_square", qb)
-            play("x180_square", qb)
-            play("x180_square", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
+            play(f"x180_{wf_type}", qb)
 
 
 def play_sequence_by_section(sequence_list, target, qb, start, end):
@@ -245,82 +245,80 @@ def play_sequence_by_section(sequence_list, target, qb, start, end):
         play_clifford(c_idx=sequence_list[i], qb=qb)
 
 
-def play_sequence(sequence_list, depth, qb, i_from=0):
+def play_sequence(sequence_list, depth, qb, wf_type="square", i_from=0):
     i = declare(int)
     with for_(i, 0, i <= depth, i + 1):
     # with for_(i, i_from, i <= depth + i_from, i + 1):
         with switch_(sequence_list[i], unsafe=False):
             with case_(0):
                 wait(4, qb)  # I
-                # play("x180_square", qb)
-                # play("x180_square", qb)
             with case_(1):
-                play("x180_square", qb)
+                play(f"x180_{wf_type}", qb)
             with case_(2):
-                play("y180_square", qb)
+                play(f"y180_{wf_type}", qb)
             with case_(3):
-                play("y180_square", qb)
-                play("x180_square", qb)
+                play(f"y180_{wf_type}", qb)
+                play(f"x180_{wf_type}", qb)
             with case_(4):
-                play("x90_square", qb)
-                play("y90_square", qb)
+                play(f"x90_{wf_type}", qb)
+                play(f"y90_{wf_type}", qb)
             with case_(5):
-                play("x90_square", qb)
-                play("-y90_square", qb)
+                play(f"x90_{wf_type}", qb)
+                play(f"-y90_{wf_type}", qb)
             with case_(6):
-                play("-x90_square", qb)
-                play("y90_square", qb)
+                play(f"-x90_{wf_type}", qb)
+                play(f"y90_{wf_type}", qb)
             with case_(7):
-                play("-x90_square", qb)
-                play("-y90_square", qb)
+                play(f"-x90_{wf_type}", qb)
+                play(f"-y90_{wf_type}", qb)
             with case_(8):
-                play("y90_square", qb)
-                play("x90_square", qb)
+                play(f"y90_{wf_type}", qb)
+                play(f"x90_{wf_type}", qb)
             with case_(9):
-                play("y90_square", qb)
-                play("-x90_square", qb)
+                play(f"y90_{wf_type}", qb)
+                play(f"-x90_{wf_type}", qb)
             with case_(10):
-                play("-y90_square", qb)
-                play("x90_square", qb)
+                play(f"-y90_{wf_type}", qb)
+                play(f"x90_{wf_type}", qb)
             with case_(11):
-                play("-y90_square", qb)
-                play("-x90_square", qb)
+                play(f"-y90_{wf_type}", qb)
+                play(f"-x90_{wf_type}", qb)
             with case_(12):
-                play("x90_square", qb)
+                play(f"x90_{wf_type}", qb)
             with case_(13):
-                play("-x90_square", qb)
+                play(f"-x90_{wf_type}", qb)
             with case_(14):
-                play("y90_square", qb)
+                play(f"y90_{wf_type}", qb)
             with case_(15):
-                play("-y90_square", qb)
+                play(f"-y90_{wf_type}", qb)
             with case_(16):
-                play("-x90_square", qb)
-                play("y90_square", qb)
-                play("x90_square", qb)
+                play(f"-x90_{wf_type}", qb)
+                play(f"y90_{wf_type}", qb)
+                play(f"x90_{wf_type}", qb)
             with case_(17):
-                play("-x90_square", qb)
-                play("-y90_square", qb)
-                play("x90_square", qb)
+                play(f"-x90_{wf_type}", qb)
+                play(f"-y90_{wf_type}", qb)
+                play(f"x90_{wf_type}", qb)
             with case_(18):
-                play("x180_square", qb)
-                play("y90_square", qb)
+                play(f"x180_{wf_type}", qb)
+                play(f"y90_{wf_type}", qb)
             with case_(19):
-                play("x180_square", qb)
-                play("-y90_square", qb)
+                play(f"x180_{wf_type}", qb)
+                play(f"-y90_{wf_type}", qb)
             with case_(20):
-                play("y180_square", qb)
-                play("x90_square", qb)
+                play(f"y180_{wf_type}", qb)
+                play(f"x90_{wf_type}", qb)
             with case_(21):
-                play("y180_square", qb)
-                play("-x90_square", qb)
+                play(f"y180_{wf_type}", qb)
+                play(f"-x90_{wf_type}", qb)
             with case_(22):
-                play("x90_square", qb)
-                play("y90_square", qb)
-                play("x90_square", qb)
+                play(f"x90_{wf_type}", qb)
+                play(f"y90_{wf_type}", qb)
+                play(f"x90_{wf_type}", qb)
             with case_(23):
-                play("-x90_square", qb)
-                play("y90_square", qb)
-                play("-x90_square", qb)
+                play(f"-x90_{wf_type}", qb)
+                play(f"y90_{wf_type}", qb)
+                play(f"-x90_{wf_type}", qb)
 
 
 # Macro to calculate exact duration of generated sequence at a given depth
