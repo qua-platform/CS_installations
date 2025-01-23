@@ -56,8 +56,8 @@ level_readout_to_arr = np.array([+0.003, -0.003]) * amplitude_scaling + level_re
 
 n_shots = 1000
 n_detunings = 100
-sweep_gates = ["P0_sticky", "P1_sticky"]
-tank_circuit = "tank_circuit1"
+sweep_gates = ["P4_sticky", "P3_sticky"]
+tank_circuit = "tank_circuit2"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 
 duration_init = 10_000 # DO NOT USE * u.ns

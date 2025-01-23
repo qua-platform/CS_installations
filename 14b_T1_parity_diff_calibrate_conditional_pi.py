@@ -33,13 +33,14 @@ from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.results.data_handler import DataHandler
-from macros_voltage_gate_sequence import VoltageGateSequence
 from scipy import signal
 
-from configuration_with_lffem import *
+from configuration_with_lffem_csrack import *
+# from configuration_with_lffem import *
 from macros_initialization_and_readout_2q import *
+from macros_voltage_gate_sequence import VoltageGateSequence
 
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 ###################
@@ -71,11 +72,12 @@ def perform_read_init(I, Q, P0_st, P1_st):
 
 n_avg = 10000  # Number of averages
 
-qubit = "qubit1"
-sweep_gates = ["P0_sticky", "P1_sticky"]
-tank_circuit = "tank_circuit1"
+qubit = "qubit5"
+sweep_gates = ["P4_sticky", "P3_sticky"]
+tank_circuit = "tank_circuit2"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 num_output_streams = 3
+operation_pulse = "x180_square"
 
 # Pulse duration sweep in ns - must be larger than 4 clock cycles
 tau_min = 16
@@ -226,7 +228,7 @@ else:
 
     # Fetch results
     # iteration, P0, P1, P2 = results.fetch_all()
-    # save_data_dict["P_diff_avg"] = P_diff_avg
+    # save_data_dict["P_diff"] = P_diff_avg
 
     # # Fit the data
     # try:

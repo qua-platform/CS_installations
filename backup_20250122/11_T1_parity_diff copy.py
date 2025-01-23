@@ -72,8 +72,8 @@ def perform_read_init(I, Q, P0_st, P1_st):
 n_avg = 1000  # Number of averages
 
 qubit = "qubit1"
-sweep_gates = ["P0_sticky", "P1_sticky"]
-tank_circuit = "tank_circuit1"
+sweep_gates = ["P4_sticky", "P3_sticky"]
+tank_circuit = "tank_circuit2"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 num_output_streams = 3
 

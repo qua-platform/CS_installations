@@ -33,13 +33,13 @@ from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.results.data_handler import DataHandler
-from macros_voltage_gate_sequence import VoltageGateSequence
-from scipy import signal
 
-from configuration_with_lffem import *
+from configuration_with_lffem_csrack import *
+# from configuration_with_lffem import *
 from macros_initialization_and_readout_2q import *
+from macros_voltage_gate_sequence import VoltageGateSequence
 
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 ###################
@@ -48,11 +48,12 @@ matplotlib.use('TkAgg')
 
 n_avg = 10  # Number of averages
 
-qubit = "qubit1"
-sweep_gates = ["P0_sticky", "P1_sticky"]
-tank_circuit = "tank_circuit1"
+qubit = "qubit5"
+sweep_gates = ["P4_sticky", "P3_sticky"]
+tank_circuit = "tank_circuit2"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 num_output_streams = 2
+x90 = "x90_square"
 
 # Pulse duration sweep in ns - must be larger than 4 clock cycles
 tau_min = 16
@@ -116,9 +117,9 @@ with program() as ramsey_with_detuning:
             play("trigger", "rf_switch", duration=d_ops >> 2)
             wait(RF_SWITCH_DELAY // 4, qubit)
 
-            play("x90_square", qubit)
+            play(x90, qubit)
             wait(tau >> 2, qubit)
-            play("x90_square", qubit)
+            play(x90, qubit)
 
             align()
             P2 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
@@ -142,7 +143,7 @@ with program() as ramsey_with_detuning:
     # Stream processing section used to process the dat[0, :]a before saving it.
     with stream_processing():
         n_st.save("iteration")
-        P_diff_st.buffer(len(durations)).buffer(len(detunings)).average().save(f"P_diff_avg_{tank_circuit}")
+        P_diff_st.buffer(len(durations)).average().save(f"P_diff_avg_{tank_circuit}")
 
 
 #####################################
@@ -202,38 +203,33 @@ else:
         plt.suptitle(f"Ramsey with detuning: {tank_circuit}")
         # Plot results
         plt.clf()
-        plt.plot(durations, P_diff_avg[0, :])
-        plt.plot(durations, P_diff_avg[1, :])
-        plt.legend([f"detuning = {d / u.MHz} MHz" for d in detunings])
+        plt.plot(durations, P_diff_avg)
+        plt.legend(f"detuning = {detuning / u.MHz} MHz")
         plt.xlabel("Idle duration [ns]")
         plt.ylabel("Average Parity Diff")
-        plt.legend([f"detuning = {d / u.MHz} MHz" for d in detunings])
         plt.tight_layout()
         plt.pause(1)
 
     # Fetch results
     iteration, P_diff_avg = results.fetch_all()
-    save_data_dict["P_diff_avg"] = P_diff_avg
+    save_data_dict["P_diff"] = P_diff_avg
 
     # Fit the data
     try:
         from qualang_tools.plot.fitting import Fit
 
-        fig_analyses = [] * 2
-        for i, sgn in enumerate([-1, 1]):
-            fit = Fit()
-            fig_analysis = plt.figure(figsize=(6, 6))
-            ramsey_fit = fit.ramsey(durations, P_diff_avg[i, :], plot=True)
-            qubit_T2 = np.abs(ramsey_fit["T2"][0])
-            qubit_detuning = ramsey_fit["f"][0] * u.GHz - sgn * detuning
-            plt.xlabel("Idle duration [ns]")
-            plt.ylabel("Average Parity Diff")
-            print(f"Qubit detuning to update in the config: qubit_IF += {-qubit_detuning:.0f} Hz")
-            print(f"T2* = {qubit_T2:.0f} ns")
-            plt.legend((f"detuning = {-qubit_detuning / u.kHz:.3f} kHz", f"T2* = {qubit_T2:.0f} ns"))
-            plt.title(f"Ramsey measurement for {qubit}, {tank_circuit}")
-            fig_analyses.append(fig_analysis)
-            save_data_dict.update({f"fig_analysis{i}": fig_analysis})
+        fit = Fit()
+        fig_analysis = plt.figure(figsize=(6, 6))
+        ramsey_fit = fit.ramsey(durations, P_diff_avg, plot=True)
+        qubit_T2 = np.abs(ramsey_fit["T2"][0])
+        qubit_detuning = ramsey_fit["f"][0] * u.GHz - detuning
+        plt.xlabel("Idle duration [ns]")
+        plt.ylabel("Average Parity Diff")
+        print(f"Qubit detuning to update in the config: qubit_IF += {-qubit_detuning:.0f} Hz")
+        print(f"T2* = {qubit_T2:.0f} ns")
+        plt.legend((f"detuning = {-qubit_detuning / u.kHz:.3f} kHz", f"T2* = {qubit_T2:.0f} ns"))
+        plt.title(f"Ramsey measurement for {qubit}, {tank_circuit}")
+        save_data_dict.update({f"fig_analysis": fig_analysis})
     except:
         pass
     finally:

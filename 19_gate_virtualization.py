@@ -30,7 +30,8 @@ from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.results.data_handler import DataHandler
 from scipy import signal
 
-from configuration_with_lffem import *
+from configuration_with_lffem_csrack import *
+# from configuration_with_lffem import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 
 # matplotlib.use('TkAgg')

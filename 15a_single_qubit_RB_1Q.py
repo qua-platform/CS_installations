@@ -31,22 +31,23 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from scipy.optimize import curve_fit
 
-from configuration_with_lffem import *
+from configuration_with_lffem_csrack import *
+# from configuration_with_lffem import *
 from macros import get_other_elements
 from macros_initialization_and_readout_2q import *
 from macros_rb import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 ##############################
 # Program-specific variables #
 ##############################
 
-qubit = "qubit1"
-sweep_gates = ["P0_sticky", "P1_sticky"]
-tank_circuit = "tank_circuit1"
+qubit = "qubit5"
+sweep_gates = ["P4_sticky", "P3_sticky"]
+tank_circuit = "tank_circuit2"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 num_output_streams = 2
 seed = 345324  # Pseudo-random number generator seed
@@ -238,6 +239,7 @@ else:
     results = fetching_tool(job, data_list=["iteration", f"P_diff_avg_{tank_circuit}"], mode="live")
 
     import time
+
     # data analysis
     plt.figure()
     while results.is_processing():

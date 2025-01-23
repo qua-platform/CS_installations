@@ -13,14 +13,15 @@ import matplotlib.pyplot as plt
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 
-from configuration_with_lffem import *
+from configuration_with_lffem_csrack import *
+# from configuration_with_lffem import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 
 ###################
 # The QUA program #
 ###################
 n_avg = 100  # The number of averages
-tank_circuit = "tank_circuit1"
+tank_circuit = "tank_circuit2"
 
 with program() as raw_trace_prog:
     n = declare(int)  # QUA variable for the averaging loop

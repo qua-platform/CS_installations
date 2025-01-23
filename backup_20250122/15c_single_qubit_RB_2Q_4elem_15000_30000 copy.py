@@ -46,8 +46,8 @@ matplotlib.use('TkAgg')
 # target_qubits = ["qubit5"]
 target_qubits1 = ["qubit1", "qubit1_dup1"]
 target_qubits2 = ["qubit2_dup1", "qubit2_dup2"]
-sweep_gates = ["P0_sticky", "P1_sticky"]
-tank_circuit = "tank_circuit1"
+sweep_gates = ["P4_sticky", "P3_sticky"]
+tank_circuit = "tank_circuit2"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 num_output_streams = 2
 seed = 345324  # Pseudo-random number generator seed

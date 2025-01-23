@@ -16,13 +16,14 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import (fetching_tool, progress_counter,
                                    wait_until_job_is_paused)
 
-from configuration_with_lffem import *
+from configuration_with_lffem_csrack import *
+# from configuration_with_lffem import *
 from macros import get_other_elements
 from macros_initialization_and_readout_2q import *
 from macros_rb import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 
-# # matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 ###################

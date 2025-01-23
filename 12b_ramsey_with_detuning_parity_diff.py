@@ -33,13 +33,14 @@ from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.results.data_handler import DataHandler
-from macros_voltage_gate_sequence import VoltageGateSequence
 from scipy import signal
 
-from configuration_with_lffem import *
+from configuration_with_lffem_csrack import *
+# from configuration_with_lffem import *
 from macros_initialization_and_readout_2q import *
+from macros_voltage_gate_sequence import VoltageGateSequence
 
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 ###################
@@ -48,11 +49,12 @@ matplotlib.use('TkAgg')
 
 n_avg = 1000  # Number of averages
 
-qubit = "qubit1"
-sweep_gates = ["P0_sticky", "P1_sticky"]
-tank_circuit = "tank_circuit1"
+qubit = "qubit5"
+sweep_gates = ["P4_sticky", "P3_sticky"]
+tank_circuit = "tank_circuit2"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 num_output_streams = 2
+x90 = "x90_square"
 
 # Pulse duration sweep in ns - must be larger than 4 clock cycles
 tau_min = 16
@@ -119,9 +121,9 @@ with program() as ramsey_with_detuning:
                 play("trigger", "rf_switch", duration=d_ops >> 2)
                 wait(RF_SWITCH_DELAY // 4, qubit)
 
-                play("x90_square", qubit)
+                play(x90, qubit)
                 wait(d >> 2, qubit)
-                play("x90_square", qubit)
+                play(x90, qubit)
 
                 align()
                 P2 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
@@ -216,7 +218,7 @@ else:
 
     # Fetch results
     iteration, P_diff_avg = results.fetch_all()
-    save_data_dict["P_diff_avg"] = P_diff_avg
+    save_data_dict["P_diff"] = P_diff_avg
 
     # Fit the data
     try:

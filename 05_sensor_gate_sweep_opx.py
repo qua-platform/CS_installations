@@ -26,21 +26,21 @@ from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.results.data_handler import DataHandler
-from scipy import signal
 
-from configuration_with_lffem import *
+from configuration_with_lffem_csrack import *
+# from configuration_with_lffem import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 ###################
 # The QUA program #
 ###################
 
-run_live = True 
-sd_sticky = "Psd1_sticky"
-tank_circuit = "tank_circuit1"
+run_live = False # True 
+sd_sticky = "Psd2_sticky"
+tank_circuit = "tank_circuit2"
 step_amp = PLUNGER_SD_CONSTANTS[sd_sticky.replace("_sticky", "")]["step_amp"]
 
 n_avg = 1000000 if run_live else 100 # Number of averaging loops

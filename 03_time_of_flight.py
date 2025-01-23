@@ -20,7 +20,8 @@ from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
 from scipy.signal import savgol_filter
 
-from configuration_with_lffem import *
+from configuration_with_lffem_csrack import *
+# from configuration_with_lffem import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 
 ###################

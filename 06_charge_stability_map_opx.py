@@ -29,22 +29,23 @@ from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.results.data_handler import DataHandler
 from scipy import signal
 
-from configuration_with_lffem import *
+from configuration_with_lffem_csrack import *
+# from configuration_with_lffem import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 ###################
 # The QUA program #
 ###################
 
-run_live = True
-Px = "P0"
-Py = "P1"
-tank_circuit = "tank_circuit1"
+run_live = False # True
+Px = "P5"
+Py = "P4"
+tank_circuit = "tank_circuit2"
 
-n_avg = 10000
+n_avg = 1000000 if run_live else 100 # Number of averaging loops
 n_voltages_Px = 201
 n_voltages_Py = 201
 

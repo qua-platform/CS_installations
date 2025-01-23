@@ -118,6 +118,7 @@ SQUARE_LEN = 1000 # 52
 
 PI_AMP = 0.3
 PI_LEN = 160 # 52
+PI_HALF_AMP = PI_AMP / 2
 PI_HALF_LEN = PI_LEN
 # PI_SIGMA = PI_LEN / 5
 
@@ -132,9 +133,11 @@ qubit_pairs = [
 
 CROT_DC_AMP = 0.1
 CROT_DC_LEN = 100
-CROT_RF_AMP = 0.1
-CROT_RF_LEN = CROT_DC_LEN
-CROT_RF_SIGMA = CROT_RF_LEN / 5
+CROT_PI_AMP = 0.1
+CROT_PI_LEN = CROT_DC_LEN
+CROT_PI_HALF_AMP = CROT_PI_AMP / 2
+CROT_PI_HALF_LEN = CROT_PI_LEN
+# CROT_RF_SIGMA = CROT_RF_LEN / 5
 
 
 ########################
@@ -151,16 +154,6 @@ PARITY_THRESHOLD2 = 0.0
 ######################
 #      DC GATES      #
 ######################
-
-# ## Section defining the points from the charge stability map - can be done in the config
-# # Relevant points in the charge stability map as ["P0", "P1"] in V
-# level_init = [-0.02, 0.02]
-# level_readout = [0.0, -0.0]
-
-# # Duration of each step in ns
-# duration_init = 400
-# duration_readout = REFLECTOMETRY_READOUT_LEN + 100
-# duration_compensation_pulse = 4 * u.us
 
 # Time to ramp down to zero for sticky elements in ns
 hold_offset_duration = 4  # in ns
@@ -185,8 +178,16 @@ QUBIT_CONSTANTS = {
         "mixer_phi": 0.201,
         "square_pi_amp": 0.30671,
         "square_pi_len": 248,
-        "pi_amp": 0.446,
-        "pi_len": 280,
+        "square_pi_half_amp": 0.30671,
+        "square_pi_half_len": 248,
+        "kaiser_pi_amp": 0.446,
+        "kaiser_pi_len": 280,
+        "kaiser_pi_half_amp": 0.446,
+        "kaiser_pi_half_len": 280,
+        "gauss_pi_amp": 0.446,
+        "gauss_pi_len": 280,
+        "gauss_pi_half_amp": 0.446,
+        "gauss_pi_half_len": 280,
         "delay": 0,
     },
     "qubit2": {
@@ -200,8 +201,16 @@ QUBIT_CONSTANTS = {
         "mixer_phi": 1.365,
         "square_pi_amp": 0.1567 * 252 / 250,
         "square_pi_len": 248,
-        "pi_amp": PI_AMP,
-        "pi_len": PI_LEN,
+        "square_pi_half_amp": 0.1567 * 252 / 250,
+        "square_pi_half_len": 248,
+        "kaiser_pi_amp": PI_AMP,
+        "kaiser_pi_len": PI_LEN,
+        "kaiser_pi_half_amp": PI_HALF_AMP,
+        "kaiser_pi_half_len": PI_HALF_LEN,
+        "gauss_pi_amp": PI_AMP,
+        "gauss_pi_len": PI_LEN,
+        "gauss_pi_half_amp": PI_HALF_AMP,
+        "gauss_pi_half_len": PI_HALF_LEN,
         "delay": 0,
     },
     "qubit3": {
@@ -215,8 +224,16 @@ QUBIT_CONSTANTS = {
         "mixer_phi": 0,
         "square_pi_amp": PI_AMP,
         "square_pi_len": PI_LEN,
-        "pi_amp": PI_AMP,
-        "pi_len": PI_LEN,
+        "square_pi_half_amp": PI_HALF_AMP,
+        "square_pi_half_len": PI_HALF_LEN,
+        "kaiser_pi_amp": PI_AMP,
+        "kaiser_pi_len": PI_LEN,
+        "kaiser_pi_half_amp": PI_HALF_AMP,
+        "kaiser_pi_half_len": PI_HALF_LEN,
+        "gauss_pi_amp": PI_AMP,
+        "gauss_pi_len": PI_LEN,
+        "gauss_pi_half_amp": PI_HALF_AMP,
+        "gauss_pi_half_len": PI_HALF_LEN,
         "delay": 0,
     },
     "qubit4": {
@@ -230,8 +247,16 @@ QUBIT_CONSTANTS = {
         "mixer_phi": 0,
         "square_pi_amp": PI_AMP,
         "square_pi_len": PI_LEN,
-        "pi_amp": PI_AMP,
-        "pi_len": PI_LEN,
+        "square_pi_half_amp": PI_HALF_AMP,
+        "square_pi_half_len": PI_HALF_LEN,
+        "kaiser_pi_amp": PI_AMP,
+        "kaiser_pi_len": PI_LEN,
+        "kaiser_pi_half_amp": PI_HALF_AMP,
+        "kaiser_pi_half_len": PI_HALF_LEN,
+        "gauss_pi_amp": PI_AMP,
+        "gauss_pi_len": PI_LEN,
+        "gauss_pi_half_amp": PI_HALF_AMP,
+        "gauss_pi_half_len": PI_HALF_LEN,
         "delay": 0,
     },
     "qubit5": {
@@ -245,8 +270,16 @@ QUBIT_CONSTANTS = {
         "mixer_phi": 0,
         "square_pi_amp": PI_AMP,
         "square_pi_len": PI_LEN,
-        "pi_amp": PI_AMP,
-        "pi_len": PI_LEN,
+        "square_pi_half_amp": PI_HALF_AMP,
+        "square_pi_half_len": PI_HALF_LEN,
+        "kaiser_pi_amp": PI_AMP,
+        "kaiser_pi_len": PI_LEN,
+        "kaiser_pi_half_amp": PI_HALF_AMP,
+        "kaiser_pi_half_len": PI_HALF_LEN,
+        "gauss_pi_amp": PI_AMP,
+        "gauss_pi_len": PI_LEN,
+        "gauss_pi_half_amp": PI_HALF_AMP,
+        "gauss_pi_half_len": PI_HALF_LEN,
         "delay": 0,
     },
 }
@@ -401,13 +434,27 @@ CROT_CONSTANTS = {
             "IF": QUBIT_CONSTANTS[f"qubit{c}"]["IF"],
             "mixer_g": QUBIT_CONSTANTS[f"qubit{c}"]["mixer_g"],
             "mixer_phi": QUBIT_CONSTANTS[f"qubit{c}"]["mixer_phi"],
-            "pi_amp": CROT_RF_AMP,
-            "pi_len": CROT_RF_LEN,
+            "square_pi_amp": CROT_PI_AMP,
+            "square_pi_len": CROT_PI_LEN,
+            "square_pi_half_amp": CROT_PI_HALF_AMP,
+            "square_pi_half_len": CROT_PI_HALF_LEN,
+            "kaiser_pi_amp": CROT_PI_AMP,
+            "kaiser_pi_len": CROT_PI_LEN,
+            "kaiser_pi_half_amp": CROT_PI_HALF_AMP,
+            "kaiser_pi_half_len": CROT_PI_HALF_LEN,
+            "gauss_pi_amp": CROT_PI_AMP,
+            "gauss_pi_len": CROT_PI_LEN,
+            "gauss_pi_half_amp": CROT_PI_HALF_AMP,
+            "gauss_pi_half_len": CROT_PI_HALF_LEN,
         }
         for c, t in qubit_pairs
     }
 }
 # # update after findng the optimal parameters
+# CROT_CONSTANTS["qp_control_c3t2"]["square_pi_amp"] = 0.1
+# CROT_CONSTANTS["qp_control_c3t2"]["square_pi_len"] = 100
+# CROT_CONSTANTS["qp_control_c3t2"]["square_pi_half_amp"] = 0.05
+# CROT_CONSTANTS["qp_control_c3t2"]["square_pi_half_amp"] = 100
 
 
 #########################
@@ -488,7 +535,8 @@ class GateVirtualizer:
 ########################
 
 # from scipy.special import i0  # Zeroth-order modified Bessel function of the first kind
-from scipy.signal.windows import kaiser # Zeroth-order modified Bessel function of the first kind
+from scipy.signal.windows import \
+    kaiser  # Zeroth-order modified Bessel function of the first kind
 
 # def kaiser_window(T: int, alpha: float) -> np.ndarray:
 #     """
@@ -508,41 +556,37 @@ from scipy.signal.windows import kaiser # Zeroth-order modified Bessel function 
 #     return window
 
 
-# TODO: Implement Kaiser
 def generate_waveforms(rotation_keys):
     """Generate all necessary waveforms for a set of rotation types across all qubits."""
 
-    def compute_and_update_waveform(waveforms, qubit, _name, _amp, _len):
+    def compute_and_update_waveform(waveforms, rotation_key, qubit, wf_name, wf_amp, wf_len):
         zero_len = 2
-        for rotation_key in rotation_keys:
-            if rotation_key in ["x180", "y180"]:
-                wf_amp = _amp
-            elif rotation_key in ["x90", "y90"]:
-                wf_amp = _amp / 2
-            elif rotation_key in ["minus_x90", "minus_y90"]:
-                wf_amp = -_amp / 2
-            else:
-                continue
 
-            if _name == "gaussian":
-                _sigma = (_len - zero_len) / 5
-                wf, der_wf = np.array(drag_gaussian_pulse_waveforms(wf_amp, _len - zero_len, _sigma, alpha=0, anharmonicity=0))
-            elif _name == "kaiser":
-                wf = wf_amp * kaiser(_len - zero_len, beta=8.0)
-                # wf = wf_amp * kaiser_window(_len - zero_len, alpha=4.0)
-                der_wf = np.array([0] * (_len - zero_len))
+        if wf_name == "gauss":
+            wf_sigma = (wf_len - zero_len) / 5
+            wf, der_wf = np.array(drag_gaussian_pulse_waveforms(wf_amp, wf_len - zero_len, wf_sigma, alpha=0, anharmonicity=0))
+        elif wf_name == "kaiser":
+            wf = wf_amp * kaiser(wf_len - zero_len, beta=8.0)
+            # wf = wf_amp * kaiser_window(wf_len - zero_len, alpha=4.0)
+            der_wf = np.array([0] * (wf_len - zero_len))
+        elif wf_name == "square":
+            wf = np.array([wf_amp] * (wf_len - zero_len))
+            der_wf = np.array([0] * (wf_len - zero_len))
+        else:
+            raise ValueError(f'{wf_name} is passed. wf_name must be one of ["gauss", "kaiser", "square]')
 
-            if rotation_key in ["x180", "x90", "minus_x90"]:
-                I_wf = wf
-                Q_wf = der_wf
-            elif rotation_key in ["y180", "y90", "minus_y90"]:
-                I_wf = (-1) * der_wf
-                Q_wf = wf
-            else:
-                raise ValueError(f'{rotation_key} is passed. rotation_key must be one of ["x180", "x90", "minus_x90", "y180", "y90", "minus_y90"]')
 
-            waveforms[f"{qubit}_{_name}_{rotation_key}_I"] = I_wf.tolist() + [0] * zero_len
-            waveforms[f"{qubit}_{_name}_{rotation_key}_Q"] = Q_wf.tolist() + [0] * zero_len
+        if rotation_key in ["x180", "x90", "minus_x90"]:
+            I_wf = wf
+            Q_wf = der_wf
+        elif rotation_key in ["y180", "y90", "minus_y90"]:
+            I_wf = (-1) * der_wf
+            Q_wf = wf
+        else:
+            raise ValueError(f'{rotation_key} is passed. rotation_key must be one of ["x180", "x90", "minus_x90", "y180", "y90", "minus_y90"]')
+
+        waveforms[f"{qubit}_{wf_name}_{rotation_key}_I"] = I_wf.tolist() + [0] * zero_len
+        waveforms[f"{qubit}_{wf_name}_{rotation_key}_Q"] = Q_wf.tolist() + [0] * zero_len
 
         return waveforms
 
@@ -550,13 +594,18 @@ def generate_waveforms(rotation_keys):
         raise ValueError("rotation_keys must be a list")
 
     waveforms = {}
-    for qubit, constants in QUBIT_CONSTANTS.items():
-        waveforms = compute_and_update_waveform(waveforms, qubit, "gaussian", constants["pi_amp"], constants["pi_len"])
-        waveforms = compute_and_update_waveform(waveforms, qubit, "kaiser", constants["pi_amp"], constants["pi_len"])
+    for rk in rotation_keys:
+        if rk in ["x180", "y180"]:
+            for qubit, constants in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.items():
+                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "gauss", constants["gauss_pi_amp"], constants["gauss_pi_len"])
+                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "kaiser", constants["kaiser_pi_amp"], constants["kaiser_pi_len"])
+                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "square", constants["square_pi_amp"], constants["square_pi_len"])
 
-    for qubit_pair, constants in CROT_CONSTANTS.items():
-        waveforms = compute_and_update_waveform(waveforms, qubit_pair, "gaussian", constants["pi_amp"], constants["pi_len"])
-        waveforms = compute_and_update_waveform(waveforms, qubit_pair, "kaiser", constants["pi_amp"], constants["pi_len"])
+        if rk in ["x90", "minus_x90", "y90", "minus_y90"]:
+            for qubit, constants in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.items():
+                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "gauss", constants["gauss_pi_half_amp"], constants["gauss_pi_half_len"])
+                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "kaiser", constants["kaiser_pi_half_amp"], constants["kaiser_pi_half_len"])
+                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "square", constants["square_pi_half_amp"], constants["square_pi_half_len"])
 
     return waveforms
 
@@ -830,7 +879,7 @@ config = {
             }
             for psdg, val in PLUNGER_SD_CONSTANTS.items()
         },
-        # qubits (qubit1, ...)
+        # qubits & crot (qubit1, ...)
         **{
             qb: {
                 "mixInputs": {
@@ -849,26 +898,26 @@ config = {
                     "y180_kaiser": f"y180_kaiser_pulse_{qb}",
                     "y90_kaiser": f"y90_kaiser_pulse_{qb}",
                     "-y90_kaiser": f"minus_y90_kaiser_pulse_{qb}",
-                    "x180_gauss": f"x180_gaussian_pulse_{qb}",
-                    "x90_gauss": f"x90_gaussian_pulse_{qb}",
-                    "-x90_gauss": f"minus_x90_gaussian_pulse_{qb}",
-                    "y180_gauss": f"y180_gaussian_pulse_{qb}",
-                    "y90_gauss": f"y90_gaussian_pulse_{qb}",
-                    "-y90_gauss": f"minus_y90_gaussian_pulse_{qb}",
-                    "x180_square": f"square_x180_pulse_{qb}",
-                    "x90_square": f"square_x90_pulse_{qb}",
-                    "-x90_square": f"square_minus_x90_pulse_{qb}",
-                    "y180_square": f"square_y180_pulse_{qb}",
-                    "y90_square": f"square_y90_pulse_{qb}",
-                    "-y90_square": f"square_minus_y90_pulse_{qb}",
+                    "x180_gauss": f"x180_gauss_pulse_{qb}",
+                    "x90_gauss": f"x90_gauss_pulse_{qb}",
+                    "-x90_gauss": f"minus_x90_gauss_pulse_{qb}",
+                    "y180_gauss": f"y180_gauss_pulse_{qb}",
+                    "y90_gauss": f"y90_gauss_pulse_{qb}",
+                    "-y90_gauss": f"minus_y90_gauss_pulse_{qb}",
+                    "x180_square": f"x180_square_pulse_{qb}",
+                    "x90_square": f"x90_square_pulse_{qb}",
+                    "-x90_square": f"minus_x90_square_pulse_{qb}",
+                    "y180_square": f"y180_square_pulse_{qb}",
+                    "y90_square": f"y90_square_pulse_{qb}",
+                    "-y90_square": f"minus_y90_square_pulse_{qb}",
                 },
                 # "thread": qb,
             }
-            for qb, val in QUBIT_CONSTANTS.items()
+            for qb, val in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.items()
         },
-        # qubits (qubit1, ...)
+        # qubits & crot (qubit1, ...)
         **{
-            f"{qb}_dup1": {
+            f"{qb}_dup": {
                 "mixInputs": {
                     "I": (val["con"], val["fem"], val["aout_I"]),
                     "Q": (val["con"], val["fem"], val["aout_Q"]),
@@ -885,95 +934,24 @@ config = {
                     "y180_kaiser": f"y180_kaiser_pulse_{qb}",
                     "y90_kaiser": f"y90_kaiser_pulse_{qb}",
                     "-y90_kaiser": f"minus_y90_kaiser_pulse_{qb}",
-                    "x180_gauss": f"x180_gaussian_pulse_{qb}",
-                    "x90_gauss": f"x90_gaussian_pulse_{qb}",
-                    "-x90_gauss": f"minus_x90_gaussian_pulse_{qb}",
-                    "y180_gauss": f"y180_gaussian_pulse_{qb}",
-                    "y90_gauss": f"y90_gaussian_pulse_{qb}",
-                    "-y90_gauss": f"minus_y90_gaussian_pulse_{qb}",
-                    "x180_square": f"square_x180_pulse_dup1",
-                    "x90_square": f"square_x90_pulse_dup1",
-                    "-x90_square": f"square_minus_x90_pulse_dup1",
-                    "y180_square": f"square_y180_pulse_dup1",
-                    "y90_square": f"square_y90_pulse_dup1",
-                    "-y90_square": f"square_minus_y90_pulse_dup1",
-                },
-                # "thread": f"{qb}_dup1",
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        # qubits (qubit1, ...)
-        **{
-            f"{qb}_dup2": {
-                "mixInputs": {
-                    "I": (val["con"], val["fem"], val["aout_I"]),
-                    "Q": (val["con"], val["fem"], val["aout_Q"]),
-                    "lo_frequency": val["LO"],
-                    "mixer": f"mixer_{qb}",
-                },
-                "intermediate_frequency": val["IF"],
-                "operations": {
-                    "const": "const_pulse",
-                    "saturation": "saturation_pulse",
-                    "x180_kaiser": f"x180_kaiser_pulse_{qb}",
-                    "x90_kaiser": f"x90_kaiser_pulse_{qb}",
-                    "-x90_kaiser": f"minus_x90_kaiser_pulse_{qb}",
-                    "y180_kaiser": f"y180_kaiser_pulse_{qb}",
-                    "y90_kaiser": f"y90_kaiser_pulse_{qb}",
-                    "-y90_kaiser": f"minus_y90_kaiser_pulse_{qb}",
-                    "x180_gauss": f"x180_gaussian_pulse_{qb}",
-                    "x90_gauss": f"x90_gaussian_pulse_{qb}",
-                    "-x90_gauss": f"minus_x90_gaussian_pulse_{qb}",
-                    "y180_gauss": f"y180_gaussian_pulse_{qb}",
-                    "y90_gauss": f"y90_gaussian_pulse_{qb}",
-                    "-y90_gauss": f"minus_y90_gaussian_pulse_{qb}",
-                    "x180_square": f"square_x180_pulse_dup2",
-                    "x90_square": f"square_x90_pulse_dup2",
-                    "-x90_square": f"square_minus_x90_pulse_dup2",
-                    "y180_square": f"square_y180_pulse_dup2",
-                    "y90_square": f"square_y90_pulse_dup2",
-                    "-y90_square": f"square_minus_y90_pulse_dup2",
+                    "x180_gauss": f"x180_gauss_pulse_{qb}",
+                    "x90_gauss": f"x90_gauss_pulse_{qb}",
+                    "-x90_gauss": f"minus_x90_gauss_pulse_{qb}",
+                    "y180_gauss": f"y180_gauss_pulse_{qb}",
+                    "y90_gauss": f"y90_gauss_pulse_{qb}",
+                    "-y90_gauss": f"minus_y90_gauss_pulse_{qb}",
+                    "x180_square": f"x180_square_pulse_{qb}",
+                    "x90_square": f"x90_square_pulse_{qb}",
+                    "-x90_square": f"minus_x90_square_pulse_{qb}",
+                    "y180_square": f"y180_square_pulse_{qb}",
+                    "y90_square": f"y90_square_pulse_{qb}",
+                    "-y90_square": f"minus_y90_square_pulse_{qb}",
                 },
                 # "thread": qb,
             }
-            for qb, val in QUBIT_CONSTANTS.items()
+            for qb, val in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.items()
         },
-        # cnots
-        **{
-            qp: {
-                "mixInputs": {
-                    "I": (val["con"], val["fem"], val["aout_I"]),
-                    "Q": (val["con"], val["fem"], val["aout_Q"]),
-                    "lo_frequency": val["LO"],
-                    "mixer": f"mixer_{qp}",
-                },
-                "intermediate_frequency": val["IF"],
-                "operations": {
-                    "const": "const_pulse",
-                    "x180_kaiser": f"x180_kaiser_pulse_{qp}",
-                    "x90_kaiser": f"x90_kaiser_pulse_{qp}",
-                    "-x90_kaiser": f"minus_x90_kaiser_pulse_{qp}",
-                    "y180_kaiser": f"y180_kaiser_pulse_{qp}",
-                    "y90_kaiser": f"y90_kaiser_pulse_{qp}",
-                    "-y90_kaiser": f"minus_y90_kaiser_pulse_{qp}",
-                    "x180_gauss": f"x180_gaussian_pulse_{qp}",
-                    "x90_gauss": f"x90_gaussian_pulse_{qp}",
-                    "-x90_gauss": f"minus_x90_gaussian_pulse_{qp}",
-                    "y180_gauss": f"y180_gaussian_pulse_{qp}",
-                    "y90_gauss": f"y90_gaussian_pulse_{qp}",
-                    "-y90_gauss": f"minus_y90_gaussian_pulse_{qp}",
-                    "x180_square": f"square_x180_pulse",
-                    "x90_square": f"square_x90_pulse",
-                    "-x90_square": f"square_minus_x90_pulse",
-                    "y180_square": f"square_y180_pulse",
-                    "y90_square": f"square_y90_pulse",
-                    "-y90_square": f"square_minus_y90_pulse",
-                },
-                # "thread": qb,
-            }
-            for qp, val in CROT_CONSTANTS.items()
-        },
-        # 
+        # RF switch
         **{
             dm: {
                 "singleInput": {
@@ -1045,268 +1023,30 @@ config = {
             for pg, val in PLUNGER_SD_CONSTANTS.items()
         },
         **{
-            f"x180_gaussian_pulse_{qb}": {
+            f"{rk}_{wf}_pulse_{qb}": {
                 "operation": "control",
-                "length": val["pi_len"],
+                "length": val[f"{wf}_pi_len"],
                 "waveforms": {
-                    "I": f"x180_gaussian_I_wf_{qb}",
-                    "Q": f"x180_gaussian_Q_wf_{qb}",
+                    "I": f"{rk}_{wf}_I_wf_{qb}",
+                    "Q": f"{rk}_{wf}_Q_wf_{qb}",
                 },
             }
-            for qb, val in QUBIT_CONSTANTS.items()
+            for rk in ["x180", "y180"]  # Loop over 
+            for wf in ["gauss", "kaiser", "square"]  # Loop over waveforms
+            for qb, val in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.items()
         },
         **{
-            f"x90_gaussian_pulse_{qb}": {
+            f"{rk}_{wf}_pulse_{qb}": {
                 "operation": "control",
-                "length": val["pi_len"],
+                "length": val[f"{wf}_pi_half_len"],
                 "waveforms": {
-                    "I": f"x90_gaussian_I_wf_{qb}",
-                    "Q": f"x90_gaussian_Q_wf_{qb}",
+                    "I": f"{rk}_{wf}_I_wf_{qb}",
+                    "Q": f"{rk}_{wf}_Q_wf_{qb}",
                 },
             }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"minus_x90_gaussian_pulse_{qb}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"minus_x90_gaussian_I_wf_{qb}",
-                    "Q": f"minus_x90_gaussian_Q_wf_{qb}",
-                },
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"y180_gaussian_pulse_{qb}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"y180_gaussian_I_wf_{qb}",
-                    "Q": f"y180_gaussian_Q_wf_{qb}",
-                },
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"y90_gaussian_pulse_{qb}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"y90_gaussian_I_wf_{qb}",
-                    "Q": f"y90_gaussian_Q_wf_{qb}",
-                },
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"minus_y90_gaussian_pulse_{qb}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"minus_y90_gaussian_I_wf_{qb}",
-                    "Q": f"minus_y90_gaussian_Q_wf_{qb}",
-                },
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"x180_kaiser_pulse_{qb}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"x180_kaiser_I_wf_{qb}",
-                    "Q": f"x180_kaiser_Q_wf_{qb}",
-                },
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"x90_kaiser_pulse_{qb}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"x90_kaiser_I_wf_{qb}",
-                    "Q": f"x90_kaiser_Q_wf_{qb}",
-                },
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"minus_x90_kaiser_pulse_{qb}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"minus_x90_kaiser_I_wf_{qb}",
-                    "Q": f"minus_x90_kaiser_Q_wf_{qb}",
-                },
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"y180_kaiser_pulse_{qb}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"y180_kaiser_I_wf_{qb}",
-                    "Q": f"y180_kaiser_Q_wf_{qb}",
-                },
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"y90_kaiser_pulse_{qb}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"y90_kaiser_I_wf_{qb}",
-                    "Q": f"y90_kaiser_Q_wf_{qb}",
-                },
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"minus_y90_kaiser_pulse_{qb}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"minus_y90_kaiser_I_wf_{qb}",
-                    "Q": f"minus_y90_kaiser_Q_wf_{qb}",
-                },
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"x180_gaussian_pulse_{qp}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"x180_gaussian_I_wf_{qp}",
-                    "Q": f"x180_gaussian_Q_wf_{qp}",
-                },
-            }
-            for qp, val in CROT_CONSTANTS.items()
-        },
-        **{
-            f"x90_gaussian_pulse_{qp}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"x90_gaussian_I_wf_{qp}",
-                    "Q": f"x90_gaussian_Q_wf_{qp}",
-                },
-            }
-            for qp, val in CROT_CONSTANTS.items()
-        },
-        **{
-            f"minus_x90_gaussian_pulse_{qp}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"minus_x90_gaussian_I_wf_{qp}",
-                    "Q": f"minus_x90_gaussian_Q_wf_{qp}",
-                },
-            }
-            for qp, val in CROT_CONSTANTS.items()
-        },
-        **{
-            f"y180_gaussian_pulse_{qp}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"y180_gaussian_I_wf_{qp}",
-                    "Q": f"y180_gaussian_Q_wf_{qp}",
-                },
-            }
-            for qp, val in CROT_CONSTANTS.items()
-        },
-        **{
-            f"y90_gaussian_pulse_{qp}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"y90_gaussian_I_wf_{qp}",
-                    "Q": f"y90_gaussian_Q_wf_{qp}",
-                },
-            }
-            for qp, val in CROT_CONSTANTS.items()
-        },
-        **{
-            f"minus_y90_gaussian_pulse_{qp}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"minus_y90_gaussian_I_wf_{qp}",
-                    "Q": f"minus_y90_gaussian_Q_wf_{qp}",
-                },
-            }
-            for qp, val in CROT_CONSTANTS.items()
-        },
-        **{
-            f"x180_kaiser_pulse_{qp}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"x180_kaiser_I_wf_{qp}",
-                    "Q": f"x180_kaiser_Q_wf_{qp}",
-                },
-            }
-            for qp, val in CROT_CONSTANTS.items()
-        },
-        **{
-            f"x90_kaiser_pulse_{qp}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"x90_kaiser_I_wf_{qp}",
-                    "Q": f"x90_kaiser_Q_wf_{qp}",
-                },
-            }
-            for qp, val in CROT_CONSTANTS.items()
-        },
-        **{
-            f"minus_x90_kaiser_pulse_{qp}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"minus_x90_kaiser_I_wf_{qp}",
-                    "Q": f"minus_x90_kaiser_Q_wf_{qp}",
-                },
-            }
-            for qp, val in CROT_CONSTANTS.items()
-        },
-        **{
-            f"y180_kaiser_pulse_{qp}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"y180_kaiser_I_wf_{qp}",
-                    "Q": f"y180_kaiser_Q_wf_{qp}",
-                },
-            }
-            for qp, val in CROT_CONSTANTS.items()
-        },
-        **{
-            f"y90_kaiser_pulse_{qp}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"y90_kaiser_I_wf_{qp}",
-                    "Q": f"y90_kaiser_Q_wf_{qp}",
-                },
-            }
-            for qp, val in CROT_CONSTANTS.items()
-        },
-        **{
-            f"minus_y90_kaiser_pulse_{qp}": {
-                "operation": "control",
-                "length": val["pi_len"],
-                "waveforms": {
-                    "I": f"minus_y90_kaiser_I_wf_{qp}",
-                    "Q": f"minus_y90_kaiser_Q_wf_{qp}",
-                },
-            }
-            for qp, val in CROT_CONSTANTS.items()
+            for rk in ["x90", "minus_x90", "y90", "minus_y90"]  # Loop over 
+            for wf in ["gauss", "kaiser", "square"]  # Loop over waveforms
+            for qb, val in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.items()
         },
         **{
             f"reflectometry_readout_pulse_{tc}": {
@@ -1339,216 +1079,6 @@ config = {
                 "Q": "zero_wf",
             },
         },
-        **{
-            f"square_x180_pulse_{qb}": {
-                "operation": "control",
-                "length": val["square_pi_len"],
-                "waveforms": {
-                    "I": f"square_x180_I_wf_{qb}",
-                    "Q": "zero_wf",
-                },
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"square_x90_pulse_{qb}": {
-                "operation": "control",
-                "length": val["square_pi_len"],
-                "waveforms": {
-                    "I": f"square_x90_I_wf_{qb}",
-                    "Q": "zero_wf",
-                },
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"square_minus_x90_pulse_{qb}": {
-                "operation": "control",
-                "length": val["square_pi_len"],
-                "waveforms": {
-                    "I": f"square_minus_x90_I_wf_{qb}",
-                    "Q": "zero_wf",
-                },
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"square_y180_pulse_{qb}": {
-                "operation": "control",
-                "length": val["square_pi_len"],
-                "waveforms": {
-                    "I": "zero_wf",
-                    "Q": f"square_y180_I_wf_{qb}",
-                },
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"square_y90_pulse_{qb}": {
-                "operation": "control",
-                "length": val["square_pi_len"],
-                "waveforms": {
-                    "I": "zero_wf",
-                    "Q": f"square_y90_I_wf_{qb}",
-                },
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"square_minus_y90_pulse_{qb}": {
-                "operation": "control",
-                "length": val["square_pi_len"],
-                "waveforms": {
-                    "I": "zero_wf",
-                    "Q": f"square_minus_y90_I_wf_{qb}",
-                },
-            }
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        "square_x180_pulse": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "square_x180_I_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "square_x90_pulse": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "square_x90_I_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "square_minus_x90_pulse": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "square_minus_x90_I_wf",
-                "Q": "zero_wf",
-            },
-        },
-        "square_y180_pulse": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "zero_wf",
-                "Q": "square_y180_I_wf",
-            },
-        },
-        "square_y90_pulse": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "zero_wf",
-                "Q": "square_y90_I_wf",
-            },
-        },
-        "square_minus_y90_pulse": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "zero_wf",
-                "Q": "square_minus_y90_I_wf",
-            },
-        },
-        "square_x180_pulse_dup1": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "square_x180_I_wf_dup1",
-                "Q": "zero_wf",
-            },
-        },
-        "square_x90_pulse_dup1": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "square_x90_I_wf_dup1",
-                "Q": "zero_wf",
-            },
-        },
-        "square_minus_x90_pulse_dup1": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "square_minus_x90_I_wf_dup1",
-                "Q": "zero_wf",
-            },
-        },
-        "square_y180_pulse_dup1": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "square_y180_I_wf_dup1",
-                "Q": "zero_wf",
-            },
-        },
-        "square_y90_pulse_dup1": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "square_y90_I_wf_dup1",
-                "Q": "zero_wf",
-            },
-        },
-        "square_minus_y90_pulse_dup1": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "square_minus_y90_I_wf_dup1",
-                "Q": "zero_wf",
-            },
-        },
-        "square_x180_pulse_dup2": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "square_x180_I_wf_dup2",
-                "Q": "zero_wf",
-            },
-        },
-        "square_x90_pulse_dup2": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "square_x90_I_wf_dup2",
-                "Q": "zero_wf",
-            },
-        },
-        "square_minus_x90_pulse_dup2": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "square_minus_x90_I_wf_dup2",
-                "Q": "zero_wf",
-            },
-        },
-        "square_y180_pulse_dup2": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "square_y180_I_wf_dup2",
-                "Q": "zero_wf",
-            },
-        },
-        "square_y90_pulse_dup2": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "square_y90_I_wf_dup2",
-                "Q": "zero_wf",
-            },
-        },
-        "square_minus_y90_pulse_dup2": {
-            "operation": "control",
-            "length": SQUARE_LEN,
-            "waveforms": {
-                "I": "square_minus_y90_I_wf_dup2",
-                "Q": "zero_wf",
-            },
-        },
         "trigger_pulse": {
             "operation": "control",
             "length": 1000,
@@ -1562,88 +1092,49 @@ config = {
         "zero_wf": {"type": "constant", "sample": 0.0},
         "const_wf": {"type": "constant", "sample": CONST_AMP},
         "saturation_wf": {"type": "constant", "sample": SATURATION_AMP},
-        # **{f"square_x180_I_wf_{key}": {"type": "constant", "sample": val["square_pi_amp"]} for key, val in QUBIT_CONSTANTS.items()},
-        # **{f"square_x90_I_wf_{key}": {"type": "constant", "sample": val["square_pi_amp"] / 2} for key, val in QUBIT_CONSTANTS.items()},
-        # **{f"square_minus_x90_I_wf_{key}": {"type": "constant", "sample": -val["square_pi_amp"] / 2} for key, val in QUBIT_CONSTANTS.items()},
-        # **{f"square_y180_I_wf_{key}": {"type": "constant", "sample": val["square_pi_amp"]} for key, val in QUBIT_CONSTANTS.items()},
-        # **{f"square_y90_I_wf_{key}": {"type": "constant", "sample": val["square_pi_amp"] / 2} for key, val in QUBIT_CONSTANTS.items()},
-        # **{f"square_minus_y90_I_wf_{key}": {"type": "constant", "sample": -val["square_pi_amp"] / 2} for key, val in QUBIT_CONSTANTS.items()},
-        **{f"square_x180_I_wf_{key}": {"type": "arbitrary", "samples": [val["square_pi_amp"]] * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
-        **{f"square_x90_I_wf_{key}": {"type": "arbitrary", "samples": [val["square_pi_amp"] / 2] * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
-        **{f"square_minus_x90_I_wf_{key}": {"type": "arbitrary", "samples": [-1 * val["square_pi_amp"] / 2] * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
-        **{f"square_y180_I_wf_{key}": {"type": "arbitrary", "samples": [val["square_pi_amp"]] * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
-        **{f"square_y90_I_wf_{key}": {"type": "arbitrary", "samples": [val["square_pi_amp"] / 2] * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
-        **{f"square_minus_y90_I_wf_{key}": {"type": "arbitrary", "samples": [-1 * val["square_pi_amp"] / 2]  * (val["square_pi_len"] - 2) + [0, 0]} for key, val in QUBIT_CONSTANTS.items()},
-        "square_x180_I_wf": {"type": "constant", "sample": SQUARE_X180_AMP},
-        "square_x90_I_wf": {"type": "constant", "sample": SQUARE_X90_AMP},
-        "square_minus_x90_I_wf": {"type": "constant", "sample": SQUARE_MINUS_X90_AMP},
-        "square_y180_I_wf": {"type": "constant", "sample": SQUARE_Y180_AMP},
-        "square_y90_I_wf": {"type": "constant", "sample": SQUARE_Y90_AMP},
-        "square_minus_y90_I_wf": {"type": "constant", "sample": SQUARE_MINUS_Y90_AMP},
-        "square_x180_I_wf_dup1": {"type": "constant", "sample": 2 * SQUARE_X180_AMP / 3},
-        "square_x90_I_wf_dup1": {"type": "constant", "sample": 2 * SQUARE_X90_AMP / 3},
-        "square_minus_x90_I_wf_dup1": {"type": "constant", "sample": 2 * SQUARE_MINUS_X90_AMP / 3},
-        "square_y180_I_wf_dup1": {"type": "constant", "sample": 2 * SQUARE_Y180_AMP / 3},
-        "square_y90_I_wf_dup1": {"type": "constant", "sample": 2 * SQUARE_Y90_AMP / 3},
-        "square_minus_y90_I_wf_dup1": {"type": "constant", "sample": 2 * SQUARE_MINUS_Y90_AMP / 3},
-        "square_x180_I_wf_dup2": {"type": "constant", "sample": SQUARE_X180_AMP / 3},
-        "square_x90_I_wf_dup2": {"type": "constant", "sample": SQUARE_X90_AMP / 3},
-        "square_minus_x90_I_wf_dup2": {"type": "constant", "sample": SQUARE_MINUS_X90_AMP / 3},
-        "square_y180_I_wf_dup2": {"type": "constant", "sample": SQUARE_Y180_AMP / 3},
-        "square_y90_I_wf_dup2": {"type": "constant", "sample": SQUARE_Y90_AMP / 3},
-        "square_minus_y90_I_wf_dup2": {"type": "constant", "sample": SQUARE_MINUS_Y90_AMP / 3},
         **{f"reflectometry_readout_wf_{key}": {"type": "constant", "sample": val["readout_amp"]} for key, val in TANK_CIRCUIT_CONSTANTS.items()},
         **{f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]} for key, val in PLUNGER_CONSTANTS.items()},
         **{f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]} for key, val in BARRIER_CONSTANTS.items()},
         **{f"{key}_step_wf": {"type": "constant", "sample": val["step_amp"]} for key, val in PLUNGER_SD_CONSTANTS.items()},
-        **{f"x180_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_x180_I"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"x180_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_x180_Q"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"x90_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_x90_I"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"x90_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_x90_Q"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"minus_x90_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_minus_x90_I"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"minus_x90_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_minus_x90_Q"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"y180_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_y180_I"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"y180_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_y180_Q"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"y90_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_y90_I"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"y90_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_y90_Q"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"minus_y90_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_minus_y90_I"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"minus_y90_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_minus_y90_Q"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"x180_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_x180_I"]} for key in CROT_CONSTANTS.keys()},
-        **{f"x180_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_x180_Q"]} for key in CROT_CONSTANTS.keys()},
-        **{f"x90_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_x90_I"]} for key in CROT_CONSTANTS.keys()},
-        **{f"x90_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_x90_Q"]} for key in CROT_CONSTANTS.keys()},
-        **{f"minus_x90_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_minus_x90_I"]} for key in CROT_CONSTANTS.keys()},
-        **{f"minus_x90_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_minus_x90_Q"]} for key in CROT_CONSTANTS.keys()},
-        **{f"y180_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_y180_I"]} for key in CROT_CONSTANTS.keys()},
-        **{f"y180_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_y180_Q"]} for key in CROT_CONSTANTS.keys()},
-        **{f"y90_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_y90_I"]} for key in CROT_CONSTANTS.keys()},
-        **{f"y90_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_y90_Q"]} for key in CROT_CONSTANTS.keys()},
-        **{f"minus_y90_gaussian_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_minus_y90_I"]} for key in CROT_CONSTANTS.keys()},
-        **{f"minus_y90_gaussian_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gaussian_minus_y90_Q"]} for key in CROT_CONSTANTS.keys()},
-        **{f"x180_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x180_I"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"x180_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x180_Q"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"x90_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x90_I"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"x90_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x90_Q"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"minus_x90_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_minus_x90_I"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"minus_x90_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_minus_x90_Q"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"y180_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_y180_I"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"y180_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_y180_Q"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"y90_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_y90_I"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"y90_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_y90_Q"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"minus_y90_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_minus_y90_I"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"minus_y90_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_minus_y90_Q"]} for key in QUBIT_CONSTANTS.keys()},
-        **{f"x180_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x180_I"]} for key in CROT_CONSTANTS.keys()},
-        **{f"x180_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x180_Q"]} for key in CROT_CONSTANTS.keys()},
-        **{f"x90_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x90_I"]} for key in CROT_CONSTANTS.keys()},
-        **{f"x90_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x90_Q"]} for key in CROT_CONSTANTS.keys()},
-        **{f"minus_x90_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_minus_x90_I"]} for key in CROT_CONSTANTS.keys()},
-        **{f"minus_x90_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_minus_x90_Q"]} for key in CROT_CONSTANTS.keys()},
-        **{f"y180_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_y180_I"]} for key in CROT_CONSTANTS.keys()},
-        **{f"y180_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_y180_Q"]} for key in CROT_CONSTANTS.keys()},
-        **{f"y90_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_y90_I"]} for key in CROT_CONSTANTS.keys()},
-        **{f"y90_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_y90_Q"]} for key in CROT_CONSTANTS.keys()},
-        **{f"minus_y90_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_minus_y90_I"]} for key in CROT_CONSTANTS.keys()},
-        **{f"minus_y90_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_minus_y90_Q"]} for key in CROT_CONSTANTS.keys()},
+
+        **{f"x180_square_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_x180_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"x180_square_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_x180_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"x90_square_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_x90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"x90_square_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_x90_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"minus_x90_square_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_minus_x90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"minus_x90_square_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_minus_x90_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"y180_square_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_y180_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"y180_square_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_y180_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"y90_square_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_y90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"y90_square_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_y90_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"minus_y90_square_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_minus_y90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"minus_y90_square_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_square_minus_y90_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        
+        **{f"x180_gauss_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_x180_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"x180_gauss_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_x180_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"x90_gauss_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_x90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"x90_gauss_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_x90_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"minus_x90_gauss_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_minus_x90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"minus_x90_gauss_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_minus_x90_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"y180_gauss_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_y180_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"y180_gauss_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_y180_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"y90_gauss_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_y90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"y90_gauss_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_y90_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"minus_y90_gauss_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_minus_y90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"minus_y90_gauss_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_gauss_minus_y90_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        
+        **{f"x180_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x180_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"x180_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x180_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"x90_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"x90_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_x90_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"minus_x90_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_minus_x90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"minus_x90_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_minus_x90_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"y180_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_y180_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"y180_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_y180_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"y90_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_y90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"y90_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_y90_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"minus_y90_kaiser_I_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_minus_y90_I"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
+        **{f"minus_y90_kaiser_Q_wf_{key}": {"type": "arbitrary", "samples": waveforms[key + "_kaiser_minus_y90_Q"]} for key in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.keys()},
     },
     "digital_waveforms": {
         "ON": {"samples": [(1, 0)]},
@@ -1673,17 +1164,7 @@ config = {
                     "correction": IQ_imbalance(val["mixer_g"], val["mixer_phi"]),
                 },
             ]
-            for qb, val in QUBIT_CONSTANTS.items()
-        },
-        **{
-            f"mixer_{qp}": [
-                {
-                    "intermediate_frequency": val["IF"],
-                    "lo_frequency": val["LO"],
-                    "correction": IQ_imbalance(val["mixer_g"], val["mixer_phi"]),
-                },
-            ]
-            for qp, val in CROT_CONSTANTS.items()
+            for qb, val in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.items()
         },
     },
 }

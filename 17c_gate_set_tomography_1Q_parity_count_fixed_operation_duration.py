@@ -19,7 +19,7 @@ from configuration_with_lffem_csrack import *
 from macros_initialization_and_readout_2q import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 
-# # matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 ###################
 #  Util funciton  #
@@ -73,9 +73,9 @@ def get_encoded_circuit(row):
 # The QUA program #
 ###################
 
-qubit = "qubit1"
-sweep_gates = ["P0_sticky", "P1_sticky"]
-tank_circuit = "tank_circuit1"
+qubit = "qubit5"
+sweep_gates = ["P4_sticky", "P3_sticky"]
+tank_circuit = "tank_circuit2"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 num_output_streams = 2
 seed = 345324  # Pseudo-random number generator seed

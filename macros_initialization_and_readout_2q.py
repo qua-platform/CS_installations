@@ -7,8 +7,8 @@ from qm import *
 from qm.qua import *
 
 from configuration_with_lffem_csrack import *
+# from configuration_with_lffem import *
 from macros_voltage_gate_sequence import VoltageGateSequence
-
 
 ##################
 #   Parameters   #

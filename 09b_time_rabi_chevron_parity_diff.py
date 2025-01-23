@@ -12,30 +12,31 @@ from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.results.data_handler import DataHandler
-from macros_voltage_gate_sequence import VoltageGateSequence
-from scipy import signal
 
-from configuration_with_lffem import *
+from configuration_with_lffem_csrack import *
+# from configuration_with_lffem import *
 from macros_initialization_and_readout_2q import *
+from macros_voltage_gate_sequence import VoltageGateSequence
 
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 
 ###################
 # The QUA program #
 ###################
 
-n_avg = 20  # Number of averages
+n_avg = 10  # Number of averages
 
-qubit = "qubit1"
-sweep_gates = ["P0_sticky", "P1_sticky"]
-tank_circuit = "tank_circuit1"
+qubit = "qubit5"
+sweep_gates = ["P4_sticky", "P3_sticky"]
+tank_circuit = "tank_circuit2"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 num_output_streams = 2
+x180 = "x180_square"
 
 # Pulse duration sweep in ns - must be larger than 4 clock cycles
 tau_min = 16
-tau_max = 100_000
+tau_max = 10_000
 tau_step = 52
 durations = np.arange(tau_min, tau_max, tau_step)
 # Pulse frequency sweep in Hz
@@ -92,7 +93,7 @@ with program() as QUBIT_CHIRP:
                 wait(duration_ramp_init // 4, "rf_switch", qubit)
                 play("trigger", "rf_switch", duration=d_ops)
                 wait(RF_SWITCH_DELAY // 4, qubit)
-                play("x180_square", qubit, duration=d >> 2)
+                play(x180, qubit, duration=d >> 2)
 
                 align()
                 P2 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
@@ -160,7 +161,7 @@ else:
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
 
-        plt.suptitle("Qubit Chirp Spectroscopy")
+        plt.suptitle("Qubit Spectroscopy")
 
         plt.clf()
         # Plot results
@@ -177,13 +178,15 @@ else:
         idx0 = np.where(frequencies == 0)[0][0]
         ax.plot(durations, P_diff_avg[idx0, :])
         ax.set_xlim(xlim)
+        ax.set_xlabel("Rabi duration [nsec]")
+        ax.set_ylabel(f"Average Parity Diff: {qubit} at 0 detuning")
 
         plt.tight_layout()
         plt.pause(1)
 
     # Fetch results
     iteration, P_diff_avg = results.fetch_all()
-    save_data_dict["P_diff_avg"] = P_diff_avg
+    save_data_dict["P_diff"] = P_diff_avg
 
     # Save results
     script_name = Path(__file__).name

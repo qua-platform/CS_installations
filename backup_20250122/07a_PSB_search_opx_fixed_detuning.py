@@ -55,8 +55,8 @@ level_readout_arr = np.array([-0.00, 0.00]) * amplitude_scaling
 
 n_shots = 100000 if run_live else 1000
 n_shots_buffer = 1000  # Number of averages
-sweep_gates = ["P0_sticky", "P1_sticky"]
-tank_circuit = "tank_circuit1"
+sweep_gates = ["P4_sticky", "P3_sticky"]
+tank_circuit = "tank_circuit2"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 
 duration_init = 10_000 # DO NOT USE * u.ns

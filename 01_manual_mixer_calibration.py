@@ -1,3 +1,4 @@
+# %%
 """
         MIXER CALIBRATION
 The program is designed to play a continuous single tone to calibrate an IQ mixer. To do this, connect the mixer's
@@ -15,7 +16,8 @@ Before proceeding to the next node, take the following steps:
 from qm import QuantumMachinesManager
 from qm.qua import *
 
-from configuration_with_lffem import *
+from configuration_with_lffem_csrack import *
+# from configuration_with_lffem import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 
 ###################
@@ -25,7 +27,7 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 with program() as cw_output:
     with infinite_loop_():
         # It is best to calibrate LO leakage first and without any power played (cf. note below)
-        play("cw" * amp(0), "qubit")
+        play("const" * amp(0), "qubit")
 
 #####################################
 #  Open Communication with the QOP  #
