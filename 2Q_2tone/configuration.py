@@ -12,15 +12,15 @@ from qualang_tools.voltage_gates import VoltageGateSequence
 ######################
 # Network parameters #
 ######################
-qop_ip = "127.0.0.1"  # Write the QM router IP address
-cluster_name = "my_cluster"  # Write your cluster_name if version >= QOP220
+qop_ip = "172.16.33.107"  # Write the QM router IP address
+cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 #####################
 # OPX configuration #
 #####################
 con = "con1"
-fem = 1  # Should be the LF-FEM index, e.g., 1
+fem = 3  # Should be the LF-FEM index, e.g., 1
 
 # Set octave_config to None if no octave are present
 octave_config = None
