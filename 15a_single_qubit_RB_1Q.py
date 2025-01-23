@@ -189,7 +189,7 @@ with program() as rb:
         m_st.save("iteration")
         # depth_st.buffer(num_of_sequences).buffer(len(circuit_depths)).save("depths")
         # ss_st.buffer(len(circuit_depths)).buffer(num_of_sequences).save("rb_sequences")
-        P_diff_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(circuit_depth_max / delta_clifford).average().save(f"P_diff_avg_{tank_circuit}")
+        P_diff_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(circuit_depth_max / delta_clifford).average().save(f"P_diff_{tank_circuit}")
 
 
 #####################################
@@ -231,7 +231,7 @@ else:
     # job = qm.execute(rb)
     # Get results from QUA program
 
-    results = fetching_tool(job, data_list=["iteration", f"P_diff_avg_{tank_circuit}"], mode="live")
+    results = fetching_tool(job, data_list=["iteration", f"P_diff_{tank_circuit}"], mode="live")
 
     import time
 
@@ -246,8 +246,8 @@ else:
         plt.plot(circuit_depths, P_diff)
         plt.pause(1)
 
-    # fetch_names = ["iteration", f"P_diff_avg_{tank_circuit}", "depths", "rb_sequences"]
-    fetch_names = ["iteration", f"P_diff_avg_{tank_circuit}"]
+    # fetch_names = ["iteration", f"P_diff_{tank_circuit}", "depths", "rb_sequences"]
+    fetch_names = ["iteration", f"P_diff_{tank_circuit}"]
     results = fetching_tool(job, data_list=fetch_names)
 
     # At the end of the program, fetch the non-averaged results to get the error-bars

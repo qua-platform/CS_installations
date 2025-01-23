@@ -1,19 +1,8 @@
-import matplotlib.pyplot as plt
-from qm import (CompilerOptionArguments, QuantumMachinesManager,
-                SimulationConfig)
 from qm.qua import *
-from qualang_tools.addons.variables import assign_variables_to_element
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import fetching_tool, progress_counter
-from scipy.optimize import curve_fit
 
 from configuration_with_lffem_csrack import *
 # from configuration_with_lffem import *
-from macros_voltage_gate_sequence import VoltageGateSequence
-
-# from configuration_with_lffem_saas import *
-# from configuration_with_opxplus import *
 
 
 qubit = "qubit1"
@@ -120,20 +109,24 @@ def power_law(power, a, b, p):
 def generate_sequence(depth, max_circuit_depth=0, seed=0):
     cayley = declare(int, value=c1_table.flatten().tolist())
     inv_list = declare(int, value=inv_gates)
+    current_state = declare(int)
     step = declare(int)
     sequence = declare(int, size=max_circuit_depth + 1)
+    # current_states = declare(int, size=max_circuit_depth + 1)
     inv_gate = declare(int)
     i = declare(int)
     rand = Random(seed=seed)
-    current_state = declare(int, value=0)
 
+    assign(current_state, 0)
     with for_(i, 0, i < depth, i + 1):
         assign(step, rand.rand_int(24))
-        assign(sequence[i], step)
         assign(current_state, cayley[current_state * 24 + step])
+        assign(sequence[i], step)
+        # assign(current_states[i], current_state)
         assign(inv_gate, inv_list[current_state])
         with if_(i == depth - 1):
             assign(sequence[depth], inv_gate)
+            # assign(current_states[depth], cayley[current_state * 24 + inv_gate])
 
     return sequence
 

@@ -49,13 +49,13 @@ sweep_gates = ["P4_sticky", "P3_sticky"]
 tank_circuit = "tank_circuit2"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 num_output_streams = 2
-seed = 345324  # Pseudo-random number generator seed
+seed = 1234 # Pseudo-random number generator seed
 
-n_avg = 100
-num_of_sequences = 16  # Number of random sequences
-# circuit_depth_min = 1
-circuit_depth_max = 1000  # worked up to 7800
-delta_clifford = 20
+n_avg = 2
+num_of_sequences = 3  # Number of random sequences
+# circuit_depth_min = 0
+circuit_depth_max = 8 # worked up to 7800
+delta_clifford = 2
 circuit_depths = np.arange(1, circuit_depth_max + 0.1, delta_clifford)
 pi_len = QUBIT_CONSTANTS[qubit]["square_pi_len"]
 pi_amp = QUBIT_CONSTANTS[qubit]["square_pi_amp"]
@@ -137,6 +137,12 @@ with program() as rb:
             assign(sequence_list[depth], inv_gate_list[depth - 1])
 
             with if_(depth == depth_target):
+                
+                ss = declare(int)
+                ss_st = declare_stream()
+                with for_(ss, 0, ss <= circuit_depth_max, ss + 1):
+                    save(sequence_list[ss], ss_st)
+
                 with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
                     # with strict_timing_():
                     # Perform specified initialization
@@ -187,7 +193,8 @@ with program() as rb:
 
     with stream_processing():
         m_st.save("iteration")
-        P_diff_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(circuit_depth_max / delta_clifford).average().save(f"P_diff_avg_{tank_circuit}")
+        ss_st.buffer(circuit_depth_max + 1).buffer(len(circuit_depths)).buffer(num_of_sequences).save("rb_sequences")
+        P_diff_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(circuit_depth_max / delta_clifford).average().save(f"P_diff_{tank_circuit}")
 
 
 #####################################
@@ -229,7 +236,7 @@ else:
     # job = qm.execute(rb)
     # Get results from QUA program
 
-    results = fetching_tool(job, data_list=["iteration", f"P_diff_avg_{tank_circuit}"], mode="live")
+    results = fetching_tool(job, data_list=["iteration", f"P_diff_{tank_circuit}"], mode="live")
 
     import time
 
@@ -244,12 +251,12 @@ else:
         plt.plot(circuit_depths, P_diff)
         plt.pause(1)
 
-    # fetch_names = ["iteration", f"P_diff_avg_{tank_circuit}", "depths", "rb_sequences"]
-    fetch_names = ["iteration", f"P_diff_avg_{tank_circuit}"]
+    # fetch_names = ["iteration", f"P_diff_{tank_circuit}", "depths", "rb_sequences"]
+    fetch_names = ["iteration", f"P_diff_{tank_circuit}", "rb_sequences"]
     results = fetching_tool(job, data_list=fetch_names)
 
     # At the end of the program, fetch the non-averaged results to get the error-bars
-    iteration, P_diff = results.fetch_all()
+    iteration, P_diff, rb_sequences = results.fetch_all()
 
     # data analysis
     x = circuit_depths

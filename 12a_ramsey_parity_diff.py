@@ -143,7 +143,7 @@ with program() as ramsey_with_detuning:
     # Stream processing section used to process the dat[0, :]a before saving it.
     with stream_processing():
         n_st.save("iteration")
-        P_diff_st.buffer(len(durations)).average().save(f"P_diff_avg_{tank_circuit}")
+        P_diff_st.buffer(len(durations)).average().save(f"P_diff_{tank_circuit}")
 
 
 #####################################
@@ -186,8 +186,8 @@ else:
     )
 
     # Get results from QUA program
-    # fetch_names = ["iteration", f"P_diff_{tank_circuit}", f"P_diff_avg_{tank_circuit}"]
-    fetch_names = ["iteration", f"P_diff_avg_{tank_circuit}"]
+    # fetch_names = ["iteration", f"P_diff_{tank_circuit}", f"P_diff_{tank_circuit}"]
+    fetch_names = ["iteration", f"P_diff_{tank_circuit}"]
 
     results = fetching_tool(job, data_list=fetch_names, mode="live")
 
@@ -196,14 +196,14 @@ else:
     # interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch results
-        iteration, P_diff_avg = results.fetch_all()
+        iteration, P_diff = results.fetch_all()
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle(f"Ramsey with detuning: {tank_circuit}")
         # Plot results
         plt.clf()
-        plt.plot(durations, P_diff_avg)
+        plt.plot(durations, P_diff)
         plt.legend(f"detuning = {detuning / u.MHz} MHz")
         plt.xlabel("Idle duration [ns]")
         plt.ylabel("Average Parity Diff")
@@ -211,8 +211,8 @@ else:
         plt.pause(1)
 
     # Fetch results
-    iteration, P_diff_avg = results.fetch_all()
-    save_data_dict["P_diff"] = P_diff_avg
+    iteration, P_diff = results.fetch_all()
+    save_data_dict["P_diff"] = P_diff
 
     # Fit the data
     try:
@@ -220,7 +220,7 @@ else:
 
         fit = Fit()
         fig_analysis = plt.figure(figsize=(6, 6))
-        ramsey_fit = fit.ramsey(durations, P_diff_avg, plot=True)
+        ramsey_fit = fit.ramsey(durations, P_diff, plot=True)
         qubit_T2 = np.abs(ramsey_fit["T2"][0])
         qubit_detuning = ramsey_fit["f"][0] * u.GHz - detuning
         plt.xlabel("Idle duration [ns]")

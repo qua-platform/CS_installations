@@ -117,7 +117,7 @@ with program() as QUBIT_CHIRP:
     # Stream processing section used to process the data before saving it
     with stream_processing():
         n_st.save("iteration")
-        P_diff_st.buffer(len(durations)).buffer(len(frequencies)).average().save(f"P_diff_avg_{tank_circuit}")
+        P_diff_st.buffer(len(durations)).buffer(len(frequencies)).average().save(f"P_diff_{tank_circuit}")
 
 
 #####################################
@@ -146,8 +146,8 @@ else:
     job = qm.execute(QUBIT_CHIRP)
 
     # Get results from QUA program
-    # fetch_names = ["iteration", f"P_diff_{tank_circuit}", f"P_diff_avg_{tank_circuit}"]
-    fetch_names = ["iteration", f"P_diff_avg_{tank_circuit}"]
+    # fetch_names = ["iteration", f"P_diff_{tank_circuit}", f"P_diff_{tank_circuit}"]
+    fetch_names = ["iteration", f"P_diff_{tank_circuit}"]
 
     results = fetching_tool(job, data_list=fetch_names, mode="live")
 
@@ -156,7 +156,7 @@ else:
 
     while results.is_processing():
         # Fetch results
-        iteration, P_diff_avg = results.fetch_all()
+        iteration, P_diff = results.fetch_all()
 
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
@@ -167,7 +167,7 @@ else:
         # Plot results
         ax = plt.subplot(2, 1, 1)
         ax.set_title(f"Average Parity Diff: {qubit}")
-        ax.pcolor(durations, frequencies / u.MHz, P_diff_avg)
+        ax.pcolor(durations, frequencies / u.MHz, P_diff)
         ax.set_xlabel("Rabi duration [nsec]")
         ax.set_ylabel("Frequency [MHz]")
         xlim = ax.get_xlim()
@@ -176,7 +176,7 @@ else:
 
         ax = plt.subplot(2, 1, 2)
         idx0 = np.where(frequencies == 0)[0][0]
-        ax.plot(durations, P_diff_avg[idx0, :])
+        ax.plot(durations, P_diff[idx0, :])
         ax.set_xlim(xlim)
         ax.set_xlabel("Rabi duration [nsec]")
         ax.set_ylabel(f"Average Parity Diff: {qubit} at 0 detuning")
@@ -185,8 +185,8 @@ else:
         plt.pause(1)
 
     # Fetch results
-    iteration, P_diff_avg = results.fetch_all()
-    save_data_dict["P_diff"] = P_diff_avg
+    iteration, P_diff = results.fetch_all()
+    save_data_dict["P_diff"] = P_diff
 
     # Save results
     script_name = Path(__file__).name

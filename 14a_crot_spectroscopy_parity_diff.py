@@ -135,7 +135,7 @@ with program() as CROT_SPEC:
     # Stream processing section used to process the data before saving it
     with stream_processing():
         n_st.save("iteration")
-        P_diff_st.buffer(len(freqs)).buffer(len(voltages_B)).average().save(f"P_diff_avg_{tank_circuit}")
+        P_diff_st.buffer(len(freqs)).buffer(len(voltages_B)).average().save(f"P_diff_{tank_circuit}")
         for k in range(num_output_streams):
             P_st[k].boolean_to_int().buffer(len(freqs)).buffer(len(voltages_B)).average().save(f"P{k:d}_{tank_circuit}")
 
@@ -166,7 +166,7 @@ else:
     job = qm.execute(CROT_SPEC)
 
     # Get results from QUA program
-    fetch_names = ["iteration", f"P_diff_avg_{tank_circuit}"] + [f"P{k:d}_{tank_circuit}" for k in range(num_output_streams)]
+    fetch_names = ["iteration", f"P_diff_{tank_circuit}"] + [f"P{k:d}_{tank_circuit}" for k in range(num_output_streams)]
     results = fetching_tool(job, data_list=fetch_names, mode="live")
 
     fig = plt.figure()

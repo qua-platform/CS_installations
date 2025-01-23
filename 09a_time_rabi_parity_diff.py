@@ -110,7 +110,7 @@ with program() as QUBIT_CHIRP:
     # Stream processing section used to process the data before saving it
     with stream_processing():
         n_st.save("iteration")
-        P_diff_st.buffer(len(durations)).average().save(f"P_diff_avg_{tank_circuit}")
+        P_diff_st.buffer(len(durations)).average().save(f"P_diff_{tank_circuit}")
 
 
 #####################################
@@ -139,8 +139,8 @@ else:
     job = qm.execute(QUBIT_CHIRP)
 
     # Get results from QUA program
-    # fetch_names = ["iteration", f"P_diff_{tank_circuit}", f"P_diff_avg_{tank_circuit}"]
-    fetch_names = ["iteration", f"P_diff_avg_{tank_circuit}"]
+    # fetch_names = ["iteration", f"P_diff_{tank_circuit}", f"P_diff_{tank_circuit}"]
+    fetch_names = ["iteration", f"P_diff_{tank_circuit}"]
 
     results = fetching_tool(job, data_list=fetch_names, mode="live")
 
@@ -149,7 +149,7 @@ else:
 
     while results.is_processing():
         # Fetch results
-        iteration, P_diff_avg = results.fetch_all()
+        iteration, P_diff = results.fetch_all()
 
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
@@ -158,15 +158,15 @@ else:
 
         plt.clf()
         # Plot results
-        plt.plot(durations, P_diff_avg)
+        plt.plot(durations, P_diff)
         plt.xlabel("Rabi duration [nsec]")
         plt.ylabel(f"Average Parity Diff: {qubit}")
         plt.tight_layout()
         plt.pause(1)
 
     # Fetch results
-    iteration, P_diff_avg = results.fetch_all()
-    save_data_dict["P_diff"] = P_diff_avg
+    iteration, P_diff = results.fetch_all()
+    save_data_dict["P_diff"] = P_diff
 
     # Save results
     script_name = Path(__file__).name

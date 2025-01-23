@@ -191,7 +191,7 @@ else:
     )
 
     # Get results from QUA program
-    # fetch_names = ["iteration", f"P_diff_{tank_circuit}", f"P_diff_avg_{tank_circuit}"]
+    # fetch_names = ["iteration", f"P_diff_{tank_circuit}", f"P_diff_{tank_circuit}"]
     fetch_names = ["iteration"] + [f"P{k:d}_{tank_circuit}" for k in range(num_output_streams)]
     # fetch_names = ["iteration", f"I_{tank_circuit}"]
 
@@ -226,7 +226,7 @@ else:
 
     # Fetch results
     iteration, P0, P1, P2 = results.fetch_all()
-    # save_data_dict["P_diff"] = P_diff_avg
+    # save_data_dict["P_diff"] = P_diff
 
     # # Fit the data
     # try:
@@ -236,7 +236,7 @@ else:
     #     for i, sgn in enumerate([-1, 1]):
     #         fit = Fit()
     #         fig_analysis = plt.figure(figsize=(6, 6))
-    #         ramsey_fit = fit.ramsey(total_durations, P_diff_avg[i, :], plot=True)
+    #         ramsey_fit = fit.ramsey(total_durations, P_diff[i, :], plot=True)
     #         qubit_T2 = np.abs(ramsey_fit["T2"][0])
     #         qubit_detuning = ramsey_fit["f"][0] * u.GHz - sgn * detuning
     #         plt.xlabel("Total Evolution Time [ns]")
