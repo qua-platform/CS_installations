@@ -1,3 +1,4 @@
+# %%
 import pygsti
 import numpy as np
 import pandas as pd
@@ -158,8 +159,14 @@ df["full_sequence_length"] = (
 )
 
 # Save the encoded DataFrame to a CSV file
-output_path = "encoded_parsed_dataset.csv"
+output_path = "encoded_parsed_dataset_test.csv"
 df.to_csv(output_path, encoding="utf8", header=True, index=False)
+
+df1 = pd.read_csv("encoded_parsed_dataset_test.csv", encoding="utf8")
+df2 = pd.read_csv("encoded_parsed_dataset.csv", encoding="utf8")
+assert df1.equals(df2)
 
 # Display the first few rows of the DataFrame
 print(df.head())
+
+# %%
