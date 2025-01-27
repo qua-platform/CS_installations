@@ -75,8 +75,12 @@ num_output_streams = 2
 seed = 345324  # Pseudo-random number generator seed
 do_simulate = False
 
-pi_half_len = QUBIT_CONSTANTS[qubit]["square_pi_len"]
-pi_half_amp = QUBIT_CONSTANTS[qubit]["square_pi_amp"]
+
+wf_type = "square"
+x90 = f"x90_{wf_type}"
+y90 = f"y90_{wf_type}"
+pi_half_len = QUBIT_CONSTANTS[qubit][f"{wf_type}_pi_half_len"]
+pi_half_amp = QUBIT_CONSTANTS[qubit][f"{wf_type}_pi_half_amp"]
 
 
 n_shots_max = 1000
@@ -225,32 +229,32 @@ with program() as PROGRAM_GST:
 
                             # prep & meas fiducials and germs
                             with case_(4):  #   I = XXXX
-                                play("x90_square", qubit)
-                                play("x90_square", qubit)
-                                play("x90_square", qubit)
-                                play("x90_square", qubit)
+                                play(x90, qubit)
+                                play(x90, qubit)
+                                play(x90, qubit)
+                                play(x90, qubit)
                             with case_(5):
-                                play("x90_square", qubit)
+                                play(x90, qubit)
                             with case_(6):
-                                play("y90_square", qubit)
+                                play(y90, qubit)
                             with case_(7):
-                                play("x90_square", qubit)
-                                play("x90_square", qubit)
+                                play(x90, qubit)
+                                play(x90, qubit)
                             with case_(8):
-                                play("x90_square", qubit)
-                                play("y90_square", qubit)
+                                play(x90, qubit)
+                                play(y90, qubit)
                             with case_(9):
-                                play("x90_square", qubit)
-                                play("x90_square", qubit)
-                                play("x90_square", qubit)
+                                play(x90, qubit)
+                                play(x90, qubit)
+                                play(x90, qubit)
                             with case_(10):
-                                play("y90_square", qubit)
-                                play("y90_square", qubit)
-                                play("y90_square", qubit)
+                                play(y90, qubit)
+                                play(y90, qubit)
+                                play(y90, qubit)
                             with case_(11):
-                                play("x90_square", qubit)
-                                play("x90_square", qubit)
-                                play("y90_square", qubit)
+                                play(x90, qubit)
+                                play(x90, qubit)
+                                play(y90, qubit)
 
                 # Perform readout
                 align()
@@ -267,7 +271,7 @@ with program() as PROGRAM_GST:
                 seq.ramp_to_zero()
 
                 # Save the LO iteration to get the progress bar
-                wait(2_000)
+                wait(25_000)
 
             save(n_shots, n_shots_st)
             save(circ_idx, circ_idx_st)

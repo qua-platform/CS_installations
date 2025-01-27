@@ -32,7 +32,7 @@ def get_dataframe_encoded_sequence(pi_half_len):
     df["full_gate_sequence_duration"] = pi_half_len * df["full_native_gate_count"]
     df.reset_index(inplace=True)
     # df = df.head(5)
-    df = df.head(100)
+    # df = df.head(100)
     return df
 
 
@@ -75,8 +75,12 @@ num_output_streams = 2
 seed = 345324  # Pseudo-random number generator seed
 do_simulate = False
 
-pi_half_len = QUBIT_CONSTANTS[qubit]["square_pi_len"]
-pi_half_amp = QUBIT_CONSTANTS[qubit]["square_pi_amp"]
+
+wf_type = "square"
+x90 = f"x90_{wf_type}"
+y90 = f"y90_{wf_type}"
+pi_half_len = QUBIT_CONSTANTS[qubit][f"{wf_type}_pi_half_len"]
+pi_half_amp = QUBIT_CONSTANTS[qubit][f"{wf_type}_pi_half_amp"]
 
 
 n_shots_max = 1000
@@ -220,32 +224,32 @@ with program() as PROGRAM_GST:
 
                             # prep & meas fiducials and germs
                             with case_(4):  #   I = XXXX
-                                play("x90_square", qubit)
-                                play("x90_square", qubit)
-                                play("x90_square", qubit)
-                                play("x90_square", qubit)
+                                play(x90, qubit)
+                                play(x90, qubit)
+                                play(x90, qubit)
+                                play(x90, qubit)
                             with case_(5):
-                                play("x90_square", qubit)
+                                play(x90, qubit)
                             with case_(6):
-                                play("y90_square", qubit)
+                                play(y90, qubit)
                             with case_(7):
-                                play("x90_square", qubit)
-                                play("x90_square", qubit)
+                                play(x90, qubit)
+                                play(x90, qubit)
                             with case_(8):
-                                play("x90_square", qubit)
-                                play("y90_square", qubit)
+                                play(x90, qubit)
+                                play(y90, qubit)
                             with case_(9):
-                                play("x90_square", qubit)
-                                play("x90_square", qubit)
-                                play("x90_square", qubit)
+                                play(x90, qubit)
+                                play(x90, qubit)
+                                play(x90, qubit)
                             with case_(10):
-                                play("y90_square", qubit)
-                                play("y90_square", qubit)
-                                play("y90_square", qubit)
+                                play(y90, qubit)
+                                play(y90, qubit)
+                                play(y90, qubit)
                             with case_(11):
-                                play("x90_square", qubit)
-                                play("x90_square", qubit)
-                                play("y90_square", qubit)
+                                play(x90, qubit)
+                                play(x90, qubit)
+                                play(y90, qubit)
 
                 # Perform readout
                 align()
@@ -265,19 +269,15 @@ with program() as PROGRAM_GST:
                 wait(25_000)
 
             # save(n_shots, n_shots_st)
-            save(circ_idx, circ_idx_st)
+            # save(circ_idx, circ_idx_st)
             save(P0_count, P0_count_st)
-            save(P1_count, P1_count_st)
+            # save(P1_count, P1_count_st)
 
     with stream_processing():
         # n_shots_st.buffer(num_cicuits).buffer(num_n_shots).save("n_shots_history")
-        circ_idx_st.buffer(num_cicuits).buffer(num_n_shots).save("circ_idx_history")
+        # circ_idx_st.buffer(num_cicuits).buffer(num_n_shots).save("circ_idx_history")
         P0_count_st.buffer(num_cicuits).buffer(num_n_shots).save(f"P0_count_{tank_circuit}")
-        P1_count_st.buffer(num_cicuits).buffer(num_n_shots).save(f"P1_count_{tank_circuit}")
-        # n_shots_st.buffer(num_cicuits).save("n_shots_history")
-        # circ_idx_st.buffer(num_cicuits).save("circ_idx_history")
-        # P0_count_st.buffer(num_cicuits).save(f"P0_count_{tank_circuit}")
-        # P1_count_st.buffer(num_cicuits).save(f"P1_count_{tank_circuit}")
+        # P1_count_st.buffer(num_cicuits).buffer(num_n_shots).save(f"P1_count_{tank_circuit}")
 
 
 #####################################
@@ -327,8 +327,12 @@ else:
         data_handler.create_data_folder(name=Path(__file__).stem)
 
     ress = []
+    n_shots_lists = []
+    circ_idx_lists = []
     start_time = datetime.now()
     for _n_shots in list_n_shots:
+        n_shots_list = []
+        circ_idx_list = []
         this_df = df_enc_seqs.sample(frac=1, random_state=_n_shots)
 
         for i_row, (_, row) in enumerate(this_df.iterrows()):
@@ -345,18 +349,29 @@ else:
 
             job.push_to_input_stream("_encoded_circuit", _encoded_circuit)
 
+            n_shots_list.append(_n_shots)
+            circ_idx_list.append(C)
+
+        n_shots_lists.append(n_shots_list)
+        circ_idx_lists.append(circ_idx_list)
+
+    print("get a fetching tool")
+    # fetch_names = ["n_shots_history", "circ_idx_history", f"P0_count_{tank_circuit}", f"P1_count_{tank_circuit}"]
+    fetch_names = [f"P0_count_{tank_circuit}"]
     results = fetching_tool(job, data_list=fetch_names)
 
     # Fetch results
     print("fetch result!")
-    # circuit_idx_history, P0_count, P1_count = results.fetch_all()
-    circuit_idx_history, P0_count = results.fetch_all()
+    res = results.fetch_all()
 
     print("save result!")
+    save_data_dict["P0_count"] = res[0]
+
+    # print("save result!")
     # save_data_dict["n_shots_history"] = res[0]
-    save_data_dict["circ_idx_history"] = circuit_idx_history
-    save_data_dict["P0_count"] = P0_count
-    # save_data_dict["P1_count"] = P1_count
+    # save_data_dict["circ_idx_history"] = res[1]
+    # save_data_dict["P0_count"] = res[2]
+    # save_data_dict["P1_count"] = res[3]
 
     # Save results
     script_name = Path(__file__).name
