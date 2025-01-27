@@ -5,15 +5,18 @@ from configuration_with_lffem_csrack import *
 # from configuration_with_lffem import *
 
 
-qubit = "qubit1"
-pi_len = QUBIT_CONSTANTS[qubit]["square_pi_len"]
+qubit = "qubit5"
+wf_type = "square"
+pi_len = QUBIT_CONSTANTS[qubit][f"{wf_type}_pi_len"]
+pi_half_len = QUBIT_CONSTANTS[qubit][f"{wf_type}_pi_half_len"]
 
 x180_len = pi_len
-x90_len = pi_len
-minus_x90_len = pi_len
+x90_len = pi_half_len
+minus_x90_len = pi_half_len
 y180_len = pi_len
-y90_len = pi_len
-minus_y90_len = pi_len
+y90_len = pi_half_len
+minus_y90_len = pi_half_len
+
 
 inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
 map_clifford_to_num_gates = {

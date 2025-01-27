@@ -257,7 +257,6 @@ else:
     r_c_std = stdevs[2] * (1 - 1 / 2**1)
     r_g_std = r_c_std / (44 / 24)  # 1.875
 
-
     print("#########################")
     print("### Useful Parameters ###")
     print("#########################")
