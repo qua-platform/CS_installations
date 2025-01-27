@@ -34,7 +34,7 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 ###################
 # The QUA program #
 ###################
-tank_circuit = "tank_circuit1"
+tank_circuit = "tank_circuit2"
 n_avg = 100  # Number of averaging loops
 # The frequency axis
 frequencies = np.linspace(50 * u.MHz, 350 * u.MHz, 101)

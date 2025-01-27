@@ -61,6 +61,8 @@ tau_min = 16
 tau_max = 35_000
 tau_step = 100
 durations = np.arange(tau_min, tau_max, tau_step)
+# n_tau_steps = 101
+# durations = np.geomspace(tau_min, tau_max, n_tau_steps).astype(int)
 # Pulse frequency sweep in Hz
 detuning = 1 * u.MHz
 detunings = [-detuning, +detuning]
@@ -109,6 +111,7 @@ with program() as ramsey_with_detuning:
             update_frequency(qubit, intermediate_frequency + df)
 
             with for_(*from_array(d, durations)):  # Loop over the qubit pulse duration
+            # with for_each_(d, durations):
                 assign(d_ops, RF_SWITCH_DELAY + pi_len + d + pi_len + RF_SWITCH_DELAY)
 
                 P1 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)

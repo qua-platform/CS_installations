@@ -30,6 +30,7 @@ from qualang_tools.loops import from_array
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import fetching_tool, progress_counter
 from scipy.optimize import curve_fit
+from qualang_tools.results.data_handler import DataHandler
 
 from configuration_with_lffem_csrack import *
 # from configuration_with_lffem import *
@@ -54,12 +55,25 @@ seed = 1234  # Pseudo-random number generator seed
 
 n_avg = 2
 num_of_sequences = 3  # Number of random sequences
-circuit_depth_min = 1500
-circuit_depth_max = 15500 # worked up to 15500
+circuit_depth_min = 1000
+circuit_depth_max = 7000 # worked up to 15500
 delta_clifford = 1000
 circuit_depths = np.arange(circuit_depth_min, circuit_depth_max + 1, delta_clifford)
 pi_len = QUBIT_CONSTANTS[qubit]["square_pi_len"]
 assert (circuit_depth_max - circuit_depth_min) % delta_clifford == 0
+
+save_data_dict = {
+    "qubits": qubits,
+    "sweep_gates": sweep_gates,
+    "tank_circuit": tank_circuit,
+    "seed": seed,
+    "n_avg": n_avg,
+    "num_of_sequences": num_of_sequences,
+    "circuit_depth_min": circuit_depth_min,
+    "circuit_depth_max": circuit_depth_max,
+    "delta_clifford": delta_clifford,
+    "config": config,
+}
 
 
 ###################
@@ -221,48 +235,65 @@ else:
 
     # At the end of the program, fetch the non-averaged results to get the error-bars
     iteration, P_diff = results.fetch_all()
+    save_data_dict["P_diff"] = P_diff
 
-    # # data analysis
-    # x = circuit_depths
-    # pars, cov = curve_fit(
-    #     f=power_law,
-    #     xdata=x,
-    #     ydata=P_diff,
-    #     p0=[0.5, 0.5, 0.9],
-    #     bounds=(-np.inf, np.inf),
-    #     maxfev=2000,
-    # )
-    # stdevs = np.sqrt(np.diag(cov))
 
-    # print("#########################")
-    # print("### Fitted Parameters ###")
-    # print("#########################")
-    # print(f"A = {pars[0]:.3} ({stdevs[0]:.1}), B = {pars[1]:.3} ({stdevs[1]:.1}), p = {pars[2]:.3} ({stdevs[2]:.1})")
-    # print("Covariance Matrix")
-    # print(cov)
+    # data analysis
+    x = circuit_depths
+    pars, cov = curve_fit(
+        f=power_law,
+        xdata=x,
+        ydata=P_diff,
+        p0=[0.5, 0.5, 0.9],
+        bounds=(-np.inf, np.inf),
+        maxfev=2000,
+    )
+    stdevs = np.sqrt(np.diag(cov))
 
-    # one_minus_p = 1 - pars[2]
-    # r_c = one_minus_p * (1 - 1 / 2**1)
-    # r_g = r_c / 1.875  # 1.875 is the average number of gates in clifford operation
-    # r_c_std = stdevs[2] * (1 - 1 / 2**1)
-    # r_g_std = r_c_std / 1.875
+    print("#########################")
+    print("### Fitted Parameters ###")
+    print("#########################")
+    log_cov = f"A = {pars[0]:.3} ({stdevs[0]:.1}), B = {pars[1]:.3} ({stdevs[1]:.1}), p = {pars[2]:.3} ({stdevs[2]:.1})"
+    print(log_cov)
+    print("Covariance Matrix")
+    print(cov)
+    save_data_dict["log_cov"] = log_cov
 
-    # print("#########################")
-    # print("### Useful Parameters ###")
-    # print("#########################")
-    # print(f"Error rate: 1-p = {np.format_float_scientific(one_minus_p, precision=2)} ({stdevs[2]:.1})\n" f"Clifford set infidelity: r_c = {np.format_float_scientific(r_c, precision=2)} ({r_c_std:.1})\n" f"Gate infidelity: r_g = {np.format_float_scientific(r_g, precision=2)}  ({r_g_std:.1})")
+    one_minus_p = 1 - pars[2]
+    r_c = one_minus_p * (1 - 1 / 2**1)
+    r_g = r_c / (44 / 24)  # 1.875  # 1.875 is the average number of gates in clifford operation
+    r_c_std = stdevs[2] * (1 - 1 / 2**1)
+    r_g_std = r_c_std / (44 / 24)  # 1.875
 
-    # # Plots
-    # plt.figure()
-    # plt.plot(x, P_diff, marker=".")
-    # plt.plot(x, power_law(x, *pars), linestyle="--", linewidth=2)
-    # plt.xlabel("Number of Clifford gates")
-    # plt.ylabel("Sequence Fidelity")
-    # plt.title("Single qubit RB")
-    # plt.show()
+    print("#########################")
+    print("### Useful Parameters ###")
+    print("#########################")
+    log_this = f"Error rate: 1-p = {np.format_float_scientific(one_minus_p, precision=2)} ({stdevs[2]:.1})\n" f"Clifford set infidelity: r_c = {np.format_float_scientific(r_c, precision=2)} ({r_c_std:.1})\n" f"Gate infidelity: r_g = {np.format_float_scientific(r_g, precision=2)}  ({r_g_std:.1})"
+    print(log_this)
+    save_data_dict["log_this"] = log_this
 
-    # np.savez("rb_values", value)
+    # Plots
+    fig_analysis = plt.figure()
+    plt.plot(x, P_diff, marker=".")
+    plt.plot(x, power_law(x, *pars), linestyle="--", linewidth=2)
+    plt.xlabel("Number of Clifford gates")
+    plt.ylabel("Sequence Fidelity")
+    plt.title("Single qubit RB")
+    plt.show()
+
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
+    # np.savez("rb_values", value)
+
+    # Save results
+    script_name = Path(__file__).name
+    data_handler = DataHandler(root_data_folder=save_dir)
+    save_data_dict.update({"fig_analysis": fig_analysis})
+    data_handler.additional_files = {
+        script_name: script_name,
+        **default_additional_files,
+    }
+    data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
+
     qm.close()
 
 # %%

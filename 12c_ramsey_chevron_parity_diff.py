@@ -40,6 +40,8 @@ tau_min = 16
 tau_max = 15_000
 tau_step = 16
 durations = np.arange(tau_min, tau_max, tau_step)
+# n_tau_steps = 101
+# durations = np.geomspace(tau_min, tau_max, n_tau_steps).astype(int)
 # Pulse frequency sweep in Hz
 detunings = np.arange(-0.5 * u.MHz, 0.51 * u.MHz, 0.01 * u.MHz)
 frequencies = detunings + QUBIT_CONSTANTS[qubit]["IF"]
@@ -85,6 +87,7 @@ with program() as QUBIT_CHIRP:
             update_frequency(qubit, f)
 
             with for_(*from_array(d, durations)):  # Loop over the qubit pulse duration
+            # with for_each_(d, durations):
                 assign(d_ops, RF_SWITCH_DELAY + pi_len + d + pi_len + RF_SWITCH_DELAY)
 
                 P1 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)

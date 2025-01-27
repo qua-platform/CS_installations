@@ -41,13 +41,13 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 ###################
 
 run_live = False  # True
-Px = "P5"
-Py = "P4"
+Px = "P4"
+Py = "P3"
 tank_circuit = "tank_circuit2"
 
 n_avg = 1000000 if run_live else 100  # Number of averaging loops
-n_voltages_Px = 201
-n_voltages_Py = 201
+n_voltages_Px = 101
+n_voltages_Py = 101
 
 # Voltages in Volt
 voltages_Px = np.linspace(-0.08, 0.08, n_voltages_Px)

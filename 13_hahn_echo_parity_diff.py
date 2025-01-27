@@ -61,6 +61,8 @@ tau_min = 16
 tau_max = 20_000
 tau_step = 1000
 durations = np.arange(tau_min, tau_max, tau_step)
+# n_tau_steps = 101
+# durations = np.geomspace(tau_min, tau_max, n_tau_steps).astype(int)
 total_durations = 2 * durations
 
 # Pulse frequency sweep in Hz
@@ -82,7 +84,7 @@ save_data_dict = {
 
 
 with program() as ramsey_with_detuning:
-    tau = declare(int)
+    d = declare(int)
     d_ops = declare(int)  # QUA variable for the qubit pulse duration
     n = declare(int)  # QUA integer used as an index for the averaging loop
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
@@ -106,8 +108,9 @@ with program() as ramsey_with_detuning:
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
 
-        with for_(*from_array(tau, durations)):  # Loop over the qubit pulse duration
-            assign(d_ops, RF_SWITCH_DELAY + pi_half_len + tau + pi_len + tau + pi_half_len + RF_SWITCH_DELAY)
+        with for_(*from_array(d, durations)):  # Loop over the qubit pulse duration
+        # with for_each_(d, durations):
+            assign(d_ops, RF_SWITCH_DELAY + pi_half_len + d + pi_len + d + pi_half_len + RF_SWITCH_DELAY)
 
             P1 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
 
@@ -121,9 +124,9 @@ with program() as ramsey_with_detuning:
 
             # with stric
             play(x90, qubit)
-            wait(tau >> 2, qubit)
+            wait(d >> 2, qubit)
             play(y180, qubit)
-            wait(tau >> 2, qubit)
+            wait(d >> 2, qubit)
             play(x90, qubit)
 
             align()

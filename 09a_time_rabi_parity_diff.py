@@ -39,6 +39,8 @@ tau_min = 16
 tau_max = 100_000
 tau_step = 52
 durations = np.arange(tau_min, tau_max, tau_step)
+# n_tau_steps = 101
+# durations = np.geomspace(tau_min, tau_max, n_tau_steps).astype(int)
 
 
 save_data_dict = {
@@ -75,6 +77,7 @@ with program() as QUBIT_CHIRP:
         save(n, n_st)
 
         with for_(*from_array(d, durations)):  # Loop over the qubit pulse duration
+        # with for_each_(d, durations):
             assign(d_ops, (RF_SWITCH_DELAY + d + RF_SWITCH_DELAY) >> 2)
 
             P1 = measure_parity(I, Q, None, None, None, None, tank_circuit, threshold)
