@@ -1,3 +1,17 @@
+.devcontainer
+.env
 .idea
 __pycache__
 .pytest_cache/
+.ssh
+backup
+backup\ \(2\)
+backup_5q
+backup_20250114
+code_snapshot_20250115
+data
+gate_set_tomography
+kaiser
+offline
+pyGSTi
+RB
