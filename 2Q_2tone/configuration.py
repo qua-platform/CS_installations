@@ -117,7 +117,7 @@ config = {
                         # Q readout
                         2: {
                             "offset": 0.0,
-                            "output_mode": "amplified",
+                            "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "mw",
                         },
@@ -131,7 +131,7 @@ config = {
                         # Q drive
                         4: {
                             "offset": 0.0,
-                            "output_mode": "amplified",
+                            "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "mw",
                         },
@@ -151,9 +151,9 @@ config = {
                         1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},  # I readout input
                         2: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},  # Q readout input
                     },
-                }
+                },
             },
-        }
+        },
     },
     "elements": {
         "P1": {
@@ -175,7 +175,7 @@ config = {
                 "step": "P1_step_pulse",
             },
         },
-        "readout": {
+        "resonator": {
             "RF_inputs": {"port": ("oct1", 1)},
             "RF_outputs": {"port": ("oct1", 1)},
             "intermediate_frequency": resonator_IF,
