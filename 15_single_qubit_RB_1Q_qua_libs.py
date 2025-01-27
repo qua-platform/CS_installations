@@ -35,6 +35,7 @@ from qualang_tools.results.data_handler import DataHandler
 from configuration_with_lffem_csrack import *
 # from configuration_with_lffem import *
 from macros_initialization_and_readout_2q import *
+# from macros_rb_xyonly import *
 from macros_rb import *
 from macros_voltage_gate_sequence import VoltageGateSequence
 
@@ -55,9 +56,9 @@ seed = 1234  # Pseudo-random number generator seed
 
 n_avg = 2
 num_of_sequences = 3  # Number of random sequences
-circuit_depth_min = 1500
-circuit_depth_max = 15500 # worked up to 15500
-delta_clifford = 1000
+circuit_depth_min = 100
+circuit_depth_max = 1600 # worked up to 15500
+delta_clifford = 100
 circuit_depths = np.arange(1, circuit_depth_max + 0.1, delta_clifford)
 pi_len = QUBIT_CONSTANTS[qubit]["square_pi_len"]
 pi_amp = QUBIT_CONSTANTS[qubit]["square_pi_amp"]

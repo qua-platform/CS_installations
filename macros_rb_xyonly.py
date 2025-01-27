@@ -1,19 +1,9 @@
-import matplotlib.pyplot as plt
-from qm import (CompilerOptionArguments, QuantumMachinesManager,
-                SimulationConfig)
 from qm.qua import *
-from qualang_tools.addons.variables import assign_variables_to_element
-from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.results import fetching_tool, progress_counter
-from scipy.optimize import curve_fit
+from rb_cayley_table import *
 
 from configuration_with_lffem_csrack import *
 # from configuration_with_lffem import *
-from macros_voltage_gate_sequence import VoltageGateSequence
 
-# from configuration_with_lffem_saas import *
-# from configuration_with_opxplus import *
 
 
 qubit = "qubit5"
