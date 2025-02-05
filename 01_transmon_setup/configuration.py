@@ -1,8 +1,8 @@
 from pathlib import Path
+
 import numpy as np
 from qualang_tools.config.waveform_tools import drag_gaussian_pulse_waveforms
 from qualang_tools.units import unit
-
 
 #######################
 # AUXILIARY FUNCTIONS #
@@ -44,13 +44,29 @@ octave_config = None
 #############################################
 #                  Qubits                   #
 #############################################
-qubit_LO = 7.4 * u.GHz
-qubit_IF = 110 * u.MHz
-mixer_qubit_g = 0.0
-mixer_qubit_phi = 0.0
+qubit_LO = 6.0 * u.GHz
+I_dc_correction_qubits = 0.0
+Q_dc_correction_qubits = 0.0
 
-qubit_T1 = int(10 * u.us)
-thermalization_time = 5 * qubit_T1
+
+q1_IF = 110 * u.MHz
+mixer_q1_g = 0.0
+mixer_q1_phi = 0.0
+
+q2_IF = 110 * u.MHz
+mixer_q1_g = 0.0
+mixer_q1_phi = 0.0
+
+q3_IF = 110 * u.MHz
+mixer_q1_g = 0.0
+mixer_q1_phi = 0.0
+
+q4_IF = 110 * u.MHz
+mixer_q1_g = 0.0
+mixer_q1_phi = 0.0
+
+q_T1 = int(50 * u.us)
+thermalization_time = 5 * q_T1
 
 # Continuous wave
 const_len = 100
@@ -143,8 +159,14 @@ minus_y90_Q_wf = minus_y90_wf
 #############################################
 #                Resonators                 #
 #############################################
-resonator_LO = 4.8 * u.GHz
-resonator_IF = 60 * u.MHz
+resonator_LO = 7.3 * u.GHz
+
+
+resonator_q1_IF = 60 * u.MHz
+resonator_q1_IF = 60 * u.MHz
+resonator_q1_IF = 60 * u.MHz
+resonator_q1_IF = 60 * u.MHz
+
 mixer_resonator_g = 0.0
 mixer_resonator_phi = 0.0
 
@@ -168,9 +190,13 @@ else:
     opt_weights_minus_real = [(-1.0, readout_len)]
 
 ##########################################
-#               Flux line                #
+#               Flux lines               #
 ##########################################
-max_frequency_point = 0.0
+max_frequency_point_q1 = 0.0
+max_frequency_point_q2 = 0.0
+max_frequency_point_q3 = 0.0
+max_frequency_point_q4 = 0.0
+
 flux_settle_time = 100 * u.ns
 
 # Resonator frequency versus flux fit parameters according to resonator_spec_vs_flux
@@ -194,11 +220,14 @@ config = {
     "controllers": {
         "con1": {
             "analog_outputs": {
-                1: {"offset": 0.0},  # I qubit
-                2: {"offset": 0.0},  # Q qubit
+                1: {"offset": I_dc_correction_qubits},  # I qubits
+                2: {"offset": Q_dc_correction_qubits},  # Q qubits
                 3: {"offset": 0.0},  # I resonator
                 4: {"offset": 0.0},  # Q resonator
-                5: {"offset": max_frequency_point},  # flux line
+                5: {"offset": max_frequency_point_q1},  # flux line q1
+                6: {"offset": max_frequency_point_q2},  # flux line q2
+                7: {"offset": max_frequency_point_q3},  # flux line q3
+                8: {"offset": max_frequency_point_q4},  # flux line q4
             },
             "digital_outputs": {
                 1: {},
@@ -210,14 +239,14 @@ config = {
         },
     },
     "elements": {
-        "qubit": {
+        "qubit_1": {
             "mixInputs": {
                 "I": ("con1", 1),
                 "Q": ("con1", 2),
                 "lo_frequency": qubit_LO,
                 "mixer": "mixer_qubit",
             },
-            "intermediate_frequency": qubit_IF,
+            "intermediate_frequency": q1_IF,
             "operations": {
                 "cw": "const_pulse",
                 "saturation": "saturation_pulse",
@@ -231,14 +260,77 @@ config = {
                 "-y90": "-y90_pulse",
             },
         },
-        "resonator": {
+        "qubit_2": {
+            "mixInputs": {
+                "I": ("con1", 1),
+                "Q": ("con1", 2),
+                "lo_frequency": qubit_LO,
+                "mixer": "mixer_qubit",
+            },
+            "intermediate_frequency": q1_IF,
+            "operations": {
+                "cw": "const_pulse",
+                "saturation": "saturation_pulse",
+                "pi": "pi_pulse",
+                "pi_half": "pi_half_pulse",
+                "x180": "x180_pulse",
+                "x90": "x90_pulse",
+                "-x90": "-x90_pulse",
+                "y90": "y90_pulse",
+                "y180": "y180_pulse",
+                "-y90": "-y90_pulse",
+            },
+        },
+        "qubit_3": {
+            "mixInputs": {
+                "I": ("con1", 1),
+                "Q": ("con1", 2),
+                "lo_frequency": qubit_LO,
+                "mixer": "mixer_qubit",
+            },
+            "intermediate_frequency": q1_IF,
+            "operations": {
+                "cw": "const_pulse",
+                "saturation": "saturation_pulse",
+                "pi": "pi_pulse",
+                "pi_half": "pi_half_pulse",
+                "x180": "x180_pulse",
+                "x90": "x90_pulse",
+                "-x90": "-x90_pulse",
+                "y90": "y90_pulse",
+                "y180": "y180_pulse",
+                "-y90": "-y90_pulse",
+            },
+        },
+        "qubit_4": {
+            "mixInputs": {
+                "I": ("con1", 1),
+                "Q": ("con1", 2),
+                "lo_frequency": qubit_LO,
+                "mixer": "mixer_qubit",
+            },
+            "intermediate_frequency": q1_IF,
+            "operations": {
+                "cw": "const_pulse",
+                "saturation": "saturation_pulse",
+                "pi": "pi_pulse",
+                "pi_half": "pi_half_pulse",
+                "x180": "x180_pulse",
+                "x90": "x90_pulse",
+                "-x90": "-x90_pulse",
+                "y90": "y90_pulse",
+                "y180": "y180_pulse",
+                "-y90": "-y90_pulse",
+            },
+        },
+        "resonator_q1": {
             "mixInputs": {
                 "I": ("con1", 3),
                 "Q": ("con1", 4),
                 "lo_frequency": resonator_LO,
                 "mixer": "mixer_resonator",
             },
-            "intermediate_frequency": resonator_IF,
+            "intermediate_frequency": resonator_q1_IF,
             "operations": {
                 "cw": "const_pulse",
                 "readout": "readout_pulse",
