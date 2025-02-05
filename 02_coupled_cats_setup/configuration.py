@@ -28,8 +28,8 @@ def IQ_imbalance(g, phi):
 ######################
 # Network parameters #
 ######################
-qop_ip = "127.0.0.1"  # Write the QM router IP address
-cluster_name = None  # Write your cluster_name if version >= QOP220
+qop_ip = "172.16.33.101"  # Write the QM router IP address
+cluster_name = "Cluster_81"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 # Path to save data
@@ -61,7 +61,7 @@ mixer_memory2_p = 0.00
 # Experiment Parameters #
 #########################
 ATS1_LO = 7.1 * u.GHz
-ATS1_IF = 100 * u.MHz
+ATS1_IF = 50 * u.MHz
 two_P_pump1_IF = 100 * u.MHz
 two_P_pump2_IF = 100 * u.MHz
 memory1_IF = 100 * u.MHz
@@ -80,6 +80,17 @@ const_len = 1 * u.us  # Length of the constant pulse
 const_amp = 0.1  # Amplitude of the constant pulse
 ATS1_drive_len = 1 * u.us  # Length of the drive pulse
 ATS2_drive_len = 1 * u.us  # Length of the drive pulse
+
+time_of_flight = 24
+
+memory1_pi_len = 100 * u.ns  # Length of the pi pulse
+memory2_pi_len = 100 * u.ns  # Length of the pi pulse
+memory1_pi_amp = 0.1  # Amplitude of the pi pulse
+memory2_pi_amp = 0.1  # Amplitude of the pi pulse
+
+saturation_amp = 0.3
+ATS1_readout_amp = 0.1
+ATS2_readout_amp = 0.1
 
 
 #############################################
@@ -138,6 +149,8 @@ config = {
             "outputs": {
                 "out1": ("con1", 1),
             },
+            "time_of_flight": time_of_flight,
+            "smearing": 0,
         },
         "ATS2": {
             "mixInputs": {
@@ -155,6 +168,8 @@ config = {
             "outputs": {
                 "out1": ("con2", 1),
             },
+            "time_of_flight": time_of_flight,
+            "smearing": 0,
         },
         "pump_trigger1": {
             "digitalInputs": {
@@ -182,8 +197,8 @@ config = {
         },
         "memory1": {
             "mixInputs": {
-                "I": ("con1", 5),
-                "Q": ("con2", 6),
+                "I": ("con1", 3),
+                "Q": ("con2", 4),
                 "lo_frequency": memory1_LO,
                 "mixer": "mixer_twoP_pump2",
             },
@@ -195,8 +210,8 @@ config = {
         },
         "memory2": {
             "mixInputs": {
-                "I": ("con2", 5),
-                "Q": ("con2", 6),
+                "I": ("con2", 3),
+                "Q": ("con2", 4),
                 "lo_frequency": memory2_LO,
                 "mixer": "mixer_twoP_pump2",
             },
@@ -264,19 +279,32 @@ config = {
                 "Q": "zero_wf",
             },
         },
+        "memory1_pi_pulse": {
+            "operation": "control",
+            "length": memory1_pi_len,
+            "waveforms": {
+                "I": "memory1_pi_wf_I",
+                "Q": "memory1_pi_wf_Q",
+            },
+        },
+        "memory2_pi_pulse": {
+            "operation": "control",
+            "length": memory2_pi_len,
+            "waveforms": {
+                "I": "memory2_pi_wf_I",
+                "Q": "memory2_pi_wf_Q",
+            },
+        },
         "drive_pulse_ATS1": {
             "operation": "control",
             "length": ATS1_drive_len,
-            "waveforms": {
-                "I": "saturation_drive_wf",
-                "Q": "zero_wf"
-            },
+            "waveforms": {"I": "saturation_drive_wf", "Q": "zero_wf"},
         },
         "readout_pulse_ATS1": {
             "operation": "measurement",
             "length": readout_len,
             "waveforms": {
-                "I": "zero_wf",
+                "I": "ATS1_readout_wf",
                 "Q": "zero_wf",
             },
             "integration_weights": {
@@ -289,16 +317,13 @@ config = {
         "drive_pulse_ATS2": {
             "operation": "control",
             "length": ATS2_drive_len,
-            "waveforms": {
-                "I": "saturation_drive_wf",
-                "Q": "zero_wf"
-            },
+            "waveforms": {"I": "saturation_drive_wf", "Q": "zero_wf"},
         },
         "readout_pulse_ATS2": {
             "operation": "measurement",
             "length": readout_len,
             "waveforms": {
-                "I": "zero_wf",
+                "I": "ATS2_readout_wf",
                 "Q": "zero_wf",
             },
             "integration_weights": {
@@ -321,7 +346,50 @@ config = {
     },
     "waveforms": {
         "const_wf": {"type": "constant", "sample": const_amp},
+        "ATS1_readout_wf": {"type": "constant", "sample": ATS1_readout_amp},
+        "ATS2_readout_wf": {"type": "constant", "sample": ATS2_readout_amp},
         "zero_wf": {"type": "constant", "sample": 0.0},
+        "memory1_pi_wf_I": {
+            "type": "arbitrary",
+            "samples": drag_gaussian_pulse_waveforms(
+                amplitude=memory1_pi_amp,
+                length=memory1_pi_len,
+                sigma=memory1_pi_len / 4,
+                alpha=0.0,
+                anharmonicity=200 * u.MHz,
+            )[0],
+        },
+        "memory1_pi_wf_Q": {
+            "type": "arbitrary",
+            "samples": drag_gaussian_pulse_waveforms(
+                amplitude=memory1_pi_amp,
+                length=memory1_pi_len,
+                sigma=memory1_pi_len / 4,
+                alpha=0.0,
+                anharmonicity=200 * u.MHz,
+            )[1],
+        },
+        "memory2_pi_wf_I": {
+            "type": "arbitrary",
+            "samples": drag_gaussian_pulse_waveforms(
+                amplitude=memory2_pi_amp,
+                length=memory2_pi_len,
+                sigma=memory2_pi_len / 4,
+                alpha=0.0,
+                anharmonicity=200 * u.MHz,
+            )[0],
+        },
+        "memory2_pi_wf_Q": {
+            "type": "arbitrary",
+            "samples": drag_gaussian_pulse_waveforms(
+                amplitude=memory2_pi_amp,
+                length=memory2_pi_len,
+                sigma=memory2_pi_len / 4,
+                alpha=0.0,
+                anharmonicity=200 * u.MHz,
+            )[1],
+        },
+        "saturation_drive_wf": {"type": "constant", "sample": saturation_amp},
     },
     "digital_waveforms": {
         "ON": {"samples": [(1, 0)]},
