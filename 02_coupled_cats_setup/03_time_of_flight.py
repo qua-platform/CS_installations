@@ -27,31 +27,37 @@ from scipy.signal import savgol_filter
 ###################
 n_avg = 100  # Number of averaging loops
 
+element1 = "ATS1"  # The element to measure
+element2 = "ATS2"  # The element to measure
+
 with program() as raw_trace_prog:
     n = declare(int)  # QUA variable for the averaging loop
-    adc_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace
+    adc_st1 = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace
+    adc_st2 = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace
 
     with for_(n, 0, n < n_avg, n + 1):
         # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
-        reset_phase("resonator")
+        reset_if_phase(element1)
+        reset_if_phase(element2)
         # Sends the readout pulse and stores the raw ADC traces in the stream called "adc_st"
-        measure("readout", "resonator", adc_st)
+        measure("readout", element1, adc_st1)
+        measure("readout", element2, adc_st2)
         # Wait for the resonator to deplete
-        wait(depletion_time * u.ns, "resonator")
+        wait(1000 * u.ns)
 
     with stream_processing():
         # Will save average:
-        adc_st.input1().average().save("adc1")
-        adc_st.input2().average().save("adc2")
+        adc_st1.input1().average().save("adc1")
+        adc_st2.input1().average().save("adc2")
         # Will save only last run:
-        adc_st.input1().save("adc1_single_run")
-        adc_st.input2().save("adc2_single_run")
+        adc_st1.input1().save("adc1_single_run")
+        adc_st2.input1().save("adc2_single_run")
 
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
 
 #######################
 # Simulate or execute #
@@ -86,11 +92,15 @@ else:
     adc1_unbiased = adc1 - np.mean(adc1)
     adc2_unbiased = adc2 - np.mean(adc2)
     # Filter the data to get the pulse arrival time
-    signal = savgol_filter(np.abs(adc1_unbiased + 1j * adc2_unbiased), 11, 3)
+    signal1 = savgol_filter(np.abs(adc1_unbiased), 11, 3)
+    signal2 = savgol_filter(np.abs(adc2_unbiased), 11, 3)
     # Detect the arrival of the readout signal
-    th = (np.mean(signal[:100]) + np.mean(signal[:-100])) / 2
-    delay = np.where(signal > th)[0][0]
-    delay = np.round(delay / 4) * 4  # Find the closest multiple integer of 4ns
+    th = (np.mean(signal1[:100]) + np.mean(signal1[:-100])) / 2
+    delay1 = np.where(signal1 > th)[0][0]
+    delay1 = np.round(delay1 / 4) * 4  # Find the closest multiple integer of 4ns
+    th = (np.mean(signal2[:100]) + np.mean(signal2[:-100])) / 2
+    delay2 = np.where(signal2 > th)[0][0]
+    delay2 = np.round(delay2 / 4) * 4  # Find the closest multiple integer of 4ns
 
     # Plot data
     fig = plt.figure()
@@ -104,7 +114,8 @@ else:
     plt.axhline(y=-0.5)
     plt.plot(xl, adc1_mean * np.ones(2), "k--")
     plt.plot(xl, adc2_mean * np.ones(2), "k--")
-    plt.plot(delay * np.ones(2), yl, "k--")
+    plt.plot(delay1 * np.ones(2), yl, "k--")
+    plt.plot(delay2 * np.ones(2), yl, "g--")
     plt.xlabel("Time [ns]")
     plt.ylabel("Signal amplitude [V]")
     plt.legend()
@@ -116,7 +127,8 @@ else:
     yl = plt.ylim()
     plt.plot(xl, adc1_mean * np.ones(2), "k--")
     plt.plot(xl, adc2_mean * np.ones(2), "k--")
-    plt.plot(delay * np.ones(2), yl, "k--")
+    plt.plot(delay1 * np.ones(2), yl, "k--")
+    plt.plot(delay2 * np.ones(2), yl, "g--")
     plt.xlabel("Time [ns]")
     plt.legend()
     plt.grid("all")
@@ -126,4 +138,5 @@ else:
     # Update the config
     print(f"DC offset to add to I in the config: {-adc1_mean:.6f} V")
     print(f"DC offset to add to Q in the config: {-adc2_mean:.6f} V")
-    print(f"Time Of Flight to add in the config: {delay} ns")
+    print(f"Time Of Flight to add in the config for ATS1: {delay1} ns")
+    print(f"Time Of Flight to add in the config for ATS2: {delay2} ns")

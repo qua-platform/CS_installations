@@ -32,13 +32,11 @@ with program() as raw_trace_prog:
         # Wait for the resonator to deplete
         wait(1000 * u.ns, element)
 
-    # with stream_processing():
-    #     # Will save average:
-    #     adc_st.input1().average().save("adc1")
-    #     # adc_st.input2().average().save("adc2")
-    #     # Will save only last run:
-    #     adc_st.input1().save("adc1_single_run")
-    #     # adc_st.input2().save("adc2_single_run")
+    with stream_processing():
+        # Will save average:
+        adc_st.input1().average().save("adc1")
+        # Will save only last run:
+        adc_st.input1().save("adc1_single_run")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -48,11 +46,11 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=10_000 >> 2)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, raw_trace_prog, simulation_config)
     # Plot the simulated samples
@@ -70,15 +68,12 @@ else:
     res_handles.wait_for_all_values()
     # Fetch the raw ADC traces and convert them into Volts
     adc1 = u.raw2volts(res_handles.get("adc1").fetch_all())
-    adc2 = u.raw2volts(res_handles.get("adc2").fetch_all())
     adc1_single_run = u.raw2volts(res_handles.get("adc1_single_run").fetch_all())
-    adc2_single_run = u.raw2volts(res_handles.get("adc2_single_run").fetch_all())
     # Plot data
     plt.figure()
     plt.subplot(121)
     plt.title("Single run")
     plt.plot(adc1_single_run, label="Input 1")
-    plt.plot(adc2_single_run, label="Input 2")
     plt.xlabel("Time [ns]")
     plt.ylabel("Signal amplitude [V]")
     plt.legend()
@@ -86,9 +81,9 @@ else:
     plt.subplot(122)
     plt.title("Averaged run")
     plt.plot(adc1, label="Input 1")
-    plt.plot(adc2, label="Input 2")
     plt.xlabel("Time [ns]")
     plt.legend()
     plt.tight_layout()
+    plt.show()
 
-    print(f"\nInput1 mean: {np.mean(adc1)} V\n" f"Input2 mean: {np.mean(adc2)} V")
+    print(f"\nInput1 mean: {np.mean(adc1)} V")

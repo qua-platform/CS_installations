@@ -35,11 +35,6 @@ qop_port = None  # Write the QOP port if version < QOP220
 # Path to save data
 save_dir = Path().absolute() / "QM" / "INSTALLATION" / "data"
 
-#####################
-# OPX configuration #
-#####################
-# Set octave_config to None if no octave are present
-octave_config = None
 
 #####################
 # Mixer Corrections #
@@ -198,9 +193,9 @@ config = {
         "memory1": {
             "mixInputs": {
                 "I": ("con1", 3),
-                "Q": ("con2", 4),
+                "Q": ("con1", 4),
                 "lo_frequency": memory1_LO,
-                "mixer": "mixer_twoP_pump2",
+                "mixer": "mixer_memory1",
             },
             "intermediate_frequency": memory1_IF,
             "operations": {
@@ -213,7 +208,7 @@ config = {
                 "I": ("con2", 3),
                 "Q": ("con2", 4),
                 "lo_frequency": memory2_LO,
-                "mixer": "mixer_twoP_pump2",
+                "mixer": "mixer_memory2",
             },
             "intermediate_frequency": memory2_IF,
             "operations": {
