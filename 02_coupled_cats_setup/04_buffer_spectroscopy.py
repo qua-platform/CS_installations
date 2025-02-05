@@ -1,85 +1,82 @@
-"""
-        RESONATOR SPECTROSCOPY
-This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to extract the
-'I' and 'Q' quadratures across varying readout intermediate frequencies.
-The data is then post-processed to determine the resonator resonance frequency.
-This frequency can be used to update the readout intermediate frequency in the configuration under "resonator_IF".
-
-Prerequisites:
-    - Ensure calibration of the time of flight, offsets, and gains (referenced as "time_of_flight").
-    - Calibrate the IQ mixer connected to the readout line (whether it's an external mixer or an Octave port).
-    - Define the readout pulse amplitude and duration in the configuration.
-    - Specify the expected resonator depletion time in the configuration.
-
-Before proceeding to the next node:
-    - Update the readout frequency, labeled as "resonator_IF", in the configuration.
-"""
-
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
+from configuration import *
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.loops import from_array
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import fetching_tool, progress_counter
 from scipy import signal
-
 
 ###################
 # The QUA program #
 ###################
 n_avg = 100  # The number of averages
-# The frequency sweep parameters
+# The frequency sweeps parameters
 f_min = 30 * u.MHz
-f_max = 70 * u.MHz
+f_max = 100 * u.MHz
 df = 100 * u.kHz
-frequencies = np.arange(f_min, f_max + 0.1, df)  # The frequency vector (+ 0.1 to add f_max to frequencies)
+frequencies = np.arange(f_min, f_max + 0.1, df)  # The frequency sweep
+
 
 with program() as resonator_spec:
     n = declare(int)  # QUA variable for the averaging loop
     f = declare(int)  # QUA variable for the readout frequency
-    I = declare(fixed)  # QUA variable for the measured 'I' quadrature
-    Q = declare(fixed)  # QUA variable for the measured 'Q' quadrature
-    I_st = declare_stream()  # Stream for the 'I' quadrature
-    Q_st = declare_stream()  # Stream for the 'Q' quadrature
+    I1 = declare(fixed)  # QUA variable for the measured 'I' quadrature
+    Q1 = declare(fixed)  # QUA variable for the measured 'Q' quadrature
+    I2 = declare(fixed)  # QUA variable for the measured 'I' quadrature
+    Q2 = declare(fixed)  # QUA variable for the measured 'Q' quadrature
+    I_st1 = declare_stream()  # Stream for the 'I' quadrature
+    Q_st1 = declare_stream()  # Stream for the 'Q' quadrature
+    I_st2 = declare_stream()  # Stream for the 'I' quadrature
+    Q_st2 = declare_stream()  # Stream for the 'Q' quadrature
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(f, frequencies)):  # QUA for_ loop for sweeping the frequency
             # Update the frequency of the digital oscillator linked to the resonator element
-            update_frequency("resonator", f)
-            # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
+            update_frequency("ATS1", f)
+            update_frequency("ATS2", f)
             measure(
                 "readout",
-                "resonator",
+                "ATS1",
                 None,
-                dual_demod.full("cos", "sin", I),
-                dual_demod.full("minus_sin", "cos", Q),
+                demod.full("cos", I1),
+                demod.full("sin", Q1),
+            )
+            measure(
+                "readout",
+                "ATS2",
+                None,
+                demod.full("cos", I2),
+                demod.full("sin", Q2),
             )
             # Wait for the resonator to deplete
-            wait(depletion_time * u.ns, "resonator")
+            wait(1000 * u.ns)
             # Save the 'I' & 'Q' quadratures to their respective streams
-            save(I, I_st)
-            save(Q, Q_st)
+            save(I1, I_st1)
+            save(Q1, Q_st1)
+            save(I2, I_st2)
+            save(Q2, Q_st2)
         # Save the averaging iteration to get the progress bar
         save(n, n_st)
 
     with stream_processing():
         # Cast the data into a 1D vector, average the 1D vectors together and store the results on the OPX processor
-        I_st.buffer(len(frequencies)).average().save("I")
-        Q_st.buffer(len(frequencies)).average().save("Q")
+        I_st1.buffer(len(frequencies)).average().save("I1")
+        Q_st1.buffer(len(frequencies)).average().save("Q1")
+        I_st2.buffer(len(frequencies)).average().save("I2")
+        Q_st2.buffer(len(frequencies)).average().save("Q2")
         n_st.save("iteration")
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
 
 #######################
 # Simulate or execute #
 #######################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -87,7 +84,11 @@ if simulate:
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, resonator_spec, simulation_config)
     # Plot the simulated samples
+    plt.figure()
     job.get_simulated_samples().con1.plot()
+    plt.figure()
+    job.get_simulated_samples().con2.plot()
+    plt.show()
 
 else:
     # Open the quantum machine
