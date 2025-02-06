@@ -19,40 +19,35 @@ from configuration import *
 ###################
 # The QUA program #
 ###################
-element = "resonator"
+element = "rr1"
 
-with program() as cw_output:
+with program() as manual_mixer_calib:
     with infinite_loop_():
-        # It is best to calibrate LO leakage first and without any power played (cf. note below)
         play("cw" * amp(0), element)
+
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 qm = qmm.open_qm(config)
-
-job = qm.execute(cw_output)
+job = qm.execute(manual_mixer_calib)
 
 # When done, the halt command can be called and the offsets can be written directly into the config file.
 
 # job.halt()
 
 # These are the 2 commands used to correct for mixer imperfections. The first is used to set the DC of the `I` and `Q`
-# channels to compensate for the LO leakage. The 2nd command is used to correct for the phase and amplitude mismatches
-# between the channels.
+# channels to compensate for the LO leakage. Since this compensation depends on the 'I' & 'Q' powers, it is advised to
+# run this step with no input power, so that there is no LO leakage while the pulses are not played.
+# The 2nd command is used to correct for the phase and amplitude mismatches between the channels.
 # The output of the IQ Mixer should be connected to a spectrum analyzer and values should be chosen as to minimize the
 # unwanted peaks.
-# If python can read the output of the spectrum analyzer, then this process can be automated and the correct values can
-# be found using an optimization method such as Nelder-Mead:
-# https://docs.scipy.org/doc/scipy/reference/optimize.minimize-neldermead.html
 
-# qm.set_output_dc_offset_by_element('qubit', ('I', 'Q'), (-0.001, 0.003))
-# qm.set_mixer_correction('mixer_qubit', int(qubit_IF), int(qubit_LO), IQ_imbalance(0.015, 0.01))
-
-# Note that the LO leakage (DC Offset) depends on the 'I' & 'Q' powers, it is advised to run this step with no input power.
-# This will ensure that there is no LO leakage while the pulses are not played in the case where the is no switch.
-# This can be achieved by changing the line above to `play("cw" * amp(0), "qubit")`
+# qm.set_output_dc_offset_by_element(element, ('I', 'Q'), (-0.001, 0.003))
+# qm.set_mixer_correction(f'mixer_qubit_q1', int(qubit_IF_q1), int(qubit_LO), IQ_imbalance(0.015, 0.01))
+# qm.set_mixer_correction(f'mixer_resonator', int(resonator_IF_q1), int(resonator_LO), IQ_imbalance(0.015, 0.01))
+# qm.set_mixer_correction(f'mixer_{element}', int(int(config["elements"][element]["intermediate_frequency"])), int(int(config["elements"][element]["mixInputs"]["lo_frequency"])), IQ_imbalance(0.015, 0.01))
 
 # Automatic LO leakage correction
 # centers = [0.5, 0]

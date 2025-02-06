@@ -26,11 +26,14 @@ with program() as raw_trace_prog:
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         # Make sure that the readout pulse is sent with the same phase so that the acquired signal does not average out
-        reset_phase("resonator")
+        reset_phase("rr2")
+        reset_phase("rr1")
         # Measure the resonator (send a readout pulse and record the raw ADC trace)
-        measure("readout", "resonator", adc_st)
+        measure("readout", "rr1", adc_st)
+        # Play the readout on rr2 as well for making sure that the ADC won't be saturated for multiplexed readout
+        measure("readout", "rr2", None)
         # Wait for the resonator to deplete
-        wait(depletion_time * u.ns, "resonator")
+        wait(depletion_time * u.ns, "rr1", "rr2")
 
     with stream_processing():
         # Will save average:
@@ -40,6 +43,7 @@ with program() as raw_trace_prog:
         adc_st.input1().save("adc1_single_run")
         adc_st.input2().save("adc2_single_run")
 
+
 #####################################
 #  Open Communication with the QOP  #
 #####################################
@@ -48,6 +52,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 ###########################
 # Run or Simulate Program #
 ###########################
+
 simulate = False
 
 if simulate:

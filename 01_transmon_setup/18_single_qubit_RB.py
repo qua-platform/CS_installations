@@ -22,18 +22,27 @@ Prerequisites:
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
-from macros import readout_macro
 from scipy.optimize import curve_fit
+from configuration import *
 import matplotlib.pyplot as plt
+import numpy as np
+from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
+from qualang_tools.results import fetching_tool, progress_counter
+from qualang_tools.plot import interrupt_on_close
+from macros import multiplexed_readout
 
 
 ##############################
 # Program-specific variables #
 ##############################
+qubit = 1
+
+if qubit == 1:
+    threshold = ge_threshold_q1
+elif qubit == 2:
+    threshold = ge_threshold_q2
+else:
+    threshold = 0
 
 num_of_sequences = 50  # Number of random sequences
 n_avg = 20  # Number of averaging loops for each random sequence
@@ -42,7 +51,7 @@ delta_clifford = 10  #  Play each sequence with a depth step equals to 'delta_cl
 assert (max_circuit_depth / delta_clifford).is_integer(), "max_circuit_depth / delta_clifford must be an integer."
 seed = 345324  # Pseudo-random number generator seed
 # Flag to enable state discrimination if the readout has been calibrated (rotated blobs and threshold)
-state_discrimination = False
+state_discrimination = True
 # List of recovery gates from the lookup table
 inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
 
@@ -74,79 +83,79 @@ def generate_sequence():
     return sequence, inv_gate
 
 
-def play_sequence(sequence_list, depth):
+def play_sequence(sequence_list, depth, qubit):
     i = declare(int)
     with for_(i, 0, i <= depth, i + 1):
         with switch_(sequence_list[i], unsafe=True):
             with case_(0):
-                wait(x180_len // 4, "qubit")
+                wait(pi_len // 4, f"q{qubit}_xy")
             with case_(1):
-                play("x180", "qubit")
+                play("x180", f"q{qubit}_xy")
             with case_(2):
-                play("y180", "qubit")
+                play("y180", f"q{qubit}_xy")
             with case_(3):
-                play("y180", "qubit")
-                play("x180", "qubit")
+                play("y180", f"q{qubit}_xy")
+                play("x180", f"q{qubit}_xy")
             with case_(4):
-                play("x90", "qubit")
-                play("y90", "qubit")
+                play("x90", f"q{qubit}_xy")
+                play("y90", f"q{qubit}_xy")
             with case_(5):
-                play("x90", "qubit")
-                play("-y90", "qubit")
+                play("x90", f"q{qubit}_xy")
+                play("-y90", f"q{qubit}_xy")
             with case_(6):
-                play("-x90", "qubit")
-                play("y90", "qubit")
+                play("-x90", f"q{qubit}_xy")
+                play("y90", f"q{qubit}_xy")
             with case_(7):
-                play("-x90", "qubit")
-                play("-y90", "qubit")
+                play("-x90", f"q{qubit}_xy")
+                play("-y90", f"q{qubit}_xy")
             with case_(8):
-                play("y90", "qubit")
-                play("x90", "qubit")
+                play("y90", f"q{qubit}_xy")
+                play("x90", f"q{qubit}_xy")
             with case_(9):
-                play("y90", "qubit")
-                play("-x90", "qubit")
+                play("y90", f"q{qubit}_xy")
+                play("-x90", f"q{qubit}_xy")
             with case_(10):
-                play("-y90", "qubit")
-                play("x90", "qubit")
+                play("-y90", f"q{qubit}_xy")
+                play("x90", f"q{qubit}_xy")
             with case_(11):
-                play("-y90", "qubit")
-                play("-x90", "qubit")
+                play("-y90", f"q{qubit}_xy")
+                play("-x90", f"q{qubit}_xy")
             with case_(12):
-                play("x90", "qubit")
+                play("x90", f"q{qubit}_xy")
             with case_(13):
-                play("-x90", "qubit")
+                play("-x90", f"q{qubit}_xy")
             with case_(14):
-                play("y90", "qubit")
+                play("y90", f"q{qubit}_xy")
             with case_(15):
-                play("-y90", "qubit")
+                play("-y90", f"q{qubit}_xy")
             with case_(16):
-                play("-x90", "qubit")
-                play("y90", "qubit")
-                play("x90", "qubit")
+                play("-x90", f"q{qubit}_xy")
+                play("y90", f"q{qubit}_xy")
+                play("x90", f"q{qubit}_xy")
             with case_(17):
-                play("-x90", "qubit")
-                play("-y90", "qubit")
-                play("x90", "qubit")
+                play("-x90", f"q{qubit}_xy")
+                play("-y90", f"q{qubit}_xy")
+                play("x90", f"q{qubit}_xy")
             with case_(18):
-                play("x180", "qubit")
-                play("y90", "qubit")
+                play("x180", f"q{qubit}_xy")
+                play("y90", f"q{qubit}_xy")
             with case_(19):
-                play("x180", "qubit")
-                play("-y90", "qubit")
+                play("x180", f"q{qubit}_xy")
+                play("-y90", f"q{qubit}_xy")
             with case_(20):
-                play("y180", "qubit")
-                play("x90", "qubit")
+                play("y180", f"q{qubit}_xy")
+                play("x90", f"q{qubit}_xy")
             with case_(21):
-                play("y180", "qubit")
-                play("-x90", "qubit")
+                play("y180", f"q{qubit}_xy")
+                play("-x90", f"q{qubit}_xy")
             with case_(22):
-                play("x90", "qubit")
-                play("y90", "qubit")
-                play("x90", "qubit")
+                play("x90", f"q{qubit}_xy")
+                play("y90", f"q{qubit}_xy")
+                play("x90", f"q{qubit}_xy")
             with case_(23):
-                play("-x90", "qubit")
-                play("y90", "qubit")
-                play("-x90", "qubit")
+                play("-x90", f"q{qubit}_xy")
+                play("y90", f"q{qubit}_xy")
+                play("-x90", f"q{qubit}_xy")
 
 
 ###################
@@ -164,16 +173,16 @@ with program() as rb:
     state = declare(bool)  # QUA variable for state discrimination
     # The relevant streams
     m_st = declare_stream()
+    I_st = declare_stream()
+    Q_st = declare_stream()
     if state_discrimination:
         state_st = declare_stream()
-    else:
-        I_st = declare_stream()
-        Q_st = declare_stream()
 
     with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
         sequence_list, inv_gate_list = generate_sequence()  # Generate the random sequence of length max_circuit_depth
 
-        assign(depth_target, 1)  # Initialize the current depth to 1
+        assign(depth_target, 1)  # Initialize the current depth to 0
+
         with for_(depth, 1, depth <= max_circuit_depth, depth + 1):  # Loop over the depths
             # Replacing the last gate in the sequence with the sequence's inverse gate
             # The original gate is saved in 'saved_gate' and is being restored at the end
@@ -181,25 +190,26 @@ with program() as rb:
             assign(sequence_list[depth], inv_gate_list[depth - 1])
             # Only played the depth corresponding to target_depth
             with if_(depth == depth_target):
-                with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
-                    # Can be replaced by active reset
-                    wait(thermalization_time * u.ns, "resonator")
+                with for_(n, 0, n < n_avg, n + 1):
+                    # Can replace by active reset
+                    wait(thermalization_time * u.ns, f"rr{qubit}")
                     # Align the two elements to play the sequence after qubit initialization
-                    align("resonator", "qubit")
+                    align()
                     # The strict_timing ensures that the sequence will be played without gaps
                     with strict_timing_():
                         # Play the random sequence of desired depth
-                        play_sequence(sequence_list, depth)
+                        play_sequence(sequence_list, depth, qubit)
                     # Align the two elements to measure after playing the circuit.
-                    align("qubit", "resonator")
+                    align()
+                    # Play through the 2nd resonator to be in the same condition as when the readout was optimized
+                    measure("readout", f"rr{qubit%2 + 1}", None)
                     # Make sure you updated the ge_threshold and angle if you want to use state discrimination
-                    state, I, Q = readout_macro(threshold=ge_threshold, state=state, I=I, Q=Q)
-                    # Save the results to their respective streams
+                    multiplexed_readout([I], [I_st], [Q], [Q_st], resonators=[qubit], weights="rotated_")
+                    # Make sure you updated the ge_threshold
                     if state_discrimination:
+                        assign(state, I > threshold)
                         save(state, state_st)
-                    else:
-                        save(I, I_st)
-                        save(Q, Q_st)
+
                 # Go to the next depth
                 assign(depth_target, depth_target + delta_clifford)
             # Reset the last gate of the sequence back to the original Clifford gate
@@ -241,6 +251,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 ###########################
 # Run or Simulate Program #
 ###########################
+
 simulate = False
 
 if simulate:
@@ -336,5 +347,6 @@ else:
     plt.title("Single qubit RB")
 
     # np.savez("rb_values", value)
+
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()

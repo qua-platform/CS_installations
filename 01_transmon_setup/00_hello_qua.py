@@ -12,11 +12,9 @@ from configuration import *
 # The QUA program #
 ###################
 with program() as hello_qua:
-    a = declare(fixed)
-    with infinite_loop_():
-        with for_(a, 0, a < 1.1, a + 0.05):
-            play("pi" * amp(a), "qubit")
-        wait(25, "qubit")
+    set_dc_offset("q1_z", "single", 0.153)
+    play("cw", "q1_xy")
+
 
 #####################################
 #  Open Communication with the QOP  #

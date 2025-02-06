@@ -18,69 +18,49 @@ Next steps before going to the next node:
     - Update the g -> e threshold (ge_threshold) in the configuration.
 """
 
-from qm.qua import *
-from qm import SimulationConfig
 from qm import QuantumMachinesManager
+from qm.qua import *
+from qm.simulate import SimulationConfig
 from configuration import *
-from qualang_tools.analysis.discriminator import two_state_discriminator
+import matplotlib.pyplot as plt
+from qualang_tools.results import fetching_tool
+from qualang_tools.analysis import two_state_discriminator
+from macros import qua_declaration, multiplexed_readout
+
 
 ###################
 # The QUA program #
 ###################
-
 n_runs = 10000  # Number of runs
 
-with program() as IQ_blobs:
-    n = declare(int)
-    I_g = declare(fixed)
-    Q_g = declare(fixed)
-    I_g_st = declare_stream()
-    Q_g_st = declare_stream()
-    I_e = declare(fixed)
-    Q_e = declare(fixed)
-    I_e_st = declare_stream()
-    Q_e_st = declare_stream()
+with program() as iq_blobs:
+    I_g, I_g_st, Q_g, Q_g_st, n, _ = qua_declaration(nb_of_qubits=2)
+    I_e, I_e_st, Q_e, Q_e_st, _, _ = qua_declaration(nb_of_qubits=2)
 
     with for_(n, 0, n < n_runs, n + 1):
-        # Measure the state of the resonator
-        measure(
-            "readout",
-            "resonator",
-            None,
-            dual_demod.full("rotated_cos", "rotated_sin", I_g),
-            dual_demod.full("rotated_minus_sin", "rotated_cos", Q_g),
-        )
-        # Wait for the qubit to decay to the ground state in the case of measurement induced transitions
-        wait(thermalization_time * u.ns, "resonator")
-        # Save the 'I' & 'Q' quadratures to their respective streams for the ground state
-        save(I_g, I_g_st)
-        save(Q_g, Q_g_st)
+        # ground iq blobs for both qubits
+        wait(thermalization_time * u.ns)
+        align()
+        # play("x180", "q2_xy")
+        multiplexed_readout(I_g, I_g_st, Q_g, Q_g_st, resonators=[1, 2], weights="rotated_")
 
-        align()  # global align
-        # Play the x180 gate to put the qubit in the excited state
-        play("x180", "qubit")
-        # Align the two elements to measure after playing the qubit pulse.
-        align("qubit", "resonator")
-        # Measure the state of the resonator
-        measure(
-            "readout",
-            "resonator",
-            None,
-            dual_demod.full("rotated_cos", "rotated_sin", I_e),
-            dual_demod.full("rotated_minus_sin", "rotated_cos", Q_e),
-        )
-        # Wait for the qubit to decay to the ground state
-        wait(thermalization_time * u.ns, "resonator")
-        # Save the 'I' & 'Q' quadratures to their respective streams for the excited state
-        save(I_e, I_e_st)
-        save(Q_e, Q_e_st)
+        # excited iq blobs for both qubits
+        align()
+        # Wait for the qubit to decay to the ground state in the case of measurement induced transitions
+        wait(thermalization_time * u.ns)
+        # Play the qubit pi pulses
+        play("x180", "q1_xy")
+        play("x180", "q2_xy")
+        align()
+        multiplexed_readout(I_e, I_e_st, Q_e, Q_e_st, resonators=[1, 2], weights="rotated_")
 
     with stream_processing():
         # Save all streamed points for plotting the IQ blobs
-        I_g_st.save_all("I_g")
-        Q_g_st.save_all("Q_g")
-        I_e_st.save_all("I_e")
-        Q_e_st.save_all("Q_e")
+        for i in range(2):
+            I_g_st[i].save_all(f"I_g_q{i}")
+            Q_g_st[i].save_all(f"Q_g_q{i}")
+            I_e_st[i].save_all(f"I_e_q{i}")
+            Q_e_st[i].save_all(f"Q_e_q{i}")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -95,27 +75,23 @@ simulate = False
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-    job = qmm.simulate(config, IQ_blobs, simulation_config)
+    job = qmm.simulate(config, iq_blobs, simulation_config)
     job.get_simulated_samples().con1.plot()
 
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(IQ_blobs)
-    # Creates a result handle to fetch data from the OPX
-    res_handles = job.result_handles
-    # Waits (blocks the Python console) until all results have been acquired
-    res_handles.wait_for_all_values()
-    # Fetch the 'I' & 'Q' points for the qubit in the ground and excited states
-    Ig = res_handles.get("I_g").fetch_all()["value"]
-    Qg = res_handles.get("Q_g").fetch_all()["value"]
-    Ie = res_handles.get("I_e").fetch_all()["value"]
-    Qe = res_handles.get("Q_e").fetch_all()["value"]
+    job = qm.execute(iq_blobs)
+    # fetch data
+    results = fetching_tool(job, ["I_g_q0", "Q_g_q0", "I_e_q0", "Q_e_q0", "I_g_q1", "Q_g_q1", "I_e_q1", "Q_e_q1"])
+    I_g_q1, Q_g_q1, I_e_q1, Q_e_q1, I_g_q2, Q_g_q2, I_e_q2, Q_e_q2 = results.fetch_all()
     # Plot the IQ blobs, rotate them to get the separation along the 'I' quadrature, estimate a threshold between them
     # for state discrimination and derive the fidelity matrix
-    angle, threshold, fidelity, gg, ge, eg, ee = two_state_discriminator(Ig, Qg, Ie, Qe, b_print=True, b_plot=True)
-
+    two_state_discriminator(I_g_q1, Q_g_q1, I_e_q1, Q_e_q1, True, True)
+    plt.suptitle("qubit 1")
+    two_state_discriminator(I_g_q2, Q_g_q2, I_e_q2, Q_e_q2, True, True)
+    plt.suptitle("qubit 2")
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
 
@@ -142,7 +118,7 @@ else:
     #     play("x180", "qubit")
     #     align("qubit", "resonator")
     #     measure("readout", "resonator", None,
-    #                 dual_demod.full("rotated_cos", "rotated_sin",  I))
+    #                 dual_demod.full("rotated_cos", "rotated_sin", I))
     #
     #########################################
     #
@@ -155,7 +131,7 @@ else:
     #     play("x180", "qubit")
     #     align("qubit", "resonator")
     #     measure("readout", "resonator", None,
-    #                 dual_demod.full("rotated_cos", "rotated_sin",  I))
+    #                 dual_demod.full("rotated_cos", "rotated_sin", I))
     #     assign(count, count + 1)
     #     assign(cont_condition, ((I > threshold) & (count < 3)))
     #

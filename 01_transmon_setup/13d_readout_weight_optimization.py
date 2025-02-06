@@ -20,20 +20,21 @@ Prerequisites:
     - Set the desired flux bias.
 
 Next steps before going to the next node:
-    - Update the integration weights in the configuration by following the steps at the end of the script.
+    - Update the integration weights in the state by following the steps at the end of the script.
 """
 
 from qm.qua import *
 from qm import QuantumMachinesManager
-from qm import SimulationConfig
 from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool
 import matplotlib.pyplot as plt
+import numpy as np
+from qm import SimulationConfig
+from qualang_tools.results import fetching_tool, progress_counter
 
 
-####################
-# Helper functions #
-####################
+###########
+# Helpers #
+###########
 def divide_array_in_half(arr):
     split_index = len(arr) // 2
     arr1 = arr[:split_index]
@@ -79,33 +80,16 @@ def plot_three_complex_arrays(x, arr1, arr2, arr3):
     plt.show()
 
 
-def update_readout_length(new_readout_length, ringdown_length):
-    config["pulses"]["readout_pulse"]["length"] = new_readout_length
-    config["integration_weights"]["cosine_weights"] = {
-        "cosine": [(1.0, new_readout_length + ringdown_length)],
-        "sine": [(0.0, new_readout_length + ringdown_length)],
-    }
-    config["integration_weights"]["sine_weights"] = {
-        "cosine": [(0.0, new_readout_length + ringdown_length)],
-        "sine": [(1.0, new_readout_length + ringdown_length)],
-    }
-    config["integration_weights"]["minus_sine_weights"] = {
-        "cosine": [(0.0, new_readout_length + ringdown_length)],
-        "sine": [(-1.0, new_readout_length + ringdown_length)],
-    }
-
-
 ###################
 # The QUA program #
 ###################
-n_avg = 100  # number of averages
+n_avg = 1e4  # number of averages
 # Set maximum readout duration for this scan and update the configuration accordingly
-readout_len = 5 * u.us  # Readout pulse duration
-ringdown_len = 0 * u.us  # integration time after readout pulse to observe the ringdown of the resonator
-update_readout_length(readout_len, ringdown_len)
+readout_len = readout_len
+ringdown_len = 0 * u.us
 # Set the sliced demod parameters
 division_length = 10  # Size of each demodulation slice in clock cycles
-number_of_divisions = int((readout_len + ringdown_len) / (4 * division_length))  # Number of slices
+number_of_divisions = int((readout_len + ringdown_len) / (4 * division_length))
 print("Integration weights chunk-size length in clock cycles:", division_length)
 print("The readout has been sliced in the following number of divisions", number_of_divisions)
 
@@ -113,67 +97,79 @@ print("The readout has been sliced in the following number of divisions", number
 x_plot = np.arange(division_length * 4, readout_len + ringdown_len + 1, division_length * 4)
 
 with program() as opt_weights:
-    n = declare(int)
-    ind = declare(int)
-    II = declare(fixed, size=number_of_divisions)
-    IQ = declare(fixed, size=number_of_divisions)
-    QI = declare(fixed, size=number_of_divisions)
-    QQ = declare(fixed, size=number_of_divisions)
-
+    n = declare(int)  # QUA variable for the averaging loop
+    ind = declare(int)  # QUA variable for the index used to save each element in the 'I' & 'Q' vectors
+    II = [declare(fixed, size=number_of_divisions) for _ in range(2)]  # QUA variable for the partial 'II'
+    IQ = [declare(fixed, size=number_of_divisions) for _ in range(2)]  # QUA variable for the partial 'IQ'
+    QI = [declare(fixed, size=number_of_divisions) for _ in range(2)]  # QUA variable for the partial 'QI'
+    QQ = [declare(fixed, size=number_of_divisions) for _ in range(2)]  # QUA variable for the partial 'QQ'
+    I = [declare(fixed, size=number_of_divisions) for _ in range(2)]  # QUA variable for the full 'I'=II+IQ
+    Q = [declare(fixed, size=number_of_divisions) for _ in range(2)]  # QUA variable for the full 'Q'=QI+QQ
+    II_st = [declare_stream() for _ in range(2)]  # Stream for the partial 'II'
+    IQ_st = [declare_stream() for _ in range(2)]  # Stream for the partial 'IQ'
+    QI_st = [declare_stream() for _ in range(2)]  # Stream for the partial 'QI'
+    QQ_st = [declare_stream() for _ in range(2)]  # Stream for the partial 'QQ'
     n_st = declare_stream()
-    II_st = declare_stream()
-    IQ_st = declare_stream()
-    QI_st = declare_stream()
-    QQ_st = declare_stream()
 
     with for_(n, 0, n < n_avg, n + 1):
-        # Measure the ground state
-        measure(
-            "readout",
-            "resonator",
-            None,
-            demod.sliced("cos", II, division_length, "out1"),
-            demod.sliced("sin", IQ, division_length, "out2"),
-            demod.sliced("minus_sin", QI, division_length, "out1"),
-            demod.sliced("cos", QQ, division_length, "out2"),
-        )
-        wait(thermalization_time * u.ns, "resonator")
-        # Save the sliced data (time trace of the demodulated data with a resolution equals to the division length)
-        with for_(ind, 0, ind < number_of_divisions, ind + 1):
-            save(II[ind], II_st)
-            save(IQ[ind], IQ_st)
-            save(QI[ind], QI_st)
-            save(QQ[ind], QQ_st)
+        # Measure the ground state.
+        wait(thermalization_time * u.ns)
+        # Loop over the two resonators
+        for rr, res in enumerate([1, 2]):
+            # Save the sliced data (time trace of the demodulated data with a resolution equals to the division length)
+            measure(
+                "readout",
+                f"rr{res}",
+                None,
+                demod.sliced("cos", II[rr], division_length, "out1"),
+                demod.sliced("sin", IQ[rr], division_length, "out2"),
+                demod.sliced("minus_sin", QI[rr], division_length, "out1"),
+                demod.sliced("cos", QQ[rr], division_length, "out2"),
+            )
+            # Save the QUA vectors to their corresponding streams
+            with for_(ind, 0, ind < number_of_divisions, ind + 1):
+                save(II[rr][ind], II_st[rr])
+                save(IQ[rr][ind], IQ_st[rr])
+                save(QI[rr][ind], QI_st[rr])
+                save(QQ[rr][ind], QQ_st[rr])
 
-        align()  # Global align to play the pi pulse after thermalization
+        # Measure the excited IQ blobs
+        align()
+        # Wait for the qubit to decay to the ground state
+        wait(thermalization_time * u.ns)
+        # Play the qubit drives
+        play("x180", "q1_xy")
+        play("x180", "q2_xy")
+        align()
+        # Loop over the two resonators
+        for rr, res in enumerate([1, 2]):
+            # Save the sliced data (time trace of the demodulated data with a resolution equals to the division length)
+            measure(
+                "readout",
+                f"rr{res}",
+                None,
+                demod.sliced("cos", II[rr], division_length, "out1"),
+                demod.sliced("sin", IQ[rr], division_length, "out2"),
+                demod.sliced("minus_sin", QI[rr], division_length, "out1"),
+                demod.sliced("cos", QQ[rr], division_length, "out2"),
+            )
+            # Save the QUA vectors to their corresponding streams
+            with for_(ind, 0, ind < number_of_divisions, ind + 1):
+                save(II[rr][ind], II_st[rr])
+                save(IQ[rr][ind], IQ_st[rr])
+                save(QI[rr][ind], QI_st[rr])
+                save(QQ[rr][ind], QQ_st[rr])
 
-        # Measure the excited state
-        play("x180", "qubit")
-        align("qubit", "resonator")
-        measure(
-            "readout",
-            "resonator",
-            None,
-            demod.sliced("cos", II, division_length, "out1"),
-            demod.sliced("sin", IQ, division_length, "out2"),
-            demod.sliced("minus_sin", QI, division_length, "out1"),
-            demod.sliced("cos", QQ, division_length, "out2"),
-        )
-        wait(thermalization_time * u.ns, "resonator")
-        # Save the sliced data (time trace of the demodulated data with a resolution equals to the division length)
-        with for_(ind, 0, ind < number_of_divisions, ind + 1):
-            save(II[ind], II_st)
-            save(IQ[ind], IQ_st)
-            save(QI[ind], QI_st)
-            save(QQ[ind], QQ_st)
         save(n, n_st)
 
     with stream_processing():
         n_st.save("iteration")
-        II_st.buffer(2 * number_of_divisions).average().save("II")
-        IQ_st.buffer(2 * number_of_divisions).average().save("IQ")
-        QI_st.buffer(2 * number_of_divisions).average().save("QI")
-        QQ_st.buffer(2 * number_of_divisions).average().save("QQ")
+        # Loop over the two resonators
+        for q in range(2):
+            II_st[q].buffer(2 * number_of_divisions).average().save(f"II_q{q}")
+            IQ_st[q].buffer(2 * number_of_divisions).average().save(f"IQ_q{q}")
+            QI_st[q].buffer(2 * number_of_divisions).average().save(f"QI_q{q}")
+            QQ_st[q].buffer(2 * number_of_divisions).average().save(f"QQ_q{q}")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -183,7 +179,8 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = False
+
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -205,40 +202,47 @@ else:
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
 
     # Fetch and reshape the data
+    ground_trace = [[], []]
+    excited_trace = [[], []]
+    norm_subtracted_trace = [[], []]
+    weights_cos = [[], []]
+    weights_sin = [[], []]
+    weights_minus_sin = [[], []]
+    weights_minus_cos = [[]]
     res_handles = job.result_handles
-    IIg, IIe = divide_array_in_half(res_handles.get("II").fetch_all())
-    IQg, IQe = divide_array_in_half(res_handles.get("IQ").fetch_all())
-    QIg, QIe = divide_array_in_half(res_handles.get("QI").fetch_all())
-    QQg, QQe = divide_array_in_half(res_handles.get("QQ").fetch_all())
-    # Sum the quadrature to fully demodulate the traces
-    Ie = IIe + IQe
-    Ig = IIg + IQg
-    Qe = QIe + QQe
-    Qg = QIg + QQg
-    # Derive and normalize the ground and excited traces
-    ground_trace = Ig + 1j * Qg
-    excited_trace = Ie + 1j * Qe
-    subtracted_trace = excited_trace - ground_trace
-    norm_subtracted_trace = normalize_complex_array(subtracted_trace)  # <- these are the optimal weights :)
-    # Plot the results
-    plot_three_complex_arrays(x_plot, ground_trace, excited_trace, norm_subtracted_trace)
-    # Reshape the optimal integration weights to match the configuration
-    weights_real = norm_subtracted_trace.real
-    weights_minus_imag = -norm_subtracted_trace.imag
-    weights_imag = norm_subtracted_trace.imag
-    weights_minus_real = -norm_subtracted_trace.real
-    # Save the weights for later use in the config
-    np.savez(
-        "optimal_weights",
-        weights_real=weights_real,
-        weights_minus_imag=weights_minus_imag,
-        weights_imag=weights_imag,
-        weights_minus_real=weights_minus_real,
-        division_length=division_length,
-    )
-    # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
-    qm.close()
+    for i in range(2):
+        IIe, IIg = divide_array_in_half(res_handles.get(f"II_q{i}").fetch_all())
+        IQe, IQg = divide_array_in_half(res_handles.get(f"IQ_q{i}").fetch_all())
+        QIe, QIg = divide_array_in_half(res_handles.get(f"QI_q{i}").fetch_all())
+        QQe, QQg = divide_array_in_half(res_handles.get(f"QQ_q{i}").fetch_all())
+        # Sum the quadrature to fully demodulate the traces
+        Ie = IIe + IQe
+        Ig = IIg + IQg
+        Qe = QIe + QQe
+        Qg = QIg + QQg
+        # Derive and normalize the ground and excited traces
+        ground_trace[i] = Ig + 1j * Qg
+        excited_trace[i] = Ie + 1j * Qe
+        subtracted_trace = excited_trace[i] - ground_trace[i]
+        norm_subtracted_trace[i] = normalize_complex_array(subtracted_trace)  # <- these are the optimal weights :)
+        # Plot the results
+        plot_three_complex_arrays(x_plot, ground_trace[i], excited_trace[i], norm_subtracted_trace[i])
+        plt.suptitle(f"Integration weight optimization for qubit {i+1}")
+        plt.tight_layout()
 
+        weights_real = norm_subtracted_trace.real
+        weights_minus_imag = -norm_subtracted_trace.imag
+        weights_imag = norm_subtracted_trace.imag
+        weights_minus_real = -norm_subtracted_trace.real
+        # Save the weights for later use in the config
+        np.savez(
+            f"optimal_weights_q{i+1}",
+            weights_real=weights_real,
+            weights_minus_imag=weights_minus_imag,
+            weights_imag=weights_imag,
+            weights_minus_real=weights_minus_real,
+            division_length=division_length,
+        )
     # After obtaining the optimal weights, you need to load them to the 'integration_weights' dictionary in the config.
     # For this, you can just copy and paste the following lines into the "integration_weights" section:
     # "opt_cosine_weights": {
@@ -276,3 +280,6 @@ else:
     #     opt_weights_minus_imag = [(1.0, readout_len)]
     #     opt_weights_imag = [(1.0, readout_len)]
     #     opt_weights_minus_real = [(1.0, readout_len)]
+
+    # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
+    qm.close()

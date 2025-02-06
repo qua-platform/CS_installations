@@ -25,6 +25,7 @@ from scipy.signal import savgol_filter
 ###################
 # The QUA program #
 ###################
+resonator = "rr1"  # The resonator element
 n_avg = 100  # Number of averaging loops
 
 with program() as raw_trace_prog:
@@ -33,17 +34,17 @@ with program() as raw_trace_prog:
 
     with for_(n, 0, n < n_avg, n + 1):
         # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
-        reset_phase("resonator")
+        reset_phase(resonator)
         # Sends the readout pulse and stores the raw ADC traces in the stream called "adc_st"
-        measure("readout", "resonator", adc_st)
+        measure("readout", resonator, adc_st)
         # Wait for the resonator to deplete
-        wait(depletion_time * u.ns, "resonator")
+        wait(depletion_time * u.ns, resonator)
 
     with stream_processing():
         # Will save average:
         adc_st.input1().average().save("adc1")
         adc_st.input2().average().save("adc2")
-        # Will save only last run:
+        # # Will save only last run:
         adc_st.input1().save("adc1_single_run")
         adc_st.input2().save("adc2_single_run")
 
