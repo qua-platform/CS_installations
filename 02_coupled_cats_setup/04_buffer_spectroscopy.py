@@ -76,7 +76,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 #######################
 # Simulate or execute #
 #######################
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -96,45 +96,62 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(resonator_spec)
     # Get results from QUA program
-    results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
+    results = fetching_tool(job, data_list=["I1", "Q1", "I2", "Q2", "iteration"], mode="live")
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch results
-        I, Q, iteration = results.fetch_all()
+        I1, Q1, I2, Q2, iteration = results.fetch_all()
         # Convert results into Volts
-        S = u.demod2volts(I + 1j * Q, readout_len)
-        R = np.abs(S)  # Amplitude
-        phase = np.angle(S)  # Phase
+        S1 = u.demod2volts(I1 + 1j * Q1, readout_len)
+        S2 = u.demod2volts(I2 + 1j * Q2, readout_len)
+        R1 = np.abs(S1)  # Amplitude
+        R2 = np.abs(S2)  # Amplitude
+        phase1 = np.angle(S1)  # Phase
+        phase2 = np.angle(S2)  # Phase
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
-        plt.suptitle(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
-        ax1 = plt.subplot(211)
+        ax1 = plt.subplot(221)
         plt.cla()
-        plt.plot(frequencies / u.MHz, R, ".")
+        plt.plot(frequencies / u.MHz, R1, ".")
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
-        plt.subplot(212, sharex=ax1)
+        plt.subplot(222, sharex=ax1)
         plt.cla()
-        plt.plot(frequencies / u.MHz, signal.detrend(np.unwrap(phase)), ".")
+        plt.plot(frequencies / u.MHz, signal.detrend(np.unwrap(phase1)), ".")
+        plt.ylabel("Phase [rad]")
+        ax2 = plt.subplot(223)
+        plt.cla()
+        plt.plot(frequencies / u.MHz, R2, ".")
+        plt.xlabel("Intermediate frequency [MHz]")
+        plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
+        plt.subplot(224, sharex=ax1)
+        plt.cla()
+        plt.plot(frequencies / u.MHz, signal.detrend(np.unwrap(phase2)), ".")
         plt.xlabel("Intermediate frequency [MHz]")
         plt.ylabel("Phase [rad]")
         plt.pause(0.1)
-        plt.tight_layout()
+
+    fig.tight_layout()
     # Fit the results to extract the resonance frequency
     try:
         from qualang_tools.plot.fitting import Fit
 
         fit = Fit()
         plt.figure()
-        res_spec_fit = fit.reflection_resonator_spectroscopy(frequencies / u.MHz, R, plot=True)
-        plt.title(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
+        plt.subplot(121)
+        res_spec_fit1 = fit.reflection_resonator_spectroscopy(frequencies / u.MHz, R1, plot=True)
         plt.xlabel("Intermediate frequency [MHz]")
         plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
-        print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit['f'][0]:.6f} MHz")
-    except (Exception,):
-        pass
+        plt.subplot(122)
+        res_spec_fit2 = fit.reflection_resonator_spectroscopy(frequencies / u.MHz, R2, plot=True)
+        plt.xlabel("Intermediate frequency [MHz]")
+        print(f"Buffer frequency to update in the config: ATS1_IF = {res_spec_fit1['f'][0]:.6f} MHz")
+        print(f"Buffer frequency to update in the config: ATS2_IF = {res_spec_fit2['f'][0]:.6f} MHz")
+    except Exception as e:
+        print(f"Error: {e}")
+    plt.show()
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
