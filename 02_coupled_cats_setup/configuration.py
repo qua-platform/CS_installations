@@ -72,7 +72,7 @@ ATS2_IF = 100 * u.MHz
 
 readout_len = 5 * u.us  # Length of the readout pulse
 const_len = 1 * u.us  # Length of the constant pulse
-const_amp = 0.1  # Amplitude of the constant pulse
+const_amp = 0.25  # Amplitude of the constant pulse
 ATS1_drive_len = 1 * u.us  # Length of the drive pulse
 ATS2_drive_len = 1 * u.us  # Length of the drive pulse
 
