@@ -53,7 +53,7 @@ with program() as repeated_readout:
 qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
 # Open a quantum machine to execute the QUA program
-qm = qmm.open_qm(config)
+qm = qmm.open_qm(config, close_other_machines=False)
 
 if readout_len >= 1_000 and shots <= 5_000:
 
@@ -97,26 +97,6 @@ if readout_len >= 1_000 and shots <= 5_000:
             plt.pause(10)
 
             counter += 1
-
-        plt.show()
-
-        res = results.fetch_all()
-
-        complete_adc = np.empty(((len(res[0]) + len(res[1])), readout_len))
-
-        complete_adc[0::2] = res[0]
-        complete_adc[1::2] = res[1]
-
-        f, pxx = signal.periodogram(complete_adc.flatten(), fs=1e9)
-
-        end_time = time.time()
-
-        plt.plot(f, pxx)
-        plt.yscale('log')
-        plt.xscale('log')
-        plt.xlabel('Frequency [Hz]')
-        plt.ylabel('PSD [a.u.]')
-        plt.show()
 
     except Exception as e:
         print(e)

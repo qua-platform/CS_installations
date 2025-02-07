@@ -61,7 +61,7 @@ with program() as repeated_readout:
 
 qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
-qm = qmm.open_qm(config)
+qm = qmm.open_qm(config, close_other_machines=False)
 
 if readout_len >= 1_000 and shots <= 10_000_000:
 
@@ -114,32 +114,6 @@ if readout_len >= 1_000 and shots <= 10_000_000:
             plt.pause(10)
 
             counter += 1
-
-        plt.show()
-
-        res = results.fetch_all()
-
-        complete_I = np.empty((res[0].size + res[2].size))
-        complete_Q = np.empty((res[1].size + res[3].size))
-
-        complete_I[0::2] = res[0]
-        complete_I[1::2] = res[2]
-
-        complete_Q[0::2] = res[1]
-        complete_Q[1::2] = res[3]
-
-        complete_Z = complete_I + 1j*complete_Q
-
-        phase = np.unwrap(np.angle(complete_Z))
-        phase -= np.mean(phase)
-        f, pxx = signal.welch(phase, nperseg=int(len(phase)/32), fs= 1e9 / readout_len)
-
-        plt.plot(f, pxx)
-        plt.yscale('log')
-        plt.xscale('log')
-        plt.xlabel('Frequency [Hz]')
-        plt.ylabel('PSD [a.u.]')
-        plt.show()
 
     except Exception as e:
         print(e)
