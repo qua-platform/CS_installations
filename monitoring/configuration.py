@@ -224,7 +224,6 @@ config = {
                             #   modulated pulses (optimized for modulated pulses):      "mw"    (default)
                             #   unmodulated pulses (optimized for clean step response): "pulse"
                             "upsampling_mode": "mw",
-                            "shareable": True,
                         },
                         # Q qubit
                         8: {
@@ -232,15 +231,14 @@ config = {
                             "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "mw",
-                            "shareable": True,
                         },
                     },
                     "digital_outputs": {},
                     "analog_inputs": {
                         # I from down-conversion
-                        1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate, "shareable": True},
+                        1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},
                         # Q from down-conversion
-                        2: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate, "shareable": True},
+                        2: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},
                     },
                 }
             },

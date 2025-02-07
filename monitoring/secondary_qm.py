@@ -318,26 +318,23 @@ config = {
                             "band": 2,
                             "full_scale_power_dbm": resonator_power,
                             "upconverters": {1: {"frequency": resonator_LO}},
-                            "shareable": True,
                         },
                         # Qubit 1 XY
                         2: {
                             "band": 1,
                             "full_scale_power_dbm": qubit_power,
                             "upconverters": {1: {"frequency": qubit_LO_q1}},
-                            "shareable": True,
                         },
                         # Qubit 2 XY
                         3: {
                             "band": 1,
                             "full_scale_power_dbm": qubit_power,
                             "upconverters": {1: {"frequency": qubit_LO_q2}},
-                            "shareable": True,
                         },
                     },
                     "digital_outputs": {},
                     "analog_inputs": {
-                        1: {"band": 2, "downconverter_frequency": resonator_LO, "shareable": True},  # for down-conversion
+                        1: {"band": 2, "downconverter_frequency": resonator_LO},  # for down-conversion
                     },
                 },
                 lf_fem: {
@@ -361,7 +358,6 @@ config = {
                             #   modulated pulses (optimized for modulated pulses):      "mw"    (default)
                             #   unmodulated pulses (optimized for clean step response): "pulse"
                             "upsampling_mode": "pulse",
-                            "shareable": True,
                         },
                         # Q2 flux line
                         2: {
@@ -369,43 +365,9 @@ config = {
                             "output_mode": "amplified",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
-                            "shareable": True,
-                        },
-                        7: {
-                            "offset": 0.0,
-                            # The "output_mode" can be used to tailor the max voltage and frequency bandwidth, i.e.,
-                            #   "direct":    1Vpp (-0.5V to 0.5V), 750MHz bandwidth (default)
-                            #   "amplified": 5Vpp (-2.5V to 2.5V), 330MHz bandwidth
-                            # Note, 'offset' takes absolute values, e.g., if in amplified mode and want to output 2.0 V, then set "offset": 2.0
-                            "output_mode": "direct",
-                            # The "sampling_rate" can be adjusted by using more FEM cores, i.e.,
-                            #   1 GS/s: uses one core per output (default)
-                            #   2 GS/s: uses two cores per output
-                            # NOTE: duration parameterization of arb. waveforms, sticky elements and chirping
-                            #       aren't yet supported in 2 GS/s.
-                            "sampling_rate": sampling_rate,
-                            # At 1 GS/s, use the "upsampling_mode" to optimize output for
-                            #   modulated pulses (optimized for modulated pulses):      "mw"    (default)
-                            #   unmodulated pulses (optimized for clean step response): "pulse"
-                            "upsampling_mode": "mw",
-                            "shareable": True,
-                        },
-                        # Q qubit
-                        8: {
-                            "offset": 0.0,
-                            "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
-                            "shareable": True,
                         },
                     },
                     "digital_outputs": {
-                    },
-                    "analog_inputs": {
-                        # I from down-conversion
-                        1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate, "shareable": True},
-                        # Q from down-conversion
-                        2: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate, "shareable": True},
                     },
                 },
             },
@@ -756,6 +718,7 @@ config = {
 }
 
 qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
+qmm.close_all_qms()
 
 qm = qmm.open_qm(config)
 
