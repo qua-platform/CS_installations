@@ -1,0 +1,1 @@
+play("cw" * amp(0), "qubit", duration = 4)
