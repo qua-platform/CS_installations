@@ -15,16 +15,14 @@ Before proceeding to the next node:
     - Update the readout frequency, labeled as "resonator_IF_q1" and "resonator_IF_q2", in the configuration.
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
+from configuration import *
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.loops import from_array
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import fetching_tool, progress_counter
 from scipy import signal
-
 
 ###################
 # The QUA program #
@@ -56,8 +54,8 @@ with program() as resonator_spec:
                 "readout",
                 resonator,
                 None,
-                dual_demod.full("cos", "sin", I),
-                dual_demod.full("minus_sin", "cos", Q),
+                demod.full("cos", I),
+                demod.full("sin", Q),
             )
             # Wait for the resonator to deplete
             wait(depletion_time * u.ns, resonator)

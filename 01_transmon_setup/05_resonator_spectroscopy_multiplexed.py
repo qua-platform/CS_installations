@@ -15,16 +15,14 @@ Before proceeding to the next node:
     - Update the readout frequency, labeled as "resonator_IF_q1" and "resonator_IF_q2", in the configuration.
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
+from configuration import *
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.loops import from_array
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import fetching_tool, progress_counter
 from scipy import signal
-
 
 ###################
 # The QUA program #
@@ -57,8 +55,8 @@ with program() as multi_res_spec:
                 "readout",
                 "rr1",
                 None,
-                dual_demod.full("cos", "sin", I[0]),
-                dual_demod.full("minus_sin", "cos", Q[0]),
+                demod.full("cos", I[0]),
+                demod.full("sin", Q[0]),
             )
             # Save the 'I' & 'Q' quadratures for rr1 to their respective streams
             save(I[0], I_st[0])
@@ -72,8 +70,8 @@ with program() as multi_res_spec:
                 "readout",
                 "rr2",
                 None,
-                dual_demod.full("cos", "sin", I[1]),
-                dual_demod.full("minus_sin", "cos", Q[1]),
+                demod.full("cos", I[1]),
+                demod.full("sin", Q[1]),
             )
             # Save the 'I' & 'Q' quadratures for rr2 to their respective streams
             save(I[1], I_st[1])
@@ -94,7 +92,7 @@ with program() as multi_res_spec:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
 
 #######################
 # Simulate or execute #

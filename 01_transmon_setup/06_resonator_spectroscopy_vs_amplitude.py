@@ -19,17 +19,15 @@ Before proceeding to the next node:
     - Adjust the readout amplitude, labeled as "readout_amp_q", in the configuration.
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
-from macros import qua_declaration
 import matplotlib.pyplot as plt
+from configuration import *
+from macros import qua_declaration
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.loops import from_array
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import fetching_tool, progress_counter
 from scipy import signal
-
 
 ###################
 # The QUA program #
@@ -63,8 +61,8 @@ with program() as multi_res_spec_vs_amp:
                     "readout" * amp(a),
                     "rr1",
                     None,
-                    dual_demod.full("cos", "sin", I[0]),
-                    dual_demod.full("minus_sin", "cos", Q[0]),
+                    demod.full("cos", I[0]),
+                    demod.full("sin", Q[0]),
                 )
                 # Save the 'I' & 'Q' quadratures for rr1 to their respective streams
                 save(I[0], I_st[0])
@@ -78,8 +76,8 @@ with program() as multi_res_spec_vs_amp:
                     "readout" * amp(a),
                     "rr2",
                     None,
-                    dual_demod.full("cos", "sin", I[1]),
-                    dual_demod.full("minus_sin", "cos", Q[1]),
+                    demod.full("cos", I[1]),
+                    demod.full("sin", Q[1]),
                 )
                 # Save the 'I' & 'Q' quadratures for rr2 to their respective streams
                 save(I[1], I_st[1])

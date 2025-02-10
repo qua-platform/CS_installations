@@ -19,18 +19,17 @@ Before proceeding to the next node:
     - Update the resonator frequency versus flux fit parameters (amplitude_fit, frequency_fit, phase_fit, offset_fit) in the configuration
 """
 
-from qm.qua import *
-from qm import QuantumMachinesManager
-from qm import SimulationConfig
-from configuration import *
-from qualang_tools.results import progress_counter, fetching_tool
-from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
-from macros import qua_declaration, multiplexed_readout
 import matplotlib.pyplot as plt
+from configuration import *
+from external_drivers import QDACII, load_qdac_voltage_list
+from macros import multiplexed_readout, qua_declaration
+from qm import QuantumMachinesManager, SimulationConfig
+from qm.qua import *
+from qualang_tools.loops import from_array
+from qualang_tools.plot import interrupt_on_close
+from qualang_tools.results import fetching_tool, progress_counter
 from scipy import signal
 from scipy.optimize import curve_fit
-
 
 ###################
 # The QUA program #
@@ -41,8 +40,8 @@ span = 10 * u.MHz
 df = 100 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)
 # Flux bias sweep in V
-flux_min = -0.49
-flux_max = 0.49
+flux_min = -5.0
+flux_max = 5.0
 step = 0.01
 flux = np.arange(flux_min, flux_max + step / 2, step)
 
@@ -52,18 +51,16 @@ with program() as multi_res_spec_vs_flux:
     df = declare(int)  # QUA variable for sweeping the readout frequency detuning around the resonance
     dc = declare(fixed)  # QUA variable for sweeping the flux bias
 
-    set_dc_offset("q2_z", "single", 0)
-    with for_(n, 0, n < n_avg, n + 1):
-        with for_(*from_array(df, dfs)):
-            # Update the frequency of the two resonator elements
-            update_frequency("rr1", df + resonator_IF_q1)
-            update_frequency("rr2", df + resonator_IF_q2)
-
-            with for_(*from_array(dc, flux)):
+    with for_(*from_array(dc, flux)):
+        play("qdac_trigger", "QDAC_trigger1")
+        play("qdac_trigger", "QDAC_trigger2")
+        wait(500 * u.ns)
+        with for_(n, 0, n < n_avg, n + 1):
+            with for_(*from_array(df, dfs)):
+                # Update the frequency of the two resonator elements
+                update_frequency("rr1", df + resonator_IF_q1)
+                update_frequency("rr2", df + resonator_IF_q2)
                 # Flux sweeping
-                set_dc_offset("q1_z", "single", dc)
-                set_dc_offset("q2_z", "single", dc)
-                wait(flux_settle_time * u.ns)  # Wait for the flux to settle
                 # Macro to perform multiplexed readout on the specified resonators
                 # It also save the 'I' and 'Q' quadratures into their respective streams
                 multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], sequential=False)
@@ -74,29 +71,58 @@ with program() as multi_res_spec_vs_flux:
     with stream_processing():
         n_st.save("n")
         # resonator 1
-        I_st[0].buffer(len(flux)).buffer(len(dfs)).average().save("I1")
-        Q_st[0].buffer(len(flux)).buffer(len(dfs)).average().save("Q1")
+        I_st[0].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(flux)).save("I1")
+        Q_st[0].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(flux)).save("Q1")
         # resonator 2
-        I_st[1].buffer(len(flux)).buffer(len(dfs)).average().save("I2")
-        Q_st[1].buffer(len(flux)).buffer(len(dfs)).average().save("Q2")
+        I_st[1].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(flux)).save("I2")
+        Q_st[1].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(flux)).save("Q2")
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
 
 #######################
 # Simulate or execute #
 #######################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, multi_res_spec_vs_flux, simulation_config)
-    job.get_simulated_samples().con1.plot()
-    plt.show()
+    samples = job.get_simulated_samples()
+    waveform_report = job.get_simulated_waveform_report()
+    waveform_report.create_plot(samples, "con1")
+    # plt.show()
 else:
+
+    ## QDAC2 section
+    # Create the qdac instrument
+    qdac = QDACII("Ethernet", IP_address="127.0.0.1", port=5025)  # Using Ethernet protocol
+    # qdac = QDACII("USB", USB_device=4)  # Using USB protocol
+    # Set up the qdac and load the voltage list
+    load_qdac_voltage_list(
+        qdac,
+        channel=1,
+        dwell=2e-6,
+        slew_rate=2e7,
+        trigger_port="ext1",
+        output_range="low",
+        output_filter="med",
+        voltage_list=flux,
+    )
+    load_qdac_voltage_list(
+        qdac,
+        channel=2,
+        dwell=2e-6,
+        slew_rate=2e7,
+        trigger_port="ext2",
+        output_range="high",
+        output_filter="med",
+        voltage_list=flux,
+    )
+
     # Open a quantum machine to execute the QUA program
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it

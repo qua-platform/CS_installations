@@ -27,8 +27,8 @@ def IQ_imbalance(g, phi):
 ######################
 # Network parameters #
 ######################
-qop_ip = "127.0.0.1"  # Write the QM router IP address
-cluster_name = None  # Write your cluster_name if version >= QOP220
+qop_ip = "172.16.33.101"  # Write the QM router IP address
+cluster_name = "Cluster_81"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 # Path to save data
@@ -245,10 +245,11 @@ config = {
             },
             "digital_outputs": {
                 1: {},
+                2: {},
             },
             "analog_inputs": {
                 1: {"offset": 0.0, "gain_db": 0},  # I from down-conversion
-                2: {"offset": 0.0, "gain_db": 0},  # Q from down-conversion
+                # 2: {"offset": 0.0, "gain_db": 0},  # Q from down-conversion
             },
         },
     },
@@ -267,7 +268,7 @@ config = {
             },
             "outputs": {
                 "out1": ("con1", 1),
-                "out2": ("con1", 2),
+                # "out2": ("con1", 2),
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -286,7 +287,7 @@ config = {
             },
             "outputs": {
                 "out1": ("con1", 1),
-                "out2": ("con1", 2),
+                # "out2": ("con1", 2),
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -343,6 +344,30 @@ config = {
             },
             "operations": {
                 "const": "const_flux_pulse",
+            },
+        },
+        "QDAC_trigger1": {
+            "digitalInputs": {
+                "trigger": {
+                    "port": ("con1", 1),
+                    "delay": 0,
+                    "buffer": 0,
+                }
+            },
+            "operations": {
+                "qdac_trigger": "short_trigger_pulse",
+            },
+        },
+        "QDAC_trigger2": {
+            "digitalInputs": {
+                "trigger": {
+                    "port": ("con1", 2),
+                    "delay": 0,
+                    "buffer": 0,
+                }
+            },
+            "operations": {
+                "qdac_trigger": "short_trigger_pulse",
             },
         },
     },
@@ -504,6 +529,11 @@ config = {
                 "opt_sin": "opt_sine_weights_q2",
                 "opt_minus_sin": "opt_minus_sine_weights_q2",
             },
+            "digital_marker": "ON",
+        },
+        "short_trigger_pulse": {
+            "operation": "control",
+            "length": 100,
             "digital_marker": "ON",
         },
     },

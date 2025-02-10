@@ -56,17 +56,15 @@ with program() as multi_qubit_spec_vs_flux:
     resonator_freq2 = declare(int, value=fitted_curve2.tolist())  # res freq vs flux table
     index = declare(int, value=0)  # index to get the right resonator freq for a given flux
 
-    with for_(n, 0, n < n_avg, n + 1):
-        with for_(*from_array(df, dfs)):
+    with for_(*from_array(dc, dcs)):
+        play("qdac_trigger", "QDAC_trigger1")
+        play("qdac_trigger", "QDAC_trigger2")
+        wait(500 * u.ns)
+        with for_(n, 0, n < n_avg, n + 1):
+            with for_(*from_array(df, dfs)):
             # Update the frequency of the two qubit elements
-            update_frequency("q1_xy", df + qubit_IF_q1)
-            update_frequency("q2_xy", df + qubit_IF_q2)
-            assign(index, 0)
-            with for_(*from_array(dc, dcs)):
-                # Flux sweeping
-                set_dc_offset("q1_z", "single", dc)
-                # set_dc_offset("q2_z", "single", dc)
-                wait(flux_settle_time * u.ns)  # Wait for the flux to settle
+                update_frequency("q1_xy", df + qubit_IF_q1)
+                update_frequency("q2_xy", df + qubit_IF_q2)
                 # Update the resonator frequency to always measure on resonance
                 # update_frequency("rr1", resonator_freq1[index] + resonator_IF_q1)
                 # update_frequency("rr2", resonator_freq2[index] + resonator_IF_q2)
@@ -76,40 +74,41 @@ with program() as multi_qubit_spec_vs_flux:
                 # play("saturation" * amp(saturation_amp), "q2_xy", duration=saturation_len * u.ns)
 
                 # Multiplexed readout, also saves the measurement outcomes
+                align()
                 multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2])
                 # Wait for the qubit to decay to the ground state
                 wait(thermalization_time * u.ns)
                 # Update the resonator frequency vs flux index
-                assign(index, index + 1)
         # Save the averaging iteration to get the progress bar
         save(n, n_st)
 
     with stream_processing():
         n_st.save("n")
         # resonator 1
-        I_st[0].buffer(len(dcs)).buffer(len(dfs)).average().save("I1")
-        Q_st[0].buffer(len(dcs)).buffer(len(dfs)).average().save("Q1")
+        I_st[0].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(dcs)).save("I1")
+        Q_st[0].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(dcs)).save("Q1")
         # resonator 2
-        I_st[1].buffer(len(dcs)).buffer(len(dfs)).average().save("I2")
-        Q_st[1].buffer(len(dcs)).buffer(len(dfs)).average().save("Q2")
+        I_st[1].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(dcs)).save("I2")
+        Q_st[1].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average()).buffer(len(dcs)).save("Q2")
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
 
 ###########################
 # Run or Simulate Program #
 ###########################
 
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, multi_qubit_spec_vs_flux, simulation_config)
-    job.get_simulated_samples().con1.plot()
-    plt.show()
+    samples = job.get_simulated_samples()
+    waveform_report = job.get_simulated_waveform_report()
+    waveform_report.create_plot(samples, "con1")
 else:
     # Open a quantum machine to execute the QUA program
     qm = qmm.open_qm(config)
