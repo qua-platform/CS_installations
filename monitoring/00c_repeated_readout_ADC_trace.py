@@ -1,4 +1,3 @@
-# %%
 """
     Repeated Readout
 
@@ -33,15 +32,15 @@ with program() as repeated_readout:
 
         align()
 
-        wait((readout_len + 16) // 4, 'rr2_twin')
+        wait((readout_len) // 4, 'rr2_twin')
 
         with for_(n, 0, n < shots, n + 1):  # QUA for_ loop for averaging
-            measure('readout', 'rr2', adc_st[0])
+            measure('zero', 'rr2', adc_st[0])
             save(n, n_st)
             wait(readout_len // 4, 'rr2')
 
         with for_(n1, 0, n1 < shots, n1 + 1):  # QUA for_ loop for averaging
-            measure('readout', 'rr2_twin', adc_st[1])
+            measure('zero', 'rr2_twin', adc_st[1])
             wait(readout_len // 4, 'rr2_twin')
 
     
@@ -51,7 +50,7 @@ with program() as repeated_readout:
             adc_st[ind].input2().buffer(shots).save(f"adc_{ind}")
 
 qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
-
+qmm.close_all_qms()
 # Open a quantum machine to execute the QUA program
 qm = qmm.open_qm(config, close_other_machines=False)
 

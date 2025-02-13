@@ -252,6 +252,7 @@ config = {
             "intermediate_frequency": resonator_IF,
             "operations": {
                 "readout": "readout_pulse",
+                "zero": "zero_pulse",
             },
             "outputs": {
                 "out1": (con, fem, 1),
@@ -266,6 +267,7 @@ config = {
             "intermediate_frequency": resonator_IF,
             "operations": {
                 "readout": "readout_pulse",
+                "zero": "zero_pulse",
             },
             "outputs": {
                 "out1": (con, fem, 1),
@@ -280,6 +282,7 @@ config = {
             "intermediate_frequency": resonator_IF,
             "operations": {
                 "readout": "readout_pulse",
+                "zero": "zero_pulse",
             },
             "outputs": {
                 "out2": (con, fem, 2),
@@ -294,6 +297,7 @@ config = {
             "intermediate_frequency": resonator_IF,
             "operations": {
                 "readout": "readout_pulse",
+                "zero": "zero_pulse",
             },
             "outputs": {
                 "out2": (con, fem, 2),
@@ -303,6 +307,19 @@ config = {
         },
     },
     "pulses": {
+        "zero_pulse": {
+            "operation": "measurement",
+            "length": readout_len,
+            "waveforms": {
+                "single": "zero_wf",
+            },
+            "integration_weights": {
+                "cos": "cosine_weights",
+                "sin": "sine_weights",
+                "minus_sin": "minus_sine_weights",
+            },
+            "digital_marker": "ON",
+        },
         "readout_pulse": {
             "operation": "measurement",
             "length": readout_len,
@@ -319,6 +336,7 @@ config = {
     },
     "waveforms": {
         "readout_wf": {"type": "constant", "sample": readout_amp},
+        "zero_wf": {"type": "constant", "sample": 0.0},
     },
     "digital_waveforms": {
         "ON": {"samples": [(1, 0)]},
