@@ -14,14 +14,14 @@ import time
 # The QUA program #
 ###################
 
-shots = 5_000  # The number of averages
+shots = 10  # The number of averages
 
 with program() as repeated_readout:
 
     n = declare(int)  # QUA variable for the averaging loop
     n_st = declare_stream()
     n1 = declare(int)  # QUA variable for the averaging loop
-    adc_st = [declare_stream(adc_trace=True) for _ in range(2)]
+    adc_st = declare_stream(adc_trace=True)
     clock = declare(int)
 
     with infinite_loop_():
@@ -35,22 +35,26 @@ with program() as repeated_readout:
         wait((readout_len) // 4, 'rr2_twin')
 
         with for_(n, 0, n < shots, n + 1):  # QUA for_ loop for averaging
-            measure('zero', 'rr2', adc_st[0])
-            save(n, n_st)
+            measure('readout', 'rr2', adc_st)
+            # save(n, n_st)
             wait(readout_len // 4, 'rr2')
 
         with for_(n1, 0, n1 < shots, n1 + 1):  # QUA for_ loop for averaging
-            measure('zero', 'rr2_twin', adc_st[1])
+            measure('readout', 'rr2_twin', adc_st)
             wait(readout_len // 4, 'rr2_twin')
 
-    
     with stream_processing():
-        n_st.save('iteration')
-        for ind in range(2):
-            adc_st[ind].input2().buffer(shots).save(f"adc_{ind}")
+        adc_st.input2().buffer(2*shots).save(f"adc_0")
 
 qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 qmm.close_all_qms()
+
+# from qm import SimulationConfig
+
+# job = qmm.simulate(config, repeated_readout, SimulationConfig(int(10000)))
+# job.get_simulated_samples().con1.plot()
+# plt.show()
+
 # Open a quantum machine to execute the QUA program
 qm = qmm.open_qm(config, close_other_machines=False)
 
@@ -62,8 +66,8 @@ if readout_len >= 1_000 and shots <= 5_000:
 
         fetch_names = []
 
-        for ind in range(2):
-            fetch_names.append(f"adc_{ind}")
+        # for ind in range(2):
+        fetch_names.append("adc_0")
 
         results = fetching_tool(job, fetch_names, mode="live")
 
@@ -77,12 +81,7 @@ if readout_len >= 1_000 and shots <= 5_000:
 
             res = results.fetch_all()
 
-            complete_adc = np.empty(((len(res[0]) + len(res[1])), readout_len), dtype=res[1][0][0])
-
-            complete_adc[0::2] = res[0]
-            complete_adc[1::2] = res[1]
-
-            f, pxx = signal.periodogram(complete_adc.flatten(), fs=1e9)
+            f, pxx = signal.periodogram(res[0].flatten(), fs=1e9)
 
             end_time = time.time()
 
@@ -90,10 +89,14 @@ if readout_len >= 1_000 and shots <= 5_000:
             plt.plot(f, pxx)
             plt.title(f'counter: {counter} and time taken: {end_time - start_time}')
             plt.yscale('log')
+            plt.axvline(x=250e6, color='r', linestyle='--')
+            # plt.axvline(x=125e6, color='r', linestyle='--')
+            # plt.axhline(y=10e-07, color='r', linestyle='--')
+            # plt.ylim([1e-12, 1e-5])
             plt.xscale('log')
             plt.xlabel('Frequency [Hz]')
             plt.ylabel('PSD [a.u.]')
-            plt.pause(10)
+            plt.pause(4)
 
             counter += 1
 

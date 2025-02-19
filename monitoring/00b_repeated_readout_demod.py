@@ -42,13 +42,13 @@ with program() as repeated_readout:
         wait((readout_len) // 4, 'rr1_twin')  # needed to delay second for_loop
 
         with for_(n, 0, n < shots, n + 1):  # QUA for_ loop for averaging
-            measure('readout', 'rr1', None, demod.full("cos", I[0], 'out1'), demod.full("sin", Q[0], 'out1'))
+            measure('zero', 'rr1', None, demod.full("cos", I[0], 'out1'), demod.full("sin", Q[0], 'out1'))
             save(I[0], I_st[0])
             save(Q[0], Q_st[0])
             wait(readout_len // 4, 'rr1')
 
         with for_(n1, 0, n1 < shots, n1 + 1):  # QUA for_ loop for averaging
-            measure('readout', 'rr1_twin', None, demod.full("cos", I[1], 'out1'), demod.full("sin", Q[1], 'out1'))
+            measure('zero', 'rr1_twin', None, demod.full("cos", I[1], 'out1'), demod.full("sin", Q[1], 'out1'))
             save(I[1], I_st[1])
             save(Q[1], Q_st[1])
             wait(readout_len // 4, 'rr1_twin')
