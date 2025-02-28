@@ -1,0 +1,10 @@
+{
+	"name": "Python 3",
+	"image": "mcr.microsoft.com/devcontainers/python:0-3.11",
+	"remoteUser": "root",
+    "workspaceFolder": "/workspaces",
+    "containerEnv": {
+        "QUAM_STATE_PATH": "/workspaces/HI_20250303_NobuKaneko/configuration/quam_state"
+    },
+    "forwardPorts": [8000,8001]
+}
