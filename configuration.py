@@ -3,11 +3,12 @@ QUA-Config supporting OPX+ & Octave
 """
 
 from pathlib import Path
-import numpy as np
 
-from qualang_tools.config.waveform_tools import drag_gaussian_pulse_waveforms
-from qualang_tools.units import unit
+import numpy as np
+from qm.octave import QmOctaveConfig
 import plotly.io as pio
+from qualang_tools.units import unit
+from scipy.signal.windows import gaussian
 
 pio.renderers.default = "browser"
 #######################
@@ -18,8 +19,8 @@ u = unit(coerce_to_integer=True)
 ######################
 # Network parameters #
 ######################
-qop_ip = "127.0.0.1"  # Write the QM router IP address
-cluster_name = None  # Write your cluster_name if version >= QOP220
+qop_ip = "172.16.33.101"  # Write the QM router IP address
+cluster_name = "Cluster_81"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 #############
@@ -32,6 +33,10 @@ save_dir.mkdir(exist_ok=True)
 #####################
 # OPX configuration #
 #####################
+
+octave_config = QmOctaveConfig()
+octave_config.set_calibration_db(Path().absolute())
+
 
 #############################################
 #                Resonators                 #
@@ -47,6 +52,12 @@ const_amp = 0.2
 time_of_flight = 24
 depletion_time = 2 * u.us
 
+#############################################
+#                Fast DC gate               #
+#############################################
+gaussian_len = 60
+
+gaussian_waveform = (0.4 * gaussian(gaussian_len, gaussian_len/8)).tolist()
 
 #############################################
 #                  Config                   #
@@ -58,8 +69,13 @@ config = {
             "analog_outputs": {
                 1: {"offset": 0.0},  # I resonator
                 2: {"offset": 0.0},  # Q resonator
+                3: {"offset": 0.0},  # Fast DC gate
             },
-            "digital_outputs": {},
+            "digital_outputs": {
+                1: {},
+                2: {},
+                3: {},
+            },
             "analog_inputs": {
                 1: {"offset": 0.0, "gain_db": 0},  # I from down-conversion
                 2: {"offset": 0.0, "gain_db": 0},  # Q from down-conversion
@@ -68,8 +84,8 @@ config = {
     },
     "elements": {
         "resonator": {
-            "RF_inputs": {"port": ("octave1", 1)},
-            "RF_outputs": {"port": ("octave1", 1)},
+            "RF_inputs": {"port": ("oct1", 1)},
+            "RF_outputs": {"port": ("oct1", 1)},
             "intermediate_frequency": resonator_IF,
             "operations": {
                 "cw": "const_pulse",
@@ -78,11 +94,19 @@ config = {
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
+        "fast_dc_gate": {
+            "singleInput": {"port": ("con1", 3)},
+            "operations": {
+                "square": "square_pulse",
+                "gaussian": "gaussian_pulse",
+            },
+        },
         "qdac_trigger_1": {
             "digitalInputs": {
                 "trig": {
                     "port": ("con1", 1),
                     "delay": 0,
+                    "buffer": 0,
                 },
             },
             "operations": {
@@ -94,6 +118,7 @@ config = {
                 "trig": {
                     "port": ("con1", 2),
                     "delay": 0,
+                    "buffer": 0,
                 },
             },
             "operations": {
@@ -104,6 +129,7 @@ config = {
             "digitalInputs": {
                 "trig": {
                     "port": ("con1", 3),
+                    "buffer": 0,
                     "delay": 0,
                 },
             },
@@ -140,6 +166,20 @@ config = {
                 "Q": "zero_wf",
             },
         },
+        "square_pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "single": "square_wf",
+            },
+        },
+        "gaussian_pulse": {
+            "operation": "control",
+            "length": gaussian_len,
+            "waveforms": {
+                "single": "gaussian_wf",
+            },
+        },
         "readout_pulse": {
             "operation": "measurement",
             "length": readout_len,
@@ -152,6 +192,7 @@ config = {
                 "sin": "sine_weights",
                 "minus_sin": "minus_sine_weights",
             },
+            "digital_marker": "ON",
         },
         "trigger_pulse": {
             "operation": "control",
@@ -161,6 +202,8 @@ config = {
     },
     "waveforms": {
         "const_wf": {"type": "constant", "sample": const_amp},
+        "square_wf": {"type": "constant", "sample": 0.3},
+        "gaussian_wf": {"type": "arbitrary", "samples": gaussian_waveform},
         "zero_wf": {"type": "constant", "sample": 0.0},
         "readout_wf": {"type": "constant", "sample": readout_amp},
     },
