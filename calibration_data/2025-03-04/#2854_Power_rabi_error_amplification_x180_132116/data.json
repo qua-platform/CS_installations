@@ -1,0 +1,25 @@
+{
+    "ds": "./ds.h5",
+    "figure": "./figure.png",
+    "initial_parameters": {
+        "qubits": [
+            "q4",
+            "q8"
+        ],
+        "num_averages": 10,
+        "operation_x180_or_any_90": "x180",
+        "min_amp_factor": 0.8,
+        "max_amp_factor": 1.2,
+        "amp_factor_step": 0.005,
+        "max_number_rabi_pulses_per_sweep": 100,
+        "flux_point_joint_or_independent": null,
+        "reset_type_thermal_or_active": "thermal",
+        "state_discrimination": true,
+        "update_x90": true,
+        "simulate": false,
+        "simulation_duration_ns": 2500,
+        "timeout": 100,
+        "load_data_id": null,
+        "multiplexed": false
+    }
+}

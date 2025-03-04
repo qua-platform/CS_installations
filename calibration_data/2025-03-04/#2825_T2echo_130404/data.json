@@ -1,0 +1,18 @@
+{
+    "ds": "./ds.h5",
+    "figure_raw": "./figure_raw.png",
+    "initial_parameters": {
+        "qubits": [
+            "q1",
+            "q5"
+        ],
+        "num_averages": 300,
+        "min_wait_time_in_ns": 16,
+        "max_wait_time_in_ns": 100000,
+        "wait_time_step_in_ns": 500,
+        "simulate": false,
+        "timeout": 100,
+        "use_state_discrimination": true,
+        "reset_type": "thermal"
+    }
+}

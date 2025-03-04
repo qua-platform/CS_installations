@@ -1,0 +1,104 @@
+{
+    "created_at": "2025-03-04T13:22:37+01:00",
+    "metadata": {
+        "name": "T2echo",
+        "data_path": "2025-03-04/#2857_T2echo_132237"
+    },
+    "data": {
+        "quam": "./quam_state.json",
+        "parameters": {
+            "model": {
+                "qubits": [
+                    "q4",
+                    "q8"
+                ],
+                "num_averages": 300,
+                "min_wait_time_in_ns": 16,
+                "max_wait_time_in_ns": 100000,
+                "wait_time_step_in_ns": 500,
+                "simulate": false,
+                "timeout": 100,
+                "use_state_discrimination": true,
+                "reset_type": "thermal"
+            },
+            "schema": {
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": [
+                            "q1",
+                            "q2",
+                            "q3",
+                            "q4",
+                            "q5",
+                            "q6",
+                            "q7",
+                            "q8"
+                        ],
+                        "title": "Qubits"
+                    },
+                    "num_averages": {
+                        "default": 300,
+                        "title": "Num Averages",
+                        "type": "integer"
+                    },
+                    "min_wait_time_in_ns": {
+                        "default": 16,
+                        "title": "Min Wait Time In Ns",
+                        "type": "integer"
+                    },
+                    "max_wait_time_in_ns": {
+                        "default": 100000,
+                        "title": "Max Wait Time In Ns",
+                        "type": "integer"
+                    },
+                    "wait_time_step_in_ns": {
+                        "default": 500,
+                        "title": "Wait Time Step In Ns",
+                        "type": "integer"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "timeout": {
+                        "default": 100,
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "use_state_discrimination": {
+                        "default": true,
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "enum": [
+                            "active",
+                            "thermal"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        }
+    },
+    "id": 2857,
+    "parents": [
+        2856
+    ]
+}

@@ -50,9 +50,9 @@ g = QualibrationGraph(
     orchestrator=BasicOrchestrator(skip_failed=False),
 )
 
-for i in range(3, 9):
-    print(f"\n---------- Measure qubit {i} ----------\n")
-    g.run(qubits=[f"q{i}"])
+# for i in range(1, 9):
+#     print(f"\n---------- Measure qubit {i} ----------\n")
+#     g.run(qubits=[f"q{i}"])
 
 # g.run(qubits=["q1"])
 # g.run(qubits=["q2"])
@@ -63,10 +63,12 @@ for i in range(3, 9):
 
 # Run the graph 2x2x2x2
 # for i in range(1, 5):
-#     print(f"\n---------- Measure qubits {i} & {4 + i} ----------\n")
-#     g.run(qubits=[f"q{i}", f"q{4 + i}"])
+    # print(f"\n---------- Measure qubits {i} & {4 + i} ----------\n")
+g.run(qubits=[f"q{1}", f"q{4 + 1}"])
+g.run(qubits=[f"q{3}", f"q{4 + 3}"])
+g.run(qubits=[f"q{4}", f"q{4 + 4}"])
 
-g.run(qubits=[f"q{i+1}" for i in range(0, 8)])
+# g.run(qubits=[f"q{i+1}" for i in range(0, 8)])
 #
 # RB_depth = [1800, 300, 600, 1800, 1200, 1800, 1200, 1800]
 # RB_step = np.array(RB_depth) // 60

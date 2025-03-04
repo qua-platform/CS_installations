@@ -1,0 +1,115 @@
+{
+    "created_at": "2025-03-04T13:20:28+01:00",
+    "metadata": {
+        "name": "IQ_blobs",
+        "data_path": "2025-03-04/#2852_IQ_blobs_132028"
+    },
+    "data": {
+        "quam": "./quam_state.json",
+        "parameters": {
+            "model": {
+                "qubits": [
+                    "q4",
+                    "q8"
+                ],
+                "num_runs": 2000,
+                "reset_type_thermal_or_active": "thermal",
+                "flux_point_joint_or_independent": null,
+                "operation_name": "readout",
+                "simulate": false,
+                "simulation_duration_ns": 2500,
+                "timeout": 100,
+                "load_data_id": null,
+                "multiplexed": true
+            },
+            "schema": {
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": [
+                            "q3",
+                            "q4"
+                        ],
+                        "title": "Qubits"
+                    },
+                    "num_runs": {
+                        "default": 2000,
+                        "title": "Num Runs",
+                        "type": "integer"
+                    },
+                    "reset_type_thermal_or_active": {
+                        "default": "thermal",
+                        "enum": [
+                            "thermal",
+                            "active"
+                        ],
+                        "title": "Reset Type Thermal Or Active",
+                        "type": "string"
+                    },
+                    "flux_point_joint_or_independent": {
+                        "default": null,
+                        "enum": [
+                            "joint",
+                            "independent",
+                            null
+                        ],
+                        "title": "Flux Point Joint Or Independent"
+                    },
+                    "operation_name": {
+                        "default": "readout",
+                        "title": "Operation Name",
+                        "type": "string"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 2500,
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "timeout": {
+                        "default": 100,
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Load Data Id"
+                    },
+                    "multiplexed": {
+                        "default": true,
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        }
+    },
+    "id": 2852,
+    "parents": [
+        2851
+    ]
+}
