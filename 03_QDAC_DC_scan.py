@@ -86,7 +86,7 @@ qdac = QDACII("Ethernet", IP_address="127.0.0.1", port=5025)  # Using Ethernet p
 load_voltage_list(
     qdac,
     channel=1,
-    dwell=2e-6,
+    # dwell=2e-6,
     slew_rate=2e7,
     trigger_port="ext1",
     output_range="high", # high (+-10V) or low (+-2V)
@@ -96,7 +96,7 @@ load_voltage_list(
 load_voltage_list(
     qdac,
     channel=2,
-    dwell=2e-6,
+    # dwell=2e-6,
     slew_rate=2e7,
     trigger_port="ext2",
     output_range="high",
