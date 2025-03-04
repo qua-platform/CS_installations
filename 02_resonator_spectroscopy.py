@@ -34,7 +34,7 @@ n_avg = 1000  # The number of averages
 # The frequency sweep parameters
 f_min = 30 * u.MHz
 f_max = 70 * u.MHz
-df = 100 * u.kHz
+df = 10 * u.kHz
 frequencies = np.arange(f_min, f_max + 0.1, df)  # The frequency vector (+ 0.1 to add f_max to frequencies)
 
 # Data to save
@@ -153,9 +153,11 @@ else:
         print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit['f'][0]:.6f} MHz")
     except (Exception,):
         pass
+
+    plt.show()
     # Save results
     script_name = Path(__file__).name
     data_handler = DataHandler(root_data_folder=save_dir)
     save_data_dict.update({"fig_live": fig})
-    data_handler.additional_files = {script_name: script_name, **default_additional_files}
+    # data_handler.additional_files = {script_name: script_name}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])

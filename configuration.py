@@ -5,8 +5,8 @@ QUA-Config supporting OPX+ & Octave
 from pathlib import Path
 
 import numpy as np
-from qm.octave import QmOctaveConfig
 import plotly.io as pio
+from qm.octave import QmOctaveConfig
 from qualang_tools.units import unit
 from scipy.signal.windows import gaussian
 
@@ -35,7 +35,7 @@ save_dir.mkdir(exist_ok=True)
 #####################
 
 octave_config = QmOctaveConfig()
-octave_config.set_calibration_db(Path().absolute())
+octave_config.set_calibration_db(str(Path(__file__).parent.resolve()))
 
 
 #############################################
@@ -57,7 +57,7 @@ depletion_time = 2 * u.us
 #############################################
 gaussian_len = 60
 
-gaussian_waveform = (0.4 * gaussian(gaussian_len, gaussian_len/8)).tolist()
+gaussian_waveform = (0.4 * gaussian(gaussian_len, gaussian_len / 8)).tolist()
 
 #############################################
 #                  Config                   #
@@ -152,6 +152,8 @@ config = {
                 1: {
                     "LO_frequency": resonator_LO,
                     "LO_source": "internal",
+                    "IF_mode_I": "direct",
+                    "IF_mode_Q": "off",
                 },
             },
             "connectivity": "con1",

@@ -51,7 +51,7 @@ qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -100,3 +100,5 @@ else:
     plt.xlabel("Time [ns]")
     plt.legend()
     plt.tight_layout()
+
+    plt.show()
