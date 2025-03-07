@@ -1,0 +1,30 @@
+{
+    "ds": "./ds.h5",
+    "fit_results": {
+        "q3": {
+            "detuning": "./arrays.npz#fit_results.q3.detuning",
+            "chi": "./arrays.npz#fit_results.q3.chi"
+        },
+        "q7": {
+            "detuning": "./arrays.npz#fit_results.q7.detuning",
+            "chi": "./arrays.npz#fit_results.q7.chi"
+        }
+    },
+    "figure": "./figure.png",
+    "figure2": "./figure2.png",
+    "initial_parameters": {
+        "qubits": [
+            "q3",
+            "q7"
+        ],
+        "num_averages": 300,
+        "frequency_span_in_mhz": 10.0,
+        "frequency_step_in_mhz": 0.1,
+        "flux_point_joint_or_independent": null,
+        "simulate": false,
+        "simulation_duration_ns": 2500,
+        "timeout": 100,
+        "load_data_id": null,
+        "multiplexed": false
+    }
+}

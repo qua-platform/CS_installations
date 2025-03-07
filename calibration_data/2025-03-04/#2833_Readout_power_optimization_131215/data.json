@@ -1,0 +1,44 @@
+{
+    "ds": "./ds.h5",
+    "results": {
+        "q1": {
+            "best_amp": 0.0778486841012846,
+            "angle": 6.228401694560194,
+            "threshold": 0.0012481899890259764,
+            "fidelity": 96.85,
+            "confusion_matrix": "./arrays.npz#results.q1.confusion_matrix",
+            "rus_threshold": -0.0012321768581069668
+        },
+        "q5": {
+            "best_amp": 0.05509114974216912,
+            "angle": 0.48322413550965093,
+            "threshold": 0.0001740069135383411,
+            "fidelity": 96.56666666666666,
+            "confusion_matrix": "./arrays.npz#results.q5.confusion_matrix",
+            "rus_threshold": -0.0027196012586369047
+        }
+    },
+    "figs": {},
+    "figure_assignment_fid": "./figure_assignment_fid.png",
+    "figure_IQ_blobs": "./figure_IQ_blobs.png",
+    "figure_fidelities": "./figure_fidelities.png",
+    "initial_parameters": {
+        "qubits": [
+            "q1",
+            "q5"
+        ],
+        "num_runs": 6000,
+        "reset_type_thermal_or_active": "thermal",
+        "flux_point_joint_or_independent": null,
+        "start_amp": 0.1,
+        "end_amp": 1.5,
+        "num_amps": 10,
+        "outliers_threshold": 0.98,
+        "plot_raw": false,
+        "simulate": false,
+        "simulation_duration_ns": 2500,
+        "timeout": 100,
+        "load_data_id": null,
+        "multiplexed": false
+    }
+}

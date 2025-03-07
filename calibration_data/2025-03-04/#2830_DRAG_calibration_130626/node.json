@@ -1,0 +1,151 @@
+{
+    "created_at": "2025-03-04T13:06:26+01:00",
+    "metadata": {
+        "name": "DRAG_calibration",
+        "data_path": "2025-03-04/#2830_DRAG_calibration_130626"
+    },
+    "data": {
+        "quam": "./quam_state.json",
+        "parameters": {
+            "model": {
+                "qubits": [
+                    "q2",
+                    "q6"
+                ],
+                "num_averages": 10,
+                "operation": "x180",
+                "min_amp_factor": 0.5,
+                "max_amp_factor": 1.5,
+                "amp_factor_step": 0.02,
+                "max_number_pulses_per_sweep": 200,
+                "flux_point_joint_or_independent": null,
+                "reset_type_thermal_or_active": "thermal",
+                "simulate": false,
+                "simulation_duration_ns": 2500,
+                "timeout": 100,
+                "alpha_setpoint": null,
+                "load_data_id": null,
+                "multiplexed": false
+            },
+            "schema": {
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": [
+                            "q2"
+                        ],
+                        "title": "Qubits"
+                    },
+                    "num_averages": {
+                        "default": 10,
+                        "title": "Num Averages",
+                        "type": "integer"
+                    },
+                    "operation": {
+                        "default": "x180",
+                        "title": "Operation",
+                        "type": "string"
+                    },
+                    "min_amp_factor": {
+                        "default": 0.5,
+                        "title": "Min Amp Factor",
+                        "type": "number"
+                    },
+                    "max_amp_factor": {
+                        "default": 1.5,
+                        "title": "Max Amp Factor",
+                        "type": "number"
+                    },
+                    "amp_factor_step": {
+                        "default": 0.02,
+                        "title": "Amp Factor Step",
+                        "type": "number"
+                    },
+                    "max_number_pulses_per_sweep": {
+                        "default": 200,
+                        "title": "Max Number Pulses Per Sweep",
+                        "type": "integer"
+                    },
+                    "flux_point_joint_or_independent": {
+                        "default": null,
+                        "enum": [
+                            "joint",
+                            "independent",
+                            null
+                        ],
+                        "title": "Flux Point Joint Or Independent"
+                    },
+                    "reset_type_thermal_or_active": {
+                        "default": "thermal",
+                        "enum": [
+                            "thermal",
+                            "active"
+                        ],
+                        "title": "Reset Type Thermal Or Active",
+                        "type": "string"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 2500,
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "timeout": {
+                        "default": 100,
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "alpha_setpoint": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Alpha Setpoint"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Load Data Id"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        }
+    },
+    "id": 2830,
+    "parents": [
+        2829
+    ]
+}

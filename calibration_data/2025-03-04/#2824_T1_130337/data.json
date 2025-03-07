@@ -1,0 +1,22 @@
+{
+    "ds": "./ds.h5",
+    "figure_raw": "./figure_raw.png",
+    "initial_parameters": {
+        "qubits": [
+            "q1",
+            "q5"
+        ],
+        "num_averages": 200,
+        "min_wait_time_in_ns": 16,
+        "max_wait_time_in_ns": 200000,
+        "wait_time_step_in_ns": 600,
+        "flux_point_joint_or_independent_or_arbitrary": null,
+        "reset_type": "thermal",
+        "use_state_discrimination": true,
+        "simulate": false,
+        "simulation_duration_ns": 2500,
+        "timeout": 100,
+        "load_data_id": null,
+        "multiplexed": false
+    }
+}

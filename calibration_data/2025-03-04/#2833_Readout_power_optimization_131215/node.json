@@ -1,0 +1,138 @@
+{
+    "created_at": "2025-03-04T13:12:15+01:00",
+    "metadata": {
+        "name": "Readout_power_optimization",
+        "data_path": "2025-03-04/#2833_Readout_power_optimization_131215"
+    },
+    "data": {
+        "quam": "./quam_state.json",
+        "parameters": {
+            "model": {
+                "qubits": [
+                    "q1",
+                    "q5"
+                ],
+                "num_runs": 6000,
+                "reset_type_thermal_or_active": "thermal",
+                "flux_point_joint_or_independent": null,
+                "start_amp": 0.1,
+                "end_amp": 1.5,
+                "num_amps": 10,
+                "outliers_threshold": 0.98,
+                "plot_raw": false,
+                "simulate": false,
+                "simulation_duration_ns": 2500,
+                "timeout": 100,
+                "load_data_id": null,
+                "multiplexed": false
+            },
+            "schema": {
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": [
+                            "q2"
+                        ],
+                        "title": "Qubits"
+                    },
+                    "num_runs": {
+                        "default": 6000,
+                        "title": "Num Runs",
+                        "type": "integer"
+                    },
+                    "reset_type_thermal_or_active": {
+                        "default": "thermal",
+                        "enum": [
+                            "thermal",
+                            "active"
+                        ],
+                        "title": "Reset Type Thermal Or Active",
+                        "type": "string"
+                    },
+                    "flux_point_joint_or_independent": {
+                        "default": null,
+                        "enum": [
+                            "joint",
+                            "independent",
+                            null
+                        ],
+                        "title": "Flux Point Joint Or Independent"
+                    },
+                    "start_amp": {
+                        "default": 0.1,
+                        "title": "Start Amp",
+                        "type": "number"
+                    },
+                    "end_amp": {
+                        "default": 1.5,
+                        "title": "End Amp",
+                        "type": "number"
+                    },
+                    "num_amps": {
+                        "default": 10,
+                        "title": "Num Amps",
+                        "type": "integer"
+                    },
+                    "outliers_threshold": {
+                        "default": 0.98,
+                        "title": "Outliers Threshold",
+                        "type": "number"
+                    },
+                    "plot_raw": {
+                        "default": false,
+                        "title": "Plot Raw",
+                        "type": "boolean"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 2500,
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "timeout": {
+                        "default": 100,
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Load Data Id"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        }
+    },
+    "id": 2833,
+    "parents": [
+        2832
+    ]
+}
