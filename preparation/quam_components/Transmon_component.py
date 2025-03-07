@@ -1,6 +1,8 @@
 from quam.core import quam_dataclass
 from quam.components.channels import IQChannel, Pulse
 from quam import QuamComponent
+
+from quam.components import SingleChannel
 from .FluxLine_component import FluxLine
 from .ReadoutResonator_component import ReadoutResonator
 from qualang_tools.octave_tools import octave_calibration_tool
@@ -34,6 +36,7 @@ class Transmon(QuamComponent):
 
     xy: IQChannel = None
     z: FluxLine = None
+    z_sb: SingleChannel = None
     resonator: ReadoutResonator = None
 
     T1: int = 10_000
