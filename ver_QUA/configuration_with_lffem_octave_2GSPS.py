@@ -94,6 +94,8 @@ thermalization_time = 5 * max(qubit1_T1, qubit2_T1)
 # CW pulse parameter
 const_len = 1000
 const_amp = 0.25
+single_len = 1000
+single_amp = 0.25
 
 # Pi pulse parameters
 pi_len = 40
@@ -259,7 +261,10 @@ ge_threshold_q2 = 0.0
 #############################################
 #                  Config                   #
 #############################################
-sampling_rate = 1e9
+sampling_rate_output1 = 1e9
+sampling_rate_output2 = 2e9
+sampling_rate_input1 = 1e9
+sampling_rate_input2 = 2e9
 config = {
     "version": 1,
     "controllers": {
@@ -282,7 +287,7 @@ config = {
                             #   2 GS/s: uses two cores per output
                             # NOTE: duration parameterization of arb. waveforms, sticky elements and chirping
                             #       aren't yet supported in 2 GS/s.
-                            "sampling_rate": sampling_rate,
+                            "sampling_rate": sampling_rate_output1,
                             # At 1 GS/s, use the "upsampling_mode" to optimize output for
                             #   modulated pulses (optimized for modulated pulses):      "mw"    (default)
                             #   unmodulated pulses (optimized for clean step response): "pulse"
@@ -292,35 +297,35 @@ config = {
                         2: {
                             "offset": 0.0,
                             "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
+                            "sampling_rate": sampling_rate_output1,
                             "upsampling_mode": "mw",
                         },
                         # Qubit 2 XY I-quadrature
                         3: {
                             "offset": 0.0,
                             "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
+                            "sampling_rate": sampling_rate_output1,
                             "upsampling_mode": "mw",
                         },
                         # Qubit 2 XY Q-quadrature
                         4: {
                             "offset": 0.0,
                             "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
+                            "sampling_rate": sampling_rate_output1,
                             "upsampling_mode": "mw",
                         },
                         # Resonator I-quadrature
                         5: {
                             "offset": 0.0,
                             "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
+                            "sampling_rate": sampling_rate_output1,
                             "upsampling_mode": "mw",
                         },
                         # Resonator Q-quadrature
                         6: {
                             "offset": 0.0,
                             "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
+                            "sampling_rate": sampling_rate_output1,
                             "upsampling_mode": "mw",
                         },
                     },
@@ -329,67 +334,80 @@ config = {
                     },
                     "analog_inputs": {
                         # I from down-conversion
-                        1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},
+                        1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate_input1},
                         # Q from down-conversion
-                        2: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},
+                        2: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate_input1},
                     },
                 },
                 lffem2: {
                     "type": "LF",
                     "analog_outputs": {
-                        # Qubit 1 XY I-quadrature
-                        1: {
-                            "offset": 0.0,
-                            # The "output_mode" can be used to tailor the max voltage and frequency bandwidth, i.e.,
-                            #   "direct":    1Vpp (-0.5V to 0.5V), 750MHz bandwidth (default)
-                            #   "amplified": 5Vpp (-2.5V to 2.5V), 330MHz bandwidth
-                            # Note, 'offset' takes absolute values, e.g., if in amplified mode and want to output 2.0 V, then set "offset": 2.0
-                            "output_mode": "direct",
-                            # The "sampling_rate" can be adjusted by using more FEM cores, i.e.,
-                            #   1 GS/s: uses one core per output (default)
-                            #   2 GS/s: uses two cores per output
-                            # NOTE: duration parameterization of arb. waveforms, sticky elements and chirping
-                            #       aren't yet supported in 2 GS/s.
-                            "sampling_rate": sampling_rate,
-                            # At 1 GS/s, use the "upsampling_mode" to optimize output for
-                            #   modulated pulses (optimized for modulated pulses):      "mw"    (default)
-                            #   unmodulated pulses (optimized for clean step response): "pulse"
-                            "upsampling_mode": "mw",
-                        },
-                        # Qubit 1 XY Q-quadrature
-                        2: {
-                            "offset": 0.0,
-                            "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
-                        },
-                        # Qubit 2 XY I-quadrature
-                        3: {
-                            "offset": 0.0,
-                            "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
-                        },
-                        # Qubit 2 XY Q-quadrature
-                        4: {
-                            "offset": 0.0,
-                            "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
-                        },
-                        # Resonator I-quadrature
-                        5: {
-                            "offset": 0.0,
-                            "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
-                        },
+                        # # Qubit 1 XY I-quadrature
+                        # 1: {
+                        #     "offset": 0.0,
+                        #     # The "output_mode" can be used to tailor the max voltage and frequency bandwidth, i.e.,
+                        #     #   "direct":    1Vpp (-0.5V to 0.5V), 750MHz bandwidth (default)
+                        #     #   "amplified": 5Vpp (-2.5V to 2.5V), 330MHz bandwidth
+                        #     # Note, 'offset' takes absolute values, e.g., if in amplified mode and want to output 2.0 V, then set "offset": 2.0
+                        #     "output_mode": "direct",
+                        #     # The "sampling_rate" can be adjusted by using more FEM cores, i.e.,
+                        #     #   1 GS/s: uses one core per output (default)
+                        #     #   2 GS/s: uses two cores per output
+                        #     # NOTE: duration parameterization of arb. waveforms, sticky elements and chirping
+                        #     #       aren't yet supported in 2 GS/s.
+                        #     "sampling_rate": sampling_rate_output1,
+                        #     # At 1 GS/s, use the "upsampling_mode" to optimize output for
+                        #     #   modulated pulses (optimized for modulated pulses):      "mw"    (default)
+                        #     #   unmodulated pulses (optimized for clean step response): "pulse"
+                        #     "upsampling_mode": "mw",
+                        # },
+                        # # Qubit 1 XY Q-quadrature
+                        # 2: {
+                        #     "offset": 0.0,
+                        #     "output_mode": "direct",
+                        #     "sampling_rate": sampling_rate_output1,
+                        #     "upsampling_mode": "mw",
+                        # },
+                        # # Qubit 2 XY I-quadrature
+                        # 3: {
+                        #     "offset": 0.0,
+                        #     "output_mode": "direct",
+                        #     "sampling_rate": sampling_rate_output1,
+                        #     "upsampling_mode": "mw",
+                        # },
+                        # # Qubit 2 XY Q-quadrature
+                        # 4: {
+                        #     "offset": 0.0,
+                        #     "output_mode": "direct",
+                        #     "sampling_rate": sampling_rate_output1,
+                        #     "upsampling_mode": "mw",
+                        # },
+                        # # Resonator I-quadrature
+                        # 5: {
+                        #     "offset": 0.0,
+                        #     "output_mode": "direct",
+                        #     "sampling_rate": sampling_rate_output1,
+                        #     "upsampling_mode": "mw",
+                        # },
+                        # # Resonator Q-quadrature
+                        # 6: {
+                        #     "offset": 0.0,
+                        #     "output_mode": "direct",
+                        #     "sampling_rate": sampling_rate_output1,
+                        #     "upsampling_mode": "mw",
+                        # },
                         # Resonator Q-quadrature
-                        6: {
+                        7: {
                             "offset": 0.0,
                             "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
+                            "sampling_rate": sampling_rate_output2,
+                            # "upsampling_mode": "mw",
+                        },
+                        8: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate_output2,
+                            # "upsampling_mode": "mw",
                         },
                     },
                     "digital_outputs": {
@@ -397,9 +415,9 @@ config = {
                     },
                     "analog_inputs": {
                         # I from down-conversion
-                        1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},
+                        1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate_input2},
                         # Q from down-conversion
-                        2: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},
+                        2: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate_input2},
                     },
                 },
             },
@@ -453,6 +471,34 @@ config = {
                 "y180": "y180_pulse_q2",
                 "-y90": "-y90_pulse_q2",
             },
+        },
+        "rr_test1": {
+            "singleInput": {
+                "port": (con, lffem2, 7),
+            },
+            "intermediate_frequency": 750 * u.MHz,  # in Hz
+            "operations": {
+                "single": "single_pulse",
+            },
+            "outputs": {
+                "out1": (con, lffem2, 1),
+            },
+            "time_of_flight": 28,
+            "smearing": 0,
+        },
+        "rr_test2": {
+            "singleInput": {
+                "port": (con, lffem2, 8),
+            },
+            "intermediate_frequency": 750 * u.MHz,  # in Hz
+            "operations": {
+                "single": "single_pulse",
+            },
+            "outputs": {
+                "out1": (con, lffem2, 2),
+            },
+            "time_of_flight": 28,
+            "smearing": 0,
         },
         "dm": {
             "digitalInputs": {
@@ -643,6 +689,19 @@ config = {
             },
             "digital_marker": "ON",
         },
+        "single_pulse": {
+            "operation": "measurement",
+            "length": single_len,
+            "waveforms": {
+                "single": "single_wf",
+            },
+            "integration_weights": {
+                "cos": "cosine_weights",
+                "sin": "sine_weights",
+                "minus_sin": "minus_sine_weights",
+            },
+            "digital_marker": "ON",
+        },
         "trigger_pulse": {
             "operation": "control",
             "length": 1000,
@@ -651,6 +710,7 @@ config = {
     },
     "waveforms": {
         "const_wf": {"type": "constant", "sample": const_amp},
+        "single_wf": {"type": "constant", "sample": single_amp},
         "zero_wf": {"type": "constant", "sample": 0.0},
         "x90_I_wf_q1": {"type": "arbitrary", "samples": x90_I_wf_q1.tolist()},
         "x90_Q_wf_q1": {"type": "arbitrary", "samples": x90_Q_wf_q1.tolist()},

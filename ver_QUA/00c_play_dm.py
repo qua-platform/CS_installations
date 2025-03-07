@@ -6,23 +6,34 @@ A simple sandbox to showcase different QUA functionalities during the installati
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from .configuration_with_lffem_octave import *
+from configuration_with_lffem_octave import *
+# from configuration_with_lffem import *
 import matplotlib
 import time
 
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
 ###################
 with program() as hello_qua:
     with infinite_loop_():
-        play("const", "resonator")
+        # play("const", "resonator")
+        play("trigger", "dm")
+        wait(250)
+
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
+
+from pathlib import Path
+from qm import generate_qua_script
+debug_filepath = sourceFile = f"debug_{Path(__file__).stem}.py"
+sourceFile = open(debug_filepath, "w")
+print(generate_qua_script(hello_qua, config), file=sourceFile)
+sourceFile.close()
 
 ###########################
 # Run or Simulate Program #

@@ -34,28 +34,26 @@ def IQ_imbalance(g, phi):
 ######################
 # Network parameters #
 ######################
-qop_ip = "172.16.33.107"
-cluster_name = "Cluster_1" 
-qop_port = 80  # Write the QOP port if version < QOP220
+qop_ip = "172.16.33.101"
+cluster_name = "Cluster_81" 
+qop_port = None  # Write the QOP port if version < QOP220
 
 con = "con1"
-lffem1 = 3
-lffem2 = 5
 
 # The Octave port is 11xxx, where xxx are the last three digits of the Octave internal IP that can be accessed from
 # the OPX admin panel if you QOP version is >= QOP220. Otherwise, it is 50 for Octave1, then 51, 52 and so on.
-# octave_1 = OctaveUnit("oct1", qop_ip, port=11109, con=con)
+octave_1 = OctaveUnit("octave1", qop_ip, port=11232, con=con)
 # octave_2 = OctaveUnit("octave2", qop_ip, port=11051, con=con)
 
 # If the control PC or local network is connected to the internal network of the QM router (port 2 onwards)
 # or directly to the Octave (without QM the router), use the local octave IP and port 80.
 # octave_ip = "172.16.33.109"
-# octave_1 = OctaveUnit("oct1", octave_ip, port=80, con=con)
+# octave_1 = OctaveUnit("octave1", octave_ip, port=80, con=con)
 
-# # Add the octaves
-# octaves = [octave_1]
-# # Configure the Octaves
-# octave_config = octave_declaration(octaves)
+# Add the octaves
+octaves = [octave_1]
+# Configure the Octaves
+octave_config = octave_declaration(octaves)
 
 
 # Path to save data
@@ -196,15 +194,8 @@ minus_y90_Q_wf_q2 = minus_y90_wf_q2
 #                Resonators                 #
 #############################################
 # Qubits full scale power
-resonator_full_scale_power_dbm = -20
-# Qubits bands
-# The keyword "band" refers to the following frequency bands:
-#   1: (50 MHz - 5.5 GHz)
-#   2: (4.5 GHz - 7.5 GHz)
-#   3: (6.5 GHz - 10.5 GHz)
-resonator_band = 3
 # Resonators LO
-resonator_LO = 16.5 * u.GHz
+resonator_LO = 17.5 * u.GHz
 # Resonators IF
 resonator_IF_q1 = int(100 * u.MHz)
 resonator_IF_q2 = int(200 * u.MHz)
@@ -217,7 +208,7 @@ readout_amp_q1 = 0.5
 readout_amp_q2 = 0.5
 
 # TOF and depletion time
-time_of_flight = 28  # must be a multiple of 4
+time_of_flight = 24  # must be a multiple of 4
 depletion_time = 2 * u.us
 
 # Mixer parameters
@@ -264,151 +255,27 @@ config = {
     "version": 1,
     "controllers": {
         con: {
-            "type": "opx1000",
-            "fems": {
-                lffem1: {
-                    "type": "LF",
-                    "analog_outputs": {
-                        # Qubit 1 XY I-quadrature
-                        1: {
-                            "offset": 0.0,
-                            # The "output_mode" can be used to tailor the max voltage and frequency bandwidth, i.e.,
-                            #   "direct":    1Vpp (-0.5V to 0.5V), 750MHz bandwidth (default)
-                            #   "amplified": 5Vpp (-2.5V to 2.5V), 330MHz bandwidth
-                            # Note, 'offset' takes absolute values, e.g., if in amplified mode and want to output 2.0 V, then set "offset": 2.0
-                            "output_mode": "direct",
-                            # The "sampling_rate" can be adjusted by using more FEM cores, i.e.,
-                            #   1 GS/s: uses one core per output (default)
-                            #   2 GS/s: uses two cores per output
-                            # NOTE: duration parameterization of arb. waveforms, sticky elements and chirping
-                            #       aren't yet supported in 2 GS/s.
-                            "sampling_rate": sampling_rate,
-                            # At 1 GS/s, use the "upsampling_mode" to optimize output for
-                            #   modulated pulses (optimized for modulated pulses):      "mw"    (default)
-                            #   unmodulated pulses (optimized for clean step response): "pulse"
-                            "upsampling_mode": "mw",
-                        },
-                        # Qubit 1 XY Q-quadrature
-                        2: {
-                            "offset": 0.0,
-                            "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
-                        },
-                        # Qubit 2 XY I-quadrature
-                        3: {
-                            "offset": 0.0,
-                            "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
-                        },
-                        # Qubit 2 XY Q-quadrature
-                        4: {
-                            "offset": 0.0,
-                            "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
-                        },
-                        # Resonator I-quadrature
-                        5: {
-                            "offset": 0.0,
-                            "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
-                        },
-                        # Resonator Q-quadrature
-                        6: {
-                            "offset": 0.0,
-                            "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
-                        },
-                    },
-                    "digital_outputs": {
-                        1: {}
-                    },
-                    "analog_inputs": {
-                        # I from down-conversion
-                        1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},
-                        # Q from down-conversion
-                        2: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},
-                    },
-                },
-                lffem2: {
-                    "type": "LF",
-                    "analog_outputs": {
-                        # Qubit 1 XY I-quadrature
-                        1: {
-                            "offset": 0.0,
-                            # The "output_mode" can be used to tailor the max voltage and frequency bandwidth, i.e.,
-                            #   "direct":    1Vpp (-0.5V to 0.5V), 750MHz bandwidth (default)
-                            #   "amplified": 5Vpp (-2.5V to 2.5V), 330MHz bandwidth
-                            # Note, 'offset' takes absolute values, e.g., if in amplified mode and want to output 2.0 V, then set "offset": 2.0
-                            "output_mode": "direct",
-                            # The "sampling_rate" can be adjusted by using more FEM cores, i.e.,
-                            #   1 GS/s: uses one core per output (default)
-                            #   2 GS/s: uses two cores per output
-                            # NOTE: duration parameterization of arb. waveforms, sticky elements and chirping
-                            #       aren't yet supported in 2 GS/s.
-                            "sampling_rate": sampling_rate,
-                            # At 1 GS/s, use the "upsampling_mode" to optimize output for
-                            #   modulated pulses (optimized for modulated pulses):      "mw"    (default)
-                            #   unmodulated pulses (optimized for clean step response): "pulse"
-                            "upsampling_mode": "mw",
-                        },
-                        # Qubit 1 XY Q-quadrature
-                        2: {
-                            "offset": 0.0,
-                            "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
-                        },
-                        # Qubit 2 XY I-quadrature
-                        3: {
-                            "offset": 0.0,
-                            "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
-                        },
-                        # Qubit 2 XY Q-quadrature
-                        4: {
-                            "offset": 0.0,
-                            "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
-                        },
-                        # Resonator I-quadrature
-                        5: {
-                            "offset": 0.0,
-                            "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
-                        },
-                        # Resonator Q-quadrature
-                        6: {
-                            "offset": 0.0,
-                            "output_mode": "direct",
-                            "sampling_rate": sampling_rate,
-                            "upsampling_mode": "mw",
-                        },
-                    },
-                    "digital_outputs": {
-                        1: {}
-                    },
-                    "analog_inputs": {
-                        # I from down-conversion
-                        1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},
-                        # Q from down-conversion
-                        2: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},
-                    },
-                },
+            "analog_outputs": {
+                1: {"offset": 0.0, "delay": 0},  # RR I
+                2: {"offset": 0.0, "delay": 0},  # RR Q
+                3: {"offset": 0.0, "delay": 0},  # RR Q
+                4: {"offset": 0.0, "delay": 0},  # RR Q
+                5: {"offset": 0.0, "delay": 0},  # RR Q
+                6: {"offset": 0.0, "delay": 0},  # RR Q
             },
-        }
+            "digital_outputs": {
+                1: {},  # AOM/Laser
+            },
+            "analog_inputs": {
+                1: {"offset": 0},  # SPCM
+                2: {"offset": 0},  # for octave calib
+            },
+        },
     },
     "elements": {
         "rr1": {
-            "RF_inputs": {"port": ("oct1", 1)},
-            "RF_outputs": {"port": ("oct1", 1)},
+            "RF_inputs": {"port": ("octave1", 1)},
+            "RF_outputs": {"port": ("octave1", 1)},
             "intermediate_frequency": resonator_IF_q1,  # in Hz [-350e6, +350e6]
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -418,8 +285,8 @@ config = {
             },
         },
         "rr2": {
-            "RF_inputs": {"port": ("oct1", 1)},
-            "RF_outputs": {"port": ("oct1", 1)},
+            "RF_inputs": {"port": ("octave1", 1)},
+            "RF_outputs": {"port": ("octave1", 1)},
             "intermediate_frequency": resonator_IF_q2,  # in Hz [-350e6, +350e6]
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -429,7 +296,7 @@ config = {
             },
         },
         "q1_xy": {
-            "RF_inputs": {"port": ("oct1", 2)},
+            "RF_inputs": {"port": ("octave1", 2)},
             "intermediate_frequency": qubit_IF_q1,  # in Hz
             "operations": {
                 "const": "const_pulse",
@@ -442,7 +309,7 @@ config = {
             },
         },
         "q2_xy": {
-            "RF_inputs": {"port": ("oct1", 3)},
+            "RF_inputs": {"port": ("octave1", 3)},
             "intermediate_frequency": qubit_IF_q2,  # in Hz
             "operations": {
                 "const": "const_pulse",
@@ -457,7 +324,7 @@ config = {
         "dm": {
             "digitalInputs": {
                 "trigger": {
-                    "port": (con, lffem2, 1),
+                    "port": (con, 1),
                     "delay": 0,
                     "buffer": 0,
                 }
@@ -468,7 +335,7 @@ config = {
         },
     },
     "octaves": {
-        "oct1": {
+        "octave1": {
             "RF_outputs": {
                 1: {
                     "LO_frequency": resonator_LO,
@@ -495,7 +362,7 @@ config = {
                     "LO_source": "internal",
                 },
             },
-            "connectivity": (con, lffem1),
+            "connectivity": con,
         }
     },
     "pulses": {
