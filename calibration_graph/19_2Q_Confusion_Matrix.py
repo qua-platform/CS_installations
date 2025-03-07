@@ -52,11 +52,11 @@ from quam_libs.lib.plot_utils import QubitPairGrid, grid_iter, grid_pair_names
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubit_pairs: Optional[List[str]] = ['q3-4']
+    qubit_pairs: Optional[List[str]] = ['q6-7']
     qubits: Optional[List[str]] = []
     num_shots: int = 2000
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
-    reset_type: Literal['active', 'thermal'] = "thermal"
+    reset_type: Literal['active', 'thermal'] = "active"
     simulate: bool = False
     timeout: int = 100
     load_data_id: Optional[int] = None

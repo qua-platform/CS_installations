@@ -49,7 +49,7 @@ class Parameters(NodeParameters):
     multiplexed: bool = True
 
 
-node = QualibrationNode(name="02a_Resonator_Spectroscopy", parameters=Parameters())
+node = QualibrationNode(name="02a_Resonator_Spectroscopy_debug", parameters=Parameters())
 assert not (
     node.parameters.simulate and node.parameters.load_data_id is not None
 ), "If simulate is True, load_data_id must be None, and vice versa."

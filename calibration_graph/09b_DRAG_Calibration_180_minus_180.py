@@ -38,21 +38,21 @@ import numpy as np
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubits: Optional[List[str]] =["q2"]
+    qubits: Optional[List[str]] = None
     num_averages: int = 10
     operation: str = "x180"
-    min_amp_factor: float = 0.5
-    max_amp_factor: float = 1.5
+    min_amp_factor: float = -2
+    max_amp_factor: float = 2
     amp_factor_step: float = 0.02
-    max_number_pulses_per_sweep: int = 200
+    max_number_pulses_per_sweep: int = 20
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
-    alpha_setpoint: Optional[float] = None
+    alpha_setpoint: Optional[float] = -1
     load_data_id: Optional[int] = None
-    multiplexed: bool = False
+    multiplexed: bool = True
 
 
 
@@ -247,3 +247,5 @@ if not node.parameters.simulate:
         node.machine = machine
         node.save()
 
+
+# %%

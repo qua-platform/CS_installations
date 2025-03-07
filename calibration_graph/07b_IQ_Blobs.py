@@ -43,7 +43,7 @@ import xarray as xr
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = ["q3"]
+    qubits: Optional[List[str]] = None
     num_runs: int = 2000
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
@@ -52,7 +52,7 @@ class Parameters(NodeParameters):
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = False
+    multiplexed: bool = True
 
 
 node = QualibrationNode(name="07b_IQ_Blobs", parameters=Parameters())

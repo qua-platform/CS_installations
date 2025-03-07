@@ -64,7 +64,7 @@ class Parameters(NodeParameters):
     multiplexed: bool = True
 
 
-node = QualibrationNode(name="03a_Qubit_Spectroscopy", parameters=Parameters())
+node = QualibrationNode(name="03a_Qubit_Spectroscopy_overtime", parameters=Parameters())
 
 
 # %% {Initialize_QuAM_and_QOP}

@@ -41,16 +41,16 @@ import xarray as xr
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = ["q1"]
+    qubits: Optional[List[str]] = None
     use_state_discrimination: bool = True
     use_strict_timing: bool = False
-    num_random_sequences: int = 100  # Number of random sequences
-    num_averages: int = 20
+    num_random_sequences: int = 2000  # Number of random sequences
+    num_averages: int = 1
     max_circuit_depth: int = 1200  # Maximum circuit depth
-    delta_clifford: int = 20
+    delta_clifford: int = 100
     seed: int = 345324
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100

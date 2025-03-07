@@ -40,13 +40,13 @@ class Parameters(NodeParameters):
     max_wait_time_in_ns: int = 200000
     wait_time_step_in_ns: int = 600
     flux_point_joint_or_independent_or_arbitrary: Literal["joint", "independent", "arbitrary", None] = None
-    reset_type: Literal["active", "thermal"] = "thermal"
+    reset_type: Literal["active", "thermal"] = "active"
     use_state_discrimination: bool = True
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = False
+    multiplexed: bool = True
 
 node = QualibrationNode(name="05_T1", parameters=Parameters())
 
@@ -256,3 +256,5 @@ if not node.parameters.simulate:
         node.machine = machine
         node.save()
 
+
+# %%

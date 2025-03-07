@@ -46,15 +46,15 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = ["q2"]
-    num_averages: int = 500
+    qubits: Optional[List[str]] = None
+    num_averages: int = 250
     operation: str = "saturation"
-    operation_amplitude_factor: Optional[float] = 0.01
+    operation_amplitude_factor: Optional[float] = 0.005
     operation_len_in_ns: Optional[int] = None
     frequency_span_in_mhz: float = 25
     frequency_step_in_mhz: float = 0.1
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
-    target_peak_width: Optional[float] = 2e6
+    target_peak_width: Optional[float] = 1e6
     arbitrary_flux_bias: Optional[float] = None
     arbitrary_qubit_frequency_in_ghz: Optional[float] = None
     simulate: bool = False
@@ -347,10 +347,10 @@ if not node.parameters.simulate:
         node.results["ds"] = ds
 
     # %% {Save_results}
-    # node.outcomes = {q.name: "successful" for q in qubits}
-    # node.results["initial_parameters"] = node.parameters.model_dump()
-    # node.machine = machine
-    # node.save()
+    node.outcomes = {q.name: "successful" for q in qubits}
+    node.results["initial_parameters"] = node.parameters.model_dump()
+    node.machine = machine
+    node.save()
 
 
 # %%

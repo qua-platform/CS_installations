@@ -5,15 +5,16 @@ from typing import Optional, Literal, List
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubits: Optional[List[str]] = ["q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8"]
+    qubits: Optional[List[str]] = None
     num_averages: int = 300
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 100000
+    max_wait_time_in_ns: int = 60000
     wait_time_step_in_ns: int = 500
     simulate: bool = False
     timeout: int = 100
     use_state_discrimination: bool = True
-    reset_type: Literal["active", "thermal"] = "thermal"
+    reset_type: Literal["active", "thermal"] = "active"
+    multiplexed: bool = True
 
 
 node = QualibrationNode(name="06c_T2echo", parameters=Parameters())
@@ -86,9 +87,9 @@ with program() as t1:
             save(n, n_st)
             with for_(*from_array(t, idle_times)):
                 if node.parameters.reset_type == "active":
-                    active_reset(machine, qubit.name)
+                    active_reset(qubit, "readout")
                 else:
-                    qubit.resonator.wait(machine.thermalization_time * u.ns)
+                    qubit.wait(machine.thermalization_time * u.ns)
                     qubit.align()
 
                 qubit.xy.play("x90")
@@ -107,8 +108,8 @@ with program() as t1:
                     # save data
                     save(I[i], I_st[i])
                     save(Q[i], Q_st[i])
-        if i < num_qubits - 1:
-            align(qubit.xy.name, machine.qubits[f"q{i+2}"].xy.name)
+        if not node.parameters.multiplexed:
+            align()
 
 
 
@@ -154,7 +155,7 @@ else:
 
 # %%
 if not node.parameters.simulate:
-    # %% {Data_fetching_and_dataset_creation}
+    
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(job.result_handles, qubits, {"idle_time": idle_times})
 

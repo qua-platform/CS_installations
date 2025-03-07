@@ -21,7 +21,7 @@ Next steps before going to the next node:
 # %% {Imports}
 from qualibrate import QualibrationNode, NodeParameters
 from quam_libs.components import QuAM
-from quam_libs.macros import qua_declaration, readout_state
+from quam_libs.macros import qua_declaration, readout_state, active_reset, reset_frame
 from quam_libs.lib.qua_datasets import convert_IQ_to_V
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset
@@ -40,20 +40,21 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = ["q2"]
-    num_averages: int = 100
-    frequency_detuning_in_mhz: float = 0.2
+    qubits: Optional[List[str]] = None
+    num_averages: int = 50
+    frequency_detuning_in_mhz: float = 1.0
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 80000
-    num_time_points: int = 300
+    max_wait_time_in_ns: int = 5000
+    num_time_points: int = 200
     log_or_linear_sweep: Literal["log", "linear"] = "linear"
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
-    use_state_discrimination: bool = True
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
+    use_state_discrimination: bool = False
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = False
+    multiplexed: bool = True
 
 node = QualibrationNode(name="06_Ramsey", parameters=Parameters())
 
@@ -128,6 +129,16 @@ with program() as ramsey:
                         assign(phi, Cast.mul_fixed_by_int(detuning * 1e-9, 4 * t))
                     with else_():
                         assign(phi, Cast.mul_fixed_by_int(-detuning * 1e-9, 4 * t))
+
+                    # Wait for the qubits to decay to the ground state
+                    if node.parameters.reset_type_thermal_or_active == "active":
+                        active_reset(qubit, "readout")
+                    else:
+                        qubit.wait(machine.thermalization_time * u.ns)
+                        qubit.align()
+                    # Reset the frame of the qubits in order not to accumulate rotations
+                    reset_frame(qubit.xy.name)
+
                     qubit.align()
                     # # Strict_timing ensures that the sequence will be played without gaps
                     # with strict_timing_():
@@ -147,14 +158,9 @@ with program() as ramsey:
                         save(I[i], I_st[i])
                         save(Q[i], Q_st[i])
 
-                    # Wait for the qubits to decay to the ground state
-                    qubit.resonator.wait(machine.thermalization_time * u.ns)
-                    # Reset the frame of the qubits in order not to accumulate rotations
-                    reset_frame(qubit.xy.name)
         # Measure sequentially
         if not node.parameters.multiplexed:
-            if i < num_qubits - 1:
-                align(qubit.xy.name, machine.qubits[f"q{i + 2}"].xy.name)
+            align()
 
     with stream_processing():
         n_st.save("n")

@@ -64,6 +64,12 @@ from quam_libs.macros import (
     active_reset,
     readout_state,
 )
+
+import sys
+import os
+sys.path.append(r"C:\Users\tomdv\Documents\OQC_QUAM\CS_installations\calibration_graph")
+
+
 from cr_hamiltonian_tomography import (
     CRHamiltonianTomographyAnalysis,
     plot_cr_duration_vs_scan_param,
@@ -75,11 +81,11 @@ from cr_hamiltonian_tomography import (
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubit_pairs: Optional[List[str]] = ["q8-1"]
-    num_averages: int = 20
+    qubit_pairs: Optional[List[str]] = ["q6-7"]
+    num_averages: int = 100
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 4000
-    wait_time_step_in_ns: int = 40
+    max_wait_time_in_ns: int = 400
+    wait_time_step_in_ns: int = 4
     min_amp_scaling: float = 0.05
     max_amp_scaling: float = 1.99
     step_amp_scaling: float = 0.05
@@ -91,7 +97,7 @@ class Parameters(NodeParameters):
     cr_drive_phases: List[float] = [0.0]
     cr_cancel_phases: List[float] = [0.0]
     use_state_discrimination: bool = False
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
     simulate: bool = False
     timeout: int = 100
 
@@ -180,6 +186,15 @@ with program() as cr_calib_unit_ham_tomo:
                 with for_(*from_array(t, idle_time_cycles)):
                     with for_(c, 0, c < 3, c + 1):  # bases
                         with for_(s, 0, s < 2, s + 1):  # states
+                            # Initialize the qubits
+                            if node.parameters.reset_type_thermal_or_active == "active":
+                                active_reset(qc, "readout")
+                                active_reset(qt, "readout")
+                            else:
+                                qc.resonator.wait(machine.thermalization_time * u.ns)
+                            # Align the two elements to play the sequence after qubit initialization
+                            align()                            
+                            
                             with if_(s == 1):
                                 qc.xy.play("x180")
                                 align(qc.xy.name, qt.xy.name, cr.name)
@@ -264,7 +279,7 @@ with program() as cr_calib_unit_ham_tomo:
                             save(state_target[i], state_st_target[i])
 
                             # Wait for the qubit to decay to the ground state - Can be replaced by active reset
-                            wait(machine.thermalization_time * u.ns)
+                            # wait(machine.thermalization_time * u.ns)
 
     with stream_processing():
         n_st.save("n")

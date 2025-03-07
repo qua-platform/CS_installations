@@ -53,11 +53,11 @@ from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubit_pairs: Optional[List[str]] = ['q3-4']
+    qubit_pairs: Optional[List[str]] = ['q6-7']
     qubits: Optional[List[str]] = []
     num_shots: int = 2000
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
-    reset_type: Literal['active', 'thermal'] = "thermal"
+    reset_type: Literal['active', 'thermal'] = "active"
     bell_state: Literal['00-11', '01-10'] = '00-11'
     simulate: bool = False
     timeout: int = 100
