@@ -148,14 +148,19 @@ class Transmon(QuamComponent):
         if self is other:
             raise ValueError("Cannot create a qubit pair with same qubit (q1 @ q1), where q1={self}")
 
-        for qubit_pair in self._root.qubit_pairs:
+        for qubit_pair in self._root.qubit_pairs.values():
             if qubit_pair.qubit_control is self and qubit_pair.qubit_target is other:
                 return qubit_pair
         else:
             raise ValueError("Qubit pair not found: qubit_control={self.name}, " "qubit_target={other.name}")
 
-    def align(self):
-        align(self.xy.name, self.z.name, self.resonator.name)
+    def align(self, other = None):
+        channels = [self.xy.name, self.resonator.name, self.z.name]
+
+        if other is not None:
+            channels += [other.xy.name, other.resonator.name, other.z.name]
+
+        align(*channels)
 
     def wait(self, duration):
         wait(duration, self.xy.name, self.z.name, self.resonator.name)

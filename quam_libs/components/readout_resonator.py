@@ -24,10 +24,11 @@ class ReadoutResonatorBase:
     f_01: float = None
     f_12: float = None
     confusion_matrix: list = None
-
+    
+    GEF_frequency_shift: float = None
     gef_centers: list = None
     gef_confusion_matrix: list = None
-
+    GEF_frequency_shift: float = None
     @staticmethod
     def calculate_voltage_scaling_factor(fixed_power_dBm: float, target_power_dBm: float):
         """
@@ -83,8 +84,10 @@ class ReadoutResonatorIQ(InOutIQChannel, ReadoutResonatorBase):
             raise RuntimeError("Either or gain or amplitude must be specified.")
         elif max_amplitude is not None:
             gain = round((power_in_dbm - u.volts2dBm(max_amplitude, Z=Z)) * 2) / 2
+            gain = min(max(gain, 20), -20)
+            amplitude = u.dBm2volts(power_in_dbm - gain)
         elif gain is not None:
-            max_amplitude = u.dBm2volts(power_in_dbm - self.frequency_converter_up.gain)
+            amplitude = u.dBm2volts(power_in_dbm - self.frequency_converter_up.gain)
 
         if not -20 <= gain <= 20:
             raise ValueError(f"Expected Octave gain within [-20:0.5:20] dB, got {gain} dB.")
@@ -92,11 +95,16 @@ class ReadoutResonatorIQ(InOutIQChannel, ReadoutResonatorBase):
         if not -0.5 <= max_amplitude < 0.5:
             raise ValueError("The OPX+ pulse amplitude must be within [-0.5, 0.5) V.")
 
-        print(f"Setting the Octave gain to {round((power_in_dbm - u.volts2dBm(max_amplitude, Z=Z)) * 2) / 2} dB")
-        print( f"Setting the {operation} amplitude to {u.dBm2volts(power_in_dbm - self.frequency_converter_up.gain)} V")
+        print(f"Setting the Octave gain to {gain} dB")
+        print(f"Setting the {operation} amplitude to {amplitude} V")
 
         self.frequency_converter_up.gain = gain
-        self.operations[operation].amplitude = max_amplitude
+        self.operations[operation].amplitude = amplitude
+
+        return {
+            "gain": gain,
+            "amplitude": max_amplitude
+        }
 
 
 @quam_dataclass
@@ -156,6 +164,11 @@ class ReadoutResonatorMW(InOutMWChannel, ReadoutResonatorBase):
             fixed_power_dBm=self.opx_output.full_scale_power_dbm,
             target_power_dBm=power_in_dbm
         )
+
+        return {
+            "full_scale_power_dbm": full_scale_power_dbm,
+            "amplitude": self.operations[operation].amplitude
+        }
 
 
 ReadoutResonator = ReadoutResonatorIQ

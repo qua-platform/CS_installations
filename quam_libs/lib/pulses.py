@@ -47,3 +47,47 @@ class DragPulseCosine(Pulse):
         Q_rot = I * np.sin(self.axis_angle) + Q * np.cos(self.axis_angle)
 
         return I_rot + 1.0j * Q_rot
+
+@quam_dataclass
+class FluxPulse(Pulse):
+    """Flux pulse QuAM component.
+
+    Args:
+        length (int): The total length of the pulse in samples, including zero padding.
+        digital_marker (str, list, optional): The digital marker to use for the pulse.
+        amplitude (float): The amplitude of the pulse in volts.
+    """
+
+    amplitude: float
+    zero_padding: int = 0
+
+    def waveform_function(self):
+        waveform = self.amplitude * np.ones(self.length)
+        if self.zero_padding:
+            if self.zero_padding > self.length:
+                raise ValueError(
+                    f"Flux pulse zero padding ({self.zero_padding} ns) exceeds " f"pulse length ({self.length} ns)."
+                )
+            waveform[-self.zero_padding :] = 0
+        return waveform
+    
+@quam_dataclass
+class SNZPulse(Pulse):
+    amplitude: float
+    step_amplitude: float
+    step_length: int
+    spacing : int
+    
+    def __post_init__(self):
+        self.length -= self.length % 4
+
+    def waveform_function(self):
+        rect_duration = (self.length - 4 - 2 * self.step_length - self.spacing) // 2
+        waveform = [self.amplitude] * rect_duration
+        waveform += [self.step_amplitude] * self.step_length
+        waveform += [0] * self.spacing
+        waveform += [-self.step_amplitude] * self.step_length
+        waveform += [-self.amplitude] * rect_duration
+        waveform += [0.0] * (self.length - len(waveform))
+        
+        return waveform    

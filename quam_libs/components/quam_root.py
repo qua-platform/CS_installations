@@ -1,5 +1,4 @@
 import os
-import toml
 import warnings
 from pathlib import Path
 from quam.core import QuamRoot, quam_dataclass
@@ -17,30 +16,14 @@ from quam.components.ports import (
 from .transmon import Transmon
 from .transmon_pair import TransmonPair
 
-from qm.qua import align
 from qm import QuantumMachinesManager, QuantumMachine
 from qualang_tools.results.data_handler import DataHandler
 
 from dataclasses import field
 from typing import List, Dict, ClassVar, Any, Optional, Sequence, Union
+from ..cloud_infrastructure import CloudQuantumMachinesManager
 
 __all__ = ["QuAM", "FEMQuAM", "OPXPlusQuAM"]
-
-
-def _get_quam_state_path() -> Optional[Path]:
-    if "QUAM_STATE_PATH" in os.environ:
-        return Path(os.environ["QUAM_STATE_PATH"])
-
-    config_path = Path.home() / ".qualibrate" / "config.toml"
-    if not config_path.exists():
-        return None
-
-    config = toml.loads(config_path.read_text())
-
-    try:
-        return config["active_machine"]["path"]
-    except KeyError:
-        return None
 
 
 @quam_dataclass
@@ -62,18 +45,16 @@ class QuAM(QuamRoot):
 
     @classmethod
     def load(cls, *args, **kwargs) -> "QuAM":
-        if args:
-            return super().load(*args, **kwargs)
-
-        quam_state_path = _get_quam_state_path()
-        if quam_state_path is None:
-            raise ValueError(
-                "No path argument provided to load the QuAM state. "
-                "Please provide a path or set the 'QUAM_STATE_PATH' environment variable. "
-                "See the README for instructions."
-            )
-
-        return super().load(quam_state_path, **kwargs)
+        if not args:
+            if "QUAM_STATE_PATH" in os.environ:
+                args = (os.environ["QUAM_STATE_PATH"],)
+            else:
+                raise ValueError(
+                    "No path argument provided to load the QuAM state. "
+                    "Please provide a path or set the 'QUAM_STATE_PATH' environment variable. "
+                    "See the README for instructions."
+                )
+        return super().load(*args, **kwargs)
 
     def save(
         self,
@@ -91,9 +72,7 @@ class QuAM(QuamRoot):
     def data_handler(self) -> DataHandler:
         """Return the existing data handler or open a new one to conveniently handle data saving."""
         if self._data_handler is None:
-            self._data_handler = DataHandler(
-                root_data_folder=self.network["data_folder"]
-            )
+            self._data_handler = DataHandler(root_data_folder=self.network["data_folder"])
             DataHandler.node_data = {"quam": "./state.json"}
         return self._data_handler
 
@@ -119,67 +98,93 @@ class QuAM(QuamRoot):
 
     def apply_all_couplers_to_min(self) -> None:
         """Apply the offsets that bring all the active qubit pairs to a decoupled point."""
-        align()
         for qp in self.active_qubit_pairs:
             if qp.coupler is not None:
                 qp.coupler.to_decouple_idle()
-        align()
 
     def apply_all_flux_to_joint_idle(self) -> None:
         """Apply the offsets that bring all the active qubits to the joint sweet spot."""
-        align()
         for q in self.active_qubits:
             if q.z is not None:
                 q.z.to_joint_idle()
-                q.z.settle()
             else:
-                warnings.warn(
-                    f"Didn't find z-element on qubit {q.name}, didn't set to joint-idle"
-                )
+                warnings.warn(f"Didn't find z-element on qubit {q.name}, didn't set to joint-idle")
         for q in self.qubits:
             if self.qubits[q] not in self.active_qubits:
                 if self.qubits[q].z is not None:
                     self.qubits[q].z.to_min()
-                    self.qubits[q].z.settle()
                 else:
-                    warnings.warn(
-                        f"Didn't find z-element on qubit {q}, didn't set to min"
-                    )
-        align()
+                    warnings.warn(f"Didn't find z-element on qubit {q}, didn't set to min")
+        self.apply_all_couplers_to_min()
 
     def apply_all_flux_to_min(self) -> None:
         """Apply the offsets that bring all the active qubits to the minimum frequency point."""
-        align()
         for q in self.qubits:
             if self.qubits[q].z is not None:
                 self.qubits[q].z.to_min()
-                self.qubits[q].z.settle()
             else:
                 warnings.warn(f"Didn't find z-element on qubit {q}, didn't set to min")
         self.apply_all_couplers_to_min()
-        align()
 
     def apply_all_flux_to_zero(self) -> None:
         """Apply the offsets that bring all the active qubits to the zero bias point."""
-        align()
         for q in self.active_qubits:
             q.z.to_zero()
-            q.z.settle()
-        align()
+        
+        
+    def set_all_fluxes(self, flux_point : str, target : Union[Transmon, TransmonPair], do_align: bool = True) -> float:
+        if flux_point == "independent":
+            assert isinstance(target, Transmon), "Independent flux point is only supported for individual transmons"
+        elif flux_point == "pairwise":
+            assert isinstance(target, TransmonPair), "Pairwise flux point is only supported for transmon pairs"
+        
+        if flux_point == "joint":
+            self.apply_all_flux_to_joint_idle()
+            if isinstance(target, TransmonPair):
+                target_bias =target.mutual_flux_bias
+            else:
+                target_bias = target.z.joint_offset
+        else:
+            self.apply_all_flux_to_min()
+        
+        if flux_point == "independent":
+            target.z.to_independent_idle()
+            target_bias = target.z.independent_offset
+            
+        elif flux_point == "pairwise":
+            target.to_mutual_idle()
+            target_bias = target.mutual_flux_bias
+        
+        if isinstance(target, Transmon):
+            target.z.settle()
+        elif isinstance(target, TransmonPair):
+            target.qubit_control.z.settle()
+            target.qubit_target.z.settle()
+        
+        if do_align:
+            target.align()
+            
+        return target_bias      
 
     def connect(self) -> QuantumMachinesManager:
         """Open a Quantum Machine Manager with the credentials ("host" and "cluster_name") as defined in the network file.
 
         Returns: the opened Quantum Machine Manager.
         """
-        settings = dict(
-            host=self.network["host"],
-            cluster_name=self.network["cluster_name"],
-            octave=self.get_octave_config(),
-        )
-        if "port" in self.network:
-            settings["port"] = self.network["port"]
-        self.qmm = QuantumMachinesManager(**settings)
+        if self.network.get("cloud", False):
+            self.qmm = CloudQuantumMachinesManager(self.network["quantum_computer_backend"])
+        else:
+            settings = dict(
+                host=self.network["host"],
+                cluster_name=self.network["cluster_name"],
+                octave=self.get_octave_config(),
+            )
+
+            if "port" in self.network:
+                settings["port"] = self.network["port"]
+
+            self.qmm = QuantumMachinesManager(**settings)
+
         return self.qmm
 
     def get_octave_config(self) -> dict:
@@ -205,9 +210,7 @@ class QuAM(QuamRoot):
             try:
                 self.qubits[name].calibrate_octave(QM)
             except NoCalibrationElements:
-                print(
-                    f"No calibration elements found for {name}. Skipping calibration."
-                )
+                print(f"No calibration elements found for {name}. Skipping calibration.")
 
 
 @quam_dataclass
