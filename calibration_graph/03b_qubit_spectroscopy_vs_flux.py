@@ -264,7 +264,7 @@ if not node.parameters.simulate:
         ax.set_ylabel("Freq (GHz)")
         ax.set_xlabel("Flux (V)")
         ax.set_title(qubit["qubit"])
-    grid.fig.suptitle(f"Qubit spectroscopy vs flux \n {date_time} #{node_id} \n multplexed = {node.parameters.multplexed}")
+    grid.fig.suptitle(f"Qubit spectroscopy vs flux \n {date_time} #{node_id}")
     
     plt.tight_layout()
     plt.show()

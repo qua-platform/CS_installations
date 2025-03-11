@@ -13,14 +13,14 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9"
-quam = ">=0.3.8"
+python = ">=3.8"
+quam = { git = "https://github.com/qua-platform/quam.git" }
 qualang-tools = ">=0.18.0"
 xarray = "*"
 lmfit = "*"
 qiskit-experiments = "*"
 tqdm = "*"
-qualibrate = ">=0.2.0"
+qualibrate = "*"
 qm-qua = "1.2.1"
 
 [build-system]
