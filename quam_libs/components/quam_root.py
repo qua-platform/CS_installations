@@ -23,6 +23,11 @@ from dataclasses import field
 from typing import List, Dict, ClassVar, Any, Optional, Sequence, Union
 from ..cloud_infrastructure import CloudQuantumMachinesManager
 
+try:
+    import tomllib  # Python 3.11+
+except ModuleNotFoundError:
+    import tomli as tomllib
+
 __all__ = ["QuAM", "FEMQuAM", "OPXPlusQuAM"]
 
 
@@ -44,16 +49,31 @@ class QuAM(QuamRoot):
     qmm: ClassVar[Optional[QuantumMachinesManager]] = None
 
     @classmethod
+    def get_quam_state_path(cls) -> Optional[Path]:
+        qualibrate_config_path = Path.home() / ".qualibrate" / "config.toml"
+
+        if qualibrate_config_path.exists():
+            config = tomllib.loads(qualibrate_config_path.read_text())
+            quam_state_path = config.get("quam", {}).get("state_path", None)
+            if quam_state_path is not None:
+                quam_state_path = Path(quam_state_path)
+            return quam_state_path
+        else:
+            return None
+
+    @classmethod
     def load(cls, *args, **kwargs) -> "QuAM":
         if not args:
-            if "QUAM_STATE_PATH" in os.environ:
-                args = (os.environ["QUAM_STATE_PATH"],)
-            else:
+            quam_state_path = cls.get_quam_state_path()
+            if quam_state_path is None:
                 raise ValueError(
                     "No path argument provided to load the QuAM state. "
-                    "Please provide a path or set the 'QUAM_STATE_PATH' environment variable. "
+                    "Please set the quam_state_path in the QUAlibrate config. "
                     "See the README for instructions."
                 )
+
+            args = (quam_state_path,)
+
         return super().load(*args, **kwargs)
 
     def save(
@@ -72,7 +92,9 @@ class QuAM(QuamRoot):
     def data_handler(self) -> DataHandler:
         """Return the existing data handler or open a new one to conveniently handle data saving."""
         if self._data_handler is None:
-            self._data_handler = DataHandler(root_data_folder=self.network["data_folder"])
+            self._data_handler = DataHandler(
+                root_data_folder=self.network["data_folder"]
+            )
             DataHandler.node_data = {"quam": "./state.json"}
         return self._data_handler
 
@@ -108,13 +130,17 @@ class QuAM(QuamRoot):
             if q.z is not None:
                 q.z.to_joint_idle()
             else:
-                warnings.warn(f"Didn't find z-element on qubit {q.name}, didn't set to joint-idle")
+                warnings.warn(
+                    f"Didn't find z-element on qubit {q.name}, didn't set to joint-idle"
+                )
         for q in self.qubits:
             if self.qubits[q] not in self.active_qubits:
                 if self.qubits[q].z is not None:
                     self.qubits[q].z.to_min()
                 else:
-                    warnings.warn(f"Didn't find z-element on qubit {q}, didn't set to min")
+                    warnings.warn(
+                        f"Didn't find z-element on qubit {q}, didn't set to min"
+                    )
         self.apply_all_couplers_to_min()
 
     def apply_all_flux_to_min(self) -> None:
@@ -130,41 +156,49 @@ class QuAM(QuamRoot):
         """Apply the offsets that bring all the active qubits to the zero bias point."""
         for q in self.active_qubits:
             q.z.to_zero()
-        
-        
-    def set_all_fluxes(self, flux_point : str, target : Union[Transmon, TransmonPair], do_align: bool = True) -> float:
+
+    def set_all_fluxes(
+        self,
+        flux_point: str,
+        target: Union[Transmon, TransmonPair],
+        do_align: bool = True,
+    ) -> float:
         if flux_point == "independent":
-            assert isinstance(target, Transmon), "Independent flux point is only supported for individual transmons"
+            assert isinstance(
+                target, Transmon
+            ), "Independent flux point is only supported for individual transmons"
         elif flux_point == "pairwise":
-            assert isinstance(target, TransmonPair), "Pairwise flux point is only supported for transmon pairs"
-        
+            assert isinstance(
+                target, TransmonPair
+            ), "Pairwise flux point is only supported for transmon pairs"
+
         if flux_point == "joint":
             self.apply_all_flux_to_joint_idle()
             if isinstance(target, TransmonPair):
-                target_bias =target.mutual_flux_bias
+                target_bias = target.mutual_flux_bias
             else:
                 target_bias = target.z.joint_offset
         else:
             self.apply_all_flux_to_min()
-        
+
         if flux_point == "independent":
             target.z.to_independent_idle()
             target_bias = target.z.independent_offset
-            
+
         elif flux_point == "pairwise":
             target.to_mutual_idle()
             target_bias = target.mutual_flux_bias
-        
+
         if isinstance(target, Transmon):
             target.z.settle()
         elif isinstance(target, TransmonPair):
             target.qubit_control.z.settle()
             target.qubit_target.z.settle()
-        
+
         if do_align:
             target.align()
-            
-        return target_bias      
+
+        return target_bias
 
     def connect(self) -> QuantumMachinesManager:
         """Open a Quantum Machine Manager with the credentials ("host" and "cluster_name") as defined in the network file.
@@ -172,7 +206,9 @@ class QuAM(QuamRoot):
         Returns: the opened Quantum Machine Manager.
         """
         if self.network.get("cloud", False):
-            self.qmm = CloudQuantumMachinesManager(self.network["quantum_computer_backend"])
+            self.qmm = CloudQuantumMachinesManager(
+                self.network["quantum_computer_backend"]
+            )
         else:
             settings = dict(
                 host=self.network["host"],
@@ -210,7 +246,9 @@ class QuAM(QuamRoot):
             try:
                 self.qubits[name].calibrate_octave(QM)
             except NoCalibrationElements:
-                print(f"No calibration elements found for {name}. Skipping calibration.")
+                print(
+                    f"No calibration elements found for {name}. Skipping calibration."
+                )
 
 
 @quam_dataclass

@@ -1,4 +1,5 @@
 from pathlib import Path
+import numpy as np
 from typing import overload, Union, Optional
 from iqcc_cloud_client import IQCC_Cloud
 from quam_libs.components.quam_root import QuAM
@@ -8,12 +9,12 @@ from qualibrate_app.config import get_config_path, get_settings
 from qualibrate import QualibrationNode
 from qualibrate.storage.local_storage_manager import LocalStorageManager
 
-config_path = get_config_path()
-settings = get_settings(config_path)
-QualibrationNode.storage_manager = LocalStorageManager(
-    root_data_folder=settings.qualibrate.storage.location,
-    active_machine_path=settings.active_machine.path,
-)
+# config_path = get_config_path()
+# settings = get_settings(config_path)
+# QualibrationNode.storage_manager = LocalStorageManager(
+#     root_data_folder=settings.qualibrate.storage.location,
+#     active_machine_path=settings.active_machine.path,
+# )
 
 
 def get_job_results(job):
@@ -72,6 +73,25 @@ def strip_octaves_from_config(config):
             }
 
     return config
+
+
+def convert_numpy_to_lists(obj):
+    """
+    Recursively search through nested dictionaries and lists for numpy arrays
+    and convert them to regular Python lists.
+
+    Args:
+        obj: The object to process (dict, list, or any other type)
+    Returns:
+        The object with all numpy arrays converted to lists
+    """
+    if isinstance(obj, dict):
+        return {key: convert_numpy_to_lists(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_to_lists(item) for item in obj]
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    return obj
 
 
 def generate_config(machine: QuAM, strip_octaves: bool = True):
@@ -146,7 +166,7 @@ def execute_local(program, machine, close_other_machines=True, strip_octaves=Tru
     return results
 
 
-def execute_IQCC(program, machine, token=None, debug=False, strip_octaves=True):
+def execute_IQCC(program, machine, token=None, debug=False, strip_octaves=False):
     if token is None:
         for path in [
             Path(".IQCC_token"),
@@ -164,9 +184,11 @@ def execute_IQCC(program, machine, token=None, debug=False, strip_octaves=True):
             )
     token = token.strip()
 
-    qc = IQCC_Cloud(api_token=token)
+    backend = machine.network["quantum_computer_backend"]
+    qc = IQCC_Cloud(api_token=token, quantum_computer_backend=backend)
 
     config = generate_config(machine, strip_octaves=strip_octaves)
+    config = convert_numpy_to_lists(config)
     results = qc.execute(program, config, True, debug=debug)
     return results["result"]
 
