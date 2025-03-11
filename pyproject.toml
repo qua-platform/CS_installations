@@ -14,7 +14,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.8"
-quam = { git = "https://github.com/qua-platform/quam.git" }
+# quam = { git = "https://github.com/qua-platform/quam.git" }
 qualang-tools = ">=0.18.0"
 xarray = "*"
 lmfit = "*"
