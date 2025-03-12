@@ -45,8 +45,11 @@ class QDACII:
     def write_binary_values(self, cmd, values):
         self._visa.write_binary_values(cmd, values)
 
-    def __exit__(self):
+    def close(self):
         self._visa.close()
+
+    def __exit__(self):
+        self.close()
 
 
 # load list of voltages to the relevant QDAC2 channel
@@ -96,4 +99,34 @@ def load_voltage_list(
     sleep(1)
     print(
         f"Set-up QDAC2 channel {channel} to step voltages from a list of {len(voltage_list)} items on trigger events from the {trigger_port} port with a {qdac.query(f'sour{channel}:dc:list:dwell?')} s dwell time."
+    )
+
+
+def set_dc_voltage(
+    qdac,
+    channel: int,
+    voltage: float,
+    slew_rate: float,
+    output_range: str,
+    output_filter: str,
+):
+    """
+    Configure a QDAC2 channel to output a DC voltage with a given slew rate, output range and output filter.
+
+    :param qdac: the QDAC2 object.
+    :param channel: the QDAC2 channel that will output the voltage.
+    :param voltage: the desired voltage to output.
+    :param slew_rate: the rate at which the voltage can change in Volt per
+    seconds to avoid transients from abruptly stepping the voltage. Must be within [0.01; 2e7].
+    :param output_range: the channel output range that can be either "low" (+/-2V) or "high" (+/-10V).
+    """
+
+
+    qdac.write(f"sour{channel}:dc:mode FIX")
+    qdac.write(f"sour{channel}:dc:volt:slew {slew_rate}")
+    qdac.write(f"sour{channel}:rang {output_range}")
+    qdac.write(f"sour{channel}:filt {output_filter}")
+    qdac.write(f"sour{channel}:dc:volt {voltage}")
+    print(
+        f"Set-up QDAC2 channel {channel} to output a DC voltage of {voltage} V with a slew rate of {slew_rate} V/s."
     )
