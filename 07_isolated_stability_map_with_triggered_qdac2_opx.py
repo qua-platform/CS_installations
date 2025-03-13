@@ -1,31 +1,26 @@
 """
-        CHARGE STABILITY MAP - fast and slow axes: QDAC2 set to trigger mode
-The goal of the script is to acquire the charge stability map.
-Here two channels of the QDAC2 are parametrized to step though two preloaded voltage lists on the event of two digital
-markers provided by the OPX (connected to ext1 and ext2). This method allows the fast acquisition of a 2D voltage map
-and the data can be fetched from the OPX in real time to enable live plotting.
-The speed can also be further improved by removing the live plotting and increasing the QDAC2 bandwidth.
+define for the 2 first axis: the number of points, the gates to sweep from start to end values
+    e.g. dim_0_pts = 100, dim_0_sweeps = {"gate_1": {'start' = -1V, 'end' = 1V}}
+         dim_1_pts = 200, dim_1_sweeps = {"gate_2": {'start' = 0V, 'end' = .1V}}
 
-The QUA program consists in sending the triggers to the QDAC2 to increment the voltages and measure the charge of the dot
-either via dc current sensing or RF reflectometry.
-On top of the DC voltage sweeps, the OPX can output a continuous square wave (Coulomb pulse) through the AC line of the
-bias-tee. This allows to check the coupling of the fast line to the sample and measure the lever arms between the DC and
-AC lines.
+    define the loading sequences used to load different electron numbers N.
+    loading_points = [val_1, val_2, val_3, ...] for N=0, 1, 2, ... (= dim_2)
+    loading_sequence = [go_to_emptying_point, wait_time, go_to_loading_point(k),
+                        wait_time, go_to_isolated_point]
 
-A global average is performed (averaging on the most outer loop) and the data is extracted while the program is running
-to display the full charge stability map with increasing SNR.
+    for k in dim_2: <- change the number of electrons loaded
+        for j in dim_1: <- 'slow' axis = can be executed on PC
 
-Prerequisites:
-    - Readout calibration (resonance frequency for RF reflectometry and sensor operating point for DC current sensing).
-    - Setting the parameters of the QDAC2 and preloading the two voltages lists for the slow and fast axes.
-    - Connect the two plunger gates (DC line of the bias-tee) to the QDAC2 and two digital markers from the OPX to the
-      QDAC2 external trigger ports.
-    - (optional) Connect the OPX to the fast line of the plunger gates for playing the Coulomb pulse and calibrate the
-      lever arm.
+            apply the voltages(j) <- QDACs
 
-Before proceeding to the next node:
-    - Identify the different charge occupation regions.
-    - Update the config with the lever-arms.
+            run loading_sequence(k) <- must be executed on the OPX right before the fast axis
+
+            for i in dim_0: <- 'fast' axis = must be executed on the OPX
+                apply the voltages(i) <- OPX
+                measure <- must be stored on the OPX
+
+            get the data from the OPX to PC
+
 """
 
 import matplotlib.pyplot as plt
@@ -46,7 +41,23 @@ from qualang_tools.results.data_handler import DataHandler
 n_avg = 100  # Number of averages
 n_points_slow = 101  # Number of points for the slow axis
 n_points_fast = 101  # Number of points for the fast axis
+
+empty_position = [0.1, -0.3]
+empty_duration = 1000
+
+isolated_position = [0.3, -0.1]
+isolated_duration = 1000
+
+dc_duration = 400
+
 buffer = 100
+
+seq = VoltageGateSequence(configuration=config, elements=["P1_sticky", "P2_sticky"])
+
+seq.add_points(name="empty_point", coordinates=empty_position, duration=empty_duration)
+seq.add_points(name="idle_point", coordinates=[0.0, 0.0], duration=dc_duration)
+seq.add_points(name="isolated_point", coordinates=isolated_position, duration=isolated_duration)
+
 
 # Voltages in Volt
 voltage_values_slow = np.linspace(-1.5, 1.5, n_points_slow)
@@ -118,16 +129,6 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 #     output_range="low",
 #     output_filter="med",
 #     voltage_list=voltage_values_fast,
-# )
-# load_voltage_list(
-#     qdac,
-#     channel=2,
-#     dwell=2e-6,
-#     slew_rate=2e7,
-#     trigger_port="ext2",
-#     output_range="high",
-#     output_filter="med",
-#     voltage_list=voltage_values_slow,
 # )
 
 ###########################

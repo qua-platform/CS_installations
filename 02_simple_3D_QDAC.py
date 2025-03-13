@@ -30,7 +30,7 @@ inner_steps = 21  # define the voltage steps
 inner_V = np.linspace(-0.3, 0.4, inner_steps)
 outer_steps = 21  # define the voltage steps
 outer_V = np.linspace(-0.2, 0.5, outer_steps)
-inner_step_time = 3e-3
+inner_step_time = 5e-3
 
 # define the plunger gates
 arrangement = qdac.arrange(
@@ -53,24 +53,26 @@ sweep = arrangement.virtual_sweep2d(
 )
 sleep(1)
 # %%
+# Set to starting voltage
+arrangement.set_virtual_voltage("p1", inner_V[0])
+arrangement.set_virtual_voltage("p2", outer_V[0])
 # define the sensor parameters
 sensor_channel = 5  # define sensing channel
 sensor_integration_time = (
     1e-3  # define time [s] to integrate current over #NOTE: sensor integration time should be <= step_time
 )
+sensor_delay_time = 1e-3  # sensor_integration_time + sensor_delay_time should be <= inner_step_time
 sensing_range = "low"  # low (max 150 nA, noise level ~10 pA) or high (max 10 mA, noise level ~1 uA) current range
 
 # Set up the current sensor
 sensor = qdac.channel(sensor_channel)  # choose the sensor channel
-sensor.measurement_aperture_s(sensor_integration_time)  # choose the sensing time
-sensor.measurement_range(sensing_range)  # choose the sensing range
+measurement = sensor.measurement(
+    aperture_s=sensor_integration_time, delay_s=sensor_delay_time, current_range=sensing_range
+)
 sensor.clear_measurements()  # clear any remaining buffer of measurements
 measurement = sensor.measurement()  # create a measurement instance for the sensor
 measurement.start_on(arrangement.get_trigger_by_name("inner"))  # set the trigger that will start a measurement
 
-# Set to starting voltage
-arrangement.set_virtual_voltage("p1", inner_V[0])
-arrangement.set_virtual_voltage("p2", outer_V[0])
 
 sleep(1)
 

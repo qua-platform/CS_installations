@@ -1,8 +1,9 @@
+from pathlib import Path
+
 import numpy as np
+import plotly.io as pio
 from qualang_tools.units import unit
 from qualang_tools.voltage_gates import VoltageGateSequence
-import plotly.io as pio
-from pathlib import Path
 
 pio.renderers.default = "browser"
 
@@ -214,6 +215,20 @@ config = {
             "smearing": 0,
         },
         "TIA": {
+            "singleInput": {
+                "port": ("con1", 10),
+            },
+            "operations": {
+                "readout": "readout_pulse",
+            },
+            "outputs": {
+                "out1": ("con1", 1),
+                "out2": ("con1", 2),
+            },
+            "time_of_flight": time_of_flight,
+            "smearing": 0,
+        },
+        "TIA_copy": {
             "singleInput": {
                 "port": ("con1", 10),
             },
