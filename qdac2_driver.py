@@ -56,7 +56,7 @@ class QDACII:
 def load_voltage_list(
     qdac,
     channel: int,
-    # dwell: float,
+    dwell: float,
     slew_rate: float,
     trigger_port: str,
     output_range: str,
@@ -81,7 +81,7 @@ def load_voltage_list(
     # Ensure that the output voltage will start from the beginning of the list.
     qdac.write(f"sour{channel}:dc:init:cont off")
     # Set the minimum time spent on each voltage level. Must be between 2µs and the time between two trigger events.
-    # qdac.write(f"sour{channel}:dc:list:dwell {dwell}")
+    qdac.write(f"sour{channel}:dc:list:dwell {dwell}")
     # Set the maximum voltage slope in V/s
     qdac.write(f"sour{channel}:dc:volt:slew {slew_rate}")
     # Step through the voltage list on the event of a trigger

@@ -1,3 +1,4 @@
+# %%
 from time import sleep
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,36 +10,38 @@ from qcodes_contrib_drivers.drivers.QDevil import QDAC2
 ##########################
 # Ethernet communication #
 ##########################
-# Insert IP
-qdac_ipaddr = "192.168.8.76"  # Write the QDAC IP address
-# Open communication
+# insert IP
+qdac_ipaddr = "192.168.8.36"
+# open communication
 qdac = QDAC2.QDac2("QDAC", visalib="@py", address=f"TCPIP::{qdac_ipaddr}::5025::SOCKET")
-# Check the communication with the QDAC
+# check the communication with the QDAC
 print(qdac.IDN())  # query the QDAC's identity
-# print(qdac.errors())  # read and clear all errors from the QDAC's error queue
+sleep(3)
+print(qdac.errors())  # read and clear all errors from the QDAC's error queue
 
+# %%
 ####################
-# 2D voltage sweep #
+# 3D voltage sweep #
 ####################
 
-inner_steps = 10 # define the voltage steps
+software_update_voltages = [0.1, 0.2]
+
+inner_steps = 21  # define the voltage steps
 inner_V = np.linspace(-0.3, 0.4, inner_steps)
-outer_steps = 100  # define the voltage steps
+outer_steps = 21  # define the voltage steps
 outer_V = np.linspace(-0.2, 0.5, outer_steps)
-inner_step_time = 20e-3
+inner_step_time = 3e-3
 
-# Define the plunger gates
+# define the plunger gates
 arrangement = qdac.arrange(
-    # QDAC channels 2 and 3 connected to p1 and p2 respectively
-    contacts={"p1": 2, "p2": 3},
+    contacts={"p1": 2, "p2": 4},
     # Internal trigger for measuring current
     internal_triggers={"inner"},
 )
-
-# Add virtual gates corrections
-arrangement.initiate_correction("p1", [0.9, 0.1])
-arrangement.initiate_correction("p2", [-0.2, 0.97])
-
+sleep(1)
+# # Add virtual gates corrections
+# arrangement.initiate_correction("p1", [0.9, 0.1])
+# arrangement.initiate_correction("p2", [-0.2, 0.97])
 
 sweep = arrangement.virtual_sweep2d(
     inner_contact="p1",
@@ -48,11 +51,12 @@ sweep = arrangement.virtual_sweep2d(
     inner_step_time_s=inner_step_time,
     inner_step_trigger="inner",
 )
-
-# Define the sensor parameters
+sleep(1)
+# %%
+# define the sensor parameters
 sensor_channel = 5  # define sensing channel
 sensor_integration_time = (
-    15e-3  # define time [s] to integrate current over #NOTE: sensor integration time should be <= step_time
+    1e-3  # define time [s] to integrate current over #NOTE: sensor integration time should be <= step_time
 )
 sensing_range = "low"  # low (max 150 nA, noise level ~10 pA) or high (max 10 mA, noise level ~1 uA) current range
 
@@ -67,27 +71,37 @@ measurement.start_on(arrangement.get_trigger_by_name("inner"))  # set the trigge
 # Set to starting voltage
 arrangement.set_virtual_voltage("p1", inner_V[0])
 arrangement.set_virtual_voltage("p2", outer_V[0])
-sleep(0.5)
 
+sleep(1)
+
+# %%
 # Start sweep
-sweep.start()
-sleep(inner_steps * outer_steps * inner_step_time + 0.5)
-# sleep(100)
 
-# Stop current flow
-arrangement.set_virtual_voltage("p1", 0)
-arrangement.set_virtual_voltage("p2", 0)
+full_data = []  # store the data
+
+for V in software_update_voltages:
+    print("Hello!")
+    qdac.channel(18).dc_constant_V(V)
+    sweep.start()
+    sleep(inner_step_time * inner_steps * outer_steps + 1)
+    sleep(10) # VPN delay
+
+    # Stop current flow
+    arrangement.set_virtual_voltage("p1", 0)
+    arrangement.set_virtual_voltage("p2", 0)
 
 
-raw = measurement.available_A()
-available = list(map(lambda x: float(x), raw[-(outer_steps * inner_steps) :]))
+    raw = measurement.available_A()
+    available = list(map(lambda x: float(x), raw[-(outer_steps * inner_steps) :]))
+    currents = np.reshape(available, (-1, inner_steps)) * 1000
+    full_data.append(currents)
 
-# Plot
-currents = np.reshape(available, (-1, inner_steps)) * 1000
+# %%
+# plot
 fig, ax = plt.subplots()
-plt.title("diodes (Ge) back-to-back")
+plt.title("2D stability diagram")
 extent = [inner_V[0], inner_V[-1], outer_V[0], outer_V[-1]]
-img = ax.imshow(currents, cmap="plasma", interpolation="nearest", extent=extent)
+img = ax.imshow(full_data[-1], cmap="plasma", interpolation="nearest", extent=extent)
 ax.set_xlabel("Volt")
 ax.set_ylabel("Volt")
 colorbar = fig.colorbar(img)
@@ -95,7 +109,9 @@ colorbar.set_label("mA")
 
 plt.show()
 
-# Free all internal triggers, 12 internal triggers are available
+# free all internal triggers, 12 internal triggers are available
 qdac.free_all_triggers()
-# Close to qdac instance so you can create it again.
+# close to qdac instance so you can create it again.
 qdac.close()
+
+# %%
