@@ -20,7 +20,6 @@ define for the 2 first axis: the number of points, the gates to sweep from start
                 measure <- must be stored on the OPX
 
             get the data from the OPX to PC
-
 """
 
 import matplotlib.pyplot as plt
@@ -42,11 +41,11 @@ n_avg = 100  # Number of averages
 n_points_slow = 101  # Number of points for the slow axis
 n_points_fast = 101  # Number of points for the fast axis
 
-empty_position = [0.1, -0.3]
+empty_position = [-0.1, -0.3]
 empty_duration = 1000
 
 isolated_position = [0.3, -0.1]
-isolated_duration = 1000
+loading_duration = 1000
 
 dc_duration = 400
 
@@ -55,59 +54,38 @@ buffer = 100
 seq = VoltageGateSequence(configuration=config, elements=["P1_sticky", "P2_sticky"])
 
 seq.add_points(name="empty_point", coordinates=empty_position, duration=empty_duration)
-seq.add_points(name="idle_point", coordinates=[0.0, 0.0], duration=dc_duration)
-seq.add_points(name="isolated_point", coordinates=isolated_position, duration=isolated_duration)
+seq.add_points(name="manipulation_point", coordinates=[0.0, 0.0], duration=loading_duration)
+seq.add_points(name="isolated_point", coordinates=isolated_position, duration=readout_len)
 
+loading_points = [[0.1, -0.3], [0.2, -0.2], [0.3, -0.1]]
 
-# Voltages in Volt
-voltage_values_slow = np.linspace(-1.5, 1.5, n_points_slow)
-voltage_values_fast = np.linspace(-0.5, 0.5, n_points_fast)
+p1_amp = [list[0] for list in loading_points]
+p2_amp = [list[1] for list in loading_points]
 
-# Data to save
-save_data_dict = {
-    "n_avg": n_avg,
-    "voltage_values_slow": voltage_values_slow,
-    "voltage_values_fast": voltage_values_fast,
-    "config": config,
-}
 
 ###################
 # The QUA program #
 ###################
-with program() as charge_stability_prog:
-    n = declare(int)  # QUA integer used as an index for the averaging loop
-    counter = declare(int)  # QUA integer used as an index for the Coulomb pulse
-    i = declare(int)  # QUA integer used as an index to loop over the voltage points
-    j = declare(fixed)  # QUA integer used as an index to loop over the voltage points
-    n_st = declare_stream()  # Stream for the iteration number (progress bar)
-    I = declare(fixed)
-    Q = declare(fixed)
-    dc_signal = declare(fixed)
-    dc_signal_st = declare_stream()
+with program() as prog:
+    n = declare(int)
+    dc = declare(fixed)
+    a1 = declare(fixed)
+    a2 = declare(fixed)
+    dc_st = declare_stream()
 
-    with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
-        with for_(i, 0, i < n_points_slow, i + 1):
-            # Trigger the QDAC2 channel to output the next voltage level from the list
-            play("trigger", "qdac_trigger2")
-            with for_(*from_array(j, voltage_values_fast)):
-                # Trigger the QDAC2 channel to output the next voltage level from the list
-                play("step" * amp(j), "P1_sticky")
-                # Wait for the voltages to settle (depends on the channel bandwidth)
-                wait(buffer * u.ns, "TIA")
-                measure("readout", "TIA", None, integration.full("constant", dc_signal, "out2"))
-                wait(buffer * u.ns, "TIA")
-                align("P1_sticky", "TIA")
-                play("step" * amp(-j), "P1_sticky")
-                save(dc_signal, dc_signal_st)
-                wait(1_000 * u.ns)  # in ns
-        # Save the LO iteration to get the progress bar
-        save(n, n_st)
-
-    # Stream processing section used to process the data before saving it.
-    with stream_processing():
-        n_st.save("iteration")
-        # DC current sensing
-        dc_signal_st.buffer(n_points_fast).buffer(n_points_slow).average().save("dc_signal")
+    with for_each_((a1, a2), (p1_amp, p2_amp)):
+        with strict_timing_():
+            seq.add_step(voltage_point_name="empty_point")
+            seq.add_step(voltage_point_name="manipulation_point")
+            seq.add_step(voltage_point_name="isolated_point")
+            seq.add_compensation_pulse()
+        wait(empty_duration * u.ns, "P1", "P2")
+        play("step" * amp(a1 * 4), "P1", duration=loading_duration * u.ns)
+        play("step"* amp(a2 * 4), "P2", duration=loading_duration * u.ns)
+        align("P1", "P2", "TIA")
+        measure("readout", "TIA", None, integration.full("constant", dc, "out2"))
+        save(dc, dc_st)
+        seq.ramp_to_zero(4)
 
 
 #####################################
@@ -140,7 +118,7 @@ if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
-    job = qmm.simulate(config, charge_stability_prog, simulation_config)
+    job = qmm.simulate(config, prog, simulation_config)
     # Get the simulated samples
     samples = job.get_simulated_samples()
     # Plot the simulated samples
@@ -155,7 +133,7 @@ else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(charge_stability_prog)
+    job = qm.execute(prog)
     # Get results from QUA program and initialize live plotting
     results = fetching_tool(job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live")
     # Live plotting

@@ -7,6 +7,7 @@ import pyvisa as visa
 from IPython.display import Image, display
 from qcodes_contrib_drivers.drivers.QDevil import QDAC2
 
+
 ##########################
 # Ethernet communication #
 ##########################
@@ -16,7 +17,6 @@ qdac_ipaddr = "192.168.8.36"
 qdac = QDAC2.QDac2("QDAC", visalib="@py", address=f"TCPIP::{qdac_ipaddr}::5025::SOCKET")
 # check the communication with the QDAC
 print(qdac.IDN())  # query the QDAC's identity
-sleep(3)
 print(qdac.errors())  # read and clear all errors from the QDAC's error queue
 
 # %%
@@ -78,9 +78,6 @@ measurement.start_on(arrangement.get_trigger_by_name("inner"))  # set the trigge
 sweep.start()
 # %%
 sleep(inner_step_time * inner_steps * outer_steps + 1)
-sleep(10)  # VPN delay
-# qdac.ask("*stb?")
-
 
 raw = measurement.available_A()
 available = list(map(lambda x: float(x), raw[-(outer_steps * inner_steps) :]))
