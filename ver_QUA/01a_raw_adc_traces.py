@@ -12,7 +12,7 @@ correcting any non-zero DC offsets, and estimating the SNR.
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from .configuration_with_lffem_octave import *
+from configuration_with_lffem_octave import *
 import matplotlib.pyplot as plt
 import matplotlib
 import time
@@ -48,7 +48,7 @@ with program() as raw_trace_prog:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
 
 ###########################
 # Run or Simulate Program #
@@ -78,6 +78,9 @@ else:
     adc1_single_run = u.raw2volts(res_handles.get("adc1_single_run").fetch_all())
     adc2_single_run = u.raw2volts(res_handles.get("adc2_single_run").fetch_all())
     
+    import time
+    time.sleep(10)
+
     # Plot data
     fig = plt.figure()
     plt.subplot(121)

@@ -17,17 +17,13 @@ import matplotlib.pyplot as plt
 import matplotlib
 import time
 
-# matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')
 
 ###################
 # The QUA program #
 ###################
-n_avg = 1  # The number of averages
-rr_if = 750 * u.MHz
-resonators = [f"rr_test{p}" for p in range(6, 9, 1)]
-
-for rr, rr_val in config["elements"].items():
-    rr_val["intermediate_frequency"] = rr_if
+n_avg = 100  # The number of averages
+resonators = [f"rr_test{p}" for p in range(1, 9, 1)]
 
 
 with program() as raw_trace_prog:
@@ -36,8 +32,8 @@ with program() as raw_trace_prog:
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         # Make sure that the readout pulse is sent with the same phase so that the acquired signal does not average out
-        # for rr in resonators:
-        #     reset_phase(rr)
+        for rr in resonators:
+            reset_phase(rr)
         # Measure the resonator (send a readout pulse and record the raw ADC trace)
         for rr in resonators:
             measure("single", rr, stream=adc_st)
@@ -58,13 +54,6 @@ with program() as raw_trace_prog:
 #####################################
 qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
 
-from pathlib import Path
-from qm import generate_qua_script
-debug_filepath = sourceFile = f"debug_{Path(__file__).stem}.py"
-sourceFile = open(debug_filepath, "w")
-print(generate_qua_script(raw_trace_prog, config), file=sourceFile)
-sourceFile.close()
-
 ###########################
 # Run or Simulate Program #
 ###########################
@@ -73,43 +62,11 @@ save_data = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=400)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, raw_trace_prog, simulation_config)
     # Plot the simulated samples
-    res = job.get_simulated_samples().con1.analog
-    ys = res["5-7"]
-    ts1 = np.arange(len(ys)) * (1e9 / sampling_rate)
-    fft_adc1 = np.fft.fft(ys)
-    freqs = np.fft.fftfreq(len(ys), d=1 / sampling_rate) / 1e6
-
-    # Plot data
-    fig, axs = plt.subplots(2, 1, figsize=(7, 5))
-    
-    ax = axs[0]
-    ax.set_title(f"IF at {rr_if / u.MHz} MHz")
-    ax.plot(ts1, ys, label="Input 1")
-    # ax.plot(ts2, adc2_single_run, label="Input 2")
-    ax.set_xlabel("Time [ns]")
-    ax.set_ylabel("Signal amplitude [V]")
-    ax.legend()
-
-    ax = axs[1]
-    ax.set_title("FFT")
-    ax.plot(freqs[:len(freqs) // 2], np.abs(fft_adc1)[:len(freqs) // 2], label="Input 1")
-    # ax.plot(freqs[:len(freqs) // 2], np.abs(fft_adc2)[:len(freqs) // 2], label="Input 2")
-    ax.set_xlabel("Frequency [MHz]")
-    ax.set_ylabel("Magnitude")
-    ylim = ax.get_ylim()
-    for f in [250, 500, 750]:
-        ax.vlines(x=f, ymin=ylim[0], ymax=ylim[1], color='m', alpha=0.2)
-        ax.annotate(f"f = {f} MHz", xy=(f, ylim[1] * 0.9), xytext=(f + 10, ylim[1] * 0.9), color='m')
-    ax.set_ylim(ylim)
-    ax.legend()
-    plt.tight_layout()
-    plt.show()
-
-    
+    job.get_simulated_samples().con1.plot()
 else:
     # Open a quantum machine to execute the QUA program
     qm = qmm.open_qm(config)
@@ -128,39 +85,24 @@ else:
     # adc2_single_run = adc1_single_run # u.raw2volts(res_handles.get("adc2_single_run").fetch_all())
     ts1 = np.arange(len(adc1_single_run)) * (1e9 / sampling_rate)
     ts2 = np.arange(len(adc2_single_run)) * (1e9 / sampling_rate) 
-
-    # Compute FFT
-    fft_adc1 = np.fft.fft(adc1_single_run)
-    fft_adc2 = np.fft.fft(adc2_single_run)
-
-    # Frequency axis (in MHz)
-    freqs = np.fft.fftfreq(len(adc1_single_run), d=1 / sampling_rate) / 1e6
-
-    # Plot data
-    fig, axs = plt.subplots(2, 1, figsize=(7, 5))
     
-    ax = axs[0]
-    ax.set_title(f"IF at {rr_if / u.MHz} MHz")
-    ax.plot(ts1, adc1_single_run, label="Input 1")
-    # ax.plot(ts2, adc2_single_run, label="Input 2")
-    ax.set_xlabel("Time [ns]")
-    ax.set_ylabel("Signal amplitude [V]")
-    ax.legend()
+    # Plot data
+    fig = plt.figure()
+    # plt.subplot(121)
+    plt.title("Single run")
+    plt.plot(ts1, adc1_single_run, label="Input 1")
+    plt.plot(ts2, adc2_single_run, label="Input 2")
+    plt.xlabel("Time [ns]")
+    plt.ylabel("Signal amplitude [V]")
+    plt.legend()
 
-    ax = axs[1]
-    ax.set_title("FFT")
-    ax.plot(freqs[:len(freqs) // 2], np.abs(fft_adc1)[:len(freqs) // 2], label="Input 1")
-    # ax.plot(freqs[:len(freqs) // 2], np.abs(fft_adc2)[:len(freqs) // 2], label="Input 2")
-    ax.set_xlabel("Frequency [MHz]")
-    ax.set_ylabel("Magnitude")
-    ylim = ax.get_ylim()
-    for f in [250, 500, 750]:
-        ax.vlines(x=f, ymin=ylim[0], ymax=ylim[1], color='m', alpha=0.2)
-        ax.annotate(f"f = {f} MHz", xy=(f, ylim[1] * 0.9), xytext=(f + 10, ylim[1] * 0.9), color='m')
-    ax.set_ylim(ylim)
-    ax.legend()
+    # plt.subplot(122)
+    # plt.title("Averaged run")
+    # plt.plot(adc1, label="Input 1")
+    # plt.plot(adc2, label="Input 2")
+    # plt.xlabel("Time [ns]")
+    # plt.legend()
     plt.tight_layout()
-    plt.show()
 
     print(f"\nInput1 mean: {np.mean(adc1)} V\n" f"Input2 mean: {np.mean(adc2)} V")
 
@@ -183,6 +125,5 @@ else:
     
     plt.show()
     qm.close()
-
 
 # %%

@@ -55,19 +55,17 @@ default_additional_files = {
 #############################################
 single_len = 100
 single_amp = 0.25
-single_IF = 750 * u.MHz
-
+single_IF = 250 * u.MHz
 
 # TOF and depletion time
-time_of_flight = 28 + 132 # must be a multiple of 4
+time_of_flight = 28  # must be a multiple of 4
 depletion_time = 2 * u.us
 
 
 #############################################
 #                  Config                   #
 #############################################
-sampling_rate = 2e9
-
+sampling_rate = 1e9
 config = {
     "version": 1,
     "controllers": {
@@ -113,10 +111,10 @@ config = {
                     "out1": (con, lffem2, 1),
                     "out2": (con, lffem2, 2),
                 },
-                "time_of_flight": time_of_flight,
+                "time_of_flight": 28,
                 "smearing": 0,
             }
-            for p in range(5, 9, 1)
+            for p in range(1, 9, 1)
         },
     },
     "pulses": {

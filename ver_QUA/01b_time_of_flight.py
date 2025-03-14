@@ -18,7 +18,7 @@ The data undergoes post-processing to calibrate three distinct parameters:
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from .configuration_with_lffem_octave import *
+from configuration_with_lffem_octave import *
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 import matplotlib

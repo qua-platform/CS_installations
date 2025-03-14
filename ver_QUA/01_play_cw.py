@@ -6,7 +6,7 @@ A simple sandbox to showcase different QUA functionalities during the installati
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from .configuration_with_lffem_octave import *
+from configuration_with_lffem_octave import *
 import matplotlib
 import time
 

@@ -17,7 +17,7 @@ Before proceeding to the next node:
 
 from qm.qua import *
 from qm import QuantumMachinesManager, SimulationConfig
-from .configuration_with_lffem_octave import *
+from configuration_with_lffem_octave import *
 from qualang_tools.results import fetching_tool
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt

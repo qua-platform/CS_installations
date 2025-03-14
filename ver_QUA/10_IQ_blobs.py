@@ -19,7 +19,7 @@ Next steps before going to the next node:
 
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
-from .configuration_with_lffem_octave import *
+from configuration_with_lffem_octave import *
 import matplotlib.pyplot as plt
 from qualang_tools.results import fetching_tool
 from .macros import qua_declaration, multiplexed_readout, active_reset
