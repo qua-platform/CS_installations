@@ -81,13 +81,13 @@ from cr_hamiltonian_tomography import (
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubit_pairs: Optional[List[str]] = ["q6-7"]
-    num_averages: int = 100
+    qubit_pairs: Optional[List[str]] = ["q5-6"]
+    num_averages: int = 50
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 400
-    wait_time_step_in_ns: int = 4
-    min_amp_scaling: float = 0.05
-    max_amp_scaling: float = 1.99
+    wait_time_step_in_ns: int = 20
+    min_amp_scaling: float = 0.01
+    max_amp_scaling: float = 1.0
     step_amp_scaling: float = 0.05
     cr_type: Literal["direct", "direct+echo", "direct+cancel", "direct+cancel+echo"] = "direct+echo"
     cr_drive_amps: List[float] = [0.225*0+0.5]
@@ -97,7 +97,7 @@ class Parameters(NodeParameters):
     cr_drive_phases: List[float] = [0.0]
     cr_cancel_phases: List[float] = [0.0]
     use_state_discrimination: bool = False
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
     timeout: int = 100
 
@@ -193,7 +193,7 @@ with program() as cr_calib_unit_ham_tomo:
                             else:
                                 qc.resonator.wait(machine.thermalization_time * u.ns)
                             # Align the two elements to play the sequence after qubit initialization
-                            align()                            
+                            qp.align()                            
                             
                             with if_(s == 1):
                                 qc.xy.play("x180")

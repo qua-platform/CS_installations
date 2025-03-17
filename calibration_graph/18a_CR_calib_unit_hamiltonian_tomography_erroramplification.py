@@ -61,6 +61,12 @@ from quam_libs.macros import (
     active_reset,
     readout_state,
 )
+
+import sys
+import os
+sys.path.append(r"C:\Users\tomdv\Documents\OQC_QUAM\CS_installations\calibration_graph")
+
+
 from cr_hamiltonian_tomography import (
     CRHamiltonianTomographyAnalysis,
     plot_crqst_result_2D,
@@ -71,8 +77,8 @@ from cr_hamiltonian_tomography import (
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubit_pairs: Optional[List[str]] = ["q3-4"]
-    num_averages: int = 2000
+    qubit_pairs: Optional[List[str]] = ["q5-6"]
+    num_averages: int = 200
     min_wait_time_in_ns: int = 20
     max_wait_time_in_ns: int = 500
     wait_time_step_in_ns: int = 12
@@ -84,7 +90,7 @@ class Parameters(NodeParameters):
     cr_drive_phase: List[float] = [0.0]  # Or 0.25
     cr_cancel_phase: List[float] = [0.46]
     use_state_discrimination: bool = False
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
     simulate: bool = False
     timeout: int = 100
 
@@ -274,32 +280,21 @@ if not node.parameters.simulate:
         print(f"fitting for {qp.name}")
         node.results[f"Best_CR_time_{qp.name}"] = float(ds_sliced.sel(qc_state="1").bloch_target.mean("N").idxmin(dim="times"))
 
-    qm.close()
-    print("Experiment QM is now closed")
     plt.show(block=False)
 
 
 # %% {Update_state}
-# if not node.parameters.simulate:
-#     with node.record_state_updates():
-#         cr_drive_amps = [0.1]
-#         cr_cancel_amps = [0.1]
-#         cr_drive_amp_scalings = [0.5]
-#         cr_cancel_amp_scalings = [0.5]
-#         cr_drive_phases = [0.5]
-#         cr_cancel_phases = [0.5]
-#         for i, qp in enumerate(qubit_pairs):
-#             cr = qp.cross_resonance
-#             qt = qp.qubit_target
-#             cr.operations["square"].amplitude = cr_drive_amps[i] * cr_drive_amp_scalings[i]
-#             cr.operations["square"].axis_angle = cr_drive_phases[i] * 360
-#             qt.xy.operations[f"{cr.name}_Square"].amplitude = cr_cancel_amps[i] * cr_cancel_amp_scalings[i]
-#             qt.xy.operations[f"{cr.name}_Square"].axis_angle = cr_cancel_phases[i] * 360
+if not node.parameters.simulate:
+    with node.record_state_updates():
+        # cr_drive_phases = [0.5]
+        # cr_cancel_phases = [0.5]
+        for i, qp in enumerate(qubit_pairs):
+            cr = qp.cross_resonance
+            qt = qp.qubit_target
+            print(node.results[f"Best_CR_time_{qp.name}"])
+            cr.operations["square"].length = int(np.round(node.results[f"Best_CR_time_{qp.name}"]/4)*4)
 
 
-    # Revert the change done at the beginning of the node
-    for tracked_qubit in tracked_qubits:
-        tracked_qubit.revert_changes()
 
 
 # %% {Save_results}

@@ -80,13 +80,13 @@ from cr_hamiltonian_tomography import (
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubit_pairs: Optional[List[str]] = ["q6-7"]
+    qubit_pairs: Optional[List[str]] = ["q5-6"]
     qubits: Optional[List[str]] = []
     num_averages: int = 200
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 1000
     wait_time_step_in_ns: int = 80
-    cr_drive_phase_span: float = 0.6
+    cr_drive_phase_span: float = 0.2
     step_cr_drive_phase: float = 0.005
     cr_type: Literal["direct", "direct+echo", "direct+cancel", "direct+cancel+echo"] = "direct+echo"
     cr_drive_amps: List[float] = [0.05]

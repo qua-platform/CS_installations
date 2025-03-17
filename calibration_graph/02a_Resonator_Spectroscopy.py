@@ -38,9 +38,9 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = None
+    qubits: Optional[List[str]] = ["q1"]
     num_averages: int = 100
-    frequency_span_in_mhz: float = 20
+    frequency_span_in_mhz: float = 15
     frequency_step_in_mhz: float = 0.05
     simulate: bool = False
     simulation_duration_ns: int = 2500
@@ -292,7 +292,6 @@ if not node.parameters.simulate:
         with node.record_state_updates():
             for index, q in enumerate(qubits):
                 q.resonator.intermediate_frequency += int(lorentzian_fits[q.name]["center_freq"])
-
     # %% {Save_results}
     if node.parameters.load_data_id is None:        
         node.outcomes = {q.name: "successful" for q in qubits}

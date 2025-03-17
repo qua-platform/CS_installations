@@ -322,7 +322,7 @@ if not node.parameters.simulate:
     plt.tight_layout()
     plt.show()
     node.results["figure"] = grid.fig
-
+    qmm.close_all_qms()
 
     # %% {Update_state}
     if node.parameters.load_data_id is None:

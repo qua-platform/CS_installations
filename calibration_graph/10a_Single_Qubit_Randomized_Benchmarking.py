@@ -370,7 +370,7 @@ if not node.parameters.simulate:
     plt.tight_layout()
     plt.show()
     node.results["figure"] = grid.fig
-
+    qmm.close_all_qms()
 
     # %% {Save_results}
     if not node.parameters.simulate:
