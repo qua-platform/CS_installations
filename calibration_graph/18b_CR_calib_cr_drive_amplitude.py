@@ -81,10 +81,10 @@ from cr_hamiltonian_tomography import (
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubit_pairs: Optional[List[str]] = ["q5-6"]
+    qubit_pairs: Optional[List[str]] = ["q3-4"]
     num_averages: int = 50
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 400
+    max_wait_time_in_ns: int = 2000
     wait_time_step_in_ns: int = 20
     min_amp_scaling: float = 0.01
     max_amp_scaling: float = 1.0
@@ -97,7 +97,7 @@ class Parameters(NodeParameters):
     cr_drive_phases: List[float] = [0.0]
     cr_cancel_phases: List[float] = [0.0]
     use_state_discrimination: bool = False
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
     simulate: bool = False
     timeout: int = 100
 

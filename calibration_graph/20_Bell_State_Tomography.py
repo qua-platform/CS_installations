@@ -53,11 +53,11 @@ from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubit_pairs: Optional[List[str]] = ['q6-7']
+    qubit_pairs: Optional[List[str]] = ['q3-4']
     qubits: Optional[List[str]] = []
     num_shots: int = 2000
     flux_point_joint_or_independent: Literal["joint", "independent", None] = None
-    reset_type: Literal['active', 'thermal'] = "active"
+    reset_type: Literal['active', 'thermal'] = "thermal"
     bell_state: Literal['00-11', '01-10'] = '00-11'
     simulate: bool = False
     timeout: int = 100
@@ -269,7 +269,7 @@ with program() as CPhase_Oscillations:
                     else:
                         qp.wait(machine.thermalization_time * u.ns)
                     qp.align()
-                    if node.parameters.bell_state == "01-10":
+                    if not node.parameters.bell_state == "01-10":
                         qp.qubit_target.xy.play("x180")
                         qp.align()
                     # Bell state
@@ -277,8 +277,8 @@ with program() as CPhase_Oscillations:
                     # qp.qubit_control.xy.frame_rotation_2pi(0.25)
                     # qp.qubit_control.xy.play("x90")
                     # qp.qubit_control.xy.frame_rotation_2pi(0.25)
-                    qp.qubit_control.xy.play("y90")
-                    qp.qubit_control.xy.play("x180")
+                    qp.qubit_control.xy.play("-y90")
+                    # qp.qubit_control.xy.play("x180")
                     qp.align()
                     CNOT(qp.cross_resonance, qp.qubit_target, qp.qubit_control)
                     qp.qubit_control.xy.frame_rotation_2pi(0.5)

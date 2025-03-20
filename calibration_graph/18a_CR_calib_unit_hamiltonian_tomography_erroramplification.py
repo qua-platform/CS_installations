@@ -77,7 +77,7 @@ from cr_hamiltonian_tomography import (
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubit_pairs: Optional[List[str]] = ["q5-6"]
+    qubit_pairs: Optional[List[str]] = ["q3-4"]
     num_averages: int = 200
     min_wait_time_in_ns: int = 20
     max_wait_time_in_ns: int = 500
