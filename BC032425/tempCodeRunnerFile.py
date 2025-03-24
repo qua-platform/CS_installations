@@ -1,0 +1,1 @@
+(int(duration_manip)
