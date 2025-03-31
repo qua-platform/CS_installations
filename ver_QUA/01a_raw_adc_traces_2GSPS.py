@@ -22,7 +22,7 @@ import time
 ###################
 # The QUA program #
 ###################
-n_avg = 1  # The number of averages
+n_avg = 10  # The number of averages
 rr_if = 750 * u.MHz
 resonators = [f"rr_test{p}" for p in range(6, 9, 1)]
 
@@ -40,7 +40,7 @@ with program() as raw_trace_prog:
         #     reset_phase(rr)
         # Measure the resonator (send a readout pulse and record the raw ADC trace)
         for rr in resonators:
-            measure("single", rr, stream=adc_st)
+            measure("single", rr, adc_stream=adc_st)
         # Wait for the resonator to deplete
         wait(1000 * u.ns, *resonators)
 

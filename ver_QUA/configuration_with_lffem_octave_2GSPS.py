@@ -34,7 +34,7 @@ def IQ_imbalance(g, phi):
 # Network parameters #
 ######################
 qop_ip = "172.16.33.115"
-cluster_name = "Cluster_1" 
+cluster_name = "CS_3" 
 qop_port = 80  # Write the QOP port if version < QOP220
 
 con = "con1"
