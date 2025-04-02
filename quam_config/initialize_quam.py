@@ -2,13 +2,14 @@
 # %%                                             Import section
 ########################################################################################################################
 import json
+
+import numpy as np
 from qualang_tools.units import unit
-from quam_config import QuAM
 from quam_builder.builder.superconducting.build_quam import save_machine
 from quam_builder.builder.superconducting.pulses import add_DragCosine_pulses
-from quam.components.pulses import GaussianPulse
-import numpy as np
+from quam_config import QuAM
 
+from quam.components.pulses import GaussianPulse, SquarePulse
 
 ########################################################################################################################
 # %%                                 QuAM loading and auxiliary functions
@@ -43,15 +44,15 @@ for i in range(len(machine.qubits.items())):
 # NOTE: be aware of coupled ports for bands
 
 # Resonator frequencies
-rr_freq = np.array([4.395, 4.412, 4.521, 4.728, 4.915, 5.147, 5.247, 5.347]) * u.GHz
-rr_LO = 4.75 * u.GHz
+rr_freq = np.array([7.2601, 6.9727, 6.7106, 6.481]) * u.GHz
+rr_LO = 6.83 * u.GHz
 rr_if = rr_freq - rr_LO
 rr_max_power_dBm = 4
 # Qubit drive frequencies
-xy_freq = np.array([6.012, 6.421, 6.785, 7.001, 7.083, 7.121, 7.184, 7.254]) * u.GHz
-xy_LO = np.array([6.0, 6.1, 6.2, 6.3, 7.1, 7.1, 7.1, 7.1]) * u.GHz
+xy_freq = np.array([4.2973, 4.9964, 3.6784, 3.9836]) * u.GHz
+xy_LO = np.array([4.250, 5.0, 3.750, 4.0]) * u.GHz
 xy_if = xy_freq - xy_LO
-xy_max_power_dBm = 1
+xy_max_power_dBm = 10
 
 
 ########################################################################################################################
@@ -74,22 +75,30 @@ for i, q in enumerate(machine.qubits):
     machine.qubits[q].xy.opx_output.upconverter_frequency = xy_LO[i]
     machine.qubits[q].xy.opx_output.band = get_band(xy_LO[i])
 
-    # Update flux channels
-    machine.qubits[q].z.opx_output.output_mode = "direct"
-    machine.qubits[q].z.opx_output.upsampling_mode = "pulse"
-
     ## Update pulses
     # readout
-    machine.qubits[q].resonator.operations["readout"].length = 2.5 * u.us
+    machine.qubits[q].resonator.operations["readout"].length = 2 * u.us
     machine.qubits[q].resonator.operations["readout"].amplitude = 1e-3
     # Qubit saturation
     machine.qubits[q].xy.operations["saturation"].length = 20 * u.us
-    machine.qubits[q].xy.operations["saturation"].amplitude = 0.25
+    machine.qubits[q].xy.operations["saturation"].amplitude = 0.01
 
     # Single qubit gates - DragCosine & Square
-    add_DragCosine_pulses(machine.qubits[q], amplitude=0.25, length=48, alpha=0.0, detuning=0)
+    add_DragCosine_pulses(machine.qubits[q], amplitude=0.25, length=48, alpha=0.0, detuning=0, anharmonicity=200 * u.MHz)
+
+# Qubits with flux line:
+
+for q in ["q1", "q3", "q4"]:
+    # Update flux channels
+    machine.qubits[q].z.opx_output.output_mode = "direct"
+    machine.qubits[q].z.opx_output.upsampling_mode = "pulse"
     # Single Gaussian flux pulse
     machine.qubits[q].z.operations["gauss"] = GaussianPulse(amplitude=0.1, length=200, sigma=40)
+    # Single square flux pulse
+    machine.qubits[q].z.operations["square"] = SquarePulse(length=40, amplitude=0.1)
+    # Static offsets:
+    machine.qubits[q].z.flux_point = "joint"
+    machine.qubits[q].z.joint_offset = 0.0
 
     # Add new pulses
     # from quam.components.pulses import (
@@ -101,6 +110,43 @@ for i, q in enumerate(machine.qubits):
     #     SquareReadoutPulse,
     # )
     # e.g., machine.qubits[q].xy.operations["new_pulse"] = FlatTopGaussianPulse(...)
+
+########################################################################################################################
+# %%                                         Set LF FEM delays
+########################################################################################################################
+
+readout_bands = [get_band(rr_LO)]
+drive_bands = [get_band(xy_LO[i]) for i, _ in enumerate(machine.qubits)]
+
+if 2 in readout_bands or 2 in drive_bands:
+    print("Value 2 is present in either readout_bands or drive_bands.")
+    lf_delay = 172
+    band_1_or_3_delay = 20
+else:
+    print("Value 2 is not present in readout_bands or drive_bands.")
+    lf_delay = 152
+    band_1_or_3_delay = None
+
+print(f"readout bands: {readout_bands}")
+print(f"drive bands: {drive_bands}")
+
+
+# Set LF delays:
+
+for q in ["q1", "q3", "q4"]:
+    machine.qubits[q].z.opx_output.delay = lf_delay
+
+# Set MW delays on ports with band 1 or 3 if needed
+
+if band_1_or_3_delay is not None:
+    for qubit in machine.qubits:
+        if machine.qubits[qubit].xy.opx_output.band != 2:
+            machine.qubits[qubit].xy.opx_output.delay = band_1_or_3_delay
+        elif machine.qubits[qubit].resonator.opx_output.band != 2:
+            machine.qubits[qubit].resonator.opx_output.delay = band_1_or_3_delay
+        else:
+            pass
+
 
 ########################################################################################################################
 # %%                                         Save the updated QuAM
