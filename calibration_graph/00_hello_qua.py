@@ -21,7 +21,7 @@ node = QualibrationNode[NodeParameters, QuAM](name="00_hello_qua", description=d
 # Any parameters that should change for debugging purposes only should go in here
 # These parameters are ignored when run through the GUI or as part of a graph
 @node.run_action(skip_if=node.modes.external)
-def custom_param(node: QualibrationNode[NodeParameters, QuAM]):
+def custom_param(node: QualibrationNode[Parameters, QuAM]):
     # You can get type hinting in your IDE by typing node.parameters.
     pass
 
@@ -44,16 +44,31 @@ simulate = False
 
 with program() as prog:
 
-    for qubit in ["q1", "q3", "q4"]:
-        node.machine.initialize_qpu(target=node.machine.qubits[qubit])
+    qubits[2].xy.update_frequency(-100e6)
+    qubits[1].xy.update_frequency(-100e6)
+    qubits[0].xy.update_frequency(-100e6)
 
-    align()
+    a = declare(fixed)
 
-    for qubit in qubits:
-        qubit.xy.play("x180")
-        # qubit.z.play("square")
-        qubit.resonator.measure("readout")
+    with infinite_loop_():
 
+        # with for_(a, 0, a < 1.0, a +0.1):
+
+        qubits[2].xy.play("x180")
+        # qubits[1].xy.play('x180')
+        # wait(4)
+        # align()
+        qubits[0].resonator.play("const")
+        # align()
+        wait(1_000)
+        # for qubit in node.machine.active_qubits:
+        #     qubit.z.play('const')
+        #     qubit.z.wait(4)
+
+        # with for_(a, 0, a < 2.0, a+0.2):
+        # # for qubit in node.machine.active_qubits:
+        #     qubits[2].xy.play('x180', amplitude_scale=a)
+        #     qubits[2].xy.wait(4)
 
 
 if simulate:
@@ -70,5 +85,3 @@ else:
     job = qm.execute(prog)
 
 plt.show()
-
-# %%

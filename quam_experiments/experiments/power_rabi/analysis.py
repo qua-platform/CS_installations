@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from typing import Optional, Tuple, Dict
+from typing import Tuple, Dict
 import numpy as np
 import xarray as xr
 
@@ -18,7 +18,6 @@ class FitParameters:
     opt_amp: float
     operation: str
     success: bool
-    qubit_name: Optional[str] = ""
 
 
 def log_fitted_results(fit_results: Dict, logger=None):
@@ -45,7 +44,7 @@ def log_fitted_results(fit_results: Dict, logger=None):
 
 
 def process_raw_dataset(ds: xr.Dataset, node: QualibrationNode):
-    if ~node.parameters.use_state_discrimination:
+    if not node.parameters.use_state_discrimination:
         ds = convert_IQ_to_V(ds, node.namespace["qubits"])
     full_amp = np.array(
         [ds.amp_prefactor * q.xy.operations[node.parameters.operation].amplitude for q in node.namespace["qubits"]]
@@ -71,7 +70,7 @@ def fit_raw_data(ds: xr.Dataset, node: QualibrationNode) -> Tuple[xr.Dataset, di
     xr.Dataset
         Dataset containing the fit results.
     """
-    if node.parameters.max_number_rabi_pulses_per_sweep == 1:
+    if node.parameters.max_number_pulses_per_sweep == 1:
         ds_fit = ds.sel(nb_of_pulses=1)
         # Fit the power Rabi oscillations
         if node.parameters.use_state_discrimination:
@@ -102,7 +101,7 @@ def fit_raw_data(ds: xr.Dataset, node: QualibrationNode) -> Tuple[xr.Dataset, di
 def _extract_relevant_fit_parameters(fit: xr.Dataset, node: QualibrationNode):
     """Add metadata to the dataset and fit results."""
     limits = [instrument_limits(q.xy) for q in node.namespace["qubits"]]
-    if node.parameters.max_number_rabi_pulses_per_sweep == 1:
+    if node.parameters.max_number_pulses_per_sweep == 1:
         # Process the fit parameters to get the right amplitude
         phase = fit.fit.sel(fit_vals="phi") - np.pi * (fit.fit.sel(fit_vals="phi") > np.pi / 2)
         factor = (np.pi - phase) / (2 * np.pi * fit.fit.sel(fit_vals="f"))
@@ -138,7 +137,6 @@ def _extract_relevant_fit_parameters(fit: xr.Dataset, node: QualibrationNode):
     # Populate the FitParameters class with fitted values
     fit_results = {
         q: FitParameters(
-            qubit_name=q,
             opt_amp_prefactor=fit.sel(qubit=q).opt_amp_prefactor.values.__float__(),
             opt_amp=fit.sel(qubit=q).opt_amp.values.__float__(),
             operation=node.parameters.operation,

@@ -18,7 +18,6 @@ class FitParameters:
     optimal_detuning: float
     chi: float
     success: bool
-    qubit_name: Optional[str] = ""
 
 
 def log_fitted_results(fit_results: Dict, logger=None):

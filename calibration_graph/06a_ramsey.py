@@ -1,6 +1,5 @@
 # %% {Imports}
 import matplotlib.pyplot as plt
-import numpy as np
 import xarray as xr
 from dataclasses import asdict
 
@@ -14,7 +13,7 @@ from qualang_tools.units import unit
 from qualibrate import QualibrationNode
 from qualibrate.utils.logger_m import logger
 from quam_config import QuAM
-from quam_experiments.experiments.ramsey_versus_flux_calibration import (
+from quam_experiments.experiments.ramsey import (
     Parameters,
     process_raw_dataset,
     fit_raw_data,
@@ -26,36 +25,27 @@ from quam_experiments.workflow import simulate_and_plot
 from qualibration_libs.xarray_data_fetcher import XarrayDataFetcher
 
 
-# %% {Initialisation}
+# %% {Description}
 description = """
         RAMSEY WITH VIRTUAL Z ROTATIONS
-This program consists in playing a Ramsey sequence (x90 - idle_time - x90 - measurement)
-for different idle times. Instead of detuning the qubit gates, the frame of the second
-x90 pulse is rotated (de-phased) to mimic an accumulated phase acquired for a given
-detuning after the idle time. This method has the advantage of playing resonant gates.
+The program consists in playing a Ramsey sequence (x90 - idle_time - x90 - measurement) for different idle times.
+Instead of detuning the qubit gates, the frame of the second x90 pulse is rotated (de-phased) to mimic an accumulated
+phase acquired for a given detuning after the idle time.
+This method has the advantage of playing gates on resonance as opposed to the detuned Ramsey.
 
-From the results, one can fit the Ramsey oscillations and precisely measure the qubit
-resonance frequency and T2*.
+From the results, one can fit the Ramsey oscillations and precisely measure the qubit resonance frequency and T2*.
 
 Prerequisites:
-    - Having found the resonance frequency of the resonator coupled to the qubit under
-      study (resonator_spectroscopy).
-    - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy,
-      rabi_chevron, power_rabi and updated the state.
-    - (optional) Having calibrated the readout (readout_frequency, amplitude,
-      duration_optimization IQ_blobs) for better SNR.
+    - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
+    - Having calibrated qubit pi pulse (x180) by running qubit spectroscopy, power_rabi and updated the state.
+    - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
 
 Next steps before going to the next node:
-    - Update the qubits frequency (f_01) in the state.
-    - Save the current state by calling machine.save("quam")
+    - Update the qubits frequency and T2_ramsey in the state.
+    - Save the current state
 """
 
-
-node = QualibrationNode[Parameters, QuAM](
-    name="09_ramsey_vs_flux_calibration",
-    description=description,
-    parameters=Parameters(),
-)
+node = QualibrationNode[Parameters, QuAM](name="06a_ramsey", description=description, parameters=Parameters())
 
 
 # Any parameters that should change for debugging purposes only should go in here
@@ -67,7 +57,7 @@ def custom_param(node: QualibrationNode[Parameters, QuAM]):
     pass
 
 
-# Instantiate the QuAM class from the state file
+## Instantiate the QuAM class from the state file
 node.machine = QuAM.load()
 
 
@@ -81,36 +71,30 @@ def create_qua_program(node: QualibrationNode[Parameters, QuAM]):
     node.namespace["qubits"] = qubits = get_qubits(node)
     num_qubits = len(qubits)
 
-    n_avg = node.parameters.num_averages  # The number of averages
-
-    # Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
-    idle_times = np.arange(
-        node.parameters.min_wait_time_in_ns // 4,
-        node.parameters.max_wait_time_in_ns // 4,
-        node.parameters.wait_time_step_in_ns // 4,
+    n_avg = node.parameters.num_averages
+    from quam_experiments.experiments.ramsey.parameters import (
+        get_idle_times_in_clock_cycles,
     )
 
-    # Detuning converted into virtual Z-rotations to observe Ramsey oscillation and get the qubit frequency
-    detuning = int(1e6 * node.parameters.frequency_detuning_in_mhz)
-    fluxes = np.arange(
-        -node.parameters.flux_span / 2,
-        node.parameters.flux_span / 2 + 0.001,
-        step=node.parameters.flux_step,
-    )
+    idle_times = get_idle_times_in_clock_cycles(node.parameters)
+    detuning = node.parameters.frequency_detuning_in_mhz * u.MHz
+
+    detuning_signs = [-1, 1]
     # Register the sweep axes to be added to the dataset when fetching data
     node.namespace["sweep_axes"] = {
         "qubit": xr.DataArray(qubits.get_names()),
-        "flux_bias": xr.DataArray(fluxes, attrs={"long_name": "flux bias", "units": "V"}),
-        "idle_times": xr.DataArray(4 * idle_times, attrs={"long_name": "idle times", "units": "ns"}),
+        "idle_time": xr.DataArray(4 * idle_times, attrs={"long_name": "idle times", "units": "ns"}),
+        "detuning_signs": xr.DataArray(detuning_signs, attrs={"long_name": "detuning signs"}),
     }
     with program() as node.namespace["qua_program"]:
         I, I_st, Q, Q_st, n, n_st = node.machine.qua_declaration()
-        init_state = declare(int)
-        state = [declare(int) for _ in range(num_qubits)]
-        state_st = [declare_stream() for _ in range(num_qubits)]
-        t = declare(int)  # QUA variable for the idle time
-        phi = declare(fixed)  # QUA variable for dephasing the second pi/2 pulse (virtual Z-rotation)
-        flux = declare(fixed)  # QUA variable for the flux dc level
+        idle_time = declare(int)
+        detuning_sign = declare(int)
+        virtual_detuning_phases = [declare(fixed) for _ in range(num_qubits)]
+
+        if node.parameters.use_state_discrimination:
+            state = [declare(int) for _ in range(num_qubits)]
+            state_st = [declare_stream() for _ in range(num_qubits)]
 
         for multiplexed_qubits in qubits.batch():
             # Initialize the QPU in terms of flux points (flux tunable transmons and/or tunable couplers)
@@ -120,37 +104,52 @@ def create_qua_program(node: QualibrationNode[Parameters, QuAM]):
 
             with for_(n, 0, n < n_avg, n + 1):
                 save(n, n_st)
-                with for_(*from_array(flux, fluxes)):
-                    with for_(*from_array(t, idle_times)):
+
+                with for_each_(idle_time, idle_times):
+                    with for_(*from_array(detuning_sign, detuning_signs)):
+                        # Qubit initialization
                         for i, qubit in multiplexed_qubits.items():
-                            # Read the state of the qubit before Ramsey starts
-                            qubit.readout_state(init_state)
-                            qubit.align()
-                            # Rotate the frame of the second x90 gate to implement a virtual Z-rotation
-                            # 4*tau because tau was in clock cycles and 1e-9 because tau is ns
-                            assign(phi, Cast.mul_fixed_by_int(detuning * 1e-9, 4 * t))
-                            # TODO: this has gaps and the Z rotation is not derived properly, is it okay still?
-                            # Ramsey sequence
-                            qubit.xy.play("x180", amplitude_scale=0.5)
-                            qubit.wait(t)
-                            qubit.xy.frame_rotation_2pi(phi)
-                            qubit.xy.play("x180", amplitude_scale=0.5)
-
-                            # Align the elements to measure after playing the qubit pulse.
-                            qubit.align()
-                            # Measure the state of the resonators
-                            qubit.readout_state(state[i])
-                            assign(state[i], init_state ^ state[i])
-                            save(state[i], state_st[i])
-
-                            # Reset the frame of the qubits in order not to accumulate rotations
                             reset_frame(qubit.xy.name)
+                            qubit.reset_qubit(node.parameters.reset_type, node.parameters.simulate)
+                        align()
+                        # Qubit manipulation
+                        for i, qubit in multiplexed_qubits.items():
+                            with if_(detuning_sign == 1):
+                                assign(
+                                    virtual_detuning_phases[i],
+                                    Cast.mul_fixed_by_int(detuning * 1e-9, 4 * idle_time),
+                                )
+                            with else_():
+                                assign(
+                                    virtual_detuning_phases[i],
+                                    Cast.mul_fixed_by_int(-detuning * 1e-9, 4 * idle_time),
+                                )
+
+                            # with strict_timing_():
+                            qubit.xy.play("x90")
+                            qubit.xy.frame_rotation_2pi(virtual_detuning_phases[i])
+                            qubit.xy.wait(idle_time)
+                            qubit.xy.play("x90")
+
+                        align()
+                        for i, qubit in multiplexed_qubits.items():
+                            if node.parameters.use_state_discrimination:
+                                qubit.readout_state(state[i])
+                                save(state[i], state_st[i])
+                            else:
+                                qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                                save(I[i], I_st[i])
+                                save(Q[i], Q_st[i])
                         align()
 
         with stream_processing():
             n_st.save("n")
             for i in range(num_qubits):
-                state_st[i].buffer(len(idle_times)).buffer(len(fluxes)).average().save(f"state{i + 1}")
+                if node.parameters.use_state_discrimination:
+                    state_st[i].buffer(len(detuning_signs)).buffer(len(idle_times)).average().save(f"state{i + 1}")
+                else:
+                    I_st[i].buffer(len(detuning_signs)).buffer(len(idle_times)).average().save(f"I{i + 1}")
+                    Q_st[i].buffer(len(detuning_signs)).buffer(len(idle_times)).average().save(f"Q{i + 1}")
 
 
 # %% {Simulate}
@@ -238,17 +237,10 @@ def update_state(node: QualibrationNode[Parameters, QuAM]):
     """Update the relevant parameters if the qubit data analysis was successful."""
     with node.record_state_updates():
         for q in node.namespace["qubits"]:
-            if node.outcomes[q.name] == "failed":
-                continue
-
-            # q.xy.intermediate_frequency -= freq_offset[q.name]
-            # if flux_point == "independent":
-            #     q.z.independent_offset += flux_offset[q.name]
-            # elif flux_point == "joint":
-            #     q.z.joint_offset += flux_offset[q.name]
-            # else:
-            #     raise RuntimeError(f"unknown flux_point")
-            # q.freq_vs_flux_01_quad_term = float(a[q.name])
+            if node.results["fit_results"][q.name]["success"]:
+                q.f_01 -= float(node.results["fit_results"][q.name]["freq_offset"])
+                q.xy.RF_frequency = q.f_01
+                q.T2ramsey = float(node.results["fit_results"][q.name]["decay"])
 
 
 # %% {Save_results}

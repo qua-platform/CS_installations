@@ -1,4 +1,5 @@
-from typing import Optional
+from typing import Optional, Literal
+import numpy as np
 from qualibrate import NodeParameters
 from qualibrate.parameters import RunnableParameters
 from quam_experiments.parameters import (
@@ -21,13 +22,12 @@ class NodeSpecificParameters(RunnableParameters):
         target_peak_width (Optional[float]): Target peak width in Hz. Default is 3e6 Hz.
     """
 
-    num_averages: int = 10
-    operation: str = "x180"
-    min_amp_factor: float = 0.0001
-    max_amp_factor: float = 2.0
-    amp_factor_step: float = 0.02
-    max_number_pulses_per_sweep: int = 40
-    alpha_setpoint: Optional[float] = -1.0
+    num_averages: int = 100
+    min_wait_time_in_ns: int = 16
+    max_wait_time_in_ns: int = 250
+    time_step_in_ns: int = 4
+    frequency_step_in_mhz: float = 4
+    frequency_span_in_mhz: float = 100
 
 
 class Parameters(
