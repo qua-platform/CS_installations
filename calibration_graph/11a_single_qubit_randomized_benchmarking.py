@@ -6,7 +6,6 @@ from dataclasses import asdict
 
 from qm.qua import *
 
-from qualang_tools.loops import from_array
 from qualang_tools.multi_user import qm_session
 from qualang_tools.results import progress_counter
 from qualang_tools.units import unit
@@ -74,7 +73,6 @@ def custom_param(node: QualibrationNode[Parameters, QuAM]):
 
 # Instantiate the QuAM class from the state file
 node.machine = QuAM.load()
-
 
 # %% {Create_QUA_program}
 @node.run_action(skip_if=node.parameters.load_data_id is not None)
@@ -245,7 +243,7 @@ def create_qua_program(node: QualibrationNode[Parameters, QuAM]):
                         with if_((depth == 1) | (depth == depth_target)):
                             with for_(n, 0, n < n_avg, n + 1):
                                 # Initialize the qubits
-                                qubit.reset_qubit(node.parameters.reset_type, node.parameters.simulate)
+                                qubit.reset(node.parameters.reset_type, node.parameters.simulate)
                                 # Align the two elements to play the sequence after qubit initialization
                                 qubit.align()
                                 # The strict_timing ensures that the sequence will be played without gaps
@@ -453,7 +451,15 @@ def plot_data(node: QualibrationNode[Parameters, QuAM]):
     node.results["figure_amplitude"] = fig_raw_fit
 
 
-# TODO: no state update?
+# %% {Update_state}
+@node.run_action(skip_if=node.parameters.simulate)
+def update_state(node: QualibrationNode[Parameters, QuAM]):
+    """Update the relevant parameters if the qubit data analysis was successful."""
+    with node.record_state_updates():
+        for q in node.namespace["qubits"]:
+            if node.outcomes[q.name] == "failed":
+                continue
+            q.gate_fidelities["averaged"] = float(1 - node.results["fit_results"][q.name]["error_per_gate"])
 
 
 # %% {Save_results}
