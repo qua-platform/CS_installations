@@ -42,7 +42,7 @@ connectivity.add_resonator_line(qubits=qubits, constraints=feedline)
 connectivity.add_qubit_drive_lines(qubits=qubits, constraints=drive_lines)
 
 # The flux lines for the individual qubits
-connectivity.add_qubit_flux_lines(qubits=[1, 3, 4])
+connectivity.add_qubit_flux_lines(qubits=qubits)
 # Allocate the wiring
 allocate_wiring(connectivity, instruments)
 

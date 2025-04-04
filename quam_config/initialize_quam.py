@@ -9,7 +9,7 @@ from quam_builder.builder.superconducting.build_quam import save_machine
 from quam_builder.builder.superconducting.pulses import add_DragCosine_pulses
 from quam_config import QuAM
 
-from quam.components.pulses import GaussianPulse, SquarePulse
+from quam.components.pulses import FlatTopGaussianPulse, SquarePulse
 
 ########################################################################################################################
 # %%                                 QuAM loading and auxiliary functions
@@ -86,14 +86,11 @@ for i, q in enumerate(machine.qubits):
     # Single qubit gates - DragCosine & Square
     add_DragCosine_pulses(machine.qubits[q], amplitude=0.25, length=48, alpha=0.0, detuning=0, anharmonicity=200 * u.MHz)
 
-# Qubits with flux line:
-
-for q in ["q1", "q3", "q4"]:
     # Update flux channels
     machine.qubits[q].z.opx_output.output_mode = "direct"
     machine.qubits[q].z.opx_output.upsampling_mode = "pulse"
-    # Single Gaussian flux pulse
-    machine.qubits[q].z.operations["gauss"] = GaussianPulse(amplitude=0.1, length=200, sigma=40)
+    # Single flat top flux pulse
+    machine.qubits[q].z.operations["flattop"] = FlatTopGaussianPulse(length=40, amplitude=0.25, flat_length=20)
     # Single square flux pulse
     machine.qubits[q].z.operations["square"] = SquarePulse(length=40, amplitude=0.1)
     # Static offsets:
@@ -120,11 +117,11 @@ drive_bands = [get_band(xy_LO[i]) for i, _ in enumerate(machine.qubits)]
 
 if 2 in readout_bands or 2 in drive_bands:
     print("Value 2 is present in either readout_bands or drive_bands.")
-    lf_delay = 172
+    lf_delay = 158
     band_1_or_3_delay = 20
 else:
     print("Value 2 is not present in readout_bands or drive_bands.")
-    lf_delay = 152
+    lf_delay = 138
     band_1_or_3_delay = None
 
 print(f"readout bands: {readout_bands}")
@@ -133,7 +130,7 @@ print(f"drive bands: {drive_bands}")
 
 # Set LF delays:
 
-for q in ["q1", "q3", "q4"]:
+for q in machine.qubits:
     machine.qubits[q].z.opx_output.delay = lf_delay
 
 # Set MW delays on ports with band 1 or 3 if needed
@@ -156,5 +153,7 @@ save_machine(machine)
 
 # %%
 # View the corresponding "raw-QUA" config
-# with open("qua_config.json", "w+") as f:
-#     json.dump(machine.generate_config(), f, indent=4)
+with open("qua_config.json", "w+") as f:
+    json.dump(machine.generate_config(), f, indent=4)
+
+# %%

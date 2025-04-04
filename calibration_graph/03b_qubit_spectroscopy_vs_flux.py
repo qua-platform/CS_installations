@@ -23,7 +23,7 @@ from quam_experiments.experiments.qubit_spectroscopy_vs_flux import (
 )
 from quam_experiments.parameters.qubits_experiment import get_qubits
 from quam_experiments.workflow import simulate_and_plot
-from quam_libs.xarray_data_fetcher import XarrayDataFetcher
+from qualibration_libs.xarray_data_fetcher import XarrayDataFetcher
 
 # %% {Description}
 description = """
@@ -57,11 +57,11 @@ node = QualibrationNode[Parameters, QuAM](
 def custom_param(node: QualibrationNode[Parameters, QuAM]):
     # You can get type hinting in your IDE by typing node.parameters.
     node.parameters.qubits = ["q3"]
-    node.parameters.num_flux_points = 21
+    node.parameters.num_flux_points = 11
     node.parameters.max_flux_offset_in_v = 0.01
     node.parameters.min_flux_offset_in_v = 0.0
     node.parameters.frequency_span_in_mhz = 20
-    node.parameters.frequency_step_in_mhz = 0.1
+    node.parameters.frequency_step_in_mhz = 1
     # node.parameters.load_data_id = 265
     pass
 
