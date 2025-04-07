@@ -117,11 +117,11 @@ drive_bands = [get_band(xy_LO[i]) for i, _ in enumerate(machine.qubits)]
 
 if 2 in readout_bands or 2 in drive_bands:
     print("Value 2 is present in either readout_bands or drive_bands.")
-    lf_delay = 158
+    lf_delay = 161
     band_1_or_3_delay = 20
 else:
     print("Value 2 is not present in readout_bands or drive_bands.")
-    lf_delay = 138
+    lf_delay = 141
     band_1_or_3_delay = None
 
 print(f"readout bands: {readout_bands}")

@@ -25,24 +25,6 @@ from quam_experiments.workflow import simulate_and_plot
 
 # %% {Description}
 description = """
-        IQ BLOBS
-This sequence involves measuring the state of the resonator 'N' times, first after
-thermalization (with the qubit in the |g> state) and then after applying a pi pulse
-to the qubit (bringing the qubit to the |e> state) successively. The resulting IQ blobs
-are displayed, and the data is processed to determine:
-    - The rotation angle required for the integration weights, ensuring that the
-      separation between |g> and |e> states aligns with the 'I' quadrature.
-    - The threshold along the 'I' quadrature for effective qubit state discrimination.
-    - The readout fidelity matrix, which is also influenced by the pi pulse fidelity.
-
-Prerequisites:
-    - Having calibrated a pi pulse (node 04b_power_rabi.py).
-
-State update:
-    - The integration weight angle
-    - the ge discrimination threshold
-    - the Repeat Until Success threshold
-    - The confusion matrix
 """
 
 # Be sure to include [Parameters, QuAM] so the node has proper type hinting
@@ -121,8 +103,6 @@ def create_qua_program(node: QualibrationNode[Parameters, QuAM]):
         for qubit in node.machine.active_qubits:
             node.machine.initialize_qpu(target=qubit)
         align()
-        control.xy.update_frequency(0.0)
-        target.xy.update_frequency(0.0)
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_each_(cond_pi, [True, False]):
@@ -138,18 +118,18 @@ def create_qua_program(node: QualibrationNode[Parameters, QuAM]):
                         target.xy.play("x90")
                         target.xy.frame_rotation_2pi(-phi)
                         align()
-                        # control.readout_state(state_c)
-                        # target.readout_state(state_t)
-                        # control.resonator.wait(control.resonator.depletion_time * u.ns)
-                        # target.resonator.wait(target.resonator.depletion_time * u.ns)
-                        # # save data
-                        # save(state_c, state_c_st)
-                        # save(state_t, state_t_st)
+                        control.readout_state(state_c)
+                        target.readout_state(state_t)
+                        control.resonator.wait(control.resonator.depletion_time * u.ns)
+                        target.resonator.wait(target.resonator.depletion_time * u.ns)
+                        # save data
+                        save(state_c, state_c_st)
+                        save(state_t, state_t_st)
 
         with stream_processing():
             n_st.save("n")
-            # state_c_st.buffer(len(tomo_angles)).buffer(len(amps)).buffer(2).average().save("state_c")
-            # state_t_st.buffer(len(tomo_angles)).buffer(len(amps)).buffer(2).average().save("state_t")
+            state_c_st.buffer(len(tomo_angles)).buffer(len(amps)).buffer(2).average().save("state_c")
+            state_t_st.buffer(len(tomo_angles)).buffer(len(amps)).buffer(2).average().save("state_t")
 
 
 # %% {Simulate}
