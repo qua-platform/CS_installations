@@ -40,7 +40,7 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = None
+    qubits: Optional[List[str]] = ["q1"]
     num_averages: int = 50
     operation_x180_or_any_90: Literal["x180", "x90", "-x90", "y90", "-y90"] = "x180"
     min_amp_factor: float = 0.001
@@ -242,10 +242,10 @@ if not node.parameters.simulate:
             f_fit = fit.loc[q.name].sel(fit_vals="f")
             phi_fit = fit.loc[q.name].sel(fit_vals="phi")
             phi_fit = phi_fit - np.pi * (phi_fit > np.pi / 2)
-            factor = float(1.0 * (np.pi - phi_fit) / (2 * np.pi * f_fit))
+            factor = fixed(1.0 * (np.pi - phi_fit) / (2 * np.pi * f_fit))
             new_pi_amp = q.xy.operations[operation].amplitude * factor
             limits = instrument_limits(q.xy)
-            if new_pi_amp < limits.max_x180_wf_amplitude:
+            if 0 < new_pi_amp < limits.max_x180_wf_amplitude:
                 print(f"amplitude for Pi pulse is modified by a factor of {factor:.2f}")
                 print(f"new amplitude is {1e3 * new_pi_amp:.2f} {limits.units} \n")
                 fit_results[q.name]["Pi_amplitude"] = new_pi_amp
@@ -267,10 +267,10 @@ if not node.parameters.simulate:
 
         # Save fitting results
         for q in qubits:
-            new_pi_amp = float(ds.abs_amp.sel(qubit=q.name)[data_max_idx.sel(qubit=q.name)].data)
+            new_pi_amp = fixed(ds.abs_amp.sel(qubit=q.name)[data_max_idx.sel(qubit=q.name)].data)
             fit_results[q.name] = {}
             limits = instrument_limits(q.xy)
-            if new_pi_amp < limits.max_x180_wf_amplitude:
+            if 0 < new_pi_amp < limits.max_x180_wf_amplitude:
                 fit_results[q.name]["Pi_amplitude"] = new_pi_amp
                 print(
                     f"amplitude for Pi pulse is modified by a factor of {I_n.idxmax(dim='amp').sel(qubit = q.name):.2f}"
@@ -309,7 +309,7 @@ if not node.parameters.simulate:
     plt.tight_layout()
     plt.show()
     node.results["figure"] = grid.fig
-
+    qmm.close_all_qms()
     # %% {Update_state}
     if node.parameters.load_data_id is None:
         with node.record_state_updates():
@@ -317,7 +317,7 @@ if not node.parameters.simulate:
                 q.xy.operations[operation].amplitude = fit_results[q.name]["Pi_amplitude"]
                 if operation == "x180" and node.parameters.update_x90:
                     q.xy.operations["x90"].amplitude = fit_results[q.name]["Pi_amplitude"] / 2
-
+    
         # %% {Save_results}
         node.outcomes = {q.name: "successful" for q in qubits}
         node.results["initial_parameters"] = node.parameters.model_dump()

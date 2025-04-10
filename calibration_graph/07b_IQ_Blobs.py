@@ -307,7 +307,7 @@ if not node.parameters.simulate:
     plt.tight_layout()
     plt.show()
     node.results["figure_fidelity"] = grid.fig
-
+    qmm.close_all_qms()
     # %% {Update_state}
     if node.parameters.load_data_id is None:
         with node.record_state_updates():

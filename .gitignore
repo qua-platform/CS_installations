@@ -1,6 +1,5 @@
 .idea
 __pycache__
 .pytest_cache/
-quam_state
 calibration_db.json
 qua_config.json

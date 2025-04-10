@@ -345,7 +345,7 @@ if not node.parameters.simulate:
                         elif factor_pi * used_amp >= limits.max_x180_wf_amplitude:
                             q.xy.operations["x180"].amplitude = limits.max_x180_wf_amplitude
         node.results["ds"] = ds
-
+    qmm.close_all_qms()
     # %% {Save_results}
     node.outcomes = {q.name: "successful" for q in qubits}
     node.results["initial_parameters"] = node.parameters.model_dump()

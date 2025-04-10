@@ -230,7 +230,7 @@ if not node.parameters.simulate:
     plt.tight_layout()
     plt.show()
     node.results["figure"] = grid.fig
-
+    qmm.close_all_qms()
     # %% {Update_state}
     # Revert the change done at the beginning of the node
     for qubit in tracked_qubits:
