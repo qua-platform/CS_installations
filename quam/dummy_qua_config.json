@@ -1,0 +1,933 @@
+{
+    "version": 1,
+    "controllers": {
+        "con1": {
+            "fems": {
+                "1": {
+                    "type": "MW",
+                    "analog_outputs": {
+                        "1": {
+                            "band": 1,
+                            "delay": 0,
+                            "shareable": false,
+                            "sampling_rate": 1000000000.0,
+                            "full_scale_power_dbm": -8,
+                            "upconverter_frequency": 3000000000
+                        }
+                    },
+                    "digital_outputs": {
+                        "1": {
+                            "inverted": false,
+                            "shareable": false,
+                            "level": "LVTTL"
+                        }
+                    }
+                },
+                "5": {
+                    "type": "LF",
+                    "analog_inputs": {
+                        "1": {
+                            "gain_db": 0,
+                            "shareable": false,
+                            "sampling_rate": 2000000000,
+                            "offset": 0.0
+                        }
+                    },
+                    "analog_outputs": {
+                        "7": {
+                            "delay": 0,
+                            "shareable": false,
+                            "sampling_rate": 2000000000,
+                            "output_mode": "direct",
+                            "offset": 0.0
+                        },
+                        "1": {
+                            "delay": 0,
+                            "shareable": false,
+                            "sampling_rate": 1000000000,
+                            "upsampling_mode": "pulse",
+                            "output_mode": "amplified",
+                            "offset": 0.0
+                        },
+                        "2": {
+                            "delay": 0,
+                            "shareable": false,
+                            "sampling_rate": 1000000000,
+                            "upsampling_mode": "pulse",
+                            "output_mode": "amplified",
+                            "offset": 0.0
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "elements": {
+        "q1.xy": {
+            "operations": {
+                "cw": "q1.xy.cw.pulse"
+            },
+            "intermediate_frequency": 100000000.0,
+            "MWInput": {
+                "port": [
+                    "con1",
+                    1,
+                    1
+                ],
+                "upconverter": 1
+            }
+        },
+        "q1.qdac_trigger": {
+            "operations": {
+                "trigger": "q1.qdac_trigger.trigger.pulse"
+            },
+            "digitalInputs": {
+                "qdac_trigger": {
+                    "port": [
+                        "con1",
+                        1,
+                        1
+                    ],
+                    "delay": 57,
+                    "buffer": 18
+                }
+            },
+            "MWInput": {
+                "port": [
+                    "con1",
+                    1,
+                    1
+                ],
+                "upconverter": 1
+            }
+        },
+        "q1.resonator": {
+            "operations": {
+                "readout": "q1.resonator.readout.pulse"
+            },
+            "intermediate_frequency": 10000000.0,
+            "smearing": 0,
+            "time_of_flight": 28,
+            "outputs": {
+                "out1": [
+                    "con1",
+                    5,
+                    1
+                ]
+            },
+            "singleInput": {
+                "port": [
+                    "con1",
+                    5,
+                    7
+                ]
+            }
+        },
+        "q1.p1": {
+            "operations": {
+                "step": "q1.p1.step.pulse"
+            },
+            "singleInput": {
+                "port": [
+                    "con1",
+                    5,
+                    1
+                ]
+            },
+            "sticky": {
+                "analog": true,
+                "digital": false,
+                "duration": 16
+            }
+        },
+        "q1.p2": {
+            "operations": {
+                "step": "q1.p2.step.pulse"
+            },
+            "singleInput": {
+                "port": [
+                    "con1",
+                    5,
+                    2
+                ]
+            },
+            "sticky": {
+                "analog": true,
+                "digital": false,
+                "duration": 16
+            }
+        },
+        "q2.xy": {
+            "operations": {
+                "cw": "q2.xy.cw.pulse"
+            },
+            "intermediate_frequency": 100000000.0,
+            "MWInput": {
+                "port": [
+                    "con1",
+                    1,
+                    1
+                ],
+                "upconverter": 1
+            }
+        },
+        "q2.qdac_trigger": {
+            "operations": {
+                "trigger": "q2.qdac_trigger.trigger.pulse"
+            },
+            "digitalInputs": {
+                "qdac_trigger": {
+                    "port": [
+                        "con1",
+                        1,
+                        1
+                    ],
+                    "delay": 57,
+                    "buffer": 18
+                }
+            },
+            "MWInput": {
+                "port": [
+                    "con1",
+                    1,
+                    1
+                ],
+                "upconverter": 1
+            }
+        },
+        "q2.resonator": {
+            "operations": {
+                "readout": "q2.resonator.readout.pulse"
+            },
+            "intermediate_frequency": 10000000.0,
+            "smearing": 0,
+            "time_of_flight": 28,
+            "outputs": {
+                "out1": [
+                    "con1",
+                    5,
+                    1
+                ]
+            },
+            "singleInput": {
+                "port": [
+                    "con1",
+                    5,
+                    7
+                ]
+            }
+        },
+        "q2.p1": {
+            "operations": {
+                "step": "q2.p1.step.pulse"
+            },
+            "singleInput": {
+                "port": [
+                    "con1",
+                    5,
+                    1
+                ]
+            },
+            "sticky": {
+                "analog": true,
+                "digital": false,
+                "duration": 16
+            }
+        },
+        "q2.p2": {
+            "operations": {
+                "step": "q2.p2.step.pulse"
+            },
+            "singleInput": {
+                "port": [
+                    "con1",
+                    5,
+                    2
+                ]
+            },
+            "sticky": {
+                "analog": true,
+                "digital": false,
+                "duration": 16
+            }
+        },
+        "q3.xy": {
+            "operations": {
+                "cw": "q3.xy.cw.pulse"
+            },
+            "intermediate_frequency": 100000000.0,
+            "MWInput": {
+                "port": [
+                    "con1",
+                    1,
+                    1
+                ],
+                "upconverter": 1
+            }
+        },
+        "q3.qdac_trigger": {
+            "operations": {
+                "trigger": "q3.qdac_trigger.trigger.pulse"
+            },
+            "digitalInputs": {
+                "qdac_trigger": {
+                    "port": [
+                        "con1",
+                        1,
+                        1
+                    ],
+                    "delay": 57,
+                    "buffer": 18
+                }
+            },
+            "MWInput": {
+                "port": [
+                    "con1",
+                    1,
+                    1
+                ],
+                "upconverter": 1
+            }
+        },
+        "q3.resonator": {
+            "operations": {
+                "readout": "q3.resonator.readout.pulse"
+            },
+            "intermediate_frequency": 10000000.0,
+            "smearing": 0,
+            "time_of_flight": 28,
+            "outputs": {
+                "out1": [
+                    "con1",
+                    5,
+                    1
+                ]
+            },
+            "singleInput": {
+                "port": [
+                    "con1",
+                    5,
+                    7
+                ]
+            }
+        },
+        "q3.p1": {
+            "operations": {
+                "step": "q3.p1.step.pulse"
+            },
+            "singleInput": {
+                "port": [
+                    "con1",
+                    5,
+                    1
+                ]
+            },
+            "sticky": {
+                "analog": true,
+                "digital": false,
+                "duration": 16
+            }
+        },
+        "q3.p2": {
+            "operations": {
+                "step": "q3.p2.step.pulse"
+            },
+            "singleInput": {
+                "port": [
+                    "con1",
+                    5,
+                    2
+                ]
+            },
+            "sticky": {
+                "analog": true,
+                "digital": false,
+                "duration": 16
+            }
+        },
+        "q4.xy": {
+            "operations": {
+                "cw": "q4.xy.cw.pulse"
+            },
+            "intermediate_frequency": 100000000.0,
+            "MWInput": {
+                "port": [
+                    "con1",
+                    1,
+                    1
+                ],
+                "upconverter": 1
+            }
+        },
+        "q4.qdac_trigger": {
+            "operations": {
+                "trigger": "q4.qdac_trigger.trigger.pulse"
+            },
+            "digitalInputs": {
+                "qdac_trigger": {
+                    "port": [
+                        "con1",
+                        1,
+                        1
+                    ],
+                    "delay": 57,
+                    "buffer": 18
+                }
+            },
+            "MWInput": {
+                "port": [
+                    "con1",
+                    1,
+                    1
+                ],
+                "upconverter": 1
+            }
+        },
+        "q4.resonator": {
+            "operations": {
+                "readout": "q4.resonator.readout.pulse"
+            },
+            "intermediate_frequency": 10000000.0,
+            "smearing": 0,
+            "time_of_flight": 28,
+            "outputs": {
+                "out1": [
+                    "con1",
+                    5,
+                    1
+                ]
+            },
+            "singleInput": {
+                "port": [
+                    "con1",
+                    5,
+                    7
+                ]
+            }
+        },
+        "q4.p1": {
+            "operations": {
+                "step": "q4.p1.step.pulse"
+            },
+            "singleInput": {
+                "port": [
+                    "con1",
+                    5,
+                    1
+                ]
+            },
+            "sticky": {
+                "analog": true,
+                "digital": false,
+                "duration": 16
+            }
+        },
+        "q4.p2": {
+            "operations": {
+                "step": "q4.p2.step.pulse"
+            },
+            "singleInput": {
+                "port": [
+                    "con1",
+                    5,
+                    2
+                ]
+            },
+            "sticky": {
+                "analog": true,
+                "digital": false,
+                "duration": 16
+            }
+        }
+    },
+    "pulses": {
+        "const_pulse": {
+            "operation": "control",
+            "length": 1000,
+            "waveforms": {
+                "I": "const_wf",
+                "Q": "zero_wf"
+            }
+        },
+        "q1.xy.cw.pulse": {
+            "operation": "control",
+            "length": 1000,
+            "waveforms": {
+                "I": "q1.xy.cw.wf.I",
+                "Q": "q1.xy.cw.wf.Q"
+            }
+        },
+        "q1.qdac_trigger.trigger.pulse": {
+            "operation": "control",
+            "length": 1000,
+            "digital_marker": "ON",
+            "waveforms": {
+                "I": "q1.qdac_trigger.trigger.wf.I",
+                "Q": "q1.qdac_trigger.trigger.wf.Q"
+            }
+        },
+        "q1.resonator.readout.pulse": {
+            "operation": "measurement",
+            "length": 1000,
+            "digital_marker": "ON",
+            "waveforms": {
+                "single": "q1.resonator.readout.wf"
+            },
+            "integration_weights": {
+                "iw1": "q1.resonator.readout.iw1",
+                "iw2": "q1.resonator.readout.iw2",
+                "iw3": "q1.resonator.readout.iw3"
+            }
+        },
+        "q1.p1.step.pulse": {
+            "operation": "control",
+            "length": 100,
+            "waveforms": {
+                "single": "q1.p1.step.wf"
+            }
+        },
+        "q1.p2.step.pulse": {
+            "operation": "control",
+            "length": 100,
+            "waveforms": {
+                "single": "q1.p2.step.wf"
+            }
+        },
+        "q2.xy.cw.pulse": {
+            "operation": "control",
+            "length": 1000,
+            "waveforms": {
+                "I": "q2.xy.cw.wf.I",
+                "Q": "q2.xy.cw.wf.Q"
+            }
+        },
+        "q2.qdac_trigger.trigger.pulse": {
+            "operation": "control",
+            "length": 1000,
+            "digital_marker": "ON",
+            "waveforms": {
+                "I": "q2.qdac_trigger.trigger.wf.I",
+                "Q": "q2.qdac_trigger.trigger.wf.Q"
+            }
+        },
+        "q2.resonator.readout.pulse": {
+            "operation": "measurement",
+            "length": 1000,
+            "digital_marker": "ON",
+            "waveforms": {
+                "single": "q2.resonator.readout.wf"
+            },
+            "integration_weights": {
+                "iw1": "q2.resonator.readout.iw1",
+                "iw2": "q2.resonator.readout.iw2",
+                "iw3": "q2.resonator.readout.iw3"
+            }
+        },
+        "q2.p1.step.pulse": {
+            "operation": "control",
+            "length": 100,
+            "waveforms": {
+                "single": "q2.p1.step.wf"
+            }
+        },
+        "q2.p2.step.pulse": {
+            "operation": "control",
+            "length": 100,
+            "waveforms": {
+                "single": "q2.p2.step.wf"
+            }
+        },
+        "q3.xy.cw.pulse": {
+            "operation": "control",
+            "length": 1000,
+            "waveforms": {
+                "I": "q3.xy.cw.wf.I",
+                "Q": "q3.xy.cw.wf.Q"
+            }
+        },
+        "q3.qdac_trigger.trigger.pulse": {
+            "operation": "control",
+            "length": 1000,
+            "digital_marker": "ON",
+            "waveforms": {
+                "I": "q3.qdac_trigger.trigger.wf.I",
+                "Q": "q3.qdac_trigger.trigger.wf.Q"
+            }
+        },
+        "q3.resonator.readout.pulse": {
+            "operation": "measurement",
+            "length": 1000,
+            "digital_marker": "ON",
+            "waveforms": {
+                "single": "q3.resonator.readout.wf"
+            },
+            "integration_weights": {
+                "iw1": "q3.resonator.readout.iw1",
+                "iw2": "q3.resonator.readout.iw2",
+                "iw3": "q3.resonator.readout.iw3"
+            }
+        },
+        "q3.p1.step.pulse": {
+            "operation": "control",
+            "length": 100,
+            "waveforms": {
+                "single": "q3.p1.step.wf"
+            }
+        },
+        "q3.p2.step.pulse": {
+            "operation": "control",
+            "length": 100,
+            "waveforms": {
+                "single": "q3.p2.step.wf"
+            }
+        },
+        "q4.xy.cw.pulse": {
+            "operation": "control",
+            "length": 1000,
+            "waveforms": {
+                "I": "q4.xy.cw.wf.I",
+                "Q": "q4.xy.cw.wf.Q"
+            }
+        },
+        "q4.qdac_trigger.trigger.pulse": {
+            "operation": "control",
+            "length": 1000,
+            "digital_marker": "ON",
+            "waveforms": {
+                "I": "q4.qdac_trigger.trigger.wf.I",
+                "Q": "q4.qdac_trigger.trigger.wf.Q"
+            }
+        },
+        "q4.resonator.readout.pulse": {
+            "operation": "measurement",
+            "length": 1000,
+            "digital_marker": "ON",
+            "waveforms": {
+                "single": "q4.resonator.readout.wf"
+            },
+            "integration_weights": {
+                "iw1": "q4.resonator.readout.iw1",
+                "iw2": "q4.resonator.readout.iw2",
+                "iw3": "q4.resonator.readout.iw3"
+            }
+        },
+        "q4.p1.step.pulse": {
+            "operation": "control",
+            "length": 100,
+            "waveforms": {
+                "single": "q4.p1.step.wf"
+            }
+        },
+        "q4.p2.step.pulse": {
+            "operation": "control",
+            "length": 100,
+            "waveforms": {
+                "single": "q4.p2.step.wf"
+            }
+        }
+    },
+    "waveforms": {
+        "zero_wf": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "const_wf": {
+            "type": "constant",
+            "sample": 0.1
+        },
+        "q1.xy.cw.wf.I": {
+            "type": "constant",
+            "sample": 0.5
+        },
+        "q1.xy.cw.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q1.qdac_trigger.trigger.wf.I": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q1.qdac_trigger.trigger.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q1.resonator.readout.wf": {
+            "type": "constant",
+            "sample": 0.1
+        },
+        "q1.p1.step.wf": {
+            "type": "constant",
+            "sample": 0.25
+        },
+        "q1.p2.step.wf": {
+            "type": "constant",
+            "sample": 0.25
+        },
+        "q2.xy.cw.wf.I": {
+            "type": "constant",
+            "sample": 0.5
+        },
+        "q2.xy.cw.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q2.qdac_trigger.trigger.wf.I": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q2.qdac_trigger.trigger.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q2.resonator.readout.wf": {
+            "type": "constant",
+            "sample": 0.1
+        },
+        "q2.p1.step.wf": {
+            "type": "constant",
+            "sample": 0.25
+        },
+        "q2.p2.step.wf": {
+            "type": "constant",
+            "sample": 0.25
+        },
+        "q3.xy.cw.wf.I": {
+            "type": "constant",
+            "sample": 0.5
+        },
+        "q3.xy.cw.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q3.qdac_trigger.trigger.wf.I": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q3.qdac_trigger.trigger.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q3.resonator.readout.wf": {
+            "type": "constant",
+            "sample": 0.1
+        },
+        "q3.p1.step.wf": {
+            "type": "constant",
+            "sample": 0.25
+        },
+        "q3.p2.step.wf": {
+            "type": "constant",
+            "sample": 0.25
+        },
+        "q4.xy.cw.wf.I": {
+            "type": "constant",
+            "sample": 0.5
+        },
+        "q4.xy.cw.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q4.qdac_trigger.trigger.wf.I": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q4.qdac_trigger.trigger.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q4.resonator.readout.wf": {
+            "type": "constant",
+            "sample": 0.1
+        },
+        "q4.p1.step.wf": {
+            "type": "constant",
+            "sample": 0.25
+        },
+        "q4.p2.step.wf": {
+            "type": "constant",
+            "sample": 0.25
+        }
+    },
+    "digital_waveforms": {
+        "ON": {
+            "samples": [
+                [
+                    1,
+                    0
+                ]
+            ]
+        }
+    },
+    "integration_weights": {
+        "q1.resonator.readout.iw1": {
+            "cosine": [
+                [
+                    1.0,
+                    1000
+                ]
+            ],
+            "sine": [
+                [
+                    -0.0,
+                    1000
+                ]
+            ]
+        },
+        "q1.resonator.readout.iw2": {
+            "cosine": [
+                [
+                    0.0,
+                    1000
+                ]
+            ],
+            "sine": [
+                [
+                    1.0,
+                    1000
+                ]
+            ]
+        },
+        "q1.resonator.readout.iw3": {
+            "cosine": [
+                [
+                    -0.0,
+                    1000
+                ]
+            ],
+            "sine": [
+                [
+                    -1.0,
+                    1000
+                ]
+            ]
+        },
+        "q2.resonator.readout.iw1": {
+            "cosine": [
+                [
+                    1.0,
+                    1000
+                ]
+            ],
+            "sine": [
+                [
+                    -0.0,
+                    1000
+                ]
+            ]
+        },
+        "q2.resonator.readout.iw2": {
+            "cosine": [
+                [
+                    0.0,
+                    1000
+                ]
+            ],
+            "sine": [
+                [
+                    1.0,
+                    1000
+                ]
+            ]
+        },
+        "q2.resonator.readout.iw3": {
+            "cosine": [
+                [
+                    -0.0,
+                    1000
+                ]
+            ],
+            "sine": [
+                [
+                    -1.0,
+                    1000
+                ]
+            ]
+        },
+        "q3.resonator.readout.iw1": {
+            "cosine": [
+                [
+                    1.0,
+                    1000
+                ]
+            ],
+            "sine": [
+                [
+                    -0.0,
+                    1000
+                ]
+            ]
+        },
+        "q3.resonator.readout.iw2": {
+            "cosine": [
+                [
+                    0.0,
+                    1000
+                ]
+            ],
+            "sine": [
+                [
+                    1.0,
+                    1000
+                ]
+            ]
+        },
+        "q3.resonator.readout.iw3": {
+            "cosine": [
+                [
+                    -0.0,
+                    1000
+                ]
+            ],
+            "sine": [
+                [
+                    -1.0,
+                    1000
+                ]
+            ]
+        },
+        "q4.resonator.readout.iw1": {
+            "cosine": [
+                [
+                    1.0,
+                    1000
+                ]
+            ],
+            "sine": [
+                [
+                    -0.0,
+                    1000
+                ]
+            ]
+        },
+        "q4.resonator.readout.iw2": {
+            "cosine": [
+                [
+                    0.0,
+                    1000
+                ]
+            ],
+            "sine": [
+                [
+                    1.0,
+                    1000
+                ]
+            ]
+        },
+        "q4.resonator.readout.iw3": {
+            "cosine": [
+                [
+                    -0.0,
+                    1000
+                ]
+            ],
+            "sine": [
+                [
+                    -1.0,
+                    1000
+                ]
+            ]
+        }
+    },
+    "mixers": {},
+    "oscillators": {}
+}

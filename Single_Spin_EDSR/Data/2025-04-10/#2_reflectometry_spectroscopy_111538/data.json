@@ -1,0 +1,630 @@
+{
+    "n_avg": 100,
+    "IF_frequencies": "./arrays.npz#IF_frequencies",
+    "config": {
+        "version": 1,
+        "controllers": {
+            "con1": {
+                "type": "opx1000",
+                "fems": {
+                    "1": {
+                        "type": "MW",
+                        "analog_outputs": {
+                            "1": {
+                                "band": 1,
+                                "full_scale_power_dbm": 1,
+                                "upconverters": {
+                                    "1": {
+                                        "frequency": 4000000000
+                                    }
+                                }
+                            }
+                        },
+                        "digital_outputs": {}
+                    },
+                    "5": {
+                        "type": "LF",
+                        "analog_outputs": {
+                            "1": {
+                                "offset": 0.0,
+                                "output_mode": "amplified",
+                                "sampling_rate": 1000000000,
+                                "upsampling_mode": "pulse"
+                            },
+                            "2": {
+                                "offset": 0.0,
+                                "output_mode": "amplified",
+                                "sampling_rate": 1000000000,
+                                "upsampling_mode": "pulse"
+                            },
+                            "7": {
+                                "offset": 0.0,
+                                "output_mode": "direct",
+                                "sampling_rate": 2000000000.0
+                            },
+                            "8": {
+                                "offset": 0.0,
+                                "output_mode": "amplified",
+                                "sampling_rate": 1000000000,
+                                "upsampling_mode": "pulse"
+                            }
+                        },
+                        "digital_outputs": {
+                            "1": {},
+                            "2": {}
+                        },
+                        "analog_inputs": {
+                            "1": {
+                                "offset": 0.0,
+                                "gain_db": 0,
+                                "sampling_rate": 2000000000.0
+                            },
+                            "2": {
+                                "offset": 0.0,
+                                "gain_db": 0,
+                                "sampling_rate": 1000000000
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "elements": {
+            "P1": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        5,
+                        1
+                    ]
+                },
+                "operations": {
+                    "step": "P1_step_pulse"
+                }
+            },
+            "P1_sticky": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        5,
+                        1
+                    ]
+                },
+                "sticky": {
+                    "analog": true,
+                    "duration": 4
+                },
+                "operations": {
+                    "step": "P1_step_pulse"
+                }
+            },
+            "P2": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        5,
+                        2
+                    ]
+                },
+                "operations": {
+                    "step": "P2_step_pulse"
+                }
+            },
+            "P2_sticky": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        5,
+                        2
+                    ]
+                },
+                "sticky": {
+                    "analog": true,
+                    "duration": 4
+                },
+                "operations": {
+                    "step": "P2_step_pulse"
+                }
+            },
+            "sensor_gate": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        5,
+                        2
+                    ]
+                },
+                "operations": {
+                    "step": "bias_charge_pulse"
+                }
+            },
+            "sensor_gate_sticky": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        5,
+                        2
+                    ]
+                },
+                "sticky": {
+                    "analog": true,
+                    "duration": 4
+                },
+                "operations": {
+                    "step": "bias_charge_pulse"
+                }
+            },
+            "qdac_trigger1": {
+                "digitalInputs": {
+                    "trigger": {
+                        "port": [
+                            "con1",
+                            5,
+                            1
+                        ],
+                        "delay": 0,
+                        "buffer": 0
+                    }
+                },
+                "operations": {
+                    "trigger": "trigger_pulse"
+                }
+            },
+            "qdac_trigger2": {
+                "digitalInputs": {
+                    "trigger": {
+                        "port": [
+                            "con1",
+                            5,
+                            2
+                        ],
+                        "delay": 0,
+                        "buffer": 0
+                    }
+                },
+                "operations": {
+                    "trigger": "trigger_pulse"
+                }
+            },
+            "qubit": {
+                "MWInput": {
+                    "port": [
+                        "con1",
+                        1,
+                        1
+                    ],
+                    "upconverter": 1
+                },
+                "intermediate_frequency": 100000000,
+                "operations": {
+                    "cw": "cw_pulse",
+                    "pi": "pi_pulse",
+                    "pi_half": "pi_half_pulse",
+                    "gauss": "gaussian_pulse"
+                }
+            },
+            "tank_circuit": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        5,
+                        7
+                    ]
+                },
+                "intermediate_frequency": 151000000,
+                "operations": {
+                    "readout": "reflectometry_readout_pulse"
+                },
+                "outputs": {
+                    "out1": [
+                        "con1",
+                        5,
+                        1
+                    ]
+                },
+                "time_of_flight": 28,
+                "smearing": 0
+            },
+            "TIA": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        5,
+                        8
+                    ]
+                },
+                "operations": {
+                    "readout": "readout_pulse"
+                },
+                "outputs": {
+                    "out2": [
+                        "con1",
+                        5,
+                        2
+                    ]
+                },
+                "time_of_flight": 28,
+                "smearing": 0
+            },
+            "tank_circuit1": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        5,
+                        7
+                    ]
+                },
+                "intermediate_frequency": 900000000.0,
+                "operations": {
+                    "readout": "reflectometry_readout_pulse"
+                },
+                "outputs": {
+                    "out1": [
+                        "con1",
+                        5,
+                        1
+                    ]
+                },
+                "time_of_flight": 28,
+                "smearing": 0
+            },
+            "tank_circuit2": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        5,
+                        7
+                    ]
+                },
+                "intermediate_frequency": 115000000.0,
+                "operations": {
+                    "readout": "reflectometry_readout_pulse"
+                },
+                "outputs": {
+                    "out1": [
+                        "con1",
+                        5,
+                        1
+                    ]
+                },
+                "time_of_flight": 28,
+                "smearing": 0
+            },
+            "tank_circuit3": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        5,
+                        7
+                    ]
+                },
+                "intermediate_frequency": 350000000.0,
+                "operations": {
+                    "readout": "reflectometry_readout_pulse"
+                },
+                "outputs": {
+                    "out1": [
+                        "con1",
+                        5,
+                        1
+                    ]
+                },
+                "time_of_flight": 28,
+                "smearing": 0
+            },
+            "tank_circuit4": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        5,
+                        7
+                    ]
+                },
+                "intermediate_frequency": 545000000.0,
+                "operations": {
+                    "readout": "reflectometry_readout_pulse"
+                },
+                "outputs": {
+                    "out1": [
+                        "con1",
+                        5,
+                        1
+                    ]
+                },
+                "time_of_flight": 28,
+                "smearing": 0
+            },
+            "tank_circuit5": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        5,
+                        7
+                    ]
+                },
+                "intermediate_frequency": 660000000.0,
+                "operations": {
+                    "readout": "reflectometry_readout_pulse"
+                },
+                "outputs": {
+                    "out1": [
+                        "con1",
+                        5,
+                        1
+                    ]
+                },
+                "time_of_flight": 28,
+                "smearing": 0
+            },
+            "tank_circuit6": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        5,
+                        7
+                    ]
+                },
+                "intermediate_frequency": 233000000.0,
+                "operations": {
+                    "readout": "reflectometry_readout_pulse"
+                },
+                "outputs": {
+                    "out1": [
+                        "con1",
+                        5,
+                        1
+                    ]
+                },
+                "time_of_flight": 28,
+                "smearing": 0
+            },
+            "tank_circuit7": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        5,
+                        7
+                    ]
+                },
+                "intermediate_frequency": 752000000.0,
+                "operations": {
+                    "readout": "reflectometry_readout_pulse"
+                },
+                "outputs": {
+                    "out1": [
+                        "con1",
+                        5,
+                        1
+                    ]
+                },
+                "time_of_flight": 28,
+                "smearing": 0
+            },
+            "tank_circuit8": {
+                "singleInput": {
+                    "port": [
+                        "con1",
+                        5,
+                        7
+                    ]
+                },
+                "intermediate_frequency": 800000000.0,
+                "operations": {
+                    "readout": "reflectometry_readout_pulse"
+                },
+                "outputs": {
+                    "out1": [
+                        "con1",
+                        5,
+                        1
+                    ]
+                },
+                "time_of_flight": 28,
+                "smearing": 0
+            }
+        },
+        "pulses": {
+            "P1_step_pulse": {
+                "operation": "control",
+                "length": 16,
+                "waveforms": {
+                    "single": "P1_step_wf"
+                }
+            },
+            "P2_step_pulse": {
+                "operation": "control",
+                "length": 16,
+                "waveforms": {
+                    "single": "P2_step_wf"
+                }
+            },
+            "bias_charge_pulse": {
+                "operation": "control",
+                "length": 16,
+                "waveforms": {
+                    "single": "charge_sensor_step_wf"
+                }
+            },
+            "trigger_pulse": {
+                "operation": "control",
+                "length": 1000,
+                "digital_marker": "ON"
+            },
+            "cw_pulse": {
+                "operation": "control",
+                "length": 100,
+                "waveforms": {
+                    "I": "const_wf",
+                    "Q": "zero_wf"
+                }
+            },
+            "gaussian_pulse": {
+                "operation": "control",
+                "length": 20,
+                "waveforms": {
+                    "I": "gaussian_wf",
+                    "Q": "zero_wf"
+                }
+            },
+            "pi_pulse": {
+                "operation": "control",
+                "length": 32,
+                "waveforms": {
+                    "I": "pi_wf",
+                    "Q": "zero_wf"
+                }
+            },
+            "pi_half_pulse": {
+                "operation": "control",
+                "length": 16,
+                "waveforms": {
+                    "I": "pi_half_wf",
+                    "Q": "zero_wf"
+                }
+            },
+            "reflectometry_readout_pulse": {
+                "operation": "measurement",
+                "length": 10000,
+                "waveforms": {
+                    "single": "reflect_wf"
+                },
+                "integration_weights": {
+                    "cos": "cosine_weights",
+                    "sin": "sine_weights"
+                },
+                "digital_marker": "ON"
+            },
+            "readout_pulse": {
+                "operation": "measurement",
+                "length": 1000,
+                "waveforms": {
+                    "single": "readout_pulse_wf"
+                },
+                "integration_weights": {
+                    "constant": "constant_weights"
+                },
+                "digital_marker": "ON"
+            }
+        },
+        "waveforms": {
+            "P1_step_wf": {
+                "type": "constant",
+                "sample": 0.25
+            },
+            "P2_step_wf": {
+                "type": "constant",
+                "sample": 0.25
+            },
+            "charge_sensor_step_wf": {
+                "type": "constant",
+                "sample": 0.25
+            },
+            "pi_wf": {
+                "type": "constant",
+                "sample": 0.7
+            },
+            "pi_half_wf": {
+                "type": "constant",
+                "sample": 0.7
+            },
+            "gaussian_wf": {
+                "type": "arbitrary",
+                "samples": [
+                    0.017876195628595826,
+                    0.03137370038670043,
+                    0.05172648716812584,
+                    0.080115550567903,
+                    0.11656743825370923,
+                    0.15932879731060356,
+                    0.20458222535710444,
+                    0.24677326871959937,
+                    0.2796307477078583,
+                    0.29766538147807303,
+                    0.29766538147807303,
+                    0.2796307477078583,
+                    0.24677326871959937,
+                    0.20458222535710444,
+                    0.15932879731060356,
+                    0.11656743825370923,
+                    0.080115550567903,
+                    0.05172648716812584,
+                    0.03137370038670043,
+                    0.017876195628595826
+                ]
+            },
+            "readout_pulse_wf": {
+                "type": "constant",
+                "sample": 0.0
+            },
+            "reflect_wf": {
+                "type": "constant",
+                "sample": 0.05
+            },
+            "const_wf": {
+                "type": "constant",
+                "sample": 0.85
+            },
+            "zero_wf": {
+                "type": "constant",
+                "sample": 0.0
+            }
+        },
+        "digital_waveforms": {
+            "ON": {
+                "samples": [
+                    [
+                        1,
+                        0
+                    ]
+                ]
+            }
+        },
+        "integration_weights": {
+            "constant_weights": {
+                "cosine": [
+                    [
+                        1,
+                        1000
+                    ]
+                ],
+                "sine": [
+                    [
+                        0.0,
+                        1000
+                    ]
+                ]
+            },
+            "cosine_weights": {
+                "cosine": [
+                    [
+                        1.0,
+                        10000
+                    ]
+                ],
+                "sine": [
+                    [
+                        0.0,
+                        10000
+                    ]
+                ]
+            },
+            "sine_weights": {
+                "cosine": [
+                    [
+                        0.0,
+                        10000
+                    ]
+                ],
+                "sine": [
+                    [
+                        1.0,
+                        10000
+                    ]
+                ]
+            }
+        }
+    },
+    "I_data": "./arrays.npz#I_data",
+    "Q_data": "./arrays.npz#Q_data",
+    "fig_live": "./fig_live.png"
+}

@@ -1,0 +1,209 @@
+{
+    "qubits": {
+        "q1": {
+            "id": 1,
+            "xy": {
+                "operations": {
+                    "cw": {
+                        "length": 1000,
+                        "amplitude": 0.5,
+                        "__class__": "quam.components.pulses.SquarePulse"
+                    }
+                },
+                "RF_frequency": 3100000000.0,
+                "opx_output": {
+                    "controller_id": "con1",
+                    "fem_id": 1,
+                    "port_id": 1,
+                    "band": 1,
+                    "upconverter_frequency": 3000000000,
+                    "full_scale_power_dbm": -8,
+                    "__class__": "quam.components.ports.analog_outputs.MWFEMAnalogOutputPort"
+                },
+                "__class__": "quam_builder.components.XYDrive"
+            },
+            "resonator": {
+                "operations": {
+                    "readout": {
+                        "length": 100,
+                        "amplitude": 0.1,
+                        "__class__": "quam.components.pulses.SquareReadoutPulse"
+                    }
+                },
+                "intermediate_frequency": 10000000.0,
+                "opx_input": {
+                    "controller_id": "con1",
+                    "fem_id": 5,
+                    "port_id": 1,
+                    "sampling_rate": 2000000000,
+                    "__class__": "quam.components.ports.analog_inputs.LFFEMAnalogInputPort"
+                },
+                "time_of_flight": 28,
+                "opx_output": {
+                    "controller_id": "con1",
+                    "fem_id": 5,
+                    "port_id": 7,
+                    "sampling_rate": 2000000000,
+                    "__class__": "quam.components.ports.analog_outputs.LFFEMAnalogOutputPort"
+                },
+                "__class__": "quam_builder.components.TankCircuit"
+            },
+            "__class__": "quam_builder.qubit.Qubit"
+        },
+        "q2": {
+            "id": 2,
+            "xy": {
+                "operations": {
+                    "cw": {
+                        "length": 1000,
+                        "amplitude": 0.5,
+                        "__class__": "quam.components.pulses.SquarePulse"
+                    }
+                },
+                "RF_frequency": 3100000000.0,
+                "opx_output": {
+                    "controller_id": "con1",
+                    "fem_id": 1,
+                    "port_id": 1,
+                    "band": 1,
+                    "upconverter_frequency": 3000000000,
+                    "full_scale_power_dbm": -8,
+                    "__class__": "quam.components.ports.analog_outputs.MWFEMAnalogOutputPort"
+                },
+                "__class__": "quam_builder.components.XYDrive"
+            },
+            "resonator": {
+                "operations": {
+                    "readout": {
+                        "length": 100,
+                        "amplitude": 0.1,
+                        "__class__": "quam.components.pulses.SquareReadoutPulse"
+                    }
+                },
+                "intermediate_frequency": 10000000.0,
+                "opx_input": {
+                    "controller_id": "con1",
+                    "fem_id": 5,
+                    "port_id": 1,
+                    "sampling_rate": 2000000000,
+                    "__class__": "quam.components.ports.analog_inputs.LFFEMAnalogInputPort"
+                },
+                "time_of_flight": 28,
+                "opx_output": {
+                    "controller_id": "con1",
+                    "fem_id": 5,
+                    "port_id": 7,
+                    "sampling_rate": 2000000000,
+                    "__class__": "quam.components.ports.analog_outputs.LFFEMAnalogOutputPort"
+                },
+                "__class__": "quam_builder.components.TankCircuit"
+            },
+            "__class__": "quam_builder.qubit.Qubit"
+        },
+        "q3": {
+            "id": 3,
+            "xy": {
+                "operations": {
+                    "cw": {
+                        "length": 1000,
+                        "amplitude": 0.5,
+                        "__class__": "quam.components.pulses.SquarePulse"
+                    }
+                },
+                "RF_frequency": 3100000000.0,
+                "opx_output": {
+                    "controller_id": "con1",
+                    "fem_id": 1,
+                    "port_id": 1,
+                    "band": 1,
+                    "upconverter_frequency": 3000000000,
+                    "full_scale_power_dbm": -8,
+                    "__class__": "quam.components.ports.analog_outputs.MWFEMAnalogOutputPort"
+                },
+                "__class__": "quam_builder.components.XYDrive"
+            },
+            "resonator": {
+                "operations": {
+                    "readout": {
+                        "length": 100,
+                        "amplitude": 0.1,
+                        "__class__": "quam.components.pulses.SquareReadoutPulse"
+                    }
+                },
+                "intermediate_frequency": 10000000.0,
+                "opx_input": {
+                    "controller_id": "con1",
+                    "fem_id": 5,
+                    "port_id": 1,
+                    "sampling_rate": 2000000000,
+                    "__class__": "quam.components.ports.analog_inputs.LFFEMAnalogInputPort"
+                },
+                "time_of_flight": 28,
+                "opx_output": {
+                    "controller_id": "con1",
+                    "fem_id": 5,
+                    "port_id": 7,
+                    "sampling_rate": 2000000000,
+                    "__class__": "quam.components.ports.analog_outputs.LFFEMAnalogOutputPort"
+                },
+                "__class__": "quam_builder.components.TankCircuit"
+            },
+            "__class__": "quam_builder.qubit.Qubit"
+        },
+        "q4": {
+            "id": 4,
+            "xy": {
+                "operations": {
+                    "cw": {
+                        "length": 1000,
+                        "amplitude": 0.5,
+                        "__class__": "quam.components.pulses.SquarePulse"
+                    }
+                },
+                "RF_frequency": 3100000000.0,
+                "opx_output": {
+                    "controller_id": "con1",
+                    "fem_id": 1,
+                    "port_id": 1,
+                    "band": 1,
+                    "upconverter_frequency": 3000000000,
+                    "full_scale_power_dbm": -8,
+                    "__class__": "quam.components.ports.analog_outputs.MWFEMAnalogOutputPort"
+                },
+                "__class__": "quam_builder.components.XYDrive"
+            },
+            "resonator": {
+                "operations": {
+                    "readout": {
+                        "length": 100,
+                        "amplitude": 0.1,
+                        "__class__": "quam.components.pulses.SquareReadoutPulse"
+                    }
+                },
+                "intermediate_frequency": 10000000.0,
+                "opx_input": {
+                    "controller_id": "con1",
+                    "fem_id": 5,
+                    "port_id": 1,
+                    "sampling_rate": 2000000000,
+                    "__class__": "quam.components.ports.analog_inputs.LFFEMAnalogInputPort"
+                },
+                "time_of_flight": 28,
+                "opx_output": {
+                    "controller_id": "con1",
+                    "fem_id": 5,
+                    "port_id": 7,
+                    "sampling_rate": 2000000000,
+                    "__class__": "quam.components.ports.analog_outputs.LFFEMAnalogOutputPort"
+                },
+                "__class__": "quam_builder.components.TankCircuit"
+            },
+            "__class__": "quam_builder.qubit.Qubit"
+        }
+    },
+    "network": {
+        "host": "172.16.33.115",
+        "cluster_name": "CS_3"
+    },
+    "__class__": "quam_builder.qpu.BaseQuam"
+}
