@@ -24,4 +24,5 @@ machine = QuAM.load()
 config = machine.generate_config()
 # Open Communication with the QOP
 qmm = machine.connect()
+qmm.clear_all_job_results()
 qmm.close_all_qms()

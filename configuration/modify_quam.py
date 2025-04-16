@@ -26,18 +26,21 @@ num_qubits = len(machine.active_qubits)
 
 
 # Update frequencies
-rr_freq = np.array([6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 7.0, 7.1]) * u.GHz
+rr_freq = np.array([6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 7.0]) * u.GHz
 rr_LO =  6.75 * u.GHz
 rr_if = rr_freq - rr_LO
 
-xy_freq = np.array([4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90]) * u.GHz
-xy_LO = np.array([4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00]) * u.GHz
-xy_if_detuning = np.array([-10, -10, -10, -10, -10, -10, -10, -10]) * u.MHz
+xy_freq = np.array([4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80]) * u.GHz
+xy_LO = np.array([4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90]) * u.GHz
+xy_if_detuning = np.array([-10, -10, -10, -10, -10, -10, -10]) * u.MHz
 xy_if = rr_freq - rr_LO
+
+grid_locations = ["0-3", "1-3", "0-2", "1-2", "0-1", "1-1", "0-0"]
 
 # NOTE: be aware of coupled ports for bands
 for i, q in enumerate(machine.qubits):
     qb = machine.qubits[q]
+    qb.grid_location = grid_locations[i]
     
     print(qb)
 
@@ -65,6 +68,8 @@ for i, q in enumerate(machine.qubits):
     # readout
     qb.resonator.operations["readout"].length = 1 * u.us
     qb.resonator.operations["readout"].amplitude = 1e-2
+    qb.resonator.operations["readout"].rus_exit_threshold = 0
+    qb.resonator.operations["readout"].ge_threshold = 0
     # Qubit saturation
     qb.xy.operations["saturation"].length = 20 * u.us
     qb.xy.operations["saturation"].amplitude = 0.25

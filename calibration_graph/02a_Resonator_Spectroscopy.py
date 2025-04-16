@@ -1,3 +1,5 @@
+# %%
+
 """
         RESONATOR SPECTROSCOPY MULTIPLEXED
 This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to extract the
@@ -38,7 +40,7 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubits: Optional[List[str]] = ["q1"]
+    qubits: Optional[List[str]] = None
     num_averages: int = 100
     frequency_span_in_mhz: float = 15
     frequency_step_in_mhz: float = 0.05
@@ -134,14 +136,15 @@ if node.parameters.simulate:
 
 elif node.parameters.load_data_id is None:
     # Open a quantum machine to execute the QUA program
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(multi_res_spec)
-        results = fetching_tool(job, ["n"], mode="live")
-        while results.is_processing():
-            # Fetch results
-            n = results.fetch_all()[0]
-            # Progress bar
-            progress_counter(n, n_avg, start_time=results.start_time)
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    qm = qmm.open_qm(config)
+    job = qm.execute(multi_res_spec)
+    results = fetching_tool(job, ["n"], mode="live")
+    while results.is_processing():
+        # Fetch results
+        n = results.fetch_all()[0]
+        # Progress bar
+        progress_counter(n, n_avg, start_time=results.start_time)
 
 # %% {Data_fetching_and_dataset_creation}
 if not node.parameters.simulate:

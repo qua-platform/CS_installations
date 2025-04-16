@@ -5,7 +5,7 @@ from typing import Optional, Union
 import warnings
 import xarray as xr
 import matplotlib
-matplotlib.use("TkAgg")
+# matplotlib.use("TkAgg")
 from qm.qua import *
 from quam_libs.components import QuAM, Transmon
 
@@ -138,7 +138,8 @@ def active_reset(
     align(qubit.resonator.name, qubit.xy.name)
     qubit.xy.play(pi_pulse_name, condition=state)
     align(qubit.resonator.name, qubit.xy.name)
-    with while_(broadcast.and_((I > pulse.rus_exit_threshold) , (attempts < max_attempts))):
+    # with while_(broadcast.and_((I > pulse.rus_exit_threshold) , (attempts < max_attempts))):
+    with while_((I > pulse.rus_exit_threshold) & (attempts < max_attempts)):
         # qubit.align()
         align(qubit.resonator.name, qubit.xy.name)
         qubit.resonator.measure("readout", qua_vars=(I, Q))

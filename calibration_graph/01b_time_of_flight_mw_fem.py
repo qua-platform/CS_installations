@@ -1,3 +1,4 @@
+# %%
 """
         TIME OF FLIGHT
 This sequence involves sending a readout pulse and capturing the raw ADC traces.
@@ -74,6 +75,7 @@ for q in qubits:
 config = machine.generate_config()
 # Open Communication with the QOP
 qmm = machine.connect()
+# qmm.close_all_qms()
 
 
 # %% {QUA_program}

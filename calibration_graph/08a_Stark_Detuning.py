@@ -1,3 +1,4 @@
+# %%
 """
         AC STARK-SHIFT CALIBRATION WITH DRAG PULSES (GOOGLE METHOD)
 The sequence consists in applying an increasing number of x180 and -x180 pulses successively for different DRAG
@@ -41,7 +42,7 @@ import numpy as np
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-    qubits: Optional[List[str]] = ["q1"]
+    qubits: Optional[List[str]] = None
     num_averages: int = 20
     operation: str = "x180"
     frequency_span_in_mhz: float = 20
@@ -104,7 +105,7 @@ N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")
 with program() as stark_detuning:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     state = [declare(bool) for _ in range(num_qubits)]
-    state_stream = [declare_stream() for _ in range(num_qubits)]
+    state_st = [declare_stream() for _ in range(num_qubits)]
     df = declare(int)  # QUA variable for the qubit drive amplitude pre-factor
     npi = declare(int)  # QUA variable for the number of qubit pulses
     count = declare(int)  # QUA variable for counting the qubit pulses
@@ -142,7 +143,7 @@ with program() as stark_detuning:
                     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                     # State discrimination
                     assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
-                    save(state[i], state_stream[i])
+                    save(state[i], state_st[i])
                     save(I[i], I_st[i])
                     save(Q[i], Q_st[i])
         # Measure sequentially
@@ -152,7 +153,7 @@ with program() as stark_detuning:
     with stream_processing():
         n_st.save("n")
         for i, qubit in enumerate(qubits):
-            state_stream[i].boolean_to_int().buffer(len(dfs)).buffer(N_pi).average().save(f"state{i + 1}")
+            state_st[i].boolean_to_int().buffer(len(dfs)).buffer(N_pi).average().save(f"state{i + 1}")
             I_stream = I_st[i].buffer(len(dfs)).buffer(N_pi).average().save(f"I{i + 1}")
             Q_stream = Q_st[i].buffer(len(dfs)).buffer(N_pi).average().save(f"Q{i + 1}")
 

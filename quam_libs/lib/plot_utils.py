@@ -334,6 +334,7 @@ class QubitGrid:
                 grid_name_mapping = dict(zip(grid_indices, [str(ds.qubit.values[0])]))
             except:
                 grid_name_mapping = dict(zip(grid_indices, [str(ds.qubit.values)]))
+        print(grid_indices)
         grid_row_idxs = [idx[1] for idx in grid_indices]
         grid_col_idxs = [idx[0] for idx in grid_indices]
         min_grid_row = min(grid_row_idxs)

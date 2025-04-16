@@ -1,7 +1,7 @@
 from typing import Dict
 
 from quam_libs.quam_builder.transmons.channel_ports import iq_in_out_channel_ports, mw_in_out_channel_ports
-from quam_libs.components import TransmonPair, TunableCoupler, CrossResonance, CrossResonanceMW, ZZDrive, ZZDriveMW, QuAM
+from quam_libs.components import TransmonPair, TunableCoupler, CrossResonanceIQ, CrossResonanceMW, ZZDriveIQ, ZZDriveMW, QuAM
 from qualang_tools.addons.calibration.calibrations import unit
 
 u = unit(coerce_to_integer=True)
@@ -27,7 +27,7 @@ def add_transmon_pair_cross_resonance_component(transmon_pair: TransmonPair, wir
     cross_resonance_name = f"cr_{qubit_pair_name}"
 
     if all(key in iq_in_out_channel_ports for key in ports):
-        transmon_pair.cross_resonance = CrossResonance(
+        transmon_pair.cross_resonance = CrossResonanceIQ(
             id=cross_resonance_name,
             opx_output_I=f"{wiring_path}/opx_output_I",
             opx_output_Q=f"{wiring_path}/opx_output_Q",
@@ -52,7 +52,7 @@ def add_transmon_pair_zz_drive_component(transmon_pair: TransmonPair, wiring_pat
     zz_drive_name = f"zz_{qubit_pair_name}"
 
     if all(key in iq_in_out_channel_ports for key in ports):
-        transmon_pair.zz_drive = ZZDrive(
+        transmon_pair.zz_drive = ZZDriveIQ(
             id=zz_drive_name,
             opx_output_I=f"{wiring_path}/opx_output_I",
             opx_output_Q=f"{wiring_path}/opx_output_Q",

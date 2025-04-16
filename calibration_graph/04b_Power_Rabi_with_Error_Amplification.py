@@ -97,7 +97,7 @@ else:
 with program() as power_rabi:
     I, _, Q, _, n, n_st = qua_declaration(num_qubits=num_qubits)
     state = [declare(bool) for _ in range(num_qubits)]
-    state_stream = [declare_stream() for _ in range(num_qubits)]
+    state_st = [declare_stream() for _ in range(num_qubits)]
     a = declare(fixed)  # QUA variable for the qubit drive amplitude pre-factor
     npi = declare(int)  # QUA variable for the number of qubit pulses
     count = declare(int)  # QUA variable for counting the qubit pulses
@@ -123,7 +123,7 @@ with program() as power_rabi:
                     assign(
                         state[i], I[i] > qubit.resonator.operations["readout"].threshold
                     )
-                    save(state[i], state_stream[i])
+                    save(state[i], state_st[i])
 
         align()
 
@@ -131,11 +131,11 @@ with program() as power_rabi:
         n_st.save("n")
         for i, qubit in enumerate(qubits):
             if operation == "x180":
-                state_stream[i].boolean_to_int().buffer(len(amps)).buffer(
+                state_st[i].boolean_to_int().buffer(len(amps)).buffer(
                     np.ceil(N_pi / 2)
                 ).average().save(f"state{i + 1}")
             elif operation in ["x90", "-x90", "y90", "-y90"]:
-                state_stream[i].boolean_to_int().buffer(len(amps)).buffer(
+                state_st[i].boolean_to_int().buffer(len(amps)).buffer(
                     np.ceil(N_pi / 4)
                 ).average().save(f"state{i + 1}")
             else:

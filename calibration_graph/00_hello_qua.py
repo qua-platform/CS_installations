@@ -48,14 +48,14 @@ with program() as prog:
         #     qubits[2].xy.wait(4)
 
 
-# job = qmm.simulate(config, prog, SimulationConfig(duration=1000))
-# samples = job.get_simulated_samples()
-    fig, ax = plt.subplots(nrows=len(samples.keys()), sharex=True)
-    for i, con in enumerate(samples.keys()):
-        plt.subplot(len(samples.keys()),1,i+1)
-        samples[con].plot()
-        plt.title(con)
-    plt.tight_layout()
+# # job = qmm.simulate(config, prog, SimulationConfig(duration=1000))
+# # samples = job.get_simulated_samples()
+#     fig, ax = plt.subplots(nrows=len(samples.keys()), sharex=True)
+#     for i, con in enumerate(samples.keys()):
+#         plt.subplot(len(samples.keys()),1,i+1)
+#         samples[con].plot()
+#         plt.title(con)
+#     plt.tight_layout()
 
 qm = qmm.open_qm(config)
 job = qm.execute(prog)

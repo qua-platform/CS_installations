@@ -40,7 +40,7 @@ import xarray as xr
 # %% {Node_parameters}
 class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
-    num_runs: int = 2000
+    num_runs: int = 100
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
     timeout: int = 100
@@ -70,6 +70,8 @@ num_qubits = len(qubits)
 for q in qubits:
     # Check if an optimized GEF frequency exists
     if not hasattr(q, "GEF_frequency_shift"):
+        q.GEF_frequency_shift = 0
+    elif q.GEF_frequency_shift is None:
         q.GEF_frequency_shift = 0
     # check if an EF_x180 operation exists
     if "EF_x180" in q.xy.operations:
@@ -241,8 +243,9 @@ else:
         node.results["results"][q.name]["confusion_matrix"] = confusion
 
     # %% {Plotting}
-    grid_names = [f"{q.name}_0" for q in qubits]
-    grid = QubitGrid(ds, grid_names)
+    # grid_names = [f"{q.name}_0" for q in qubits]
+    # grid = QubitGrid(ds, grid_names)
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     # TODO: maybe wrap it up in a function plot_IQ_blobs?
     for ax, qubit in grid_iter(grid):
         qn = qubit["qubit"]
@@ -304,7 +307,8 @@ else:
     plt.tight_layout()
     node.results["figure_IQ_blobs"] = grid.fig
 
-    grid = QubitGrid(ds, grid_names)
+    # grid = QubitGrid(ds, grid_names)
+    grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         confusion = node.results["results"][qubit["qubit"]]["confusion_matrix"]
         ax.imshow(confusion)

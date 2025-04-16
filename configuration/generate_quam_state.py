@@ -1,4 +1,5 @@
 # %%
+from pathlib import Path
 import os
 import glob
 import subprocess
@@ -9,7 +10,14 @@ from datetime import datetime
 # Define paths
 quam_state_dir = "quam_state"
 backup_dir = "../backup_quam_states"
-cluster_type = "mwfem_1chassis_2fems_01"
+# List of scripts to run
+make_scripts = [
+    "make_wiring_opx1000_mwfem.py",
+    # "make_wiring_opxplus_octave.py",
+    "make_quam.py",
+    "modify_quam.py",
+]
+cluster_type = make_scripts[0].replace("make_wiring_","")
 
 # Create a timestamped backup directory
 timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -28,17 +36,6 @@ json_files = glob.glob(os.path.join(quam_state_dir, "*.json"))
 for file in json_files:
     os.remove(file)
     print(f"Removed: {file}")
-
-# List of scripts to run
-make_scripts = [
-    f"make_wiring_{cluster_type}.py",
-    "make_quam.py",
-    f"modify_quam.py",
-]
-
-
-# Execute each script
-from pathlib import Path
 
 path_config = Path("/workspaces/HI_20250428_EunseongKim/configuration")
 for script in make_scripts:

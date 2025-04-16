@@ -1,3 +1,5 @@
+
+# %%
 """
         DRAG PULSE CALIBRATION (GOOGLE METHOD)
 The sequence consists in applying an increasing number of x180 and -x180 pulses successively while varying the DRAG
@@ -110,7 +112,7 @@ N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")
 with program() as drag_calibration:
     I, _, Q, _, n, n_st = qua_declaration(num_qubits=num_qubits)
     state = [declare(bool) for _ in range(num_qubits)]
-    state_stream = [declare_stream() for _ in range(num_qubits)]
+    state_st = [declare_stream() for _ in range(num_qubits)]
     a = declare(fixed)  # QUA variable for the qubit drive amplitude pre-factor
     npi = declare(int)  # QUA variable for the number of qubit pulses
     count = declare(int)  # QUA variable for counting the qubit pulses
@@ -143,7 +145,7 @@ with program() as drag_calibration:
                     qubit.align()
                     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                     assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
-                    save(state[i], state_stream[i])
+                    save(state[i], state_st[i])
         # Measure sequentially
         if not node.parameters.multiplexed:
             if i < num_qubits - 1:
@@ -152,7 +154,7 @@ with program() as drag_calibration:
     with stream_processing():
         n_st.save("n")
         for i, qubit in enumerate(qubits):
-            state_stream[i].boolean_to_int().buffer(len(amps)).buffer(N_pi).average().save(f"state{i + 1}")
+            state_st[i].boolean_to_int().buffer(len(amps)).buffer(N_pi).average().save(f"state{i + 1}")
 
 
 # %% {Simulate_or_execute}

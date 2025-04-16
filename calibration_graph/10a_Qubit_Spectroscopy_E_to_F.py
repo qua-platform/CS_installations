@@ -50,7 +50,7 @@ import numpy as np
 class Parameters(NodeParameters):
 
     qubits: Optional[List[str]] = None
-    num_averages: int = 500
+    num_averages: int = 100
     operation: str = "saturation"
     operation_amplitude_factor: Optional[float] = 0.5
     operation_len_in_ns: Optional[int] = None
