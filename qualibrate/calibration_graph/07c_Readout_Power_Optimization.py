@@ -67,7 +67,8 @@ node_id = get_node_id()
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+path = r"C:\Git\CS_installations\qualibrate\configuration\quam_state"
+machine = QuAM.load(path)
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 # Open Communication with the QOP

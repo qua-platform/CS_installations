@@ -1,0 +1,160 @@
+{
+    "created_at": "2025-04-17T15:16:42-05:00",
+    "metadata": {
+        "description": null,
+        "run_start": "2025-04-17T15:16:29.739-05:00",
+        "run_end": "2025-04-17T15:16:42.545-05:00",
+        "name": "04_Power_Rabi",
+        "data_path": "2025-04-17/#4_04_Power_Rabi_151642"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": null,
+                "num_averages": 50,
+                "operation_x180_or_any_90": "x180_Cosine",
+                "min_amp_factor": 0.0,
+                "max_amp_factor": 1.5,
+                "amp_factor_step": 0.05,
+                "max_number_rabi_pulses_per_sweep": 1,
+                "flux_point_joint_or_independent": "joint",
+                "reset_type_thermal_or_active": "thermal",
+                "state_discrimination": false,
+                "update_x90": true,
+                "simulate": false,
+                "simulation_duration_ns": 2500,
+                "timeout": 100,
+                "load_data_id": null,
+                "multiplexed": true
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Qubits"
+                    },
+                    "num_averages": {
+                        "default": 50,
+                        "title": "Num Averages",
+                        "type": "integer"
+                    },
+                    "operation_x180_or_any_90": {
+                        "default": "x180_Cosine",
+                        "enum": [
+                            "x180",
+                            "x90",
+                            "-x90",
+                            "y90",
+                            "-y90"
+                        ],
+                        "title": "Operation X180 Or Any 90",
+                        "type": "string"
+                    },
+                    "min_amp_factor": {
+                        "default": 0.0,
+                        "title": "Min Amp Factor",
+                        "type": "number"
+                    },
+                    "max_amp_factor": {
+                        "default": 1.5,
+                        "title": "Max Amp Factor",
+                        "type": "number"
+                    },
+                    "amp_factor_step": {
+                        "default": 0.05,
+                        "title": "Amp Factor Step",
+                        "type": "number"
+                    },
+                    "max_number_rabi_pulses_per_sweep": {
+                        "default": 1,
+                        "title": "Max Number Rabi Pulses Per Sweep",
+                        "type": "integer"
+                    },
+                    "flux_point_joint_or_independent": {
+                        "default": "joint",
+                        "enum": [
+                            "joint",
+                            "independent"
+                        ],
+                        "title": "Flux Point Joint Or Independent",
+                        "type": "string"
+                    },
+                    "reset_type_thermal_or_active": {
+                        "default": "thermal",
+                        "enum": [
+                            "thermal",
+                            "active"
+                        ],
+                        "title": "Reset Type Thermal Or Active",
+                        "type": "string"
+                    },
+                    "state_discrimination": {
+                        "default": false,
+                        "title": "State Discrimination",
+                        "type": "boolean"
+                    },
+                    "update_x90": {
+                        "default": true,
+                        "title": "Update X90",
+                        "type": "boolean"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 2500,
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "timeout": {
+                        "default": 100,
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Load Data Id"
+                    },
+                    "multiplexed": {
+                        "default": true,
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "q1": "successful",
+            "q2": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 4,
+    "parents": [
+        3
+    ]
+}

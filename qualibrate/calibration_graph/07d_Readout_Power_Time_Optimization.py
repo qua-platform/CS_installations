@@ -57,8 +57,8 @@ if node.parameters.duration_chunks % 4 != 0:
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
-
+path = r"C:\Git\CS_installations\qualibrate\configuration\quam_state"
+machine = QuAM.load(path)
 # Get the relevant QuAM components
 if node.parameters.qubits is None or node.parameters.qubits == "":
     qubits = machine.active_qubits

@@ -43,7 +43,7 @@ class Parameters(NodeParameters):
 
     qubits: Optional[List[str]] = None
     num_averages: int = 50
-    operation_x180_or_any_90: Literal["x180", "x90", "-x90", "y90", "-y90"] = "x180"
+    operation_x180_or_any_90: Literal["x180", "x90", "-x90", "y90", "-y90"] = "x180_Cosine"
     min_amp_factor: float = 0.
     max_amp_factor: float = 1.5
     amp_factor_step: float = 0.05
@@ -65,7 +65,8 @@ node_id = get_node_id()
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+path = r"C:\Git\CS_installations\qualibrate\configuration\quam_state"
+machine = QuAM.load(path)
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 # Open Communication with the QOP
@@ -131,7 +132,7 @@ with program() as power_rabi:
 
                     # Loop for error amplification (perform many qubit pulses)
                     with for_(count, 0, count < npi, count + 1):
-                        qubit.xy.play(operation, amplitude_scale=a)
+                        qubit.xy_play(operation, amplitude_scale=a)
                     qubit.align()
                     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                     if state_discrimination:
@@ -146,7 +147,7 @@ with program() as power_rabi:
     with stream_processing():
         n_st.save("n")
         for i, qubit in enumerate(qubits):
-            if operation == "x180":
+            if operation == "x180_Cosine":
                 if state_discrimination:
                     state_stream[i].boolean_to_int().buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(
                         f"state{i + 1}"
@@ -155,7 +156,7 @@ with program() as power_rabi:
                     I_st[i].buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(f"I{i + 1}")
                     Q_st[i].buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(f"Q{i + 1}")
 
-            elif operation in ["x90", "-x90", "y90", "-y90"]:
+            elif operation in ["x90_Cosine", "-x90_Cosine"]:
                 if state_discrimination:
                     state_stream[i].boolean_to_int().buffer(len(amps)).buffer(np.ceil(N_pi / 4)).average().save(
                         f"state{i + 1}"
@@ -187,14 +188,15 @@ if node.parameters.simulate:
 
 elif node.parameters.load_data_id is None:
     date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(power_rabi)
-        results = fetching_tool(job, ["n"], mode="live")
-        while results.is_processing():
-            # Fetch results
-            n = results.fetch_all()[0]
-            # Progress bar
-            progress_counter(n, n_avg, start_time=results.start_time)
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    qm = qmm.open_qm(config)
+    job = qm.execute(power_rabi)
+    results = fetching_tool(job, ["n"], mode="live")
+    while results.is_processing():
+        # Fetch results
+        n = results.fetch_all()[0]
+        # Progress bar
+        progress_counter(n, n_avg, start_time=results.start_time)
 
 # %% {Data_fetching_and_dataset_creation}
 if not node.parameters.simulate:
@@ -208,7 +210,7 @@ if not node.parameters.simulate:
         {
             "abs_amp": (
                 ["qubit", "amp"],
-                np.array([q.xy.operations[operation].amplitude * amps for q in qubits]),
+                np.array([q.I.operations[operation].amplitude * amps for q in qubits]),
             )
             }
         )
@@ -241,8 +243,8 @@ if not node.parameters.simulate:
             phi_fit = fit.loc[q.name].sel(fit_vals="phi")
             phi_fit = phi_fit - np.pi * (phi_fit > np.pi / 2)
             factor = float(1.0 * (np.pi - phi_fit) / (2 * np.pi * f_fit))
-            new_pi_amp = q.xy.operations[operation].amplitude * factor
-            limits = instrument_limits(q.xy)
+            new_pi_amp = q.I.operations[operation].amplitude * factor
+            limits = instrument_limits(q.I)
             if new_pi_amp < limits.max_x180_wf_amplitude:
                 print(f"amplitude for Pi pulse is modified by a factor of {factor:.2f}")
                 print(f"new amplitude is {1e3 * new_pi_amp:.2f} {limits.units} \n")
@@ -267,7 +269,7 @@ if not node.parameters.simulate:
         for q in qubits:
             new_pi_amp = float(ds.abs_amp.sel(qubit=q.name)[data_max_idx.sel(qubit=q.name)].data)
             fit_results[q.name] = {}
-            limits = instrument_limits(q.xy)
+            limits = instrument_limits(q.I)
             if new_pi_amp < limits.max_x180_wf_amplitude:
                 fit_results[q.name]["Pi_amplitude"] = new_pi_amp
                 print(
@@ -309,9 +311,10 @@ if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         with node.record_state_updates():
             for q in qubits:
-                q.xy.operations[operation].amplitude = fit_results[q.name]["Pi_amplitude"]
-                if operation == "x180" and node.parameters.update_x90:
-                    q.xy.operations["x90"].amplitude = fit_results[q.name]["Pi_amplitude"] / 2
+                q.I.operations[operation].amplitude = fit_results[q.name]["Pi_amplitude"]
+                if operation == "x180_Cosine" and node.parameters.update_x90:
+                    q.I.operations["x90_Cosine"].amplitude = fit_results[q.name]["Pi_amplitude"] / 2
+                    q.Q.operations["x90_Cosine"].amplitude = fit_results[q.name]["Pi_amplitude"] / 2
 
         # %% {Save_results}
         node.outcomes = {q.name: "successful" for q in qubits}
