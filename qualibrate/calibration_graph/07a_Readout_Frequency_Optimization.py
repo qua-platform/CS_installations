@@ -56,7 +56,8 @@ node_id = get_node_id()
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+path = r"C:\Git\CS_installations\qualibrate\configuration\quam_state"
+machine = QuAM.load(path)
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 # Open Communication with the QOP
@@ -112,7 +113,7 @@ with program() as ro_freq_opt:
                 # Wait for thermalization again in case of measurement induced transitions
                 wait(qubit.thermalization_time * u.ns)
                 # Play the x180 gate to put the qubits in the excited state
-                qubit.xy.play("x180")
+                qubit.xy_play("x180_Cosine")
                 # Align the elements to measure after playing the qubit pulses.
                 align()
                 # Measure the state of the resonators
@@ -156,12 +157,13 @@ if node.parameters.simulate:
 
 elif node.parameters.load_data_id is None:
     date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(ro_freq_opt)
-        results = fetching_tool(job, ["n"], mode="live")
-        while results.is_processing():
-            n = results.fetch_all()[0]
-            progress_counter(n, n_avg, start_time=results.start_time)
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    qm = qmm.open_qm(config)
+    job = qm.execute(ro_freq_opt)
+    results = fetching_tool(job, ["n"], mode="live")
+    while results.is_processing():
+        n = results.fetch_all()[0]
+        progress_counter(n, n_avg, start_time=results.start_time)
 
 # %% {Data_fetching_and_dataset_creation}
 if not node.parameters.simulate:

@@ -321,6 +321,7 @@ if not node.parameters.simulate:
                         q.z.arbitrary_offset = arb_flux_bias_offset[q.name]
                     else:
                         q.I.intermediate_frequency += float(result.sel(qubit=q.name).position.values)
+                        q.Q.intermediate_frequency += float(result.sel(qubit=q.name).position.values)
                     if not flux_point == "arbitrary":
                         prev_angle = q.resonator.operations["readout"].integration_weights_angle
                         if not prev_angle:

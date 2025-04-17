@@ -42,12 +42,12 @@ import xarray as xr
 class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     num_averages: int = 1000
-    operation: str = "x180"
+    operation: str = "x180_Cosine"
     min_amp_factor: float = -2
     max_amp_factor: float = 2.0
     amp_factor_step: float = 0.05
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
@@ -61,7 +61,8 @@ node = QualibrationNode(name="09c_DRAG_Calibration_180_90", parameters=Parameter
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+path = r"C:\Git\CS_installations\qualibrate\configuration\quam_state"
+machine = QuAM.load(path)
 # Generate the OPX and Octave configurations
 if node.parameters.qubits is None or node.parameters.qubits == "":
     qubits = machine.active_qubits
@@ -73,7 +74,8 @@ num_qubits = len(qubits)
 tracked_qubits = []
 for q in qubits:
     with tracked_updates(q, auto_revert=False, dont_assign_to_none=True) as q:
-        q.xy.operations["x180"].alpha = -1.0
+        q.I.operations["x180_Cosine"].alpha = -1.0
+        q.Q.operations["x180_Cosine"].alpha = -1.0
         tracked_qubits.append(q)
 
 config = machine.generate_config()
@@ -117,11 +119,24 @@ with program() as drag_calibration:
                         qubit.wait(qubit.thermalization_time * u.ns)
 
                     if option == 0:
-                        play("x180" * amp(1, 0, 0, a), qubit.xy.name)
-                        play("y90" * amp(a, 0, 0, 1), qubit.xy.name)
+                        play("x180_Cosine" * amp(1), qubit.I.name)
+                        play("x180_Cosine" * amp(a), qubit.Q.name)
+
+                        frame_rotation_2pi(0.25, qubit.I.name)
+                        frame_rotation_2pi(0.25, qubit.Q.name)
+                        play("x90_Cosine" * amp(a), qubit.I.name)
+                        play("x90_Cosine" * amp(1), qubit.Q.name)
+                        reset_frame(qubit.I.name, qubit.Q.name)
                     else:
-                        play("y180" * amp(a, 0, 0, 1), qubit.xy.name)
-                        play("x90" * amp(1, 0, 0, a), qubit.xy.name)
+                        frame_rotation_2pi(0.25, qubit.I.name)
+                        frame_rotation_2pi(0.25, qubit.Q.name)
+                        play("x180_Cosine" * amp(a), qubit.I.name)
+                        play("x180_Cosine" * amp(1), qubit.Q.name)
+                        reset_frame(qubit.I.name, qubit.Q.name)
+                        frame_rotation_2pi(0.25, qubit.Q.name)
+
+                        play("x90_Cosine" * amp(1), qubit.I.name)
+                        play("x90_Cosine" * amp(a), qubit.Q.name)
 
                     qubit.align()
                     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
@@ -156,14 +171,15 @@ if node.parameters.simulate:
     node.save()
 
 elif node.parameters.load_data_id is None:
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(drag_calibration)
-        results = fetching_tool(job, ["n"], mode="live")
-        while results.is_processing():
-            # Fetch results
-            n = results.fetch_all()[0]
-            # Progress bar
-            progress_counter(n, n_avg, start_time=results.start_time)
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    qm = qmm.open_qm(config)
+    job = qm.execute(drag_calibration)
+    results = fetching_tool(job, ["n"], mode="live")
+    while results.is_processing():
+        # Fetch results
+        n = results.fetch_all()[0]
+        # Progress bar
+        progress_counter(n, n_avg, start_time=results.start_time)
 
 # %% {Data_fetching_and_dataset_creation}
 if not node.parameters.simulate:
@@ -172,7 +188,7 @@ if not node.parameters.simulate:
         ds = fetch_results_as_xarray(job.result_handles, qubits, {"amp": amps, "sequence": [0, 1]})
         # Add the qubit pulse absolute alpha coefficient to the dataset
         ds = ds.assign_coords(
-            {"alpha": (["qubit", "amp"], np.array([q.xy.operations[operation].alpha * amps for q in qubits]))}
+            {"alpha": (["qubit", "amp"], np.array([q.I.operations[operation].alpha * amps for q in qubits]))}
         )
     else:
         node = node.load_from_id(node.parameters.load_data_id)
@@ -188,7 +204,7 @@ if not node.parameters.simulate:
     diffs = state.polyfit(dim="amp", deg=1).polyfit_coefficients.diff(dim="sequence").drop("sequence")
     intersection = -diffs.sel(degree=0) / diffs.sel(degree=1)
     intersection_alpha = intersection * xr.DataArray(
-        [q.xy.operations[operation].alpha for q in qubits],
+        [q.I.operations[operation].alpha for q in qubits],
         dims=["qubit"],
         coords={"qubit": ds.qubit},
     )
@@ -220,7 +236,8 @@ if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         with node.record_state_updates():
             for q in qubits:
-                q.xy.operations[operation].alpha = fit_results[q.name]["alpha"]
+                q.I.operations[operation].alpha = fit_results[q.name]["alpha"]
+                q.Q.operations[operation].alpha = fit_results[q.name]["alpha"]
 
         # %% {Save_results}
         node.results["initial_parameters"] = node.parameters.model_dump()

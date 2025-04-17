@@ -175,7 +175,7 @@ def active_reset_gef(
 def active_reset_simple(
     qubit: Transmon,
     save_qua_var: Optional[StreamType] = None,
-    pi_pulse_name: str = "x180",
+    pi_pulse_name: str = "x180_Cosine",
     readout_pulse_name: str = "readout",
 ):
     """
@@ -198,7 +198,7 @@ def active_reset_simple(
 def active_reset(
     qubit: Transmon,
     save_qua_var: Optional[StreamType] = None,
-    pi_pulse_name: str = "x180",
+    pi_pulse_name: str = "x180_Cosine",
     readout_pulse_name: str = "readout",
     max_attempts: int = 15,
 ):
@@ -209,26 +209,28 @@ def active_reset(
     state = declare(bool)
     attempts = declare(int, value=1)
     assign(attempts, 1)
-    align(qubit.resonator.name, qubit.xy.name)
+    align(qubit.resonator.name, qubit.I.name, qubit.Q.name)
     qubit.resonator.measure("readout", qua_vars=(I, Q))
     assign(state, I > pulse.threshold)
     wait(qubit.resonator.depletion_time // 4, qubit.resonator.name)
-    align(qubit.resonator.name, qubit.xy.name)
-    qubit.xy.play(pi_pulse_name, condition=state)
-    align(qubit.resonator.name, qubit.xy.name)
+    align(qubit.resonator.name, qubit.I.name, qubit.Q.name)
+    qubit.I.play(pi_pulse_name, condition=state)
+    qubit.Q.play(pi_pulse_name, condition=state)
+    align(qubit.resonator.name, qubit.I.name, qubit.Q.name)
     with while_(broadcast.and_((I > pulse.rus_exit_threshold), (attempts < max_attempts))):
         # qubit.align()
-        align(qubit.resonator.name, qubit.xy.name)
+        align(qubit.resonator.name, qubit.I.name, qubit.Q.name)
         qubit.resonator.measure("readout", qua_vars=(I, Q))
         assign(state, I > pulse.threshold)
         wait(qubit.resonator.depletion_time // 4, qubit.resonator.name)
         # qubit.align()
-        align(qubit.resonator.name, qubit.xy.name)
-        qubit.xy.play(pi_pulse_name, condition=state)
-        align(qubit.resonator.name, qubit.xy.name)
+        align(qubit.resonator.name, qubit.I.name, qubit.Q.name)
+        qubit.I.play(pi_pulse_name, condition=state)
+        qubit.Q.play(pi_pulse_name, condition=state)
+        align(qubit.resonator.name, qubit.I.name, qubit.Q.name)
         # qubit.align()
         assign(attempts, attempts + 1)
-    # wait(500, qubit.xy.name)
-    align(qubit.resonator.name, qubit.xy.name)
+    # wait(500, qubit.I.name, qubit.Q.name)
+    align(qubit.resonator.name, qubit.I.name, qubit.Q.name)
     if save_qua_var is not None:
         save(attempts, save_qua_var)

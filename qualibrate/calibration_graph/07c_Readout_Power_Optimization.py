@@ -125,7 +125,7 @@ with program() as iq_blobs:
                 else:
                     raise ValueError(f"Unrecognized reset type {reset_type}.")
                 qubit.align()
-                qubit.xy.play("x180")
+                qubit.xy_play("x180_Cosine")
                 qubit.align()
                 qubit.resonator.measure("readout", qua_vars=(I_e[i], Q_e[i]), amplitude_scale=a)
                 save(I_e[i], I_e_st[i])
@@ -163,14 +163,15 @@ if node.parameters.simulate:
 
 elif node.parameters.load_data_id is None:
     date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(iq_blobs)
-        results = fetching_tool(job, ["n"], mode="live")
-        while results.is_processing():
-            # Fetch results
-            n = results.fetch_all()[0]
-            # Progress bar
-            progress_counter(n, n_runs, start_time=results.start_time)
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    qm = qmm.open_qm(config)
+    job = qm.execute(iq_blobs)
+    results = fetching_tool(job, ["n"], mode="live")
+    while results.is_processing():
+        # Fetch results
+        n = results.fetch_all()[0]
+        # Progress bar
+        progress_counter(n, n_runs, start_time=results.start_time)
 
 
 # %% {Data_fetching_and_dataset_creation}

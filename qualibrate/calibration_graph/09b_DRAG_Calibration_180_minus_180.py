@@ -36,18 +36,17 @@ from typing import Literal, Optional, List
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 # %% {Node_parameters}
 class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     num_averages: int = 10
-    operation: str = "x180"
+    operation: str = "x180_Cosine"
     min_amp_factor: float = -2.0
     max_amp_factor: float = 2.0
     amp_factor_step: float = 0.02
     max_number_pulses_per_sweep: int = 40
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
@@ -64,7 +63,8 @@ node_id = get_node_id()
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+path = r"C:\Git\CS_installations\qualibrate\configuration\quam_state"
+machine = QuAM.load(path)
 operation = node.parameters.operation  # The qubit operation to play
 
 if node.parameters.qubits is None or node.parameters.qubits == "":
@@ -78,7 +78,8 @@ tracked_qubits = []
 if node.parameters.alpha_setpoint is not None:
     for q in qubits:
         with tracked_updates(q, auto_revert=False, dont_assign_to_none=True) as q:
-            q.xy.operations[operation].alpha = node.parameters.alpha_setpoint
+            q.I.operations[operation].alpha = node.parameters.alpha_setpoint
+            q.Q.operations[operation].alpha = node.parameters.alpha_setpoint
             tracked_qubits.append(q)
 
 # Generate the OPX and Octave configurations
@@ -126,20 +127,30 @@ with program() as drag_calibration:
                 with for_(*from_array(a, amps)):
                     # Initialize the qubits
                     if reset_type == "active":
-                        active_reset(qubit, "readout")
+                        active_reset(qubit, pi_pulse_name="x180_Cosine", readout_pulse_name="readout")
                     else:
                         qubit.wait(qubit.thermalization_time * u.ns)
 
                     # Loop for error amplification (perform many qubit pulses)
                     with for_(count, 0, count < npi, count + 1):
-                        if operation == "x180":
-                            play(operation * amp(1, 0, 0, a), qubit.xy.name)
-                            play(operation * amp(-1, 0, 0, -a), qubit.xy.name)
-                        elif operation == "x90":
-                            play(operation * amp(1, 0, 0, a), qubit.xy.name)
-                            play(operation * amp(1, 0, 0, a), qubit.xy.name)
-                            play(operation * amp(-1, 0, 0, -a), qubit.xy.name)
-                            play(operation * amp(-1, 0, 0, -a), qubit.xy.name)
+                        if operation == "x180_Cosine":
+                            # +a multiplication factor
+                            play(operation * amp(1), qubit.I.name)
+                            play(operation * amp(a), qubit.Q.name)
+                            # -a multiplication factor
+                            play(operation * amp(-1), qubit.I.name)
+                            play(operation * amp(-a), qubit.Q.name)
+                        elif operation == "x90_Cosine":
+                            # +a multiplication factor
+                            play(operation * amp(1), qubit.I.name)
+                            play(operation * amp(a), qubit.Q.name)
+                            play(operation * amp(1), qubit.I.name)
+                            play(operation * amp(a), qubit.Q.name)
+                            # -a multiplication factor
+                            play(operation * amp(-1), qubit.I.name)
+                            play(operation * amp(-a), qubit.Q.name)
+                            play(operation * amp(-1), qubit.I.name)
+                            play(operation * amp(-a), qubit.Q.name)
 
                     qubit.align()
                     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
@@ -175,14 +186,15 @@ if node.parameters.simulate:
 
 elif node.parameters.load_data_id is None:
     date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(drag_calibration)
-        results = fetching_tool(job, ["n"], mode="live")
-        while results.is_processing():
-            # Fetch results
-            n = results.fetch_all()[0]
-            # Progress bar
-            progress_counter(n, n_avg, start_time=results.start_time)
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    qm = qmm.open_qm(config)
+    job = qm.execute(drag_calibration)
+    results = fetching_tool(job, ["n"], mode="live")
+    while results.is_processing():
+        # Fetch results
+        n = results.fetch_all()[0]
+        # Progress bar
+        progress_counter(n, n_avg, start_time=results.start_time)
 
 # %% {Data_fetching_and_dataset_creation}
 if not node.parameters.simulate:
@@ -194,7 +206,7 @@ if not node.parameters.simulate:
         {
             "alpha": (
                 ["qubit", "amp"],
-                np.array([q.xy.operations[operation].alpha * amps for q in qubits]),
+                np.array([q.I.operations[operation].alpha * amps for q in qubits]),
             )
         }
         )
@@ -211,7 +223,7 @@ if not node.parameters.simulate:
     alphas = ds.amp[data_max_idx]
     # Save fitting results
     fit_results = {
-        qubit.name: {"alpha": float(alphas.sel(qubit=qubit.name).values * qubit.xy.operations[operation].alpha)}
+        qubit.name: {"alpha": float(alphas.sel(qubit=qubit.name).values * qubit.I.operations[operation].alpha)}
         for qubit in qubits
     }
     for q in qubits:
@@ -239,7 +251,8 @@ if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         with node.record_state_updates():
             for q in qubits:
-                q.xy.operations[operation].alpha = fit_results[q.name]["alpha"]
+                q.I.operations[operation].alpha = fit_results[q.name]["alpha"]
+                q.Q.operations[operation].alpha = fit_results[q.name]["alpha"]
 
         # %% {Save_results}
         node.outcomes = {q.name: "successful" for q in qubits}

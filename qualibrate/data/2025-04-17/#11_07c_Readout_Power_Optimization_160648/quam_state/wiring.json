@@ -1,0 +1,53 @@
+{
+    "wiring": {
+        "qubits": {
+            "c12": {
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/2/2"
+                },
+                "z": {
+                    "opx_output": "#/ports/analog_outputs/con1/3/5"
+                }
+            }
+        },
+        "rf_qubits": {
+            "q1": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/2/1",
+                    "opx_output": "#/ports/mw_outputs/con1/2/1"
+                },
+                "I": {
+                    "opx_output": "#/ports/analog_outputs/con1/3/1"
+                },
+                "Q": {
+                    "opx_output": "#/ports/analog_outputs/con1/3/2"
+                },
+                "z": {
+                    "opx_output": "#/ports/analog_outputs/con1/3/2"
+                }
+            },
+            "q2": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/2/1",
+                    "opx_output": "#/ports/mw_outputs/con1/2/1"
+                },
+                "I": {
+                    "opx_output": "#/ports/analog_outputs/con1/3/3"
+                },
+                "Q": {
+                    "opx_output": "#/ports/analog_outputs/con1/3/3"
+                },
+                "z": {
+                    "opx_output": "#/ports/analog_outputs/con1/3/4"
+                }
+            }
+        }
+    },
+    "network": {
+        "host": "172.16.33.115",
+        "port": null,
+        "cluster_name": "CS_3",
+        "octave_ips": [],
+        "octave_ports": []
+    }
+}
