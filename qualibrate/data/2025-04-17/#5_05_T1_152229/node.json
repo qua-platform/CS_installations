@@ -1,0 +1,133 @@
+{
+    "created_at": "2025-04-17T15:22:29-05:00",
+    "metadata": {
+        "description": null,
+        "run_start": "2025-04-17T15:22:13.374-05:00",
+        "run_end": "2025-04-17T15:22:29.000-05:00",
+        "name": "05_T1",
+        "data_path": "2025-04-17/#5_05_T1_152229"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": null,
+                "num_averages": 100,
+                "min_wait_time_in_ns": 16,
+                "max_wait_time_in_ns": 100000,
+                "wait_time_step_in_ns": 600,
+                "flux_point_joint_or_independent_or_arbitrary": "joint",
+                "reset_type": "thermal",
+                "use_state_discrimination": false,
+                "simulate": false,
+                "simulation_duration_ns": 2500,
+                "timeout": 100,
+                "load_data_id": null,
+                "multiplexed": false
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Qubits"
+                    },
+                    "num_averages": {
+                        "default": 100,
+                        "title": "Num Averages",
+                        "type": "integer"
+                    },
+                    "min_wait_time_in_ns": {
+                        "default": 16,
+                        "title": "Min Wait Time In Ns",
+                        "type": "integer"
+                    },
+                    "max_wait_time_in_ns": {
+                        "default": 100000,
+                        "title": "Max Wait Time In Ns",
+                        "type": "integer"
+                    },
+                    "wait_time_step_in_ns": {
+                        "default": 600,
+                        "title": "Wait Time Step In Ns",
+                        "type": "integer"
+                    },
+                    "flux_point_joint_or_independent_or_arbitrary": {
+                        "default": "joint",
+                        "enum": [
+                            "joint",
+                            "independent",
+                            "arbitrary"
+                        ],
+                        "title": "Flux Point Joint Or Independent Or Arbitrary",
+                        "type": "string"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "enum": [
+                            "active",
+                            "thermal"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "use_state_discrimination": {
+                        "default": false,
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 2500,
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "timeout": {
+                        "default": 100,
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Load Data Id"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {},
+        "quam": "./quam_state"
+    },
+    "id": 5,
+    "parents": [
+        4
+    ]
+}

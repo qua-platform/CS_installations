@@ -54,7 +54,7 @@ class RF_Transmon(QuamComponent):
     freq_vs_flux_01_quad_term: float = 0.0
     arbitrary_intermediate_frequency: float = 0.0
 
-    T1: float = 10e-6
+    T1: float = 15e-6
     T2ramsey: float = None
     T2echo: float = None
     thermalization_time_factor: int = 5
