@@ -339,7 +339,7 @@ if not node.parameters.simulate:
                             q.I.operations["saturation"].amplitude = limits.max_wf_amplitude
 
                         if factor_pi * used_amp < limits.max_x180_wf_amplitude:
-                            q.I.operations["x180"].amplitude = factor_pi * used_amp
+                            q.I.operations["x180_Cosine"].amplitude = factor_pi * used_amp
                         elif factor_pi * used_amp >= limits.max_x180_wf_amplitude:
                             q.I.operations["x180_Cosine"].amplitude = limits.max_x180_wf_amplitude
         node.results["ds"] = ds

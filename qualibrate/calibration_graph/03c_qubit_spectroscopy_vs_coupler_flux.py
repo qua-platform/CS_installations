@@ -69,7 +69,8 @@ if node.parameters.qubit_pair is None:
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+path = r"C:\Git\CS_installations\qualibrate\configuration\quam_state"
+machine = QuAM.load(path)
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 # Open Communication with the QOP
@@ -124,10 +125,10 @@ with program() as multi_qubit_spec_vs_flux:
 
             with for_(*from_array(df, dfs)):
                 # Update the qubit frequency
-                qubit.xy.update_frequency(df + qubit.xy.intermediate_frequency)
+                qubit.xy_update_frequency(df + qubit.I.intermediate_frequency)
                 with for_(*from_array(dc, dcs)):
                     # Flux sweeping for a qubit
-                    duration = operation_len * u.ns if operation_len is not None else qubit.xy.operations[operation].length * u.ns
+                    duration = operation_len * u.ns if operation_len is not None else qubit.I.operations[operation].length * u.ns
                     # Bring the qubit to the desired point during the saturation pulse
                     qubit_pair.coupler.set_dc_offset(dc)
                     qubit_pair.align()
@@ -176,14 +177,15 @@ if node.parameters.simulate:
 
 elif node.parameters.load_data_id is None:
     date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(multi_qubit_spec_vs_flux)
-        results = fetching_tool(job, ["n"], mode="live")
-        while results.is_processing():
-            # Fetch results
-            n = results.fetch_all()[0]
-            # Progress bar
-            progress_counter(n, n_avg, start_time=results.start_time)
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    qm = qmm.open_qm(config)
+    job = qm.execute(multi_qubit_spec_vs_flux)
+    results = fetching_tool(job, ["n"], mode="live")
+    while results.is_processing():
+        # Fetch results
+        n = results.fetch_all()[0]
+        # Progress bar
+        progress_counter(n, n_avg, start_time=results.start_time)
 
 # %% {Data_fetching_and_dataset_creation}
 if not node.parameters.simulate:

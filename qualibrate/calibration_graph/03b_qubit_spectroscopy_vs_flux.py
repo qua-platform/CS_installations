@@ -64,7 +64,8 @@ node_id = get_node_id()
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+path = r"C:\Git\CS_installations\qualibrate\configuration\quam_state"
+machine = QuAM.load(path)
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 # Open Communication with the QOP
@@ -116,16 +117,16 @@ with program() as multi_qubit_spec_vs_flux:
 
             with for_(*from_array(df, dfs)):
                 # Update the qubit frequency
-                qubit.xy.update_frequency(df + qubit.xy.intermediate_frequency)
+                qubit.xy_update_frequency(df + qubit.I.intermediate_frequency)
                 with for_(*from_array(dc, dcs)):
                     qubit.wait(qubit.thermalization_time * u.ns)
                     # Flux sweeping for a qubit
-                    duration = operation_len * u.ns if operation_len is not None else qubit.xy.operations[operation].length * u.ns
+                    duration = operation_len * u.ns if operation_len is not None else qubit.I.operations[operation].length * u.ns
                     # Bring the qubit to the desired point during the saturation pulse
                     qubit.z.play("const", amplitude_scale=dc / qubit.z.operations["const"].amplitude, duration=duration)
                     # Apply saturation pulse to all qubits
                     # qubit.xy.wait(qubit.z.settle_time * u.ns)
-                    qubit.xy.play(
+                    qubit.xy_play(
                         operation,
                         amplitude_scale=operation_amp,
                         duration=duration,
@@ -170,14 +171,15 @@ if node.parameters.simulate:
 
 elif node.parameters.load_data_id is None:
     date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(multi_qubit_spec_vs_flux)
-        results = fetching_tool(job, ["n"], mode="live")
-        while results.is_processing():
-            # Fetch results
-            n = results.fetch_all()[0]
-            # Progress bar
-            progress_counter(n, n_avg, start_time=results.start_time)
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    qm = qmm.open_qm(config)
+    job = qm.execute(multi_qubit_spec_vs_flux)
+    results = fetching_tool(job, ["n"], mode="live")
+    while results.is_processing():
+        # Fetch results
+        n = results.fetch_all()[0]
+        # Progress bar
+        progress_counter(n, n_avg, start_time=results.start_time)
 
 # %% {Data_fetching_and_dataset_creation}
 if not node.parameters.simulate:
@@ -191,12 +193,12 @@ if not node.parameters.simulate:
         ds = convert_IQ_to_V(ds, qubits)
         # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2)
         ds = ds.assign({"IQ_abs": np.sqrt(ds["I"] ** 2 + ds["Q"] ** 2)})
-        # Add the resonator RF frequency axis of each qubit to the dataset coordinates for plotting
+        # Add the resonator IF frequency axis of each qubit to the dataset coordinates for plotting
         ds = ds.assign_coords(
             {
                 "freq_full": (
                     ["qubit", "freq"],
-                    np.array([dfs + q.xy.RF_frequency for q in qubits]),
+                    np.array([dfs + q.I.intermediate_frequency for q in qubits]),
                 )
             }
         )
@@ -237,7 +239,7 @@ if not node.parameters.simulate:
                 print(f"flux offset for qubit {q.name} is {offset*1e3 + flux_shift.sel(qubit = q.name).values*1e3:.0f} mV")
                 print(f"(shift of  {flux_shift.sel(qubit = q.name).values*1e3:.0f} mV)")
                 print(
-                    f"Drive frequency for {q.name} is {(freq_shift.sel(qubit = q.name).values + q.xy.RF_frequency)/1e9:.3f} GHz"
+                    f"Drive frequency for {q.name} is {(freq_shift.sel(qubit = q.name).values + q.I.intermediate_frequency)/1e9:.3f} GHz"
                 )
                 print(f"(shift of {freq_shift.sel(qubit = q.name).values/1e6:.0f} MHz)")
                 print(f"quad term for qubit {q.name} is {float(coeff.sel(degree = 2, qubit = q.name)/1e9):.3e} GHz/V^2 \n")
@@ -280,7 +282,8 @@ if not node.parameters.simulate:
                         q.z.independent_offset += fit_results[q.name]["flux_shift"]
                     elif flux_point == "joint":
                         q.z.joint_offset += fit_results[q.name]["flux_shift"]
-                    q.xy.intermediate_frequency += fit_results[q.name]["drive_freq"]
+                    q.I.intermediate_frequency += fit_results[q.name]["drive_freq"]
+                    q.Q.intermediate_frequency += fit_results[q.name]["drive_freq"]
                     q.freq_vs_flux_01_quad_term = fit_results[q.name]["quad_term"]
 
     # %% {Save_results}
