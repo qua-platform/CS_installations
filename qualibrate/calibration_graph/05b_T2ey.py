@@ -88,7 +88,7 @@ else:
     arb_flux_bias_offset = {q.name: 0.0 for q in qubits}
     detunings = {q.name: 0.0 for q in qubits}
 
-with program() as t1:
+with program() as t2ey:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     if node.parameters.use_state_discrimination:
         state = [declare(int) for _ in range(num_qubits)]
@@ -117,7 +117,7 @@ with program() as t1:
                     qubit.resonator.wait(qubit.thermalization_time * u.ns)
                     qubit.align()
 
-                qubit.xy.play("x90")
+                qubit.xy_play("x90_Cosine")
                 qubit.align()
                 qubit.z.play(
                     "const",
@@ -125,7 +125,7 @@ with program() as t1:
                     duration=t[i],
                 )
                 qubit.align()
-                qubit.xy.play("x180")
+                qubit.xy_play("x180_Cosine")
                 qubit.align()
                 qubit.z.play(
                     "const",
@@ -133,8 +133,8 @@ with program() as t1:
                     duration=t[i],
                 )
                 qubit.align()
-                qubit.xy.play("x90")
-                qubit.xy.play("x180")
+                qubit.xy_play("x90_Cosine")
+                qubit.xy_play("x180_Cosine")
                 qubit.align()
 
                 # Measure the state of the resonators
@@ -164,7 +164,7 @@ with program() as t1:
 if node.parameters.simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=node.parameters.simulation_duration_ns * 4)  # In clock cycles = 4ns
-    job = qmm.simulate(config, t1, simulation_config)
+    job = qmm.simulate(config, t2ey, simulation_config)
     # Get the simulated samples and plot them for all controllers
     samples = job.get_simulated_samples()
     fig, ax = plt.subplots(nrows=len(samples.keys()), sharex=True)
@@ -179,14 +179,15 @@ if node.parameters.simulate:
     node.save()
 
 elif node.parameters.load_data_id is None:
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(t1)
-        results = fetching_tool(job, ["n"], mode="live")
-        while results.is_processing():
-            # Fetch results
-            n = results.fetch_all()[0]
-            # Progress bar
-            progress_counter(n, n_avg, start_time=results.start_time)
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    qm = qmm.open_qm(config)
+    job = qm.execute(t2ey)
+    results = fetching_tool(job, ["n"], mode="live")
+    while results.is_processing():
+        # Fetch results
+        n = results.fetch_all()[0]
+        # Progress bar
+        progress_counter(n, n_avg, start_time=results.start_time)
 
 # %% {Data_fetching_and_dataset_creation}
 if not node.parameters.simulate:

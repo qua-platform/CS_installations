@@ -43,7 +43,7 @@ class Parameters(NodeParameters):
 
     qubits: Optional[List[str]] = None
     num_averages: int = 50
-    operation_x180_or_any_90: Literal["x180", "x90", "-x90", "y90", "-y90"] = "x180_Cosine"
+    operation_x180_or_any_90: Literal["x180_Cosine", "x90_Cosine"] = "x180_Cosine"
     min_amp_factor: float = 0.
     max_amp_factor: float = 1.5
     amp_factor_step: float = 0.05
@@ -323,3 +323,10 @@ if not node.parameters.simulate:
         node.save()
 
 # %%
+debug = True
+if debug:
+    from qm import generate_qua_script
+
+    sourceFile = open('debug_power_rabi.py', 'w')
+    print(generate_qua_script(power_rabi, config), file=sourceFile)
+    sourceFile.close()

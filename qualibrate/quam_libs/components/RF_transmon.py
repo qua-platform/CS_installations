@@ -215,3 +215,10 @@ class RF_Transmon(QuamComponent):
                             ):
         self.I.update_frequency(new_frequency)
         self.Q.update_frequency(new_frequency)
+
+    def xy_frame_rotation_2pi(self, phase):
+        self.I.frame_rotation_2pi(phase)
+        self.Q.frame_rotation_2pi(phase)
+
+    def xy_reset_frame(self):
+        reset_frame(self.I.name, self.Q.name)

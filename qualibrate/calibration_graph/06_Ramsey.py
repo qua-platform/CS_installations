@@ -130,10 +130,10 @@ with program() as ramsey:
                     qubit.align()
                     # # Strict_timing ensures that the sequence will be played without gaps
                     # with strict_timing_():
-                    qubit.xy.play("x90")
-                    qubit.xy.wait(t)
-                    qubit.xy.frame_rotation_2pi(phi)
-                    qubit.xy.play("x90")
+                    qubit.xy_play("x90_Cosine")
+                    qubit.xy_wait(t)
+                    qubit.xy_frame_rotation_2pi(phi)
+                    qubit.xy_play("x90_Cosine")
 
                     # Align the elements to measure after playing the qubit pulse.
                     qubit.align()
@@ -149,7 +149,7 @@ with program() as ramsey:
                     # Wait for the qubits to decay to the ground state
                     qubit.resonator.wait(qubit.thermalization_time * u.ns)
                     # Reset the frame of the qubits in order not to accumulate rotations
-                    reset_frame(qubit.xy.name)
+                    qubit.xy_reset_frame()
         # Measure sequentially
         if not node.parameters.multiplexed:
             align()
@@ -184,14 +184,15 @@ if node.parameters.simulate:
 
 elif node.parameters.load_data_id is None:
     date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(ramsey)
-        results = fetching_tool(job, ["n"], mode="live")
-        while results.is_processing():
-            # Fetch results
-            n = results.fetch_all()[0]
-            # Progress bar
-            progress_counter(n, n_avg, start_time=results.start_time)
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    qm = qmm.open_qm(config)
+    job = qm.execute(ramsey)
+    results = fetching_tool(job, ["n"], mode="live")
+    while results.is_processing():
+        # Fetch results
+        n = results.fetch_all()[0]
+        # Progress bar
+        progress_counter(n, n_avg, start_time=results.start_time)
 
 
 # %% {Data_fetching_and_dataset_creation}
@@ -320,7 +321,8 @@ if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         with node.record_state_updates():
             for q in qubits:
-                q.xy.intermediate_frequency -= float(fit_results[q.name]["freq_offset"])
+                q.I.intermediate_frequency -= float(fit_results[q.name]["freq_offset"])
+                q.Q.intermediate_frequency -= float(fit_results[q.name]["freq_offset"])
                 q.T2ramsey = float(fit_results[q.name]["decay"])
 
 
