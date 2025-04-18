@@ -80,7 +80,9 @@ else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
 
-
+qubits[0].z.joint_offset=0.1
+qubits[1].z.joint_offset=0.2
+machine.qubits.c12.z.joint_offset = 0.3
 # %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 N_pi = node.parameters.max_number_rabi_pulses_per_sweep  # Number of applied Rabi pulses sweep
