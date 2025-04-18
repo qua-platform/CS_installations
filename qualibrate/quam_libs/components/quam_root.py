@@ -99,9 +99,11 @@ class QuAM(QuamRoot):
 
     def apply_all_couplers_to_min(self) -> None:
         """Apply the offsets that bring all the active qubit pairs to a decoupled point."""
-        for qp in self.active_qubit_pairs:
-            if qp.coupler is not None:
-                qp.coupler.to_decouple_idle()
+        # for qp in self.qubits:
+        #     if qp.coupler is not None:
+        #         qp.coupler.to_decouple_idle()
+        for qp in self.qubits:
+            self.qubits[qp].z.to_min()
 
     def apply_all_flux_to_joint_idle(self) -> None:
         """Apply the offsets that bring all the active qubits to the joint sweet spot."""
@@ -110,9 +112,9 @@ class QuAM(QuamRoot):
                 q.z.to_joint_idle()
             else:
                 warnings.warn(f"Didn't find z-element on qubit {q.name}, didn't set to joint-idle")
-        for q in self.qubits:
-            if self.qubits[q] not in self.active_qubits:
-                if self.qubits[q].z is not None:
+        for q in self.rf_qubits:
+            if self.rf_qubits[q] not in self.active_qubits:
+                if self.rf_qubits[q].z is not None:
                     self.qubits[q].z.to_min()
                 else:
                     warnings.warn(f"Didn't find z-element on qubit {q}, didn't set to min")
@@ -120,9 +122,9 @@ class QuAM(QuamRoot):
 
     def apply_all_flux_to_min(self) -> None:
         """Apply the offsets that bring all the active qubits to the minimum frequency point."""
-        for q in self.qubits:
-            if self.qubits[q].z is not None:
-                self.qubits[q].z.to_min()
+        for q in self.rf_qubits:
+            if self.rf_qubits[q].z is not None:
+                self.rf_qubits[q].z.to_min()
             else:
                 warnings.warn(f"Didn't find z-element on qubit {q}, didn't set to min")
         self.apply_all_couplers_to_min()
@@ -135,7 +137,7 @@ class QuAM(QuamRoot):
         
     def set_all_fluxes(self, flux_point : str, target : Union[Transmon, TransmonPair], do_align: bool = True) -> float:
         if flux_point == "independent":
-            assert isinstance(target, Transmon), "Independent flux point is only supported for individual transmons"
+            assert isinstance(target, RF_Transmon), "Independent flux point is only supported for individual rf transmons"
         elif flux_point == "pairwise":
             assert isinstance(target, TransmonPair), "Pairwise flux point is only supported for transmon pairs"
         

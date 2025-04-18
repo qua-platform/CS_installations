@@ -17,7 +17,7 @@ instruments.add_lf_fem(controller=1, slots=[1])
 instruments.add_mw_fem(controller=1, slots=[2])
 
 # Define which qubit indices are present in the system
-qubits = [1, 2]
+qubits = [1, 2, 3]
 couplers = [1, 2, 3, 4, 5]
 # Allocate the wiring to the connectivity object based on the available instruments
 connectivity = Connectivity()
@@ -28,8 +28,8 @@ q1_res_ch = mw_fem_spec(con=1, slot=2, in_port=1, out_port=1)
 connectivity.add_resonator_line(qubits=qubits, constraints=q1_res_ch)
 connectivity.add_qubit_drive_lines(qubits=qubits)
 connectivity.add_qubit_flux_lines(qubits=qubits)
-connectivity.add_qubit_flux_lines(qubits=couplers)
-# connectivity.add_qubit_pair_flux_lines(qubit_pairs=[(1,2)])  # Tunable coupler
+# connectivity.add_qubit_flux_lines(qubits=couplers)
+# connectivity.add_qubit_pair_flux_lines(qubit_pairs=[(1, 2)])  # Tunable coupler
 allocate_wiring(connectivity, instruments)
 
 # Single feed-line for reading the resonators & driving the qubits + flux on specific fem slot
@@ -39,7 +39,7 @@ allocate_wiring(connectivity, instruments)
 # q1_flux_fem = lf_fem_spec(con=1, in_slot=None, in_port=None, out_slot=4, out_port=None)
 # connectivity.add_resonator_line(qubits=qubits, constraints=q1_res_ch)
 # connectivity.add_qubit_flux_lines(qubits=qubits, constraints=q1_flux_fem)
-# connectivity.add_qubit_pair_flux_lines(qubit_pairs=[(1,2)])  # Tunable coupler
+# connectivity.add_qubit_pair_flux_lines(qubit_pairs=[(1, 2)])  # Tunable coupler
 # for qubit in qubits:
 #     connectivity.add_qubit_drive_lines(qubits=qubit, constraints=q1_drive_ch)
 #     allocate_wiring(connectivity, instruments, block_used_channels=False)

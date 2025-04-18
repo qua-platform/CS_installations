@@ -125,6 +125,15 @@ def add_default_rf_transmon_pulses(transmon: Transmon):
             detuning=0,
             digital_marker="ON",
         )
+        transmon.I.operations["-x90_Cosine"] = pulses.DragCosinePulse_I(
+            amplitude=-0.1,
+            alpha=0.0,
+            anharmonicity=f"#/rf_qubits/{transmon.name}/anharmonicity",
+            axis_angle=0,
+            length="#../x180_Cosine/length",
+            detuning=0,
+            digital_marker="ON",
+        )
 
         # DRAG pulses
         transmon.I.operations["x180_DragCosine"] = pulses.DragCosinePulse_I(
@@ -173,6 +182,15 @@ def add_default_rf_transmon_pulses(transmon: Transmon):
         )
         transmon.Q.operations["x90_Cosine"] = pulses.DragCosinePulse_Q(
             amplitude=0.1,
+            alpha=0.0,
+            anharmonicity=f"#/rf_qubits/{transmon.name}/anharmonicity",
+            axis_angle=0,
+            length="#../x180_Cosine/length",
+            detuning=0,
+            digital_marker="ON",
+        )
+        transmon.Q.operations["-x90_Cosine"] = pulses.DragCosinePulse_Q(
+            amplitude=-0.1,
             alpha=0.0,
             anharmonicity=f"#/rf_qubits/{transmon.name}/anharmonicity",
             axis_angle=0,
