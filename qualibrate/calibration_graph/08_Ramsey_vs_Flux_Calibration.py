@@ -62,7 +62,8 @@ node_id = get_node_id()
 # Class containing tools to help handle units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+path = r"C:\Git\CS_installations\qualibrate\configuration\quam_state"
+machine = QuAM.load(path)
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
 # Open Communication with the QOP
@@ -121,14 +122,14 @@ with program() as ramsey:
                     # Ramsey sequence
                     qubit.align()
                     with strict_timing_():
-                        qubit.xy.play("x180", amplitude_scale=0.5)
-                        qubit.xy.frame_rotation_2pi(phi)
-                        qubit.z.wait(duration=qubit.xy.operations["x180"].length)
+                        qubit.xy_play("x180_Cosine", amplitude_scale=0.5)
+                        qubit.xy_frame_rotation_2pi(phi)
+                        qubit.z.wait(duration=qubit.I.operations["x180_Cosine"].length)
                         
-                        qubit.xy.wait(t+1)
+                        qubit.xy_wait(t+1)
                         qubit.z.play("const", amplitude_scale=flux / qubit.z.operations["const"].amplitude, duration=t)
                         
-                        qubit.xy.play("x180", amplitude_scale=0.5)
+                        qubit.xy_play("x180_Cosine", amplitude_scale=0.5)
 
                     qubit.align()
                     # Measure the state of the resonators
@@ -138,7 +139,7 @@ with program() as ramsey:
                     assign(init_state[i], state[i])
 
                     # Reset the frame of the qubits in order not to accumulate rotations
-                    reset_frame(qubit.xy.name)
+                    qubit.xy_reset_frame()
 
         if not node.parameters.multiplexed:
             align()
@@ -169,14 +170,15 @@ if node.parameters.simulate:
 
 elif node.parameters.load_data_id is None:
     date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        job = qm.execute(ramsey)
-        results = fetching_tool(job, ["n"], mode="live")
-        while results.is_processing():
-            # Fetch results
-            n = results.fetch_all()[0]
-            # Progress bar
-            progress_counter(n, n_avg, start_time=results.start_time)
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    qm = qmm.open_qm(config)
+    job = qm.execute(ramsey)
+    results = fetching_tool(job, ["n"], mode="live")
+    while results.is_processing():
+        # Fetch results
+        n = results.fetch_all()[0]
+        # Progress bar
+        progress_counter(n, n_avg, start_time=results.start_time)
 
 # %% {Data_fetching_and_dataset_creation}
 if not node.parameters.simulate:
@@ -279,7 +281,8 @@ if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         with node.record_state_updates():
             for qubit in qubits:
-                qubit.xy.intermediate_frequency -= freq_offset[qubit.name]
+                qubit.I.intermediate_frequency -= freq_offset[qubit.name]
+                qubit.Q.intermediate_frequency -= freq_offset[qubit.name]
                 if flux_point == "independent":
                     qubit.z.independent_offset += flux_offset[qubit.name]
                 elif flux_point == "joint":

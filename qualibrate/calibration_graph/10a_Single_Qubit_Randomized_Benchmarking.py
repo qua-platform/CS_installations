@@ -51,7 +51,7 @@ class Parameters(NodeParameters):
     delta_clifford: int = 20
     seed: int = 345324
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
@@ -132,75 +132,151 @@ def play_sequence(sequence_list, depth, qubit: Transmon):
     with for_(i, 0, i <= depth, i + 1):
         with switch_(sequence_list[i], unsafe=True):
             with case_(0):
-                qubit.xy.wait(qubit.xy.operations["x180_Cosine"].length // 4)
+                qubit.xy_wait(qubit.I.operations["x180_Cosine"].length // 4)
             with case_(1):  # x180_Cosine
                 qubit.xy_play("x180_Cosine")
             with case_(2):  # y180
-
-                qubit.xy_play("y180")
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("x180_Cosine")
+                qubit.xy_reset_frame()
             with case_(3):  # Z180
-                qubit.xy_play("y180")
+                # y180
+                qubit.xy_frame_rotation_2pi(0.25)
                 qubit.xy_play("x180_Cosine")
-            with case_(4):  # Z90 x180_Cosine Z-180
-                qubit.xy_play("x90")
-                qubit.xy_play("y90")
+                qubit.xy_reset_frame()
+                # x180
+                qubit.xy_play("x180_Cosine")
+            with case_(4):  # Z90 y90 Z-180
+                # x90_Cosine
+                qubit.xy_play("x90_Cosine")
+                # y90
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("x90_Cosine")
+                qubit.xy_reset_frame()
             with case_(5):  # Z-90 Y-90 Z-90
-                qubit.xy_play("x90")
-                qubit.xy_play("-y90")
-            with case_(6):  # Z-90 x180_Cosine Z-180
-                qubit.xy_play("-x90")
-                qubit.xy_play("y90")
+                # x90_Cosine
+                qubit.xy_play("x90_Cosine")
+                # -y90
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("-x90_Cosine")
+                qubit.xy_reset_frame()
+            with case_(6):  # Z-90 y90 Z-180
+                # -x90
+                qubit.xy_play("-x90_Cosine")
+                # x90_Cosine
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("x90_Cosine")
+                qubit.xy_reset_frame()
             with case_(7):  # Z-90 Y90 Z-90
-                qubit.xy_play("-x90")
-                qubit.xy_play("-y90")
-            with case_(8):  # X90 Z90
-                qubit.xy_play("y90")
-                qubit.xy_play("x90")
+                # -x90
+                qubit.xy_play("-x90_Cosine")
+                # -y90
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("-x90_Cosine")
+                qubit.xy_reset_frame()
+            with case_(8):  # x90_Cosine Z90
+                # x90_Cosine
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("x90_Cosine")
+                qubit.xy_reset_frame()
+                # x90
+                qubit.xy_play("x90_Cosine")
             with case_(9):  # X-90 Z-90
-                qubit.xy_play("y90")
-                qubit.xy_play("-x90")
-            with case_(10):  # z90 X90 Z90
-                qubit.xy_play("-y90")
-                qubit.xy_play("x90")
+                # x90_Cosine
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("x90_Cosine")
+                qubit.xy_reset_frame()
+                # -x90
+                qubit.xy_play("-x90_Cosine")
+            with case_(10):  # z90 x90_Cosine Z90
+                # x90_Cosine
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("-x90_Cosine")
+                qubit.xy_reset_frame()
+                # x90
+                qubit.xy_play("x90_Cosine")
             with case_(11):  # z90 X-90 Z90
-                qubit.xy_play("-y90")
-                qubit.xy_play("-x90")
-            with case_(12):  # x90
-                qubit.xy_play("x90")
-            with case_(13):  # -x90
-                qubit.xy_play("-x90")
+                # -x90_Cosine
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("-x90_Cosine")
+                qubit.xy_reset_frame()
+                #-x90
+                qubit.xy_play("-x90_Cosine")
+            with case_(12):  # x90_Cosine
+                qubit.xy_play("x90_Cosine")
+            with case_(13):  # -x90_CCosine
+                qubit.xy_play("-x90_Cosine")
             with case_(14):  # y90
-                qubit.xy_play("y90")
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("x90_Cosine")
+                qubit.xy_reset_frame()
             with case_(15):  # -y90
-                qubit.xy_play("-y90")
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("-x90_Cosine")
+                qubit.xy_reset_frame()
             with case_(16):  # Z90
-                qubit.xy_play("-x90")
-                qubit.xy_play("y90")
-                qubit.xy_play("x90")
+                # -x90
+                qubit.xy_play("-x90_Cosine")
+                # y90
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("x90_Cosine")
+                qubit.xy_reset_frame()
+                qubit.xy_play("x90_Cosine")
             with case_(17):  # -Z90
-                qubit.xy_play("-x90")
-                qubit.xy_play("-y90")
-                qubit.xy_play("x90")
+                # -x90
+                qubit.xy_play("-x90_Cosine")
+                # -y90
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("-x90_Cosine")
+                qubit.xy_reset_frame()
+                # x90
+                qubit.xy_play("x90_Cosine")
             with case_(18):  # Y-90 Z-90
+                # x180
                 qubit.xy_play("x180_Cosine")
-                qubit.xy_play("y90")
+                # y90
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("x90_Cosine")
+                qubit.xy_reset_frame()
             with case_(19):  # Y90 Z90
+                # x180
                 qubit.xy_play("x180_Cosine")
-                qubit.xy_play("-y90")
+                #-y90
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("-x90_Cosine")
+                qubit.xy_reset_frame()
             with case_(20):  # Y90 Z-90
-                qubit.xy_play("y180")
-                qubit.xy_play("x90")
+                # y180
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("x180_Cosine")
+                qubit.xy_reset_frame()
+                # x90
+                qubit.xy_play("x90_Cosine")
             with case_(21):  # Y-90 Z90
-                qubit.xy_play("y180")
-                qubit.xy_play("-x90")
-            with case_(22):  # x90 Z-90
-                qubit.xy_play("x90")
-                qubit.xy_play("y90")
-                qubit.xy_play("x90")
-            with case_(23):  # -x90 Z90
-                qubit.xy_play("-x90")
-                qubit.xy_play("y90")
-                qubit.xy_play("-x90")
+                # y180
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("x180_Cosine")
+                qubit.xy_reset_frame()
+                # -x90
+                qubit.xy_play("-x90_Cosine")
+            with case_(22):  # x90_Cosine Z-90
+                # x90
+                qubit.xy_play("x90_Cosine")
+                # y90
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("x90_Cosine")
+                qubit.xy_reset_frame()
+                # x90
+                qubit.xy_play("x90_Cosine")
+            with case_(23):  # -x90_Cosine Z90
+                # -x90
+                qubit.xy_play("-x90_Cosine")
+                # y90
+                qubit.xy_frame_rotation_2pi(0.25)
+                qubit.xy_play("x90_Cosine")
+                qubit.xy_reset_frame()
+                # -x90
+                qubit.xy_play("-x90_Cosine")
 
 
 # %% {QUA_program}
