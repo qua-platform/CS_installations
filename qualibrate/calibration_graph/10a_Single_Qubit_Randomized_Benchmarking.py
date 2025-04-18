@@ -13,7 +13,7 @@ The data is then post-processed to extract the single-qubit gate fidelity and er
 .
 Prerequisites:
     - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
-    - Having calibrated qubit pi pulse (x180) by running qubit spectroscopy, rabi_chevron, power_rabi and updated the state.
+    - Having calibrated qubit pi pulse (x180_Cosine) by running qubit spectroscopy, rabi_chevron, power_rabi and updated the state.
     - Having the qubit frequency perfectly calibrated (ramsey).
     - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR and state discrimination.
     - Set the desired flux bias.
@@ -65,7 +65,8 @@ node_id = get_node_id()
 # Class containing tools to help handling units and conversions.
 u = unit(coerce_to_integer=True)
 # Instantiate the QuAM class from the state file
-machine = QuAM.load()
+path = r"C:\Git\CS_installations\qualibrate\configuration\quam_state"
+machine = QuAM.load(path)
 # Generate the OPX and Octave configurations
 
 config = machine.generate_config()
@@ -131,74 +132,75 @@ def play_sequence(sequence_list, depth, qubit: Transmon):
     with for_(i, 0, i <= depth, i + 1):
         with switch_(sequence_list[i], unsafe=True):
             with case_(0):
-                qubit.xy.wait(qubit.xy.operations["x180"].length // 4)
-            with case_(1):  # x180
-                qubit.xy.play("x180")
+                qubit.xy.wait(qubit.xy.operations["x180_Cosine"].length // 4)
+            with case_(1):  # x180_Cosine
+                qubit.xy_play("x180_Cosine")
             with case_(2):  # y180
-                qubit.xy.play("y180")
+
+                qubit.xy_play("y180")
             with case_(3):  # Z180
-                qubit.xy.play("y180")
-                qubit.xy.play("x180")
-            with case_(4):  # Z90 X180 Z-180
-                qubit.xy.play("x90")
-                qubit.xy.play("y90")
+                qubit.xy_play("y180")
+                qubit.xy_play("x180_Cosine")
+            with case_(4):  # Z90 x180_Cosine Z-180
+                qubit.xy_play("x90")
+                qubit.xy_play("y90")
             with case_(5):  # Z-90 Y-90 Z-90
-                qubit.xy.play("x90")
-                qubit.xy.play("-y90")
-            with case_(6):  # Z-90 X180 Z-180
-                qubit.xy.play("-x90")
-                qubit.xy.play("y90")
+                qubit.xy_play("x90")
+                qubit.xy_play("-y90")
+            with case_(6):  # Z-90 x180_Cosine Z-180
+                qubit.xy_play("-x90")
+                qubit.xy_play("y90")
             with case_(7):  # Z-90 Y90 Z-90
-                qubit.xy.play("-x90")
-                qubit.xy.play("-y90")
+                qubit.xy_play("-x90")
+                qubit.xy_play("-y90")
             with case_(8):  # X90 Z90
-                qubit.xy.play("y90")
-                qubit.xy.play("x90")
+                qubit.xy_play("y90")
+                qubit.xy_play("x90")
             with case_(9):  # X-90 Z-90
-                qubit.xy.play("y90")
-                qubit.xy.play("-x90")
+                qubit.xy_play("y90")
+                qubit.xy_play("-x90")
             with case_(10):  # z90 X90 Z90
-                qubit.xy.play("-y90")
-                qubit.xy.play("x90")
+                qubit.xy_play("-y90")
+                qubit.xy_play("x90")
             with case_(11):  # z90 X-90 Z90
-                qubit.xy.play("-y90")
-                qubit.xy.play("-x90")
+                qubit.xy_play("-y90")
+                qubit.xy_play("-x90")
             with case_(12):  # x90
-                qubit.xy.play("x90")
+                qubit.xy_play("x90")
             with case_(13):  # -x90
-                qubit.xy.play("-x90")
+                qubit.xy_play("-x90")
             with case_(14):  # y90
-                qubit.xy.play("y90")
+                qubit.xy_play("y90")
             with case_(15):  # -y90
-                qubit.xy.play("-y90")
+                qubit.xy_play("-y90")
             with case_(16):  # Z90
-                qubit.xy.play("-x90")
-                qubit.xy.play("y90")
-                qubit.xy.play("x90")
+                qubit.xy_play("-x90")
+                qubit.xy_play("y90")
+                qubit.xy_play("x90")
             with case_(17):  # -Z90
-                qubit.xy.play("-x90")
-                qubit.xy.play("-y90")
-                qubit.xy.play("x90")
+                qubit.xy_play("-x90")
+                qubit.xy_play("-y90")
+                qubit.xy_play("x90")
             with case_(18):  # Y-90 Z-90
-                qubit.xy.play("x180")
-                qubit.xy.play("y90")
+                qubit.xy_play("x180_Cosine")
+                qubit.xy_play("y90")
             with case_(19):  # Y90 Z90
-                qubit.xy.play("x180")
-                qubit.xy.play("-y90")
+                qubit.xy_play("x180_Cosine")
+                qubit.xy_play("-y90")
             with case_(20):  # Y90 Z-90
-                qubit.xy.play("y180")
-                qubit.xy.play("x90")
+                qubit.xy_play("y180")
+                qubit.xy_play("x90")
             with case_(21):  # Y-90 Z90
-                qubit.xy.play("y180")
-                qubit.xy.play("-x90")
+                qubit.xy_play("y180")
+                qubit.xy_play("-x90")
             with case_(22):  # x90 Z-90
-                qubit.xy.play("x90")
-                qubit.xy.play("y90")
-                qubit.xy.play("x90")
+                qubit.xy_play("x90")
+                qubit.xy_play("y90")
+                qubit.xy_play("x90")
             with case_(23):  # -x90 Z90
-                qubit.xy.play("-x90")
-                qubit.xy.play("y90")
-                qubit.xy.play("-x90")
+                qubit.xy_play("-x90")
+                qubit.xy_play("y90")
+                qubit.xy_play("-x90")
 
 
 # %% {QUA_program}
@@ -372,17 +374,18 @@ elif node.parameters.load_data_id is None:
     # Prepare data for saving
     node.results = {}
     date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        if not node.parameters.multiplexed:
-            job = qm.execute(randomized_benchmarking_individual)
-        else:
-            job = qm.execute(randomized_benchmarking_multiplexed)
-        results = fetching_tool(job, ["iteration"], mode="live")
-        while results.is_processing():
-            # Fetch results
-            m = results.fetch_all()[0]
-            # Progress bar
-            progress_counter(m, num_of_sequences, start_time=results.start_time)
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    qm = qmm.open_qm(config)
+    if not node.parameters.multiplexed:
+        job = qm.execute(randomized_benchmarking_individual)
+    else:
+        job = qm.execute(randomized_benchmarking_multiplexed)
+    results = fetching_tool(job, ["iteration"], mode="live")
+    while results.is_processing():
+        # Fetch results
+        m = results.fetch_all()[0]
+        # Progress bar
+        progress_counter(m, num_of_sequences, start_time=results.start_time)
 
 
     # %% {Data_fetching_and_dataset_creation}
