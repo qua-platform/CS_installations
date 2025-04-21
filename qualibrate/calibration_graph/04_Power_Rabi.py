@@ -105,7 +105,6 @@ if N_pi > 1:
 else:
     N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[::2]
 
-
 with program() as power_rabi:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     if state_discrimination:

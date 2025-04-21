@@ -45,10 +45,10 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     use_state_discrimination: bool = True
     use_strict_timing: bool = False
-    num_random_sequences: int = 2000  # Number of random sequences
+    num_random_sequences: int = 10  # Number of random sequences
     num_averages: int = 1
-    max_circuit_depth: int = 1000  # Maximum circuit depth
-    delta_clifford: int = 20
+    max_circuit_depth: int = 2  # Maximum circuit depth
+    delta_clifford: int = 1
     seed: int = 345324
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
@@ -314,6 +314,7 @@ with program() as randomized_benchmarking_individual:
                 assign(sequence_list[depth], inv_gate_list[depth - 1])
                 # Only played the depth corresponding to target_depth
                 with if_((depth == 1) | (depth == depth_target)):
+                    # TODO:here
                     with for_(n, 0, n < n_avg, n + 1):
                         # Initialize the qubits
                         if reset_type == "active":
@@ -548,3 +549,11 @@ if not node.parameters.simulate:
 
 
 # %%
+# %%
+debug = False
+if debug:
+    from qm import generate_qua_script
+
+    sourceFile = open('debug_randomized_benchmarking_multiplexed.py', 'w')
+    print(generate_qua_script(randomized_benchmarking_multiplexed, config), file=sourceFile)
+    sourceFile.close()
