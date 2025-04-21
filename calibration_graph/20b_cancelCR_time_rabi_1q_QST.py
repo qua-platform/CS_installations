@@ -26,17 +26,22 @@ from typing import Optional, Literal, List
 class Parameters(NodeParameters):
 
     qubit_pairs: Optional[List[str]] = ["q1-2"]
-    num_averages: int = 100
+    num_averages: int = 20
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 4000
-    wait_time_step_in_ns: int = 40
+    max_wait_time_in_ns: int = 1000
+    wait_time_step_in_ns: int = 4
+    cr_cancel_amp: float = 0.5
+    cr_drive_phase: float = 0.5
+    cr_cancel_phase: float = 0.5
     use_state_discrimination: bool = False
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
     timeout: int = 100
 
 
-node = QualibrationNode(name="17a_CR_time_rabi_1q_QST", parameters=Parameters())
+from pathlib import Path
+script_name = Path(__file__).stem
+node = QualibrationNode(name=script_name, parameters=Parameters())
 
 
 from qm.qua import *
@@ -104,7 +109,6 @@ idle_time_cycles = idle_time_ns // 4
 with program() as cr_time_rabi:
     n = declare(int)
     n_st = declare_stream()
-    # I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
     state_control = [declare(int) for _ in range(num_qubit_pairs)]
     state_target = [declare(int) for _ in range(num_qubit_pairs)]
     state_st_control = [declare_stream() for _ in range(num_qubit_pairs)]
@@ -126,12 +130,20 @@ with program() as cr_time_rabi:
                     with for_(s, 0, s < 2, s + 1):  # states
                         with if_(s == 1):
                             qc.xy.play("x180")
-                            align(qc.xy.name, cr.name)
+                            align(qc.xy.name, qt.xy.name, cr.name)
 
+                        # phase shift for cancel drive
+                        cr.frame_rotation_2pi(node.parameters.cr_drive_phase)
+                        qt.xy.frame_rotation_2pi(node.parameters.cr_cancel_phase)
+                        # direct + cancel
+                        align(qc.xy.name, qt.xy.name, cr.name)
                         # Control
                         cr.play("square", duration=t)
-
+                        qt.xy.play(f"{cr.name}_Square", duration=t, amplitude_scale=node.parameters.cr_cancel_amp)
                         align(qt.xy.name, cr.name)
+                        reset_frame(qt.xy.name)
+                        reset_frame(cr.name)
+
                         with switch_(c):
                             with case_(0):  # projection along X
                                 qt.xy.play("-y90")
@@ -164,7 +176,6 @@ if node.parameters.simulate:
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     job = qmm.simulate(config, cr_time_rabi, simulation_config)
     job.get_simulated_samples().con1.plot()
-    plt.show()
     node.results = {"figure": plt.gcf()}
     node.machine = machine
     node.save()
@@ -219,8 +230,8 @@ if not node.parameters.simulate:
 
 
 # %% {Save_results}
-# if not node.parameters.simulate:
-#     node.outcomes = {qp.name: "successful" for qp in qubit_pairs}
-#     node.results["initial_parameters"] = node.parameters.model_dump()
-#     node.machine = machine
-#     node.save()
+if not node.parameters.simulate:
+    node.outcomes = {qp.name: "successful" for qp in qubit_pairs}
+    node.results["initial_parameters"] = node.parameters.model_dump()
+    node.machine = machine
+    node.save()

@@ -63,7 +63,9 @@ class Parameters(NodeParameters):
     multiplexed: bool = True
     load_data_id: Optional[int] = None
 
-node = QualibrationNode(name="02c_Resonator_Spectroscopy_vs_Amplitude", parameters=Parameters())
+from pathlib import Path
+script_name = Path(__file__).stem
+node = QualibrationNode(name=script_name, parameters=Parameters())
 
 
 # %% {Initialize_QuAM_and_QOP}

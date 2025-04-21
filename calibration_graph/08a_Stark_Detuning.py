@@ -57,7 +57,9 @@ class Parameters(NodeParameters):
     load_data_id: Optional[int] = None
     multiplexed: bool = True
 
-node = QualibrationNode(name="09a_Stark_Detuning", parameters=Parameters())
+from pathlib import Path
+script_name = Path(__file__).stem
+node = QualibrationNode(name=script_name, parameters=Parameters())
 
 
 # %% {Initialize_QuAM_and_QOP}

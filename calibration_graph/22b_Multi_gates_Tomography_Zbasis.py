@@ -63,11 +63,10 @@ class Parameters(NodeParameters):
     load_data_id: Optional[int] = None
 
 
-node = QualibrationNode(
-    name="20_Multi_Gates_Tomography_Zbasis", parameters=Parameters()
-)
-assert not (
-            node.parameters.simulate and node.parameters.load_data_id is not None), "If simulate is True, load_data_id must be None, and vice versa."
+from pathlib import Path
+script_name = Path(__file__).stem
+node = QualibrationNode(name=script_name, parameters=Parameters())
+assert not (node.parameters.simulate and node.parameters.load_data_id is not None), "If simulate is True, load_data_id must be None, and vice versa."
 
 # %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.

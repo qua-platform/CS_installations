@@ -15,7 +15,9 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
 
 
-node = QualibrationNode(name="00_Close_other_QMs", parameters=Parameters())
+from pathlib import Path
+script_name = Path(__file__).stem
+node = QualibrationNode(name=script_name, parameters=Parameters())
 
 # Instantiate the QuAM class from the state file
 machine = QuAM.load()

@@ -1,11 +1,12 @@
 # %%
 """
-                                 CR_calib_cr_drive_phase
+                                 CR_calib_cancel_drive_amplitude
 
 The CR_calib scripts are designed for calibrating cross-resonance (CR) gates involving a system
 with a control qubit and a target qubit. These scripts help estimate the parameters of a Hamiltonian,
 which is represented as:
     H = I ⊗ (a_X X + a_Y Y + a_Z Z) + Z ⊗ (b_I I + b_X X + b_Y Y + b_Z Z)
+
 
 For the calibration sequences, we employ echoed CR drive.
                                    ____      ____ 
@@ -17,9 +18,10 @@ For the calibration sequences, we employ echoed CR drive.
                                                          ______
             Readout(fR): _____________________ _________|  RR  |__
 
-This script is to calibrate the phase of CR drive.
-Each sequence, which varies in the duration and phase of the CR drive, ends with
-state tomography of the target state (across X, Y, and Z bases).
+This script is to calibrate the phase of CR cancellation drive.
+CR cancellation pulse is applied to the target qubit at the target qubit frequency.
+Each sequence, which varies in the duration of the CR drive and the phase of CR cancel drive,
+ends with state tomography of the target state (across X, Y, and Z bases).
 This process is repeated with the control state in both |0> and |1> states.
 We fit the two sets of CR duration versus tomography data to a theoretical model,
 yielding two sets of three parameters: delta, omega_x, and omega_y.
@@ -31,9 +33,8 @@ Prerequisites:
     - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
 
 Next steps before going to the next node:
-    - Find the phase where b_Y (coeff of Z_Y) is zero. We call it phi0.
-      Set cr_drive_phase = phi0 in the configuration file.
-      Note that the phase is in units of 2 * pi as it is used with `frame_rotation_2pi`.
+    - Find the amplitude where a_X (coeff of I_X) and a_Y (coeff of I_Y) is zero simultaneously.
+      If the two coeffs do not vanish simultaneously, the value of phi could be wrong.
       Update relevant parameters at the end of the script.
 
 Reference: Sarah Sheldon, Easwar Magesan, Jerry M. Chow, and Jay M. Gambetta Phys. Rev. A 93, 060302(R) (2016)
@@ -64,13 +65,7 @@ from quam_libs.macros import (
     active_reset,
     readout_state,
 )
-
-import sys
-import os
-sys.path.append(r"C:\Users\tomdv\Documents\OQC_QUAM\CS_installations\calibration_graph")
-
-
-from cr_hamiltonian_tomography import (
+from quam_libs.cr_hamiltonian_tomography import (
     CRHamiltonianTomographyAnalysis,
     plot_cr_duration_vs_scan_param,
     plot_interaction_coeffs,
@@ -81,28 +76,30 @@ from cr_hamiltonian_tomography import (
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubit_pairs: Optional[List[str]] = ["q6-7"]
-    num_averages: int = 200
+    qubit_pairs: Optional[List[str]] = ["q2-3"]
+    num_averages: int = 20
     min_wait_time_in_ns: int = 16
-    max_wait_time_in_ns: int = 1000
+    max_wait_time_in_ns: int = 3000
     wait_time_step_in_ns: int = 40
-    min_cr_drive_phase: float = -0.25
-    max_cr_drive_phase: float = 0.5
-    step_cr_drive_phase: float = 0.01
-    cr_type: Literal["direct", "direct+echo", "direct+cancel", "direct+cancel+echo"] = "direct+echo"
-    cr_drive_amps: List[float] = [0.05]
-    cr_cancel_amps: List[float] = [0.0]
-    cr_drive_amp_scalings: List[float] = [1.0]
-    cr_cancel_amp_scalings: List[float] = [0.0]
-    cr_drive_phases: List[float] = [0.0]
-    cr_cancel_phases: List[float] = [0.0]
+    min_amp_scaling: float = 0.0
+    max_amp_scaling: float = 1.9
+    step_amp_scaling: float = 0.01
+    cr_type: Literal["direct+cancel", "direct+cancel+echo"] = "direct+cancel+echo"
+    cr_drive_amps: List[float] = [0.19]  # 0.225
+    cr_cancel_amps: List[float] = [0.1]
+    cr_drive_amp_scalings: List[float] = [1]
+    cr_cancel_amp_scalings: List[float] = [1]
+    cr_drive_phases: List[float] = [- 0.06]
+    cr_cancel_phases: List[float] = [0.46]
     use_state_discrimination: bool = False
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
     timeout: int = 100
 
 
-node = QualibrationNode(name="18c_CR_calib_cr_drive_phase", parameters=Parameters())
+from pathlib import Path
+script_name = Path(__file__).stem
+node = QualibrationNode(name=script_name, parameters=Parameters())
 
 
 # Class containing tools to help handle units and conversions.
@@ -120,7 +117,7 @@ num_qubit_pairs = len(qubit_pairs)
 
 
 # Update the readout power to match the desired range, this change will be reverted at the end of the node.
-tracked_qubits = []
+# tracked_qubits = []
 # for i, qp in enumerate(qubit_pairs):
 #     cr = qp.cross_resonance
 #     cr_name = cr.name
@@ -131,7 +128,7 @@ tracked_qubits = []
 #         tracked_qubits.append(cr)
 #     with tracked_updates(qt_xy, auto_revert=False, dont_assign_to_none=True) as qt_xy:
 #         qt_xy.operations[f"{cr_name}_Square"].amplitude = node.parameters.cr_cancel_amps[i]
-#         qt_xy.operations[f"{cr_name}_Square"].axis_angle = node.parameters.cr_cancel_phases[i] * 360
+#         # qt_xy.operations[f"{cr_name}_Square"].axis_angle = node.parameters.cr_cancel_phases[i] * 360
 #         tracked_qubits.append(qt_xy)
 
 
@@ -151,10 +148,10 @@ idle_time_ns = np.arange(
     node.parameters.wait_time_step_in_ns,
 ) // 4 * 4
 idle_time_cycles = idle_time_ns // 4
-cr_drive_phases = np.arange(
-    node.parameters.min_cr_drive_phase,
-    node.parameters.max_cr_drive_phase,
-    node.parameters.step_cr_drive_phase,
+amp_scalings = np.arange(
+    node.parameters.min_amp_scaling,
+    node.parameters.max_amp_scaling,
+    node.parameters.step_amp_scaling,
 )
 
 
@@ -169,7 +166,7 @@ with program() as cr_calib_unit_ham_tomo:
     state_target = [declare(int) for _ in range(num_qubit_pairs)]
     state_st_control = [declare_stream() for _ in range(num_qubit_pairs)]
     state_st_target = [declare_stream() for _ in range(num_qubit_pairs)]
-    ph = declare(fixed)
+    a = declare(fixed)
     t = declare(int)
     s = declare(int)  # QUA variable for the control state
     c = declare(int)  # QUA variable for the projection index in QST
@@ -182,59 +179,22 @@ with program() as cr_calib_unit_ham_tomo:
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
 
-            with for_(*from_array(ph, cr_drive_phases)):
+            with for_(*from_array(a, amp_scalings)):
                 with for_(*from_array(t, idle_time_cycles)):
                     with for_(c, 0, c < 3, c + 1):  # bases
                         with for_(s, 0, s < 2, s + 1):  # states
-                            # Initialize the qubits
-                            if node.parameters.reset_type_thermal_or_active == "active":
-                                active_reset(qc, "readout")
-                                active_reset(qt, "readout")
-                            else:
-                                qc.resonator.wait(machine.thermalization_time * u.ns)
-                            # Align the two elements to play the sequence after qubit initialization
-                            align()  
-                            
                             with if_(s == 1):
                                 qc.xy.play("x180")
                                 align(qc.xy.name, qt.xy.name, cr.name)
 
-                            if node.parameters.cr_type == "direct":
+                            if node.parameters.cr_type == "direct+cancel":
                                 # phase shift for cancel drive
-                                cr.frame_rotation_2pi(ph)
-                                align(qc.xy.name, cr.name)
-                                cr.play("square", duration=t, amplitude_scale=node.parameters.cr_drive_amp_scalings[i])
-                                align(qc.xy.name, cr.name)
-                                reset_frame(cr.name)
-
-                            elif node.parameters.cr_type == "direct+echo":
-                                # phase shift for cancel drive
-                                cr.frame_rotation_2pi(ph)
-                                # direct + cancel
-                                align(qc.xy.name, cr.name)
-                                cr.play("square", duration=t, amplitude_scale=node.parameters.cr_drive_amp_scalings[i])
-                                # pi pulse on control
-                                align(qc.xy.name, cr.name)
-                                qc.xy.play("x180")
-                                # echoed direct + cancel
-                                align(qc.xy.name, cr.name)
-                                cr.play("square", duration=t, amplitude_scale=-node.parameters.cr_drive_amp_scalings[i])
-                                # pi pulse on control
-                                align(qc.xy.name, cr.name)
-                                qc.xy.play("x180")
-                                # align for the next step and clear the phase shift
-                                align(qc.xy.name, qt.xy.name)
-                                reset_frame(cr.name)
-                                reset_frame(qt.xy.name)
-
-                            elif node.parameters.cr_type == "direct+cancel":
-                                # phase shift for cancel drive
-                                cr.frame_rotation_2pi(ph)
+                                cr.frame_rotation_2pi(node.parameters.cr_drive_phases[i])
                                 qt.xy.frame_rotation_2pi(node.parameters.cr_cancel_phases[i])
                                 # direct + cancel
                                 align(qc.xy.name, qt.xy.name, cr.name)
                                 cr.play("square", duration=t, amplitude_scale=node.parameters.cr_drive_amp_scalings[i])
-                                qt.xy.play(f"{cr.name}_Square", duration=t, amplitude_scale=node.parameters.cr_cancel_amp_scalings[i])
+                                qt.xy.play(f"{cr.name}_Square", duration=t, amplitude_scale=a)
                                 # align for the next step and clear the phase shift
                                 align(qt.xy.name, cr.name)
                                 reset_frame(cr.name)
@@ -242,19 +202,19 @@ with program() as cr_calib_unit_ham_tomo:
 
                             elif node.parameters.cr_type == "direct+cancel+echo":
                                 # phase shift for cancel drive
-                                cr.frame_rotation_2pi(ph)
+                                cr.frame_rotation_2pi(node.parameters.cr_drive_phases[i])
                                 qt.xy.frame_rotation_2pi(node.parameters.cr_cancel_phases[i])
                                 # direct + cancel
                                 align(qc.xy.name, qt.xy.name, cr.name)
                                 cr.play("square", duration=t, amplitude_scale=node.parameters.cr_drive_amp_scalings[i])
-                                qt.xy.play(f"{cr.name}_Square", duration=t, amplitude_scale=node.parameters.cr_cancel_amp_scalings[i])
+                                qt.xy.play(f"{cr.name}_Square", duration=t, amplitude_scale=a)
                                 # pi pulse on control
                                 align(qc.xy.name, qt.xy.name, cr.name)
                                 qc.xy.play("x180")
                                 # echoed direct + cancel
                                 align(qc.xy.name, qt.xy.name, cr.name)
                                 cr.play("square", duration=t, amplitude_scale=-node.parameters.cr_drive_amp_scalings[i])
-                                qt.xy.play(f"{cr.name}_Square", duration=t, amplitude_scale=-node.parameters.cr_cancel_amp_scalings[i])
+                                qt.xy.play(f"{cr.name}_Square", duration=t, amplitude_scale=-a)
                                 # pi pulse on control
                                 align(qc.xy.name, qt.xy.name, cr.name)
                                 qc.xy.play("x180")
@@ -282,13 +242,13 @@ with program() as cr_calib_unit_ham_tomo:
                             save(state_target[i], state_st_target[i])
 
                             # Wait for the qubit to decay to the ground state - Can be replaced by active reset
-                            # wait(machine.thermalization_time * u.ns)
+                            wait(machine.thermalization_time * u.ns)
 
     with stream_processing():
         n_st.save("n")
         for i in range(num_qubit_pairs):
-            state_st_control[i].buffer(2).buffer(3).buffer(len(idle_time_cycles)).buffer(len(cr_drive_phases)).average().save(f"state_control{i + 1}")
-            state_st_target[i].buffer(2).buffer(3).buffer(len(idle_time_cycles)).buffer(len(cr_drive_phases)).average().save(f"state_target{i + 1}")
+            state_st_control[i].buffer(2).buffer(3).buffer(len(idle_time_cycles)).buffer(len(amp_scalings)).average().save(f"state_control{i + 1}")
+            state_st_target[i].buffer(2).buffer(3).buffer(len(idle_time_cycles)).buffer(len(amp_scalings)).average().save(f"state_target{i + 1}")
 
 
 # %% {Simulate_or_execute}
@@ -320,7 +280,7 @@ if not node.parameters.simulate:
     ds = fetch_results_as_xarray(
         job.result_handles,
         qubit_pairs,
-        {"qc_state": ["0", "1"], "qt_component": ["X", "Y", "Z"], "times": idle_time_ns, "cr_drive_phases": cr_drive_phases},
+        {"qc_state": ["0", "1"], "qt_component": ["X", "Y", "Z"], "times": idle_time_ns, "amp_scalings": amp_scalings},
     )
     # Then, add new data variables based on existing ones
     ds = ds.assign(
@@ -338,33 +298,33 @@ if not node.parameters.simulate:
             ds_sliced.bloch_control.data,
             ds_sliced.bloch_target.data,
             ds_sliced.times.data,
-            cr_drive_phases,
-            "cr drive phase",
+            amp_scalings,
+            "cr cancel amplitude scaling",
             axss,
         )
         node.results[f"figure_{qp.name}"] = fig
 
         # Perform CR Hamiltonian tomography
         coeffs = []
-        for idx, ph in enumerate(cr_drive_phases):
+        for idx, ph in enumerate(amp_scalings):
             print("-" * 40)
             print(f"fitting for phase = {ph}")
             try:
                 crht = CRHamiltonianTomographyAnalysis(
                     ts=ds_sliced.times.data,
-                    data=ds_sliced.isel(cr_drive_phases=idx).bloch_target.data,  # target data: len(cr_drive_phases) x len(t_vec_cycle) x 3 x 2
+                    data=ds_sliced.isel(amp_scalings=idx).bloch_target.data,  # target data: len(amp_scalings) x len(t_vec_cycle) x 3 x 2
                 )
                 crht.fit_params()
                 coeffs.append(crht.interaction_coeffs_MHz)
                 fig_analysis = crht.plot_fit_result(do_show=False)
-                node.results[f"figure_analysis_{qp.name}_cr_drive_phases={ph:5.4f}".replace(".", "-")] = fig_analysis
+                node.results[f"figure_analysis_{qp.name}_amplitude_scaling={ph:5.4f}".replace(".", "-")] = fig_analysis
             except:
                 print(f"-> failed")
                 crht.interaction_coeffs_MHz = {k: None for k, v in crht.interaction_coeffs_MHz.items()}
                 coeffs.append({p: None for p in PAULI_2Q})
 
         # Plot the estimated interaction coefficients
-        fig_summary = plot_interaction_coeffs(coeffs, cr_drive_phases, xlabel="cr drive phase")
+        fig_summary = plot_interaction_coeffs(coeffs, amp_scalings, xlabel="cr cancel amplitude scaling")
         node.results[f"figure_summary_{qp.name}"] = fig_summary
 
     qm.close()
@@ -375,13 +335,11 @@ if not node.parameters.simulate:
 # %% {Update_state}
 # if not node.parameters.simulate:
 #     with node.record_state_updates():
-#         # cr_drive_phases = [0.5]
-#         # cr_cancel_phases = [0.5]
+#         cr_cancel_amps = [0.1]
+#         cr_cancel_amp_scalings = [0.5]
 #         for i, qp in enumerate(qubit_pairs):
-#             cr = qp.cross_resonance
 #             qt = qp.qubit_target
-#             cr.operations["square"].amplitude = cr_drive_phases[i] * 360
-#             # qt.xy.operations[f"{cr.name}_Square"].axis_angle = cr_cancel_phases[i] * 360
+#             qt.xy.operations[f"{cr.name}_Square"].amplitude = cr_cancel_amps[i] * cr_cancel_amp_scalings[i]
 #
 #     # Revert the change done at the beginning of the node
 #     for tracked_qubit in tracked_qubits:
@@ -395,5 +353,13 @@ if not node.parameters.simulate:
     node.machine = machine
     node.save()
 
+# amp_s=0.03
+# plt.figure()
+# ds_sliced.sel(amp_scalings=amp_s, method="nearest").sel(qt_component="Z", qc_state="0").bloch_target.plot()
+# ds_sliced.sel(amp_scalings=amp_s, method="nearest").sel(qt_component="Z", qc_state="1").bloch_target.plot()
+# plt.show()
 
+# plt.figure()
+# (ds_sliced.sel(qt_component="Z", qc_state="0").bloch_target - ds_sliced.sel(qt_component="Z", qc_state="1").bloch_target).plot()
+# plt.show()
 # %%

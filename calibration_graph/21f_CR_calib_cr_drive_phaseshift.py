@@ -61,7 +61,7 @@ from quam_libs.macros import (
     active_reset,
     readout_state,
 )
-from cr_hamiltonian_tomography import (
+from quam_libs.cr_hamiltonian_tomography import (
     CRHamiltonianTomographyAnalysis,
     plot_crqst_result_2D,
     PAULI_2Q,
@@ -89,7 +89,9 @@ class Parameters(NodeParameters):
     timeout: int = 100
 
 
-node = QualibrationNode(name="18a_CR_calib_cr_drive_phaseshift", parameters=Parameters())
+from pathlib import Path
+script_name = Path(__file__).stem
+node = QualibrationNode(name=script_name, parameters=Parameters())
 
 
 # Class containing tools to help handle units and conversions.

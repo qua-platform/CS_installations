@@ -60,7 +60,9 @@ class Parameters(NodeParameters):
     multiplexed: bool = False
     
 
-node = QualibrationNode(name="10b_Single_Qubit_Randomized_Benchmarking_Interleaved", parameters=Parameters())
+from pathlib import Path
+script_name = Path(__file__).stem
+node = QualibrationNode(name=script_name, parameters=Parameters())
 
 
 # %% {Initialize_QuAM_and_QOP}

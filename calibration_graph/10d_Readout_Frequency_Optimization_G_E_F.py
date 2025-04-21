@@ -43,7 +43,9 @@ class Parameters(NodeParameters):
     timeout: int = 100
 
 
-node = QualibrationNode(name="10c_Readout_Frequency_Optimization_G_E_F", parameters=Parameters())
+from pathlib import Path
+script_name = Path(__file__).stem
+node = QualibrationNode(name=script_name, parameters=Parameters())
 
 
 # %% {Initialize_QuAM_and_QOP}

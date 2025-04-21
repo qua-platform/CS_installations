@@ -66,10 +66,11 @@ from quam_libs.macros import (
 )
 
 import sys
+import os
 sys.path.append(r"C:\Users\tomdv\Documents\OQC_QUAM\CS_installations\calibration_graph")
 
 
-from cr_hamiltonian_tomography import (
+from quam_libs.cr_hamiltonian_tomography import (
     CRHamiltonianTomographyAnalysis,
     plot_cr_duration_vs_scan_param,
     plot_interaction_coeffs,
@@ -80,14 +81,14 @@ from cr_hamiltonian_tomography import (
 # %% {Node_parameters}
 class Parameters(NodeParameters):
 
-    qubit_pairs: Optional[List[str]] = ["q3-4"]
-    qubits: Optional[List[str]] = []
+    qubit_pairs: Optional[List[str]] = ["q6-7"]
     num_averages: int = 200
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 1000
-    wait_time_step_in_ns: int = 80
-    cr_drive_phase_span: float = 0.2
-    step_cr_drive_phase: float = 0.005
+    wait_time_step_in_ns: int = 40
+    min_cr_drive_phase: float = -0.25
+    max_cr_drive_phase: float = 0.5
+    step_cr_drive_phase: float = 0.01
     cr_type: Literal["direct", "direct+echo", "direct+cancel", "direct+cancel+echo"] = "direct+echo"
     cr_drive_amps: List[float] = [0.05]
     cr_cancel_amps: List[float] = [0.0]
@@ -101,7 +102,9 @@ class Parameters(NodeParameters):
     timeout: int = 100
 
 
-node = QualibrationNode(name="18c_CR_calib_cr_drive_phase_quick", parameters=Parameters())
+from pathlib import Path
+script_name = Path(__file__).stem
+node = QualibrationNode(name=script_name, parameters=Parameters())
 
 
 # Class containing tools to help handle units and conversions.
@@ -151,8 +154,8 @@ idle_time_ns = np.arange(
 ) // 4 * 4
 idle_time_cycles = idle_time_ns // 4
 cr_drive_phases = np.arange(
-    -node.parameters.cr_drive_phase_span,
-    node.parameters.cr_drive_phase_span,
+    node.parameters.min_cr_drive_phase,
+    node.parameters.max_cr_drive_phase,
     node.parameters.step_cr_drive_phase,
 )
 
@@ -185,7 +188,6 @@ with program() as cr_calib_unit_ham_tomo:
                 with for_(*from_array(t, idle_time_cycles)):
                     with for_(c, 0, c < 3, c + 1):  # bases
                         with for_(s, 0, s < 2, s + 1):  # states
-                            
                             # Initialize the qubits
                             if node.parameters.reset_type_thermal_or_active == "active":
                                 active_reset(qc, "readout")
@@ -193,7 +195,8 @@ with program() as cr_calib_unit_ham_tomo:
                             else:
                                 qc.resonator.wait(machine.thermalization_time * u.ns)
                             # Align the two elements to play the sequence after qubit initialization
-                            align()
+                            align()  
+                            
                             with if_(s == 1):
                                 qc.xy.play("x180")
                                 align(qc.xy.name, qt.xy.name, cr.name)
@@ -314,7 +317,6 @@ if not node.parameters.simulate:
         progress_counter(n, n_avg, start_time=results.start_time)
         
 # %% {Data_fetching_and_dataset_creation}
-debug = False
 if not node.parameters.simulate:
     # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
     ds = fetch_results_as_xarray(
@@ -330,14 +332,7 @@ if not node.parameters.simulate:
 
     for qp in qubit_pairs:
         ds_sliced = ds.sel(qubit=qp.name)
-
-        X_Y_diff = (ds.sel(qubit=qp.name, qt_component="X").state_target.std("times").sum("qc_state") - ds.sel(qubit=qp.name, qt_component="Y").state_target.std("times").sum("qc_state")).rolling(cr_drive_phases=4).mean()
-        phase_shift = float(X_Y_diff.idxmin().values)
-
-        fig_diff = plt.figure()
-        X_Y_diff.plot()
-        plt.ylabel("std across the time axis [a.u.]")
-        node.results[f"figure_std_diff_{qp.name}"] = fig_diff
+    
         # Prepare the figure for live plotting
         fig, axss = plt.subplots(3, 4, figsize=(12, 9), sharex=True, sharey=True)
         # plotting data
@@ -351,29 +346,28 @@ if not node.parameters.simulate:
         )
         node.results[f"figure_{qp.name}"] = fig
 
-        if debug:
-            # Perform CR Hamiltonian tomography
-            coeffs = []
-            for idx, ph in enumerate(cr_drive_phases):
-                print("-" * 40)
-                print(f"fitting for phase = {ph}")
-                try:
-                    crht = CRHamiltonianTomographyAnalysis(
-                        ts=ds_sliced.times.data,
-                        data=ds_sliced.isel(cr_drive_phases=idx).bloch_target.data,  # target data: len(cr_drive_phases) x len(t_vec_cycle) x 3 x 2
-                    )
-                    crht.fit_params()
-                    coeffs.append(crht.interaction_coeffs_MHz)
-                    fig_analysis = crht.plot_fit_result(do_show=False)
-                    node.results[f"figure_analysis_{qp.name}_cr_drive_phases={ph:5.4f}".replace(".", "-")] = fig_analysis
-                except:
-                    print(f"-> failed")
-                    crht.interaction_coeffs_MHz = {k: None for k, v in crht.interaction_coeffs_MHz.items()}
-                    coeffs.append({p: None for p in PAULI_2Q})
+        # Perform CR Hamiltonian tomography
+        coeffs = []
+        for idx, ph in enumerate(cr_drive_phases):
+            print("-" * 40)
+            print(f"fitting for phase = {ph}")
+            try:
+                crht = CRHamiltonianTomographyAnalysis(
+                    ts=ds_sliced.times.data,
+                    data=ds_sliced.isel(cr_drive_phases=idx).bloch_target.data,  # target data: len(cr_drive_phases) x len(t_vec_cycle) x 3 x 2
+                )
+                crht.fit_params()
+                coeffs.append(crht.interaction_coeffs_MHz)
+                fig_analysis = crht.plot_fit_result(do_show=False)
+                node.results[f"figure_analysis_{qp.name}_cr_drive_phases={ph:5.4f}".replace(".", "-")] = fig_analysis
+            except:
+                print(f"-> failed")
+                crht.interaction_coeffs_MHz = {k: None for k, v in crht.interaction_coeffs_MHz.items()}
+                coeffs.append({p: None for p in PAULI_2Q})
 
-            # Plot the estimated interaction coefficients
-            fig_summary = plot_interaction_coeffs(coeffs, cr_drive_phases, xlabel="cr drive phase")
-            node.results[f"figure_summary_{qp.name}"] = fig_summary
+        # Plot the estimated interaction coefficients
+        fig_summary = plot_interaction_coeffs(coeffs, cr_drive_phases, xlabel="cr drive phase")
+        node.results[f"figure_summary_{qp.name}"] = fig_summary
 
     qm.close()
     print("Experiment QM is now closed")
@@ -381,16 +375,19 @@ if not node.parameters.simulate:
 
 
 # %% {Update_state}
-if not node.parameters.simulate:
-    with node.record_state_updates():
-        # cr_drive_phases = [0.5]
-        # cr_cancel_phases = [0.5]
-        for i, qp in enumerate(qubit_pairs):
-            cr = qp.cross_resonance
-            qt = qp.qubit_target
-            cr.operations["square"].axis_angle += phase_shift * 2 * np.pi
-            # qt.xy.operations[f"{cr.name}_Square"].axis_angle = cr_cancel_phases[i] * 360
-
+# if not node.parameters.simulate:
+#     with node.record_state_updates():
+#         # cr_drive_phases = [0.5]
+#         # cr_cancel_phases = [0.5]
+#         for i, qp in enumerate(qubit_pairs):
+#             cr = qp.cross_resonance
+#             qt = qp.qubit_target
+#             cr.operations["square"].amplitude = cr_drive_phases[i] * 360
+#             # qt.xy.operations[f"{cr.name}_Square"].axis_angle = cr_cancel_phases[i] * 360
+#
+#     # Revert the change done at the beginning of the node
+#     for tracked_qubit in tracked_qubits:
+#         tracked_qubit.revert_changes()
 
 
 # %% {Save_results}

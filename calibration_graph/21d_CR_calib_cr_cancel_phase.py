@@ -67,7 +67,7 @@ from quam_libs.macros import (
     active_reset,
     readout_state,
 )
-from cr_hamiltonian_tomography import (
+from quam_libs.cr_hamiltonian_tomography import (
     CRHamiltonianTomographyAnalysis,
     plot_cr_duration_vs_scan_param,
     plot_interaction_coeffs,
@@ -99,7 +99,9 @@ class Parameters(NodeParameters):
     timeout: int = 100
 
 
-node = QualibrationNode(name="18d_CR_calib_cr_cancel_phase", parameters=Parameters())
+from pathlib import Path
+script_name = Path(__file__).stem
+node = QualibrationNode(name=script_name, parameters=Parameters())
 
 
 # Class containing tools to help handle units and conversions.
