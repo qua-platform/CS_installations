@@ -41,12 +41,11 @@ import xarray as xr
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-
     qubits: Optional[List[str]] = None
     use_state_discrimination: bool = True
     use_strict_timing: bool = False
     num_random_sequences: int = 10  # Number of random sequences
-    num_averages: int = 10
+    num_averages: int = 5
     max_circuit_depth: int = 50  # Maximum circuit depth
     delta_clifford: int = 10
     seed: int = 345324
@@ -57,6 +56,7 @@ class Parameters(NodeParameters):
     timeout: int = 100
     load_data_id: Optional[int] = None
     multiplexed: bool = False
+
 
 node = QualibrationNode(name="10a_Single_Qubit_Randomized_Benchmarking", parameters=Parameters())
 node_id = get_node_id()
@@ -79,7 +79,6 @@ if node.parameters.qubits is None or node.parameters.qubits == "":
 else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
-
 
 # %% {QUA_program_parameters}
 num_of_sequences = node.parameters.num_random_sequences  # Number of random sequences
@@ -104,16 +103,16 @@ inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
 
 # %% {Utility functions}
 def power_law(power, a, b, p):
-    return a * (p**power) + b
+    return a * (p ** power) + b
 
 
 def generate_sequence():
     cayley = declare(int, value=c1_table.flatten().tolist())
-    inv_list = declare(int, value=inv_gates)
+    # inv_list = declare(int, value=inv_gates)
     current_state = declare(int)
     step = declare(int)
     sequence = declare(int, size=max_circuit_depth + 1)
-    inv_gate = declare(int, size=max_circuit_depth + 1)
+    # inv_gate = declare(int, size=max_circuit_depth + 1)
     i = declare(int)
     rand = Random(seed=seed)
 
@@ -122,9 +121,9 @@ def generate_sequence():
         assign(step, rand.rand_int(24))
         assign(current_state, cayley[current_state * 24 + step])
         assign(sequence[i], step)
-        assign(inv_gate[i], inv_list[current_state])
+        # assign(inv_gate[i], inv_list[current_state])
 
-    return sequence, inv_gate
+    return sequence
 
 
 def play_sequence(sequence_list, depth, qubit: Transmon):
@@ -200,7 +199,7 @@ def play_sequence(sequence_list, depth, qubit: Transmon):
                 qubit.xy_frame_rotation_2pi(0.25)
                 qubit.xy_play("-x90_Cosine")
                 qubit.xy_reset_frame()
-                #-x90
+                # -x90
                 qubit.xy_play("-x90_Cosine")
             with case_(12):  # x90_Cosine
                 qubit.xy_play("x90_Cosine")
@@ -241,7 +240,7 @@ def play_sequence(sequence_list, depth, qubit: Transmon):
             with case_(19):  # Y90 Z90
                 # x180
                 qubit.xy_play("x180_Cosine")
-                #-y90
+                # -y90
                 qubit.xy_frame_rotation_2pi(0.25)
                 qubit.xy_play("-x90_Cosine")
                 qubit.xy_reset_frame()
@@ -279,6 +278,23 @@ def play_sequence(sequence_list, depth, qubit: Transmon):
                 qubit.xy_play("-x90_Cosine")
 
 
+def calculate_inv_gate(sequence_list, depth):
+    cayley = declare(int, value=c1_table.flatten().tolist())
+    inv_list = declare(int, value=inv_gates)
+    current_state = declare(int)
+    i = declare(int)
+
+    with if_(depth == 1):
+        assign(current_state, sequence_list[0])
+    with else_():
+        assign(current_state, cayley[sequence_list[0] * 24 + sequence_list[1]])
+        with for_(i, 2, i <= depth-1, i+1):
+            assign(current_state, cayley[current_state * 24 + sequence_list[i]])
+
+    return inv_list[current_state]
+
+
+
 # %% {QUA_program}
 with program() as randomized_benchmarking_individual:
     depth = declare(int)  # QUA variable for the varying depth
@@ -293,7 +309,7 @@ with program() as randomized_benchmarking_individual:
     m_st = declare_stream()
     # state_st = declare_stream()
     state_st = [declare_stream() for _ in range(num_qubits)]
-
+    inv_gate = declare(int)
     for i, qubit in enumerate(qubits):
 
         align()
@@ -304,16 +320,19 @@ with program() as randomized_benchmarking_individual:
         # QUA for_ loop over the random sequences
         with for_(m, 0, m < num_of_sequences, m + 1):
             # Generate the random sequence of length max_circuit_depth
-            sequence_list, inv_gate_list = generate_sequence()
+            sequence_list = generate_sequence()
             assign(depth_target, 0)  # Initialize the current depth to 0
-            
+
             with for_(depth, 1, depth <= max_circuit_depth, depth + 1):
-                # Replacing the last gate in the sequence with the sequence's inverse gate
-                # The original gate is saved in 'saved_gate' and is being restored at the end
-                assign(saved_gate, sequence_list[depth])
-                assign(sequence_list[depth], inv_gate_list[depth - 1])
+
                 # Only played the depth corresponding to target_depth
                 with if_((depth == 1) | (depth == depth_target)):
+                    # Replacing the last gate in the sequence with the sequence's inverse gate
+                    # The original gate is saved in 'saved_gate' and is being restored at the end
+                    assign(saved_gate, sequence_list[depth])
+                    # assign(inv_gate, calculate_inv_gate(sequence_list, depth))
+                    inv_gate = calculate_inv_gate(sequence_list, depth)
+                    assign(sequence_list[depth], inv_gate)
                     with for_(n, 0, n < n_avg, n + 1):
                         # Initialize the qubits
                         if reset_type == "active":
@@ -350,7 +369,6 @@ with program() as randomized_benchmarking_individual:
                 f"state{i + 1}"
             )
 
-
 with program() as randomized_benchmarking_multiplexed:
     depth = declare(int)  # QUA variable for the varying depth
     # QUA variable for the current depth (changes in steps of delta_clifford)
@@ -366,24 +384,24 @@ with program() as randomized_benchmarking_multiplexed:
     state_st = [declare_stream() for _ in range(num_qubits)]
 
     for i, qubit in enumerate(qubits):
-
         # Bring the active qubits to the desired frequency point
         machine.set_all_fluxes(flux_point=flux_point, target=qubit)
 
     # QUA for_ loop over the random sequences
     with for_(m, 0, m < num_of_sequences, m + 1):
         # Generate the random sequence of length max_circuit_depth
-        sequence_list, inv_gate_list = generate_sequence()
+        sequence_list = generate_sequence()
         assign(depth_target, 0)  # Initialize the current depth to 0
-        
+
         with for_(depth, 1, depth <= max_circuit_depth, depth + 1):
-            # Replacing the last gate in the sequence with the sequence's inverse gate
-            # The original gate is saved in 'saved_gate' and is being restored at the end
-            assign(saved_gate, sequence_list[depth])
-            assign(sequence_list[depth], inv_gate_list[depth - 1])
             # Only played the depth corresponding to target_depth
             with if_((depth == 1) | (depth == depth_target)):
 
+                # Replacing the last gate in the sequence with the sequence's inverse gate
+                # The original gate is saved in 'saved_gate' and is being restored at the end
+                assign(saved_gate, sequence_list[depth])
+                inv_gate = calculate_inv_gate(sequence_list, depth)
+                assign(sequence_list[depth], inv_gate)
                 with for_(n, 0, n < n_avg, n + 1):
 
                     for i, qubit in enumerate(qubits):
@@ -411,7 +429,6 @@ with program() as randomized_benchmarking_multiplexed:
 
                     # Align the two elements to measure after playing the circuit.
                     for i, qubit in enumerate(qubits):
-
                         readout_state(qubit, state[i])
 
                         save(state[i], state_st[i])
@@ -438,7 +455,7 @@ if node.parameters.simulate:
     samples = job.get_simulated_samples()
     fig, ax = plt.subplots(nrows=len(samples.keys()), sharex=True)
     for i, con in enumerate(samples.keys()):
-        plt.subplot(len(samples.keys()),1,i+1)
+        plt.subplot(len(samples.keys()), 1, i + 1)
         samples[con].plot()
         plt.title(con)
     plt.tight_layout()
@@ -463,15 +480,14 @@ elif node.parameters.load_data_id is None:
         # Progress bar
         progress_counter(m, num_of_sequences, start_time=results.start_time)
 
-
     # %% {Data_fetching_and_dataset_creation}
     if node.parameters.load_data_id is None:
         depths = np.arange(0, max_circuit_depth + 0.1, delta_clifford)
         depths[0] = 1
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
         ds = fetch_results_as_xarray(
-        job.result_handles,
-        qubits,
+            job.result_handles,
+            qubits,
             {"depths": depths, "sequence": np.arange(num_of_sequences)},
         )
     else:
@@ -505,14 +521,13 @@ elif node.parameters.load_data_id is None:
         print(f"{q.name}: EPC={EPC.sel(qubit=q.name).values}")
         print(f"{q.name}: EPG={EPG.sel(qubit=q.name).values}")
 
-
 # %% {Plotting}
 if not node.parameters.simulate:
     grid_names = [q.grid_location for q in qubits]
     grid = QubitGrid(ds, [q.grid_location for q in qubits])
     for ax, qubit in grid_iter(grid):
         da_state_qubit = da_state.sel(qubit=qubit["qubit"])
-        da_state_std = ds["state"].std(dim="sequence").sel(qubit=qubit["qubit"])/np.sqrt(ds.sequence.size)
+        da_state_std = ds["state"].std(dim="sequence").sel(qubit=qubit["qubit"]) / np.sqrt(ds.sequence.size)
         ax.errorbar(
             da_state_qubit.m,
             da_state_qubit,
@@ -533,11 +548,11 @@ if not node.parameters.simulate:
             f"RB fidelity = {1 - EPG.sel(**qubit).values:.4f}",
             transform=ax.transAxes,
         )
-    plt.suptitle(f"{date_time} #{node_id} \n multiplexed = {node.parameters.multiplexed} reset Type = {node.parameters.reset_type_thermal_or_active}")
+    plt.suptitle(
+        f"{date_time} #{node_id} \n multiplexed = {node.parameters.multiplexed} reset Type = {node.parameters.reset_type_thermal_or_active}")
     plt.tight_layout()
     plt.show()
     node.results["figure"] = grid.fig
-
 
     # %% {Save_results}
     if not node.parameters.simulate:
@@ -545,7 +560,6 @@ if not node.parameters.simulate:
         node.results["initial_parameters"] = node.parameters.model_dump()
         node.machine = machine
         node.save()
-
 
 # %%
 # %%
