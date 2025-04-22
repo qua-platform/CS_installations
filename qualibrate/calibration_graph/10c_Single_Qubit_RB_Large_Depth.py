@@ -107,33 +107,26 @@ def power_law(power, a, b, p):
 
 
 def generate_sequence():
-    cayley = declare(int, value=c1_table.flatten().tolist())
-    current_state = declare(int)
     step = declare(int)
     sequence = declare(int, size=max_circuit_depth + 1)
     i = declare(int)
     rand = Random(seed=seed)
 
-    assign(current_state, 0)
     with for_(i, 0, i < max_circuit_depth, i + 1):
         assign(step, rand.rand_int(24))
-        assign(current_state, cayley[current_state * 24 + step])
         assign(sequence[i], step)
 
     return sequence
+
 
 def calculate_inv_gate(sequence_list, depth):
     cayley = declare(int, value=c1_table.flatten().tolist())
     inv_list = declare(int, value=inv_gates)
     current_state = declare(int)
     i = declare(int)
-
-    with if_(depth == 1):
-        assign(current_state, sequence_list[0])
-    with else_():
-        assign(current_state, cayley[sequence_list[0] * 24 + sequence_list[1]])
-        with for_(i, 2, i <= depth-1, i+1):
-            assign(current_state, cayley[current_state * 24 + sequence_list[i]])
+    assign(current_state, 0)
+    with for_(i, 0, i < depth, i + 1):
+        assign(current_state, cayley[current_state * 24 + sequence_list[i]])
 
     return inv_list[current_state]
 

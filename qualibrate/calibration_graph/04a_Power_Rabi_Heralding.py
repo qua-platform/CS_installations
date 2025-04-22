@@ -16,7 +16,6 @@ Next steps before going to the next node:
     - Save the current state
 """
 
-
 # %% {Imports}
 from datetime import datetime
 from qualibrate import QualibrationNode, NodeParameters
@@ -25,7 +24,7 @@ from quam_libs.macros import qua_declaration, active_reset
 from quam_libs.lib.instrument_limits import instrument_limits
 from quam_libs.lib.qua_datasets import convert_IQ_to_V
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
-from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset, get_node_id
+from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset, get_node_id, fetch_results_as_xarray_for_heralding
 from quam_libs.lib.fit import fit_oscillation, oscillation
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.loops import from_array
@@ -40,7 +39,6 @@ import numpy as np
 
 # %% {Node_parameters}
 class Parameters(NodeParameters):
-
     qubits: Optional[List[str]] = None
     num_averages: int = 50
     operation_x180_or_any_90: Literal["x180_Cosine", "x90_Cosine"] = "x180_Cosine"
@@ -49,7 +47,7 @@ class Parameters(NodeParameters):
     amp_factor_step: float = 0.05
     max_number_rabi_pulses_per_sweep: int = 1
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
-    reset_type_thermal_heralding_or_active: Literal["thermal", "active", "heralding"] = "thermal"
+    reset_type_thermal_heralding_or_active: Literal["thermal", "active", "heralding"] = "heralding"
     state_discrimination: bool = True
     update_x90: bool = True
     simulate: bool = False
@@ -57,6 +55,7 @@ class Parameters(NodeParameters):
     timeout: int = 100
     load_data_id: Optional[int] = None
     multiplexed: bool = True
+
 
 node = QualibrationNode(name="04_Power_Rabi", parameters=Parameters())
 node_id = get_node_id()
@@ -117,7 +116,7 @@ with program() as power_rabi:
     for i, qubit in enumerate(qubits):
         # Bring the active qubits to the minimum frequency point
         machine.set_all_fluxes(flux_point=flux_point, target=qubit)
-        
+
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_(*from_array(npi, N_pi_vec)):
@@ -148,25 +147,33 @@ with program() as power_rabi:
         n_st.save("n")
         for i, qubit in enumerate(qubits):
             if operation == "x180_Cosine":
-                if state_discrimination:
+                if state_discrimination and reset_type != "heralding":
                     state_stream[i].boolean_to_int().buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(
                         f"state{i + 1}"
                     )
+                elif state_discrimination and reset_type == "heralding":
+                    state_stream[i].boolean_to_int().buffer(len(amps)).buffer(np.ceil(N_pi / 2)).save_all(
+                        f"state{i + 1}"
+                    )
+
                 else:
                     I_st[i].buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(f"I{i + 1}")
                     Q_st[i].buffer(len(amps)).buffer(np.ceil(N_pi / 2)).average().save(f"Q{i + 1}")
 
             elif operation in ["x90_Cosine", "-x90_Cosine"]:
-                if state_discrimination:
+                if state_discrimination and reset_type != "heralding":
                     state_stream[i].boolean_to_int().buffer(len(amps)).buffer(np.ceil(N_pi / 4)).average().save(
                         f"state{i + 1}"
+                    )
+                elif state_discrimination and reset_type == "heralding":
+                    state_stream[i].boolean_to_int().buffer(len(amps)).buffer(np.ceil(N_pi / 4)).save_all(
+                    f"state{i + 1}"
                     )
                 else:
                     I_st[i].buffer(len(amps)).buffer(np.ceil(N_pi / 4)).average().save(f"I{i + 1}")
                     Q_st[i].buffer(len(amps)).buffer(np.ceil(N_pi / 4)).average().save(f"Q{i + 1}")
             else:
                 raise ValueError(f"Unrecognized operation {operation}.")
-
 
 # %% {Simulate_or_execute}
 if node.parameters.simulate:
@@ -202,19 +209,21 @@ elif node.parameters.load_data_id is None:
 if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
-        ds = fetch_results_as_xarray(job.result_handles, qubits, {"amp": amps, "N": N_pi_vec})
+        if state_discrimination and reset_type == "heralding":
+            amps = amps[1:]
+            ds = fetch_results_as_xarray_for_heralding(job.result_handles, qubits, {"amp": amps, "N": N_pi_vec})
+        else:
+            ds = fetch_results_as_xarray(job.result_handles, qubits, {"amp": amps, "N": N_pi_vec})
         if not state_discrimination:
             ds = convert_IQ_to_V(ds, qubits)
-        if state_discrimination and reset_type == "heralding":
-            pass
 
         # Add the qubit pulse absolute amplitude to the dataset
         ds = ds.assign_coords(
-        {
-            "abs_amp": (
-                ["qubit", "amp"],
-                np.array([q.I.operations[operation].amplitude * amps for q in qubits]),
-            )
+            {
+                "abs_amp": (
+                    ["qubit", "amp"],
+                    np.array([q.I.operations[operation].amplitude * amps for q in qubits]),
+                )
             }
         )
     else:
@@ -276,7 +285,7 @@ if not node.parameters.simulate:
             if new_pi_amp < limits.max_x180_wf_amplitude:
                 fit_results[q.name]["Pi_amplitude"] = new_pi_amp
                 print(
-                    f"amplitude for Pi pulse is modified by a factor of {I_n.idxmax(dim='amp').sel(qubit = q.name):.2f}"
+                    f"amplitude for Pi pulse is modified by a factor of {I_n.idxmax(dim='amp').sel(qubit=q.name):.2f}"
                 )
                 print(f"new amplitude is {1e3 * new_pi_amp:.2f} {limits.units} \n")
             else:
@@ -305,7 +314,8 @@ if not node.parameters.simulate:
             ax.axvline(1e3 * ds.abs_amp.loc[qubit][data_max_idx.loc[qubit]], color="r")
         ax.set_xlabel("Amplitude [mV]")
         ax.set_title(qubit["qubit"])
-    grid.fig.suptitle(f"Rabi : I vs. amplitude \n {date_time} #{node_id} \n multiplexed = {node.parameters.multiplexed} reset Type = {node.parameters.reset_type_thermal_heralding_or_active}")
+    grid.fig.suptitle(
+        f"Rabi : I vs. amplitude \n {date_time} #{node_id} \n multiplexed = {node.parameters.multiplexed} reset Type = {node.parameters.reset_type_thermal_heralding_or_active}")
     plt.tight_layout()
     plt.show()
     node.results["figure"] = grid.fig

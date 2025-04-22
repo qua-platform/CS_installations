@@ -150,26 +150,16 @@ def power_law(power, a, b, p):
 
 
 def generate_sequence(interleaved_gate_index):
-    cayley = declare(int, value=c1_table.flatten().tolist())
-    # inv_list = declare(int, value=inv_gates)
-    current_state = declare(int)
     step = declare(int)
     sequence = declare(int, size=2 * max_circuit_depth + 1)
-    # inv_gate = declare(int, size=2 * max_circuit_depth + 1)
     i = declare(int)
     rand = Random(seed=seed)
 
-    assign(current_state, 0)
     with for_(i, 0, i < 2 * max_circuit_depth, i + 2):
         assign(step, rand.rand_int(24))
-        assign(current_state, cayley[current_state * 24 + step])
         assign(sequence[i], step)
-        # assign(inv_gate[i], inv_list[current_state])
-        # interleaved gate
         assign(step, interleaved_gate_index)
-        assign(current_state, cayley[current_state * 24 + step])
         assign(sequence[i + 1], step)
-        # assign(inv_gate[i + 1], inv_list[current_state])
 
     return sequence
 
@@ -179,15 +169,12 @@ def calculate_inv_gate(sequence_list, depth):
     inv_list = declare(int, value=inv_gates)
     current_state = declare(int)
     i = declare(int)
-
-    with if_(depth == 1):
-        assign(current_state, sequence_list[0])
-    with else_():
-        assign(current_state, cayley[sequence_list[0] * 24 + sequence_list[1]])
-        with for_(i, 2, i <= depth-1, i+1):
-            assign(current_state, cayley[current_state * 24 + sequence_list[i]])
+    assign(current_state, 0)
+    with for_(i, 0, i < depth, i + 1):
+        assign(current_state, cayley[current_state * 24 + sequence_list[i]])
 
     return inv_list[current_state]
+
 
 
 def play_sequence(sequence_list, depth, qubit: Transmon):
