@@ -123,8 +123,6 @@ def generate_sequence():
         assign(current_state, cayley[current_state * 24 + step])
         assign(sequence[i], step)
         assign(inv_gate[i], inv_list[current_state])
-        save(sequence[i], "sequence")
-        save(inv_gate[i], "inv_gate")
     return sequence, inv_gate
 
 

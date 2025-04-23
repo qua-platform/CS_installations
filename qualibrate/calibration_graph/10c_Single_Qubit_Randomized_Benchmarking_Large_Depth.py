@@ -46,7 +46,7 @@ class Parameters(NodeParameters):
     use_strict_timing: bool = False
     num_random_sequences: int = 1  # Number of random sequences
     num_averages: int = 1
-    max_circuit_depth: int = 5  # Maximum circuit depth
+    max_circuit_depth: int = 3  # Maximum circuit depth
     delta_clifford: int = 1
     seed: int = 345324
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
@@ -115,7 +115,6 @@ def generate_sequence():
     with for_(i, 0, i < max_circuit_depth, i + 1):
         assign(step, rand.rand_int(24))
         assign(sequence[i], step)
-        save(sequence[i], "sequence")
 
     return sequence
 
@@ -128,7 +127,6 @@ def calculate_inv_gate(sequence_list, depth):
     assign(current_state, 0)
     with for_(i, 0, i < depth, i + 1):
         assign(current_state, cayley[current_state * 24 + sequence_list[i]])
-    save(inv_list[current_state], "inv_gate")
 
     return inv_list[current_state]
 
