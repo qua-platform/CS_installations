@@ -16,7 +16,7 @@ Next steps before going to the next node:
 
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
-from configuration import *
+from configuration_mw_fem import *
 import matplotlib.pyplot as plt
 from qualang_tools.loops import from_array
 from qualang_tools.results import fetching_tool
@@ -139,6 +139,7 @@ else:
             progress_counter(n, n_avg, start_time=results.start_time)
             # Plot
             plt.subplot(221)
+            plt.suptitle("T2R measurement")
             plt.cla()
             plt.plot(4 * t_delays, I1)
             plt.ylabel("I quadrature [V]")
