@@ -1,5 +1,5 @@
 
-# Single QUA script generated at 2025-04-21 18:26:47.191965
+# Single QUA script generated at 2025-04-23 12:40:28.930480
 # QUA library version: 1.2.2
 
 from qm import CompilerOptionArguments
@@ -14,19 +14,19 @@ with program() as prog:
     v6 = declare(int, )
     set_dc_offset("q1.z", "single", 0.0)
     set_dc_offset("q2.z", "single", 0.0)
-    set_dc_offset("c12.z", "single", 0.1)
+    set_dc_offset("c12.z", "single", 0)
     with for_(v1,0,(v1<100),(v1+1)):
         r1 = declare_stream()
         save(v1, r1)
         with for_(v6,-15000000,(v6<=14900000),(v6+100000)):
-            update_frequency("q1.resonator", (v6+-282945421.0), "Hz", False)
+            update_frequency("q1.resonator", (v6+-300000000.0), "Hz", False)
             measure("readout", "q1.resonator", dual_demod.full("iw1", "iw2", v2), dual_demod.full("iw3", "iw1", v4))
             wait(250, "q1.resonator")
             r2 = declare_stream()
             save(v2, r2)
             r4 = declare_stream()
             save(v4, r4)
-            update_frequency("q2.resonator", (v6+-206821879.0), "Hz", False)
+            update_frequency("q2.resonator", (v6+-200000000.0), "Hz", False)
             measure("readout", "q2.resonator", dual_demod.full("iw1", "iw2", v3), dual_demod.full("iw3", "iw1", v5))
             wait(250, "q2.resonator")
             r3 = declare_stream()
@@ -46,7 +46,7 @@ config = {
     "controllers": {
         "con1": {
             "fems": {
-                "3": {
+                "5": {
                     "type": "LF",
                     "analog_outputs": {
                         "5": {
@@ -157,7 +157,7 @@ config = {
                 "const": "c12.z.const.pulse",
             },
             "singleInput": {
-                "port": ('con1', 3, 5),
+                "port": ('con1', 5, 5),
             },
         },
         "q1.I": {
@@ -173,7 +173,7 @@ config = {
             },
             "intermediate_frequency": 100000000.0,
             "singleInput": {
-                "port": ('con1', 3, 1),
+                "port": ('con1', 5, 1),
             },
         },
         "q1.Q": {
@@ -189,7 +189,7 @@ config = {
             },
             "intermediate_frequency": 100000000.0,
             "singleInput": {
-                "port": ('con1', 3, 1),
+                "port": ('con1', 5, 1),
             },
         },
         "q1.z": {
@@ -197,7 +197,7 @@ config = {
                 "const": "q1.z.const.pulse",
             },
             "singleInput": {
-                "port": ('con1', 3, 2),
+                "port": ('con1', 5, 2),
             },
         },
         "q1.resonator": {
@@ -205,7 +205,7 @@ config = {
                 "readout": "q1.resonator.readout.pulse",
                 "const": "q1.resonator.const.pulse",
             },
-            "intermediate_frequency": -282945421.0,
+            "intermediate_frequency": -300000000.0,
             "MWOutput": {
                 "port": ('con1', 2, 1),
             },
@@ -229,7 +229,7 @@ config = {
             },
             "intermediate_frequency": 200000000.0,
             "singleInput": {
-                "port": ('con1', 3, 3),
+                "port": ('con1', 5, 3),
             },
         },
         "q2.Q": {
@@ -245,7 +245,7 @@ config = {
             },
             "intermediate_frequency": 200000000.0,
             "singleInput": {
-                "port": ('con1', 3, 3),
+                "port": ('con1', 5, 3),
             },
         },
         "q2.z": {
@@ -253,7 +253,7 @@ config = {
                 "const": "q2.z.const.pulse",
             },
             "singleInput": {
-                "port": ('con1', 3, 4),
+                "port": ('con1', 5, 4),
             },
         },
         "q2.resonator": {
@@ -261,7 +261,7 @@ config = {
                 "readout": "q2.resonator.readout.pulse",
                 "const": "q2.resonator.const.pulse",
             },
-            "intermediate_frequency": -206821879.0,
+            "intermediate_frequency": -200000000.0,
             "MWOutput": {
                 "port": ('con1', 2, 1),
             },
@@ -1048,7 +1048,7 @@ loaded_config = {
         "con1": {
             "type": "opx1000",
             "fems": {
-                "3": {
+                "5": {
                     "type": "LF",
                     "analog_outputs": {
                         "5": {
@@ -1221,7 +1221,7 @@ loaded_config = {
                 "duration": 4,
             },
             "singleInput": {
-                "port": ('con1', 3, 5),
+                "port": ('con1', 5, 5),
             },
         },
         "q1.I": {
@@ -1247,7 +1247,7 @@ loaded_config = {
                 "duration": 4,
             },
             "singleInput": {
-                "port": ('con1', 3, 1),
+                "port": ('con1', 5, 1),
             },
             "intermediate_frequency": 100000000.0,
         },
@@ -1274,7 +1274,7 @@ loaded_config = {
                 "duration": 4,
             },
             "singleInput": {
-                "port": ('con1', 3, 1),
+                "port": ('con1', 5, 1),
             },
             "intermediate_frequency": 100000000.0,
         },
@@ -1294,7 +1294,7 @@ loaded_config = {
                 "duration": 4,
             },
             "singleInput": {
-                "port": ('con1', 3, 2),
+                "port": ('con1', 5, 2),
             },
         },
         "q1.resonator": {
@@ -1322,7 +1322,7 @@ loaded_config = {
             },
             "smearing": 0,
             "time_of_flight": 28,
-            "intermediate_frequency": -282945421.0,
+            "intermediate_frequency": -300000000.0,
         },
         "q2.I": {
             "digitalInputs": {},
@@ -1347,7 +1347,7 @@ loaded_config = {
                 "duration": 4,
             },
             "singleInput": {
-                "port": ('con1', 3, 3),
+                "port": ('con1', 5, 3),
             },
             "intermediate_frequency": 200000000.0,
         },
@@ -1374,7 +1374,7 @@ loaded_config = {
                 "duration": 4,
             },
             "singleInput": {
-                "port": ('con1', 3, 3),
+                "port": ('con1', 5, 3),
             },
             "intermediate_frequency": 200000000.0,
         },
@@ -1394,7 +1394,7 @@ loaded_config = {
                 "duration": 4,
             },
             "singleInput": {
-                "port": ('con1', 3, 4),
+                "port": ('con1', 5, 4),
             },
         },
         "q2.resonator": {
@@ -1422,7 +1422,7 @@ loaded_config = {
             },
             "smearing": 0,
             "time_of_flight": 28,
-            "intermediate_frequency": -206821879.0,
+            "intermediate_frequency": -200000000.0,
         },
     },
     "pulses": {

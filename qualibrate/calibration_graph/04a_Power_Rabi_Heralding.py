@@ -210,6 +210,23 @@ if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
         if state_discrimination and reset_type == "heralding":
+            # data = job.result_handles.state1.fetch_all()['value']
+            # data_squeezed = data.squeeze()
+            # threshold = 0.5
+            # result = np.empty_like(data_squeezed, dtype=float)
+            # # Apply thresholding rule per row
+            # for i, row in enumerate(data_squeezed):
+            #     new_row = []
+            #     for j in range(len(row)):
+            #         if j == 0:
+            #             new_row.append(np.nan)  # No previous value
+            #         else:
+            #             new_row.append(row[j] if row[j - 1] > threshold else np.nan)
+            #     result[i] = np.array(new_row, dtype=float)  # <- fix: convert to array
+            # # remove the first column which is full with Nans
+            # result_no_first_column = result[:, 1:]
+            # data_averaged = np.nanmean(result_no_first_column, axis=0)
+            amps = amps[1:]
             ds = fetch_results_as_xarray_for_heralding(job.result_handles, qubits, {"amp": amps, "N": N_pi_vec})
         else:
             ds = fetch_results_as_xarray(job.result_handles, qubits, {"amp": amps, "N": N_pi_vec})
