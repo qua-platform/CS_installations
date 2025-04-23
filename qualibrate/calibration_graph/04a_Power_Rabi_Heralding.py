@@ -40,9 +40,9 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
-    num_averages: int = 50
+    num_averages: int = 10
     operation_x180_or_any_90: Literal["x180_Cosine", "x90_Cosine"] = "x180_Cosine"
-    min_amp_factor: float = 0.
+    min_amp_factor: float = 0.0
     max_amp_factor: float = 1.5
     amp_factor_step: float = 0.05
     max_number_rabi_pulses_per_sweep: int = 1
@@ -95,9 +95,9 @@ amps = np.arange(
 
 # Number of applied Rabi pulses sweep
 if N_pi > 1:
-    if operation == "x180":
+    if operation == "x180_Cosine":
         N_pi_vec = np.arange(1, N_pi, 2).astype("int")
-    elif operation in ["x90", "-x90", "y90", "-y90"]:
+    elif operation in ["x90_Cosine", "-x90_Cosine", "y90_Cosine", "-y90_Cosine"]:
         N_pi_vec = np.arange(2, N_pi, 4).astype("int")
     else:
         raise ValueError(f"Unrecognized operation {operation}.")
@@ -210,7 +210,6 @@ if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
         if state_discrimination and reset_type == "heralding":
-            amps = amps[1:]
             ds = fetch_results_as_xarray_for_heralding(job.result_handles, qubits, {"amp": amps, "N": N_pi_vec})
         else:
             ds = fetch_results_as_xarray(job.result_handles, qubits, {"amp": amps, "N": N_pi_vec})

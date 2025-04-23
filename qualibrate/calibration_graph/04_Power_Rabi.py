@@ -42,12 +42,12 @@ import numpy as np
 class Parameters(NodeParameters):
 
     qubits: Optional[List[str]] = None
-    num_averages: int = 50
+    num_averages: int = 10
     operation_x180_or_any_90: Literal["x180_Cosine", "x90_Cosine"] = "x180_Cosine"
-    min_amp_factor: float = 0.
+    min_amp_factor: float = 0.0
     max_amp_factor: float = 1.5
     amp_factor_step: float = 0.05
-    max_number_rabi_pulses_per_sweep: int = 1
+    max_number_rabi_pulses_per_sweep: int = 4
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     reset_type_thermal_heralding_or_active: Literal["thermal", "active", "heralding"] = "thermal"
     state_discrimination: bool = True
@@ -96,9 +96,9 @@ amps = np.arange(
 
 # Number of applied Rabi pulses sweep
 if N_pi > 1:
-    if operation == "x180":
+    if operation == "x180_Cosine":
         N_pi_vec = np.arange(1, N_pi, 2).astype("int")
-    elif operation in ["x90", "-x90", "y90", "-y90"]:
+    elif operation in ["x900_Cosine", "-x900_Cosine", "y900_Cosine", "-y900_Cosine"]:
         N_pi_vec = np.arange(2, N_pi, 4).astype("int")
     else:
         raise ValueError(f"Unrecognized operation {operation}.")
@@ -205,9 +205,6 @@ if not node.parameters.simulate:
         ds = fetch_results_as_xarray(job.result_handles, qubits, {"amp": amps, "N": N_pi_vec})
         if not state_discrimination:
             ds = convert_IQ_to_V(ds, qubits)
-        if state_discrimination and reset_type == "heralding":
-            pass
-
         # Add the qubit pulse absolute amplitude to the dataset
         ds = ds.assign_coords(
         {
