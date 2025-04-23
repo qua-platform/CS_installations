@@ -5,7 +5,7 @@ SINGLE QUBIT RANDOMIZED BENCHMARKING
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from configuration import *
+from configuration_mw_fem import *
 import matplotlib.pyplot as plt
 import numpy as np
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
