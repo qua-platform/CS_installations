@@ -42,14 +42,14 @@ import numpy as np
 class Parameters(NodeParameters):
 
     qubits: Optional[List[str]] = None
-    num_averages: int = 3
+    num_averages: int = 10
     operation_x180_or_any_90: Literal["x180_Cosine", "x90_Cosine"] = "x180_Cosine"
     min_amp_factor: float = 0.0
     max_amp_factor: float = 1.5
-    amp_factor_step: float = 0.4
+    amp_factor_step: float = 0.05
     max_number_rabi_pulses_per_sweep: int = 1
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
-    reset_type_thermal_heralding_or_active: Literal["thermal", "active", "heralding"] = "thermal"
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
     state_discrimination: bool = True
     update_x90: bool = True
     simulate: bool = False
@@ -84,7 +84,7 @@ num_qubits = len(qubits)
 n_avg = node.parameters.num_averages  # The number of averages
 N_pi = node.parameters.max_number_rabi_pulses_per_sweep  # Number of applied Rabi pulses sweep
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
-reset_type = node.parameters.reset_type_thermal_heralding_or_active  # "thermal", "heralding" or "active"
+reset_type = node.parameters.reset_type_thermal_or_active  # "thermal", "heralding" or "active"
 state_discrimination = node.parameters.state_discrimination
 operation = node.parameters.operation_x180_or_any_90  # The qubit operation to play
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
@@ -302,7 +302,7 @@ if not node.parameters.simulate:
             ax.axvline(1e3 * ds.abs_amp.loc[qubit][data_max_idx.loc[qubit]], color="r")
         ax.set_xlabel("Amplitude [mV]")
         ax.set_title(qubit["qubit"])
-    grid.fig.suptitle(f"Rabi : I vs. amplitude \n {date_time} #{node_id} \n multiplexed = {node.parameters.multiplexed} reset Type = {node.parameters.reset_type_thermal_heralding_or_active}")
+    grid.fig.suptitle(f"Rabi : I vs. amplitude \n {date_time} #{node_id} \n multiplexed = {node.parameters.multiplexed} reset Type = {node.parameters.reset_type_thermal_or_active}")
     plt.tight_layout()
     plt.show()
     node.results["figure"] = grid.fig
