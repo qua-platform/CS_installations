@@ -115,7 +115,7 @@ else:
             # Progress bar
             progress_counter(n, n_avg, start_time=results.start_time)
             # Plot
-            plt.suptitle("T1 measurement")
+            plt.suptitle("T2E measurement")
             plt.subplot(221)
             plt.cla()
             plt.plot(8 * t_delays, I1)
