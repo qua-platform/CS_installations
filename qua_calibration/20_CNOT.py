@@ -14,7 +14,7 @@ Prerequisites:
 
 from qm.qua import *
 from qm import QuantumMachinesManager
-from configuration import *
+from configuration_mw_fem import *
 import matplotlib.pyplot as plt
 from qm import SimulationConfig
 from qualang_tools.loops import from_array
