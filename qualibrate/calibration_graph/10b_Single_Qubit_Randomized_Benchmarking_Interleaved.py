@@ -348,7 +348,7 @@ with program() as randomized_benchmarking:
         with for_(m, 0, m < num_of_sequences, m + 1):
             # Generate the random sequence of length max_circuit_depth
             sequence_list, inv_gate_list = generate_sequence(interleaved_gate_index=interleaved_gate_index)
-            assign(depth_target, 0)  # Initialize the current depth to 0
+            assign(depth_target, 1)  # Initialize the current depth to 0
             
             with for_(depth, 1, depth <= 2 * max_circuit_depth, depth + 1):
                 # Replacing the last gate in the sequence with the sequence's inverse gate
@@ -356,7 +356,7 @@ with program() as randomized_benchmarking:
                 assign(saved_gate, sequence_list[depth])
                 assign(sequence_list[depth], inv_gate_list[depth - 1])
                 # Only played the depth corresponding to target_depth
-                with if_((depth == 1) | (depth == depth_target)):
+                with if_(depth == depth_target):
                     with for_(n, 0, n < n_avg, n + 1):
                         # Initialize the qubits
                         if reset_type == "active":

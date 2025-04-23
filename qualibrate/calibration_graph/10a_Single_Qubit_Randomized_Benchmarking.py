@@ -45,10 +45,10 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     use_state_discrimination: bool = True
     use_strict_timing: bool = False
-    num_random_sequences: int = 10  # Number of random sequences
-    num_averages: int = 10
-    max_circuit_depth: int = 50  # Maximum circuit depth
-    delta_clifford: int = 10
+    num_random_sequences: int = 1  # Number of random sequences
+    num_averages: int = 1
+    max_circuit_depth: int = 3  # Maximum circuit depth
+    delta_clifford: int = 1
     seed: int = 345324
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
@@ -56,7 +56,7 @@ class Parameters(NodeParameters):
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = False
+    multiplexed: bool = True
 
 node = QualibrationNode(name="10a_Single_Qubit_Randomized_Benchmarking", parameters=Parameters())
 node_id = get_node_id()
@@ -123,7 +123,8 @@ def generate_sequence():
         assign(current_state, cayley[current_state * 24 + step])
         assign(sequence[i], step)
         assign(inv_gate[i], inv_list[current_state])
-
+        save(sequence[i], "sequence")
+        save(inv_gate[i], "inv_gate")
     return sequence, inv_gate
 
 
@@ -305,7 +306,7 @@ with program() as randomized_benchmarking_individual:
         with for_(m, 0, m < num_of_sequences, m + 1):
             # Generate the random sequence of length max_circuit_depth
             sequence_list, inv_gate_list = generate_sequence()
-            assign(depth_target, 0)  # Initialize the current depth to 0
+            assign(depth_target, 1)  # Initialize the current depth to 0
             
             with for_(depth, 1, depth <= max_circuit_depth, depth + 1):
                 # Replacing the last gate in the sequence with the sequence's inverse gate
@@ -313,7 +314,7 @@ with program() as randomized_benchmarking_individual:
                 assign(saved_gate, sequence_list[depth])
                 assign(sequence_list[depth], inv_gate_list[depth - 1])
                 # Only played the depth corresponding to target_depth
-                with if_((depth == 1) | (depth == depth_target)):
+                with if_(depth == depth_target):
                     with for_(n, 0, n < n_avg, n + 1):
                         # Initialize the qubits
                         if reset_type == "active":
@@ -374,7 +375,7 @@ with program() as randomized_benchmarking_multiplexed:
     with for_(m, 0, m < num_of_sequences, m + 1):
         # Generate the random sequence of length max_circuit_depth
         sequence_list, inv_gate_list = generate_sequence()
-        assign(depth_target, 0)  # Initialize the current depth to 0
+        assign(depth_target, 1)  # Initialize the current depth to 0
         
         with for_(depth, 1, depth <= max_circuit_depth, depth + 1):
             # Replacing the last gate in the sequence with the sequence's inverse gate
@@ -382,7 +383,9 @@ with program() as randomized_benchmarking_multiplexed:
             assign(saved_gate, sequence_list[depth])
             assign(sequence_list[depth], inv_gate_list[depth - 1])
             # Only played the depth corresponding to target_depth
-            with if_((depth == 1) | (depth == depth_target)):
+            # with if_((depth == 1) | (depth == depth_target)):
+            with if_(depth == depth_target):
+                save(depth, "depth")
 
                 with for_(n, 0, n < n_avg, n + 1):
 
