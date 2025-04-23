@@ -16,7 +16,7 @@ Next steps before going to the next node:
 
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
-from configuration import *
+from configuration_mw_fem import *
 import matplotlib.pyplot as plt
 from qualang_tools.results import fetching_tool
 from qualang_tools.plot import interrupt_on_close
