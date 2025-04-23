@@ -4,7 +4,7 @@ READOUT OPTIMISATION: DURATION
 
 from qm import QuantumMachinesManager, SimulationConfig
 from qm.qua import *
-from configuration import *
+from configuration_mw_fem import *
 import matplotlib.pyplot as plt
 from qualang_tools.results import fetching_tool, progress_counter
 import math
