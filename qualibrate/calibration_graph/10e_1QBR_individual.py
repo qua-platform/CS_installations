@@ -13,7 +13,7 @@ The data is then post-processed to extract the single-qubit gate fidelity and er
 .
 Prerequisites:
     - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
-    - Having calibrated qubit pi pulse (x180_Cosine) by running qubit spectroscopy, rabi_chevron, power_rabi and updated the state.
+    - Having calibrated qubit pi pulse (x180) by running qubit spectroscopy, rabi_chevron, power_rabi and updated the state.
     - Having the qubit frequency perfectly calibrated (ramsey).
     - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR and state discrimination.
     - Set the desired flux bias.
@@ -44,10 +44,10 @@ class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     use_state_discrimination: bool = True
     use_strict_timing: bool = False
-    num_random_sequences: int = 1  # Number of random sequences
+    num_random_sequences: int = 10  # Number of random sequences
     num_averages: int = 1
-    max_circuit_depth: int = 3  # Maximum circuit depth
-    delta_clifford: int = 1
+    max_circuit_depth: int = 4000  # Maximum circuit depth
+    delta_clifford: int = 20
     seed: int = 345324
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
@@ -55,7 +55,7 @@ class Parameters(NodeParameters):
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
-    multiplexed: bool = True
+    multiplexed: bool = False
 
 
 node = QualibrationNode(name="10a_Single_Qubit_Randomized_Benchmarking", parameters=Parameters())
@@ -107,28 +107,24 @@ def power_law(power, a, b, p):
 
 
 def generate_sequence():
-    step = declare(int)
-    sequence = declare(int, size=max_circuit_depth + 1)
-    i = declare(int)
-    rand = Random(seed=seed)
-
-    with for_(i, 0, i < max_circuit_depth, i + 1):
-        assign(step, rand.rand_int(24))
-        assign(sequence[i], step)
-
-    return sequence
-
-
-def calculate_inv_gate(sequence_list, depth):
     cayley = declare(int, value=c1_table.flatten().tolist())
     inv_list = declare(int, value=inv_gates)
     current_state = declare(int)
+    step = declare(int)
+    sequence = declare(int, size=max_circuit_depth + 1)
+    inv_gate = declare(int, size=max_circuit_depth + 1)
     i = declare(int)
-    assign(current_state, 0)
-    with for_(i, 0, i < depth, i + 1):
-        assign(current_state, cayley[current_state * 24 + sequence_list[i]])
+    rand = Random(seed=seed)
 
-    return inv_list[current_state]
+    assign(current_state, 0)
+    with for_(i, 0, i < max_circuit_depth, i + 1):
+        assign(step, rand.rand_int(24))
+        assign(current_state, cayley[current_state * 24 + step])
+        assign(sequence[i], step)
+        assign(inv_gate[i], inv_list[current_state])
+
+    return sequence, inv_gate
+
 
 
 def play_sequence(sequence_list, depth, qubit: Transmon):
@@ -204,7 +200,7 @@ def play_sequence(sequence_list, depth, qubit: Transmon):
                 qubit.xy_frame_rotation_2pi(0.25)
                 qubit.xy_play("-x90_Cosine")
                 qubit.xy_reset_frame()
-                # -x90
+                #-x90
                 qubit.xy_play("-x90_Cosine")
             with case_(12):  # x90_Cosine
                 qubit.xy_play("x90_Cosine")
@@ -245,7 +241,7 @@ def play_sequence(sequence_list, depth, qubit: Transmon):
             with case_(19):  # Y90 Z90
                 # x180
                 qubit.xy_play("x180_Cosine")
-                # -y90
+                #-y90
                 qubit.xy_frame_rotation_2pi(0.25)
                 qubit.xy_play("-x90_Cosine")
                 qubit.xy_reset_frame()
@@ -282,7 +278,6 @@ def play_sequence(sequence_list, depth, qubit: Transmon):
                 # -x90
                 qubit.xy_play("-x90_Cosine")
 
-
 # %% {QUA_program}
 with program() as randomized_benchmarking_individual:
     depth = declare(int)  # QUA variable for the varying depth
@@ -297,29 +292,32 @@ with program() as randomized_benchmarking_individual:
     m_st = declare_stream()
     # state_st = declare_stream()
     state_st = [declare_stream() for _ in range(num_qubits)]
-    inv_gate = declare(int)
-    for i, qubit in enumerate(qubits):
 
-        align()
+    # for i, qubit in enumerate(qubits):
+    #
+    #     align()
 
-        # Bring the active qubits to the desired frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+# Bring the active qubits to the desired frequency point
+# machine.set_all_fluxes(flux_point=flux_point, target=qubit)
 
-        # QUA for_ loop over the random sequences
-        with for_(m, 0, m < num_of_sequences, m + 1):
-            # Generate the random sequence of length max_circuit_depth
-            sequence_list = generate_sequence()
-            assign(depth_target, 1)  # Initialize the current depth to 0
+    # QUA for_ loop over the random sequences
+    with for_(m, 0, m < num_of_sequences, m + 1):
+        # Generate the random sequence of length max_circuit_depth
+        sequence_list, inv_gate_list = generate_sequence()
+        assign(depth_target, 1)  # Initialize the current depth to 0
 
-            with for_(depth, 1, depth <= max_circuit_depth, depth + 1):
+        with for_(depth, 1, depth <= max_circuit_depth, depth + 1):
+            # Replacing the last gate in the sequence with the sequence's inverse gate
+            # The original gate is saved in 'saved_gate' and is being restored at the end
+            assign(saved_gate, sequence_list[depth])
 
-                # Only played the depth corresponding to target_depth
-                with if_(depth == depth_target):
-                    # Replacing the last gate in the sequence with the sequence's inverse gate
-                    # The original gate is saved in 'saved_gate' and is being restored at the end
-                    assign(saved_gate, sequence_list[depth])
-                    inv_gate = calculate_inv_gate(sequence_list, depth)
-                    assign(sequence_list[depth], inv_gate)
+            assign(sequence_list[depth], inv_gate_list[depth - 1])
+            # Only played the depth corresponding to target_depth
+
+            with if_(depth == depth_target):
+                for i, qubit in enumerate(qubits):
+                    machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+                    align()
                     with for_(n, 0, n < n_avg, n + 1):
                         # Initialize the qubits
                         if reset_type == "active":
@@ -341,13 +339,13 @@ with program() as randomized_benchmarking_individual:
 
                         save(state[i], state_st[i])
 
-                    # Go to the next depth
-                    assign(depth_target, depth_target + delta_clifford)
-                # Reset the last gate of the sequence back to the original Clifford gate
-                # (that was replaced by the recovery gate at the beginning)
-                assign(sequence_list[depth], saved_gate)
-            # Save the counter for the progress bar
-            save(m, m_st)
+                # Go to the next depth
+                assign(depth_target, depth_target + delta_clifford)
+            # Reset the last gate of the sequence back to the original Clifford gate
+            # (that was replaced by the recovery gate at the beginning)
+            assign(sequence_list[depth], saved_gate)
+        # Save the counter for the progress bar
+        save(m, m_st)
 
     with stream_processing():
         m_st.save("iteration")
@@ -377,19 +375,17 @@ with program() as randomized_benchmarking_multiplexed:
     # QUA for_ loop over the random sequences
     with for_(m, 0, m < num_of_sequences, m + 1):
         # Generate the random sequence of length max_circuit_depth
-        sequence_list = generate_sequence()
+        sequence_list, inv_gate_list = generate_sequence()
         assign(depth_target, 1)  # Initialize the current depth to 0
 
         with for_(depth, 1, depth <= max_circuit_depth, depth + 1):
+            # Replacing the last gate in the sequence with the sequence's inverse gate
+            # The original gate is saved in 'saved_gate' and is being restored at the end
+            assign(saved_gate, sequence_list[depth])
+            assign(sequence_list[depth], inv_gate_list[depth - 1])
             # Only played the depth corresponding to target_depth
             with if_(depth == depth_target):
 
-                # Replacing the last gate in the sequence with the sequence's inverse gate
-                # The original gate is saved in 'saved_gate' and is being restored at the end
-                assign(saved_gate, sequence_list[depth])
-                inv_gate = calculate_inv_gate(sequence_list, depth)
-                save(depth, "depth")
-                assign(sequence_list[depth], inv_gate)
                 with for_(n, 0, n < n_avg, n + 1):
 
                     for i, qubit in enumerate(qubits):
@@ -455,7 +451,7 @@ elif node.parameters.load_data_id is None:
     # Prepare data for saving
     node.results = {}
     date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+# with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
     qm = qmm.open_qm(config)
     if not node.parameters.multiplexed:
         job = qm.execute(randomized_benchmarking_individual)
@@ -550,11 +546,15 @@ if not node.parameters.simulate:
         node.save()
 
 # %%
+
 # %%
-debug = False
+debug = True
 if debug:
     from qm import generate_qua_script
 
-    sourceFile = open('debug_randomized_benchmarking_multiplexed.py', 'w')
+    sourceFile = open('randomized_benchmarking_individual.py', 'w')
+    print(generate_qua_script(randomized_benchmarking_individual, config), file=sourceFile)
+    sourceFile.close()
+    sourceFile = open('randomized_benchmarking_multiplexed.py', 'w')
     print(generate_qua_script(randomized_benchmarking_multiplexed, config), file=sourceFile)
     sourceFile.close()

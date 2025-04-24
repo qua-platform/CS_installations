@@ -133,7 +133,7 @@ delta_clifford = node.parameters.delta_clifford
 flux_point = node.parameters.flux_point_joint_or_independent
 reset_type = node.parameters.reset_type_thermal_or_active
 assert (max_circuit_depth / delta_clifford).is_integer(), "max_circuit_depth / delta_clifford must be an integer."
-num_depths = max_circuit_depth // delta_clifford + 1
+num_depths = max_circuit_depth // delta_clifford
 seed = node.parameters.seed  # Pseudo-random number generator seed
 # Flag to enable state discrimination if the readout has been calibrated (rotated blobs and threshold)
 state_discrimination = node.parameters.use_state_discrimination
@@ -432,8 +432,8 @@ elif node.parameters.load_data_id is None:
 
     # %% {Data_fetching_and_dataset_creation}
     if node.parameters.load_data_id is None:
-        depths = np.arange(0, max_circuit_depth + 0.1, delta_clifford)
-        depths[0] = 1
+        depths = np.arange(1, max_circuit_depth + 0.1, delta_clifford)
+        # depths[0] = 1
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
         ds = fetch_results_as_xarray(
             job.result_handles,
