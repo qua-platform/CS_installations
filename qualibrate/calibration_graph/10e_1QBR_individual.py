@@ -46,7 +46,7 @@ class Parameters(NodeParameters):
     use_strict_timing: bool = False
     num_random_sequences: int = 10  # Number of random sequences
     num_averages: int = 1
-    max_circuit_depth: int = 4000  # Maximum circuit depth
+    max_circuit_depth: int = 6000  # Maximum circuit depth
     delta_clifford: int = 20
     seed: int = 345324
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"

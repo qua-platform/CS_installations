@@ -1,5 +1,5 @@
 
-# Single QUA script generated at 2025-04-23 20:26:59.803702
+# Single QUA script generated at 2025-04-23 20:32:07.885580
 # QUA library version: 1.2.2
 
 from qm import CompilerOptionArguments
@@ -21,8 +21,8 @@ with program() as prog:
     a2 = declare(int, value=[0, 1, 2, 3, 11, 9, 10, 8, 7, 5, 6, 4, 13, 12, 15, 14, 17, 16, 18, 19, 20, 21, 22, 23])
     v12 = declare(int, )
     v13 = declare(int, )
-    a3 = declare(int, size=4001)
-    a4 = declare(int, size=4001)
+    a3 = declare(int, size=6001)
+    a4 = declare(int, size=6001)
     v14 = declare(int, )
     v15 = declare(int, value=345324)
     v16 = declare(int, )
@@ -41,13 +41,13 @@ with program() as prog:
     align("q2.I", "q2.Q", "q2.resonator", "q2.z")
     with for_(v4,0,(v4<10),(v4+1)):
         assign(v12, 0)
-        with for_(v14,0,(v14<4000),(v14+1)):
+        with for_(v14,0,(v14<6000),(v14+1)):
             assign(v13, Random(v15).rand_int(24))
             assign(v12, a1[((v12*24)+v13)])
             assign(a3[v14], v13)
             assign(a4[v14], a2[v12])
         assign(v2, 1)
-        with for_(v1,1,(v1<=4000),(v1+1)):
+        with for_(v1,1,(v1<=6000),(v1+1)):
             assign(v3, a3[v1])
             assign(a3[v1], a4[(v1-1)])
             with if_((v1==v2)):
@@ -724,8 +724,8 @@ with program() as prog:
         save(v4, r6)
     with stream_processing():
         r6.save("iteration")
-        r7.buffer(1).map(FUNCTIONS.average()).buffer(200).buffer(10).save("state1")
-        r8.buffer(1).map(FUNCTIONS.average()).buffer(200).buffer(10).save("state2")
+        r7.buffer(1).map(FUNCTIONS.average()).buffer(300).buffer(10).save("state1")
+        r8.buffer(1).map(FUNCTIONS.average()).buffer(300).buffer(10).save("state2")
 
 
 config = {
