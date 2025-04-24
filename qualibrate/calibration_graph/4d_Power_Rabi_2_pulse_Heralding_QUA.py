@@ -118,7 +118,6 @@ with program() as power_rabi:
         machine.set_all_fluxes(flux_point=flux_point, target=qubit)
 
         with for_(n, 0, n < n_avg, n + 1):
-            assign(init_state[i], 0)
             save(n, n_st)
             with for_(*from_array(a, amps)):
                 # first measurement

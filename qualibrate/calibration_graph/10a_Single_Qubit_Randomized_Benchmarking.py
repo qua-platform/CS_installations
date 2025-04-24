@@ -293,27 +293,26 @@ with program() as randomized_benchmarking_individual:
     # state_st = declare_stream()
     state_st = [declare_stream() for _ in range(num_qubits)]
 
-    for i, qubit in enumerate(qubits):
+    # QUA for_ loop over the random sequences
+    with for_(m, 0, m < num_of_sequences, m + 1):
+        # Generate the random sequence of length max_circuit_depth
+        sequence_list, inv_gate_list = generate_sequence()
+        assign(depth_target, 1)  # Initialize the current depth to 0
 
-        align()
+        with for_(depth, 1, depth <= max_circuit_depth, depth + 1):
+            # Replacing the last gate in the sequence with the sequence's inverse gate
+            # The original gate is saved in 'saved_gate' and is being restored at the end
+            assign(saved_gate, sequence_list[depth])
 
-        # Bring the active qubits to the desired frequency point
-        machine.set_all_fluxes(flux_point=flux_point, target=qubit)
+            assign(sequence_list[depth], inv_gate_list[depth - 1])
+            # Only played the depth corresponding to target_depth
+            with if_(depth == depth_target):
+                for i, qubit in enumerate(qubits):
+                    align()
+                    # Bring the active qubits to the desired frequency point
 
-        # QUA for_ loop over the random sequences
-        with for_(m, 0, m < num_of_sequences, m + 1):
-            # Generate the random sequence of length max_circuit_depth
-            sequence_list, inv_gate_list = generate_sequence()
-            assign(depth_target, 1)  # Initialize the current depth to 0
+                    machine.set_all_fluxes(flux_point=flux_point, target=qubit)
 
-            with for_(depth, 1, depth <= max_circuit_depth, depth + 1):
-                # Replacing the last gate in the sequence with the sequence's inverse gate
-                # The original gate is saved in 'saved_gate' and is being restored at the end
-                assign(saved_gate, sequence_list[depth])
-
-                assign(sequence_list[depth], inv_gate_list[depth - 1])
-                # Only played the depth corresponding to target_depth
-                with if_(depth == depth_target):
                     with for_(n, 0, n < n_avg, n + 1):
                         # Initialize the qubits
                         if reset_type == "active":
@@ -335,13 +334,13 @@ with program() as randomized_benchmarking_individual:
 
                         save(state[i], state_st[i])
 
-                    # Go to the next depth
-                    assign(depth_target, depth_target + delta_clifford)
-                # Reset the last gate of the sequence back to the original Clifford gate
-                # (that was replaced by the recovery gate at the beginning)
-                assign(sequence_list[depth], saved_gate)
-            # Save the counter for the progress bar
-            save(m, m_st)
+                # Go to the next depth
+                assign(depth_target, depth_target + delta_clifford)
+            # Reset the last gate of the sequence back to the original Clifford gate
+            # (that was replaced by the recovery gate at the beginning)
+            assign(sequence_list[depth], saved_gate)
+        # Save the counter for the progress bar
+        save(m, m_st)
 
     with stream_processing():
         m_st.save("iteration")

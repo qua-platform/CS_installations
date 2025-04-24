@@ -130,6 +130,7 @@ with program() as power_rabi:
                 qubit.align()
                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                 assign(state[i], Cast.to_int(I[i] > qubit.resonator.operations["readout"].threshold))
+
                 assign(final_state[i], init_state[i] ^ state[i])
                 save(final_state[i], state_stream[i])
                 assign(init_state[i], state[i])
