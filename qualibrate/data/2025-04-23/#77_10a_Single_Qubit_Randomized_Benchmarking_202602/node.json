@@ -1,0 +1,147 @@
+{
+    "created_at": "2025-04-23T20:26:02-05:00",
+    "metadata": {
+        "description": null,
+        "run_start": "2025-04-23T20:25:36.942-05:00",
+        "run_end": "2025-04-23T20:26:02.615-05:00",
+        "name": "10a_Single_Qubit_Randomized_Benchmarking",
+        "data_path": "2025-04-23/#77_10a_Single_Qubit_Randomized_Benchmarking_202602"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": null,
+                "use_state_discrimination": true,
+                "use_strict_timing": false,
+                "num_random_sequences": 10,
+                "num_averages": 1,
+                "max_circuit_depth": 1000,
+                "delta_clifford": 20,
+                "seed": 345324,
+                "flux_point_joint_or_independent": "joint",
+                "reset_type_thermal_or_active": "thermal",
+                "simulate": false,
+                "simulation_duration_ns": 2500,
+                "timeout": 100,
+                "load_data_id": null,
+                "multiplexed": false
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Qubits"
+                    },
+                    "use_state_discrimination": {
+                        "default": true,
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "use_strict_timing": {
+                        "default": false,
+                        "title": "Use Strict Timing",
+                        "type": "boolean"
+                    },
+                    "num_random_sequences": {
+                        "default": 10,
+                        "title": "Num Random Sequences",
+                        "type": "integer"
+                    },
+                    "num_averages": {
+                        "default": 1,
+                        "title": "Num Averages",
+                        "type": "integer"
+                    },
+                    "max_circuit_depth": {
+                        "default": 1000,
+                        "title": "Max Circuit Depth",
+                        "type": "integer"
+                    },
+                    "delta_clifford": {
+                        "default": 20,
+                        "title": "Delta Clifford",
+                        "type": "integer"
+                    },
+                    "seed": {
+                        "default": 345324,
+                        "title": "Seed",
+                        "type": "integer"
+                    },
+                    "flux_point_joint_or_independent": {
+                        "default": "joint",
+                        "enum": [
+                            "joint",
+                            "independent"
+                        ],
+                        "title": "Flux Point Joint Or Independent",
+                        "type": "string"
+                    },
+                    "reset_type_thermal_or_active": {
+                        "default": "thermal",
+                        "enum": [
+                            "thermal",
+                            "active"
+                        ],
+                        "title": "Reset Type Thermal Or Active",
+                        "type": "string"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 2500,
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "timeout": {
+                        "default": 100,
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Load Data Id"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "q1": "successful",
+            "q2": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 77,
+    "parents": [
+        76
+    ]
+}

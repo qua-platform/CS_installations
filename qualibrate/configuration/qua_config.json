@@ -3,7 +3,7 @@
     "controllers": {
         "con1": {
             "fems": {
-                "3": {
+                "5": {
                     "type": "LF",
                     "analog_outputs": {
                         "5": {
@@ -120,7 +120,7 @@
             "singleInput": {
                 "port": [
                     "con1",
-                    3,
+                    5,
                     5
                 ]
             }
@@ -140,7 +140,7 @@
             "singleInput": {
                 "port": [
                     "con1",
-                    3,
+                    5,
                     1
                 ]
             }
@@ -160,7 +160,7 @@
             "singleInput": {
                 "port": [
                     "con1",
-                    3,
+                    5,
                     1
                 ]
             }
@@ -172,7 +172,7 @@
             "singleInput": {
                 "port": [
                     "con1",
-                    3,
+                    5,
                     2
                 ]
             }
@@ -216,7 +216,7 @@
             "singleInput": {
                 "port": [
                     "con1",
-                    3,
+                    5,
                     3
                 ]
             }
@@ -236,7 +236,7 @@
             "singleInput": {
                 "port": [
                     "con1",
-                    3,
+                    5,
                     3
                 ]
             }
@@ -248,7 +248,7 @@
             "singleInput": {
                 "port": [
                     "con1",
-                    3,
+                    5,
                     4
                 ]
             }

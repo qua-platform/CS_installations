@@ -98,12 +98,18 @@ class QuAM(QuamRoot):
         return max(q.thermalization_time for q in self.active_qubits)
 
     def apply_all_couplers_to_min(self) -> None:
-        """Apply the offsets that bring all the active qubit pairs to a decoupled point."""
+        """Apply the offsets that bring all the active qubit pairs to a minimum point."""
         # for qp in self.qubits:
         #     if qp.coupler is not None:
         #         qp.coupler.to_decouple_idle()
         for qp in self.qubits:
             self.qubits[qp].z.to_min()
+
+
+    def apply_all_couplers_to_decouple(self) -> None:
+        """Apply the offsets that bring all the active qubit pairs to a decoupled point."""
+        for qp in self.qubits:
+            self.qubits[qp].z.to_decouple()
 
     def apply_all_flux_to_joint_idle(self) -> None:
         """Apply the offsets that bring all the active qubits to the joint sweet spot."""
@@ -118,7 +124,8 @@ class QuAM(QuamRoot):
                     self.qubits[q].z.to_min()
                 else:
                     warnings.warn(f"Didn't find z-element on qubit {q}, didn't set to min")
-        self.apply_all_couplers_to_min()
+        # self.apply_all_couplers_to_min()
+        self.apply_all_couplers_to_decouple()
 
     def apply_all_flux_to_min(self) -> None:
         """Apply the offsets that bring all the active qubits to the minimum frequency point."""
@@ -127,7 +134,8 @@ class QuAM(QuamRoot):
                 self.rf_qubits[q].z.to_min()
             else:
                 warnings.warn(f"Didn't find z-element on qubit {q}, didn't set to min")
-        self.apply_all_couplers_to_min()
+        # self.apply_all_couplers_to_min()
+        self.apply_all_couplers_to_decouple()
 
     def apply_all_flux_to_zero(self) -> None:
         """Apply the offsets that bring all the active qubits to the zero bias point."""

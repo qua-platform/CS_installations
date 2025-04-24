@@ -40,7 +40,7 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
-    num_averages: int = 100
+    num_averages: int = 5
     operation_x180_or_any_90: Literal["x180_Cosine", "x90_Cosine"] = "x180_Cosine"
     min_amp_factor: float = 0.0
     max_amp_factor: float = 1.5
@@ -92,6 +92,7 @@ amps = np.arange(
     node.parameters.max_amp_factor,
     node.parameters.amp_factor_step,
 )
+assert reset_type == "heralding" and state_discrimination, "if doing Herladed readout, only state descrimination is supported"
 
 # Number of applied Rabi pulses sweep
 if N_pi > 1:
@@ -206,29 +207,13 @@ if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
         if state_discrimination and reset_type == "heralding":
-            # data = job.result_handles.state1.fetch_all()['value']
-            # data_squeezed = data.squeeze()
-            # threshold = 0.5
-            # result = np.empty_like(data_squeezed, dtype=float)
-            # # Apply thresholding rule per row
-            # for i, row in enumerate(data_squeezed):
-            #     new_row = []
-            #     for j in range(len(row)):
-            #         if j == 0:
-            #             new_row.append(np.nan)  # No previous value
-            #         else:
-            #             new_row.append(row[j] if row[j - 1] > threshold else np.nan)
-            #     result[i] = np.array(new_row, dtype=float)  # <- fix: convert to array
-            # # remove the first column which is full with Nans
-            # result_no_first_column = result[:, 1:]
-            # data_averaged = np.nanmean(result_no_first_column, axis=0)
-            amps = amps[1:]
-            ds = fetch_results_as_xarray_for_heralding(job.result_handles, qubits, {"amp": amps})
+            ds, mask = fetch_results_as_xarray_for_heralding(job.result_handles, qubits, {"amp": amps})
         else:
             ds = fetch_results_as_xarray(job.result_handles, qubits, {"amp": amps})
         if not state_discrimination:
             ds = convert_IQ_to_V(ds, qubits)
-
+        # appy the NaN mask on the amps vector
+        amps = amps[mask]
         # Add the qubit pulse absolute amplitude to the dataset
         ds = ds.assign_coords(
             {

@@ -1,0 +1,162 @@
+{
+    "created_at": "2025-04-18T17:48:26-05:00",
+    "metadata": {
+        "description": null,
+        "run_start": "2025-04-18T17:47:50.410-05:00",
+        "run_end": "2025-04-18T17:48:26.666-05:00",
+        "name": "10b_Single_Qubit_Randomized_Benchmarking_Interleaved",
+        "data_path": "2025-04-18/#41_10b_Single_Qubit_Randomized_Benchmarking_Interleaved_174826"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": null,
+                "use_state_discrimination": true,
+                "use_strict_timing": false,
+                "interleaved_gate_operation": "y180_Cosine",
+                "num_random_sequences": 100,
+                "num_averages": 20,
+                "max_circuit_depth": 500,
+                "delta_clifford": 10,
+                "seed": 345324,
+                "flux_point_joint_or_independent": "independent",
+                "reset_type_thermal_or_active": "thermal",
+                "simulate": false,
+                "simulation_duration_ns": 2500,
+                "timeout": 100,
+                "load_data_id": null,
+                "multiplexed": false
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Qubits"
+                    },
+                    "use_state_discrimination": {
+                        "default": true,
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "use_strict_timing": {
+                        "default": false,
+                        "title": "Use Strict Timing",
+                        "type": "boolean"
+                    },
+                    "interleaved_gate_operation": {
+                        "default": "y180_Cosine",
+                        "enum": [
+                            "I",
+                            "x180_Cosine",
+                            "y180_Cosine",
+                            "x90_Cosine",
+                            "-x90_Cosine",
+                            "y90_Cosine",
+                            "-y90_Cosine"
+                        ],
+                        "title": "Interleaved Gate Operation",
+                        "type": "string"
+                    },
+                    "num_random_sequences": {
+                        "default": 100,
+                        "title": "Num Random Sequences",
+                        "type": "integer"
+                    },
+                    "num_averages": {
+                        "default": 20,
+                        "title": "Num Averages",
+                        "type": "integer"
+                    },
+                    "max_circuit_depth": {
+                        "default": 500,
+                        "title": "Max Circuit Depth",
+                        "type": "integer"
+                    },
+                    "delta_clifford": {
+                        "default": 10,
+                        "title": "Delta Clifford",
+                        "type": "integer"
+                    },
+                    "seed": {
+                        "default": 345324,
+                        "title": "Seed",
+                        "type": "integer"
+                    },
+                    "flux_point_joint_or_independent": {
+                        "default": "independent",
+                        "enum": [
+                            "joint",
+                            "independent"
+                        ],
+                        "title": "Flux Point Joint Or Independent",
+                        "type": "string"
+                    },
+                    "reset_type_thermal_or_active": {
+                        "default": "thermal",
+                        "enum": [
+                            "thermal",
+                            "active"
+                        ],
+                        "title": "Reset Type Thermal Or Active",
+                        "type": "string"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 2500,
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "timeout": {
+                        "default": 100,
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Load Data Id"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "q1": "successful",
+            "q2": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 41,
+    "parents": [
+        40
+    ]
+}

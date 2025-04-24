@@ -21,6 +21,7 @@ class FluxLine(SingleChannel):
     independent_offset: float = 0.0
     joint_offset: float = 0.0
     min_offset: float = 0.0
+    decouple_offset: float = 0
     arbitrary_offset: float = 0.0
     settle_time: float = 16
     extras: Dict[str, Any] = field(default_factory=dict)
@@ -46,3 +47,7 @@ class FluxLine(SingleChannel):
     def to_zero(self):
         """Set the flux bias to 0.0 V"""
         self.set_dc_offset(0.0)
+
+    def to_decouple(self):
+        """Set the flux bias to the min offset"""
+        self.set_dc_offset(self.decouple_offset)

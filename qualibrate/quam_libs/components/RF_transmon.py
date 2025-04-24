@@ -58,6 +58,7 @@ class RF_Transmon(QuamComponent):
     T2ramsey: float = None
     T2echo: float = None
     thermalization_time_factor: int = 5
+    resonator_depopulation_factor: int = 1/10
     sigma_time_factor: int = 5
     phi0_current: float = 0.0
     phi0_voltage: float = 0.0
@@ -102,6 +103,12 @@ class RF_Transmon(QuamComponent):
     def thermalization_time(self):
         """The transmon thermalization time in ns."""
         return int(self.thermalization_time_factor * self.T1 * 1e9 / 4) * 4
+
+    @property
+    def resonator_depopulation_time(self):
+        """The transmon thermalization time in ns."""
+        return int(self.resonator_depopulation_factor * self.T1 * 1e9 / 4) * 4
+
 
     def calibrate_octave(
         self, QM: QuantumMachine, calibrate_drive: bool = True, calibrate_resonator: bool = True

@@ -1,0 +1,31 @@
+{
+    "ds": "./ds.h5",
+    "fit_results": {
+        "q1": {
+            "EPC": "./arrays.npz#fit_results.q1.EPC",
+            "EPG": "./arrays.npz#fit_results.q1.EPG"
+        },
+        "q2": {
+            "EPC": "./arrays.npz#fit_results.q2.EPC",
+            "EPG": "./arrays.npz#fit_results.q2.EPG"
+        }
+    },
+    "figure": "./figure.png",
+    "initial_parameters": {
+        "qubits": null,
+        "use_state_discrimination": true,
+        "use_strict_timing": false,
+        "num_random_sequences": 10,
+        "num_averages": 5,
+        "max_circuit_depth": 50,
+        "delta_clifford": 10,
+        "seed": 345324,
+        "flux_point_joint_or_independent": "joint",
+        "reset_type_thermal_or_active": "thermal",
+        "simulate": false,
+        "simulation_duration_ns": 2500,
+        "timeout": 100,
+        "load_data_id": null,
+        "multiplexed": false
+    }
+}
