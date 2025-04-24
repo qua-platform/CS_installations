@@ -60,7 +60,7 @@ def fetch_results_as_xarray(handles, qubits, measurement_axis):
     return ds
 
 
-def fetch_results_as_xarray_for_heralding(handles, qubits, measurement_axis, threshold=0.5, mask_axis=1):
+def fetch_results_as_xarray_for_1_pulse_heralding(handles, qubits, measurement_axis, threshold=0.5, mask_axis=1):
     """
     Fetches measurement results as an xarray dataset.
     Parameters:
@@ -145,6 +145,90 @@ def fetch_results_as_xarray_for_heralding(handles, qubits, measurement_axis, thr
 
     return ds, valid_mask
 
+def fetch_results_as_xarray_for_2_pulse_heralding(handles, qubits, measurement_axis, threshold=0.5, mask_axis=1):
+    """
+    Fetches measurement results as an xarray dataset.
+    Parameters:
+    - handles : A dictionary containing stream handles, obtained through handles = job.result_handles after the execution of the program.
+    - qubits (list): A list of qubits.
+    - measurement_axis (dict): A dictionary containing measurement axis information, e.g. {"frequency" : freqs, "flux",}.
+    Returns:
+    - ds (xarray.Dataset): An xarray dataset containing the fetched measurement results.
+    """
+
+    stream_handles = handles.keys()
+    meas_vars = list(set([extract_string(handle) for handle in stream_handles if extract_string(handle) is not None]))
+
+    values = [
+        [handles.get(f"{meas_var}{i + 1}").fetch_all() for i, qubit in enumerate(qubits)] for meas_var in meas_vars
+    ]
+    # Define threshold
+    threshold = 0.5
+
+    # Processed output
+    processed = []
+    valid_masks = []
+    for row_group in values:
+        processed_row = []
+        for row_arr in row_group:
+            raw = row_arr['value']
+
+            # Apply threshold rule: keep value if previous value > threshold, else NaN
+            result = np.empty((raw.shape[0], raw.shape[1] - 1), dtype=float)
+            for i, row in enumerate(raw):
+                new_row = []
+                for j in range(0, len(row)):
+                    new_row.append(row[j][1] if row[j][0] < threshold else np.nan)
+                result[i] = np.array(new_row)
+
+            # find the columns that contain only NaN
+            # only_nan_mask = np.all(np.isnan(result), axis=0)
+            # valid_mask = ~only_nan_mask
+            #
+            # # Delete all the columns that contain only NaN results
+            # result_valid = result[:, valid_mask]
+            # Average over columns, ignoring NaN
+            result_avg = np.nanmean(result, axis=0)
+
+            processed_row.append(np.array(result_avg))
+            # valid_masks.append(valid_mask)
+        # Wrap the entire processed row
+        processed.append(processed_row)
+
+    # find the most number of Nans
+    # nan_counts = [np.isnan(arr).sum() for arr in processed[0]]
+    # # Find index of array with the most NaNs
+    # max_nan_index = np.argmax(nan_counts)
+    # # crate the Nan mask
+    # nan_mask = np.isnan(processed[0][max_nan_index])
+    nan_mask = np.any(np.isnan(processed[0]), axis=0)
+    valid_mask = ~nan_mask
+    # # to make the lengths of the vactor the same, we take the results with the most amount of columns with all Nans
+    # false_counts = [np.sum(~arr) for arr in valid_masks]
+    # max_false_index = np.argmax(false_counts)
+    # Nan_mask = valid_masks[max_false_index]
+    #
+    # diff_mask = (~valid_masks[max_false_index])& (valid_masks[1-max_false_index])
+    #
+    # # apply the mask on the processed data
+    # for i in range(len(qubits)):
+    #     if len(processed[0][i]) != len(Nan_mask):
+    processed_masked = [
+        [arr[valid_mask] for arr in row_group]
+        for row_group in processed
+    ]
+    if np.array(processed_masked).shape[-1] == 1:
+        processed_masked = np.array(processed_masked).squeeze(axis=-1)
+    measurement_axis["qubit"] = [qubit.name for qubit in qubits]
+    measurement_axis = {key: measurement_axis[key] for key in reversed(measurement_axis.keys())}
+    measurement_axis_valid = {key: value if key=="qubit" else value[valid_mask] for key, value in measurement_axis.items()}
+
+    ds = xr.Dataset(
+        {f"{meas_var}": ([key for key in measurement_axis_valid.keys()], processed_masked[i]) for i, meas_var in enumerate(meas_vars)},
+        coords=measurement_axis_valid,
+    )
+
+    return ds, valid_mask
 
 # def fetch_results_as_xarray_for_heralding(handles, qubits, measurement_axis):
 #     """

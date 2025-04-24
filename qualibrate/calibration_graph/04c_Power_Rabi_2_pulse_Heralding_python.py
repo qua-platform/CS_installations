@@ -24,7 +24,7 @@ from quam_libs.macros import qua_declaration, active_reset
 from quam_libs.lib.instrument_limits import instrument_limits
 from quam_libs.lib.qua_datasets import convert_IQ_to_V
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
-from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset, get_node_id, fetch_results_as_xarray_for_1_pulse_heralding
+from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset, get_node_id, fetch_results_as_xarray_for_2_pulse_heralding
 from quam_libs.lib.fit import fit_oscillation, oscillation
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.loops import from_array
@@ -110,6 +110,9 @@ with program() as power_rabi:
     if state_discrimination:
         state = [declare(bool) for _ in range(num_qubits)]
         state_stream = [declare_stream() for _ in range(num_qubits)]
+        if reset_type==("heralding"):
+            init_state = [declare(bool) for _ in range(num_qubits)]
+            init_state_stream = [declare_stream() for _ in range(num_qubits)]
     a = declare(fixed)  # QUA variable for the qubit drive amplitude pre-factor
     npi = declare(int)  # QUA variable for the number of qubit pulses
     count = declare(int)  # QUA variable for counting the qubit pulses
@@ -125,6 +128,10 @@ with program() as power_rabi:
                 if reset_type == "active":
                     active_reset(qubit, "readout")
                 elif reset_type == "heralding":
+                    qubit.wait(qubit.thermalization_time * u.ns)
+                    qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                    assign(init_state[i], I[i] > qubit.resonator.operations["readout"].threshold)
+                    save(init_state[i], state_stream[i])
                     qubit.wait(qubit.resonator_depopulation_time * u.ns)
                 else:
                     qubit.wait(qubit.thermalization_time * u.ns)
@@ -149,10 +156,12 @@ with program() as power_rabi:
                         f"state{i + 1}"
                     )
                 elif state_discrimination and reset_type == "heralding":
-                    state_stream[i].boolean_to_int().buffer(len(amps)).save_all(
+                    state_stream[i].boolean_to_int().buffer(2).buffer(len(amps)).save_all(
                         f"state{i + 1}"
                     )
-
+                    # init_state_stream[i].boolean_to_int().buffer(len(amps)).save_all(
+                    #     f"init_state{i + 1}"
+                    # )
                 else:
                     I_st[i].buffer(len(amps)).average().save(f"I{i + 1}")
                     Q_st[i].buffer(len(amps)).average().save(f"Q{i + 1}")
@@ -163,9 +172,12 @@ with program() as power_rabi:
                         f"state{i + 1}"
                     )
                 elif state_discrimination and reset_type == "heralding":
-                    state_stream[i].boolean_to_int().buffer(len(amps)).save_all(
+                    state_stream[i].boolean_to_int().buffer(2).buffer(len(amps)).save_all(
                     f"state{i + 1}"
                     )
+                    # init_state_stream[i].boolean_to_int().buffer(len(amps)).save_all(
+                    #     f"init_state{i + 1}"
+                    # )
                 else:
                     I_st[i].buffer(len(amps)).buffer(np.ceil(N_pi / 4)).average().save(f"I{i + 1}")
                     Q_st[i].buffer(len(amps)).buffer(np.ceil(N_pi / 4)).average().save(f"Q{i + 1}")
@@ -207,7 +219,7 @@ if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
         if state_discrimination and reset_type == "heralding":
-            ds, mask = fetch_results_as_xarray_for_1_pulse_heralding(job.result_handles, qubits, {"amp": amps})
+            ds, mask = fetch_results_as_xarray_for_2_pulse_heralding(job.result_handles, qubits, {"amp": amps})
         else:
             ds = fetch_results_as_xarray(job.result_handles, qubits, {"amp": amps})
         if not state_discrimination:
