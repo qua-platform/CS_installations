@@ -121,6 +121,10 @@ with program() as power_rabi:
             assign(init_state[i], 0)
             save(n, n_st)
             with for_(*from_array(a, amps)):
+                # first measurement
+                qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                assign(init_state[i], Cast.to_int(I[i] > qubit.resonator.operations["readout"].threshold))
+
                 # Initialize the qubits
                 qubit.wait(qubit.resonator_depopulation_time * u.ns)
 
@@ -128,11 +132,15 @@ with program() as power_rabi:
 
                 qubit.xy_play(operation, amplitude_scale=a)
                 qubit.align()
+                # second measurement
                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                 assign(state[i], Cast.to_int(I[i] > qubit.resonator.operations["readout"].threshold))
+
                 assign(final_state[i], init_state[i] ^ state[i])
                 save(final_state[i], state_stream[i])
-                assign(init_state[i], state[i])
+
+
+                qubit.wait(qubit.thermalization_time * u.ns)
 
 
 
