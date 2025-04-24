@@ -40,7 +40,7 @@ import numpy as np
 # %% {Node_parameters}
 class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
-    num_averages: int = 100
+    num_averages: int = 10
     operation_x180_or_any_90: Literal["x180_Cosine", "x90_Cosine"] = "x180_Cosine"
     min_amp_factor: float = 0.0
     max_amp_factor: float = 1.5
@@ -112,6 +112,8 @@ with program() as power_rabi:
     a = declare(fixed)  # QUA variable for the qubit drive amplitude pre-factor
     npi = declare(int)  # QUA variable for the number of qubit pulses
     count = declare(int)  # QUA variable for counting the qubit pulses
+    state_integer = [declare(int) for _ in range(len(qubits))]
+    init_state = [declare(int) for _ in range(len(qubits))]
 
     for i, qubit in enumerate(qubits):
         # Bring the active qubits to the minimum frequency point
@@ -119,23 +121,42 @@ with program() as power_rabi:
 
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
-            with for_(*from_array(a, amps)):
+            # Initialize the qubits
+            qubit.wait(qubit.resonator_depopulation_time * u.ns)
+
+            qubit.xy_play(operation, amplitude_scale=amps[0])
+
+            qubit.align()
+            qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+            assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
+            assign(init_state[i], Cast.to_int(state[i]))
+            # save(init_state[i], "start")
+
+
+            with for_(*from_array(a, amps[1:])):
                 # Initialize the qubits
-                if reset_type == "active":
-                    active_reset(qubit, "readout")
-                elif reset_type == "heralding":
-                    qubit.wait(qubit.resonator_depopulation_time * u.ns)
-                else:
-                    qubit.wait(qubit.thermalization_time * u.ns)
+                qubit.wait(qubit.resonator_depopulation_time * u.ns)
+
+                # Loop for error amplification (perform many qubit pulses)
+
                 qubit.xy_play(operation, amplitude_scale=a)
                 qubit.align()
                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
-                if state_discrimination:
-                    assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
-                    save(state[i], state_stream[i])
-                else:
-                    save(I[i], I_st[i])
-                    save(Q[i], Q_st[i])
+
+                assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
+                assign(state_integer[i], Cast.to_int(state[i]))
+                # save(state_integer[i], "data")
+                # save(init_state[i], "data_init")
+                with if_(init_state[i] < 0.5):
+                    assign(init_state[i], state_integer[i])
+                    save(state_integer[i], state_stream[i])
+                with else_():
+                    assign(init_state[i], state_integer[i])
+                    assign(state_integer[i], -1)
+                    save(state_integer[i], state_stream[i])
+
+
+
         if not node.parameters.multiplexed:
             align()
 
@@ -143,31 +164,14 @@ with program() as power_rabi:
         n_st.save("n")
         for i, qubit in enumerate(qubits):
             if operation == "x180_Cosine":
-                if state_discrimination and reset_type != "heralding":
-                    state_stream[i].boolean_to_int().buffer(len(amps)).average().save(
+                    state_stream[i].buffer(len(amps)).average().save(
                         f"state{i + 1}"
                     )
-                elif state_discrimination and reset_type == "heralding":
-                    state_stream[i].boolean_to_int().buffer(len(amps)).save_all(
-                        f"state{i + 1}"
-                    )
-
-                else:
-                    I_st[i].buffer(len(amps)).average().save(f"I{i + 1}")
-                    Q_st[i].buffer(len(amps)).average().save(f"Q{i + 1}")
 
             elif operation in ["x90_Cosine", "-x90_Cosine"]:
-                if state_discrimination and reset_type != "heralding":
-                    state_stream[i].boolean_to_int().buffer(len(amps)).average().save(
-                        f"state{i + 1}"
-                    )
-                elif state_discrimination and reset_type == "heralding":
-                    state_stream[i].boolean_to_int().buffer(len(amps)).save_all(
+                state_stream[i].boolean_to_int().buffer(len(amps)).average().save(
                     f"state{i + 1}"
-                    )
-                else:
-                    I_st[i].buffer(len(amps)).buffer(np.ceil(N_pi / 4)).average().save(f"I{i + 1}")
-                    Q_st[i].buffer(len(amps)).buffer(np.ceil(N_pi / 4)).average().save(f"Q{i + 1}")
+                )
             else:
                 raise ValueError(f"Unrecognized operation {operation}.")
 
@@ -205,25 +209,8 @@ elif node.parameters.load_data_id is None:
 if not node.parameters.simulate:
     if node.parameters.load_data_id is None:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
-        if state_discrimination and reset_type == "heralding":
-            # data = job.result_handles.state1.fetch_all()['value']
-            # data_squeezed = data.squeeze()
-            # threshold = 0.5
-            # result = np.empty_like(data_squeezed, dtype=float)
-            # # Apply thresholding rule per row
-            # for i, row in enumerate(data_squeezed):
-            #     new_row = []
-            #     for j in range(len(row)):
-            #         if j == 0:
-            #             new_row.append(np.nan)  # No previous value
-            #         else:
-            #             new_row.append(row[j] if row[j - 1] > threshold else np.nan)
-            #     result[i] = np.array(new_row, dtype=float)  # <- fix: convert to array
-            # # remove the first column which is full with Nans
-            # result_no_first_column = result[:, 1:]
-            # data_averaged = np.nanmean(result_no_first_column, axis=0)
-            amps = amps[1:]
-            ds = fetch_results_as_xarray_for_heralding(job.result_handles, qubits, {"amp": amps})
+        if state_discrimination:
+            ds = fetch_results_as_xarray(job.result_handles, qubits, {"amp": amps})
         else:
             ds = fetch_results_as_xarray(job.result_handles, qubits, {"amp": amps})
         if not state_discrimination:
