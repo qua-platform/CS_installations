@@ -174,12 +174,10 @@ def fetch_results_as_xarray_for_2_pulse_heralding(handles, qubits, measurement_a
             raw = row_arr['value']
 
             # Apply threshold rule: keep value if previous value > threshold, else NaN
-            result = np.empty((raw.shape[0], raw.shape[1] - 1), dtype=float)
+            result = np.empty((raw.shape[0], raw.shape[1]), dtype=float)
             for i, row in enumerate(raw):
-                new_row = []
                 for j in range(0, len(row)):
-                    new_row.append(row[j][1] if row[j][0] < threshold else np.nan)
-                result[i] = np.array(new_row)
+                    result[i] = [pair[1] if pair[0] < threshold else np.nan for pair in row]
 
             # find the columns that contain only NaN
             # only_nan_mask = np.all(np.isnan(result), axis=0)
