@@ -10,13 +10,13 @@ library = QualibrationLibrary.get_active_library()
 
 
 class Parameters(GraphParameters):
-    qubits: List[str] = ["qubitC1", "qubitC2", "qubitC3"]
+    rf_qubits: List[str] = ["q1", "q2", "c12"]
 
 
 
 multiplexed = True
 flux_point = "joint"
-reset_type_thermal_or_active = "active"
+reset_type_thermal_heralding_or_active = "active"
 
 
 
@@ -28,11 +28,14 @@ g = QualibrationGraph(
                                                                                    name="resonator_spectroscopy"),
         "resonator_spec_vs_flux": library.nodes["02b_Resonator_Spectroscopy_vs_Flux"].copy(flux_point_joint_or_independent=flux_point,
                                                                                            name="resonator_spec_vs_flux"),
-        "resonator_spec_vs_amplitude": library.nodes["02c_resonator_spectroscopy_vs_amplitude"].copy(flux_point_joint_or_independent=flux_point,
+        "resonator_spec_vs_amplitude": library.nodes["02c_Resonator_Spectroscopy_vs_Amplitude"].copy(flux_point_joint_or_independent=flux_point,
                                                                                             name="resonator_spec_vs_amplitude"),
         "qubit_spectroscopy": library.nodes["03a_Qubit_Spectroscopy"].copy(flux_point_joint_or_independent=flux_point,
                                                                            multiplexed=multiplexed,
                                                                            name="qubit_spectroscopy"),
+        "qubit_spectroscopy_weak_drive": library.nodes["03a_Qubit_Spectroscopy"].copy(flux_point_joint_or_independent=flux_point,
+                                                                           multiplexed=multiplexed,
+                                                                           name="qubit_spectroscopy_weak_drive"),
         "qubit_spec_vs_flux": library.nodes["03b_Qubit_Spectroscopy_vs_Flux"].copy(flux_point_joint_or_independent=flux_point,
                                                                                    multiplexed=multiplexed,
                                                                                    name="qubit_spec_vs_flux"),
@@ -64,12 +67,16 @@ g = QualibrationGraph(
         "drag_calibration": library.nodes["09b_DRAG_Calibration_180_minus_180"].copy(flux_point_joint_or_independent=flux_point,
                                                                                      multiplexed=multiplexed,
                                                                                      name="drag_calibration"),
-        # "power_rabi_error_amplification_x180": library.nodes["04_Power_Rabi"].copy(flux_point_joint_or_independent=flux_point,
-        #                                                                            multiplexed=multiplexed, operation_x180_or_any_90 = "x180",
-        #                                                                            min_amp_factor = 0.9, max_amp_factor = 1.1, amp_factor_step = 0.005,
-        #                                                                            max_number_rabi_pulses_per_sweep = 200, reset_type_thermal_or_active = reset_type_thermal_or_active,
-        #                                                                            state_discrimination = True, update_x90 = True,
-        #                                                                            name="power_rabi_error_amplification_x180"),
+        "drag_calibration_zoom": library.nodes["09b_DRAG_Calibration_180_minus_180"].copy(
+            flux_point_joint_or_independent=flux_point,
+            multiplexed=multiplexed,
+            name="drag_calibration_zoom"),
+        "power_rabi_error_amplification_x180": library.nodes["04_Power_Rabi"].copy(flux_point_joint_or_independent=flux_point,
+                                                                                   multiplexed=multiplexed, operation_x180_or_any_90 = "x180_Cosine",
+                                                                                   min_amp_factor = 0.9, max_amp_factor = 1.1, amp_factor_step = 0.005,
+                                                                                   max_number_rabi_pulses_per_sweep = 200, reset_type_thermal_or_active = reset_type_thermal_heralding_or_active,
+                                                                                   state_discrimination = True, update_x90 = True,
+                                                                                   name="power_rabi_error_amplification_x180"),
         # "power_rabi_error_amplification_x90": library.nodes["04_Power_Rabi"].copy(flux_point_joint_or_independent=flux_point,
         #                                                                           multiplexed=multiplexed, operation_x180_or_any_90 = "x90",
         #                                                                            min_amp_factor = 0.95, max_amp_factor = 1.05, amp_factor_step = 0.005,
@@ -86,15 +93,18 @@ g = QualibrationGraph(
                   ("resonator_spec_vs_flux2", "qubit_spectroscopy"),
                   ("qubit_spectroscopy", "qubit_spec_vs_flux"),
                   ("qubit_spec_vs_flux", "power_rabi"),
-                  ("power_rabi", "power_rabi2"),
-                  ("power_rabi2", "ramsey"),
-                  ("ramsey", "readout_frequency_optimization"),
+                  ("power_rabi", "ramsey"),
+                  ("readout_frequency_optimization", "readout_power_time_optimization"),
+                  ("readout_power_time_optimization", "ramsey"),
+                  ("ramsey", "readout_power_optimization"),
                   ("readout_frequency_optimization", "IQ_blobs"),
-                  ("IQ_blobs", "ramsey_flux_calibration"),
-                  ("ramsey_flux_calibration", "drag_calibration"),
-                  ("drag_calibration", "power_rabi_error_amplification_x180"),
-                  ("power_rabi_error_amplification_x180", "power_rabi_error_amplification_x90"),
-                  ("power_rabi_error_amplification_x90", "single_qubit_randomized_benchmarking"),
+                  ("IQ_blobs", "qubit_spectroscopy_weak_drive"),
+                  ("qubit_spectroscopy_weak_drive", "drag_calibration"),
+                  ("drag_calibration", "drag_calibration_zoom"),
+                  ("drag_calibration_zoom", "power_rabi_error_amplification_x180"),
+                  # ("power_rabi_error_amplification_x180", "power_rabi_error_amplification_x90"),
+                  # ("power_rabi_error_amplification_x90", "single_qubit_randomized_benchmarking"),
+                  ("power_rabi_error_amplification_x180", "single_qubit_randomized_benchmarking"),
                   ],
 
     orchestrator=BasicOrchestrator(skip_failed=True),

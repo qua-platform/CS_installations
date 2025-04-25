@@ -349,7 +349,7 @@ with program() as randomized_benchmarking_individual:
                         readout_state(qubit, state[i])
 
                         if node.parameters.reset_type == "heralding":
-                            assign(final_state[i], init_state[i] & state[i])
+                            assign(final_state[i], init_state[i] ^ state[i])
                             save(final_state[i], state_st[i])
                         else:
                             save(state[i], state_st[i])
@@ -440,7 +440,7 @@ with program() as randomized_benchmarking_multiplexed:
                         readout_state(qubit, state[i])
 
                         if node.parameters.reset_type == "heralding":
-                            assign(final_state[i], init_state[i] & state[i])
+                            assign(final_state[i], init_state[i] ^ state[i])
                             save(final_state[i], state_st[i])
                         else:
                             save(state[i], state_st[i])

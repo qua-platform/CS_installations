@@ -109,8 +109,8 @@ with program() as power_rabi:
     b = declare(int)
     c = declare(int)
     c_st = declare_stream()
-    assign(a, 1)
-    assign(b, 1)
+    assign(a, 0)
+    assign(b, 0)
     assign(c, a & b)
     save(c, c_st)
     with stream_processing():
