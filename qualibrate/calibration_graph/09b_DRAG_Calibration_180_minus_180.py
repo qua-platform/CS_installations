@@ -46,7 +46,7 @@ class Parameters(NodeParameters):
     amp_factor_step: float = 0.02
     max_number_pulses_per_sweep: int = 40
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "active"
+    reset_type: Literal["thermal", "heralding", "active"] = "heralding"
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
@@ -98,7 +98,7 @@ num_qubits = len(qubits)
 # %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
 flux_point = node.parameters.flux_point_joint_or_independent
-reset_type = node.parameters.reset_type_thermal_or_active
+reset_type = node.parameters.reset_type
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
 amps = np.arange(
     node.parameters.min_amp_factor,
@@ -113,6 +113,9 @@ with program() as drag_calibration:
     I, _, Q, _, n, n_st = qua_declaration(num_qubits=num_qubits)
     state = [declare(bool) for _ in range(num_qubits)]
     state_stream = [declare_stream() for _ in range(num_qubits)]
+    if node.parameters.reset_type == "heralding":
+        init_state = [declare(bool) for _ in range(num_qubits)]
+        final_state = [declare(bool) for _ in range(num_qubits)]
     a = declare(fixed)  # QUA variable for the qubit drive amplitude pre-factor
     npi = declare(int)  # QUA variable for the number of qubit pulses
     count = declare(int)  # QUA variable for counting the qubit pulses
@@ -128,6 +131,11 @@ with program() as drag_calibration:
                     # Initialize the qubits
                     if reset_type == "active":
                         active_reset(qubit, pi_pulse_name="x180_Cosine", readout_pulse_name="readout")
+                    elif node.parameters.reset_type == "heralding":
+                        qubit.wait(qubit.thermalization_time * u.ns)
+                        qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                        assign(init_state[i], I[i] > qubit.resonator.operations["readout"].threshold)
+                        qubit.wait(qubit.resonator_depopulation_time * u.ns)
                     else:
                         qubit.wait(qubit.thermalization_time * u.ns)
 
@@ -155,7 +163,11 @@ with program() as drag_calibration:
                     qubit.align()
                     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                     assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
-                    save(state[i], state_stream[i])
+                    if node.parameters.reset_type == "heralding":
+                        assign(final_state[i], init_state[i] ^ state[i])
+                        save(final_state[i], state_stream[i])
+                    else:
+                        save(state[i], state_stream[i])
         # Measure sequentially
         if not node.parameters.multiplexed:
             align()
@@ -238,7 +250,7 @@ if not node.parameters.simulate:
         ax.set_ylabel("num. of pulses")
         ax.set_xlabel(r"DRAG coeff $\alpha$")
         ax.set_title(qubit["qubit"])
-    grid.fig.suptitle(f"DRAG calibration \n {date_time} #{node_id} \n multiplexed = {node.parameters.multiplexed} reset Type = {node.parameters.reset_type_thermal_or_active}")
+    grid.fig.suptitle(f"DRAG calibration \n {date_time} #{node_id} \n multiplexed = {node.parameters.multiplexed} reset Type = {node.parameters.reset_type}")
     plt.tight_layout()
     plt.show()
     node.results["figure"] = grid.fig

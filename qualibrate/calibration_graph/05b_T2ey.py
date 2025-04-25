@@ -40,7 +40,7 @@ class Parameters(NodeParameters):
     max_wait_time_in_ns: int = 70000
     wait_time_step_in_ns: int = 300
     flux_point_joint_or_independent_or_arbitrary: Literal["joint", "independent", "arbitrary"] = "independent"
-    reset_type: Literal["active", "thermal"] = "thermal"
+    reset_type: Literal["thermal", "heralding", "active"] = "thermal"
     use_state_discrimination: bool = True
     simulate: bool = False
     simulation_duration_ns: int = 2500
@@ -80,6 +80,11 @@ idle_times = np.arange(
     node.parameters.wait_time_step_in_ns // 4,
 )
 
+# make sure that if using heralded readout then also using state discrimination
+if node.parameters.reset_type == "heralding" and not node.parameters.use_state_discrimination:
+    raise AssertionError("Heralded readout is only supported with state discrimination.")
+
+
 flux_point = node.parameters.flux_point_joint_or_independent_or_arbitrary  # 'independent' or 'joint'
 if flux_point == "arbitrary":
     detunings = {q.name: q.arbitrary_intermediate_frequency for q in qubits}
@@ -93,6 +98,9 @@ with program() as t2ey:
     if node.parameters.use_state_discrimination:
         state = [declare(int) for _ in range(num_qubits)]
         state_st = [declare_stream() for _ in range(num_qubits)]
+    if node.parameters.reset_type == "heralding":
+        init_state = [declare(int) for _ in range(num_qubits)]
+        final_state = [declare(int) for _ in range(num_qubits)]
 
     shot = [declare(int) for _ in range(num_qubits)]
     t = [declare(int) for _ in range(num_qubits)]
@@ -113,6 +121,10 @@ with program() as t2ey:
             with for_(*from_array(t[i], idle_times)):
                 if node.parameters.reset_type == "active":
                     active_reset(qubit, "readout")
+                elif node.parameters.reset_type == "heralding":
+                    qubit.wait(qubit.thermalization_time * u.ns)
+                    readout_state(qubit, init_state[i])
+                    qubit.wait(qubit.resonator_depopulation_time * u.ns)
                 else:
                     qubit.resonator.wait(qubit.thermalization_time * u.ns)
                     qubit.align()
@@ -138,7 +150,11 @@ with program() as t2ey:
                 qubit.align()
 
                 # Measure the state of the resonators
-                if node.parameters.use_state_discrimination:
+                if node.parameters.reset_type == "heralding":
+                    readout_state(qubit, state[i])
+                    assign(final_state[i], init_state[i] ^ state[i])
+                    save(final_state[i], state_st[i])
+                elif node.parameters.use_state_discrimination:
                     readout_state(qubit, state[i])
                     save(state[i], state_st[i])
                 else:

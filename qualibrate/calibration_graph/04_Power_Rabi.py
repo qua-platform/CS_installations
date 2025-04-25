@@ -49,7 +49,7 @@ class Parameters(NodeParameters):
     amp_factor_step: float = 0.05
     max_number_rabi_pulses_per_sweep: int = 1
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "heralding"
+    reset_type: Literal["thermal", "heralding", "active"] = "heralding"
     state_discrimination: bool = True
     update_x90: bool = True
     simulate: bool = False
@@ -84,7 +84,7 @@ num_qubits = len(qubits)
 n_avg = node.parameters.num_averages  # The number of averages
 N_pi = node.parameters.max_number_rabi_pulses_per_sweep  # Number of applied Rabi pulses sweep
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
-reset_type = node.parameters.reset_type_thermal_or_active  # "thermal", "heralding" or "active"
+reset_type = node.parameters.reset_type  # "thermal", "heralding" or "active"
 state_discrimination = node.parameters.state_discrimination
 operation = node.parameters.operation_x180_or_any_90  # The qubit operation to play
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
@@ -93,6 +93,9 @@ amps = np.arange(
     node.parameters.max_amp_factor,
     node.parameters.amp_factor_step,
 )
+# make sure that if using heralded readout then also using state discrimination
+if reset_type == "heralding" and not state_discrimination:
+    raise AssertionError("Heralded readout is only supported with state discrimination.")
 
 # Number of applied Rabi pulses sweep
 if N_pi > 1:
@@ -110,6 +113,9 @@ with program() as power_rabi:
     if state_discrimination:
         state = [declare(bool) for _ in range(num_qubits)]
         state_stream = [declare_stream() for _ in range(num_qubits)]
+    if reset_type == "heralding":
+        init_state = [declare(bool) for _ in range(num_qubits)]
+        final_state = [declare(bool) for _ in range(num_qubits)]
     a = declare(fixed)  # QUA variable for the qubit drive amplitude pre-factor
     npi = declare(int)  # QUA variable for the number of qubit pulses
     count = declare(int)  # QUA variable for counting the qubit pulses
@@ -128,12 +134,7 @@ with program() as power_rabi:
                     elif reset_type == "heralding":
                         qubit.wait(qubit.thermalization_time * u.ns)
                         qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
-                        if state_discrimination:
-                            assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
-                            save(state[i], state_stream[i])
-                        else:
-                            save(I[i], I_st[i])
-                            save(Q[i], Q_st[i])
+                        assign(init_state[i], I[i] > qubit.resonator.operations["readout"].threshold)
                         qubit.wait(qubit.resonator_depopulation_time * u.ns)
                     else:
                         qubit.wait(qubit.thermalization_time * u.ns)
@@ -142,12 +143,18 @@ with program() as power_rabi:
                         qubit.xy_play(operation, amplitude_scale=a)
                     qubit.align()
                     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
-                    if state_discrimination:
+
+                    if reset_type == "heralding":
+                        assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
+                        assign(final_state[i], init_state[i] ^ state[i])
+                        save(final_state[i], state_stream[i])
+                    elif state_discrimination:
                         assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
                         save(state[i], state_stream[i])
                     else:
                         save(I[i], I_st[i])
                         save(Q[i], Q_st[i])
+
 
         if not node.parameters.multiplexed:
             align()
@@ -310,7 +317,7 @@ if not node.parameters.simulate:
             ax.axvline(1e3 * ds.abs_amp.loc[qubit][data_max_idx.loc[qubit]], color="r")
         ax.set_xlabel("Amplitude [mV]")
         ax.set_title(qubit["qubit"])
-    grid.fig.suptitle(f"Rabi : I vs. amplitude \n {date_time} #{node_id} \n multiplexed = {node.parameters.multiplexed} reset Type = {node.parameters.reset_type_thermal_or_active}")
+    grid.fig.suptitle(f"Rabi : I vs. amplitude \n {date_time} #{node_id} \n multiplexed = {node.parameters.multiplexed} reset Type = {node.parameters.reset_type}")
     plt.tight_layout()
     plt.show()
     node.results["figure"] = grid.fig

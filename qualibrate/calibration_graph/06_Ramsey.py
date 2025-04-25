@@ -22,7 +22,7 @@ Next steps before going to the next node:
 from datetime import datetime
 from qualibrate import QualibrationNode, NodeParameters
 from quam_libs.components import QuAM
-from quam_libs.macros import qua_declaration, readout_state
+from quam_libs.macros import qua_declaration, active_reset, readout_state
 from quam_libs.lib.qua_datasets import convert_IQ_to_V
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset, get_node_id
@@ -49,6 +49,7 @@ class Parameters(NodeParameters):
     num_time_points: int = 500
     log_or_linear_sweep: Literal["log", "linear"] = "linear"
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
+    reset_type: Literal["thermal", "heralding", "active"] = "heralding"
     use_state_discrimination: bool = False
     simulate: bool = False
     simulation_duration_ns: int = 2500
@@ -114,7 +115,9 @@ with program() as ramsey:
     if node.parameters.use_state_discrimination:
         state = [declare(int) for _ in range(num_qubits)]
         state_st = [declare_stream() for _ in range(num_qubits)]
-
+    if node.parameters.reset_type == "heralding":
+        init_state = [declare(int) for _ in range(num_qubits)]
+        final_state = [declare(int) for _ in range(num_qubits)]
     for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the desired frequency point
@@ -125,6 +128,15 @@ with program() as ramsey:
             with for_each_(t, idle_times):
                 #  with for_(*from_array(t, idle_times)):
                 with for_(*from_array(sign, [-1, 1])):
+                    if node.parameters.reset_type == "active":
+                        active_reset(qubit, "readout")
+                    elif node.parameters.reset_type == "heralding":
+                        qubit.wait(qubit.thermalization_time * u.ns)
+                        readout_state(qubit, init_state[i])
+                        qubit.wait(qubit.resonator_depopulation_time * u.ns)
+                    else:
+                        qubit.resonator.wait(qubit.thermalization_time * u.ns)
+                        qubit.align()
                     # Rotate the frame of the second x90 gate to implement a virtual Z-rotation
                     assign(phi, Util.cond((sign == 1),  Cast.mul_fixed_by_int(detuning * 1e-9, 4 * t), Cast.mul_fixed_by_int(-detuning * 1e-9, 4 * t)))
                     qubit.align()
@@ -138,7 +150,11 @@ with program() as ramsey:
                     # Align the elements to measure after playing the qubit pulse.
                     qubit.align()
                     # Measure the state of the resonators and save data
-                    if node.parameters.use_state_discrimination:
+                    if node.parameters.reset_type == "heralding":
+                        readout_state(qubit, state[i])
+                        assign(final_state[i], init_state[i] ^ state[i])
+                        save(final_state[i], state_st[i])
+                    elif node.parameters.use_state_discrimination:
                         readout_state(qubit, state[i])
                         save(state[i], state_st[i])
                     else:
@@ -146,8 +162,6 @@ with program() as ramsey:
                         save(I[i], I_st[i])
                         save(Q[i], Q_st[i])
 
-                    # Wait for the qubits to decay to the ground state
-                    qubit.resonator.wait(qubit.thermalization_time * u.ns)
                     # Reset the frame of the qubits in order not to accumulate rotations
                     qubit.xy_reset_frame()
         # Measure sequentially

@@ -143,7 +143,7 @@
                         "length": 40,
                         "digital_marker": "ON",
                         "axis_angle": 0,
-                        "amplitude": 0.01104584008303254,
+                        "amplitude": 0.13681690767484345,
                         "alpha": 0.0,
                         "anharmonicity": "#/rf_qubits/q1/anharmonicity",
                         "__class__": "quam.components.pulses.DragCosinePulse_I"
@@ -152,7 +152,7 @@
                         "length": "#../x180_Cosine/length",
                         "digital_marker": "ON",
                         "axis_angle": 0,
-                        "amplitude": 0.00552292004151627,
+                        "amplitude": 0.06840845383742172,
                         "alpha": 0.0,
                         "anharmonicity": "#/rf_qubits/q1/anharmonicity",
                         "__class__": "quam.components.pulses.DragCosinePulse_I"
@@ -223,7 +223,7 @@
                         "length": "#../x180_Cosine/length",
                         "digital_marker": "ON",
                         "axis_angle": 0,
-                        "amplitude": 0.00552292004151627,
+                        "amplitude": 0.06840845383742172,
                         "alpha": 0.0,
                         "anharmonicity": "#/rf_qubits/q1/anharmonicity",
                         "__class__": "quam.components.pulses.DragCosinePulse_Q"
@@ -320,7 +320,7 @@
                         "length": 40,
                         "digital_marker": "ON",
                         "axis_angle": 0,
-                        "amplitude": 0.11402645991288932,
+                        "amplitude": 0.0878905735438794,
                         "alpha": 0.0,
                         "anharmonicity": "#/rf_qubits/q2/anharmonicity",
                         "__class__": "quam.components.pulses.DragCosinePulse_I"
@@ -329,7 +329,7 @@
                         "length": "#../x180_Cosine/length",
                         "digital_marker": "ON",
                         "axis_angle": 0,
-                        "amplitude": 0.05701322995644466,
+                        "amplitude": 0.0439452867719397,
                         "alpha": 0.0,
                         "anharmonicity": "#/rf_qubits/q2/anharmonicity",
                         "__class__": "quam.components.pulses.DragCosinePulse_I"
@@ -400,7 +400,7 @@
                         "length": "#../x180_Cosine/length",
                         "digital_marker": "ON",
                         "axis_angle": 0,
-                        "amplitude": 0.05701322995644466,
+                        "amplitude": 0.0439452867719397,
                         "alpha": 0.0,
                         "anharmonicity": "#/rf_qubits/q2/anharmonicity",
                         "__class__": "quam.components.pulses.DragCosinePulse_Q"

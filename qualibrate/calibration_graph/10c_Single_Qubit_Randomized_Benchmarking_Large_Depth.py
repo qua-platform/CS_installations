@@ -50,7 +50,7 @@ class Parameters(NodeParameters):
     delta_clifford: int = 1
     seed: int = 345324
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
+    reset_type: Literal["thermal", "heralding", "active"] = "heralding"
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
@@ -293,6 +293,9 @@ with program() as randomized_benchmarking_individual:
     m = declare(int)  # QUA variable for the loop over random sequences
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     state = [declare(int) for _ in range(num_qubits)]
+    if reset_type == "heralding":
+        init_state = [declare(int) for _ in range(num_qubits)]
+        final_state = [declare(int) for _ in range(num_qubits)]
     # The relevant streams
     m_st = declare_stream()
     # state_st = declare_stream()
@@ -326,6 +329,10 @@ with program() as randomized_benchmarking_individual:
                         # Initialize the qubits
                         if reset_type == "active":
                             active_reset(qubit, "readout")
+                        elif reset_type == "heralding":
+                            qubit.wait(qubit.thermalization_time * u.ns)
+                            readout_state(qubit, init_state[i])
+                            qubit.wait(qubit.resonator_depopulation_time * u.ns)
                         else:
                             qubit.resonator.wait(qubit.thermalization_time * u.ns)
                         # Align the two elements to play the sequence after qubit initialization
@@ -341,7 +348,11 @@ with program() as randomized_benchmarking_individual:
                         qubit.align()
                         readout_state(qubit, state[i])
 
-                        save(state[i], state_st[i])
+                        if node.parameters.reset_type == "heralding":
+                            assign(final_state[i], init_state[i] & state[i])
+                            save(final_state[i], state_st[i])
+                        else:
+                            save(state[i], state_st[i])
 
                 # Go to the next depth
                 assign(depth_target, depth_target + delta_clifford)
@@ -367,6 +378,9 @@ with program() as randomized_benchmarking_multiplexed:
     m = declare(int)  # QUA variable for the loop over random sequences
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     state = [declare(int) for _ in range(num_qubits)]
+    if reset_type == "heralding":
+        init_state = [declare(int) for _ in range(num_qubits)]
+        final_state = [declare(int) for _ in range(num_qubits)]
     # The relevant streams
     m_st = declare_stream()
     # state_st = declare_stream()
@@ -399,6 +413,10 @@ with program() as randomized_benchmarking_multiplexed:
                         # Initialize the qubits
                         if reset_type == "active":
                             active_reset(qubit, "readout")
+                        elif reset_type == "heralding":
+                            qubit.wait(qubit.thermalization_time * u.ns)
+                            readout_state(qubit, init_state[i])
+                            qubit.wait(qubit.resonator_depopulation_time * u.ns)
                         else:
                             qubit.resonator.wait(qubit.thermalization_time * u.ns)
                         # Align the two elements to play the sequence after qubit initialization
@@ -421,7 +439,11 @@ with program() as randomized_benchmarking_multiplexed:
                     for i, qubit in enumerate(qubits):
                         readout_state(qubit, state[i])
 
-                        save(state[i], state_st[i])
+                        if node.parameters.reset_type == "heralding":
+                            assign(final_state[i], init_state[i] & state[i])
+                            save(final_state[i], state_st[i])
+                        else:
+                            save(state[i], state_st[i])
 
                 # Go to the next depth
                 assign(depth_target, depth_target + delta_clifford)

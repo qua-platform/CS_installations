@@ -490,6 +490,57 @@
             "grid_location": "1,0"
         }
     },
+    "wiring": {
+        "qubits": {
+            "c12": {
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/2/2"
+                },
+                "z": {
+                    "opx_output": "#/ports/analog_outputs/con1/5/5"
+                }
+            }
+        },
+        "rf_qubits": {
+            "q1": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/2/1",
+                    "opx_output": "#/ports/mw_outputs/con1/2/1"
+                },
+                "I": {
+                    "opx_output": "#/ports/analog_outputs/con1/5/1"
+                },
+                "Q": {
+                    "opx_output": "#/ports/analog_outputs/con1/5/1"
+                },
+                "z": {
+                    "opx_output": "#/ports/analog_outputs/con1/5/2"
+                }
+            },
+            "q2": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/2/1",
+                    "opx_output": "#/ports/mw_outputs/con1/2/1"
+                },
+                "I": {
+                    "opx_output": "#/ports/analog_outputs/con1/5/3"
+                },
+                "Q": {
+                    "opx_output": "#/ports/analog_outputs/con1/5/3"
+                },
+                "z": {
+                    "opx_output": "#/ports/analog_outputs/con1/5/4"
+                }
+            }
+        }
+    },
+    "network": {
+        "host": "172.16.33.114",
+        "port": null,
+        "cluster_name": "CS_4",
+        "octave_ips": [],
+        "octave_ports": []
+    },
     "active_qubit_names": [
         "q1",
         "q2"

@@ -52,7 +52,7 @@ class Parameters(NodeParameters):
     delta_clifford: int = 10
     seed: int = 345324
     flux_point_joint_or_independent: Literal["joint", "independent"] = "independent"
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
+    reset_type: Literal["thermal", "active"] = "thermal"
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
@@ -131,7 +131,7 @@ if node.parameters.delta_clifford < 1:
 #  Play each sequence with a depth step equals to 'delta_clifford - Must be > 1
 delta_clifford = node.parameters.delta_clifford
 flux_point = node.parameters.flux_point_joint_or_independent
-reset_type = node.parameters.reset_type_thermal_or_active
+reset_type = node.parameters.reset_type
 assert (max_circuit_depth / delta_clifford).is_integer(), "max_circuit_depth / delta_clifford must be an integer."
 num_depths = max_circuit_depth // delta_clifford
 seed = node.parameters.seed  # Pseudo-random number generator seed
@@ -340,6 +340,9 @@ with program() as randomized_benchmarking:
     m = declare(int)  # QUA variable for the loop over random sequences
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     state = [declare(int) for _ in range(num_qubits)]
+    if reset_type == "heralding":
+        init_state = [declare(int) for _ in range(num_qubits)]
+        final_state = [declare(int) for _ in range(num_qubits)]
     # The relevant streams
     m_st = declare_stream()
     # state_st = declare_stream()
@@ -370,6 +373,10 @@ with program() as randomized_benchmarking:
                         # Initialize the qubits
                         if reset_type == "active":
                             active_reset(qubit, "readout")
+                        elif reset_type == "heralding":
+                            qubit.wait(qubit.thermalization_time * u.ns)
+                            readout_state(qubit, init_state[i])
+                            qubit.wait(qubit.resonator_depopulation_time * u.ns)
                         else:
                             qubit.resonator.wait(qubit.thermalization_time * u.ns)
                         # Align the two elements to play the sequence after qubit initialization
@@ -385,7 +392,11 @@ with program() as randomized_benchmarking:
                         qubit.align()
                         readout_state(qubit, state[i])
 
-                        save(state[i], state_st[i])
+                        if node.parameters.reset_type == "heralding":
+                            assign(final_state[i], init_state[i] & state[i])
+                            save(final_state[i], state_st[i])
+                        else:
+                            save(state[i], state_st[i])
 
                     # Go to the next depth
                     assign(depth_target, depth_target + 2 * delta_clifford)

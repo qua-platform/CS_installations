@@ -41,7 +41,7 @@ class Parameters(NodeParameters):
     max_wait_time_in_ns: int = 100000
     wait_time_step_in_ns: int = 600
     flux_point_joint_or_independent_or_arbitrary: Literal["joint", "independent", "arbitrary"] = "joint"
-    reset_type: Literal["active", "thermal"] = "thermal"
+    reset_type: Literal["thermal", "heralding", "active"] = "heralding"
     use_state_discrimination: bool = False
     simulate: bool = False
     simulation_duration_ns: int = 2500
@@ -71,6 +71,9 @@ else:
     qubits = [machine.qubits[q] for q in node.parameters.qubits]
 num_qubits = len(qubits)
 
+# make sure that if using heralded readout then also using state discrimination
+if node.parameters.reset_type == "heralding" and not node.parameters.use_state_discrimination:
+    raise AssertionError("Heralded readout is only supported with state discrimination.")
 
 # %% {QUA_program}
 n_avg = node.parameters.num_averages  # The number of averages
@@ -95,6 +98,9 @@ with program() as t1:
     if node.parameters.use_state_discrimination:
         state = [declare(int) for _ in range(num_qubits)]
         state_st = [declare_stream() for _ in range(num_qubits)]
+    if node.parameters.reset_type == "heralding":
+        init_state = [declare(int) for _ in range(num_qubits)]
+        final_state = [declare(int) for _ in range(num_qubits)]
     for i, qubit in enumerate(qubits):
 
         # Bring the active qubits to the desired frequency point
@@ -105,6 +111,10 @@ with program() as t1:
             with for_(*from_array(t, idle_times)):
                 if node.parameters.reset_type == "active":
                     active_reset(qubit, "readout")
+                elif node.parameters.reset_type == "heralding":
+                    qubit.wait(qubit.thermalization_time * u.ns)
+                    readout_state(qubit, init_state[i])
+                    qubit.wait(qubit.resonator_depopulation_time * u.ns)
                 else:
                     qubit.resonator.wait(qubit.thermalization_time * u.ns)
                     qubit.align()
@@ -121,7 +131,11 @@ with program() as t1:
                 qubit.align()
 
                 # Measure the state of the resonators
-                if node.parameters.use_state_discrimination:
+                if node.parameters.reset_type == "heralding":
+                    readout_state(qubit, state[i])
+                    assign(final_state[i], init_state[i] ^ state[i])
+                    save(final_state[i], state_st[i])
+                elif node.parameters.use_state_discrimination:
                     readout_state(qubit, state[i])
                     save(state[i], state_st[i])
                 else:

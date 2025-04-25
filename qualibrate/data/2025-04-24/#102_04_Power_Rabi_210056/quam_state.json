@@ -143,7 +143,7 @@
                         "length": 40,
                         "digital_marker": "ON",
                         "axis_angle": 0,
-                        "amplitude": 0.01104584008303254,
+                        "amplitude": 0.035211812351130696,
                         "alpha": 0.0,
                         "anharmonicity": "#/rf_qubits/q1/anharmonicity",
                         "__class__": "quam.components.pulses.DragCosinePulse_I"
@@ -152,7 +152,7 @@
                         "length": "#../x180_Cosine/length",
                         "digital_marker": "ON",
                         "axis_angle": 0,
-                        "amplitude": 0.00552292004151627,
+                        "amplitude": 0.017605906175565348,
                         "alpha": 0.0,
                         "anharmonicity": "#/rf_qubits/q1/anharmonicity",
                         "__class__": "quam.components.pulses.DragCosinePulse_I"
@@ -223,7 +223,7 @@
                         "length": "#../x180_Cosine/length",
                         "digital_marker": "ON",
                         "axis_angle": 0,
-                        "amplitude": 0.00552292004151627,
+                        "amplitude": 0.017605906175565348,
                         "alpha": 0.0,
                         "anharmonicity": "#/rf_qubits/q1/anharmonicity",
                         "__class__": "quam.components.pulses.DragCosinePulse_Q"
@@ -320,7 +320,7 @@
                         "length": 40,
                         "digital_marker": "ON",
                         "axis_angle": 0,
-                        "amplitude": 0.11402645991288932,
+                        "amplitude": 0.021885519269930345,
                         "alpha": 0.0,
                         "anharmonicity": "#/rf_qubits/q2/anharmonicity",
                         "__class__": "quam.components.pulses.DragCosinePulse_I"
@@ -329,7 +329,7 @@
                         "length": "#../x180_Cosine/length",
                         "digital_marker": "ON",
                         "axis_angle": 0,
-                        "amplitude": 0.05701322995644466,
+                        "amplitude": 0.010942759634965172,
                         "alpha": 0.0,
                         "anharmonicity": "#/rf_qubits/q2/anharmonicity",
                         "__class__": "quam.components.pulses.DragCosinePulse_I"
@@ -400,7 +400,7 @@
                         "length": "#../x180_Cosine/length",
                         "digital_marker": "ON",
                         "axis_angle": 0,
-                        "amplitude": 0.05701322995644466,
+                        "amplitude": 0.010942759634965172,
                         "alpha": 0.0,
                         "anharmonicity": "#/rf_qubits/q2/anharmonicity",
                         "__class__": "quam.components.pulses.DragCosinePulse_Q"
@@ -489,6 +489,57 @@
             },
             "grid_location": "1,0"
         }
+    },
+    "wiring": {
+        "qubits": {
+            "c12": {
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/2/2"
+                },
+                "z": {
+                    "opx_output": "#/ports/analog_outputs/con1/5/5"
+                }
+            }
+        },
+        "rf_qubits": {
+            "q1": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/2/1",
+                    "opx_output": "#/ports/mw_outputs/con1/2/1"
+                },
+                "I": {
+                    "opx_output": "#/ports/analog_outputs/con1/5/1"
+                },
+                "Q": {
+                    "opx_output": "#/ports/analog_outputs/con1/5/1"
+                },
+                "z": {
+                    "opx_output": "#/ports/analog_outputs/con1/5/2"
+                }
+            },
+            "q2": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/2/1",
+                    "opx_output": "#/ports/mw_outputs/con1/2/1"
+                },
+                "I": {
+                    "opx_output": "#/ports/analog_outputs/con1/5/3"
+                },
+                "Q": {
+                    "opx_output": "#/ports/analog_outputs/con1/5/3"
+                },
+                "z": {
+                    "opx_output": "#/ports/analog_outputs/con1/5/4"
+                }
+            }
+        }
+    },
+    "network": {
+        "host": "172.16.33.114",
+        "port": null,
+        "cluster_name": "CS_4",
+        "octave_ips": [],
+        "octave_ports": []
     },
     "active_qubit_names": [
         "q1",
