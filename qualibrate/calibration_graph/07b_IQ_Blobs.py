@@ -46,7 +46,7 @@ class Parameters(NodeParameters):
 
     qubits: Optional[List[str]] = None
     num_runs: int = 2000
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
+    reset_type: Literal["thermal", "heralding", "active"] = "heralding"
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     operation_name: str = "readout"  # or "readout_QND"
     simulate: bool = False
@@ -82,7 +82,7 @@ num_qubits = len(qubits)
 # %% {QUA_program}
 n_runs = node.parameters.num_runs  # Number of runs
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
-reset_type = node.parameters.reset_type_thermal_or_active  # "active" or "thermal"
+reset_type = node.parameters.reset_type # "active" or "thermal"
 operation_name = node.parameters.operation_name
 with program() as iq_blobs:
     I_g, I_g_st, Q_g, Q_g_st, n, n_st = qua_declaration(num_qubits=num_qubits)
@@ -98,6 +98,8 @@ with program() as iq_blobs:
             save(n, n_st)
             if reset_type == "active":
                 active_reset(qubit, "readout")
+            elif reset_type == "heralding":
+                qubit.wait(4 * qubit.resonator_depopulation_time * u.ns)
             elif reset_type == "thermal":
                 qubit.wait(4* qubit.thermalization_time * u.ns)
             else:
@@ -119,7 +121,7 @@ with program() as iq_blobs:
             else:
                 raise ValueError(f"Unrecognized reset type {reset_type}.")
             qubit.align()
-            qubit.xy_play("x180_Cosine")
+            # qubit.xy_play("x180_Cosine")
             qubit.align()
             qubit.resonator.measure(operation_name, qua_vars=(I_e[i], Q_e[i]))
             qubit.resonator.wait(qubit.resonator.depletion_time * u.ns)
@@ -304,7 +306,7 @@ if not node.parameters.simulate:
         ax.text(1, 1, f"{100 * confusion[1][1]:.1f}%", ha="center", va="center", color="k")
         ax.set_title(qubit["qubit"])
 
-    grid.fig.suptitle(f"g.s. and e.s. fidelity \n {date_time} #{node_id} \n multiplexed = {node.parameters.multiplexed} reset Type = {node.parameters.reset_type_thermal_or_active}")
+    grid.fig.suptitle(f"g.s. and e.s. fidelity \n {date_time} #{node_id} \n multiplexed = {node.parameters.multiplexed} reset Type = {node.parameters.reset_type}")
     plt.tight_layout()
     plt.show()
     node.results["figure_fidelity"] = grid.fig

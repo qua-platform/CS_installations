@@ -10,7 +10,7 @@ library = QualibrationLibrary.get_active_library()
 
 
 class Parameters(GraphParameters):
-    rf_qubits: List[str] = ["q1", "q2", "c12"]
+    qubits: List[str] = ["q1", "q2", "c12"]
 
 
 
@@ -88,22 +88,16 @@ g = QualibrationGraph(
                                                                                                                name="single_qubit_randomized_benchmarking"),
     },
     connectivity=[
-                  ("resonator_spectroscopy", "resonator_spec_vs_flux"),
-                  ("resonator_spec_vs_flux", "resonator_spec_vs_flux2"),
-                  ("resonator_spec_vs_flux2", "qubit_spectroscopy"),
+                  ("resonator_spectroscopy", "IQ_blobs"),
+                  ("IQ_blobs", "qubit_spectroscopy"),
                   ("qubit_spectroscopy", "qubit_spec_vs_flux"),
                   ("qubit_spec_vs_flux", "power_rabi"),
-                  ("power_rabi", "ramsey"),
-                  ("readout_frequency_optimization", "readout_power_time_optimization"),
-                  ("readout_power_time_optimization", "ramsey"),
-                  ("ramsey", "readout_power_optimization"),
-                  ("readout_frequency_optimization", "IQ_blobs"),
+                  ("power_rabi", "ramsey_flux_calibration"),
+                  ("ramsey_flux_calibration", "IQ_blobs"),
                   ("IQ_blobs", "qubit_spectroscopy_weak_drive"),
                   ("qubit_spectroscopy_weak_drive", "drag_calibration"),
                   ("drag_calibration", "drag_calibration_zoom"),
                   ("drag_calibration_zoom", "power_rabi_error_amplification_x180"),
-                  # ("power_rabi_error_amplification_x180", "power_rabi_error_amplification_x90"),
-                  # ("power_rabi_error_amplification_x90", "single_qubit_randomized_benchmarking"),
                   ("power_rabi_error_amplification_x180", "single_qubit_randomized_benchmarking"),
                   ],
 
