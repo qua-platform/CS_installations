@@ -116,6 +116,8 @@ with program() as iq_blobs:
             # excited iq blobs for all qubits
             if reset_type == "active":
                 active_reset(qubit, "readout")
+            elif reset_type == "heralding":
+                qubit.wait(4 * qubit.resonator_depopulation_time * u.ns)
             elif reset_type == "thermal":
                 qubit.wait(qubit.thermalization_time * u.ns)
             else:

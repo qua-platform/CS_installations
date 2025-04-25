@@ -28,7 +28,7 @@ from qualibrate import QualibrationNode, NodeParameters
 
 from quam_libs.components import QuAM
 from quam_libs.lib.instrument_limits import instrument_limits
-from quam_libs.macros import qua_declaration
+from quam_libs.macros import qua_declaration, active_reset
 from quam_libs.lib.qua_datasets import convert_IQ_to_V
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset, get_node_id
@@ -48,12 +48,14 @@ import numpy as np
 class Parameters(NodeParameters):
 
     qubits: Optional[List[str]] = None
-    num_averages: int = 500
+    num_averages: int = 100
     operation: str = "saturation"
     operation_amplitude_factor: Optional[float] = 0.1
     operation_len_in_ns: Optional[int] = None
     frequency_span_in_mhz: float = 100
     frequency_step_in_mhz: float = 0.25
+    reset_type: Literal["thermal", "heralding", "active"] = "heralding"
+    state_discrimination: bool = True
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     target_peak_width: Optional[float] = 2e6
     arbitrary_flux_bias: Optional[float] = None
@@ -104,7 +106,6 @@ step = node.parameters.frequency_step_in_mhz * u.MHz
 dfs = np.arange(-span // 2, +span // 2, step, dtype=np.int32)
 flux_point = node.parameters.flux_point_joint_or_independent
 qubit_freqs = {q.name: q.I.intermediate_frequency for q in qubits}  # for opx
-
 # Set the qubit frequency for a given flux point
 if node.parameters.arbitrary_flux_bias is not None:
     arb_flux_bias_offset = {q.name: node.parameters.arbitrary_flux_bias for q in qubits}
@@ -126,9 +127,23 @@ if target_peak_width is None:
         3e6  # the desired width of the response to the saturation pulse (including saturation amp), in Hz
     )
 
+reset_type = node.parameters.reset_type  # "thermal", "heralding" or "active"
+state_discrimination = node.parameters.state_discrimination
+# make sure that if using heralded readout then also using state discrimination
+if reset_type == "heralding" and not state_discrimination:
+    raise AssertionError("Heralded readout is only supported with state discrimination.")
+
+
 with program() as qubit_spec:
     # Macro to declare I, Q, n and their respective streams for a given number of qubit (defined in macros.py)
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
+    if state_discrimination:
+        state = [declare(bool) for _ in range(num_qubits)]
+        state_stream = [declare_stream() for _ in range(num_qubits)]
+    if reset_type == "heralding":
+        init_state = [declare(bool) for _ in range(num_qubits)]
+        final_state = [declare(bool) for _ in range(num_qubits)]
+
     df = declare(int)  # QUA variable for the qubit frequency
 
     for i, qubit in enumerate(qubits):
@@ -138,6 +153,17 @@ with program() as qubit_spec:
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_(*from_array(df, dfs)):
+                # Initialize the qubits
+                if reset_type == "active":
+                    active_reset(qubit, "readout")
+                elif reset_type == "heralding":
+                    qubit.wait(qubit.thermalization_time * u.ns)
+                    qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                    assign(init_state[i], I[i] > qubit.resonator.operations["readout"].threshold)
+                    qubit.wait(qubit.resonator_depopulation_time * u.ns)
+                else:
+                    qubit.wait(qubit.thermalization_time * u.ns)
+
                 # Update the qubit frequency
                 qubit.xy_update_frequency(df + qubit.I.intermediate_frequency + detunings[qubit.name])
                 qubit.align()
@@ -153,11 +179,17 @@ with program() as qubit_spec:
                 qubit.align()
                 # readout the resonator
                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
-                # Wait for the qubit to decay to the ground state
-                qubit.resonator.wait(machine.depletion_time * u.ns)
-                # save data
-                save(I[i], I_st[i])
-                save(Q[i], Q_st[i])
+
+                if reset_type == "heralding":
+                    assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
+                    assign(final_state[i], init_state[i] ^ state[i])
+                    save(final_state[i], state_stream[i])
+                elif state_discrimination:
+                    assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
+                    save(state[i], state_stream[i])
+                else:
+                    save(I[i], I_st[i])
+                    save(Q[i], Q_st[i])
 
         # Measure sequentially
         if not node.parameters.multiplexed:
@@ -166,8 +198,13 @@ with program() as qubit_spec:
     with stream_processing():
         n_st.save("n")
         for i in range(num_qubits):
-            I_st[i].buffer(len(dfs)).average().save(f"I{i + 1}")
-            Q_st[i].buffer(len(dfs)).average().save(f"Q{i + 1}")
+            if state_discrimination:
+                state_stream[i].boolean_to_int().buffer(len(dfs)).average().save(
+                    f"state{i + 1}"
+                )
+            else:
+                I_st[i].buffer(len(dfs)).average().save(f"I{i + 1}")
+                Q_st[i].buffer(len(dfs)).average().save(f"Q{i + 1}")
 
 
 # %% {Simulate_or_execute}
@@ -209,11 +246,12 @@ if not node.parameters.simulate:
     else:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
         ds = fetch_results_as_xarray(job.result_handles, qubits, {"freq": dfs})
-        # Convert IQ data into volts
-        ds = convert_IQ_to_V(ds, qubits)
-        # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2) and phase
-        ds = ds.assign({"IQ_abs": np.sqrt(ds["I"] ** 2 + ds["Q"] ** 2)})
-        ds = ds.assign({"phase": np.arctan2(ds.Q, ds.I)})
+        if not state_discrimination:
+            # Convert IQ data into volts
+            ds = convert_IQ_to_V(ds, qubits)
+            # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2) and phase
+            ds = ds.assign({"IQ_abs": np.sqrt(ds["I"] ** 2 + ds["Q"] ** 2)})
+            ds = ds.assign({"phase": np.arctan2(ds.Q, ds.I)})
         # Add the resonator RF frequency axis of each qubit to the dataset coordinates for plotting
         ds = ds.assign_coords(
             {
@@ -227,19 +265,21 @@ if not node.parameters.simulate:
         ds.freq_full.attrs["units"] = "GHz"
     # Add the dataset to the node
     node.results = {"ds": ds}
-
-    # %% {Data_analysis}
-    # search for frequency for which the amplitude the farthest from the mean to indicate the approximate location of the peak
-    shifts = np.abs((ds.IQ_abs - ds.IQ_abs.mean(dim="freq"))).idxmax(dim="freq")
-    # Find the rotation angle to align the separation along the 'I' axis
-    angle = np.arctan2(
-        ds.sel(freq=shifts).Q - ds.Q.mean(dim="freq"),
-        ds.sel(freq=shifts).I - ds.I.mean(dim="freq"),
-    )
-    # rotate the data to the new I axis
-    ds = ds.assign({"I_rot" : ds.I * np.cos(angle) + ds.Q * np.sin(angle)})
-    # Find the peak with minimal prominence as defined, if no such peak found, returns nan
-    result = peaks_dips(ds.I_rot, dim="freq", prominence_factor=5)
+    if not state_discrimination:
+        # %% {Data_analysis}
+        # search for frequency for which the amplitude the farthest from the mean to indicate the approximate location of the peak
+        shifts = np.abs((ds.IQ_abs - ds.IQ_abs.mean(dim="freq"))).idxmax(dim="freq")
+        # Find the rotation angle to align the separation along the 'I' axis
+        angle = np.arctan2(
+            ds.sel(freq=shifts).Q - ds.Q.mean(dim="freq"),
+            ds.sel(freq=shifts).I - ds.I.mean(dim="freq"),
+        )
+        # rotate the data to the new I axis
+        ds = ds.assign({"I_rot" : ds.I * np.cos(angle) + ds.Q * np.sin(angle)})
+        # Find the peak with minimal prominence as defined, if no such peak found, returns nan
+        result = peaks_dips(ds.I_rot, dim="freq", prominence_factor=5)
+    else:
+        result = peaks_dips(ds.state, dim="freq", prominence_factor=5)
     # The resonant RF frequency of the qubits
     abs_freqs = dict(
         [
@@ -276,7 +316,8 @@ if not node.parameters.simulate:
                 f"To obtain a Pi pulse at {Pi_length} ns the Rabi amplitude is modified by {factor_pi:.2f} "
                 f"to {factor_pi*used_amp*1e3:.0f} mV"
             )
-            print(f"readout angle for qubit {q.name}: {angle.sel(qubit = q.name).values:.4}")
+            if not state_discrimination:
+                print(f"readout angle for qubit {q.name}: {angle.sel(qubit = q.name).values:.4}")
             print()
         else:
             fit_results[q.name]["fit_successful"] = False
@@ -289,14 +330,24 @@ if not node.parameters.simulate:
     approx_peak = result.base_line + result.amplitude * (1 / (1 + ((ds.freq - result.position) / result.width) ** 2))
     for ax, qubit in grid_iter(grid):
         # Plot the line
-        (ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].I_rot * 1e3).plot(ax=ax, x="freq_GHz")
+        if not state_discrimination:
+            (ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].I_rot * 1e3).plot(ax=ax, x="freq_GHz")
+        else:
+            (ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].state * 1e3).plot(ax=ax, x="freq_GHz")
         # Identify the resonance peak
         if not np.isnan(result.sel(qubit=qubit["qubit"]).position.values):
-            ax.plot(
-                abs_freqs[qubit["qubit"]] / 1e9,
-                ds.loc[qubit].sel(freq=result.loc[qubit].position.values, method="nearest").I_rot * 1e3,
-                ".r",
-            )
+            if not state_discrimination:
+                ax.plot(
+                    abs_freqs[qubit["qubit"]] / 1e9,
+                    ds.loc[qubit].sel(freq=result.loc[qubit].position.values, method="nearest").I_rot * 1e3,
+                    ".r",
+                )
+            else:
+                ax.plot(
+                    abs_freqs[qubit["qubit"]] / 1e9,
+                    ds.loc[qubit].sel(freq=result.loc[qubit].position.values, method="nearest").state * 1e3,
+                    ".r",
+                )
             # # Identify the width
             (approx_peak.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit] * 1e3).plot(
                 ax=ax, x="freq_GHz", linewidth=0.5, linestyle="--"
@@ -304,7 +355,8 @@ if not node.parameters.simulate:
         ax.set_xlabel("Qubit freq [GHz]")
         ax.set_ylabel("Trans. amp. [mV]")
         ax.set_title(qubit["qubit"])
-    grid.fig.suptitle(f"Qubit spectroscopy (amplitude) \n {date_time} #{node_id} \n multiplexed = {node.parameters.multiplexed}")
+    grid.fig.suptitle(
+        f"Qubit spectroscopy (amplitude) \n {date_time} #{node_id} \n multiplexed = {node.parameters.multiplexed}")
     plt.tight_layout()
     plt.show()
     node.results["figure"] = grid.fig
@@ -326,9 +378,11 @@ if not node.parameters.simulate:
                         prev_angle = q.resonator.operations["readout"].integration_weights_angle
                         if not prev_angle:
                             prev_angle = 0.0
-                        q.resonator.operations["readout"].integration_weights_angle = (
-                            prev_angle + angle.sel(qubit=q.name).values
-                        ) % (2 * np.pi)
+                        if not state_discrimination:
+                            q.resonator.operations["readout"].integration_weights_angle = (
+                                                                                                  prev_angle + angle.sel(
+                                                                                              qubit=q.name).values
+                                                                                          ) % (2 * np.pi)
                         Pi_length = q.I.operations["x180_Cosine"].length
                         used_amp = q.I.operations["saturation"].amplitude * operation_amp
                         factor_cw = float(target_peak_width / result.sel(qubit=q.name).width.values)

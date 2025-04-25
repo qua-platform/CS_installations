@@ -337,11 +337,3 @@ if not node.parameters.simulate:
         node.machine = machine
         node.save()
 
-# %%
-debug = True
-if debug:
-    from qm import generate_qua_script
-
-    sourceFile = open('debug_power_rabi_heralding.py', 'w')
-    print(generate_qua_script(power_rabi, config), file=sourceFile)
-    sourceFile.close()

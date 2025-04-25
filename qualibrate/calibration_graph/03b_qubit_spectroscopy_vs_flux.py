@@ -20,7 +20,7 @@ Before proceeding to the next node:
 from datetime import datetime
 from qualibrate import QualibrationNode, NodeParameters
 from quam_libs.components import QuAM
-from quam_libs.macros import qua_declaration
+from quam_libs.macros import qua_declaration, active_reset
 from quam_libs.lib.qua_datasets import convert_IQ_to_V
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset, get_node_id
@@ -49,6 +49,8 @@ class Parameters(NodeParameters):
     min_flux_offset_in_v: float = -0.01
     max_flux_offset_in_v: float = 0.01
     num_flux_points: int = 11
+    reset_type: Literal["thermal", "heralding", "active"] = "heralding"
+    state_discrimination: bool = True
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     simulate: bool = False
     simulation_duration_ns: int = 2500
@@ -102,9 +104,21 @@ dcs = np.linspace(
 )
 flux_point = node.parameters.flux_point_joint_or_independent  # 'independent' or 'joint'
 
+reset_type = node.parameters.reset_type  # "thermal", "heralding" or "active"
+state_discrimination = node.parameters.state_discrimination
+# make sure that if using heralded readout then also using state discrimination
+if reset_type == "heralding" and not state_discrimination:
+    raise AssertionError("Heralded readout is only supported with state discrimination.")
+
 with program() as multi_qubit_spec_vs_flux:
     # Macro to declare I, Q, n and their respective streams for a given number of qubit (defined in macros.py)
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
+    if state_discrimination:
+        state = [declare(bool) for _ in range(num_qubits)]
+        state_stream = [declare_stream() for _ in range(num_qubits)]
+    if reset_type == "heralding":
+        init_state = [declare(bool) for _ in range(num_qubits)]
+        final_state = [declare(bool) for _ in range(num_qubits)]
     df = declare(int)  # QUA variable for the qubit frequency
     dc = declare(fixed)  # QUA variable for the flux dc level
 
@@ -119,7 +133,16 @@ with program() as multi_qubit_spec_vs_flux:
                 # Update the qubit frequency
                 qubit.xy_update_frequency(df + qubit.I.intermediate_frequency)
                 with for_(*from_array(dc, dcs)):
-                    qubit.wait(qubit.thermalization_time * u.ns)
+                    # Initialize the qubits
+                    if reset_type == "active":
+                        active_reset(qubit, "readout")
+                    elif reset_type == "heralding":
+                        qubit.wait(qubit.thermalization_time * u.ns)
+                        qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                        assign(init_state[i], I[i] > qubit.resonator.operations["readout"].threshold)
+                        qubit.wait(qubit.resonator_depopulation_time * u.ns)
+                    else:
+                        qubit.wait(qubit.thermalization_time * u.ns)
                     # Flux sweeping for a qubit
                     duration = operation_len * u.ns if operation_len is not None else qubit.I.operations[operation].length * u.ns
                     # Bring the qubit to the desired point during the saturation pulse
@@ -135,10 +158,16 @@ with program() as multi_qubit_spec_vs_flux:
                     # QUA macro to read the state of the active resonators
                     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                     # save data
-                    save(I[i], I_st[i])
-                    save(Q[i], Q_st[i])
-                    # Wait for the qubits to decay to the ground state
-                    qubit.resonator.wait(machine.depletion_time * u.ns)
+                    if reset_type == "heralding":
+                        assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
+                        assign(final_state[i], init_state[i] ^ state[i])
+                        save(final_state[i], state_stream[i])
+                    elif state_discrimination:
+                        assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
+                        save(state[i], state_stream[i])
+                    else:
+                        save(I[i], I_st[i])
+                        save(Q[i], Q_st[i])
 
         # Measure sequentially
         if not node.parameters.multiplexed:
@@ -147,8 +176,13 @@ with program() as multi_qubit_spec_vs_flux:
     with stream_processing():
         n_st.save("n")
         for i, qubit in enumerate(qubits):
-            I_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"I{i + 1}")
-            Q_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"Q{i + 1}")
+            if state_discrimination:
+                state_stream[i].boolean_to_int().buffer(len(dcs)).buffer(len(dfs)).average().save(
+                    f"state{i + 1}"
+                )
+            else:
+                I_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"I{i + 1}")
+                Q_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"Q{i + 1}")
 
 
 # %% {Simulate_or_execute}
