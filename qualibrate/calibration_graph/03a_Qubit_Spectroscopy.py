@@ -352,11 +352,3 @@ if not node.parameters.simulate:
         node.save()
 
 
-# %%
-debug = True
-if debug:
-    from qm import generate_qua_script
-
-    sourceFile = open('debug_qubit_spec.py', 'w')
-    print(generate_qua_script(qubit_spec, config), file=sourceFile)
-    sourceFile.close()

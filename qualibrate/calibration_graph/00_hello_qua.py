@@ -68,3 +68,11 @@ job.halt()
 qm.close()
 
 
+# %%
+debug = True
+if debug:
+    from qm import generate_qua_script
+
+    sourceFile = open('debug.py', 'w')
+    print(generate_qua_script(prog, config), file=sourceFile)
+    sourceFile.close()

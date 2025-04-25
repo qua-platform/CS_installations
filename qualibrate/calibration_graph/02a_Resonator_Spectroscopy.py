@@ -247,13 +247,3 @@ if not node.parameters.simulate:
         print("Results saved")
 
 
-# %%
-
-# %%
-debug = True
-if debug:
-    from qm import generate_qua_script
-
-    sourceFile = open('debug_multi_res_spec.py', 'w')
-    print(generate_qua_script(multi_res_spec, config), file=sourceFile)
-    sourceFile.close()
