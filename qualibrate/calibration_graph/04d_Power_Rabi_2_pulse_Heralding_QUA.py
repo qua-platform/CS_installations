@@ -24,7 +24,7 @@ from quam_libs.macros import qua_declaration, active_reset
 from quam_libs.lib.instrument_limits import instrument_limits
 from quam_libs.lib.qua_datasets import convert_IQ_to_V
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
-from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset, get_node_id, fetch_results_as_xarray_for_heralding
+from quam_libs.lib.save_utils import fetch_results_as_xarray, load_dataset, get_node_id
 from quam_libs.lib.fit import fit_oscillation, oscillation
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.loops import from_array
@@ -108,9 +108,9 @@ with program() as power_rabi:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
     a = declare(fixed)  # QUA variable for the qubit drive amplitude pre-factor
     count = declare(int)  # QUA variable for counting the qubit pulses
-    init_state = [declare(int) for _ in range(num_qubits)]
-    state = [declare(int) for _ in range(num_qubits)]
-    final_state = [declare(int) for _ in range(num_qubits)]
+    init_state = [declare(bool) for _ in range(num_qubits)]
+    state = [declare(bool) for _ in range(num_qubits)]
+    final_state = [declare(bool) for _ in range(num_qubits)]
     state_stream = [declare_stream() for _ in range(num_qubits)]
 
     for i, qubit in enumerate(qubits):
@@ -122,8 +122,7 @@ with program() as power_rabi:
             with for_(*from_array(a, amps)):
                 # first measurement
                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
-                assign(init_state[i], Cast.to_int(I[i] > qubit.resonator.operations["readout"].threshold))
-
+                assign(init_state[i], I[i] > qubit.resonator.operations["readout"].threshold)
                 # Initialize the qubits
                 qubit.wait(qubit.resonator_depopulation_time * u.ns)
 
@@ -133,11 +132,10 @@ with program() as power_rabi:
                 qubit.align()
                 # second measurement
                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
-                assign(state[i], Cast.to_int(I[i] > qubit.resonator.operations["readout"].threshold))
+                assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
 
                 assign(final_state[i], init_state[i] ^ state[i])
                 save(final_state[i], state_stream[i])
-
 
                 qubit.wait(qubit.thermalization_time * u.ns)
 
@@ -150,12 +148,12 @@ with program() as power_rabi:
         n_st.save("n")
         for i, qubit in enumerate(qubits):
             if operation == "x180_Cosine":
-                    state_stream[i].buffer(len(amps)).average().save(
+                    state_stream[i].boolean_to_int().buffer(len(amps)).average().save(
                         f"state{i + 1}"
                     )
 
             elif operation in ["x90_Cosine", "-x90_Cosine"]:
-                state_stream[i].buffer(len(amps)).average().save(
+                state_stream[i].boolean_to_int().buffer(len(amps)).average().save(
                     f"state{i + 1}"
                 )
             else:

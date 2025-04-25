@@ -49,7 +49,7 @@ class Parameters(NodeParameters):
     amp_factor_step: float = 0.05
     max_number_rabi_pulses_per_sweep: int = 1
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
-    reset_type_thermal_or_active: Literal["thermal", "active"] = "thermal"
+    reset_type_thermal_or_active: Literal["thermal", "active"] = "heralding"
     state_discrimination: bool = True
     update_x90: bool = True
     simulate: bool = False
@@ -126,10 +126,17 @@ with program() as power_rabi:
                     if reset_type == "active":
                         active_reset(qubit, "readout")
                     elif reset_type == "heralding":
+                        qubit.wait(qubit.thermalization_time * u.ns)
+                        qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                        if state_discrimination:
+                            assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
+                            save(state[i], state_stream[i])
+                        else:
+                            save(I[i], I_st[i])
+                            save(Q[i], Q_st[i])
                         qubit.wait(qubit.resonator_depopulation_time * u.ns)
                     else:
                         qubit.wait(qubit.thermalization_time * u.ns)
-
                     # Loop for error amplification (perform many qubit pulses)
                     with for_(count, 0, count < npi, count + 1):
                         qubit.xy_play(operation, amplitude_scale=a)
@@ -141,6 +148,7 @@ with program() as power_rabi:
                     else:
                         save(I[i], I_st[i])
                         save(Q[i], Q_st[i])
+
         if not node.parameters.multiplexed:
             align()
 
@@ -322,3 +330,11 @@ if not node.parameters.simulate:
         node.machine = machine
         node.save()
 
+# %%
+debug = True
+if debug:
+    from qm import generate_qua_script
+
+    sourceFile = open('debug_power_rabi_heralding.py', 'w')
+    print(generate_qua_script(power_rabi, config), file=sourceFile)
+    sourceFile.close()
