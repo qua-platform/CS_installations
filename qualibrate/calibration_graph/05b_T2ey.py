@@ -39,7 +39,7 @@ class Parameters(NodeParameters):
     min_wait_time_in_ns: int = 16
     max_wait_time_in_ns: int = 70000
     wait_time_step_in_ns: int = 300
-    flux_point_joint_or_independent_or_arbitrary: Literal["joint", "independent", "arbitrary"] = "independent"
+    flux_point_joint_or_independent: Literal["joint", "independent", "arbitrary"] = "joint"
     reset_type: Literal["thermal", "heralding", "active"] = "thermal"
     use_state_discrimination: bool = True
     simulate: bool = False
@@ -48,7 +48,7 @@ class Parameters(NodeParameters):
     load_data_id: Optional[int] = None
     multiplexed: bool = False
 
-node = QualibrationNode(name="05b_T2e", parameters=Parameters())
+node = QualibrationNode(name="05b_T2ey", parameters=Parameters())
 
 
 # %% {Initialize_QuAM_and_QOP}

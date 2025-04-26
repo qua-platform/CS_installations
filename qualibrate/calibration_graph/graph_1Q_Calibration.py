@@ -16,7 +16,7 @@ class Parameters(GraphParameters):
 
 multiplexed = True
 flux_point = "joint"
-reset_type_thermal_heralding_or_active = "heralding"
+reset_type = "heralding" # "thermal" / "heralding" / "active"
 
 
 g = QualibrationGraph(
@@ -73,7 +73,7 @@ g = QualibrationGraph(
         "power_rabi_error_amplification_x180": library.nodes["04_Power_Rabi"].copy(flux_point_joint_or_independent=flux_point,
                                                                                    multiplexed=multiplexed, operation_x180_or_any_90 = "x180_Cosine",
                                                                                    min_amp_factor = 0.9, max_amp_factor = 1.1, amp_factor_step = 0.005,
-                                                                                   max_number_rabi_pulses_per_sweep = 200, reset_type_thermal_or_active = reset_type_thermal_heralding_or_active,
+                                                                                   max_number_rabi_pulses_per_sweep = 200, reset_type = reset_type,
                                                                                    state_discrimination = True, update_x90 = True,
                                                                                    name="power_rabi_error_amplification_x180"),
         # "power_rabi_error_amplification_x90": library.nodes["04_Power_Rabi"].copy(flux_point_joint_or_independent=flux_point,
