@@ -22,7 +22,7 @@ Next steps before going to the next node:
 from datetime import datetime
 from qualibrate import QualibrationNode, NodeParameters
 from quam_libs.components import QuAM
-from quam_libs.macros import qua_declaration, readout_state
+from quam_libs.macros import qua_declaration, readout_state, active_reset
 from quam_libs.lib.qua_datasets import convert_IQ_to_V
 from quam_libs.lib.plot_utils import QubitGrid, grid_iter
 from quam_libs.lib.save_utils import fetch_results_as_xarray, get_node_id, load_dataset
@@ -48,12 +48,15 @@ class Parameters(NodeParameters):
     wait_time_step_in_ns: int = 20
     flux_span: float = 0.02
     flux_step: float = 0.001
+    reset_type: Literal["thermal", "heralding", "active"] = "heralding"
+    state_discrimination: bool = True
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
     multiplexed: bool = False
+    strict_timing: bool = False
 
 node = QualibrationNode(name="08_Ramsey_vs_Flux_Calibration", parameters=Parameters())
 node_id = get_node_id()
@@ -95,12 +98,22 @@ fluxes = np.arange(
     -node.parameters.flux_span / 2, node.parameters.flux_span / 2 + 0.001, step=node.parameters.flux_step
 )
 
+
+strict_timing = node.parameters.strict_timing
+reset_type = node.parameters.reset_type  # "thermal", "heralding" or "active"
+state_discrimination = node.parameters.state_discrimination
+# make sure that if using heralded readout then also using state discrimination
+if reset_type == "heralding" and not state_discrimination:
+    raise AssertionError("Heralded readout is only supported with state discrimination.")
+
 with program() as ramsey:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(num_qubits=num_qubits)
-    init_state = [declare(int) for _ in range(num_qubits)]
-    final_state = [declare(int) for _ in range(num_qubits)]
-    state = [declare(int) for _ in range(num_qubits)]
-    state_st = [declare_stream() for _ in range(num_qubits)]
+    if state_discrimination:
+        state = [declare(bool) for _ in range(num_qubits)]
+        state_st = [declare_stream() for _ in range(num_qubits)]
+    if reset_type == "heralding":
+        init_state = [declare(bool) for _ in range(num_qubits)]
+        final_state = [declare(bool) for _ in range(num_qubits)]
     t = declare(int)  # QUA variable for the idle time
     phi = declare(fixed)  # QUA variable for dephasing the second pi/2 pulse (virtual Z-rotation)
     flux = declare(fixed)  # QUA variable for the flux dc level
@@ -115,28 +128,56 @@ with program() as ramsey:
             assign(init_state[i], 0)
             with for_(*from_array(flux, fluxes)):
                 with for_(*from_array(t, idle_times)):
+                    # Initialize the qubits
+                    if reset_type == "active":
+                        active_reset(qubit, "readout")
+                    elif reset_type == "heralding":
+                        qubit.wait(qubit.thermalization_time * u.ns)
+                        qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+                        assign(init_state[i], I[i] > qubit.resonator.operations["readout"].threshold)
+                        qubit.wait(qubit.resonator_depopulation_time * u.ns)
+                    else:
+                        qubit.wait(qubit.thermalization_time * u.ns)
+
                     # Rotate the frame of the second x90 gate to implement a virtual Z-rotation
                     # 4*tau because tau was in clock cycles and 1e-9 because tau is ns
                     assign(phi, Cast.mul_fixed_by_int(detuning * 1e-9, 4 * t))
                     # TODO: this has gaps and the Z rotation is not derived properly, is it okay still?
                     # Ramsey sequence
                     qubit.align()
-                    with strict_timing_():
+                    if strict_timing:
+                        with strict_timing_():
+                            qubit.xy_play("x180_Cosine", amplitude_scale=0.5)
+                            qubit.xy_frame_rotation_2pi(phi)
+                            qubit.z.wait(duration=qubit.I.operations["x180_Cosine"].length)
+
+                            qubit.xy_wait(t+1)
+                            qubit.z.play("const", amplitude_scale=flux / qubit.z.operations["const"].amplitude, duration=t)
+
+                            qubit.xy_play("x180_Cosine", amplitude_scale=0.5)
+                    else:
                         qubit.xy_play("x180_Cosine", amplitude_scale=0.5)
                         qubit.xy_frame_rotation_2pi(phi)
                         qubit.z.wait(duration=qubit.I.operations["x180_Cosine"].length)
-                        
-                        qubit.xy_wait(t+1)
-                        qubit.z.play("const", amplitude_scale=flux / qubit.z.operations["const"].amplitude, duration=t)
-                        
-                        qubit.xy_play("x180_Cosine", amplitude_scale=0.5)
 
+                        qubit.xy_wait(t + 1)
+                        qubit.z.play("const", amplitude_scale=flux / qubit.z.operations["const"].amplitude, duration=t)
+
+                        qubit.xy_play("x180_Cosine", amplitude_scale=0.5)
                     qubit.align()
                     # Measure the state of the resonators
-                    readout_state(qubit, state[i])
-                    assign(final_state[i], init_state[i] ^ state[i])
-                    save(final_state[i], state_st[i])
-                    assign(init_state[i], state[i])
+                    qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
+
+                    if reset_type == "heralding":
+                        assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
+                        assign(final_state[i], init_state[i] ^ state[i])
+                        save(final_state[i], state_st[i])
+                    elif state_discrimination:
+                        assign(state[i], I[i] > qubit.resonator.operations["readout"].threshold)
+                        save(state[i], state_st[i])
+                    else:
+                        save(I[i], I_st[i])
+                        save(Q[i], Q_st[i])
 
                     # Reset the frame of the qubits in order not to accumulate rotations
                     qubit.xy_reset_frame()
@@ -147,8 +188,11 @@ with program() as ramsey:
     with stream_processing():
         n_st.save("n")
         for i in range(num_qubits):
-            state_st[i].buffer(len(idle_times)).buffer(len(fluxes)).average().save(f"state{i + 1}")
-
+            if state_discrimination:
+                state_st[i].boolean_to_int().buffer(len(idle_times)).buffer(len(fluxes)).average().save(f"state{i + 1}")
+            else:
+                I_st[i].buffer(len(idle_times)).buffer(len(fluxes)).average().save(f"I{i + 1}")
+                Q_st[i].buffer(len(idle_times)).buffer(len(fluxes)).average().save(f"Q{i + 1}")
 
 # %% {Simulate_or_execute}
 if node.parameters.simulate:
