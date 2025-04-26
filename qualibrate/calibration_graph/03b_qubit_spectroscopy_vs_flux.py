@@ -223,10 +223,11 @@ if not node.parameters.simulate:
     else:
         # Fetch the data from the OPX and convert it into a xarray with corresponding axes (from most inner to outer loop)
         ds = fetch_results_as_xarray(job.result_handles, qubits, {"flux": dcs, "freq": dfs})
-        # Convert IQ data into volts
-        ds = convert_IQ_to_V(ds, qubits)
-        # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2)
-        ds = ds.assign({"IQ_abs": np.sqrt(ds["I"] ** 2 + ds["Q"] ** 2)})
+        if not state_discrimination:
+            # Convert IQ data into volts
+            ds = convert_IQ_to_V(ds, qubits)
+            # Derive the amplitude IQ_abs = sqrt(I**2 + Q**2)
+            ds = ds.assign({"IQ_abs": np.sqrt(ds["I"] ** 2 + ds["Q"] ** 2)})
         # Add the resonator IF frequency axis of each qubit to the dataset coordinates for plotting
         ds = ds.assign_coords(
             {
@@ -243,13 +244,19 @@ if not node.parameters.simulate:
 
     # %% {Data_analysis}
     # Find the resonance dips for each flux point
-    peaks = peaks_dips(ds.I, dim="freq", prominence_factor=3)
+    if not state_discrimination:
+        peaks = peaks_dips(ds.I, dim="freq", prominence_factor=3)
+    else:
+        peaks = peaks_dips(ds.state, dim="freq", prominence_factor=3)
     # Fit the result with a parabola
     parabolic_fit_results = peaks.position.polyfit("flux", 2)
     # Try to fit again with a smaller prominence factor (may need some adjustment)
     if np.any(np.isnan(np.concatenate(parabolic_fit_results.polyfit_coefficients.values))):
         # Find the resonance dips for each flux point
-        peaks = peaks_dips(ds.I, dim="freq", prominence_factor=4)
+        if not state_discrimination:
+            peaks = peaks_dips(ds.I, dim="freq", prominence_factor=4)
+        else:
+            peaks = peaks_dips(ds.state, dim="freq", prominence_factor=4)
         # Fit the result with a parabola
         parabolic_fit_results = peaks.position.polyfit("flux", 2)
     # Extract relevant fitted parameters
@@ -291,10 +298,15 @@ if not node.parameters.simulate:
     grid = QubitGrid(ds, [q.grid_location for q in qubits])
 
     for ax, qubit in grid_iter(grid):
-        freq_ref = (ds.freq_full-ds.freq).sel(qubit = qubit["qubit"]).values[0]
-        ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].I.plot(
-            ax=ax, add_colorbar=False, x="flux", y="freq_GHz", robust=True
-        )
+        freq_ref = (ds.freq_full - ds.freq).sel(qubit=qubit["qubit"]).values[0]
+        if not state_discrimination:
+            ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].I.plot(
+                ax=ax, add_colorbar=False, x="flux", y="freq_GHz", robust=True
+            )
+        else:
+            ds.assign_coords(freq_GHz=ds.freq_full / 1e9).loc[qubit].state.plot(
+                ax=ax, add_colorbar=False, x="flux", y="freq_GHz", robust=True
+            )
         ((fitted + freq_ref) / 1e9).loc[qubit].plot(ax=ax, linewidth=0.5, ls="--", color="r")
         ax.plot(flux_shift.loc[qubit], ((freq_shift.loc[qubit] + freq_ref) / 1e9), "r*")
         ((peaks.position.loc[qubit] + freq_ref) / 1e9).plot(ax=ax, ls="", marker=".", color="g", ms=0.5)
