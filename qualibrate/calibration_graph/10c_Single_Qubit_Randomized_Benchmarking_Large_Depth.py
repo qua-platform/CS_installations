@@ -58,7 +58,7 @@ class Parameters(NodeParameters):
     multiplexed: bool = True
 
 
-node = QualibrationNode(name="10a_Single_Qubit_Randomized_Benchmarking", parameters=Parameters())
+node = QualibrationNode(name="10c_Single_Qubit_Randomized_Benchmarking_Large_Depth", parameters=Parameters())
 node_id = get_node_id()
 
 # %% {Initialize_QuAM_and_QOP}
