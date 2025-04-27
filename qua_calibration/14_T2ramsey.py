@@ -162,7 +162,6 @@ else:
             plt.subplot(224)
             plt.cla()
             plt.plot(4 * t_delays, Q2)
-            plt.title("Q2")
             plt.xlabel("Idle times [ns]")
             plt.tight_layout()
             plt.pause(1)
