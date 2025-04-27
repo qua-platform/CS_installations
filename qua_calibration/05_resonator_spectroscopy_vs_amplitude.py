@@ -34,6 +34,14 @@ from scipy import signal
 ##################
 #   Parameters   #
 ##################
+# Choose parameters of target rr/qb
+rr1 = "rr1"
+rr2 = "rr2"
+resonator_IF_Q1 = resonator_IF_q1
+resonator_IF_Q2 = resonator_IF_q2
+readout_amp_Q1 = readout_amp_q1
+readout_amp_Q2 = readout_amp_q2
+
 # Parameters Definition
 n_avg = 20  # The number of averages
 # The frequency sweep around the resonators' frequency
@@ -66,15 +74,15 @@ with program() as PROGRAM:
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the frequency
             # Update the frequency of the two resonator elements
-            update_frequency("rr1", df + resonator_IF_q1)
-            update_frequency("rr2", df + resonator_IF_q2)
+            update_frequency(rr1, df + resonator_IF_Q1)
+            update_frequency(rr2, df + resonator_IF_Q2)
 
             with for_each_(a, amplitudes):  # QUA for_ loop for sweeping the readout amplitude
                 # resonator 1
-                wait(depletion_time * u.ns, "rr1")  # wait for the resonator to relax
+                wait(depletion_time * u.ns, rr1)  # wait for the resonator to relax
                 measure(
                     "readout" * amp(a),
-                    "rr1",
+                    rr1,
                     None,
                     dual_demod.full("cos", "sin", I[0]),
                     dual_demod.full("minus_sin", "cos", Q[0]),
@@ -83,13 +91,13 @@ with program() as PROGRAM:
                 save(I[0], I_st[0])
                 save(Q[0], Q_st[0])
 
-                # align("rr1", "rr2")  # Uncomment to measure sequentially
+                # align(rr1, rr2)  # Uncomment to measure sequentially
 
                 # resonator 2
-                wait(depletion_time * u.ns, "rr2")  # wait for the resonator to relax
+                wait(depletion_time * u.ns, rr2)  # wait for the resonator to relax
                 measure(
                     "readout" * amp(a),
-                    "rr2",
+                    rr2,
                     None,
                     dual_demod.full("cos", "sin", I[1]),
                     dual_demod.full("minus_sin", "cos", Q[1]),
@@ -167,37 +175,37 @@ else:
             row_sums = R2.sum(axis=0)
             R2 /= row_sums[np.newaxis, :]
             # Plot
-            plt.suptitle("Resonator spectroscopy")
+            plt.suptitle(f"Resonator spectroscopy {rr1} & {rr2}")
             plt.subplot(221)
             plt.cla()
-            plt.title(f"Resonator 1 - LO: {resonator_LO / u.GHz} GHz")
+            plt.title(f"Resonator {rr1} - LO: {resonator_LO / u.GHz} GHz")
             plt.ylabel("Readout IF [MHz]")
-            plt.pcolor(amplitudes * readout_amp_q1, (dfs + resonator_IF_q1) / u.MHz, R1)
+            plt.pcolor(amplitudes * readout_amp_Q1, (dfs + resonator_IF_Q1) / u.MHz, R1)
             plt.xscale("log")
-            plt.xlim(amplitudes[0] * readout_amp_q1, amplitudes[-1] * readout_amp_q1)
-            plt.axhline(resonator_IF_q1 / u.MHz, color="k")
+            plt.xlim(amplitudes[0] * readout_amp_Q1, amplitudes[-1] * readout_amp_Q1)
+            plt.axhline(resonator_IF_Q1 / u.MHz, color="k")
             plt.subplot(222)
             plt.cla()
-            plt.title(f"Resonator 2 - LO: {resonator_LO / u.GHz} GHz")
-            plt.pcolor(amplitudes * readout_amp_q2, (dfs + resonator_IF_q2) / u.MHz, R2)
+            plt.title(f"Resonator {rr2} - LO: {resonator_LO / u.GHz} GHz")
+            plt.pcolor(amplitudes * readout_amp_Q2, (dfs + resonator_IF_Q2) / u.MHz, R2)
             plt.xscale("log")
-            plt.xlim(amplitudes[0] * readout_amp_q2, amplitudes[-1] * readout_amp_q2)
-            plt.axhline(resonator_IF_q2 / u.MHz, color="k")
+            plt.xlim(amplitudes[0] * readout_amp_Q2, amplitudes[-1] * readout_amp_Q2)
+            plt.axhline(resonator_IF_Q2 / u.MHz, color="k")
             plt.subplot(223)
             plt.cla()
             plt.xlabel("Readout amplitude [V]")
             plt.ylabel("Readout IF [MHz]")
-            plt.pcolor(amplitudes * readout_amp_q1, (dfs + resonator_IF_q1) / u.MHz, signal.detrend(np.unwrap(phase1)))
+            plt.pcolor(amplitudes * readout_amp_Q1, (dfs + resonator_IF_Q1) / u.MHz, signal.detrend(np.unwrap(phase1)))
             plt.xscale("log")
-            plt.xlim(amplitudes[0] * readout_amp_q1, amplitudes[-1] * readout_amp_q1)
-            plt.axhline(resonator_IF_q1 / u.MHz, color="k")
+            plt.xlim(amplitudes[0] * readout_amp_Q1, amplitudes[-1] * readout_amp_Q1)
+            plt.axhline(resonator_IF_Q1 / u.MHz, color="k")
             plt.subplot(224)
             plt.cla()
             plt.xlabel("Readout amplitude [V]")
-            plt.pcolor(amplitudes * readout_amp_q2, (dfs + resonator_IF_q2) / u.MHz, signal.detrend(np.unwrap(phase2)))
+            plt.pcolor(amplitudes * readout_amp_Q2, (dfs + resonator_IF_Q2) / u.MHz, signal.detrend(np.unwrap(phase2)))
             plt.xscale("log")
-            plt.xlim(amplitudes[0] * readout_amp_q2, amplitudes[-1] * readout_amp_q2)
-            plt.axhline(resonator_IF_q2 / u.MHz, color="k")
+            plt.xlim(amplitudes[0] * readout_amp_Q2, amplitudes[-1] * readout_amp_Q2)
+            plt.axhline(resonator_IF_Q2 / u.MHz, color="k")
             plt.tight_layout()
             plt.pause(0.1)
 

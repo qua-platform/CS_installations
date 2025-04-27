@@ -27,10 +27,12 @@ from qualang_tools.results.data_handler import DataHandler
 ##################
 #   Parameters   #
 ##################
-# Parameters Definition
+# Choose parameters of target rr/qb
 resonator = "rr1"
 resonator_LO = resonator_LO
 
+
+# Parameters Definition
 n_avg = 200  # The number of averages
 frequencies = {
     "rr1": np.arange(-50e6, +50e6, 100e3),
@@ -64,7 +66,7 @@ with program() as PROGRAM:
             update_frequency(resonator, f)
             # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
             measure(
-                "readout" * amp(1),
+                "readout",
                 resonator,
                 None,
                 dual_demod.full("cos", "sin", I),

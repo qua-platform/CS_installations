@@ -25,8 +25,13 @@ from scipy.signal import savgol_filter
 ##################
 #   Parameters   #
 ##################
+# Choose parameters of target rr/qb
+rr1 = "rr1"
+
 # Parameters Definition
 n_avg = 5000  # The number of averages
+
+
 
 ###################
 # The QUA program #
@@ -40,14 +45,14 @@ with program() as PROGRAM:
 
     with for_(n, 0, n < n_avg, n + 1):
         # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
-        reset_if_phase("rr1")
-        reset_if_phase("rr2")
+        reset_if_phase(rr1)
+        # reset_if_phase(rr2)
         # Sends the readout pulse and stores the raw ADC traces in the stream called "adc_st"
-        measure("readout", "rr1", adc_st)
-        measure("readout", "rr2", None)
+        measure("readout", rr1, adc_st)
+        # measure("readout", rr2, None)
         # Wait for the resonators to empty
-        wait(depletion_time * u.ns, "rr1")
-        wait(depletion_time * u.ns, "rr2")
+        wait(depletion_time * u.ns)
+        # wait(depletion_time * u.ns, rr2)
 
     with stream_processing():
         # Will save average:
@@ -111,7 +116,7 @@ else:
 
         # Plot for single run
         plt.subplot(121)
-        plt.title("Single run")
+        plt.title(f"Resonator {rr1} Single run")
         plt.plot(adc1_single_run.real, label="Input 1 real")
         plt.plot(adc1_single_run.imag, label="Input 1 image")
         plt.axhline(y=0)
