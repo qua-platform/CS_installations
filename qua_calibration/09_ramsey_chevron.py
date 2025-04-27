@@ -27,6 +27,14 @@ from qualang_tools.results.data_handler import DataHandler
 
 ##################
 #   Parameters   #
+Q1_xy = "q1_xy"
+Q2_xy = "q2_xy"
+qubit_IF_Q1 = qubit_IF_q1
+qubit_IF_Q2 = qubit_IF_q2
+qubit_LO_Q1 = qubit_LO_q1
+qubit_LO_Q2 = qubit_LO_q2
+pi_amp_Q1 = pi_amp_q1
+pi_amp_Q2 = pi_amp_q2
 ##################
 # Parameters Definition
 n_avg = 10  # The number of averages
@@ -46,6 +54,8 @@ save_data_dict = {
     "dfs": dfs,
     "t_delay": t_delay,
     "config": config,
+    "Q1_xy" : Q1_xy,
+    "Q2_xy" : Q2_xy,
 }
 
 ###################
@@ -59,19 +69,19 @@ with program() as PROGRAM:
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
             # Update the frequency of the two qubit elements
-            update_frequency("q1_xy", df + qubit_IF_q1)
-            update_frequency("q2_xy", df + qubit_IF_q2)
+            update_frequency(Q1_xy, df + qubit_IF_Q1)
+            update_frequency(Q2_xy, df + qubit_IF_Q2)
 
             with for_(*from_array(t, t_delay)):
                 # qubit 1
-                play("x90", "q1_xy")
-                wait(t, "q1_xy")
-                play("x90", "q1_xy")
+                play("x90", Q1_xy)
+                wait(t, Q1_xy)
+                play("x90", Q1_xy)
 
                 # qubit 2
-                play("x90", "q2_xy")
-                wait(t, "q2_xy")
-                play("x90", "q2_xy")
+                play("x90", Q2_xy)
+                wait(t, Q2_xy)
+                play("x90", Q2_xy)
 
                 # Align the elements to measure after having waited a time "tau" after the qubit pulses.
                 align()
@@ -142,22 +152,22 @@ else:
             plt.subplot(221)
             plt.cla()
             plt.pcolor(4 * t_delay, dfs / u.MHz, I1)
-            plt.title(f"qubit 1 I, fcent={(qubit_LO_q1 + qubit_IF_q1) / u.MHz} MHz")
+            plt.title(f"qubit {Q1_xy} I, fcent={(qubit_LO_Q1 + qubit_IF_Q1) / u.MHz} MHz")
             plt.ylabel("Frequency detuning [MHz]")
             plt.subplot(223)
             plt.cla()
             plt.pcolor(4 * t_delay, dfs / u.MHz, Q1)
-            plt.title("qubit 1 Q")
+            plt.title(f"qubit {Q1_xy} Q")
             plt.xlabel("Idle time [ns]")
             plt.ylabel("Frequency detuning [MHz]")
             plt.subplot(222)
             plt.cla()
             plt.pcolor(4 * t_delay, dfs / u.MHz, I2)
-            plt.title(f"qubit 2 I, fcent={(qubit_LO_q2 + qubit_IF_q2) / u.MHz} MHz")
+            plt.title(f"qubit {Q2_xy} I, fcent={(qubit_LO_Q2 + qubit_IF_Q2) / u.MHz} MHz")
             plt.subplot(224)
             plt.cla()
             plt.pcolor(4 * t_delay, dfs / u.MHz, Q2)
-            plt.title("qubit 2 Q")
+            plt.title(f"qubit {Q2_xy} Q")
             plt.xlabel("Idle time [ns]")
             plt.tight_layout()
             plt.pause(1)
