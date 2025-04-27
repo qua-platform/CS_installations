@@ -60,6 +60,8 @@ save_data_dict = {
     "dfs": dfs,
     "amplitudes": amplitudes,
     "config": config,
+    "rr1" = rr1,
+    "rr2" = rr2,
 }
 
 ###################
