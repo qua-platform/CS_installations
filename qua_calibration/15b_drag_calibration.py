@@ -30,8 +30,6 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 Q1_xy = "q1_xy"
 Q2_xy = "q2_xy"
-Q1 = "1"
-Q2 = "2"
 drag_coef_Q1 = drag_coef_q1
 drag_coef_Q2 = drag_coef_q2
 ##################
