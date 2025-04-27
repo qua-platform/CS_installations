@@ -28,6 +28,10 @@ from qualang_tools.results.data_handler import DataHandler
 
 ##################
 #   Parameters   #
+Q1_xy = "q1_xy"
+Q2_xy = "q2_xy"
+Q1 = "1"
+Q2 = "2"
 ##################
 # Parameters Definition
 n_avg = 8 * 60  # The number of averages
@@ -44,6 +48,8 @@ save_data_dict = {
     "t_delays": t_delays,
     "detuning": freq_detuning,
     "config": config,
+    "Q1_xy": Q1_xy,
+    "Q2_xy": Q2_xy,
 }
 
 ###################
@@ -65,13 +71,13 @@ with program() as PROGRAM:
 
             assign(phase, phase + delta_phase)
 
-            play("x90", "q1_xy")
-            play("x90", "q2_xy")
+            play("x90", Q1_xy)
+            play("x90", Q2_xy)
             wait(t)
-            frame_rotation_2pi(phase, "q1_xy")
-            frame_rotation_2pi(phase, "q2_xy")
-            play("x90", "q1_xy")
-            play("x90", "q2_xy")
+            frame_rotation_2pi(phase, Q1_xy)
+            frame_rotation_2pi(phase, Q2_xy)
+            play("x90", Q1_xy)
+            play("x90", Q2_xy)
 
             # Align the elements to measure after having waited a time "tau" after the qubit pulses.
             align()
@@ -143,7 +149,7 @@ else:
             plt.cla()
             plt.plot(4 * t_delays, I1)
             plt.ylabel("I quadrature [V]")
-            plt.title("Qubit 1")
+            plt.title(f"Qubit {Q1}")
             plt.subplot(223)
             plt.cla()
             plt.plot(4 * t_delays, Q1)
@@ -152,7 +158,7 @@ else:
             plt.subplot(222)
             plt.cla()
             plt.plot(4 * t_delays, I2)
-            plt.title("Qubit 2")
+            plt.title(f"Qubit {Q2}")
             plt.subplot(224)
             plt.cla()
             plt.plot(4 * t_delays, Q2)
@@ -160,6 +166,33 @@ else:
             plt.xlabel("Idle times [ns]")
             plt.tight_layout()
             plt.pause(1)
+        try:
+            from qualang_tools.plot.fitting import Fit
+
+            fit = Fit()
+            plt.figure()
+            plt.suptitle(f"Ramsey measurement with detuning={freq_detuning} MHz")
+            plt.subplot(221)
+            fit.ramsey(4 * t_delays, I1, plot=True)
+            plt.xlabel("Idle times [ns]")
+            plt.ylabel("I quadrature [V]")
+            plt.title(f"Qubit {Q1}")
+            plt.subplot(223)
+            fit.ramsey(4 * t_delays, Q1, plot=True)
+            plt.xlabel("Idle times [ns]")
+            plt.ylabel("I quadrature [V]")
+            plt.title(f"Qubit {Q2}")
+            plt.subplot(222)
+            fit.ramsey(4 * t_delays, I2, plot=True)
+            plt.xlabel("Idle times [ns]")
+            plt.ylabel("I quadrature [V]")
+            plt.subplot(224)
+            fit.ramsey(4 * t_delays, Q2, plot=True)
+            plt.xlabel("Idle times [ns]")
+            plt.ylabel("I quadrature [V]")
+            plt.tight_layout()
+        except (Exception,):
+            pass
 
         # Save results
         script_name = Path(__file__).name
