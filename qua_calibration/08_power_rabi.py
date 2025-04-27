@@ -28,6 +28,10 @@ from qualang_tools.results.data_handler import DataHandler
 
 ##################
 #   Parameters   #
+Q1_xy = "q1_xy"
+Q2_xy = "q2_xy"
+pi_amp_Q1 = pi_amp_q1
+pi_amp_Q2 = pi_amp_q2
 ##################
 # Parameters Definition
 n_avg = 10  # The number of averages
@@ -45,6 +49,8 @@ save_data_dict = {
     "nb_of_pulses": nb_of_pulses,
     "scalings": scalings,
     "config": config,
+    "Q1_xy" : Q1_xy,
+    "Q2_xy" : Q2_xy,
 }
 
 ###################
@@ -61,8 +67,8 @@ with program() as PROGRAM:
             with for_(*from_array(a, scalings)):
                 # Loop for error amplification (perform many qubit pulses)
                 with for_(count, 0, count < npi, count + 1):
-                    play("x180" * amp(a), "q1_xy")
-                    play("x180" * amp(a), "q2_xy")
+                    play("x180" * amp(a), Q1_xy)
+                    play("x180" * amp(a), Q2_xy)
                 # Align the elements to measure after playing the qubit pulses.
                 align()
                 # Start using Rotated integration weights (cf. IQ_blobs.py)
@@ -132,23 +138,23 @@ else:
             # Power Rabi with error amplification
             plt.subplot(221)
             plt.cla()
-            plt.pcolor(scalings * pi_amp_q1, nb_of_pulses, I1)
-            plt.title("I1")
+            plt.pcolor(scalings * pi_amp_Q1, nb_of_pulses, I1)
+            plt.title(f"I{Q1_xy}")
             plt.ylabel("# of Rabi pulses")
             plt.subplot(223)
             plt.cla()
-            plt.pcolor(scalings * pi_amp_q1, nb_of_pulses, Q1)
-            plt.title("Q1")
+            plt.pcolor(scalings * pi_amp_Q1, nb_of_pulses, Q1)
+            plt.title(f"Q{Q1_xy}")
             plt.xlabel("qubit pulse amplitude [V]")
             plt.ylabel("# of Rabi pulses")
             plt.subplot(222)
             plt.cla()
-            plt.pcolor(scalings * pi_amp_q2, nb_of_pulses, I2)
-            plt.title("I2")
+            plt.pcolor(scalings * pi_amp_Q2, nb_of_pulses, I2)
+            plt.title(f"I{Q2_xy}")
             plt.subplot(224)
             plt.cla()
-            plt.pcolor(scalings * pi_amp_q2, nb_of_pulses, Q2)
-            plt.title("Q2")
+            plt.pcolor(scalings * pi_amp_Q2, nb_of_pulses, Q2)
+            plt.title(f"Q{Q2_xy}")
             plt.xlabel("Qubit pulse amplitude [V]")
             plt.pause(1)
 
