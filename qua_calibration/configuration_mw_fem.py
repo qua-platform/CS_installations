@@ -56,29 +56,29 @@ qubit_full_scale_power_dbm_q7 = -8
 #   1: (50 MHz - 5.5 GHz)
 #   2: (4.5 GHz - 7.5 GHz)
 #   3: (6.5 GHz - 10.5 GHz)
-qubit_band_q1 = 3
-qubit_band_q2 = 3
-qubit_band_q3 = 3
-qubit_band_q4 = 3
-qubit_band_q5 = 3
-qubit_band_q6 = 3
-qubit_band_q7 = 3
+qubit_band_q1 = 1
+qubit_band_q2 = 1
+qubit_band_q3 = 1
+qubit_band_q4 = 1
+qubit_band_q5 = 1
+qubit_band_q6 = 1
+qubit_band_q7 = 1
 # Qubits LO
-qubit_LO_q1 = 8.00 * u.GHz
-qubit_LO_q2 = 7.50 * u.GHz
-qubit_LO_q3 = 8.00 * u.GHz
-qubit_LO_q4 = 7.50 * u.GHz
-qubit_LO_q5 = 8.00 * u.GHz
-qubit_LO_q6 = 7.50 * u.GHz
-qubit_LO_q7 = 8.00 * u.GHz
+qubit_LO_q1 = 4.00 * u.GHz
+qubit_LO_q2 = 4.00 * u.GHz
+qubit_LO_q3 = 4.00 * u.GHz
+qubit_LO_q4 = 4.00 * u.GHz
+qubit_LO_q5 = 4.00 * u.GHz
+qubit_LO_q6 = 4.00 * u.GHz
+qubit_LO_q7 = 4.00 * u.GHz
 # Qubits IF
-qubit_IF_q1 = -100 * u.MHz
-qubit_IF_q2 = -200 * u.MHz
-qubit_IF_q3 = -100 * u.MHz
-qubit_IF_q4 = -200 * u.MHz
-qubit_IF_q5 = -100 * u.MHz
-qubit_IF_q6 = -200 * u.MHz
-qubit_IF_q7 = -100 * u.MHz
+qubit_IF_q1 = 300 * u.MHz
+qubit_IF_q2 = 200 * u.MHz
+qubit_IF_q3 = 100 * u.MHz
+qubit_IF_q4 = -100 * u.MHz
+qubit_IF_q5 = -200 * u.MHz
+qubit_IF_q6 = -300 * u.MHz
+qubit_IF_q7 = -400 * u.MHz
 # Qubits_delay
 qubit_delay_q1 = 0
 qubit_delay_q2 = 0
@@ -660,9 +660,10 @@ resonator_full_scale_power_dbm = -11
 #   1: (50 MHz - 5.5 GHz)
 #   2: (4.5 GHz - 7.5 GHz)
 #   3: (6.5 GHz - 10.5 GHz)
-resonator_band = 3
+resonator_band = 2
 # Resonators LO
-resonator_LO = 10.0 * u.GHz
+resonator_LO1 = 6.3 * u.GHz
+resonator_LO2 = 7.2 * u.GHz
 # Resonators IF
 resonator_IF_q1 = int(100 * u.MHz)
 resonator_IF_q2 = int(200 * u.MHz)
@@ -676,7 +677,7 @@ resonator_delay = 0
 
 # Readout pulse parameters
 readout_len = 1000
-readout_amp_q1 = 0.1
+readout_amp_q1 = 0.1 # our q1 as their q3
 readout_amp_q2 = 0.1
 readout_amp_q3 = 0.1
 readout_amp_q4 = 0.1
@@ -816,7 +817,9 @@ config = {
                             "full_scale_power_dbm": resonator_full_scale_power_dbm,
                             "band": resonator_band,
                             "delay": resonator_delay,
-                            "upconverters": {1: {"frequency": resonator_LO}},
+                            "upconverters": {
+                                1: {"frequency": resonator_LO1},
+                                2: {"frequency": resonator_LO2},
                         },  # RL1  0.5V => 4dbm +[+6, -45] 3db spacing
 
                         2: {
