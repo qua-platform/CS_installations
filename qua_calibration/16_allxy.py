@@ -15,16 +15,18 @@ from qualang_tools.results.data_handler import DataHandler
 
 ##################
 #   Parameters   #
+qubit = "q1_xy"
 ##################
 # Parameters Definition
 n_avg = 10
-qubit = "q1_xy"
+
 
 # Data to save
 save_data_dict = {
     "n_avg": n_avg,
     "qubit": qubit,
     "config": config,
+    "qubit": qubit
 }
 
 ###################################
@@ -146,10 +148,11 @@ else:
 
             plt.suptitle("AllXY")
 
-            if qubit == "q1_xy":
-                ind = 0
-            else:
-                ind = 1
+            # if qubit == "q1_xy":
+            #     ind = 0
+            # else:
+            #     ind = 1
+            ind = 0
 
             I = res[2 * ind + 1]
             Q = res[2 * ind + 2]
@@ -158,7 +161,7 @@ else:
             save_data_dict[f"Q{ind}"] = res[2 * ind + 2]
 
             # Plot
-            plt.suptitle(f"All XY for qubit {ind}")
+            plt.suptitle(f"All XY for qubit {qubit}")
             plt.subplot(211)
             plt.cla()
             plt.plot(I, "bx", label="Experimental data")
