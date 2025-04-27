@@ -29,6 +29,12 @@ from qualang_tools.results.data_handler import DataHandler
 
 ##################
 #   Parameters   #
+RR1 = "rr1"
+RR2 = "rr2"
+Q1 = "1"
+Q2 = "2"
+resonator_IF_Q1 = resonator_IF_q1
+resonator_IF_Q2 = resonator_IF_q2
 ##################
 # Parameters Definition
 n_avg = 400  # Number of runs
@@ -43,6 +49,9 @@ save_data_dict = {
     "n_avg": n_avg,
     "dfs": dfs,
     "config": config,
+    "RR1" : RR1,
+    "RR2" : RR2
+
 }
 
 ###################
@@ -60,8 +69,8 @@ with program() as PROGRAM:
         with for_(*from_array(df, dfs)):
 
             # Update the frequency of the two resonator elements
-            update_frequency("rr1", df + resonator_IF_q1)
-            update_frequency("rr2", df + resonator_IF_q2)
+            update_frequency(RR1, df + resonator_IF_Q1)
+            update_frequency(RR2, df + resonator_IF_Q2)
 
             # Reset both qubits to ground
             wait(thermalization_time * u.ns)
@@ -197,21 +206,21 @@ else:
             plt.subplot(121)
             plt.cla()
             plt.plot(dfs / u.MHz, SNR1, ".-")
-            plt.title(f"Qubit 1 around {resonator_IF_q1 / u.MHz} MHz")
+            plt.title(f"Qubit {Q1} around {resonator_IF_Q1 / u.MHz} MHz")
             plt.xlabel("Readout frequency detuning [MHz]")
             plt.ylabel("SNR")
             plt.grid("on")
             plt.subplot(122)
             plt.cla()
             plt.plot(dfs / u.MHz, SNR2, ".-")
-            plt.title(f"Qubit 2 around {resonator_IF_q2 / u.MHz} MHz")
+            plt.title(f"Qubit {Q2} around {resonator_IF_Q2 / u.MHz} MHz")
             plt.xlabel("Readout frequency detuning [MHz]")
             plt.grid("on")
             plt.tight_layout()
             plt.pause(1)
 
-        print(f"The optimal readout frequency is {dfs[np.argmax(SNR1)] + resonator_IF_q1} Hz (SNR={max(SNR1)})")
-        print(f"The optimal readout frequency is {dfs[np.argmax(SNR2)] + resonator_IF_q2} Hz (SNR={max(SNR2)})")
+        print(f"The optimal readout frequency is {dfs[np.argmax(SNR1)] + resonator_IF_Q1} Hz (SNR={max(SNR1)})")
+        print(f"The optimal readout frequency is {dfs[np.argmax(SNR2)] + resonator_IF_Q2} Hz (SNR={max(SNR2)})")
 
         # Save results
         script_name = Path(__file__).name
