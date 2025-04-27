@@ -28,6 +28,12 @@ from qualang_tools.results.data_handler import DataHandler
 
 ##################
 #   Parameters   #
+Q1_xy = "q1_xy"
+Q2_xy = "q2_xy"
+Q1 = "1"
+Q2 = "2"
+drag_coef_Q1 = drag_coef_q1
+drag_coef_Q2 = drag_coef_q2
 ##################
 # Parameters Definition
 n_avg = 10  # The number of averages
@@ -50,6 +56,8 @@ save_data_dict = {
     "nb_of_pulses": nb_of_pulses,
     "amps": amps,
     "config": config,
+    "Q1_xy": Q1_xy,
+    "Q2_xy": Q2_xy,
 }
 
 ###################
@@ -70,10 +78,10 @@ with program() as PROGRAM:
             with for_(*from_array(a, amps)):
                 # Loop for error amplification (perform many qubit pulses)
                 with for_(count, 0, count < npi, count + 1):
-                    play("x180" * amp(1, 0, 0, a), "q1_xy")
-                    play("x180" * amp(1, 0, 0, a), "q2_xy")
-                    play("x180" * amp(-1, 0, 0, -a), "q1_xy")
-                    play("x180" * amp(-1, 0, 0, -a), "q2_xy")
+                    play("x180" * amp(1, 0, 0, a), Q1_xy)
+                    play("x180" * amp(1, 0, 0, a), Q2_xy)
+                    play("x180" * amp(-1, 0, 0, -a), Q1_xy)
+                    play("x180" * amp(-1, 0, 0, -a), Q2_xy)
 
                 # Align the elements to measure after playing the qubit pulses.
                 align()
@@ -139,22 +147,22 @@ else:
             # Power Rabi with error amplification
             plt.subplot(221)
             plt.cla()
-            plt.pcolor(amps * drag_coef_q1, nb_of_pulses, I1)
+            plt.pcolor(amps * drag_coef_Q1, nb_of_pulses, I1)
             plt.title("I1")
             plt.ylabel("# of pulses")
             plt.subplot(223)
             plt.cla()
-            plt.pcolor(amps * drag_coef_q1, nb_of_pulses, Q1)
+            plt.pcolor(amps * drag_coef_Q1, nb_of_pulses, Q1)
             plt.title("Q1")
             plt.xlabel("qubit pulse amplitude [V]")
             plt.ylabel("# of pulses")
             plt.subplot(222)
             plt.cla()
-            plt.pcolor(amps * drag_coef_q2, nb_of_pulses, I2)
+            plt.pcolor(amps * drag_coef_Q2, nb_of_pulses, I2)
             plt.title("I2")
             plt.subplot(224)
             plt.cla()
-            plt.pcolor(amps * drag_coef_q2, nb_of_pulses, Q2)
+            plt.pcolor(amps * drag_coef_Q2, nb_of_pulses, Q2)
             plt.title("Q2")
             plt.xlabel("Qubit pulse amplitude [V]")
             plt.tight_layout()
