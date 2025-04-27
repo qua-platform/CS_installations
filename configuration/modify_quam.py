@@ -57,6 +57,7 @@ for i, q in enumerate(machine.qubits):
     qb.xy.opx_output.upconverter_frequency = round(xy_LO[i])
     qb.xy.opx_output.band = get_band(xy_LO[i])
     qb.xy.intermediate_frequency = round(xy_if[i])
+    qb.xy.anharmonicity = -100 * u.MHz
     qb.xy.thread = qb.name
 
     ## Update qubit xy detuned freq and power
@@ -89,9 +90,14 @@ for i, qp in enumerate(machine.qubit_pairs):
     qbc = qb_pair.qubit_control
     qbt = qb_pair.qubit_target
     cr = qb_pair.cross_resonance
-    zz = qb_pair.zz_drive
+    # zz = qb_pair.zz_drive
     
+    print("qubit_pair:", qp)
     print(qb_pair)
+    print(qbc)
+    print(qbt)
+    print(cr)
+    # print(zz)
 
     # CR gates - Square
     cr.thread = qbc.name
@@ -100,14 +106,14 @@ for i, qp in enumerate(machine.qubit_pairs):
     qbt.xy.operations[f"{cr.name}_Square"].length = f"#/qubit_pairs/{qb_pair.name}/cross_resonance/operations/square/length"
     qbt.xy.operations[f"{cr.name}_Square"].axis_angle = 0  
 
-    # ZZ gates - Square
-    zz.thread = qbc.name
-    zz.detuning = -15 * u.MHz
-    # qbt.xy_detuned.detuning = f"#/qubit_pairs/{qb_pair.name}/zz_drive/intermediate_frquencys"
-    qbt.xy_detuned.operations[f"{zz.name}_Square"] = pulses.SquarePulse(amplitude=-0.25, length=100, axis_angle=0, digital_marker="ON")
-    qbt.xy_detuned.operations[f"{zz.name}_Square"].amplitude = 0.1
-    qbt.xy_detuned.operations[f"{zz.name}_Square"].length = f"#/qubit_pairs/{qb_pair.name}/zz_drive/operations/square/length"
-    qbt.xy_detuned.operations[f"{zz.name}_Square"].axis_angle = 0
+    # # ZZ gates - Square
+    # zz.thread = qbc.name
+    # zz.detuning = -15 * u.MHz
+    # # qbt.xy_detuned.detuning = f"#/qubit_pairs/{qb_pair.name}/zz_drive/intermediate_frquencys"
+    # qbt.xy_detuned.operations[f"{zz.name}_Square"] = pulses.SquarePulse(amplitude=-0.25, length=100, axis_angle=0, digital_marker="ON")
+    # qbt.xy_detuned.operations[f"{zz.name}_Square"].amplitude = 0.1
+    # qbt.xy_detuned.operations[f"{zz.name}_Square"].length = f"#/qubit_pairs/{qb_pair.name}/zz_drive/operations/square/length"
+    # qbt.xy_detuned.operations[f"{zz.name}_Square"].axis_angle = 0
         
 
 # %%

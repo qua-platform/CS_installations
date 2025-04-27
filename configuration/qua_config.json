@@ -190,9 +190,7 @@
             }
         },
         "q2.xy_detuned": {
-            "operations": {
-                "zz_q1_q2_Square": "q2.xy_detuned.zz_q1_q2_Square.pulse"
-            },
+            "operations": {},
             "intermediate_frequency": -260000000,
             "thread": "q2",
             "MWInput": {
@@ -264,9 +262,7 @@
             }
         },
         "q3.xy_detuned": {
-            "operations": {
-                "zz_q2_q3_Square": "q3.xy_detuned.zz_q2_q3_Square.pulse"
-            },
+            "operations": {},
             "intermediate_frequency": -160000000,
             "thread": "q3",
             "MWInput": {
@@ -338,9 +334,7 @@
             }
         },
         "q4.xy_detuned": {
-            "operations": {
-                "zz_q3_q4_Square": "q4.xy_detuned.zz_q3_q4_Square.pulse"
-            },
+            "operations": {},
             "intermediate_frequency": -60000000,
             "thread": "q4",
             "MWInput": {
@@ -412,9 +406,7 @@
             }
         },
         "q5.xy_detuned": {
-            "operations": {
-                "zz_q4_q5_Square": "q5.xy_detuned.zz_q4_q5_Square.pulse"
-            },
+            "operations": {},
             "intermediate_frequency": 40000000,
             "thread": "q5",
             "MWInput": {
@@ -486,9 +478,7 @@
             }
         },
         "q6.xy_detuned": {
-            "operations": {
-                "zz_q5_q6_Square": "q6.xy_detuned.zz_q5_q6_Square.pulse"
-            },
+            "operations": {},
             "intermediate_frequency": 140000000,
             "thread": "q6",
             "MWInput": {
@@ -560,9 +550,7 @@
             }
         },
         "q7.xy_detuned": {
-            "operations": {
-                "zz_q6_q7_Square": "q7.xy_detuned.zz_q6_q7_Square.pulse"
-            },
+            "operations": {},
             "intermediate_frequency": 240000000,
             "thread": "q7",
             "MWInput": {
@@ -613,37 +601,9 @@
                 "upconverter": 1
             }
         },
-        "zz_q1_q2": {
-            "operations": {
-                "square": "zz_q1_q2.square.pulse"
-            },
-            "thread": "q1",
-            "MWInput": {
-                "port": [
-                    "con1",
-                    1,
-                    2
-                ],
-                "upconverter": 1
-            }
-        },
         "cr_q2_q3": {
             "operations": {
                 "square": "cr_q2_q3.square.pulse"
-            },
-            "thread": "q2",
-            "MWInput": {
-                "port": [
-                    "con1",
-                    1,
-                    3
-                ],
-                "upconverter": 1
-            }
-        },
-        "zz_q2_q3": {
-            "operations": {
-                "square": "zz_q2_q3.square.pulse"
             },
             "thread": "q2",
             "MWInput": {
@@ -669,37 +629,9 @@
                 "upconverter": 1
             }
         },
-        "zz_q3_q4": {
-            "operations": {
-                "square": "zz_q3_q4.square.pulse"
-            },
-            "thread": "q3",
-            "MWInput": {
-                "port": [
-                    "con1",
-                    1,
-                    4
-                ],
-                "upconverter": 1
-            }
-        },
         "cr_q4_q5": {
             "operations": {
                 "square": "cr_q4_q5.square.pulse"
-            },
-            "thread": "q4",
-            "MWInput": {
-                "port": [
-                    "con1",
-                    1,
-                    5
-                ],
-                "upconverter": 1
-            }
-        },
-        "zz_q4_q5": {
-            "operations": {
-                "square": "zz_q4_q5.square.pulse"
             },
             "thread": "q4",
             "MWInput": {
@@ -725,37 +657,9 @@
                 "upconverter": 1
             }
         },
-        "zz_q5_q6": {
-            "operations": {
-                "square": "zz_q5_q6.square.pulse"
-            },
-            "thread": "q5",
-            "MWInput": {
-                "port": [
-                    "con1",
-                    1,
-                    6
-                ],
-                "upconverter": 1
-            }
-        },
         "cr_q6_q7": {
             "operations": {
                 "square": "cr_q6_q7.square.pulse"
-            },
-            "thread": "q6",
-            "MWInput": {
-                "port": [
-                    "con1",
-                    1,
-                    7
-                ],
-                "upconverter": 1
-            }
-        },
-        "zz_q6_q7": {
-            "operations": {
-                "square": "zz_q6_q7.square.pulse"
             },
             "thread": "q6",
             "MWInput": {
@@ -1042,15 +946,6 @@
                 "Q": "q2.xy.cr_q1_q2_Square.wf.Q"
             }
         },
-        "q2.xy_detuned.zz_q1_q2_Square.pulse": {
-            "operation": "control",
-            "length": 100,
-            "digital_marker": "ON",
-            "waveforms": {
-                "I": "q2.xy_detuned.zz_q1_q2_Square.wf.I",
-                "Q": "q2.xy_detuned.zz_q1_q2_Square.wf.Q"
-            }
-        },
         "q2.resonator.readout.pulse": {
             "operation": "measurement",
             "length": 1000,
@@ -1197,15 +1092,6 @@
             "waveforms": {
                 "I": "q3.xy.cr_q2_q3_Square.wf.I",
                 "Q": "q3.xy.cr_q2_q3_Square.wf.Q"
-            }
-        },
-        "q3.xy_detuned.zz_q2_q3_Square.pulse": {
-            "operation": "control",
-            "length": 100,
-            "digital_marker": "ON",
-            "waveforms": {
-                "I": "q3.xy_detuned.zz_q2_q3_Square.wf.I",
-                "Q": "q3.xy_detuned.zz_q2_q3_Square.wf.Q"
             }
         },
         "q3.resonator.readout.pulse": {
@@ -1356,15 +1242,6 @@
                 "Q": "q4.xy.cr_q3_q4_Square.wf.Q"
             }
         },
-        "q4.xy_detuned.zz_q3_q4_Square.pulse": {
-            "operation": "control",
-            "length": 100,
-            "digital_marker": "ON",
-            "waveforms": {
-                "I": "q4.xy_detuned.zz_q3_q4_Square.wf.I",
-                "Q": "q4.xy_detuned.zz_q3_q4_Square.wf.Q"
-            }
-        },
         "q4.resonator.readout.pulse": {
             "operation": "measurement",
             "length": 1000,
@@ -1511,15 +1388,6 @@
             "waveforms": {
                 "I": "q5.xy.cr_q4_q5_Square.wf.I",
                 "Q": "q5.xy.cr_q4_q5_Square.wf.Q"
-            }
-        },
-        "q5.xy_detuned.zz_q4_q5_Square.pulse": {
-            "operation": "control",
-            "length": 100,
-            "digital_marker": "ON",
-            "waveforms": {
-                "I": "q5.xy_detuned.zz_q4_q5_Square.wf.I",
-                "Q": "q5.xy_detuned.zz_q4_q5_Square.wf.Q"
             }
         },
         "q5.resonator.readout.pulse": {
@@ -1670,15 +1538,6 @@
                 "Q": "q6.xy.cr_q5_q6_Square.wf.Q"
             }
         },
-        "q6.xy_detuned.zz_q5_q6_Square.pulse": {
-            "operation": "control",
-            "length": 100,
-            "digital_marker": "ON",
-            "waveforms": {
-                "I": "q6.xy_detuned.zz_q5_q6_Square.wf.I",
-                "Q": "q6.xy_detuned.zz_q5_q6_Square.wf.Q"
-            }
-        },
         "q6.resonator.readout.pulse": {
             "operation": "measurement",
             "length": 1000,
@@ -1827,15 +1686,6 @@
                 "Q": "q7.xy.cr_q6_q7_Square.wf.Q"
             }
         },
-        "q7.xy_detuned.zz_q6_q7_Square.pulse": {
-            "operation": "control",
-            "length": 100,
-            "digital_marker": "ON",
-            "waveforms": {
-                "I": "q7.xy_detuned.zz_q6_q7_Square.wf.I",
-                "Q": "q7.xy_detuned.zz_q6_q7_Square.wf.Q"
-            }
-        },
         "q7.resonator.readout.pulse": {
             "operation": "measurement",
             "length": 1000,
@@ -1866,28 +1716,12 @@
                 "Q": "cr_q1_q2.square.wf.Q"
             }
         },
-        "zz_q1_q2.square.pulse": {
-            "operation": "control",
-            "length": 100,
-            "waveforms": {
-                "I": "zz_q1_q2.square.wf.I",
-                "Q": "zz_q1_q2.square.wf.Q"
-            }
-        },
         "cr_q2_q3.square.pulse": {
             "operation": "control",
             "length": 100,
             "waveforms": {
                 "I": "cr_q2_q3.square.wf.I",
                 "Q": "cr_q2_q3.square.wf.Q"
-            }
-        },
-        "zz_q2_q3.square.pulse": {
-            "operation": "control",
-            "length": 100,
-            "waveforms": {
-                "I": "zz_q2_q3.square.wf.I",
-                "Q": "zz_q2_q3.square.wf.Q"
             }
         },
         "cr_q3_q4.square.pulse": {
@@ -1898,28 +1732,12 @@
                 "Q": "cr_q3_q4.square.wf.Q"
             }
         },
-        "zz_q3_q4.square.pulse": {
-            "operation": "control",
-            "length": 100,
-            "waveforms": {
-                "I": "zz_q3_q4.square.wf.I",
-                "Q": "zz_q3_q4.square.wf.Q"
-            }
-        },
         "cr_q4_q5.square.pulse": {
             "operation": "control",
             "length": 100,
             "waveforms": {
                 "I": "cr_q4_q5.square.wf.I",
                 "Q": "cr_q4_q5.square.wf.Q"
-            }
-        },
-        "zz_q4_q5.square.pulse": {
-            "operation": "control",
-            "length": 100,
-            "waveforms": {
-                "I": "zz_q4_q5.square.wf.I",
-                "Q": "zz_q4_q5.square.wf.Q"
             }
         },
         "cr_q5_q6.square.pulse": {
@@ -1930,28 +1748,12 @@
                 "Q": "cr_q5_q6.square.wf.Q"
             }
         },
-        "zz_q5_q6.square.pulse": {
-            "operation": "control",
-            "length": 100,
-            "waveforms": {
-                "I": "zz_q5_q6.square.wf.I",
-                "Q": "zz_q5_q6.square.wf.Q"
-            }
-        },
         "cr_q6_q7.square.pulse": {
             "operation": "control",
             "length": 100,
             "waveforms": {
                 "I": "cr_q6_q7.square.wf.I",
                 "Q": "cr_q6_q7.square.wf.Q"
-            }
-        },
-        "zz_q6_q7.square.pulse": {
-            "operation": "control",
-            "length": 100,
-            "waveforms": {
-                "I": "zz_q6_q7.square.wf.I",
-                "Q": "zz_q6_q7.square.wf.Q"
             }
         }
     },
@@ -3372,14 +3174,6 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q2.xy_detuned.zz_q1_q2_Square.wf.I": {
-            "type": "constant",
-            "sample": 0.1
-        },
-        "q2.xy_detuned.zz_q1_q2_Square.wf.Q": {
-            "type": "constant",
-            "sample": 0.0
-        },
         "q2.resonator.readout.wf.I": {
             "type": "constant",
             "sample": 0.01
@@ -4093,14 +3887,6 @@
             "sample": 0.1
         },
         "q3.xy.cr_q2_q3_Square.wf.Q": {
-            "type": "constant",
-            "sample": 0.0
-        },
-        "q3.xy_detuned.zz_q2_q3_Square.wf.I": {
-            "type": "constant",
-            "sample": 0.1
-        },
-        "q3.xy_detuned.zz_q2_q3_Square.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
@@ -4820,14 +4606,6 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q4.xy_detuned.zz_q3_q4_Square.wf.I": {
-            "type": "constant",
-            "sample": 0.1
-        },
-        "q4.xy_detuned.zz_q3_q4_Square.wf.Q": {
-            "type": "constant",
-            "sample": 0.0
-        },
         "q4.resonator.readout.wf.I": {
             "type": "constant",
             "sample": 0.01
@@ -5541,14 +5319,6 @@
             "sample": 0.1
         },
         "q5.xy.cr_q4_q5_Square.wf.Q": {
-            "type": "constant",
-            "sample": 0.0
-        },
-        "q5.xy_detuned.zz_q4_q5_Square.wf.I": {
-            "type": "constant",
-            "sample": 0.1
-        },
-        "q5.xy_detuned.zz_q4_q5_Square.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
@@ -6268,14 +6038,6 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q6.xy_detuned.zz_q5_q6_Square.wf.I": {
-            "type": "constant",
-            "sample": 0.1
-        },
-        "q6.xy_detuned.zz_q5_q6_Square.wf.Q": {
-            "type": "constant",
-            "sample": 0.0
-        },
         "q6.resonator.readout.wf.I": {
             "type": "constant",
             "sample": 0.01
@@ -6992,14 +6754,6 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q7.xy_detuned.zz_q6_q7_Square.wf.I": {
-            "type": "constant",
-            "sample": 0.1
-        },
-        "q7.xy_detuned.zz_q6_q7_Square.wf.Q": {
-            "type": "constant",
-            "sample": 0.0
-        },
         "q7.resonator.readout.wf.I": {
             "type": "constant",
             "sample": 0.01
@@ -7024,27 +6778,11 @@
             "type": "constant",
             "sample": 0.0
         },
-        "zz_q1_q2.square.wf.I": {
-            "type": "constant",
-            "sample": 0.1
-        },
-        "zz_q1_q2.square.wf.Q": {
-            "type": "constant",
-            "sample": 0.0
-        },
         "cr_q2_q3.square.wf.I": {
             "type": "constant",
             "sample": 0.1
         },
         "cr_q2_q3.square.wf.Q": {
-            "type": "constant",
-            "sample": 0.0
-        },
-        "zz_q2_q3.square.wf.I": {
-            "type": "constant",
-            "sample": 0.1
-        },
-        "zz_q2_q3.square.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
@@ -7056,27 +6794,11 @@
             "type": "constant",
             "sample": 0.0
         },
-        "zz_q3_q4.square.wf.I": {
-            "type": "constant",
-            "sample": 0.1
-        },
-        "zz_q3_q4.square.wf.Q": {
-            "type": "constant",
-            "sample": 0.0
-        },
         "cr_q4_q5.square.wf.I": {
             "type": "constant",
             "sample": 0.1
         },
         "cr_q4_q5.square.wf.Q": {
-            "type": "constant",
-            "sample": 0.0
-        },
-        "zz_q4_q5.square.wf.I": {
-            "type": "constant",
-            "sample": 0.1
-        },
-        "zz_q4_q5.square.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
@@ -7088,27 +6810,11 @@
             "type": "constant",
             "sample": 0.0
         },
-        "zz_q5_q6.square.wf.I": {
-            "type": "constant",
-            "sample": 0.1
-        },
-        "zz_q5_q6.square.wf.Q": {
-            "type": "constant",
-            "sample": 0.0
-        },
         "cr_q6_q7.square.wf.I": {
             "type": "constant",
             "sample": 0.1
         },
         "cr_q6_q7.square.wf.Q": {
-            "type": "constant",
-            "sample": 0.0
-        },
-        "zz_q6_q7.square.wf.I": {
-            "type": "constant",
-            "sample": 0.1
-        },
-        "zz_q6_q7.square.wf.Q": {
             "type": "constant",
             "sample": 0.0
         }

@@ -2,7 +2,9 @@
     "network": {
         "host": "172.16.33.115",
         "port": 9510,
-        "cluster_name": "CS_3"
+        "cluster_name": "CS_3",
+        "octave_ips": [],
+        "octave_ports": []
     },
     "wiring": {
         "qubits": {
