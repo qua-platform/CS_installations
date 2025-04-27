@@ -820,6 +820,7 @@ config = {
                             "upconverters": {
                                 1: {"frequency": resonator_LO1},
                                 2: {"frequency": resonator_LO2},
+                            },
                         },  # RL1  0.5V => 4dbm +[+6, -45] 3db spacing
 
                         2: {
