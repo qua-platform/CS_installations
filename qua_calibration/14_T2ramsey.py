@@ -30,8 +30,8 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 Q1_xy = "q1_xy"
 Q2_xy = "q2_xy"
-Q1 = "1"
-Q2 = "2"
+Qubit1 = "1"
+Qubit2 = "2"
 ##################
 # Parameters Definition
 n_avg = 8 * 60  # The number of averages
@@ -149,7 +149,7 @@ else:
             plt.cla()
             plt.plot(4 * t_delays, I1)
             plt.ylabel("I quadrature [V]")
-            plt.title(f"Qubit {Q1}")
+            plt.title(f"Qubit {Qubit1}")
             plt.subplot(223)
             plt.cla()
             plt.plot(4 * t_delays, Q1)
@@ -158,7 +158,7 @@ else:
             plt.subplot(222)
             plt.cla()
             plt.plot(4 * t_delays, I2)
-            plt.title(f"Qubit {Q2}")
+            plt.title(f"Qubit {Qubit2}")
             plt.subplot(224)
             plt.cla()
             plt.plot(4 * t_delays, Q2)
@@ -175,12 +175,12 @@ else:
             fit.ramsey(4 * t_delays, I1, plot=True)
             plt.xlabel("Idle times [ns]")
             plt.ylabel("I quadrature [V]")
-            plt.title(f"Qubit {Q1}")
+            plt.title(f"Qubit {Qubit1}")
             plt.subplot(223)
             fit.ramsey(4 * t_delays, Q1, plot=True)
             plt.xlabel("Idle times [ns]")
             plt.ylabel("I quadrature [V]")
-            plt.title(f"Qubit {Q2}")
+            plt.title(f"Qubit {Qubit2}")
             plt.subplot(222)
             fit.ramsey(4 * t_delays, I2, plot=True)
             plt.xlabel("Idle times [ns]")
