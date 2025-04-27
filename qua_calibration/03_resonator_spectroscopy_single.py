@@ -46,6 +46,7 @@ save_data_dict = {
     "frequencies": frequencies,
     "n_avg": n_avg,
     "config": config,
+    "resonator" = resonator
 }
 
 ###################
@@ -132,6 +133,18 @@ else:
         plt.xlabel("Intermediate frequency [MHz]")
         plt.ylabel("Phase [rad]")
         plt.tight_layout()
+            
+        try:
+            from qualang_tools.plot.fitting import Fit
+            fit = Fit()
+            plt.figure()
+            res_spec_fit = fit.reflection_resonator_spectroscopy((frequencies[resonator]) / u.MHz, R, plot=True)
+            plt.title(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
+            plt.xlabel("Intermediate frequency [MHz]")
+            plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
+            print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit['f'][0]:.6f} MHz")
+        except (Exception,):
+            pass
 
         save_data_dict[resonator + "_I"] = I
         save_data_dict[resonator + "_Q"] = Q
