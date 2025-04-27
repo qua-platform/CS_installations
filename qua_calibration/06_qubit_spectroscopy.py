@@ -63,6 +63,9 @@ save_data_dict = {
     "saturation_scaling": saturation_scaling,
     "saturation_len": saturation_len,
     "config": config,
+    "Q1_xy": Q1_xy,
+    "Q2_xy": Q2_xy,
+        
 }
 
 ###################
