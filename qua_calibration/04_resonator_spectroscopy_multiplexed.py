@@ -51,8 +51,8 @@ save_data_dict = {
     "n_avg": n_avg,
     "dfs": dfs,
     "config": config,
-    "RR1": "rr1",
-    "RR": "rr2",
+    "RR1": RR1,
+    "RR": RR2,
 }
 
 ###################
