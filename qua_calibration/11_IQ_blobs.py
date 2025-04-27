@@ -29,10 +29,12 @@ from qualang_tools.analysis import two_state_discriminator
 
 ##################
 #   Parameters   #
+qubits = ["q1_xy", "q2_xy"]
+Q1 = "1"
+Q2 = "2"
 ##################
 # Parameters Definition
 n_runs = 10_000  # Number of runs
-qubits = ["q1_xy", "q2_xy"]
 
 # Data to save
 save_data_dict = {
@@ -120,9 +122,9 @@ else:
         # Plot the IQ blobs, rotate them to get the separation along the 'I' quadrature, estimate a threshold between them
         # for state discrimination and derive the fidelity matrix
         two_state_discriminator(I_g_q1, Q_g_q1, I_e_q1, Q_e_q1, True, True)
-        plt.suptitle("qubit 1")
+        plt.suptitle(f"qubit {Q1}")
         two_state_discriminator(I_g_q2, Q_g_q2, I_e_q2, Q_e_q2, True, True)
-        plt.suptitle("qubit 2")
+        plt.suptitle(f"qubit {Q2}")
 
         # Save results
         script_name = Path(__file__).name
