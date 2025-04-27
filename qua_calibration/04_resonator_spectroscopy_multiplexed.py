@@ -188,6 +188,27 @@ else:
             plt.pause(1)
 
             plt.tight_layout()
+                
+            try:
+                from qualang_tools.plot.fitting import Fit
+
+                fit = Fit()
+                plt.figure()
+                res_spec_fit_Q1 = fit.reflection_resonator_spectroscopy((resonator_IF_Q1 + dfs)  / u.MHz, R1, plot=True)
+                plt.title(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
+                plt.xlabel("Intermediate frequency [MHz]")
+                plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
+                print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit_Q1['f'][0]:.6f} MHz")
+
+                fit = Fit()
+                plt.figure()
+                res_spec_fit_Q2 = fit.reflection_resonator_spectroscopy((resonator_IF_Q2 + dfs)  / u.MHz, R2, plot=True)
+                plt.title(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
+                plt.xlabel("Intermediate frequency [MHz]")
+                plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
+                print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit_Q2['f'][0]:.6f} MHz")
+            except (Exception,):
+                pass
 
             # Save results
             script_name = Path(__file__).name
