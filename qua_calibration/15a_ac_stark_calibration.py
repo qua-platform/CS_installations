@@ -34,8 +34,6 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 Q1_xy = "q1_xy"
 Q2_xy = "q2_xy"
-Q1 = "1"
-Q2 = "2"
 qubit_IF_Q1 = qubit_IF_q1
 qubit_IF_Q2 = qubit_IF_q2
 ##################
