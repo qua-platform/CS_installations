@@ -31,8 +31,8 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 RR1 = "rr1"
 RR2 = "rr2"
-Q1 = "1"
-Q2 = "2"
+Qubit1 = "1"
+Qubit2 = "2"
 resonator_IF_Q1 = resonator_IF_q1
 resonator_IF_Q2 = resonator_IF_q2
 ##################
@@ -206,14 +206,14 @@ else:
             plt.subplot(121)
             plt.cla()
             plt.plot(dfs / u.MHz, SNR1, ".-")
-            plt.title(f"Qubit {Q1} around {resonator_IF_Q1 / u.MHz} MHz")
+            plt.title(f"Qubit {Qubit1} around {resonator_IF_Q1 / u.MHz} MHz")
             plt.xlabel("Readout frequency detuning [MHz]")
             plt.ylabel("SNR")
             plt.grid("on")
             plt.subplot(122)
             plt.cla()
             plt.plot(dfs / u.MHz, SNR2, ".-")
-            plt.title(f"Qubit {Q2} around {resonator_IF_Q2 / u.MHz} MHz")
+            plt.title(f"Qubit {Qubit2} around {resonator_IF_Q2 / u.MHz} MHz")
             plt.xlabel("Readout frequency detuning [MHz]")
             plt.grid("on")
             plt.tight_layout()
