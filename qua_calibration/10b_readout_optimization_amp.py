@@ -29,8 +29,8 @@ from qualang_tools.analysis import two_state_discriminator
 #   Parameters   #
 RR1 = "rr1"
 RR2 = "rr2"
-Q1 = "1"
-Q2 = "2"
+Qubit1 = "1"
+Qubit2 = "2"
 Q1_xy = "q1_xy"
 Q2_xy = "q2_xy"
 readout_amp_Q1 = readout_amp_q1
@@ -156,12 +156,12 @@ else:
         plt.subplot(121)
         plt.plot(scalings * readout_amp_Q1, fidelity_vec[0], "b.-", label="averaged fidelity")
         plt.plot(scalings * readout_amp_Q1, ground_fidelity_vec[0], "r.-", label="ground fidelity")
-        plt.title(f"Qubit {Q1}")
+        plt.title(f"Qubit {Qubit1}")
         plt.xlabel("Readout amplitude [V]")
         plt.ylabel("Fidelity [%]")
         plt.legend()
         plt.subplot(122)
-        plt.title(f"Qubit {Q2}")
+        plt.title(f"Qubit {Qubit2}")
         plt.plot(scalings * readout_amp_Q2, fidelity_vec[1], "b.-", label="averaged fidelity")
         plt.plot(scalings * readout_amp_Q2, ground_fidelity_vec[1], "r.-", label="ground fidelity")
         plt.xlabel("Readout amplitude [V]")
