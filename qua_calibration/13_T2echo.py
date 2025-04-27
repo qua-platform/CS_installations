@@ -16,8 +16,8 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 Q1_xy = "q1_xy"
 Q2_xy = "q2_xy"
-Q1 = "1"
-Q2 = "2"
+Qubit1 = "1"
+Qubit2 = "2"
 ##################
 # Parameters Definition
 n_avg = 1000
@@ -126,7 +126,7 @@ else:
             plt.cla()
             plt.plot(8 * t_delays, I1)
             plt.ylabel("I quadrature [V]")
-            plt.title(f"Qubit {Q1}")
+            plt.title(f"Qubit {Qubit1}")
             plt.subplot(223)
             plt.cla()
             plt.plot(8 * t_delays, Q1)
@@ -135,7 +135,7 @@ else:
             plt.subplot(222)
             plt.cla()
             plt.plot(8 * t_delays, I2)
-            plt.title(f"Qubit {Q2}")
+            plt.title(f"Qubit {Qubit2}")
             plt.subplot(224)
             plt.cla()
             plt.plot(8 * t_delays, Q2)
@@ -153,7 +153,7 @@ else:
             plt.xlabel("Delay [ns]")
             plt.ylabel("I quadrature [V]")
             print(f"Qubit coherence time T2 = {qubit_T2:.0f} ns")
-            plt.legend((f"Qubit {Q1} Coherence time T2 = {qubit_T2:.0f} ns",))
+            plt.legend((f"Qubit {Qubit1} Coherence time T2 = {qubit_T2:.0f} ns",))
             plt.title("Echo measurement")
 
             fit = Fit()
@@ -163,7 +163,7 @@ else:
             plt.xlabel("Delay [ns]")
             plt.ylabel("I quadrature [V]")
             print(f"Qubit coherence time T2 = {qubit_T2:.0f} ns")
-            plt.legend((f"Qubit {Q2} Coherence time T2 = {qubit_T2:.0f} ns",))
+            plt.legend((f"Qubit {Qubit2} Coherence time T2 = {qubit_T2:.0f} ns",))
             plt.title("Echo measurement")
         except (Exception,):
             pass
