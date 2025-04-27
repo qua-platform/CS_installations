@@ -26,6 +26,10 @@ from qualang_tools.results.data_handler import DataHandler
 
 ##################
 #   Parameters   #
+Q1_xy = "q1_xy"
+Q2_xy = "q2_xy"
+Q1 = "1"
+Q2 = "2"
 ##################
 # Parameters Definition
 n_avg = 100
@@ -39,6 +43,8 @@ save_data_dict = {
     "n_avg": n_avg,
     "t_delays": t_delays,
     "config": config,
+    "Q1_xy": Q1_xy,
+    "Q2_xy": Q2_xy,
 }
 
 
@@ -58,8 +64,8 @@ with program() as PROGRAM:
 
         with for_each_(t, t_delays.tolist()):
 
-            play("x180", "q1_xy")
-            play("x180", "q2_xy")
+            play("x180", Q1_xy)
+            play("x180", Q2_xy)
 
             wait(t)
 
@@ -130,7 +136,7 @@ else:
             plt.cla()
             plt.plot(4 * t_delays, I1)
             plt.ylabel("I quadrature [V]")
-            plt.title("Qubit 1")
+            plt.title(f"Qubit {Q1}")
             plt.subplot(223)
             plt.cla()
             plt.plot(4 * t_delays, Q1)
@@ -139,14 +145,40 @@ else:
             plt.subplot(222)
             plt.cla()
             plt.plot(4 * t_delays, I2)
-            plt.title("Qubit 2")
+            plt.title(f"Qubit {Q2}")
             plt.subplot(224)
             plt.cla()
             plt.plot(4 * t_delays, Q2)
-            plt.title("Q2")
             plt.xlabel("Wait time (ns)")
             plt.tight_layout()
             plt.pause(1)
+
+        try:
+            from qualang_tools.plot.fitting import Fit
+
+            fit = Fit()
+            plt.figure()
+            plt.suptitle("T1 measurement")
+            plt.subplot(121)
+            decay_fit = fit.T1(4 * t_delays, I1, plot=True)
+            qubit_T1 = np.round(np.abs(decay_fit["T1"][0]) / 4) * 4
+            plt.xlabel("Delay [ns]")
+            plt.ylabel("I quadrature [V]")
+            print(f"Qubit decay time to update in the config: qubit_T1 = {qubit_T1:.0f} ns")
+            plt.legend((f"depletion time = {qubit_T1:.0f} ns",))
+            plt.title(f"Qubit {Q1}")
+
+            plt.subplot(122)
+            decay_fit = fit.T1(4 * t_delays, I2, plot=True)
+            qubit_T1 = np.round(np.abs(decay_fit["T1"][0]) / 4) * 4
+            plt.xlabel("Delay [ns]")
+            plt.ylabel("I quadrature [V]")
+            print(f"Qubit decay time to update in the config: qubit_T1 = {qubit_T1:.0f} ns")
+            plt.legend((f"depletion time = {qubit_T1:.0f} ns",))
+            plt.title(f"Qubit {Q2}")
+            plt.tight_layout()
+        except (Exception,):
+            pass
 
         # Save results
         script_name = Path(__file__).name
