@@ -14,6 +14,10 @@ from qualang_tools.results.data_handler import DataHandler
 
 ##################
 #   Parameters   #
+Q1_xy = "q1_xy"
+Q2_xy = "q2_xy"
+Q1 = "1"
+Q2 = "2"
 ##################
 # Parameters Definition
 n_avg = 1000
@@ -26,6 +30,8 @@ save_data_dict = {
     "n_avg": n_avg,
     "t_delays": t_delays,
     "config": config,
+    "Q1_xy": Q1_xy,
+    "Q2_xy": Q2_xy,
 }
 
 ###################
@@ -44,14 +50,14 @@ with program() as PROGRAM:
 
         with for_each_(t, t_delays.tolist()):
 
-            play("x90", "q1_xy")
-            play("x90", "q2_xy")
+            play("x90", Q1_xy)
+            play("x90", Q2_xy)
             wait(t)
-            play("x180", "q1_xy")
-            play("x180", "q2_xy")
+            play("x180", Q1_xy)
+            play("x180", Q2_xy)
             wait(t)
-            play("x90", "q1_xy")  # 2nd x90 gate
-            play("x90", "q2_xy")  # 2nd x90 gate
+            play("x90", Q1_xy)  # 2nd x90 gate
+            play("x90", Q2_xy)  # 2nd x90 gate
 
             # Align the elements to measure after having waited a time "tau" after the qubit pulses.
             align()
@@ -120,7 +126,7 @@ else:
             plt.cla()
             plt.plot(8 * t_delays, I1)
             plt.ylabel("I quadrature [V]")
-            plt.title("Qubit 1")
+            plt.title(f"Qubit {Q1}")
             plt.subplot(223)
             plt.cla()
             plt.plot(8 * t_delays, Q1)
@@ -129,14 +135,38 @@ else:
             plt.subplot(222)
             plt.cla()
             plt.plot(8 * t_delays, I2)
-            plt.title("Qubit 2")
+            plt.title(f"Qubit {Q2}")
             plt.subplot(224)
             plt.cla()
             plt.plot(8 * t_delays, Q2)
-            plt.title("Q2")
             plt.xlabel("Wait time (ns)")
             plt.tight_layout()
             plt.pause(1)
+
+        try:
+            from qualang_tools.plot.fitting import Fit
+
+            fit = Fit()
+            plt.figure()
+            T2_fit = fit.T1(8 * t_delays, I1, plot=True)
+            qubit_T2 = np.abs(T2_fit["T1"][0])
+            plt.xlabel("Delay [ns]")
+            plt.ylabel("I quadrature [V]")
+            print(f"Qubit coherence time T2 = {qubit_T2:.0f} ns")
+            plt.legend((f"Qubit {Q1} Coherence time T2 = {qubit_T2:.0f} ns",))
+            plt.title("Echo measurement")
+
+            fit = Fit()
+            plt.figure()
+            T2_fit = fit.T1(8 * t_delays, I2, plot=True)
+            qubit_T2 = np.abs(T2_fit["T1"][0])
+            plt.xlabel("Delay [ns]")
+            plt.ylabel("I quadrature [V]")
+            print(f"Qubit coherence time T2 = {qubit_T2:.0f} ns")
+            plt.legend((f"Qubit {Q2} Coherence time T2 = {qubit_T2:.0f} ns",))
+            plt.title("Echo measurement")
+        except (Exception,):
+            pass
 
         # Save results
         script_name = Path(__file__).name
