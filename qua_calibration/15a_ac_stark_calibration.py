@@ -1,3 +1,4 @@
+# %%
 """
         AC STARK-SHIFT CALIBRATION WITH DRAG PULSES 2D (GOOGLE METHOD)
 The sequence consists in applying an increasing number of x180 and -x180 pulses successively for different DRAG
@@ -29,9 +30,18 @@ from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.plot import interrupt_on_close
 from macros import qua_declaration, multiplexed_readout
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
+
 
 ##################
 #   Parameters   #
+Q1_xy = "q1_xy"
+Q2_xy = "q2_xy"
+qubit_IF_Q1 = qubit_IF_q1
+qubit_IF_Q2 = qubit_IF_q2
 ##################
 # Parameters Definition
 n_avg = 10  # The number of averages
@@ -48,6 +58,8 @@ save_data_dict = {
     "nb_of_pulses": nb_of_pulses,
     "detunings": detunings,
     "config": config,
+    "Q1_xy": Q1_xy,
+    "Q2_xy": Q2_xy,
 }
 
 ###################
@@ -71,16 +83,16 @@ with program() as PROGRAM:
             with for_(*from_array(df, detunings)):
                 # Update the frequency of the two qubit elements
 
-                update_frequency("q1_xy", df + qubit_IF_q1)
-                update_frequency("q2_xy", df + qubit_IF_q2)
+                update_frequency(Q1_xy, df + qubit_IF_Q1)
+                update_frequency(Q2_xy, df + qubit_IF_Q2)
 
                 # Loop for error amplification (perform many qubit pulses)
 
                 with for_(count, 0, count < npi, count + 1):
-                    play("x180" * amp(1), "q1_xy")
-                    play("x180" * amp(1), "q2_xy")
-                    play("x180" * amp(-1), "q1_xy")
-                    play("x180" * amp(-1), "q2_xy")
+                    play("x180" * amp(1), Q1_xy)
+                    play("x180" * amp(1), Q2_xy)
+                    play("x180" * amp(-1), Q1_xy)
+                    play("x180" * amp(-1), Q2_xy)
 
                 # Align the elements to measure after playing the qubit pulses.
                 align()
@@ -153,7 +165,7 @@ else:
             plt.cla()
             plt.pcolor(detunings, nb_of_pulses, Q1)
             plt.title("Q1")
-            plt.xlabel("qubit pulse amplitude [V]")
+            plt.ylabel("Detuning [Hz]")
             plt.ylabel("# of pulses")
             plt.subplot(222)
             plt.cla()
@@ -163,7 +175,7 @@ else:
             plt.cla()
             plt.pcolor(detunings, nb_of_pulses, Q2)
             plt.title("Q2")
-            plt.xlabel("Qubit pulse amplitude [V]")
+            plt.ylabel("Detuning [Hz]")
             plt.tight_layout()
             plt.pause(1)
 

@@ -1,3 +1,4 @@
+# %%
 """
                                  CR_calib_cancel_drive_amplitude
 
@@ -42,14 +43,14 @@ Reference: Sarah Sheldon, Easwar Magesan, Jerry M. Chow, and Jay M. Gambetta Phy
 
 from qm.qua import *
 from qm import QuantumMachinesManager
-from configuration import *
+from configuration_mw_fem import *
 import matplotlib.pyplot as plt
 from qm import SimulationConfig
 from qualang_tools.loops import from_array
 from qualang_tools.results import fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import progress_counter
-from macros import qua_declaration, multiplexed_readout, active_reset
+from macros import qua_declaration, multiplexed_readout
 from qualang_tools.results.data_handler import DataHandler
 from macros import qua_declaration, multiplexed_readout
 from cr_hamiltonian_tomography import (
@@ -58,6 +59,11 @@ from cr_hamiltonian_tomography import (
     plot_interaction_coeffs,
     PAULI_2Q,
 )
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
+
 
 
 ##################
@@ -68,14 +74,17 @@ qc = 1  # index of control qubit
 qt = 2  # index of target qubit
 
 # Parameters Definition
-n_avg = 10
-cr_type = "direct+cancel+echo"  # "direct" "direct+cancel", "direct+cancel+echo"
-cr_drive_amp = 1.0  # ratio
-cr_drive_phase = 0.0  # in units of 2pi
-cr_cancel_amp = 0.5  # ratio
+n_avg = 6
+cr_type = "direct+cancel"  # "direct" "direct+cancel", "direct+cancel+echo"
+cr_drive_amp = 0.7  # ratio
+cr_drive_phase = 0.4  # in units of 2pi
+cr_cancel_amp = 1.0  # ratio
 cr_cancel_phase = 0.0  # in units of 2pi
-ts_cycles = np.arange(4, 100, 1)  # in clock cylcle = 4ns
-amp_scalings = np.arange(0.5, 1.01, 0.05)  # scaling factor for amplitude
+ts_cycles = np.arange(4, 200, 1)  # in clock cylcle = 4ns
+amp_scalings = np.arange(-2.0, 2.0, 0.05)  # scaling factor for amplitude
+
+# Readout Parameters
+weights = "rotated_"  # ["", "rotated_", "opt_"]
 
 # Derived parameters
 qc_xy = f"q{qc}_xy"
@@ -114,15 +123,12 @@ with program() as PROGRAM:
     state_st = [declare_stream() for _ in range(2)]
     t = declare(int)
     a = declare(fixed)
-    counter = declare(int, value=0)
-    counter_st = declare_stream()
     s = declare(int)  # QUA variable for the control state
     c = declare(int)  # QUA variable for the projection index in QST
 
-    with for_(*from_array(a, amp_scalings)):
-        save(counter, counter_st)
-        wait(60 * u.ms)
-        with for_(n, 0, n < n_avg, n + 1):
+    with for_(n, 0, n < n_avg, n + 1):
+        save(n, n_st)
+        with for_(*from_array(a, amp_scalings)):
             with for_(*from_array(t, ts_cycles)):
                 with for_(c, 0, c < 3, c + 1):  # bases
                     with for_(s, 0, s < 2, s + 1):  # states
@@ -186,9 +192,9 @@ with program() as PROGRAM:
 
                         # Wait for the qubit to decay to the ground state - Can be replaced by active reset
                         wait(thermalization_time * u.ns)
-        assign(counter, counter + 1)
+
     with stream_processing():
-        counter_st.save("n")
+        n_st.save("n")
         # control qubit
         I_st[0].buffer(2).buffer(3).buffer(len(ts_cycles)).buffer(len(amp_scalings)).average().save("I1")
         Q_st[0].buffer(2).buffer(3).buffer(len(ts_cycles)).buffer(len(amp_scalings)).average().save("Q1")
@@ -246,7 +252,7 @@ else:
             res = results.fetch_all()
             iterations, I1, Q1, state_c, I2, Q2, state_t = res
             # Progress bar
-            progress_counter(iterations, len(amp_scalings), start_time=results.start_time)
+            progress_counter(iterations, n_avg, start_time=results.start_time)
             # Convert the results into Volts
             I1, Q1 = u.demod2volts(I1, readout_len), u.demod2volts(Q1, readout_len)
             I2, Q2 = u.demod2volts(I2, readout_len), u.demod2volts(Q2, readout_len)
@@ -254,12 +260,13 @@ else:
             # Progress bar
             progress_counter(iterations, n_avg, start_time=results.start_time)
 
-        # plotting data
-        fig = plot_cr_duration_vs_scan_param(bloch_c, bloch_t, ts_ns, amp_scalings, "cr cancel amplitude", axss)
-        plt.tight_layout()
-        # plt.pause(1)
+            # plotting data
+            fig = plot_cr_duration_vs_scan_param(bloch_c, bloch_t, ts_ns, amp_scalings, "cr cancel amplitude", axss)
+            plt.tight_layout()
+            plt.pause(1)
 
         # Save data
+        fig = plt.gcf()
         save_data_dict.update({"fig_live": fig})
         for fname, r in zip(fetch_names[1:], res[1:]):
             save_data_dict[fname] = r

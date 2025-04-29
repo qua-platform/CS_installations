@@ -1,3 +1,4 @@
+# %%
 """
         RESONATOR SPECTROSCOPY MULTIPLEXED
 This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to extract the
@@ -25,10 +26,23 @@ import matplotlib.pyplot as plt
 import math
 from qualang_tools.results.data_handler import DataHandler
 from scipy import signal
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
 ##################
+# Choose parameters of target rr/qb
+RR1 = "rr1"
+RR2 = "rr2"
+resonator_IF_Q1 = resonator_IF_q1
+resonator_IF_Q2 = resonator_IF_q2
+readout_amp_Q1 = readout_amp_q1
+readout_amp_Q2 = readout_amp_q2
+
+
 # Parameters Definition
 n_avg = 1_000  # The number of averages
 # The frequency sweep parameters (for both resonators)
@@ -36,11 +50,14 @@ span = 30.0 * u.MHz  # the span around the resonant frequencies
 step = 100 * u.kHz
 dfs = np.arange(-span, span, step)
 
+
 # Data to save
 save_data_dict = {
     "n_avg": n_avg,
     "dfs": dfs,
     "config": config,
+    "RR1": RR1,
+    "RR": RR2,
 }
 
 ###################
@@ -59,29 +76,29 @@ with program() as PROGRAM:
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the frequency
             # wait for the resonators to deplete
-            wait(depletion_time * u.ns, "rr1", "rr2")
+            wait(depletion_time * u.ns, RR1, RR2)
 
             # resonator 1
-            update_frequency("rr1", df + resonator_IF_q1)  # Update the frequency the rr1 element
+            update_frequency(RR1, df + resonator_IF_Q1)  # Update the frequency the RR1 element
             # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
             measure(
                 "readout",
-                "rr1",
+                RR1,
                 None,
                 dual_demod.full("cos", "sin", I[0]),
                 dual_demod.full("minus_sin", "cos", Q[0]),
             )
-            # Save the 'I' & 'Q' quadratures for rr1 to their respective streams
+            # Save the 'I' & 'Q' quadratures for RR1 to their respective streams
             save(I[0], I_st[0])
             save(Q[0], Q_st[0])
 
-            # align("rr1", "rr2")  # Uncomment to measure sequentially
+            # align("RR1", RR2)  # Uncomment to measure sequentially
             # resonator 2
-            update_frequency("rr2", df + resonator_IF_q2)  # Update the frequency the rr1 element
+            update_frequency(RR2, df + resonator_IF_Q2)  # Update the frequency the RR1 element
             # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
             measure(
                 "readout",
-                "rr2",
+                RR2,
                 None,
                 dual_demod.full("cos", "sin", I[1]),
                 dual_demod.full("minus_sin", "cos", Q[1]),
@@ -153,29 +170,50 @@ else:
             R2 = np.abs(S2)
             phase2 = np.angle(S2)
             # Plot
-            plt.suptitle("Multiplexed resonator spectroscopy")
+            plt.suptitle(f"Multiplexed resonator spectroscopy")
             plt.subplot(221)
             plt.cla()
-            plt.plot((resonator_IF_q1 + dfs) / u.MHz, R1)
-            plt.title(f"Resonator 1 - LO: {resonator_LO / u.GHz} GHz")
+            plt.plot((resonator_IF_Q1 + dfs) / u.MHz, R1)
+            plt.title(f"Resonator {RR1} - LO: {resonator_LO / u.GHz} GHz")
             plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
             plt.subplot(222)
             plt.cla()
-            plt.plot((resonator_IF_q2 + dfs) / u.MHz, R2)
-            plt.title(f"Resonator 2 - LO: {resonator_LO / u.GHz} GHz")
+            plt.plot((resonator_IF_Q2 + dfs) / u.MHz, R2)
+            plt.title(f"Resonator {RR2} - LO: {resonator_LO / u.GHz} GHz")
             plt.subplot(223)
             plt.cla()
-            plt.plot((resonator_IF_q1 + dfs) / u.MHz, signal.detrend(np.unwrap(phase1)))
+            plt.plot((resonator_IF_Q1 + dfs) / u.MHz, signal.detrend(np.unwrap(phase1)))
             plt.xlabel("Readout IF [MHz]")
             plt.ylabel("Phase [rad]")
             plt.subplot(224)
             plt.cla()
-            plt.plot((resonator_IF_q2 + dfs) / u.MHz, signal.detrend(np.unwrap(phase2)))
+            plt.plot((resonator_IF_Q2 + dfs) / u.MHz, signal.detrend(np.unwrap(phase2)))
             plt.xlabel("Readout IF [MHz]")
             plt.tight_layout()
             plt.pause(1)
 
             plt.tight_layout()
+                
+            try:
+                from qualang_tools.plot.fitting import Fit
+
+                fit = Fit()
+                plt.figure()
+                res_spec_fit_Q1 = fit.reflection_resonator_spectroscopy((resonator_IF_Q1 + dfs)  / u.MHz, R1, plot=True)
+                plt.title(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
+                plt.xlabel("Intermediate frequency [MHz]")
+                plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
+                print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit_Q1['f'][0]:.6f} MHz")
+
+                fit = Fit()
+                plt.figure()
+                res_spec_fit_Q2 = fit.reflection_resonator_spectroscopy((resonator_IF_Q2 + dfs)  / u.MHz, R2, plot=True)
+                plt.title(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
+                plt.xlabel("Intermediate frequency [MHz]")
+                plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
+                print(f"Resonator resonance frequency to update in the config: resonator_IF = {res_spec_fit_Q2['f'][0]:.6f} MHz")
+            except (Exception,):
+                pass
 
             # Save results
             script_name = Path(__file__).name
@@ -195,3 +233,5 @@ else:
         qm.close()
         print("Experiment QM is now closed")
         plt.show(block=True)
+
+# %%

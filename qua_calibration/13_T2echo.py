@@ -1,3 +1,4 @@
+# %%
 """
 T2-echo
 """
@@ -11,21 +12,31 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import progress_counter
 from macros import qua_declaration, multiplexed_readout
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
+Q1_xy = "q1_xy"
+Q2_xy = "q2_xy"
+Qubit1 = "1"
+Qubit2 = "2"
 ##################
 # Parameters Definition
 n_avg = 1000
-t_max = 40_000
+t_max = 5_000
 t_min = 4
-t_delays = np.geomspace(t_min, t_max, 100).astype(int)  # np.arange(t_min, t_max, t_step)
+t_delays = np.geomspace(t_min, t_max, 400).astype(int)  # np.arange(t_min, t_max, t_step)
 
 # Data to save
 save_data_dict = {
     "n_avg": n_avg,
     "t_delays": t_delays,
     "config": config,
+    "Q1_xy": Q1_xy,
+    "Q2_xy": Q2_xy,
 }
 
 ###################
@@ -44,14 +55,14 @@ with program() as PROGRAM:
 
         with for_each_(t, t_delays.tolist()):
 
-            play("x90", "q1_xy")
-            play("x90", "q2_xy")
+            play("x90", Q1_xy)
+            play("x90", Q2_xy)
             wait(t)
-            play("x180", "q1_xy")
-            play("x180", "q2_xy")
+            play("x180", Q1_xy)
+            play("x180", Q2_xy)
             wait(t)
-            play("x90", "q1_xy")  # 2nd x90 gate
-            play("x90", "q2_xy")  # 2nd x90 gate
+            play("x90", Q1_xy)  # 2nd x90 gate
+            play("x90", Q2_xy)  # 2nd x90 gate
 
             # Align the elements to measure after having waited a time "tau" after the qubit pulses.
             align()
@@ -120,7 +131,7 @@ else:
             plt.cla()
             plt.plot(8 * t_delays, I1)
             plt.ylabel("I quadrature [V]")
-            plt.title("Qubit 1")
+            plt.title(f"Qubit {Qubit1}")
             plt.subplot(223)
             plt.cla()
             plt.plot(8 * t_delays, Q1)
@@ -129,14 +140,39 @@ else:
             plt.subplot(222)
             plt.cla()
             plt.plot(8 * t_delays, I2)
-            plt.title("Qubit 2")
+            plt.title(f"Qubit {Qubit2}")
             plt.subplot(224)
             plt.cla()
             plt.plot(8 * t_delays, Q2)
-            plt.title("Q2")
             plt.xlabel("Wait time (ns)")
             plt.tight_layout()
             plt.pause(1)
+
+        try:
+            from qualang_tools.plot.fitting import Fit
+
+            fit = Fit()
+            plt.figure()
+            T2_fit = fit.T1(8 * t_delays, I1, plot=True)
+            qubit_T2 = np.abs(T2_fit["T1"][0])
+            plt.xlabel("Delay [ns]")
+            plt.ylabel("I quadrature [V]")
+            print(f"Qubit coherence time T2 = {qubit_T2:.0f} ns")
+            plt.legend((f"Qubit {Qubit1} Coherence time T2 = {qubit_T2:.0f} ns",))
+            plt.title("Echo measurement")
+
+            fit = Fit()
+            plt.figure()
+            T2_fit = fit.T1(8 * t_delays, I2, plot=True)
+            qubit_T2 = np.abs(T2_fit["T1"][0])
+            plt.xlabel("Delay [ns]")
+            plt.ylabel("I quadrature [V]")
+            print(f"Qubit coherence time T2 = {qubit_T2:.0f} ns")
+            plt.legend((f"Qubit {Qubit2} Coherence time T2 = {qubit_T2:.0f} ns",))
+            plt.title("Echo measurement")
+            fig_analysis = plt.gcf()
+        except (Exception,):
+            pass
 
         # Save results
         script_name = Path(__file__).name
@@ -145,7 +181,7 @@ else:
         save_data_dict.update({"Q1_data": Q1})
         save_data_dict.update({"I2_data": I2})
         save_data_dict.update({"Q2_data": Q2})
-        save_data_dict.update({"fig_live": fig})
+        save_data_dict.update({"fig_live": fig, "fig_analysis": fig_analysis})
         data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
 
@@ -156,3 +192,5 @@ else:
         qm.close()
         print("Experiment QM is now closed")
         plt.show(block=True)
+
+# %%

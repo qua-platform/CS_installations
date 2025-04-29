@@ -1,3 +1,4 @@
+# %%
 """
 READOUT OPTIMISATION: INTEGRATION WEIGHTS
 """
@@ -12,6 +13,8 @@ from qualang_tools.results.data_handler import DataHandler
 
 ####################
 # Helper functions #
+qubit = "q1_xy"
+resonator = "rr1"
 ####################
 
 
@@ -64,8 +67,6 @@ x_plot = np.arange(division_length * 4, readout_len + 1, division_length * 4)
 print("Integration weights chunk-size length in clock cycles:", division_length)
 print("The readout has been sliced in the following number of divisions", number_of_divisions)
 
-qubit = "q1_xy"
-resonator = "rr1"
 
 # Data to save
 save_data_dict = {
@@ -76,6 +77,7 @@ save_data_dict = {
     "number_of_divisions": number_of_divisions,
     "x_plot": x_plot,
     "config": config,
+    "qubit": qubit
 }
 
 ###################

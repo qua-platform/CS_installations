@@ -1,3 +1,4 @@
+# %%
 """
         READOUT OPTIMISATION: FREQUENCY & AMP
 This sequence involves measuring the state of the resonator in two scenarios: first, after thermalization
@@ -24,9 +25,22 @@ from qualang_tools.results import fetching_tool, progress_counter
 from macros import multiplexed_readout, qua_declaration
 from qualang_tools.results.data_handler import DataHandler
 from qualang_tools.analysis import two_state_discriminator
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
+
 
 ##################
 #   Parameters   #
+RR1 = "rr1"
+RR2 = "rr2"
+Qubit1 = "1"
+Qubit2 = "2"
+Q1_xy = "q1_xy"
+Q2_xy = "q2_xy"
+readout_amp_Q1 = readout_amp_q1
+readout_amp_Q2 = readout_amp_q2
 ##################
 # Parameters Definition
 n_avg = 1000  # Number of runs
@@ -41,6 +55,8 @@ save_data_dict = {
     "n_avg": n_avg,
     "scalings": scalings,
     "config": config,
+    "RR1" : RR1,
+    "RR2" : RR2,
 }
 
 ###################
@@ -68,8 +84,8 @@ with program() as PROGRAM:
             # Reset both qubits to ground
             wait(thermalization_time * u.ns)
             # Measure the excited IQ blobs
-            play("x180", "q1_xy")
-            play("x180", "q2_xy")
+            play("x180", Q1_xy)
+            play("x180", Q2_xy)
             align()
             # Measure the state of the resonators
             multiplexed_readout(Ie, I_e_st, Qe, Q_e_st, resonators=[1, 2], amplitude=a, weights="rotated_")
@@ -144,16 +160,16 @@ else:
         fig = plt.figure()
         plt.suptitle("Readout amplitude optimization")
         plt.subplot(121)
-        plt.plot(scalings * readout_amp_q1, fidelity_vec[0], "b.-", label="averaged fidelity")
-        plt.plot(scalings * readout_amp_q1, ground_fidelity_vec[0], "r.-", label="ground fidelity")
-        plt.title("Qubit 1")
+        plt.plot(scalings * readout_amp_Q1, fidelity_vec[0], "b.-", label="averaged fidelity")
+        plt.plot(scalings * readout_amp_Q1, ground_fidelity_vec[0], "r.-", label="ground fidelity")
+        plt.title(f"Qubit {Qubit1}")
         plt.xlabel("Readout amplitude [V]")
         plt.ylabel("Fidelity [%]")
         plt.legend()
         plt.subplot(122)
-        plt.title("Qubit 2")
-        plt.plot(scalings * readout_amp_q2, fidelity_vec[1], "b.-", label="averaged fidelity")
-        plt.plot(scalings * readout_amp_q2, ground_fidelity_vec[1], "r.-", label="ground fidelity")
+        plt.title(f"Qubit {Qubit2}")
+        plt.plot(scalings * readout_amp_Q2, fidelity_vec[1], "b.-", label="averaged fidelity")
+        plt.plot(scalings * readout_amp_Q2, ground_fidelity_vec[1], "r.-", label="ground fidelity")
         plt.xlabel("Readout amplitude [V]")
         plt.ylabel("Fidelity [%]")
         plt.legend()

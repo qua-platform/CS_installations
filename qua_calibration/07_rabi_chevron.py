@@ -1,3 +1,4 @@
+# %%
 """
         RABI CHEVRON (AMPLITUDE VS FREQUENCY)
 This sequence involves executing the qubit pulse and measuring the state
@@ -25,20 +26,32 @@ from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.plot import interrupt_on_close
 from macros import qua_declaration, multiplexed_readout
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
+Q1_xy = "q1_xy"
+Q2_xy = "q2_xy"
+qubit_IF_Q1 = qubit_IF_q1
+qubit_IF_Q2 = qubit_IF_q2
+qubit_LO_Q1 = qubit_LO_q1
+qubit_LO_Q2 = qubit_LO_q2
+pi_amp_Q1 = pi_amp_q1
+pi_amp_Q2 = pi_amp_q2
 ##################
 # Parameters Definition
 n_avg = 10  # The number of averages
 # Qubit detuning sweep with respect to qubit_IF
 freq_span = 40e6
-freq_step = 0.1e6
+freq_step = 0.2e6
 dfs = np.arange(-freq_span, +freq_span, freq_step)
 # Qubit pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
 scaling_max = 1.00
 scaling_min = 0
-scaling_step = 0.25
+scaling_step = 0.02
 scalings = np.arange(scaling_min, scaling_max, scaling_step)
 
 # Data to save
@@ -47,6 +60,8 @@ save_data_dict = {
     "dfs": dfs,
     "scalings": scalings,
     "config": config,
+    "Q1_xy" : Q1_xy,
+    "Q2_xy" : Q2_xy,
 }
 
 ###################
@@ -60,13 +75,13 @@ with program() as PROGRAM:
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
             # Update the frequency of the two qubit elements
-            update_frequency("q1_xy", df + qubit_IF_q1)
-            update_frequency("q2_xy", df + qubit_IF_q2)
+            update_frequency(Q1_xy, df + qubit_IF_Q1)
+            update_frequency(Q2_xy, df + qubit_IF_Q2)
 
             with for_(*from_array(a, scalings)):
                 # Play qubit pulses simultaneously
-                play("x180" * amp(a), "q1_xy")
-                play("x180" * amp(a), "q2_xy")
+                play("x180" * amp(a), Q1_xy)
+                play("x180" * amp(a), Q2_xy)
                 # Measure after the qubit pulses
                 align()
                 # Multiplexed readout, also saves the measurement outcomes
@@ -135,26 +150,26 @@ else:
             plt.suptitle("Rabi chevron")
             plt.subplot(221)
             plt.cla()
-            plt.pcolor(scalings * pi_amp_q1, dfs, I1)
+            plt.pcolor(scalings * pi_amp_Q1, dfs, I1)
             plt.xlabel("Qubit pulse amplitude [V]")
             plt.ylabel("Qubit 1 detuning [MHz]")
-            plt.title(f"q1 (f_res: {(qubit_LO_q1 + qubit_IF_q1) / u.MHz} MHz)")
+            plt.title(f"q{Q1_xy} (f_res: {(qubit_LO_Q1 + qubit_IF_Q1) / u.MHz} MHz)")
             plt.subplot(223)
             plt.cla()
-            plt.pcolor(scalings * pi_amp_q1, dfs, Q1)
+            plt.pcolor(scalings * pi_amp_Q1, dfs, Q1)
             plt.xlabel("Qubit pulse amplitude [V]")
-            plt.ylabel("Qubit 1 detuning [MHz]")
+            plt.ylabel(f"Qubit {Q1_xy} detuning [MHz]")
             plt.subplot(222)
             plt.cla()
-            plt.pcolor(scalings * pi_amp_q2, dfs, I2)
-            plt.title(f"q2 (f_res: {(qubit_LO_q2 + qubit_IF_q2) / u.MHz} MHz)")
+            plt.pcolor(scalings * pi_amp_Q2, dfs, I2)
+            plt.title(f"q{Q2_xy} (f_res: {(qubit_LO_Q2 + qubit_IF_Q2) / u.MHz} MHz)")
             plt.xlabel("Qubit pulse amplitude [V]")
-            plt.ylabel("Qubit 2 detuning [MHz]")
+            plt.ylabel(f"Qubit {Q2_xy} detuning [MHz]")
             plt.subplot(224)
             plt.cla()
-            plt.pcolor(scalings * pi_amp_q2, dfs, Q2)
+            plt.pcolor(scalings * pi_amp_Q2, dfs, Q2)
             plt.xlabel("Qubit pulse amplitude [V]")
-            plt.ylabel("Qubit 2 detuning [MHz]")
+            plt.ylabel(f"Qubit {Q2_xy} detuning [MHz]")
             plt.tight_layout()
             plt.pause(1)
 

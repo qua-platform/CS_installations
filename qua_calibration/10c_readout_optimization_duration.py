@@ -1,3 +1,5 @@
+
+# %%
 """
 READOUT OPTIMISATION: DURATION
 """
@@ -10,13 +12,20 @@ from qualang_tools.results import fetching_tool, progress_counter
 import math
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
+resonator = "rr1"
+Q1_xy = "q1_xy"
+Q2_xy = "q2_xy"
+Qubit1 = "1"
 ##################
 # Parameters Definition
 n_avg = 10  # Number of runs
-resonator = "rr1"
 division_length = 1  # Size of each demodulation slice in clock cycles
 number_of_divisions = int((readout_len) / (4 * division_length))
 # Time axis for the plots at the end
@@ -32,6 +41,7 @@ save_data_dict = {
     "number_of_divisions": number_of_divisions,
     "pulse_duration": pulse_duration,
     "config": config,
+    "resonator": resonator
 }
 
 ###################
@@ -84,8 +94,8 @@ with program() as PROGRAM:
         # Reset both qubits to ground
         wait(thermalization_time * u.ns)
         # Measure the excited IQ blobs
-        play("x180", "q1_xy")
-        play("x180", "q2_xy")
+        play("x180", Q1_xy)
+        play("x180", Q2_xy)
         align()
         measure(
             "readout",
@@ -199,20 +209,20 @@ else:
             plt.plot(excited_trace.real, label="excited")
             plt.xlabel("Clock cycles [4ns]")
             plt.ylabel("demodulated traces [V]")
-            plt.title("Real part qubit 1")
+            plt.title(f"Real part qubit {Qubit1}")
             plt.legend()
             plt.subplot(132)
             plt.cla()
             plt.plot(ground_trace.imag, label="ground")
             plt.plot(excited_trace.imag, label="excited")
             plt.xlabel("Clock cycles [4ns]")
-            plt.title("Imaginary part qubit 1")
+            plt.title(f"Imaginary part qubit {Qubit1}")
             plt.legend()
             plt.subplot(133)
             plt.cla()
             plt.plot(SNR, ".-")
             plt.xlabel("Clock cycles [4ns]")
-            plt.ylabel("SNR qubit 1")
+            plt.ylabel(f"SNR qubit {Qubit1}")
             plt.title("SNR")
             plt.tight_layout()
             plt.pause(1)

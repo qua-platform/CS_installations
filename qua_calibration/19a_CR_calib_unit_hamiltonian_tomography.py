@@ -1,3 +1,4 @@
+# %%
 """
                                  CR_calib_unit_hamiltonian_tomography
 
@@ -52,6 +53,10 @@ from cr_hamiltonian_tomography import (
     plot_crqst_result_2D,
     plot_crqst_result_3D,
 )
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
@@ -62,10 +67,10 @@ qt = 2  # index of target qubit
 
 # Parameters Definition
 n_avg = 200
-cr_type = "direct+cancel+echo"  # "direct", "direct+echo", "direct+cancel", "direct+cancel+echo"
+cr_type = "direct+cancel"  # "direct", "direct+echo", "direct+cancel", "direct+cancel+echo"
 cr_drive_amp = 1.0  # ratio
 cr_drive_phase = 0.0  # in units of 2pi
-cr_cancel_amp = 0.5  # ratio
+cr_cancel_amp = 1.0  # ratio
 cr_cancel_phase = 0.0  # in units of 2pi
 ts_cycles = np.arange(4, 400, 4)  # in clock cylcle = 4ns
 

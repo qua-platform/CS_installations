@@ -1,3 +1,4 @@
+# %%
 """
         IQ BLOBS
 This sequence involves measuring the state of the resonator 'N' times, first after thermalization (with the qubit
@@ -26,13 +27,19 @@ from macros import qua_declaration, multiplexed_readout, active_reset
 from qualang_tools.results import progress_counter
 from qualang_tools.results.data_handler import DataHandler
 from qualang_tools.analysis import two_state_discriminator
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
+qubits = ["q1_xy", "q2_xy"]
+Qubit1 = "1"
+Qubit2 = "2"
 ##################
 # Parameters Definition
 n_runs = 10_000  # Number of runs
-qubits = ["q1_xy", "q2_xy"]
 
 # Data to save
 save_data_dict = {
@@ -120,9 +127,11 @@ else:
         # Plot the IQ blobs, rotate them to get the separation along the 'I' quadrature, estimate a threshold between them
         # for state discrimination and derive the fidelity matrix
         two_state_discriminator(I_g_q1, Q_g_q1, I_e_q1, Q_e_q1, True, True)
-        plt.suptitle("qubit 1")
+        plt.suptitle(f"qubit {Qubit1}")
+        fig1 = plt.gcf()
         two_state_discriminator(I_g_q2, Q_g_q2, I_e_q2, Q_e_q2, True, True)
-        plt.suptitle("qubit 2")
+        plt.suptitle(f"qubit {Qubit2}")
+        fig2 = plt.gcf()
 
         # Save results
         script_name = Path(__file__).name
@@ -135,6 +144,7 @@ else:
         save_data_dict.update({"Q_g_q2_data": Q_g_q2})
         save_data_dict.update({"I_e_q2_data": I_e_q2})
         save_data_dict.update({"Q_e_q2_data": Q_e_q2})
+        save_data_dict.update({"fig_g": fig1, "fig_e": fig2})
         data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
 
@@ -145,3 +155,5 @@ else:
         qm.close()
         print("Experiment QM is now closed")
         plt.show(block=True)
+
+# %%

@@ -1,3 +1,5 @@
+
+#%%
 """
         RAMSEY CHEVRON (IDLE TIME VS FREQUENCY)
 The program consists in playing a Ramsey sequence (x90 - idle_time - x90 - measurement) for different qubit intermediate
@@ -25,15 +27,23 @@ from qualang_tools.results import progress_counter
 from macros import qua_declaration, multiplexed_readout, active_reset
 import math
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
+Q1_xy = "q1_xy"
+Q2_xy = "q2_xy"
+Qubit1 = "1"
+Qubit2 = "2"
 ##################
 # Parameters Definition
-n_avg = 8 * 60  # The number of averages
-t_max = 8_000
+n_avg = 500  # The number of averages
+t_max = 5_000
 t_min = 4
-t_step = 120
+t_step = 16
 t_delays = np.arange(t_min, t_max, t_step)  # Idle time sweep in clock cycles (Needs to be a list of integers)
 freq_detuning = 0.5 * u.MHz
 delta_phase = 4e-09 * freq_detuning * t_step
@@ -44,6 +54,8 @@ save_data_dict = {
     "t_delays": t_delays,
     "detuning": freq_detuning,
     "config": config,
+    "Q1_xy": Q1_xy,
+    "Q2_xy": Q2_xy,
 }
 
 ###################
@@ -65,13 +77,13 @@ with program() as PROGRAM:
 
             assign(phase, phase + delta_phase)
 
-            play("x90", "q1_xy")
-            play("x90", "q2_xy")
+            play("x90", Q1_xy)
+            play("x90", Q2_xy)
             wait(t)
-            frame_rotation_2pi(phase, "q1_xy")
-            frame_rotation_2pi(phase, "q2_xy")
-            play("x90", "q1_xy")
-            play("x90", "q2_xy")
+            frame_rotation_2pi(phase, Q1_xy)
+            frame_rotation_2pi(phase, Q2_xy)
+            play("x90", Q1_xy)
+            play("x90", Q2_xy)
 
             # Align the elements to measure after having waited a time "tau" after the qubit pulses.
             align()
@@ -143,7 +155,7 @@ else:
             plt.cla()
             plt.plot(4 * t_delays, I1)
             plt.ylabel("I quadrature [V]")
-            plt.title("Qubit 1")
+            plt.title(f"Qubit {Qubit1}")
             plt.subplot(223)
             plt.cla()
             plt.plot(4 * t_delays, Q1)
@@ -152,14 +164,41 @@ else:
             plt.subplot(222)
             plt.cla()
             plt.plot(4 * t_delays, I2)
-            plt.title("Qubit 2")
+            plt.title(f"Qubit {Qubit2}")
             plt.subplot(224)
             plt.cla()
             plt.plot(4 * t_delays, Q2)
-            plt.title("Q2")
             plt.xlabel("Idle times [ns]")
             plt.tight_layout()
             plt.pause(1)
+        try:
+            from qualang_tools.plot.fitting import Fit
+
+            fit = Fit()
+            plt.figure()
+            plt.suptitle(f"Ramsey measurement with detuning={freq_detuning} MHz")
+            plt.subplot(221)
+            fit.ramsey(4 * t_delays, I1, plot=True)
+            plt.xlabel("Idle times [ns]")
+            plt.ylabel("I quadrature [V]")
+            plt.title(f"Qubit {Qubit1}")
+            plt.subplot(223)
+            fit.ramsey(4 * t_delays, Q1, plot=True)
+            plt.xlabel("Idle times [ns]")
+            plt.ylabel("I quadrature [V]")
+            plt.title(f"Qubit {Qubit2}")
+            plt.subplot(222)
+            fit.ramsey(4 * t_delays, I2, plot=True)
+            plt.xlabel("Idle times [ns]")
+            plt.ylabel("I quadrature [V]")
+            plt.subplot(224)
+            fit.ramsey(4 * t_delays, Q2, plot=True)
+            plt.xlabel("Idle times [ns]")
+            plt.ylabel("I quadrature [V]")
+            plt.tight_layout()
+            fig_analysis = plt.gcf()
+        except (Exception,):
+            pass
 
         # Save results
         script_name = Path(__file__).name
@@ -168,7 +207,7 @@ else:
         save_data_dict.update({"Q1_data": Q1})
         save_data_dict.update({"I2_data": I2})
         save_data_dict.update({"Q2_data": Q2})
-        save_data_dict.update({"fig_live": fig})
+        save_data_dict.update({"fig_live": fig, "fig_analysis": fig_analysis})
         data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
 
