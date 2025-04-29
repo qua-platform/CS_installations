@@ -17,6 +17,61 @@ import matplotlib.pyplot as plt
 
 matplotlib.use('TkAgg')
 
+
+def active_reset(I, I_st, Q, Q_st, state, state_st, resonators, qubits, state_to, delay=None, amplitude=1.0, readout_pulse="midcircuit_readout", weights="rotated_"):
+
+    global_state = declare(int)
+
+    if type(resonators) is not list:
+        resonators = [resonators]
+
+    assign(global_state, 0)
+    
+    for ind, rr in enumerate(resonators):
+        # reset_if_phase(rr)
+        measure(
+            readout_pulse * amp(amplitude),
+            rr,
+            None,
+            dual_demod.full(weights + "cos", weights + "minus_sin", I[ind]),
+            dual_demod.full(weights + "sin", weights + "cos", Q[ind]),
+        )
+
+        if I_st is not None:
+            save(I[ind], I_st[ind])
+        if Q_st is not None:
+            save(Q[ind], Q_st[ind])
+
+        ###################################################################################
+        # NOTE: Ig is promised to be smaller than Ie ONLY if rotation angle is calibrated #
+        ###################################################################################
+
+        assign(state[ind], I[ind] > RR_CONSTANTS[rr]["midcircuit_ge_threshold"])
+        assign(global_state, (Cast.to_int(state[ind]) << ind) + global_state)
+
+        if state_st is not None:
+            save(state[ind], state_st[ind])
+
+    align()
+
+    for ind, qb in enumerate(qubits):
+
+        if delay is None:
+            pass
+        else:
+            wait(delay, qb)
+        if state_to == "ground":
+            play("x180", qb, condition=state[ind])
+        elif state_to == "excited":
+            play("x180", qb, condition=~state[ind])
+        elif state_to == "none":
+            pass
+
+    return global_state
+
+
+
+
 ##################
 #   Parameters   #
 ##################
