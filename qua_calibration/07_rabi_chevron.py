@@ -1,3 +1,4 @@
+# %%
 """
         RABI CHEVRON (AMPLITUDE VS FREQUENCY)
 This sequence involves executing the qubit pulse and measuring the state
@@ -25,6 +26,10 @@ from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.plot import interrupt_on_close
 from macros import qua_declaration, multiplexed_readout
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
@@ -41,12 +46,12 @@ pi_amp_Q2 = pi_amp_q2
 n_avg = 10  # The number of averages
 # Qubit detuning sweep with respect to qubit_IF
 freq_span = 40e6
-freq_step = 0.1e6
+freq_step = 0.2e6
 dfs = np.arange(-freq_span, +freq_span, freq_step)
 # Qubit pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
 scaling_max = 1.00
 scaling_min = 0
-scaling_step = 0.25
+scaling_step = 0.02
 scalings = np.arange(scaling_min, scaling_max, scaling_step)
 
 # Data to save

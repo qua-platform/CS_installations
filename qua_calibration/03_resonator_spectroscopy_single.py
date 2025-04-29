@@ -1,3 +1,4 @@
+# %%
 """
         RESONATOR SPECTROSCOPY INDIVIDUAL RESONATORS
 This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to extract the
@@ -23,6 +24,10 @@ from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
@@ -35,8 +40,8 @@ resonator_LO = resonator_LO
 # Parameters Definition
 n_avg = 200  # The number of averages
 frequencies = {
-    "rr1": np.arange(-50e6, +50e6, 100e3),
-    "rr2": np.arange(-50e6, +50e6, 100e3),
+    "rr1": np.arange(10e6, +450e6, 20e3),
+    "rr2": np.arange(80e6, +130e6, 100e3),
 }
 
 # Data to save
@@ -46,7 +51,7 @@ save_data_dict = {
     "frequencies": frequencies,
     "n_avg": n_avg,
     "config": config,
-    "resonator" = resonator
+    "resonator": resonator,
 }
 
 ###################
@@ -64,7 +69,7 @@ with program() as PROGRAM:
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(f, frequencies[resonator])):  # QUA for_ loop for sweeping the frequency
             # Update the frequency of the digital oscillator linked to the resonator element
-            update_frequency(resonator, f)
+            update_frequency(resonator, f) # change intermediate freq
             # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
             measure(
                 "readout",
@@ -165,3 +170,5 @@ else:
         qm.close()
         print("Experiment QM is now closed")
         plt.show(block=True)
+
+# %%

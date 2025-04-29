@@ -1,3 +1,4 @@
+# %%
 """
         QUBIT SPECTROSCOPY
 This sequence involves sending a saturation pulse to the qubit, placing it in a mixed state,
@@ -33,6 +34,10 @@ from qualang_tools.loops import from_array
 from macros import qua_declaration, multiplexed_readout
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
@@ -46,15 +51,27 @@ qubit_LO_Q1 = qubit_LO_q1
 qubit_LO_Q2 = qubit_LO_q2
 
 
+# # Parameters Definition
+# n_avg = 400  # The number of averages
+# # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
+# # Qubit detuning sweep with respect to qubit_IF
+# span = 10.0 * u.MHz
+# freq_step = 100 * u.kHz
+# dfs = np.arange(-span, +span, freq_step)
+# saturation_len = 30 * u.us  # In ns
+# saturation_scaling = 0.01 # pre-factor to the value defined in the config - restricted to [-2; 2)
+
 # Parameters Definition
-n_avg = 1_000  # The number of averages
+n_avg = 100  # The number of averages
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
 # Qubit detuning sweep with respect to qubit_IF
-span = 20.0 * u.MHz
-freq_step = 100 * u.kHz
+span = 300.0 * u.MHz
+freq_step = 200 * u.kHz
 dfs = np.arange(-span, +span, freq_step)
-saturation_len = 10 * u.us  # In ns
-saturation_scaling = 0.5  # pre-factor to the value defined in the config - restricted to [-2; 2)
+saturation_len = 30 * u.us  # In ns
+saturation_scaling = 0.2  # pre-factor to the value defined in the config - restricted to [-2; 2)
+
+
 
 # Data to save
 save_data_dict = {
@@ -86,9 +103,11 @@ with program() as PROGRAM:
             # Play the saturation pulse to put the qubit in a mixed state - Can adjust the amplitude on the fly [-2; 2)
             # qubit 1
             play("cw" * amp(saturation_scaling), Q1_xy, duration=saturation_len * u.ns)
+            # play("cw" * amp(0), Q1_xy, duration=saturation_len * u.ns)
             align(Q1_xy, "rr1")
             # qubit 2
             play("cw" * amp(saturation_scaling), Q2_xy, duration=saturation_len * u.ns)
+            # play("cw" * amp(0), Q2_xy, duration=saturation_len * u.ns)
             align(Q2_xy, "rr2")
 
             # Multiplexed readout, also saves the measurement outcomes
@@ -198,3 +217,5 @@ else:
         qm.close()
         print("Experiment QM is now closed")
         plt.show(block=True)
+
+# %%

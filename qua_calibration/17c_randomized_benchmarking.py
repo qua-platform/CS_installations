@@ -1,3 +1,4 @@
+#  %%
 """
         SINGLE QUBIT RANDOMIZED BENCHMARKING (for gates >= 40ns)
 The program consists in playing random sequences of Clifford gates and measuring the state of the resonator afterwards.
@@ -21,7 +22,7 @@ Prerequisites:
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from configuration import *
+from configuration_mw_fem import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
@@ -29,14 +30,23 @@ from macros import readout_macro
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
 ##################
+ge_threshold = ge_threshold_q1
+Q1_xy = "q2_xy"
+RR1 = "rr2"
+
+
 # Parameters Definition
 num_of_sequences = 50  # Number of random sequences
 n_avg = 20  # Number of averaging loops for each random sequence
-max_circuit_depth = 1000  # Maximum circuit depth
+max_circuit_depth = 500  # Maximum circuit depth
 delta_clifford = 10  #  Play each sequence with a depth step equals to 'delta_clifford - Must be > 0
 assert (max_circuit_depth / delta_clifford).is_integer(), "max_circuit_depth / delta_clifford must be an integer."
 seed = 345324  # Pseudo-random number generator seed
@@ -84,74 +94,74 @@ def play_sequence(sequence_list, depth):
     with for_(i, 0, i <= depth, i + 1):
         with switch_(sequence_list[i], unsafe=True):
             with case_(0):
-                wait(x180_len // 4, "qubit")
+                wait(pi_len // 4, Q1_xy)
             with case_(1):
-                play("x180", "qubit")
+                play("x180", Q1_xy)
             with case_(2):
-                play("y180", "qubit")
+                play("y180", Q1_xy)
             with case_(3):
-                play("y180", "qubit")
-                play("x180", "qubit")
+                play("y180", Q1_xy)
+                play("x180", Q1_xy)
             with case_(4):
-                play("x90", "qubit")
-                play("y90", "qubit")
+                play("x90", Q1_xy)
+                play("y90", Q1_xy)
             with case_(5):
-                play("x90", "qubit")
-                play("-y90", "qubit")
+                play("x90", Q1_xy)
+                play("-y90", Q1_xy)
             with case_(6):
-                play("-x90", "qubit")
-                play("y90", "qubit")
+                play("-x90", Q1_xy)
+                play("y90", Q1_xy)
             with case_(7):
-                play("-x90", "qubit")
-                play("-y90", "qubit")
+                play("-x90", Q1_xy)
+                play("-y90", Q1_xy)
             with case_(8):
-                play("y90", "qubit")
-                play("x90", "qubit")
+                play("y90", Q1_xy)
+                play("x90", Q1_xy)
             with case_(9):
-                play("y90", "qubit")
-                play("-x90", "qubit")
+                play("y90", Q1_xy)
+                play("-x90", Q1_xy)
             with case_(10):
-                play("-y90", "qubit")
-                play("x90", "qubit")
+                play("-y90", Q1_xy)
+                play("x90", Q1_xy)
             with case_(11):
-                play("-y90", "qubit")
-                play("-x90", "qubit")
+                play("-y90", Q1_xy)
+                play("-x90", Q1_xy)
             with case_(12):
-                play("x90", "qubit")
+                play("x90", Q1_xy)
             with case_(13):
-                play("-x90", "qubit")
+                play("-x90", Q1_xy)
             with case_(14):
-                play("y90", "qubit")
+                play("y90", Q1_xy)
             with case_(15):
-                play("-y90", "qubit")
+                play("-y90", Q1_xy)
             with case_(16):
-                play("-x90", "qubit")
-                play("y90", "qubit")
-                play("x90", "qubit")
+                play("-x90", Q1_xy)
+                play("y90", Q1_xy)
+                play("x90", Q1_xy)
             with case_(17):
-                play("-x90", "qubit")
-                play("-y90", "qubit")
-                play("x90", "qubit")
+                play("-x90", Q1_xy)
+                play("-y90", Q1_xy)
+                play("x90", Q1_xy)
             with case_(18):
-                play("x180", "qubit")
-                play("y90", "qubit")
+                play("x180", Q1_xy)
+                play("y90", Q1_xy)
             with case_(19):
-                play("x180", "qubit")
-                play("-y90", "qubit")
+                play("x180", Q1_xy)
+                play("-y90", Q1_xy)
             with case_(20):
-                play("y180", "qubit")
-                play("x90", "qubit")
+                play("y180", Q1_xy)
+                play("x90", Q1_xy)
             with case_(21):
-                play("y180", "qubit")
-                play("-x90", "qubit")
+                play("y180", Q1_xy)
+                play("-x90", Q1_xy)
             with case_(22):
-                play("x90", "qubit")
-                play("y90", "qubit")
-                play("x90", "qubit")
+                play("x90", Q1_xy)
+                play("y90", Q1_xy)
+                play("x90", Q1_xy)
             with case_(23):
-                play("-x90", "qubit")
-                play("y90", "qubit")
-                play("-x90", "qubit")
+                play("-x90", Q1_xy)
+                play("y90", Q1_xy)
+                play("-x90", Q1_xy)
 
 
 ###################
@@ -194,17 +204,17 @@ with program() as rb:
             with if_(depth == depth_target):
                 with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
                     # Can be replaced by active reset
-                    wait(thermalization_time * u.ns, "resonator")
+                    wait(thermalization_time * u.ns, RR1)
                     # Align the two elements to play the sequence after qubit initialization
-                    align("resonator", "qubit")
+                    align(RR1, Q1_xy)
                     # The strict_timing ensures that the sequence will be played without gaps
-                    with strict_timing_():
-                        # Play the random sequence of desired depth
-                        play_sequence(sequence_list, depth)
+                    # with strict_timing_():
+                    # Play the random sequence of desired depth
+                    play_sequence(sequence_list, depth)
                     # Align the two elements to measure after playing the circuit.
-                    align("qubit", "resonator")
+                    align(Q1_xy, RR1)
                     # Make sure you updated the ge_threshold and angle if you want to use state discrimination
-                    state, I, Q = readout_macro(threshold=ge_threshold, state=state, I=I, Q=Q)
+                    state, I, Q = readout_macro(resonator=RR1, threshold=ge_threshold, state=state, I=I, Q=Q)
                     # Save the results to their respective streams
                     if state_discrimination:
                         save(state, state_st)
@@ -345,16 +355,19 @@ else:
     print(
         f"Error rate: 1-p = {np.format_float_scientific(one_minus_p, precision=2)} ({stdevs[2]:.1})\n"
         f"Clifford set infidelity: r_c = {np.format_float_scientific(r_c, precision=2)} ({r_c_std:.1})\n"
-        f"Gate infidelity: r_g = {np.format_float_scientific(r_g, precision=2)}  ({r_g_std:.1})"
+        f"Gate infidelity: r_g = {np.format_float_scientific(r_g, precision=2)}  ({r_g_std:.1})\n"
+        f"1 - Gate infidelity: F_g = {np.format_float_scientific(1 - r_g, precision=2)}  ({r_g_std:.1})"
     )
 
     # Plots
-    plt.figure()
+    fig_analysis = plt.figure()
     plt.errorbar(x, value_avg, yerr=error_avg, marker=".")
     plt.plot(x, power_law(x, *pars), linestyle="--", linewidth=2)
     plt.xlabel("Number of Clifford gates")
     plt.ylabel("Sequence Fidelity")
     plt.title("Single qubit RB")
+    plt.legend((f"Qubit {Q1_xy} Gate Fidelity = {100 * (1 - r_g):2.2f}%",))
+    plt.show()
 
     # Save results
     script_name = Path(__file__).name
@@ -364,6 +377,6 @@ else:
     else:
         save_data_dict.update({"I_data": I})
         save_data_dict.update({"Q_data": Q})
-    save_data_dict.update({"fig_live": fig})
+    save_data_dict.update({"fig_live": fig, "fig_analysis": fig_analysis})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])

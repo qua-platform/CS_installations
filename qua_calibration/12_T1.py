@@ -1,3 +1,4 @@
+# %%
 """
         RAMSEY CHEVRON (IDLE TIME VS FREQUENCY)
 The program consists in playing a Ramsey sequence (x90 - idle_time - x90 - measurement) for different qubit intermediate
@@ -23,6 +24,10 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import progress_counter
 from macros import qua_declaration, multiplexed_readout, active_reset
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
@@ -33,10 +38,10 @@ Qubit2 = "2"
 ##################
 # Parameters Definition
 n_avg = 100
-t_max = 100_000
+t_max = 10_000
 t_min = 4
 # t_step = 1
-t_delays = np.geomspace(t_min, t_max, 100).astype(int)
+t_delays = np.geomspace(t_min, t_max, 400).astype(int)
 
 # Data to save
 save_data_dict = {
@@ -67,7 +72,7 @@ with program() as PROGRAM:
             play("x180", Q1_xy)
             play("x180", Q2_xy)
 
-            wait(t)
+            wait(t, Q1_xy, Q2_xy) # in clock cycles = 4ns
 
             # Align the elements to measure after having waited a time "tau" after the qubit pulses.
             align()
@@ -177,6 +182,8 @@ else:
             plt.legend((f"depletion time = {qubit_T1:.0f} ns",))
             plt.title(f"Qubit {Qubit2}")
             plt.tight_layout()
+
+            fig_analysis = plt.gcf()
         except (Exception,):
             pass
 
@@ -187,7 +194,7 @@ else:
         save_data_dict.update({"Q1_data": Q1})
         save_data_dict.update({"I2_data": I2})
         save_data_dict.update({"Q2_data": Q2})
-        save_data_dict.update({"fig_live": fig})
+        save_data_dict.update({"fig_live": fig, "fig_analysis": fig_analysis})
         data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
 

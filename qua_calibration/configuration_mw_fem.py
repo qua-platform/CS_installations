@@ -19,8 +19,8 @@ u = unit(coerce_to_integer=True)
 ######################
 # Network parameters #
 ######################
-qop_ip = "127.0.0.1"  # Write the QM router IP address
-cluster_name = None  # Write your cluster_name if version >= QOP220
+qop_ip = "192.168.88.254"  # Write the QM router IP address
+cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 octave_config = None
 
@@ -44,13 +44,13 @@ default_additional_files = {
 #                  Qubits                   #
 #############################################
 # Qubits full scale power
-qubit_full_scale_power_dbm_q1 = -8
-qubit_full_scale_power_dbm_q2 = -8
-qubit_full_scale_power_dbm_q3 = -8
-qubit_full_scale_power_dbm_q4 = -8
-qubit_full_scale_power_dbm_q5 = -8
-qubit_full_scale_power_dbm_q6 = -8
-qubit_full_scale_power_dbm_q7 = -8
+qubit_full_scale_power_dbm_q1 = 1
+qubit_full_scale_power_dbm_q2 = 1
+qubit_full_scale_power_dbm_q3 = 1
+qubit_full_scale_power_dbm_q4 = 1
+qubit_full_scale_power_dbm_q5 = 1
+qubit_full_scale_power_dbm_q6 = 1
+qubit_full_scale_power_dbm_q7 = 1
 # Qubits bands
 # The keyword "band" refers to the following frequency bands:
 #   1: (50 MHz - 5.5 GHz)
@@ -64,20 +64,20 @@ qubit_band_q5 = 1
 qubit_band_q6 = 1
 qubit_band_q7 = 1
 # Qubits LO
-qubit_LO_q1 = 4.00 * u.GHz
-qubit_LO_q2 = 4.00 * u.GHz
-qubit_LO_q3 = 4.00 * u.GHz
-qubit_LO_q4 = 4.00 * u.GHz
-qubit_LO_q5 = 4.00 * u.GHz
-qubit_LO_q6 = 4.00 * u.GHz
-qubit_LO_q7 = 4.00 * u.GHz
+qubit_LO_q1 = 5.10 * u.GHz
+qubit_LO_q2 = 5.00 * u.GHz
+qubit_LO_q3 = 4.60 * u.GHz
+qubit_LO_q4 = 4.90 * u.GHz
+qubit_LO_q5 = 4.90 * u.GHz
+qubit_LO_q6 = 5.05 * u.GHz
+qubit_LO_q7 = 5.00 * u.GHz
 # Qubits IF
-qubit_IF_q1 = 300 * u.MHz
-qubit_IF_q2 = 200 * u.MHz
-qubit_IF_q3 = 100 * u.MHz
-qubit_IF_q4 = -100 * u.MHz
-qubit_IF_q5 = -200 * u.MHz
-qubit_IF_q6 = -300 * u.MHz
+qubit_IF_q1 = (+127.6)* u.MHz
+qubit_IF_q2 = (-165.0) * u.MHz
+qubit_IF_q3 = 150 * u.MHz
+qubit_IF_q4 = 100 * u.MHz
+qubit_IF_q5 = 200 * u.MHz
+qubit_IF_q6 = 150 * u.MHz
 qubit_IF_q7 = -400 * u.MHz
 # Qubits_delay
 qubit_delay_q1 = 0
@@ -100,13 +100,13 @@ thermalization_time = 5 * max(qubit1_T1, qubit2_T1, qubit3_T1, qubit4_T1, qubit5
 
 # CW pulse parameter
 const_len = 1000
-const_amp = 0.25
+const_amp = 0.5
 
 # Pi pulse parameters
 pi_len = 40
 pi_sigma = pi_len / 5
-pi_amp_q1 = 0.22
-pi_amp_q2 = 0.22
+pi_amp_q1 = 0.1183
+pi_amp_q2 = 0.04953
 pi_amp_q3 = 0.22
 pi_amp_q4 = 0.22
 pi_amp_q5 = 0.22
@@ -114,22 +114,22 @@ pi_amp_q6 = 0.22
 pi_amp_q7 = 0.22
 
 # DRAG coefficients
-drag_coef_q1 = 1.0
-drag_coef_q2 = 1.0
+drag_coef_q1 = 0.28
+drag_coef_q2 = 0.61
 drag_coef_q3 = 1.0
 drag_coef_q4 = 1.0
 drag_coef_q5 = 1.0
 drag_coef_q6 = 1.0
 drag_coef_q7 = 1.0
-anharmonicity_q1 = -200 * u.MHz
-anharmonicity_q2 = -180 * u.MHz
+anharmonicity_q1 = -258 * u.MHz
+anharmonicity_q2 = -268 * u.MHz
 anharmonicity_q3 = -200 * u.MHz
-anharmonicity_q4 = -180 * u.MHz
+anharmonicity_q4 = -200 * u.MHz
 anharmonicity_q5 = -200 * u.MHz
-anharmonicity_q6 = -180 * u.MHz
+anharmonicity_q6 = -200 * u.MHz
 anharmonicity_q7 = -200 * u.MHz
-AC_stark_detuning_q1 = 0 * u.MHz
-AC_stark_detuning_q2 = 0 * u.MHz
+AC_stark_detuning_q1 = 20 * u.kHz
+AC_stark_detuning_q2 = 2 * u.kHz
 AC_stark_detuning_q3 = 0 * u.MHz
 AC_stark_detuning_q4 = 0 * u.MHz
 AC_stark_detuning_q5 = 0 * u.MHz
@@ -434,32 +434,32 @@ minus_y90_Q_wf_q7 = minus_y90_wf_q7
 #              Cross Resonance              #
 #############################################
 
-# CR Drive full scale power
-cr_drive_full_scale_power_dbm_c1t2 = -2
-cr_drive_full_scale_power_dbm_c2t1 = -2
-cr_drive_full_scale_power_dbm_c2t3 = -2
-cr_drive_full_scale_power_dbm_c3t2 = -2
-cr_drive_full_scale_power_dbm_c3t4 = -2
-cr_drive_full_scale_power_dbm_c4t3 = -2
-cr_drive_full_scale_power_dbm_c4t5 = -2
-cr_drive_full_scale_power_dbm_c5t4 = -2
-cr_drive_full_scale_power_dbm_c5t6 = -2
-cr_drive_full_scale_power_dbm_c6t5 = -2
-cr_drive_full_scale_power_dbm_c6t7 = -2
-cr_drive_full_scale_power_dbm_c7t6 = -2
-# CR Cancel full scale power
-cr_cancel_full_scale_power_dbm_c1t2 = -8
-cr_cancel_full_scale_power_dbm_c2t1 = -8
-cr_cancel_full_scale_power_dbm_c2t3 = -8
-cr_cancel_full_scale_power_dbm_c3t2 = -8
-cr_cancel_full_scale_power_dbm_c3t4 = -8
-cr_cancel_full_scale_power_dbm_c4t3 = -8
-cr_cancel_full_scale_power_dbm_c4t5 = -8
-cr_cancel_full_scale_power_dbm_c5t4 = -8
-cr_cancel_full_scale_power_dbm_c5t6 = -8
-cr_cancel_full_scale_power_dbm_c6t5 = -8
-cr_cancel_full_scale_power_dbm_c6t7 = -8
-cr_cancel_full_scale_power_dbm_c7t6 = -8
+# # CR Drive full scale power
+# cr_drive_full_scale_power_dbm_c1t2 = 4
+# cr_drive_full_scale_power_dbm_c2t1 = 4
+# cr_drive_full_scale_power_dbm_c2t3 = 4
+# cr_drive_full_scale_power_dbm_c3t2 = 4
+# cr_drive_full_scale_power_dbm_c3t4 = 4
+# cr_drive_full_scale_power_dbm_c4t3 = 4
+# cr_drive_full_scale_power_dbm_c4t5 = 4
+# cr_drive_full_scale_power_dbm_c5t4 = 4
+# cr_drive_full_scale_power_dbm_c5t6 = 4
+# cr_drive_full_scale_power_dbm_c6t5 = 4
+# cr_drive_full_scale_power_dbm_c6t7 = 4
+# cr_drive_full_scale_power_dbm_c7t6 = 4
+# # CR Cancel full scale power
+# cr_cancel_full_scale_power_dbm_c1t2 = -11
+# cr_cancel_full_scale_power_dbm_c2t1 = -11
+# cr_cancel_full_scale_power_dbm_c2t3 = -11
+# cr_cancel_full_scale_power_dbm_c3t2 = -11
+# cr_cancel_full_scale_power_dbm_c3t4 = -11
+# cr_cancel_full_scale_power_dbm_c4t3 = -11
+# cr_cancel_full_scale_power_dbm_c4t5 = -11
+# cr_cancel_full_scale_power_dbm_c5t4 = -11
+# cr_cancel_full_scale_power_dbm_c5t6 = -11
+# cr_cancel_full_scale_power_dbm_c6t5 = -11
+# cr_cancel_full_scale_power_dbm_c6t7 = -11
+# cr_cancel_full_scale_power_dbm_c7t6 = -11
 
 # CR Drive bands
 cr_drive_band_c1t2 = qubit_band_q2
@@ -546,18 +546,18 @@ cr_cancel_IF_c6t7 = qubit_IF_q7
 cr_cancel_IF_c7t6 = qubit_IF_q6
 
 # CR Drive pulse len
-cr_drive_square_len_c1t2 = 120
-cr_drive_square_len_c2t1 = 120
-cr_drive_square_len_c2t3 = 120
-cr_drive_square_len_c3t2 = 120
-cr_drive_square_len_c3t4 = 120
-cr_drive_square_len_c4t3 = 120
-cr_drive_square_len_c4t5 = 120
-cr_drive_square_len_c5t4 = 120
-cr_drive_square_len_c5t6 = 120
-cr_drive_square_len_c6t5 = 120
-cr_drive_square_len_c6t7 = 120
-cr_drive_square_len_c7t6 = 120
+cr_drive_square_len_c1t2 = 100
+cr_drive_square_len_c2t1 = 100
+cr_drive_square_len_c2t3 = 100
+cr_drive_square_len_c3t2 = 100
+cr_drive_square_len_c3t4 = 100
+cr_drive_square_len_c4t3 = 100
+cr_drive_square_len_c4t5 = 100
+cr_drive_square_len_c5t4 = 100
+cr_drive_square_len_c5t6 = 100
+cr_drive_square_len_c6t5 = 100
+cr_drive_square_len_c6t7 = 100
+cr_drive_square_len_c7t6 = 100
 
 # CR Cancel pulse len
 cr_cancel_square_len_c1t2 = cr_drive_square_len_c1t2
@@ -574,32 +574,32 @@ cr_cancel_square_len_c6t7 = cr_drive_square_len_c6t7
 cr_cancel_square_len_c7t6 = cr_drive_square_len_c7t6
 
 # CR Drive pulse amp
-cr_drive_square_amp_c1t2 = 0.5
-cr_drive_square_amp_c2t1 = 0.5
-cr_drive_square_amp_c2t3 = 0.5
-cr_drive_square_amp_c3t2 = 0.5
-cr_drive_square_amp_c3t4 = 0.5
-cr_drive_square_amp_c4t3 = 0.5
-cr_drive_square_amp_c4t5 = 0.5
-cr_drive_square_amp_c5t4 = 0.5
-cr_drive_square_amp_c5t6 = 0.5
-cr_drive_square_amp_c6t5 = 0.5
-cr_drive_square_amp_c6t7 = 0.5
-cr_drive_square_amp_c7t6 = 0.5
+cr_drive_square_amp_c1t2 = 1.0
+cr_drive_square_amp_c2t1 = 1.0
+cr_drive_square_amp_c2t3 = 1.0
+cr_drive_square_amp_c3t2 = 1.0
+cr_drive_square_amp_c3t4 = 1.0
+cr_drive_square_amp_c4t3 = 1.0
+cr_drive_square_amp_c4t5 = 1.0
+cr_drive_square_amp_c5t4 = 1.0
+cr_drive_square_amp_c5t6 = 1.0
+cr_drive_square_amp_c6t5 = 1.0
+cr_drive_square_amp_c6t7 = 1.0
+cr_drive_square_amp_c7t6 = 1.0
 
 # CR Cancel pulse amp
-cr_cancel_square_amp_c1t2 = 0.5
-cr_cancel_square_amp_c2t1 = 0.5
-cr_cancel_square_amp_c2t3 = 0.5
-cr_cancel_square_amp_c3t2 = 0.5
-cr_cancel_square_amp_c3t4 = 0.5
-cr_cancel_square_amp_c4t3 = 0.5
-cr_cancel_square_amp_c4t5 = 0.5
-cr_cancel_square_amp_c5t4 = 0.5
-cr_cancel_square_amp_c5t6 = 0.5
-cr_cancel_square_amp_c6t5 = 0.5
-cr_cancel_square_amp_c6t7 = 0.5
-cr_cancel_square_amp_c7t6 = 0.5
+cr_cancel_square_amp_c1t2 = 1.0
+cr_cancel_square_amp_c2t1 = 1.0
+cr_cancel_square_amp_c2t3 = 1.0
+cr_cancel_square_amp_c3t2 = 1.0
+cr_cancel_square_amp_c3t4 = 1.0
+cr_cancel_square_amp_c4t3 = 1.0
+cr_cancel_square_amp_c4t5 = 1.0
+cr_cancel_square_amp_c5t4 = 1.0
+cr_cancel_square_amp_c5t6 = 1.0
+cr_cancel_square_amp_c6t5 = 1.0
+cr_cancel_square_amp_c6t7 = 1.0
+cr_cancel_square_amp_c7t6 = 1.0
 
 # CR Drive pulse phase
 cr_drive_square_phase_c1t2 = 0.0  # in units of 2pi
@@ -660,33 +660,32 @@ resonator_full_scale_power_dbm = -11
 #   1: (50 MHz - 5.5 GHz)
 #   2: (4.5 GHz - 7.5 GHz)
 #   3: (6.5 GHz - 10.5 GHz)
-resonator_band = 2
+resonator_band = 3
 # Resonators LO
-resonator_LO1 = 6.3 * u.GHz
-resonator_LO2 = 7.2 * u.GHz
+resonator_LO = 6.95 * u.GHz
 # Resonators IF
-resonator_IF_q1 = int(100 * u.MHz)
-resonator_IF_q2 = int(200 * u.MHz)
-resonator_IF_q3 = int(100 * u.MHz)
-resonator_IF_q4 = int(200 * u.MHz)
-resonator_IF_q5 = int(100 * u.MHz)
-resonator_IF_q6 = int(200 * u.MHz)
-resonator_IF_q7 = int(100 * u.MHz)
+resonator_IF_q1 = int( 57.28 * u.MHz)
+resonator_IF_q2 = int(106.1 * u.MHz)
+resonator_IF_q3 = int(150.0 * u.MHz)
+resonator_IF_q4 = int(200.0 * u.MHz)
+resonator_IF_q5 = int(260.0 * u.MHz)
+resonator_IF_q6 = int(314.3 * u.MHz)
+resonator_IF_q7 = int(350.0 * u.MHz)
 # resontor_delay
 resonator_delay = 0
 
 # Readout pulse parameters
-readout_len = 1000
-readout_amp_q1 = 0.1 # our q1 as their q3
-readout_amp_q2 = 0.1
-readout_amp_q3 = 0.1
-readout_amp_q4 = 0.1
-readout_amp_q5 = 0.1
-readout_amp_q6 = 0.1
-readout_amp_q7 = 0.1
+readout_len = 900
+readout_amp_q1 = 0.035 # our q1 as their q3
+readout_amp_q2 = 0.030
+readout_amp_q3 = 1.0
+readout_amp_q4 = 1.0
+readout_amp_q5 = 1.0 # 0.05
+readout_amp_q6 = 1.0
+readout_amp_q7 = 1.0
 
 # TOF and depletion time
-time_of_flight = 32  # must be a multiple of 4
+time_of_flight = 32 + 332  # must be a multiple of 4
 depletion_time = 2 * u.us
 
 opt_weights = False
@@ -773,16 +772,16 @@ else:
     opt_weights_minus_real_q7 = [(-1.0, readout_len)]
 
 # state discrimination
-rotation_angle_q1 = (0.0 / 180) * np.pi
-rotation_angle_q2 = (0.0 / 180) * np.pi
+rotation_angle_q1 = ((26.9) / 180) * np.pi
+rotation_angle_q2 = ((156.2) / 180) * np.pi
 rotation_angle_q3 = (0.0 / 180) * np.pi
 rotation_angle_q4 = (0.0 / 180) * np.pi
 rotation_angle_q5 = (0.0 / 180) * np.pi
 rotation_angle_q6 = (0.0 / 180) * np.pi
 rotation_angle_q7 = (0.0 / 180) * np.pi
 
-ge_threshold_q1 = 0.0
-ge_threshold_q2 = 0.0
+ge_threshold_q1 = -7.821e-06
+ge_threshold_q2 = -9.167e-06
 ge_threshold_q3 = 0.0
 ge_threshold_q4 = 0.0
 ge_threshold_q5 = 0.0
@@ -798,7 +797,7 @@ config = {
         "con1": {
             "type": "opx1000",
             "fems": {
-                1: {
+                7: {
                     # The keyword "band" refers to the following frequency bands:
                     #   1: (50 MHz - 5.5 GHz)
                     #   2: (4.5 GHz - 7.5 GHz)
@@ -812,14 +811,13 @@ config = {
                     # Its range is -41dBm to +10dBm with 3dBm steps.
                     "type": "MW",
                     "analog_outputs": {
-                        1: {
+                        8: {
                             "sampling_rate": 1e9,
                             "full_scale_power_dbm": resonator_full_scale_power_dbm,
                             "band": resonator_band,
                             "delay": resonator_delay,
                             "upconverters": {
-                                1: {"frequency": resonator_LO1},
-                                2: {"frequency": resonator_LO2},
+                                1: {"frequency": resonator_LO},
                             },
                         },  # RL1  0.5V => 4dbm +[+6, -45] 3db spacing
 
@@ -841,7 +839,7 @@ config = {
                             "delay": qubit_delay_q2,
                             "upconverters": {
                                 1: {"frequency": qubit_LO_q2},  # cr_cancel_LO_c1t2 = qubit_LO_q2
-                                2: {"frequency": cr_drive_LO_c2t3},
+                                2: {"frequency": cr_drive_LO_c2t1},
                                 # 3: {"frequency": cr_drive_LO_c2t1},
                             },
                         },  # q2 XY
@@ -894,19 +892,25 @@ config = {
                             },
                         },  # q6 XY
 
-                        8: {
-                            "sampling_rate": 1e9,
-                            "full_scale_power_dbm": qubit_full_scale_power_dbm_q7,
-                            "band": qubit_band_q7,
-                            "delay": qubit_delay_q7,
-                            "upconverters": {
-                                1: {"frequency": qubit_LO_q7}, 
-                                2: {"frequency": cr_drive_LO_c7t6},
-                            },
-                        },  # q7 XY
+                        # 8: {
+                        #     "sampling_rate": 1e9,
+                        #     "full_scale_power_dbm": qubit_full_scale_power_dbm_q7,
+                        #     "band": qubit_band_q7,
+                        #     "delay": qubit_delay_q7,
+                        #     "upconverters": {
+                        #         1: {"frequency": qubit_LO_q7}, 
+                        #         2: {"frequency": cr_drive_LO_c7t6},
+                        #     },
+                        # },  # q7 XY
                     },
                     "analog_inputs": {
                         1: {
+                            "sampling_rate": 1e9,
+                            "band": resonator_band,
+                            "gain_db": 0,
+                            "downconverter_frequency": resonator_LO,
+                        },  # RL1, gain_db resolution is 1
+                        2: {
                             "sampling_rate": 1e9,
                             "band": resonator_band,
                             "gain_db": 0,
@@ -920,12 +924,12 @@ config = {
     "elements": {
         "rr1": {
             "MWInput": {
-                "port": ("con1", 1, 1),
+                "port": ("con1", 7, 8),
                 "upconverter": 1,
             },
             "intermediate_frequency": resonator_IF_q1,  # in Hz [-350e6, +350e6]
             "MWOutput": {
-                "port": ("con1", 1, 1),
+                "port": ("con1", 7, 1),
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -936,12 +940,12 @@ config = {
         },
         "rr2": {
             "MWInput": {
-                "port": ("con1", 1, 1),
+                "port": ("con1", 7, 8),
                 "upconverter": 1,
             },
             "intermediate_frequency": resonator_IF_q2,  # in Hz [-350e6, +350e6]
             "MWOutput": {
-                "port": ("con1", 1, 1),
+                "port": ("con1", 7, 1),
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -952,12 +956,12 @@ config = {
         },
          "rr3": {
             "MWInput": {
-                "port": ("con1", 1, 1),
+                "port": ("con1", 7, 8),
                 "upconverter": 1,
             },
             "intermediate_frequency": resonator_IF_q3,  # in Hz [-350e6, +350e6]
             "MWOutput": {
-                "port": ("con1", 1, 1),
+                "port": ("con1", 7, 1),
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -968,12 +972,12 @@ config = {
         },
          "rr4": {
             "MWInput": {
-                "port": ("con1", 1, 1),
+                "port": ("con1", 7, 8),
                 "upconverter": 1,
             },
             "intermediate_frequency": resonator_IF_q4,  # in Hz [-350e6, +350e6]
             "MWOutput": {
-                "port": ("con1", 1, 1),
+                "port": ("con1", 7, 1),
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -984,12 +988,12 @@ config = {
         },
          "rr5": {
             "MWInput": {
-                "port": ("con1", 1, 1),
+                "port": ("con1", 7, 8),
                 "upconverter": 1,
             },
             "intermediate_frequency": resonator_IF_q5,  # in Hz [-350e6, +350e6]
             "MWOutput": {
-                "port": ("con1", 1, 1),
+                "port": ("con1", 7, 1),
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -1000,12 +1004,12 @@ config = {
         },
          "rr6": {
             "MWInput": {
-                "port": ("con1", 1, 1),
+                "port": ("con1", 7, 8),
                 "upconverter": 1,
             },
             "intermediate_frequency": resonator_IF_q6,  # in Hz [-350e6, +350e6]
             "MWOutput": {
-                "port": ("con1", 1, 1),
+                "port": ("con1", 7, 1),
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -1016,12 +1020,12 @@ config = {
         },
          "rr7": {
             "MWInput": {
-                "port": ("con1", 1, 1),
+                "port": ("con1", 7, 8),
                 "upconverter": 1,
             },
             "intermediate_frequency": resonator_IF_q7,  # in Hz [-350e6, +350e6]
             "MWOutput": {
-                "port": ("con1", 1, 1),
+                "port": ("con1", 7, 1),
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
@@ -1033,7 +1037,7 @@ config = {
         #----------------------
         "q1_xy": {
             "MWInput": {
-                "port": ("con1", 1, 2),
+                "port": ("con1", 7, 2),
                 "upconverter": 1,
             },
             "intermediate_frequency": qubit_IF_q1,  # in Hz
@@ -1049,7 +1053,7 @@ config = {
         },
         "q2_xy": {
             "MWInput": {
-                "port": ("con1", 1, 3),
+                "port": ("con1", 7, 3),
                 "upconverter": 1,
             },
             "intermediate_frequency": qubit_IF_q2,  # in Hz
@@ -1065,7 +1069,7 @@ config = {
         },
         "q3_xy": {
             "MWInput": {
-                "port": ("con1", 1, 4),
+                "port": ("con1", 7, 4),
                 "upconverter": 1,
             },
             "intermediate_frequency": qubit_IF_q3,  # in Hz
@@ -1081,7 +1085,7 @@ config = {
         },
         "q4_xy": {
             "MWInput": {
-                "port": ("con1", 1, 5),
+                "port": ("con1", 7, 5),
                 "upconverter": 1,
             },
             "intermediate_frequency": qubit_IF_q4,  # in Hz
@@ -1097,7 +1101,7 @@ config = {
         },
         "q5_xy": {
             "MWInput": {
-                "port": ("con1", 1, 5),
+                "port": ("con1", 7, 5),
                 "upconverter": 1,
             },
             "intermediate_frequency": qubit_IF_q5,  # in Hz
@@ -1113,7 +1117,7 @@ config = {
         },
         "q6_xy": {
             "MWInput": {
-                "port": ("con1", 1, 7),
+                "port": ("con1", 7, 7),
                 "upconverter": 1,
             },
             "intermediate_frequency": qubit_IF_q6,  # in Hz
@@ -1127,26 +1131,26 @@ config = {
                 "-y90": "-y90_pulse_q6",
             },
         },
-        "q7_xy": {
-            "MWInput": {
-                "port": ("con1", 1, 8),
-                "upconverter": 1,
-            },
-            "intermediate_frequency": qubit_IF_q7,  # in Hz
-            "operations": {
-                "cw": "const_pulse",
-                "x180": "x180_pulse_q7",
-                "x90": "x90_pulse_q7",
-                "-x90": "-x90_pulse_q7",
-                "y90": "y90_pulse_q7",
-                "y180": "y180_pulse_q7",
-                "-y90": "-y90_pulse_q7",
-            },
-        },
+        # "q7_xy": {
+        #     "MWInput": {
+        #         "port": ("con1", 7, 8),
+        #         "upconverter": 1,
+        #     },
+        #     "intermediate_frequency": qubit_IF_q7,  # in Hz
+        #     "operations": {
+        #         "cw": "const_pulse",
+        #         "x180": "x180_pulse_q7",
+        #         "x90": "x90_pulse_q7",
+        #         "-x90": "-x90_pulse_q7",
+        #         "y90": "y90_pulse_q7",
+        #         "y180": "y180_pulse_q7",
+        #         "-y90": "-y90_pulse_q7",
+        #     },
+        # },
         #----------------------
         "cr_drive_c1t2": {
             "MWInput": {
-                "port": ("con1", 1, 2),
+                "port": ("con1", 7, 2),
                 "upconverter": 2,
             },
             "intermediate_frequency": cr_drive_IF_c1t2,  # in Hz
@@ -1158,7 +1162,7 @@ config = {
         },
         "cr_drive_c2t3": {
             "MWInput": {
-                "port": ("con1", 1, 3),
+                "port": ("con1", 7, 3),
                 "upconverter": 2,
             },
             "intermediate_frequency": cr_drive_IF_c2t3,  # in Hz
@@ -1170,7 +1174,7 @@ config = {
         },
         "cr_drive_c2t1": {
             "MWInput": {
-                "port": ("con1", 1, 3),
+                "port": ("con1", 7, 3),
                 "upconverter": 2, #3
             },
             "intermediate_frequency": cr_drive_IF_c2t1,  # in Hz
@@ -1182,7 +1186,7 @@ config = {
         },
         "cr_drive_c3t4": {
             "MWInput": {
-                "port": ("con1", 1, 4),
+                "port": ("con1", 7, 4),
                 "upconverter": 2,
             },
             "intermediate_frequency": cr_drive_IF_c3t4,  # in Hz
@@ -1194,7 +1198,7 @@ config = {
         },
         "cr_drive_c3t2": {
             "MWInput": {
-                "port": ("con1", 1, 4),
+                "port": ("con1", 7, 4),
                 "upconverter": 2, #3
             },
             "intermediate_frequency": cr_drive_IF_c3t2,  # in Hz
@@ -1206,7 +1210,7 @@ config = {
         },
         "cr_drive_c4t5": {
             "MWInput": {
-                "port": ("con1", 1, 5),
+                "port": ("con1", 7, 5),
                 "upconverter": 2,
             },
             "intermediate_frequency": cr_drive_IF_c4t5,  # in Hz
@@ -1218,7 +1222,7 @@ config = {
         },
         "cr_drive_c4t3": {
             "MWInput": {
-                "port": ("con1", 1, 5),
+                "port": ("con1", 7, 5),
                 "upconverter": 2, #3
             },
             "intermediate_frequency": cr_drive_IF_c4t3,  # in Hz
@@ -1230,7 +1234,7 @@ config = {
         },
         "cr_drive_c5t6": {
             "MWInput": {
-                "port": ("con1", 1, 6),
+                "port": ("con1", 7, 6),
                 "upconverter": 2,
             },
             "intermediate_frequency": cr_drive_IF_c5t6,  # in Hz
@@ -1242,7 +1246,7 @@ config = {
         },
         "cr_drive_c5t4": {
             "MWInput": {
-                "port": ("con1", 1, 6),
+                "port": ("con1", 7, 6),
                 "upconverter": 2, #3
             },
             "intermediate_frequency": cr_drive_IF_c5t4,  # in Hz
@@ -1254,7 +1258,7 @@ config = {
         },
         "cr_drive_c6t7": {
             "MWInput": {
-                "port": ("con1", 1, 7),
+                "port": ("con1", 7, 7),
                 "upconverter": 2,
             },
             "intermediate_frequency": cr_drive_IF_c6t7,  # in Hz
@@ -1266,7 +1270,7 @@ config = {
         },
         "cr_drive_c6t5": {
             "MWInput": {
-                "port": ("con1", 1, 7),
+                "port": ("con1", 7, 7),
                 "upconverter": 2, #3
             },
             "intermediate_frequency": cr_drive_IF_c6t5,  # in Hz
@@ -1276,23 +1280,23 @@ config = {
                 "square_negative": "square_negative_pulse_cr_drive_c6t5",
             },
         },
-        "cr_drive_c7t6": {
-            "MWInput": {
-                "port": ("con1", 1, 8),
-                "upconverter": 2,
-            },
-            "intermediate_frequency": cr_drive_IF_c7t6,  # in Hz
-            "operations": {
-                "cw": "const_pulse",
-                "square_positive": "square_positive_pulse_cr_drive_c7t6",
-                "square_negative": "square_negative_pulse_cr_drive_c7t6",
-            },
-        },
+        # "cr_drive_c7t6": {
+        #     "MWInput": {
+        #         "port": ("con1", 7, 8),
+        #         "upconverter": 2,
+        #     },
+        #     "intermediate_frequency": cr_drive_IF_c7t6,  # in Hz
+        #     "operations": {
+        #         "cw": "const_pulse",
+        #         "square_positive": "square_positive_pulse_cr_drive_c7t6",
+        #         "square_negative": "square_negative_pulse_cr_drive_c7t6",
+        #     },
+        # },
         #----------------------
         "cr_cancel_c1t2": {
             "MWInput": {
-                "port": ("con1", 1, 2),
-                "upconverter": 2,
+                "port": ("con1", 7, 3),
+                "upconverter": 1,
             },
             "intermediate_frequency": cr_cancel_IF_c1t2,  # in Hz
             "operations": {
@@ -1303,8 +1307,8 @@ config = {
         },
         "cr_cancel_c2t3": {
             "MWInput": {
-                "port": ("con1", 1, 3),
-                "upconverter": 2,
+                "port": ("con1", 7, 4),
+                "upconverter": 1,
             },
             "intermediate_frequency": cr_cancel_IF_c2t3,  # in Hz
             "operations": {
@@ -1315,8 +1319,8 @@ config = {
         },
         "cr_cancel_c2t1": {
             "MWInput": {
-                "port": ("con1", 1, 3),
-                "upconverter": 2, #3
+                "port": ("con1", 7, 2),
+                "upconverter": 1, #3
             },
             "intermediate_frequency": cr_cancel_IF_c2t1,  # in Hz
             "operations": {
@@ -1327,8 +1331,8 @@ config = {
         },
         "cr_cancel_c3t4": {
             "MWInput": {
-                "port": ("con1", 1, 4),
-                "upconverter": 2,
+                "port": ("con1", 7, 5),
+                "upconverter": 1,
             },
             "intermediate_frequency": cr_cancel_IF_c3t4,  # in Hz
             "operations": {
@@ -1339,8 +1343,8 @@ config = {
         },
         "cr_cancel_c3t2": {
             "MWInput": {
-                "port": ("con1", 1, 4),
-                "upconverter": 2, #3
+                "port": ("con1", 7, 3),
+                "upconverter": 1, #3
             },
             "intermediate_frequency": cr_cancel_IF_c3t2,  # in Hz
             "operations": {
@@ -1351,8 +1355,8 @@ config = {
         },
         "cr_cancel_c4t5": {
             "MWInput": {
-                "port": ("con1", 1, 5),
-                "upconverter": 2,
+                "port": ("con1", 7, 6),
+                "upconverter": 1,
             },
             "intermediate_frequency": cr_cancel_IF_c4t5,  # in Hz
             "operations": {
@@ -1363,8 +1367,8 @@ config = {
         },
         "cr_cancel_c4t3": {
             "MWInput": {
-                "port": ("con1", 1, 5),
-                "upconverter": 2, #3,
+                "port": ("con1", 7, 4),
+                "upconverter": 1, #3,
             },
             "intermediate_frequency": cr_cancel_IF_c4t3,  # in Hz
             "operations": {
@@ -1375,8 +1379,8 @@ config = {
         },
         "cr_cancel_c5t6": {
             "MWInput": {
-                "port": ("con1", 1, 6),
-                "upconverter": 2,
+                "port": ("con1", 7, 7),
+                "upconverter": 1,
             },
             "intermediate_frequency": cr_cancel_IF_c5t6,  # in Hz
             "operations": {
@@ -1387,8 +1391,8 @@ config = {
         },
         "cr_cancel_c5t4": {
             "MWInput": {
-                "port": ("con1", 1, 6),
-                "upconverter": 2, #3
+                "port": ("con1", 7, 5),
+                "upconverter": 1, #3
             },
             "intermediate_frequency": cr_cancel_IF_c5t4,  # in Hz
             "operations": {
@@ -1397,22 +1401,22 @@ config = {
                 "square_negative": "square_negative_pulse_cr_cancel_c5t4",
             },
         },
-        "cr_cancel_c6t7": {
-            "MWInput": {
-                "port": ("con1", 1, 7),
-                "upconverter": 2,
-            },
-            "intermediate_frequency": cr_cancel_IF_c6t7,  # in Hz
-            "operations": {
-                "cw": "const_pulse",
-                "square_positive": "square_positive_pulse_cr_cancel_c6t7",
-                "square_negative": "square_negative_pulse_cr_cancel_c6t7",
-            },
-        },
+        # "cr_cancel_c6t7": {
+        #     "MWInput": {
+        #         "port": ("con1", 7, 8),
+        #         "upconverter": 1,
+        #     },
+        #     "intermediate_frequency": cr_cancel_IF_c6t7,  # in Hz
+        #     "operations": {
+        #         "cw": "const_pulse",
+        #         "square_positive": "square_positive_pulse_cr_cancel_c6t7",
+        #         "square_negative": "square_negative_pulse_cr_cancel_c6t7",
+        #     },
+        # },
         "cr_cancel_c6t5": {
             "MWInput": {
-                "port": ("con1", 1, 7),
-                "upconverter": 2, #3
+                "port": ("con1", 7, 6),
+                "upconverter": 1, #3
             },
             "intermediate_frequency": cr_cancel_IF_c6t5,  # in Hz
             "operations": {
@@ -1421,18 +1425,18 @@ config = {
                 "square_negative": "square_negative_pulse_cr_cancel_c6t5",
             },
         },
-        "cr_cancel_c7t6": {
-            "MWInput": {
-                "port": ("con1", 1, 8),
-                "upconverter": 2,
-            },
-            "intermediate_frequency": cr_cancel_IF_c7t6,  # in Hz
-            "operations": {
-                "cw": "const_pulse",
-                "square_positive": "square_positive_pulse_cr_cancel_c7t6",
-                "square_negative": "square_negative_pulse_cr_cancel_c7t6",
-            },
-        },      
+        # "cr_cancel_c7t6": {
+        #     "MWInput": {
+        #         "port": ("con1", 7, 8),
+        #         "upconverter": 1,
+        #     },
+        #     "intermediate_frequency": cr_cancel_IF_c7t6,  # in Hz
+        #     "operations": {
+        #         "cw": "const_pulse",
+        #         "square_positive": "square_positive_pulse_cr_cancel_c7t6",
+        #         "square_negative": "square_negative_pulse_cr_cancel_c7t6",
+        #     },
+        # },      
     },
 
     "pulses": {

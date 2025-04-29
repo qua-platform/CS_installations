@@ -1,3 +1,4 @@
+# %%
 """
         READOUT OPTIMISATION: FREQUENCY & AMP
 This sequence involves measuring the state of the resonator in two scenarios: first, after thermalization
@@ -26,6 +27,10 @@ from macros import multiplexed_readout, qua_declaration
 import math
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #

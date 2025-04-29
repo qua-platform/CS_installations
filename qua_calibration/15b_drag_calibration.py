@@ -1,3 +1,4 @@
+# %%
 """
         DRAG PULSE CALIBRATION (GOOGLE METHOD)
 The sequence consists in applying an increasing number of x180 and -x180 pulses successively while varying the DRAG
@@ -25,6 +26,10 @@ from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.plot import interrupt_on_close
 from macros import qua_declaration, multiplexed_readout, active_reset
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #

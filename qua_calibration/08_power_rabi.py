@@ -1,3 +1,4 @@
+# %%
 """
         POWER RABI WITH ERROR AMPLIFICATION
 This sequence involves repeatedly executing the qubit pulse (such as x180, square_pi, or similar) 'N' times and
@@ -25,6 +26,10 @@ from qualang_tools.results import fetching_tool, progress_counter
 from qualang_tools.plot import interrupt_on_close
 from macros import qua_declaration, multiplexed_readout
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
@@ -34,10 +39,10 @@ pi_amp_Q1 = pi_amp_q1
 pi_amp_Q2 = pi_amp_q2
 ##################
 # Parameters Definition
-n_avg = 10  # The number of averages
-scaling_min = 0.0
-scaling_max = 1.5
-scaling_step = 0.005
+n_avg = 50  # The number of averages
+scaling_min = 0.8
+scaling_max = 1.2
+scaling_step = 0.001
 scalings = np.arange(scaling_min, scaling_max, scaling_step)
 # repeated rabi
 max_nb_of_pulses = 80  # Maximum number of qubit pulses

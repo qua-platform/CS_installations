@@ -1,3 +1,4 @@
+# %%
 """
                                  CR_calib_cancel_drive_phase
 
@@ -58,6 +59,11 @@ from cr_hamiltonian_tomography import (
     plot_interaction_coeffs,
     PAULI_2Q,
 )
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
+
 
 
 ##################
@@ -68,13 +74,13 @@ qc = 1  # index of control qubit
 qt = 2  # index of target qubit
 
 # Parameters Definition
-n_avg = 10
-cr_type = "direct+cancel+echo"  # "direct" "direct+cancel", "direct+cancel+echo"
-cr_drive_amp = 1.0  # ratio
-cr_drive_phase = 0.0  # in units of 2pi
-cr_cancel_amp = 0.5  # ratio
+n_avg = 4
+cr_type = "direct+cancel"  # "direct" "direct+cancel", "direct+cancel+echo"
+cr_drive_amp = 0.0  # ratio
+cr_drive_phase = 0.4  # in units of 2pi
+cr_cancel_amp = 0.4  # ratio
 cr_cancel_phase = 0.0  # in units of 2pi
-ts_cycles = np.arange(4, 100, 1)  # in clock cylcle = 4ns
+ts_cycles = np.arange(4, 200, 1)  # in clock cylcle = 4ns
 phases = np.arange(0.0, 1.01, 0.05)  # ratio relative to 2 * pi
 
 # Readout Parameters
@@ -136,8 +142,8 @@ with program() as PROGRAM:
                             frame_rotation_2pi(ph, cr_cancel)
                             # direct + cancel
                             align(qc_xy, cr_drive, cr_cancel)
-                            play("square_positive", cr_drive, duration=t)
-                            play("square_positive", cr_cancel, duration=t)
+                            play("square_positive" * amp(cr_drive_amp), cr_drive, duration=t)
+                            play("square_positive" * amp(cr_cancel_amp), cr_cancel, duration=t)
                             # align for the next step and clear the phase shift
                             align(qt_xy, cr_drive, cr_cancel)
                             reset_frame(cr_drive)
@@ -253,12 +259,14 @@ else:
             bloch_c, bloch_t = -2 * state_c + 1, -2 * state_t + 1  # convert |0> -> 1, |1> -> -1
             # Progress bar
             progress_counter(iterations, n_avg, start_time=results.start_time)
+
             # plotting data
             fig = plot_cr_duration_vs_scan_param(bloch_c, bloch_t, ts_ns, phases, "cr cancel phase [2pi]", axss)
             plt.tight_layout()
             plt.pause(1)
 
         # Save data
+        fig = plt.gcf()
         save_data_dict.update({"fig_live": fig})
         for fname, r in zip(fetch_names[1:], res[1:]):
             save_data_dict[fname] = r

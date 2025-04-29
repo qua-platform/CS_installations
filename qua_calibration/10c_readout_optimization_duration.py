@@ -1,3 +1,5 @@
+
+# %%
 """
 READOUT OPTIMISATION: DURATION
 """
@@ -10,6 +12,10 @@ from qualang_tools.results import fetching_tool, progress_counter
 import math
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #

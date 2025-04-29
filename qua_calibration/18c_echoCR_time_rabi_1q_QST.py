@@ -1,3 +1,4 @@
+# %%
 """
                                     Cross-Resonance Time Rabi
 The sequence consists two consecutive pulse sequences with the qubit's thermal decay in between.
@@ -27,6 +28,10 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import progress_counter
 from macros import qua_declaration, multiplexed_readout
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 
 ##################
@@ -38,11 +43,11 @@ qt = 2  # index of target qubit
 
 # Parameters Definition
 n_avg = 100
-cr_drive_amp = 0.8  # ratio
-cr_drive_phase = 0.5  # in units of 2pi
-cr_cancel_amp = 0.8  # ratio
-cr_cancel_phase = 0.5  # in units of 2pi
-ts_cycles = np.arange(4, 400, 4)  # in clock cylcle = 4ns
+cr_drive_amp = 0.5  # ratio
+cr_drive_phase = 0.0  # in units of 2pi
+cr_cancel_amp = 0.5  # ratio
+cr_cancel_phase = 0.0  # in units of 2pi
+ts_cycles = np.arange(4, 200, 4)  # in clock cylcle = 4ns
 
 # Derived parameters
 qc_xy = f"q{qc}_xy"
@@ -97,14 +102,14 @@ with program() as PROGRAM:
 
                     # direct + cancel
                     align(qc_xy, qt_xy, cr_drive, cr_cancel)
-                    play("square_positive", cr_drive, duration=t)
+                    play("square_positive" * amp(cr_drive_amp), cr_drive, duration=t)
                     play("square_positive" * amp(cr_cancel_amp), cr_cancel, duration=t)
 
                     # pi pulse on control
                     align(qc_xy, cr_drive, cr_cancel)
                     play("x180", qc_xy)
 
-                    # echoed direct + cancel
+                    # # echoed direct + cancel
                     align(qc_xy, cr_drive, cr_cancel)
                     play("square_negative" * amp(cr_drive_amp), cr_drive, duration=t)
                     play("square_negative" * amp(cr_cancel_amp), cr_cancel, duration=t)
@@ -114,7 +119,7 @@ with program() as PROGRAM:
                     play("x180", qc_xy)
 
                     # QST on Target
-                    align(qc_xy, qt_xy)
+                    align(qc_xy, qt_xy, cr_drive, cr_cancel)
                     with switch_(c):
                         with case_(0):  # projection along X
                             play("-y90", qt_xy)
@@ -198,7 +203,7 @@ else:
             I1, Q1 = u.demod2volts(I1, readout_len), u.demod2volts(Q1, readout_len)
             I2, Q2 = u.demod2volts(I2, readout_len), u.demod2volts(Q2, readout_len)
             # Plots
-            plt.suptitle("echo CR Time Rabi")
+            plt.suptitle("echo + cancel CR Time Rabi")
             for i, (axs, bss) in enumerate(zip(axss, ["X", "Y", "Z"])):
                 for ax, q in zip(axs, ["c", "t"]):
                     I = I1 if q == "c" else I2
@@ -212,14 +217,14 @@ else:
             plt.tight_layout()
             plt.pause(1)
 
-        # Save live plot
-        save_data_dict.update({"I_data": I})
-        save_data_dict.update({"Q_data": Q})
-        save_data_dict.update({"fig_live": fig})
-
         # Save results
         script_name = Path(__file__).name
         data_handler = DataHandler(root_data_folder=save_dir)
+        save_data_dict.update({"I1_data": I1})
+        save_data_dict.update({"Q1_data": Q1})
+        save_data_dict.update({"I2_data": I2})
+        save_data_dict.update({"Q2_data": Q2})
+        save_data_dict.update({"fig_live": fig})
         data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
 
@@ -230,3 +235,5 @@ else:
         qm.close()
         print("Experiment QM is now closed")
         plt.show(block=True)
+
+# %%

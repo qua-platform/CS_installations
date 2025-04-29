@@ -1,3 +1,4 @@
+# %%
 """
         RAMSEY CHEVRON (IDLE TIME VS FREQUENCY)
 The program consists in playing a Ramsey sequence (x90 - idle_time - x90 - measurement) for different qubit intermediate
@@ -24,6 +25,10 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import progress_counter
 from macros import qua_declaration, multiplexed_readout
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
@@ -37,7 +42,7 @@ pi_amp_Q1 = pi_amp_q1
 pi_amp_Q2 = pi_amp_q2
 ##################
 # Parameters Definition
-n_avg = 10  # The number of averages
+n_avg = 50  # The number of averages
 # Qubit detuning sweep with respect to qubit_IF
 freq_span = 10e6
 freq_step = 0.2e6
@@ -190,3 +195,5 @@ else:
         qm.close()
         print("Experiment QM is now closed")
         plt.show(block=True)
+
+# %%

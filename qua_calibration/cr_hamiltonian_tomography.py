@@ -374,8 +374,8 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
                 eV0 = self._compute_Z(self.ts, *self.params_fitted["0"])
                 eV1 = self._compute_Z(self.ts, *self.params_fitted["1"])
 
-            ax.scatter(self.ts, v0, s=20, color="b", label="ctrl in |0>")
-            ax.scatter(self.ts, v1, s=20, color="r", label="ctrl in |1>")
+            ax.plot(self.ts, v0, color="b", label="ctrl in |0>")
+            ax.plot(self.ts, v1, color="r", label="ctrl in |1>")
             ax.plot(self.ts, eV0, lw=4.0, color="b", alpha=0.5)
             ax.plot(self.ts, eV1, lw=4.0, color="r", alpha=0.5)
             ax.set_ylabel(f"<{bss}(t)>", fontsize=16)

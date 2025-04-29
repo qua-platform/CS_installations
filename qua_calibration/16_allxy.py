@@ -1,3 +1,4 @@
+# %%
 """
 ALL-XY MEASUREMENT
 """
@@ -12,13 +13,17 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import progress_counter
 from macros import qua_declaration, multiplexed_readout
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
-qubit = "q1_xy"
+qubit = "q2_xy"
 ##################
 # Parameters Definition
-n_avg = 10
+n_avg = 4000
 
 
 # Data to save
@@ -148,11 +153,11 @@ else:
 
             plt.suptitle("AllXY")
 
-            # if qubit == "q1_xy":
-            #     ind = 0
-            # else:
-            #     ind = 1
-            ind = 0
+            if qubit == "q1_xy":
+                ind = 0
+            else:
+                ind = 1
+            # ind = 0
 
             I = res[2 * ind + 1]
             Q = res[2 * ind + 2]
@@ -194,3 +199,5 @@ else:
         qm.close()
         print("Experiment QM is now closed")
         plt.show(block=True)
+
+# %%

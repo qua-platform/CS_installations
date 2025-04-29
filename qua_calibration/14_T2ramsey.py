@@ -1,3 +1,5 @@
+
+#%%
 """
         RAMSEY CHEVRON (IDLE TIME VS FREQUENCY)
 The program consists in playing a Ramsey sequence (x90 - idle_time - x90 - measurement) for different qubit intermediate
@@ -25,6 +27,10 @@ from qualang_tools.results import progress_counter
 from macros import qua_declaration, multiplexed_readout, active_reset
 import math
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
@@ -34,10 +40,10 @@ Qubit1 = "1"
 Qubit2 = "2"
 ##################
 # Parameters Definition
-n_avg = 8 * 60  # The number of averages
-t_max = 8_000
+n_avg = 500  # The number of averages
+t_max = 5_000
 t_min = 4
-t_step = 120
+t_step = 16
 t_delays = np.arange(t_min, t_max, t_step)  # Idle time sweep in clock cycles (Needs to be a list of integers)
 freq_detuning = 0.5 * u.MHz
 delta_phase = 4e-09 * freq_detuning * t_step
@@ -190,6 +196,7 @@ else:
             plt.xlabel("Idle times [ns]")
             plt.ylabel("I quadrature [V]")
             plt.tight_layout()
+            fig_analysis = plt.gcf()
         except (Exception,):
             pass
 
@@ -200,7 +207,7 @@ else:
         save_data_dict.update({"Q1_data": Q1})
         save_data_dict.update({"I2_data": I2})
         save_data_dict.update({"Q2_data": Q2})
-        save_data_dict.update({"fig_live": fig})
+        save_data_dict.update({"fig_live": fig, "fig_analysis": fig_analysis})
         data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
 

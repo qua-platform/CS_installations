@@ -1,3 +1,4 @@
+# %%
 """
         RESONATOR SPECTROSCOPY MULTIPLEXED
 This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to extract the
@@ -25,6 +26,10 @@ import matplotlib.pyplot as plt
 import math
 from qualang_tools.results.data_handler import DataHandler
 from scipy import signal
+import matplotlib
+import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
@@ -228,3 +233,5 @@ else:
         qm.close()
         print("Experiment QM is now closed")
         plt.show(block=True)
+
+# %%

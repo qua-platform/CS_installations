@@ -1,3 +1,4 @@
+# %%
 """
 SINGLE QUBIT RANDOMIZED BENCHMARKING
 """
@@ -17,8 +18,10 @@ from qualang_tools.results.data_handler import DataHandler
 from scipy.optimize import curve_fit
 import matplotlib
 import time
+import matplotlib
+import matplotlib.pyplot as plt
 
-matplotlib.use("TkAgg")
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
@@ -28,7 +31,7 @@ num_of_sequences = 50  # Number of random sequences
 n_avg = 10  # Number of averaging loops for each random sequence
 max_circuit_depth = 200  # Maximum circuit depth
 delta_clifford = 20  #  Play each sequence with a depth step equals to 'delta_clifford - Must be > 1
-seed = 345324  # Pseudo-random number generator seed
+seed = 123  # Pseudo-random number generator seed
 # List of recovery gates from the lookup table
 inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
 
