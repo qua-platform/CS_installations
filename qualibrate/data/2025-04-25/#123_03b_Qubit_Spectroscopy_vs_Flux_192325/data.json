@@ -1,0 +1,36 @@
+{
+    "ds": "./ds.h5",
+    "fit_results": {
+        "q1": {
+            "flux_shift": -0.004354216867469869,
+            "drive_freq": 2501226.8303985177,
+            "quad_term": -18138111888.11192
+        },
+        "q2": {
+            "flux_shift": 0.003360749330954504,
+            "drive_freq": -1847704.4747550958,
+            "quad_term": 81657925407.92538
+        }
+    },
+    "figure": "./figure.png",
+    "initial_parameters": {
+        "qubits": null,
+        "num_averages": 100,
+        "operation": "saturation",
+        "operation_amplitude_factor": 0.1,
+        "operation_len_in_ns": null,
+        "frequency_span_in_mhz": 40,
+        "frequency_step_in_mhz": 0.25,
+        "min_flux_offset_in_v": -0.01,
+        "max_flux_offset_in_v": 0.01,
+        "num_flux_points": 11,
+        "reset_type": "heralding",
+        "state_discrimination": true,
+        "flux_point_joint_or_independent": "joint",
+        "simulate": false,
+        "simulation_duration_ns": 2500,
+        "timeout": 100,
+        "load_data_id": null,
+        "multiplexed": true
+    }
+}

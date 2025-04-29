@@ -1,0 +1,124 @@
+{
+    "created_at": "2025-04-25T16:41:52-05:00",
+    "metadata": {
+        "description": null,
+        "run_start": "2025-04-25T16:41:40.805-05:00",
+        "run_end": "2025-04-25T16:41:52.322-05:00",
+        "name": "01b_Time_of_Flight_MW_FEM",
+        "data_path": "2025-04-25/#107_01b_Time_of_Flight_MW_FEM_164152"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": null,
+                "num_averages": 100,
+                "time_of_flight_in_ns": 32,
+                "intermediate_frequency_in_mhz": 50.0,
+                "readout_amplitude_in_dBm": -3.0,
+                "readout_length_in_ns": null,
+                "simulate": false,
+                "simulation_duration_ns": 2500,
+                "timeout": 100
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Qubits"
+                    },
+                    "num_averages": {
+                        "default": 100,
+                        "title": "Num Averages",
+                        "type": "integer"
+                    },
+                    "time_of_flight_in_ns": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": 32,
+                        "title": "Time Of Flight In Ns"
+                    },
+                    "intermediate_frequency_in_mhz": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": 50,
+                        "title": "Intermediate Frequency In Mhz"
+                    },
+                    "readout_amplitude_in_dBm": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": -3,
+                        "title": "Readout Amplitude In Dbm"
+                    },
+                    "readout_length_in_ns": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Readout Length In Ns"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 2500,
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "timeout": {
+                        "default": 100,
+                        "title": "Timeout",
+                        "type": "integer"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "q1.resonator": "successful",
+            "q2.resonator": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 107,
+    "parents": [
+        106
+    ]
+}

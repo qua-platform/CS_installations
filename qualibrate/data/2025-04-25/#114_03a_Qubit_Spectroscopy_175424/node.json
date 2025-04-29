@@ -1,0 +1,201 @@
+{
+    "created_at": "2025-04-25T17:54:24-05:00",
+    "metadata": {
+        "description": null,
+        "run_start": "2025-04-25T17:54:11.023-05:00",
+        "run_end": "2025-04-25T17:54:24.157-05:00",
+        "name": "03a_Qubit_Spectroscopy",
+        "data_path": "2025-04-25/#114_03a_Qubit_Spectroscopy_175424"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": null,
+                "num_averages": 100,
+                "operation": "saturation",
+                "operation_amplitude_factor": 0.1,
+                "operation_len_in_ns": null,
+                "frequency_span_in_mhz": 100.0,
+                "frequency_step_in_mhz": 0.25,
+                "reset_type": "thermal",
+                "state_discrimination": false,
+                "flux_point_joint_or_independent": "joint",
+                "target_peak_width": 2000000.0,
+                "arbitrary_flux_bias": null,
+                "arbitrary_qubit_frequency_in_ghz": null,
+                "simulate": false,
+                "simulation_duration_ns": 2500,
+                "timeout": 100,
+                "load_data_id": null,
+                "multiplexed": true
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Qubits"
+                    },
+                    "num_averages": {
+                        "default": 100,
+                        "title": "Num Averages",
+                        "type": "integer"
+                    },
+                    "operation": {
+                        "default": "saturation",
+                        "title": "Operation",
+                        "type": "string"
+                    },
+                    "operation_amplitude_factor": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": 0.1,
+                        "title": "Operation Amplitude Factor"
+                    },
+                    "operation_len_in_ns": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Operation Len In Ns"
+                    },
+                    "frequency_span_in_mhz": {
+                        "default": 100,
+                        "title": "Frequency Span In Mhz",
+                        "type": "number"
+                    },
+                    "frequency_step_in_mhz": {
+                        "default": 0.25,
+                        "title": "Frequency Step In Mhz",
+                        "type": "number"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "enum": [
+                            "thermal",
+                            "heralding",
+                            "active"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "state_discrimination": {
+                        "default": false,
+                        "title": "State Discrimination",
+                        "type": "boolean"
+                    },
+                    "flux_point_joint_or_independent": {
+                        "default": "joint",
+                        "enum": [
+                            "joint",
+                            "independent"
+                        ],
+                        "title": "Flux Point Joint Or Independent",
+                        "type": "string"
+                    },
+                    "target_peak_width": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": 2000000.0,
+                        "title": "Target Peak Width"
+                    },
+                    "arbitrary_flux_bias": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Arbitrary Flux Bias"
+                    },
+                    "arbitrary_qubit_frequency_in_ghz": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Arbitrary Qubit Frequency In Ghz"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 2500,
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "timeout": {
+                        "default": 100,
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Load Data Id"
+                    },
+                    "multiplexed": {
+                        "default": true,
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "q1": "successful",
+            "q2": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 114,
+    "parents": [
+        113
+    ]
+}

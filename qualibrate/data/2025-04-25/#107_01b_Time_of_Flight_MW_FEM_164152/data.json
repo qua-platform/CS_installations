@@ -1,0 +1,26 @@
+{
+    "ds": "./ds.h5",
+    "fit_results": {
+        "q1": {
+            "delay_to_add": 288.0,
+            "fit_successful": true
+        },
+        "q2": {
+            "delay_to_add": 288.0,
+            "fit_successful": true
+        }
+    },
+    "adc_single_run": "./adc_single_run.png",
+    "adc_averaged": "./adc_averaged.png",
+    "initial_parameters": {
+        "qubits": null,
+        "num_averages": 100,
+        "time_of_flight_in_ns": 32,
+        "intermediate_frequency_in_mhz": 50.0,
+        "readout_amplitude_in_dBm": -3.0,
+        "readout_length_in_ns": null,
+        "simulate": false,
+        "simulation_duration_ns": 2500,
+        "timeout": 100
+    }
+}

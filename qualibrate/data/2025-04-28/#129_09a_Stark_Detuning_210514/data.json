@@ -1,0 +1,28 @@
+{
+    "ds": "./ds.h5",
+    "fit_results": {
+        "q1": {
+            "detuning": 3200000.0
+        },
+        "q2": {
+            "detuning": 350000.0
+        }
+    },
+    "figure": "./figure.png",
+    "initial_parameters": {
+        "qubits": null,
+        "num_averages": 20,
+        "operation": "x180_Cosine",
+        "frequency_span_in_mhz": 10,
+        "frequency_step_in_mhz": 0.05,
+        "max_number_pulses_per_sweep": 20,
+        "flux_point_joint_or_independent": "joint",
+        "reset_type": "heralding",
+        "use_state_discrimination": true,
+        "simulate": false,
+        "simulation_duration_ns": 2500,
+        "timeout": 100,
+        "load_data_id": null,
+        "multiplexed": true
+    }
+}

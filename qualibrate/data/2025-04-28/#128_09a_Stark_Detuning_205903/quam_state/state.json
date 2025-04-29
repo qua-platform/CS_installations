@@ -144,9 +144,8 @@
                         "digital_marker": "ON",
                         "axis_angle": 0,
                         "amplitude": 0.19709725917699095,
-                        "alpha": 0.0,
+                        "alpha": 0.9999999999999991,
                         "anharmonicity": "#/rf_qubits/q1/anharmonicity",
-                        "detuning": 3200000.0,
                         "__class__": "quam.components.pulses.DragCosinePulse_I"
                     },
                     "x90_Cosine": {
@@ -156,7 +155,7 @@
                         "amplitude": 0.09854862958849547,
                         "alpha": 0.0,
                         "anharmonicity": "#/rf_qubits/q1/anharmonicity",
-                        "detuning": 0,
+                        "detuning": -3700000.0,
                         "__class__": "quam.components.pulses.DragCosinePulse_I"
                     },
                     "-x90_Cosine": {
@@ -173,7 +172,7 @@
                         "digital_marker": "ON",
                         "axis_angle": 0,
                         "amplitude": 0.2,
-                        "alpha": 0.0,
+                        "alpha": 1.0,
                         "anharmonicity": "#/rf_qubits/q1/anharmonicity",
                         "__class__": "quam.components.pulses.DragCosinePulse_I"
                     },
@@ -219,7 +218,6 @@
                         "amplitude": 0.2,
                         "alpha": 0.9999999999999991,
                         "anharmonicity": "#/rf_qubits/q1/anharmonicity",
-                        "detuning": 3200000.0,
                         "__class__": "quam.components.pulses.DragCosinePulse_Q"
                     },
                     "x90_Cosine": {
@@ -341,7 +339,6 @@
                         "amplitude": 0.040806483346454085,
                         "alpha": 0.7599999999999989,
                         "anharmonicity": "#/rf_qubits/q2/anharmonicity",
-                        "detuning": 350000.0,
                         "__class__": "quam.components.pulses.DragCosinePulse_I"
                     },
                     "x90_Cosine": {
@@ -414,7 +411,6 @@
                         "amplitude": 0.2,
                         "alpha": 0.7599999999999989,
                         "anharmonicity": "#/rf_qubits/q2/anharmonicity",
-                        "detuning": 350000.0,
                         "__class__": "quam.components.pulses.DragCosinePulse_Q"
                     },
                     "x90_Cosine": {

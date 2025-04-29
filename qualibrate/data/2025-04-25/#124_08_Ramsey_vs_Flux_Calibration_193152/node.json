@@ -1,0 +1,160 @@
+{
+    "created_at": "2025-04-25T19:31:52-05:00",
+    "metadata": {
+        "description": null,
+        "run_start": "2025-04-25T19:31:07.063-05:00",
+        "run_end": "2025-04-25T19:31:52.169-05:00",
+        "name": "08_Ramsey_vs_Flux_Calibration",
+        "data_path": "2025-04-25/#124_08_Ramsey_vs_Flux_Calibration_193152"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": null,
+                "num_averages": 100,
+                "frequency_detuning_in_mhz": 4.0,
+                "min_wait_time_in_ns": 16,
+                "max_wait_time_in_ns": 2000,
+                "wait_time_step_in_ns": 20,
+                "flux_span": 0.02,
+                "flux_step": 0.001,
+                "reset_type": "heralding",
+                "state_discrimination": true,
+                "flux_point_joint_or_independent": "joint",
+                "simulate": false,
+                "simulation_duration_ns": 2500,
+                "timeout": 100,
+                "load_data_id": null,
+                "multiplexed": false,
+                "strict_timing": false
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Qubits"
+                    },
+                    "num_averages": {
+                        "default": 100,
+                        "title": "Num Averages",
+                        "type": "integer"
+                    },
+                    "frequency_detuning_in_mhz": {
+                        "default": 4.0,
+                        "title": "Frequency Detuning In Mhz",
+                        "type": "number"
+                    },
+                    "min_wait_time_in_ns": {
+                        "default": 16,
+                        "title": "Min Wait Time In Ns",
+                        "type": "integer"
+                    },
+                    "max_wait_time_in_ns": {
+                        "default": 2000,
+                        "title": "Max Wait Time In Ns",
+                        "type": "integer"
+                    },
+                    "wait_time_step_in_ns": {
+                        "default": 20,
+                        "title": "Wait Time Step In Ns",
+                        "type": "integer"
+                    },
+                    "flux_span": {
+                        "default": 0.02,
+                        "title": "Flux Span",
+                        "type": "number"
+                    },
+                    "flux_step": {
+                        "default": 0.001,
+                        "title": "Flux Step",
+                        "type": "number"
+                    },
+                    "reset_type": {
+                        "default": "heralding",
+                        "enum": [
+                            "thermal",
+                            "heralding",
+                            "active"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "state_discrimination": {
+                        "default": true,
+                        "title": "State Discrimination",
+                        "type": "boolean"
+                    },
+                    "flux_point_joint_or_independent": {
+                        "default": "joint",
+                        "enum": [
+                            "joint",
+                            "independent"
+                        ],
+                        "title": "Flux Point Joint Or Independent",
+                        "type": "string"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 2500,
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "timeout": {
+                        "default": 100,
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Load Data Id"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    },
+                    "strict_timing": {
+                        "default": false,
+                        "title": "Strict Timing",
+                        "type": "boolean"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "q1": "successful",
+            "q2": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 124,
+    "parents": [
+        123
+    ]
+}
