@@ -155,6 +155,8 @@ with program() as CZ_amp_cal:
 
             play("x180"*amp(a), c12.xy.name)
 
+            align()
+
             play("x90_Cosine", q1.I.name)
             play("x90_Cosine", q1.I.name)
             play("x90_Cosine", q2.I.name)
@@ -165,13 +167,12 @@ with program() as CZ_amp_cal:
             q1.resonator.measure("readout", qua_vars=(I[0], Q[0]))
             q2.resonator.measure("readout", qua_vars=(I[1], Q[1]))
 
-
             if reset_type == "heralding":
                 assign(state[0], Cast.to_int(I[0] > q1.resonator.operations["readout"].threshold))
                 assign(state[1], Cast.to_int(I[1] > q1.resonator.operations["readout"].threshold))
                 assign(final_state[0], init_state[0] ^ state[0])
                 assign(final_state[1], init_state[1] ^ state[1])
-                with if_(final_state[0]+final_state[1]>0):
+                with if_(final_state[0] + final_state[1] > 0):
                     save(1, res_state)
                 with else_():
                     save(0, res_state)
