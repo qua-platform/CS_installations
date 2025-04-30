@@ -1,0 +1,139 @@
+{
+    "created_at": "2025-04-29T20:57:02-04:00",
+    "metadata": {
+        "description": null,
+        "run_start": "2025-04-29T20:56:01.952-04:00",
+        "run_end": "2025-04-29T20:57:02.763-04:00",
+        "name": "09a_Stark_Detuning",
+        "data_path": "2025-04-29/#134_09a_Stark_Detuning_205702"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": null,
+                "num_averages": 20,
+                "operation": "x90_Cosine",
+                "frequency_span_in_mhz": 10.0,
+                "frequency_step_in_mhz": 0.05,
+                "max_number_pulses_per_sweep": 20,
+                "flux_point_joint_or_independent": "joint",
+                "reset_type": "heralding",
+                "use_state_discrimination": true,
+                "simulate": true,
+                "simulation_duration_ns": 2500,
+                "timeout": 100,
+                "load_data_id": null,
+                "multiplexed": true
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Qubits"
+                    },
+                    "num_averages": {
+                        "default": 20,
+                        "title": "Num Averages",
+                        "type": "integer"
+                    },
+                    "operation": {
+                        "default": "x90_Cosine",
+                        "title": "Operation",
+                        "type": "string"
+                    },
+                    "frequency_span_in_mhz": {
+                        "default": 10,
+                        "title": "Frequency Span In Mhz",
+                        "type": "number"
+                    },
+                    "frequency_step_in_mhz": {
+                        "default": 0.05,
+                        "title": "Frequency Step In Mhz",
+                        "type": "number"
+                    },
+                    "max_number_pulses_per_sweep": {
+                        "default": 20,
+                        "title": "Max Number Pulses Per Sweep",
+                        "type": "integer"
+                    },
+                    "flux_point_joint_or_independent": {
+                        "default": "joint",
+                        "enum": [
+                            "joint",
+                            "independent"
+                        ],
+                        "title": "Flux Point Joint Or Independent",
+                        "type": "string"
+                    },
+                    "reset_type": {
+                        "default": "heralding",
+                        "enum": [
+                            "thermal",
+                            "heralding",
+                            "active"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "use_state_discrimination": {
+                        "default": true,
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "simulate": {
+                        "default": true,
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 2500,
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "timeout": {
+                        "default": 100,
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Load Data Id"
+                    },
+                    "multiplexed": {
+                        "default": true,
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {},
+        "quam": "./quam_state"
+    },
+    "id": 134,
+    "parents": [
+        133
+    ]
+}

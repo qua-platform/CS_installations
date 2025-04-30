@@ -42,14 +42,14 @@ import numpy as np
 class Parameters(NodeParameters):
     qubits: Optional[List[str]] = None
     num_averages: int = 20
-    operation: str = "x180_Cosine"
+    operation: str = "x90_Cosine"
     frequency_span_in_mhz: float = 10
     frequency_step_in_mhz: float = 0.05
     max_number_pulses_per_sweep: int = 20
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     reset_type: Literal["thermal", "heralding", "active"] = "heralding"
     use_state_discrimination: bool = True
-    simulate: bool = False
+    simulate: bool = True
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
@@ -75,11 +75,11 @@ operation = node.parameters.operation  # The qubit operation to play
 
 # Update the readout power to match the desired range, this change will be reverted at the end of the node.
 tracked_qubits = []
-for q in qubits:
-    with tracked_updates(q, auto_revert=False) as q:
-        q.I.operations[operation].detuning = 0
-        q.Q.operations[operation].detuning = 0
-        tracked_qubits.append(q)
+# for q in qubits:
+#     with tracked_updates(q, auto_revert=False) as q:
+#         q.I.operations[operation].detuning = 0
+#         q.Q.operations[operation].detuning = 0
+#         tracked_qubits.append(q)
 
 # Generate the OPX and Octave configurations
 config = machine.generate_config()
@@ -113,7 +113,6 @@ with program() as stark_detuning:
     for i, qubit in enumerate(qubits):
         # Bring the active qubits to the desired frequency point
         machine.set_all_fluxes(flux_point=flux_point, target=qubit)
-
         with for_(n, 0, n < n_avg, n + 1):
             save(n, n_st)
             with for_(*from_array(npi, N_pi_vec)):
@@ -122,10 +121,10 @@ with program() as stark_detuning:
                     if reset_type == "active":
                         active_reset(qubit, "readout")
                     elif node.parameters.reset_type == "heralding":
-                        qubit.wait(qubit.thermalization_time * u.ns)
+                        # qubit.wait(qubit.thermalization_time * u.ns)
                         qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                         assign(init_state[i], I[i] > qubit.resonator.operations["readout"].threshold)
-                        qubit.wait(qubit.resonator_depopulation_time * u.ns)
+                        # qubit.wait(qubit.resonator_depopulation_time * u.ns)
                     else:
                         qubit.wait(qubit.thermalization_time * u.ns)
 

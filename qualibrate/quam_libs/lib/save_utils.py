@@ -60,6 +60,36 @@ def fetch_results_as_xarray(handles, qubits, measurement_axis):
     return ds
 
 
+def fetch_results_as_xarray_CZ(handles, qubits, measurement_axis):
+    """
+    Fetches measurement results as an xarray dataset.
+    Parameters:
+    - handles : A dictionary containing stream handles, obtained through handles = job.result_handles after the execution of the program.
+    - qubits (list): A list of qubits.
+    - measurement_axis (dict): A dictionary containing measurement axis information, e.g. {"frequency" : freqs, "flux",}.
+    Returns:
+    - ds (xarray.Dataset): An xarray dataset containing the fetched measurement results.
+    """
+
+    stream_handles = handles.keys()
+    meas_vars = list(set([extract_string(handle) for handle in stream_handles if extract_string(handle) is not None]))
+
+    values = [
+        [handles.get(f"{meas_var}{i + 1}").fetch_all() for i, qubit in enumerate(qubits)] for meas_var in meas_vars
+    ]
+
+    if np.array(values).shape[-1] == 1:
+        values = np.array(values).squeeze(axis=-1)
+    measurement_axis["c12"] = ["c12"]
+    measurement_axis = {key: measurement_axis[key] for key in reversed(measurement_axis.keys())}
+
+    ds = xr.Dataset(
+        {f"{meas_var}": ([key for key in measurement_axis.keys()], values[i]) for i, meas_var in enumerate(meas_vars)},
+        coords=measurement_axis,
+    )
+
+    return ds
+
 def fetch_results_as_xarray_for_1_pulse_heralding(handles, qubits, measurement_axis, threshold=0.5, mask_axis=1):
     """
     Fetches measurement results as an xarray dataset.

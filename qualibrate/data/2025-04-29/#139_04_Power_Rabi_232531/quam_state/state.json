@@ -8,7 +8,7 @@
                         "length": 32,
                         "digital_marker": "ON",
                         "axis_angle": 0,
-                        "amplitude": 0.3958269234099944,
+                        "amplitude": 2.0164944910139333,
                         "alpha": 0.0,
                         "anharmonicity": "#/qubits/c12/anharmonicity",
                         "__class__": "quam.components.pulses.DragCosinePulse"
