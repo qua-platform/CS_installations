@@ -125,25 +125,17 @@ with program() as CZ_amp_cal:
             q1.resonator.measure("readout", qua_vars=(I[0], Q[0]))
             q2.resonator.measure("readout", qua_vars=(I[1], Q[1]))
             if initial_state == '00':
-                with if_(I[0] > q1.resonator.operations["readout"].threshold):
-                    play("x180_Cosine", q1.I.name)
-                with if_(I[1] > q2.resonator.operations["readout"].threshold):
-                    play("x180_Cosine", q2.I.name)
+                play("x180_Cosine", q1.I.name, condition=I[0] > q1.resonator.operations["readout"].threshold)
+                play("x180_Cosine", q2.I.name, condition=if_(I[1] > q2.resonator.operations["readout"].threshold))
             elif initial_state == '01':
-                with if_(I[0] > q1.resonator.operations["readout"].threshold):
-                    play("x180_Cosine", q1.I.name)
-                with if_(I[1] < q2.resonator.operations["readout"].threshold):
-                    play("x180_Cosine", q2.I.name)
+                play("x180_Cosine", q1.I.name, condition=I[0] > q1.resonator.operations["readout"].threshold)
+                play("x180_Cosine", q2.I.name, condition=I[1] < q2.resonator.operations["readout"].threshold)
             elif initial_state == '10':
-                with if_(I[0] < q1.resonator.operations["readout"].threshold):
-                    play("x180_Cosine", q1.I.name)
-                with if_(I[1] > q2.resonator.operations["readout"].threshold):
-                    play("x180_Cosine", q2.I.name)
+                play("x180_Cosine", q1.I.name, condition=I[0] < q1.resonator.operations["readout"].threshold)
+                play("x180_Cosine", q2.I.name, condition=I[1] > q2.resonator.operations["readout"].threshold)
             elif initial_state == '11':
-                with if_(I[0] < q1.resonator.operations["readout"].threshold):
-                    play("x180_Cosine", q1.I.name)
-                with if_(I[1] < q2.resonator.operations["readout"].threshold):
-                    play("x180_Cosine", q2.I.name)
+                play("x180_Cosine", q1.I.name, condition=I[0] < q1.resonator.operations["readout"].threshold)
+                play("x180_Cosine", q2.I.name, condition=I[1] < q2.resonator.operations["readout"].threshold)
 
 
             align()
@@ -169,7 +161,6 @@ with program() as CZ_amp_cal:
             assign(state[1], Cast.to_int(I[1] > q2.resonator.operations["readout"].threshold))
             save(state[0], state_stream[0])
             save(state[1], state_stream[1])
-
 
 
     with stream_processing():
