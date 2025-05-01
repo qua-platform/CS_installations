@@ -137,7 +137,7 @@ with program() as CZ_amp_cal:
                 play("x180_Cosine", q1.I.name, condition=I[0] < q1.resonator.operations["readout"].threshold)
                 play("x180_Cosine", q2.I.name, condition=I[1] < q2.resonator.operations["readout"].threshold)
 
-
+            wait(1000)
             align()
             c12.xy.update_frequency(df + c12.xy.intermediate_frequency)
 
