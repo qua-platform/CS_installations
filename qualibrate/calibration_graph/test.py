@@ -105,13 +105,13 @@ else:
     N_pi_vec = np.linspace(1, N_pi, N_pi).astype("int")[::2]
 
 with program() as power_rabi:
-    a = declare(int)
-    b = declare(int)
-    c = declare(int)
+    a = declare(bool)
+    b = declare(bool)
+    c = declare(bool)
     c_st = declare_stream()
-    assign(a, 0)
-    assign(b, 0)
-    assign(c, a & b)
+    assign(a, True)
+    assign(b, True)
+    assign(c, a | b)
     save(c, c_st)
     with stream_processing():
         c_st.save_all("test")
@@ -126,3 +126,4 @@ job = qm.execute(power_rabi)
 res = job.result_handles
 res.wait_for_all_values()
 t = res.test.fetch_all()
+print(t)

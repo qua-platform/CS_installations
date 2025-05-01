@@ -49,14 +49,14 @@ class Parameters(NodeParameters):
     flux_point_joint_or_independent: Literal["joint", "independent"] = "joint"
     reset_type: Literal["thermal", "heralding", "active"] = "heralding"
     use_state_discrimination: bool = True
-    simulate: bool = True
+    simulate: bool = False
     simulation_duration_ns: int = 2500
     timeout: int = 100
     load_data_id: Optional[int] = None
     multiplexed: bool = True
 
 
-node = QualibrationNode(name="09a_Stark_Detuning", parameters=Parameters())
+node = QualibrationNode(name="09a_Stark_Shift_Calibration", parameters=Parameters())
 
 # %% {Initialize_QuAM_and_QOP}
 # Class containing tools to help handling units and conversions.
