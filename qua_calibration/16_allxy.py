@@ -11,7 +11,7 @@ from qm import SimulationConfig
 from qualang_tools.results import fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import progress_counter
-from macros import qua_declaration, multiplexed_readout
+from macros import qua_declaration_new, multiplexed_readout
 from qualang_tools.results.data_handler import DataHandler
 import matplotlib
 import matplotlib.pyplot as plt
