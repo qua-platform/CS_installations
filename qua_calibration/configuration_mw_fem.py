@@ -66,7 +66,7 @@ qubit_band_q7 = 1
 # Qubits LO
 qubit_LO_q1 = 5.10 * u.GHz
 qubit_LO_q2 = 5.00 * u.GHz
-qubit_LO_q3 = 4.60 * u.GHz
+qubit_LO_q3 = 4.50 * u.GHz
 qubit_LO_q4 = 4.90 * u.GHz
 qubit_LO_q5 = 4.90 * u.GHz
 qubit_LO_q6 = 5.05 * u.GHz
@@ -74,7 +74,7 @@ qubit_LO_q7 = 5.00 * u.GHz
 # Qubits IF
 qubit_IF_q1 = (+127.6)* u.MHz
 qubit_IF_q2 = (-165.0) * u.MHz
-qubit_IF_q3 = 150 * u.MHz
+qubit_IF_q3 = (+115) * u.MHz
 qubit_IF_q4 = 100 * u.MHz
 qubit_IF_q5 = 200 * u.MHz
 qubit_IF_q6 = 150 * u.MHz
@@ -107,7 +107,7 @@ pi_len = 40
 pi_sigma = pi_len / 5
 pi_amp_q1 = 0.1183
 pi_amp_q2 = 0.04953
-pi_amp_q3 = 0.22
+pi_amp_q3 = 0.02313
 pi_amp_q4 = 0.22
 pi_amp_q5 = 0.22
 pi_amp_q6 = 0.22
@@ -116,21 +116,21 @@ pi_amp_q7 = 0.22
 # DRAG coefficients
 drag_coef_q1 = 0.28
 drag_coef_q2 = 0.61
-drag_coef_q3 = 1.0
+drag_coef_q3 = 0.14
 drag_coef_q4 = 1.0
 drag_coef_q5 = 1.0
 drag_coef_q6 = 1.0
 drag_coef_q7 = 1.0
 anharmonicity_q1 = -258 * u.MHz
 anharmonicity_q2 = -268 * u.MHz
-anharmonicity_q3 = -200 * u.MHz
+anharmonicity_q3 = -268 * u.MHz
 anharmonicity_q4 = -200 * u.MHz
 anharmonicity_q5 = -200 * u.MHz
 anharmonicity_q6 = -200 * u.MHz
 anharmonicity_q7 = -200 * u.MHz
 AC_stark_detuning_q1 = 20 * u.kHz
 AC_stark_detuning_q2 = 2 * u.kHz
-AC_stark_detuning_q3 = 0 * u.MHz
+AC_stark_detuning_q3 = -1.49 * u.MHz
 AC_stark_detuning_q4 = 0 * u.MHz
 AC_stark_detuning_q5 = 0 * u.MHz
 AC_stark_detuning_q6 = 0 * u.MHz
@@ -666,7 +666,7 @@ resonator_LO = 6.95 * u.GHz
 # Resonators IF
 resonator_IF_q1 = int( 57.28 * u.MHz)
 resonator_IF_q2 = int(106.1 * u.MHz)
-resonator_IF_q3 = int(150.0 * u.MHz)
+resonator_IF_q3 = int(156.1 * u.MHz)
 resonator_IF_q4 = int(200.0 * u.MHz)
 resonator_IF_q5 = int(260.0 * u.MHz)
 resonator_IF_q6 = int(314.3 * u.MHz)
@@ -676,9 +676,9 @@ resonator_delay = 0
 
 # Readout pulse parameters
 readout_len = 900
-readout_amp_q1 = 0.035 # our q1 as their q3
-readout_amp_q2 = 0.030
-readout_amp_q3 = 1.0
+readout_amp_q1 = 0.032 # our q1 as their q3
+readout_amp_q2 = 0.03
+readout_amp_q3 = 0.025
 readout_amp_q4 = 1.0
 readout_amp_q5 = 1.0 # 0.05
 readout_amp_q6 = 1.0
@@ -772,17 +772,17 @@ else:
     opt_weights_minus_real_q7 = [(-1.0, readout_len)]
 
 # state discrimination
-rotation_angle_q1 = ((26.9) / 180) * np.pi
-rotation_angle_q2 = ((156.2) / 180) * np.pi
-rotation_angle_q3 = (0.0 / 180) * np.pi
+rotation_angle_q1 = ((23.2) / 180) * np.pi
+rotation_angle_q2 = ((157.2) / 180) * np.pi
+rotation_angle_q3 = ((177.1) / 180) * np.pi
 rotation_angle_q4 = (0.0 / 180) * np.pi
 rotation_angle_q5 = (0.0 / 180) * np.pi
 rotation_angle_q6 = (0.0 / 180) * np.pi
 rotation_angle_q7 = (0.0 / 180) * np.pi
 
-ge_threshold_q1 = -7.821e-06
-ge_threshold_q2 = -9.167e-06
-ge_threshold_q3 = 0.0
+ge_threshold_q1 = -6.279e-06
+ge_threshold_q2 = -8.975e-06
+ge_threshold_q3 = 4.604e-06
 ge_threshold_q4 = 0.0
 ge_threshold_q5 = 0.0
 ge_threshold_q6 = 0.0
@@ -839,7 +839,7 @@ config = {
                             "delay": qubit_delay_q2,
                             "upconverters": {
                                 1: {"frequency": qubit_LO_q2},  # cr_cancel_LO_c1t2 = qubit_LO_q2
-                                2: {"frequency": cr_drive_LO_c2t1},
+                                2: {"frequency": cr_drive_LO_c2t3},
                                 # 3: {"frequency": cr_drive_LO_c2t1},
                             },
                         },  # q2 XY
@@ -851,7 +851,7 @@ config = {
                             "delay": qubit_delay_q3,
                             "upconverters": {
                                 1: {"frequency": qubit_LO_q3}, 
-                                2: {"frequency": cr_drive_LO_c3t4},
+                                2: {"frequency": cr_drive_LO_c3t2},
                                 # 3: {"frequency": cr_drive_LO_c3t2},
                             },
                         },  # q3 XY

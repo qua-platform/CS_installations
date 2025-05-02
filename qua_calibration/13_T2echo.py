@@ -19,16 +19,20 @@ matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
-Q1_xy = "q1_xy"
+Q1_xy = "q3_xy"
 Q2_xy = "q2_xy"
-Qubit1 = "1"
+Qubit1 = "3"
 Qubit2 = "2"
+rr1 = "rr3"
+rr2 = "rr2"
+rrs = [3, 2]
+
 ##################
 # Parameters Definition
-n_avg = 1000
-t_max = 5_000
+n_avg = 200
+t_max = 2_000
 t_min = 4
-t_delays = np.geomspace(t_min, t_max, 400).astype(int)  # np.arange(t_min, t_max, t_step)
+t_delays = np.geomspace(t_min, t_max, 100).astype(int)  # np.arange(t_min, t_max, t_step)
 
 # Data to save
 save_data_dict = {
@@ -68,7 +72,7 @@ with program() as PROGRAM:
             align()
 
             # Measure the state of the resonators
-            multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
+            multiplexed_readout(I, I_st, Q, Q_st, resonators=rrs, weights="rotated_")
 
             wait(thermalization_time * u.ns)
 
@@ -153,24 +157,25 @@ else:
 
             fit = Fit()
             plt.figure()
-            T2_fit = fit.T1(8 * t_delays, I1, plot=True)
-            qubit_T2 = np.abs(T2_fit["T1"][0])
+            T2_fit_1 = fit.T1(8 * t_delays, I1, plot=True)
+            qubit_T2_1 = np.abs(T2_fit_1["T1"][0])
             plt.xlabel("Delay [ns]")
             plt.ylabel("I quadrature [V]")
-            print(f"Qubit coherence time T2 = {qubit_T2:.0f} ns")
-            plt.legend((f"Qubit {Qubit1} Coherence time T2 = {qubit_T2:.0f} ns",))
+            print(f"Qubit coherence time T2 = {qubit_T2_1:.0f} ns")
+            plt.legend((f"Qubit {Qubit1} Coherence time T2 = {qubit_T2_1:.0f} ns",))
             plt.title("Echo measurement")
+            fig_analysis1 = plt.gcf()
 
             fit = Fit()
             plt.figure()
-            T2_fit = fit.T1(8 * t_delays, I2, plot=True)
-            qubit_T2 = np.abs(T2_fit["T1"][0])
+            T2_fit_2 = fit.T1(8 * t_delays, I2, plot=True)
+            qubit_T2_2 = np.abs(T2_fit_2["T1"][0])
             plt.xlabel("Delay [ns]")
             plt.ylabel("I quadrature [V]")
-            print(f"Qubit coherence time T2 = {qubit_T2:.0f} ns")
-            plt.legend((f"Qubit {Qubit2} Coherence time T2 = {qubit_T2:.0f} ns",))
+            print(f"Qubit coherence time T2 = {qubit_T2_2:.0f} ns")
+            plt.legend((f"Qubit {Qubit2} Coherence time T2 = {qubit_T2_2:.0f} ns",))
             plt.title("Echo measurement")
-            fig_analysis = plt.gcf()
+            fig_analysis2 = plt.gcf()
         except (Exception,):
             pass
 
@@ -181,7 +186,7 @@ else:
         save_data_dict.update({"Q1_data": Q1})
         save_data_dict.update({"I2_data": I2})
         save_data_dict.update({"Q2_data": Q2})
-        save_data_dict.update({"fig_live": fig, "fig_analysis": fig_analysis})
+        save_data_dict.update({"fig_live": fig, "fig_analysis1": fig_analysis1, "fig_analysis2": fig_analysis2})
         data_handler.additional_files = {script_name: script_name, **default_additional_files}
         data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
 
@@ -191,6 +196,6 @@ else:
     finally:
         qm.close()
         print("Experiment QM is now closed")
-        plt.show(block=True)
+        plt.show(block=False)
 
 # %%

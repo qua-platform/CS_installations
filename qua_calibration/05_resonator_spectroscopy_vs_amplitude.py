@@ -40,11 +40,11 @@ matplotlib.use('TkAgg')
 #   Parameters   #
 ##################
 # Choose parameters of target rr/qb
-rr1 = "rr1"
+rr1 = "rr3"
 rr2 = "rr2"
-resonator_IF_Q1 = resonator_IF_q1
+resonator_IF_Q1 = resonator_IF_q3
 resonator_IF_Q2 = resonator_IF_q2
-readout_amp_Q1 = readout_amp_q1
+readout_amp_Q1 = readout_amp_q3
 readout_amp_Q2 = readout_amp_q2
 
 # Parameters Definition

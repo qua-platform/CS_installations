@@ -38,9 +38,9 @@ matplotlib.use('TkAgg')
 ##################
 #   Parameters   #
 ##################
-ge_threshold = ge_threshold_q1
-Q1_xy = "q2_xy"
-RR1 = "rr2"
+ge_threshold = ge_threshold_q3
+Q1_xy = "q3_xy"
+RR1 = "rr3"
 
 
 # Parameters Definition

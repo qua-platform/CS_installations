@@ -33,10 +33,15 @@ matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
-Q1_xy = "q1_xy"
+Q1_xy = "q3_xy"
 Q2_xy = "q2_xy"
-pi_amp_Q1 = pi_amp_q1
+pi_amp_Q1 = pi_amp_q3
 pi_amp_Q2 = pi_amp_q2
+rr1 = "rr3"
+rr2 = "rr2"
+rrs = [3, 2]
+
+
 ##################
 # Parameters Definition
 n_avg = 50  # The number of averages
@@ -77,7 +82,7 @@ with program() as PROGRAM:
                 # Align the elements to measure after playing the qubit pulses.
                 align()
                 # Start using Rotated integration weights (cf. IQ_blobs.py)
-                multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
+                multiplexed_readout(I, I_st, Q, Q_st, resonators=rrs, weights="rotated_")
                 # Wait for the qubit to decay to the ground state
                 wait(thermalization_time * u.ns)
         # Save the averaging iteration to get the progress bar

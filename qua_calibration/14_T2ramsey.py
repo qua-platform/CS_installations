@@ -34,10 +34,14 @@ matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
-Q1_xy = "q1_xy"
+Q1_xy = "q3_xy"
 Q2_xy = "q2_xy"
-Qubit1 = "1"
+Qubit1 = "3"
 Qubit2 = "2"
+rr1 = "rr3"
+rr2 = "rr2"
+rrs = [3, 2]
+
 ##################
 # Parameters Definition
 n_avg = 500  # The number of averages
@@ -89,7 +93,7 @@ with program() as PROGRAM:
             align()
 
             # Measure the state of the resonators
-            multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
+            multiplexed_readout(I, I_st, Q, Q_st, resonators=rrs, weights="rotated_")
 
             wait(thermalization_time * u.ns)
 

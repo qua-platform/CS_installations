@@ -328,9 +328,10 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
             ax.cla()
             v0 = self.data_dict["0"][bss]
             v1 = self.data_dict["1"][bss]
-            ax.scatter(self.ts, v0, s=20, color="b", label="ctrl in |0>")
-            ax.scatter(self.ts, v1, s=20, color="r", label="ctrl in |1>")
+            ax.plot(self.ts, v0, color="b", label="ctrl in |0>")
+            ax.plot(self.ts, v1, color="r", label="ctrl in |1>")
             ax.set_ylabel(f"<{bss}(t)>", fontsize=16)
+            ax.set_ylim((-1.05, 1.05))
 
         # plot "R"
         if len(axs) == 4:
@@ -464,11 +465,13 @@ def plot_crqst_result_2D(ts_ns, data_c, data_t, fig, axss):
         ts=ts_ns,
         data=data_c,
     ).plot_data(fig, axss[:, 0], label="control")
+    plt.ylim([-1.05, 1.05])
     # target qubit
     fig = CRHamiltonianTomographyAnalysis(
         ts=ts_ns,
         data=data_t,
     ).plot_data(fig, axss[:, 1], label="target")
+    plt.ylim([-1.05, 1.05])
     return fig
 
 

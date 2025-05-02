@@ -43,13 +43,15 @@ matplotlib.use('TkAgg')
 #   Parameters   #
 ##################
 # Choose parameters of target rr/qb
-Q1_xy = "q1_xy"
+Q1_xy = "q3_xy"
 Q2_xy = "q2_xy"
-qubit_IF_Q1 = qubit_IF_q1
+qubit_IF_Q1 = qubit_IF_q3
 qubit_IF_Q2 = qubit_IF_q2
-qubit_LO_Q1 = qubit_LO_q1
+qubit_LO_Q1 = qubit_LO_q3
 qubit_LO_Q2 = qubit_LO_q2
-
+rr1 = "rr3"
+rr2 = "rr2"
+rrs = [3, 2]
 
 # # Parameters Definition
 # n_avg = 400  # The number of averages
@@ -69,7 +71,7 @@ span = 300.0 * u.MHz
 freq_step = 200 * u.kHz
 dfs = np.arange(-span, +span, freq_step)
 saturation_len = 30 * u.us  # In ns
-saturation_scaling = 0.2  # pre-factor to the value defined in the config - restricted to [-2; 2)
+saturation_scaling = 0.02  # pre-factor to the value defined in the config - restricted to [-2; 2)
 
 
 
@@ -104,14 +106,14 @@ with program() as PROGRAM:
             # qubit 1
             play("cw" * amp(saturation_scaling), Q1_xy, duration=saturation_len * u.ns)
             # play("cw" * amp(0), Q1_xy, duration=saturation_len * u.ns)
-            align(Q1_xy, "rr1")
+            align(Q1_xy, rr1)
             # qubit 2
             play("cw" * amp(saturation_scaling), Q2_xy, duration=saturation_len * u.ns)
             # play("cw" * amp(0), Q2_xy, duration=saturation_len * u.ns)
-            align(Q2_xy, "rr2")
+            align(Q2_xy, rr2)
 
             # Multiplexed readout, also saves the measurement outcomes
-            multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2])
+            multiplexed_readout(I, I_st, Q, Q_st, resonators=rrs)
             # Wait for the qubit to decay to the ground state
             wait(thermalization_time * u.ns)
         # Save the averaging iteration to get the progress bar

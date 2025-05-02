@@ -146,7 +146,7 @@ def reset_qubit(method: str, qubit: str, resonator: str, **kwargs):
 
 
 # Macro for performing active reset until successful for a given number of tries.
-def active_reset(threshold: float, qubit: str, resonator: str, max_tries=1, Ig=None):
+def active_reset(threshold: float, qubit: str, resonator: str, max_tries=1000, Ig=None):
     """Macro for performing active reset until successful for a given number of tries.
 
     :param threshold: threshold for the 'I' quadrature discriminating between ground and excited state.

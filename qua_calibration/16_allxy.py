@@ -20,7 +20,15 @@ matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
-qubit = "q2_xy"
+q_measure = 3
+q_the_other = 2
+
+qubit = f"q{q_measure}_xy"
+rrs = [q_measure, q_the_other]
+rr1 = f"rr{q_measure}"
+rr2 = f"rr{q_the_other}"
+rr_list = [rr1, rr2]
+
 ##################
 # Parameters Definition
 n_avg = 4000
@@ -86,7 +94,7 @@ def allXY(pulses, qb):
 # The QUA program #
 ###################
 with program() as PROGRAM:
-    I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
+    I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2, rr_list = rr_list)
 
     with for_(n, 0, n < n_avg, n + 1):
 
@@ -99,7 +107,7 @@ with program() as PROGRAM:
 
             align()
 
-            multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
+            multiplexed_readout(I, I_st, Q, Q_st, resonators=rrs, weights="rotated_")
             # Wait for the qubit to decay to the ground state - Can be replaced by active reset
             wait(thermalization_time * u.ns)
 
@@ -153,17 +161,17 @@ else:
 
             plt.suptitle("AllXY")
 
-            if qubit == "q1_xy":
-                ind = 0
-            else:
-                ind = 1
-            # ind = 0
+            # if qubit == f"q{q_measure}_xy":
+            #     ind = 0
+            # else:
+            #     ind = 1
+            ind = 0
 
             I = res[2 * ind + 1]
             Q = res[2 * ind + 2]
 
-            save_data_dict[f"I{ind}"] = res[2 * ind + 1]
-            save_data_dict[f"Q{ind}"] = res[2 * ind + 2]
+            save_data_dict[f"I{ind}"] = I
+            save_data_dict[f"Q{ind}"] = Q
 
             # Plot
             plt.suptitle(f"All XY for qubit {qubit}")

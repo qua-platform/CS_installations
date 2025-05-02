@@ -38,16 +38,19 @@ matplotlib.use('TkAgg')
 #   Parameters   #
 ##################
 # Qubits and resonators
-qc = 1  # index of control qubit
-qt = 2  # index of target qubit
+qc = 2  # index of control qubit
+qt = 3  # index of target qubit
+rrs = [qc, qt]
+ge_threshold_Qc = ge_threshold_q2
+ge_threshold_Qt = ge_threshold_q3
 
 # Parameters Definition
-n_avg = 100
-cr_drive_amp = 0.5  # ratio
-cr_drive_phase = 0.0  # in units of 2pi
-cr_cancel_amp = 0.5  # ratio
+n_avg = 200
+cr_drive_amp = 0.005  # ratio
+cr_drive_phase = 0.6  # in units of 2pi
+cr_cancel_amp = -0.0001  # ratio
 cr_cancel_phase = 0.0  # in units of 2pi
-ts_cycles = np.arange(4, 200, 4)  # in clock cylcle = 4ns
+ts_cycles = np.arange(4, 300, 4)  # in clock cylcle = 4ns
 
 # Derived parameters
 qc_xy = f"q{qc}_xy"
@@ -131,10 +134,10 @@ with program() as PROGRAM:
                     align(qt_xy, *resonators)
 
                     # Measure the state of the resonators
-                    multiplexed_readout(I, I_st, Q, Q_st, resonators=[1, 2], weights="rotated_")
-                    assign(state[0], I[0] > ge_threshold_q1)
+                    multiplexed_readout(I, I_st, Q, Q_st, resonators=rrs, weights="rotated_")
+                    assign(state[0], I[0] > ge_threshold_Qc)
                     save(state[0], state_st[0])
-                    assign(state[1], I[1] > ge_threshold_q2)
+                    assign(state[1], I[1] > ge_threshold_Qt)
                     save(state[1], state_st[1])
 
                     # reset phase shift for cancel drive
