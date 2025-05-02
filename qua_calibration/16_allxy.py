@@ -94,7 +94,7 @@ def allXY(pulses, qb):
 # The QUA program #
 ###################
 with program() as PROGRAM:
-    I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2, rr_list = rr_list)
+    I, I_st, Q, Q_st, n, n_st = qua_declaration_new(nb_of_qubits=2, rr_list = rr_list)
 
     with for_(n, 0, n < n_avg, n + 1):
 
