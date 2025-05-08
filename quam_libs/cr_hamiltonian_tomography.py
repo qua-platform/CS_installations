@@ -447,7 +447,7 @@ def plot_cr_duration_vs_scan_param(data_c, data_t, ts_ns, scan_param, scan_param
     for i, (axs, bss) in enumerate(zip(axss, TARGET_BASES)):
         for j, (ax, dt, st) in enumerate(zip(axs, data, 2 * CONTROL_STATES)):
             ax.cla()
-            ax.pcolor(ts_ns, scan_param, dt[:, :, i, j % 2])
+            ax.pcolor(ts_ns, scan_param, dt[:, :, i, j % 2], vmin=-1.05, vmax=1.05)
             if i == 0 and j < 2:
                 ax.set_title(f"Q_C w/ Q_C={st}")
             if i == 0 and j >= 2:
