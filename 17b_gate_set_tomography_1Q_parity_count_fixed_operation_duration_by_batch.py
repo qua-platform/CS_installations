@@ -31,7 +31,7 @@ def get_dataframe_encoded_sequence(pi_half_len):
     df = pd.read_csv(path, header=0)  # Use header=0 to indicate the first row is the header
     df["full_gate_sequence_duration"] = pi_half_len * df["full_native_gate_count"]
     df.reset_index(inplace=True)
-    # df = df.head(33)
+    df = df.head(33)
     # df = df.head(10)
     return df
 
@@ -46,6 +46,7 @@ def get_encoded_circuit(row):
     Ph4 = int(row["remaining_wait_num_4-pihalf"])
     Ph = int(row["remaining_wait_num_pihalf"])
 
+    Ph4 = 2000 if Ph4 > 2000 else Ph4
     seq_len = 0
     _encoded_circuit = [C]
     if P != -1:
@@ -74,9 +75,9 @@ def get_encoded_circuit(row):
 # The QUA program #
 ###################
 
-qubit = "qubit5"
-sweep_gates = ["P4_sticky", "P3_sticky"]
-tank_circuit = "tank_circuit2"
+qubit = "qubit1"
+sweep_gates = ["P1_sticky", "P2_sticky"]
+tank_circuit = "tank_circuit1"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 num_output_streams = 2
 seed = 345324  # Pseudo-random number generator seed
@@ -96,7 +97,7 @@ df_enc_seqs = get_dataframe_encoded_sequence(pi_half_len=pi_half_len)
 sequence_max_len = 2 + df_enc_seqs["full_sequence_length"].max()  # 2 for circ_idx and circ_len
 num_cicuits = len(df_enc_seqs)
 num_n_shots = len(list_n_shots)
-batch_size = 20
+batch_size = 10
 num_zero_pads = batch_size - num_cicuits % batch_size
 
 
@@ -284,8 +285,9 @@ with program() as PROGRAM_GST:
             save(circ_idx, circ_idx_st)
             save(P0_count, P0_count_st)
             save(P1_count, P1_count_st)
+            wait(25_000)
 
-            with if_(circ == division * batch_size):
+            with if_(circ == division * batch_size - 1):
                 assign(division, division + 1)
                 # pause to outstream the data
                 pause()
@@ -297,7 +299,7 @@ with program() as PROGRAM_GST:
                     save(-1, circ_idx_st)
                     save(-1, P0_count_st)
                     save(-1, P1_count_st)
-                pause()
+                # pause()
 
     with stream_processing():
         circ_st.save_all("circs")
@@ -310,7 +312,7 @@ with program() as PROGRAM_GST:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 qmm.clear_all_job_results()
 qmm.close_all_qms()
 

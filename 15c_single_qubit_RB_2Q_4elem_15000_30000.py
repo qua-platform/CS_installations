@@ -46,7 +46,7 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 # target_qubits = ["qubit5"]
 target_qubits1 = ["qubit5", "qubit5_dup1"]
 target_qubits2 = ["qubit4_dup1", "qubit4_dup2"]
-target_tank_circuit = "tank_circuit2"
+target_tank_circuit = "tank_circuit1"
 plungers = "P4-P5"
 do_feedback = False  # False for test. True for actual.
 # seed = np.random.randint(2**31)  # Pseudo-random number generator seed
@@ -205,7 +205,7 @@ with program() as PROG_RB:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
 ###########################
 # Run or Simulate Program #

@@ -53,8 +53,8 @@ n_avg = 3  # Number of averages
 
 qubit = "qubit1"
 barrier_gate = "B1_sticky"
-sweep_gates = ["P4_sticky", "P3_sticky"]
-tank_circuit = "tank_circuit2"
+sweep_gates = ["P1_sticky", "P2_sticky"]
+tank_circuit = "tank_circuit1"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 num_output_streams = 3
 x180 = "x180_square"
@@ -143,7 +143,7 @@ with program() as CROT_SPEC:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
 
 ###########################
@@ -206,10 +206,7 @@ else:
     script_name = Path(__file__).name
     data_handler = DataHandler(root_data_folder=save_dir)
     save_data_dict.update({"fig_live": fig})
-    data_handler.additional_files = {
-        script_name: script_name,
-        **default_additional_files,
-    }
+    data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     qm.close()

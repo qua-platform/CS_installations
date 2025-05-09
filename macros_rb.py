@@ -5,7 +5,7 @@ from configuration_with_lffem_csrack import *
 # from configuration_with_lffem import *
 
 
-qubit = "qubit5"
+qubit = "qubit1"
 wf_type = "square"
 pi_len = QUBIT_CONSTANTS[qubit][f"{wf_type}_pi_len"]
 pi_half_len = QUBIT_CONSTANTS[qubit][f"{wf_type}_pi_half_len"]

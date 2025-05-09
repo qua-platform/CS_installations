@@ -40,20 +40,26 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 # The QUA program #
 ###################
 
-run_live = False  # True
-Px = "P4"
-Py = "P3"
-tank_circuit = "tank_circuit2"
+Px = "P1" # fast gate
+Py = "P2" # slow gate
+tank_circuit = "tank_circuit1"
 
+
+###################
+# Sweep Parameters
+###################
+
+run_live = False  # True
 n_avg = 1000000 if run_live else 100  # Number of averaging loops
+v_span = 0.08
 n_voltages_Px = 101
 n_voltages_Py = 101
 
 # Voltages in Volt
-voltages_Px = np.linspace(-0.08, 0.08, n_voltages_Px)
+voltages_Px = np.linspace(-v_span, v_span, n_voltages_Px)
 # Because of the bias-tee, it is important that the voltages swept along the fast axis are centered around 0.
 # Also, since the OPX dynamic range is [-0.5, 0.5)V, one may need to add a voltage offset on the DC part of the bias-tee.
-voltages_Py = np.linspace(-0.08, 0.08, n_voltages_Py)
+voltages_Py = np.linspace(-v_span, v_span, n_voltages_Py)
 # TODO: set DC offset on the external source for the fast gate
 # One can check the expected voltage levels after the bias-tee using the following function:
 # _, _ = get_filtered_voltage(
@@ -123,7 +129,7 @@ with program() as charge_stability_prog:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
 
 ###########################
@@ -184,10 +190,7 @@ else:
     script_name = Path(__file__).name
     data_handler = DataHandler(root_data_folder=save_dir)
     save_data_dict.update({"fig_live": fig})
-    data_handler.additional_files = {
-        script_name: script_name,
-        **default_additional_files,
-    }
+    data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     qm.close()

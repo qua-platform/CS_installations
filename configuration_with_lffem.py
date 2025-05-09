@@ -82,8 +82,8 @@ VIRTUALIZATION_MATRIX = np.array(
 STEP_LEN = 1000
 STEP_AMP = 0.25
 
-amplitude_scaling = 4.7
-LEVEL_INIT = [-0.094, +0.094]  # [-0.02, 0.02] * amplitude_scaling
+AMP_SCALING = 4.7
+LEVEL_INIT = [-0.094, +0.094]  # [-0.02, 0.02] * AMP_SCALING
 LEVEL_READOUT = [0.00161, -0.0018]
 
 

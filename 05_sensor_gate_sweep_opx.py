@@ -39,9 +39,14 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 ###################
 
 run_live = False  # True
-sd_sticky = "Psd2_sticky"
-tank_circuit = "tank_circuit2"
+sd_sticky = "Psd1_sticky"
+tank_circuit = "tank_circuit1"
 step_amp = PLUNGER_SD_CONSTANTS[sd_sticky.replace("_sticky", "")]["step_amp"]
+
+
+###################
+# Sweep Parameters
+###################
 
 n_avg = 1000000 if run_live else 100  # Number of averaging loops
 offset_max = +0.2
@@ -89,7 +94,13 @@ with program() as charge_sensor_sweep:
             align()
             # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
             # frequency and the integrated quadratures are stored in "I" and "Q"
-            measure("readout", tank_circuit, None, demod.full("cos", I, "out1"), demod.full("sin", Q, "out1"))
+            measure(
+                "readout",
+                tank_circuit,
+                None,
+                demod.full("cos", I, "out1"),
+                demod.full("sin", Q, "out1"),
+            )
             save(I, I_st)
             save(Q, Q_st)
 
@@ -114,7 +125,7 @@ with program() as charge_sensor_sweep:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
 
 #######################
@@ -172,10 +183,7 @@ else:
     script_name = Path(__file__).name
     data_handler = DataHandler(root_data_folder=save_dir)
     save_data_dict.update({"fig_live": fig})
-    data_handler.additional_files = {
-        script_name: script_name,
-        **default_additional_files,
-    }
+    data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     qm.close()

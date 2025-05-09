@@ -45,45 +45,45 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 # The QUA program #
 ###################
 
+sweep_gates = ["P1_sticky", "P2_sticky"]
+tank_circuit = "tank_circuit1"
+threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
+
+
+###################
+# Sweep Parameters
+###################
+
 run_live = False  # True
-set_init_as_dc_offset = True
-amplitude_scaling = 4.7  # (DC port / AC port) of bias tee
-
-level_init_arr = np.array([-0.02, 0.02]) * amplitude_scaling
-level_readout_arr = np.array([-0.00, 0.00]) * amplitude_scaling
-
-
 n_shots = 100000 if run_live else 1000
 n_shots_buffer = 1000  # Number of averages
-sweep_gates = ["P4_sticky", "P3_sticky"]
-tank_circuit = "tank_circuit2"
-threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
+
+set_init_as_dc_offset = True
+level_init_arr = np.array([-0.02, 0.02]) * AMP_SCALING
+level_readout_arr = np.array([-0.00, 0.00]) * AMP_SCALING
+
+###################
+# Gate Sequences
+###################
 
 duration_init = 10_000  # DO NOT USE * u.ns
 duration_ramp_init = 200  # DO NOT USE * u.ns
 duration_readout = 1_000 + REFLECTOMETRY_READOUT_LEN  # DO NOT USE * u.ns
 duration_ramp_readout = 52  # DO NOT USE * u.ns
 
+print(f"level init: {level_readout_arr.tolist()}")
+print(f"level readout: {level_init_arr.tolist()}")
 
 if set_init_as_dc_offset:
-    level_readout_offset_arr = level_readout_arr - level_init_arr
-    level_init_offset_arr = np.array([0.0, 0.0])  # level_init_arr - level_init_arr
+    level_readout_arr -= level_init_arr # level_readout_arr - level_init_arr
+    level_init_arr = np.array([0.0, 0.0])  # level_init_arr - level_init_arr
 
-level_readout_list = level_readout_arr.tolist()
-level_init_list = level_init_arr.tolist()
-level_readout_offset_list = level_readout_offset_arr.tolist()
-level_init_offset_list = level_init_offset_arr.tolist()
-
-
-print(f"level init: {level_init_list}")
-print(f"level readout: {level_readout_list}")
-print(f"level init after offset: {level_init_offset_list}")
-print(f"level readout after offset: {level_readout_offset_list}")
-
+print(f"level init after offset: {level_readout_arr.tolist()}")
+print(f"level readout after offset: {level_init_arr.tolist()}")
 
 seq = VoltageGateSequence(config, sweep_gates)
-seq.add_points("initialization", level_init_offset_list, duration_init)
-seq.add_points("readout", level_readout_offset_list, duration_readout)
+seq.add_points("initialization", level_readout_arr.tolist(), duration_init)
+seq.add_points("readout", level_init_arr.tolist(), duration_readout)
 
 
 save_data_dict = {
@@ -111,7 +111,7 @@ with program() as PSB_search_prog:
     assign_variables_to_element("tank_circuit1", I, Q, P)
 
     if set_init_as_dc_offset:
-        for sg, lvl_init in zip(sweep_gates, level_init_list):
+        for sg, lvl_init in zip(sweep_gates, level_init_arr.tolist()):
             set_dc_offset(sg, "single", lvl_init)
 
     with for_(n, 0, n < n_shots, n + 1):
@@ -158,7 +158,7 @@ with program() as PSB_search_prog:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
 ###########################
 # Run or Simulate Program #
@@ -203,18 +203,13 @@ else:
 
     # Fetch results
     iteration, I, Q, P = results.fetch_all()
-    save_data_dict["I"] = I
-    save_data_dict["Q"] = Q
-    save_data_dict["P"] = P
+    save_data_dict.update({"I": I, "Q": Q, "P": P})
 
     # Save results
     script_name = Path(__file__).name
     data_handler = DataHandler(root_data_folder=save_dir)
     save_data_dict.update({"fig_live": fig})
-    data_handler.additional_files = {
-        script_name: script_name,
-        **default_additional_files,
-    }
+    data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     qm.close()

@@ -255,8 +255,8 @@ def read_init45(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st, init_singlet=
     qua_st_vars1 = I1_st, Q1_st, P1_st
     qua_st_vars2 = I2_st, Q2_st, P2_st
 
-    qubit = "qubit5"
-    tank_circuit = "tank_circuit2"
+    qubit = "qubit1"
+    tank_circuit = "tank_circuit1"
     plungers = "P4-P5"  # "full", "P1-P2", "P4-P5"
     threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
     other_elements = get_other_elements(elements_in_use=[qubit, tank_circuit] + sweep_gates, all_elements=all_elements)

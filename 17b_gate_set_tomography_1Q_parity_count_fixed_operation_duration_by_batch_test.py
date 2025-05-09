@@ -74,9 +74,9 @@ def get_encoded_circuit(row):
 # The QUA program #
 ###################
 
-qubit = "qubit5"
-sweep_gates = ["P4_sticky", "P3_sticky"]
-tank_circuit = "tank_circuit2"
+qubit = "qubit1"
+sweep_gates = ["P1_sticky", "P2_sticky"]
+tank_circuit = "tank_circuit1"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 num_output_streams = 2
 seed = 345324  # Pseudo-random number generator seed
@@ -197,9 +197,9 @@ with program() as PROGRAM_GST:
             assign(P0_count, 0)
             assign(P1_count, 0)
 
-            # with for_(n, 0, n < n_shots, n + 1):
-            #     # Perform initialization
-            #     _, _ = perform_read_init(I, Q)
+            with for_(n, 0, n < n_shots, n + 1):
+                # Perform initialization
+                _, _ = perform_read_init(I, Q)
 
             #     # Navigate through the charge stability map
             #     align()
@@ -310,7 +310,7 @@ with program() as PROGRAM_GST:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 qmm.clear_all_job_results()
 qmm.close_all_qms()
 

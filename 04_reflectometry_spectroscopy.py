@@ -34,7 +34,13 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 ###################
 # The QUA program #
 ###################
-tank_circuit = "tank_circuit2"
+tank_circuit = "tank_circuit1"
+
+
+###################
+# Sweep Parameters
+###################
+
 n_avg = 100  # Number of averaging loops
 # The frequency axis
 frequencies = np.linspace(50 * u.MHz, 350 * u.MHz, 101)
@@ -87,7 +93,7 @@ with program() as reflectometry_spectro:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
 
 #######################
@@ -148,10 +154,7 @@ else:
     script_name = Path(__file__).name
     data_handler = DataHandler(root_data_folder=save_dir)
     save_data_dict.update({"fig_live": fig})
-    data_handler.additional_files = {
-        script_name: script_name,
-        **default_additional_files,
-    }
+    data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     qm.close()

@@ -32,14 +32,9 @@ def IQ_imbalance(g, phi):
 ######################
 # Network parameters #
 ######################
-# qop_ip = "192.168.88.253"  # Write the QM router IP address
-# cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP120
-qop_ip = "172.16.33.107"  # Write the QM router IP address
-cluster_name = "Cluster_1"  # "Beta_8"  # Write your cluster_name if version >= QOP120
-# qop_ip = "192.168.88.253"  # Write the QM router IP address
-# cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP120
+qop_ip = "172.16.33.115"  # Write the QM router IP address
+cluster_name = "CS_3"  # "Beta_8"  # Write your cluster_name if version >= QOP120
 qop_port = 9510  # Write the QOP port if version < QOP120
-octave_config = None
 
 
 #############
@@ -58,9 +53,8 @@ default_additional_files = {
 # OPX configuration #
 #####################
 con1 = "con1"
-lffem1 = 5  # Should be the LF-FEM index, e.g., 1
-lffem2 = 3  # Should be the LF-FEM index, e.g., 1
-lffem3 = 3  # Should be the LF-FEM index, e.g., 1
+lffem1 = 3  # Should be the LF-FEM index, e.g., 1
+lffem2 = 5  # Should be the LF-FEM index, e.g., 1
 
 
 #############################################
@@ -82,8 +76,8 @@ VIRTUALIZATION_MATRIX = np.array(
 STEP_LEN = 1000
 STEP_AMP = 0.25
 
-amplitude_scaling = 4.7
-LEVEL_INIT = [-0.094, +0.094]  # [-0.02, 0.02] * amplitude_scaling
+AMP_SCALING = 4.7  # (DC port / AC port) of bias tee
+LEVEL_INIT = [-0.094, +0.094]  # [-0.02, 0.02] * AMP_SCALING
 LEVEL_READOUT = [0.00161, -0.0018]
 
 
@@ -173,114 +167,86 @@ QUBIT_CONSTANTS = {
         "aout_I": 1,
         "aout_Q": 2,
         "LO": 16 * u.GHz,
-        "IF": (167.432) * u.MHz,
+        "IF": 100 * u.MHz,
         "mixer_g": 0,
-        "mixer_phi": 0.201,
-        "square_pi_amp": 0.30671,
-        "square_pi_len": 248,
-        "square_pi_half_amp": 0.30671,
-        "square_pi_half_len": 248,
-        "kaiser_pi_amp": 0.446,
-        "kaiser_pi_len": 280,
-        "kaiser_pi_half_amp": 0.446,
-        "kaiser_pi_half_len": 280,
-        "gauss_pi_amp": 0.446,
-        "gauss_pi_len": 280,
-        "gauss_pi_half_amp": 0.446,
-        "gauss_pi_half_len": 280,
+        "mixer_phi": 0,
         "delay": 0,
+        "square": {
+            "pi_amp": PI_AMP,
+            "pi_len": PI_LEN,
+            "pi_half_amp": PI_HALF_AMP,
+            "pi_half_len": PI_HALF_LEN,
+        },
+        "kaiser": {
+            "pi_amp": PI_AMP,
+            "pi_len": PI_LEN,
+            "pi_half_amp": PI_HALF_AMP,
+            "pi_half_len": PI_HALF_LEN,
+        },
+        "gauss": {
+            "pi_amp": PI_AMP,
+            "pi_len": PI_LEN,
+            "pi_half_amp": PI_HALF_AMP,
+            "pi_half_len": PI_HALF_LEN,
+        },
     },
     "qubit2": {
         "con": con1,
         "fem": lffem1,
-        "aout_I": 1,
-        "aout_Q": 2,
+        "aout_I": 3,
+        "aout_Q": 4,
         "LO": 16 * u.GHz,
-        "IF": 31.5 * u.MHz,
+        "IF": 200 * u.MHz,
         "mixer_g": 0,
-        "mixer_phi": 1.365,
-        "square_pi_amp": 0.1567 * 252 / 250,
-        "square_pi_len": 248,
-        "square_pi_half_amp": 0.1567 * 252 / 250,
-        "square_pi_half_len": 248,
-        "kaiser_pi_amp": PI_AMP,
-        "kaiser_pi_len": PI_LEN,
-        "kaiser_pi_half_amp": PI_HALF_AMP,
-        "kaiser_pi_half_len": PI_HALF_LEN,
-        "gauss_pi_amp": PI_AMP,
-        "gauss_pi_len": PI_LEN,
-        "gauss_pi_half_amp": PI_HALF_AMP,
-        "gauss_pi_half_len": PI_HALF_LEN,
+        "mixer_phi": 0,
         "delay": 0,
+        "square": {
+            "pi_amp": PI_AMP,
+            "pi_len": PI_LEN,
+            "pi_half_amp": PI_HALF_AMP,
+            "pi_half_len": PI_HALF_LEN,
+        },
+        "kaiser": {
+            "pi_amp": PI_AMP,
+            "pi_len": PI_LEN,
+            "pi_half_amp": PI_HALF_AMP,
+            "pi_half_len": PI_HALF_LEN,
+        },
+        "gauss": {
+            "pi_amp": PI_AMP,
+            "pi_len": PI_LEN,
+            "pi_half_amp": PI_HALF_AMP,
+            "pi_half_len": PI_HALF_LEN,
+        },
     },
     "qubit3": {
         "con": con1,
         "fem": lffem1,
-        "aout_I": 3,
-        "aout_Q": 4,
-        "LO": 16.3 * u.GHz,
-        "IF": 0 * u.MHz,
+        "aout_I": 5,
+        "aout_Q": 6,
+        "LO": 16 * u.GHz,
+        "IF": 300 * u.MHz,
         "mixer_g": 0,
         "mixer_phi": 0,
-        "square_pi_amp": PI_AMP,
-        "square_pi_len": PI_LEN,
-        "square_pi_half_amp": PI_HALF_AMP,
-        "square_pi_half_len": PI_HALF_LEN,
-        "kaiser_pi_amp": PI_AMP,
-        "kaiser_pi_len": PI_LEN,
-        "kaiser_pi_half_amp": PI_HALF_AMP,
-        "kaiser_pi_half_len": PI_HALF_LEN,
-        "gauss_pi_amp": PI_AMP,
-        "gauss_pi_len": PI_LEN,
-        "gauss_pi_half_amp": PI_HALF_AMP,
-        "gauss_pi_half_len": PI_HALF_LEN,
         "delay": 0,
-    },
-    "qubit4": {
-        "con": con1,
-        "fem": lffem1,
-        "aout_I": 3,  # TODO: Fix
-        "aout_Q": 4,  # TODO: Fix
-        "LO": 16.3 * u.GHz,
-        "IF": 50 * u.MHz,
-        "mixer_g": 0,
-        "mixer_phi": 0,
-        "square_pi_amp": PI_AMP,
-        "square_pi_len": PI_LEN,
-        "square_pi_half_amp": PI_HALF_AMP,
-        "square_pi_half_len": PI_HALF_LEN,
-        "kaiser_pi_amp": PI_AMP,
-        "kaiser_pi_len": PI_LEN,
-        "kaiser_pi_half_amp": PI_HALF_AMP,
-        "kaiser_pi_half_len": PI_HALF_LEN,
-        "gauss_pi_amp": PI_AMP,
-        "gauss_pi_len": PI_LEN,
-        "gauss_pi_half_amp": PI_HALF_AMP,
-        "gauss_pi_half_len": PI_HALF_LEN,
-        "delay": 0,
-    },
-    "qubit5": {
-        "con": con1,
-        "fem": lffem1,
-        "aout_I": 5,  # TODO: Fix
-        "aout_Q": 6,  # TODO: Fix
-        "LO": 16.3 * u.GHz,
-        "IF": 0 * u.MHz,
-        "mixer_g": 0,
-        "mixer_phi": 0,
-        "square_pi_amp": PI_AMP,
-        "square_pi_len": PI_LEN,
-        "square_pi_half_amp": PI_HALF_AMP,
-        "square_pi_half_len": PI_HALF_LEN,
-        "kaiser_pi_amp": PI_AMP,
-        "kaiser_pi_len": PI_LEN,
-        "kaiser_pi_half_amp": PI_HALF_AMP,
-        "kaiser_pi_half_len": PI_HALF_LEN,
-        "gauss_pi_amp": PI_AMP,
-        "gauss_pi_len": PI_LEN,
-        "gauss_pi_half_amp": PI_HALF_AMP,
-        "gauss_pi_half_len": PI_HALF_LEN,
-        "delay": 0,
+        "square": {
+            "pi_amp": PI_AMP,
+            "pi_len": PI_LEN,
+            "pi_half_amp": PI_HALF_AMP,
+            "pi_half_len": PI_HALF_LEN,
+        },
+        "kaiser": {
+            "pi_amp": PI_AMP,
+            "pi_len": PI_LEN,
+            "pi_half_amp": PI_HALF_AMP,
+            "pi_half_len": PI_HALF_LEN,
+        },
+        "gauss": {
+            "pi_amp": PI_AMP,
+            "pi_len": PI_LEN,
+            "pi_half_amp": PI_HALF_AMP,
+            "pi_half_len": PI_HALF_LEN,
+        },
     },
 }
 
@@ -296,7 +262,7 @@ DO_CONSTANTS = {
 }
 
 PLUNGER_CONSTANTS = {
-    "P0": {
+    "P2": {
         "con": con1,
         "fem": lffem2,
         "ao": 1,
@@ -304,34 +270,18 @@ PLUNGER_CONSTANTS = {
         "step_len": STEP_LEN,
         "delay": 0,
     },
-    "P1": {
+    "P3": {
         "con": con1,
         "fem": lffem2,
-        "ao": 3,
-        "step_amp": STEP_AMP,
-        "step_len": STEP_LEN,
-        "delay": 0,
-    },
-    "P2": {
-        "con": con1,
-        "fem": lffem2,
-        "ao": 5,
+        "ao": 2,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
     },
     "P3": {
         "con": con1,
-        "fem": lffem2,  # TODO: Fix
-        "ao": 7,  # TODO: Fix
-        "step_amp": STEP_AMP,
-        "step_len": STEP_LEN,
-        "delay": 0,
-    },
-    "P4": {
-        "con": con1,
-        "fem": lffem3,  # TODO: Fix
-        "ao": 1,  # TODO: Fix
+        "fem": lffem2,
+        "ao": 3,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
@@ -342,7 +292,7 @@ BARRIER_CONSTANTS = {
     "B1": {
         "con": con1,
         "fem": lffem2,
-        "ao": 2,
+        "ao": 4,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
@@ -350,7 +300,7 @@ BARRIER_CONSTANTS = {
     "B2": {
         "con": con1,
         "fem": lffem2,
-        "ao": 4,
+        "ao": 5,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
@@ -363,29 +313,21 @@ BARRIER_CONSTANTS = {
         "step_len": STEP_LEN,
         "delay": 0,
     },
-    "B4": {
-        "con": con1,
-        "fem": lffem2,  # TODO: Fix
-        "ao": 8,  # TODO: Fix
-        "step_amp": STEP_AMP,
-        "step_len": STEP_LEN,
-        "delay": 0,
-    },
 }
 
 PLUNGER_SD_CONSTANTS = {
     "Psd1": {
         "con": con1,
-        "fem": lffem3,
-        "ao": 2,
+        "fem": lffem2,
+        "ao": 7,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
     },
     "Psd2": {
         "con": con1,
-        "fem": lffem3,
-        "ao": 3,
+        "fem": lffem2,
+        "ao": 8,
         "step_amp": STEP_AMP,
         "step_len": STEP_LEN,
         "delay": 0,
@@ -395,26 +337,26 @@ PLUNGER_SD_CONSTANTS = {
 TANK_CIRCUIT_CONSTANTS = {
     "tank_circuit1": {
         "con": con1,
-        "fem": lffem3,
-        "ao": 8,
-        "ai": 2,
-        "IF": 181.02 * u.MHz,
+        "fem": lffem1,
+        "ao": 7,
+        "ai": 1,
+        "IF": 100 * u.MHz,
         "readout_amp": REFLECTOMETRY_READOUT_AMP,
         "readout_len": REFLECTOMETRY_READOUT_LEN,
         "threshold": PARITY_THRESHOLD1,
-        "time_of_flight": 24 + 180,
+        "time_of_flight": 32,
         "delay": 0,
     },
     "tank_circuit2": {
         "con": con1,
-        "fem": lffem3,
+        "fem": lffem1,
         "ao": 8,
         "ai": 2,
-        "IF": 139.534 * u.MHz,
+        "IF": 200 * u.MHz,
         "readout_amp": REFLECTOMETRY_READOUT_AMP,
         "readout_len": REFLECTOMETRY_READOUT_LEN,
         "threshold": PARITY_THRESHOLD2,
-        "time_of_flight": 24 + 180,
+        "time_of_flight": 32,
         "delay": 0,
     },
 }
@@ -450,12 +392,6 @@ CROT_CONSTANTS = {
         for c, t in qubit_pairs
     }
 }
-# # update after findng the optimal parameters
-# CROT_CONSTANTS["qp_control_c3t2"]["square_pi_amp"] = 0.1
-# CROT_CONSTANTS["qp_control_c3t2"]["square_pi_len"] = 100
-# CROT_CONSTANTS["qp_control_c3t2"]["square_pi_half_amp"] = 0.05
-# CROT_CONSTANTS["qp_control_c3t2"]["square_pi_half_amp"] = 100
-
 
 #########################
 #  GATE VIRTUALIZATION  #
@@ -465,9 +401,9 @@ from collections import OrderedDict
 
 MAP_GATE_TO_IDX = OrderedDict(
     [
-        ("P0", 0),
-        ("P1", 1),
-        ("P2", 2),
+        ("P1", 0),
+        ("P2", 1),
+        ("P3", 2),
         ("B1", 3),
         ("B2", 4),
         ("B3", 5),
@@ -535,25 +471,7 @@ class GateVirtualizer:
 ########################
 
 # from scipy.special import i0  # Zeroth-order modified Bessel function of the first kind
-from scipy.signal.windows import \
-    kaiser  # Zeroth-order modified Bessel function of the first kind
-
-# def kaiser_window(T: int, alpha: float) -> np.ndarray:
-#     """
-#     Generate a Kaiser window for digital signal processing.
-
-#     :param T: Length of the window (number of points - 1).
-#     :param alpha: Shape parameter that determines the trade-off between main lobe width and side lobe level.
-#     :return: A numpy array of the Kaiser window values.
-#     """
-#     # Compute the normalized indices
-#     t = np.arange(T)
-#     x = (2 * t / (T - 1)) - 1
-
-#     # Calculate the Kaiser window using the zeroth-order modified Bessel function
-#     window = 1.6 * kaiser(np.pi * alpha * np.sqrt(1 - x**2)) / (np.pi * alpha)
-
-#     return window
+from scipy.signal.windows import kaiser  # Zeroth-order modified Bessel function of the first kind
 
 
 def generate_waveforms(rotation_keys):
@@ -596,15 +514,15 @@ def generate_waveforms(rotation_keys):
     for rk in rotation_keys:
         if rk in ["x180", "y180"]:
             for qubit, constants in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.items():
-                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "gauss", constants["gauss_pi_amp"], constants["gauss_pi_len"])
-                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "kaiser", constants["kaiser_pi_amp"], constants["kaiser_pi_len"])
-                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "square", constants["square_pi_amp"], constants["square_pi_len"])
+                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "gauss", constants["gauss"]["pi_amp"], constants["gauss"]["pi_len"])
+                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "kaiser", constants["kaiser"]["pi_amp"], constants["kaiser"]["pi_len"])
+                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "square", constants["square"]["pi_amp"], constants["square"]["pi_len"])
 
         if rk in ["x90", "minus_x90", "y90", "minus_y90"]:
             for qubit, constants in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.items():
-                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "gauss", constants["gauss_pi_half_amp"], constants["gauss_pi_half_len"])
-                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "kaiser", constants["kaiser_pi_half_amp"], constants["kaiser_pi_half_len"])
-                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "square", constants["square_pi_half_amp"], constants["square_pi_half_len"])
+                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "gauss", constants["gauss"]["pi_half_amp"], constants["gauss"]["pi_half_len"])
+                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "kaiser", constants["kaiser"]["pi_half_amp"], constants["kaiser"]["pi_half_len"])
+                waveforms = compute_and_update_waveform(waveforms, rk, qubit, "square", constants["square"]["pi_half_amp"], constants["square"]["pi_half_len"])
 
     return waveforms
 
@@ -680,72 +598,92 @@ config = {
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "mw",
                         },
-                        # Psd2
+                        # Tank Circuit 1
                         7: {
                             "offset": 0.0,
                             "output_mode": "direct",
                             "sampling_rate": sampling_rate,
-                            "upsampling_mode": "pulse",
+                            "upsampling_mode": "mw",
+                        },
+                        # Tank Circuit 2
+                        8: {
+                            "offset": 0.0,
+                            "output_mode": "direct",
+                            "sampling_rate": sampling_rate,
+                            "upsampling_mode": "mw",
                         },
                     },
                     "digital_outputs": {
                         1: {},  # TTL for RF
                     },
-                    "analog_inputs": {},
+                    "analog_inputs": {
+                        # Reflectometry in
+                        1: {
+                            "offset": 0.0,
+                            "gain_db": 0,
+                            "sampling_rate": sampling_rate,
+                        },  # DC readout input
+                        # Reflectometry in
+                        2: {
+                            "offset": 0.0,
+                            "gain_db": 0,
+                            "sampling_rate": sampling_rate,
+                        },  # DC readout input
+                    },
                 },
                 lffem2: {
                     "type": "LF",
                     "analog_outputs": {
-                        # P0
+                        # P1
                         1: {
                             "offset": 0.0,
                             "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
-                        # B1
+                        # P2
                         2: {
                             "offset": 0.0,
                             "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
-                        # P1
+                        # P3
                         3: {
                             "offset": 0.0,
                             "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
-                        # B2
+                        # B12
                         4: {
                             "offset": 0.0,
                             "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
-                        # P2
+                        # B23
                         5: {
                             "offset": 0.0,
                             "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
-                        # B3
+                        # B34
                         6: {
                             "offset": 0.0,
                             "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
-                        # P3
+                        # Psd1
                         7: {
                             "offset": 0.0,
                             "output_mode": "direct",
                             "sampling_rate": sampling_rate,
                             "upsampling_mode": "pulse",
                         },
-                        # B4
+                        # Psd2
                         8: {
                             "offset": 0.0,
                             "output_mode": "direct",
@@ -754,14 +692,7 @@ config = {
                         },
                     },
                     "digital_outputs": {},
-                    "analog_inputs": {
-                        # Reflectometry in
-                        2: {
-                            "offset": -0.007773877929687499,
-                            "gain_db": 0,
-                            "sampling_rate": sampling_rate,
-                        },  # DC readout input
-                    },
+                    "analog_inputs": {},
                 },
             },
         }
@@ -844,7 +775,7 @@ config = {
         },
         # qubits & crot (qubit1, ...)
         **{
-            qb: {
+            f"{qb}{tw}": {
                 "mixInputs": {
                     "I": (val["con"], val["fem"], val["aout_I"]),
                     "Q": (val["con"], val["fem"], val["aout_Q"]),
@@ -855,63 +786,16 @@ config = {
                 "operations": {
                     "const": "const_pulse",
                     "saturation": "saturation_pulse",
-                    "x180_kaiser": f"x180_kaiser_pulse_{qb}",
-                    "x90_kaiser": f"x90_kaiser_pulse_{qb}",
-                    "-x90_kaiser": f"minus_x90_kaiser_pulse_{qb}",
-                    "y180_kaiser": f"y180_kaiser_pulse_{qb}",
-                    "y90_kaiser": f"y90_kaiser_pulse_{qb}",
-                    "-y90_kaiser": f"minus_y90_kaiser_pulse_{qb}",
-                    "x180_gauss": f"x180_gauss_pulse_{qb}",
-                    "x90_gauss": f"x90_gauss_pulse_{qb}",
-                    "-x90_gauss": f"minus_x90_gauss_pulse_{qb}",
-                    "y180_gauss": f"y180_gauss_pulse_{qb}",
-                    "y90_gauss": f"y90_gauss_pulse_{qb}",
-                    "-y90_gauss": f"minus_y90_gauss_pulse_{qb}",
-                    "x180_square": f"x180_square_pulse_{qb}",
-                    "x90_square": f"x90_square_pulse_{qb}",
-                    "-x90_square": f"minus_x90_square_pulse_{qb}",
-                    "y180_square": f"y180_square_pulse_{qb}",
-                    "y90_square": f"y90_square_pulse_{qb}",
-                    "-y90_square": f"minus_y90_square_pulse_{qb}",
+                    **{
+                        f"{axis}{angle}_{shape}": f"{axis}{angle}_{shape}_pulse_{qb}" # e.g. x180_kaiser_pulse_q1
+                        for shape in ["kaiser", "gauss", "square"]
+                        for axis in ["x", "y"]
+                        for angle in ["180", "90", "-90"]
+                    },
                 },
                 # "thread": qb,
             }
-            for qb, val in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.items()
-        },
-        # qubits & crot (qubit1, ...)
-        **{
-            f"{qb}_dup": {
-                "mixInputs": {
-                    "I": (val["con"], val["fem"], val["aout_I"]),
-                    "Q": (val["con"], val["fem"], val["aout_Q"]),
-                    "lo_frequency": val["LO"],
-                    "mixer": f"mixer_{qb}",
-                },
-                "intermediate_frequency": val["IF"],
-                "operations": {
-                    "const": "const_pulse",
-                    "saturation": "saturation_pulse",
-                    "x180_kaiser": f"x180_kaiser_pulse_{qb}",
-                    "x90_kaiser": f"x90_kaiser_pulse_{qb}",
-                    "-x90_kaiser": f"minus_x90_kaiser_pulse_{qb}",
-                    "y180_kaiser": f"y180_kaiser_pulse_{qb}",
-                    "y90_kaiser": f"y90_kaiser_pulse_{qb}",
-                    "-y90_kaiser": f"minus_y90_kaiser_pulse_{qb}",
-                    "x180_gauss": f"x180_gauss_pulse_{qb}",
-                    "x90_gauss": f"x90_gauss_pulse_{qb}",
-                    "-x90_gauss": f"minus_x90_gauss_pulse_{qb}",
-                    "y180_gauss": f"y180_gauss_pulse_{qb}",
-                    "y90_gauss": f"y90_gauss_pulse_{qb}",
-                    "-y90_gauss": f"minus_y90_gauss_pulse_{qb}",
-                    "x180_square": f"x180_square_pulse_{qb}",
-                    "x90_square": f"x90_square_pulse_{qb}",
-                    "-x90_square": f"minus_x90_square_pulse_{qb}",
-                    "y180_square": f"y180_square_pulse_{qb}",
-                    "y90_square": f"y90_square_pulse_{qb}",
-                    "-y90_square": f"minus_y90_square_pulse_{qb}",
-                },
-                # "thread": qb,
-            }
+            for tw in ["", "_twin"]
             for qb, val in {**QUBIT_CONSTANTS, **CROT_CONSTANTS}.items()
         },
         # RF switch

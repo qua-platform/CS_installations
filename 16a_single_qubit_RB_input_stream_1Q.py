@@ -32,7 +32,7 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 # The QUA program #
 ###################
 
-qubit = "qubit5"
+qubit = "qubit1"
 plungers = "P4-P5"  # "full", "P1-P2", "P4-P5"
 do_feedback = False  # False for test. True for actual.
 num_output_streams = 6 if plungers == "full" else 2
@@ -153,7 +153,7 @@ with program() as PROGRAM_RB:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 qmm.clear_all_job_results()
 qmm.close_all_qms()
 

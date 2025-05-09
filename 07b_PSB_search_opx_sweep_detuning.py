@@ -45,55 +45,56 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 # The QUA program #
 ###################
 
+sweep_gates = ["P1_sticky", "P2_sticky"]
+tank_circuit = "tank_circuit1"
+threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
+
+
+###################
+# Sweep Parameters
+###################
+
 run_live = True
-set_init_as_dc_offset = True
-amplitude_scaling = 4.7  # (DC port / AC port) of bias tee
-
-level_init_arr = np.array([-0.02, 0.02]) * amplitude_scaling
-level_readout_center_arr = np.array([-0.00, +0.00]) * amplitude_scaling
-level_readout_from_arr = np.array([-0.003, +0.003]) * amplitude_scaling + level_readout_center_arr
-level_readout_to_arr = np.array([+0.003, -0.003]) * amplitude_scaling + level_readout_center_arr
-
 n_shots = 1000
 n_detunings = 100
-sweep_gates = ["P4_sticky", "P3_sticky"]
-tank_circuit = "tank_circuit2"
-threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
+
+set_init_as_dc_offset = True
+level_init_arr = np.array([-0.02, 0.02]) * AMP_SCALING
+level_readout_center_arr = np.array([-0.00, +0.00]) * AMP_SCALING
+level_readout_from_arr = np.array([-0.003, +0.003]) * AMP_SCALING + level_readout_center_arr
+level_readout_to_arr = np.array([+0.003, -0.003]) * AMP_SCALING + level_readout_center_arr
+
+
+###################
+# Gate Sequences
+###################
 
 duration_init = 10_000  # DO NOT USE * u.ns
 duration_ramp_init = 200
 duration_readout = 1_000 + REFLECTOMETRY_READOUT_LEN  # DO NOT USE * u.ns
 duration_ramp_readout = 52  # DO NOT USE * u.ns
 
+print(f"level init: {level_init_arr.tolist()}")
+print(f"level readout from: {level_readout_from_arr.tolist()}")
+print(f"level readout to: {level_readout_to_arr.tolist()}")
 
 if set_init_as_dc_offset:
-    level_readout_from_offset_arr = level_readout_from_arr - level_init_arr
-    level_readout_to_offset_arr = level_readout_to_arr - level_init_arr
+    level_readout_from_arr -= level_init_arr # level_readout_from_arr - level_init_arr
+    level_readout_to_arr -= level_init_arr # level_readout_to_arr - level_init_arr
     level_init_offset_arr = np.array([0.0, 0.0])  # level_init_arr - level_init_arr
 
-level_readout_from_list = level_readout_from_arr.tolist()
-level_readout_to_list = level_readout_to_arr.tolist()
-level_init_list = level_init_arr.tolist()
-level_readout_from_offset_list = level_readout_from_offset_arr.tolist()
-level_readout_to_offset_list = level_readout_to_offset_arr.tolist()
-level_init_offset_list = level_init_offset_arr.tolist()
+print(f"level init after offset: {level_init_arr.tolist()}")
+print(f"level readout from after offset: {level_readout_from_arr.tolist()}")
+print(f"level readout to after offset: {level_readout_to_arr.tolist()}")
 
-voltages_Px = np.linspace(level_readout_from_offset_arr[0], level_readout_to_offset_arr[0], n_detunings)
-voltages_Py = np.linspace(level_readout_from_offset_arr[1], level_readout_to_offset_arr[1], n_detunings)
-
-print(f"level init: {level_init_list}")
-print(f"level readout from: {level_readout_from_list}")
-print(f"level readout to: {level_readout_from_list}")
-print(f"level init after offset: {level_init_offset_list}")
-print(f"level readout from after offset: {level_readout_from_offset_list}")
-print(f"level readout to after offset: {level_readout_to_offset_list}")
+voltages_Px = np.linspace(level_readout_from_arr[0], level_readout_to_arr[0], n_detunings)
+voltages_Py = np.linspace(level_readout_from_arr[1], level_readout_to_arr[1], n_detunings)
 
 print(f"level readout on {sweep_gates[0]}: {voltages_Px}")
 print(f"level readout on {sweep_gates[1]}: {voltages_Py}")
 
-
 seq = VoltageGateSequence(config, sweep_gates)
-seq.add_points("initialization", level_init_offset_list, duration_init)
+seq.add_points("initialization", level_init_arr.tolist(), duration_init)
 
 
 save_data_dict = {
@@ -125,7 +126,7 @@ with program() as PSB_search_prog:
     assign_variables_to_element("tank_circuit1", I, Q, P)
 
     if set_init_as_dc_offset:
-        for sg, lvl_init in zip(sweep_gates, level_init_list):
+        for sg, lvl_init in zip(sweep_gates, level_init_arr.tolist()):
             set_dc_offset(sg, "single", lvl_init)
 
     with for_(n, 0, n < n_shots, n + 1):
@@ -169,7 +170,7 @@ with program() as PSB_search_prog:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
 ###########################
 # Run or Simulate Program #
@@ -195,8 +196,8 @@ else:
     results = fetching_tool(job, data_list=fetch_names, mode="live")
 
     bins = np.arange(0.05, 0.30, 0.001)
-    x_data_Px = np.tile(voltages_Px + level_init_list[0], (n_shots, 1)).ravel()
-    x_data_Py = np.tile(voltages_Py + level_init_list[1], (n_shots, 1)).ravel()
+    x_data_Px = np.tile(voltages_Px + level_init_arr.tolist()[0], (n_shots, 1)).ravel()
+    x_data_Py = np.tile(voltages_Py + level_init_arr.tolist()[1], (n_shots, 1)).ravel()
 
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
@@ -271,10 +272,7 @@ else:
     script_name = Path(__file__).name
     data_handler = DataHandler(root_data_folder=save_dir)
     save_data_dict.update({"fig_live": fig})
-    data_handler.additional_files = {
-        script_name: script_name,
-        **default_additional_files,
-    }
+    data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name=script_name.replace(".py", ""))
 
     # qm.close()
