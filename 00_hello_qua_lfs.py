@@ -24,28 +24,28 @@ with program() as hello_qua:
         "saturation",
         "x180_kaiser",
         "x90_kaiser",
-        "-x90_kaiser",
+        "minus_x90_kaiser",
         "y180_kaiser",
         "y90_kaiser",
-        "-y90_kaiser",
+        "minus_y90_kaiser",
         "x180_gauss",
         "x90_gauss",
-        "-x90_gauss",
+        "minus_x90_gauss",
         "y180_gauss",
         "y90_gauss",
-        "-y90_gauss",
+        "minus_y90_gauss",
         "x180_square",
         "x90_square",
-        "-x90_square",
+        "minus_x90_square",
         "y180_square",
         "y90_square",
-        "-y90_square",
+        "minus_y90_square",
     ]:
         play(pls, "qubit1")
         play(pls, "qubit2")
         play(pls, "qubit3")
-        play(pls, "qubit4")
-        play(pls, "qubit5")
+        # play(pls, "qubit4")
+        # play(pls, "qubit5")
         wait(50)
         align()
 
@@ -53,18 +53,18 @@ with program() as hello_qua:
         wait(50)
         align()
 
-    play("step", "P0", duration=100 * u.ns)
+    # play("step", "P0", duration=100 * u.ns)
     play("step", "P1", duration=100 * u.ns)
     play("step", "P2", duration=100 * u.ns)
     play("step", "P3", duration=100 * u.ns)
-    play("step", "P4", duration=100 * u.ns)
+    # play("step", "P4", duration=100 * u.ns)
     wait(50)
     align()
 
     play("step", "B1", duration=100 * u.ns)
     play("step", "B2", duration=100 * u.ns)
     play("step", "B3", duration=100 * u.ns)
-    play("step", "B4", duration=100 * u.ns)
+    # play("step", "B4", duration=100 * u.ns)
     wait(50)
     align()
 

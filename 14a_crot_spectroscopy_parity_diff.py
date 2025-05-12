@@ -49,15 +49,20 @@ def perform_read_init(I, Q, P0_st, P1_st):
 # The QUA program #
 ###################
 
-n_avg = 3  # Number of averages
-
-qubit = "qubit1"
-barrier_gate = "B1_sticky"
-sweep_gates = ["P1_sticky", "P2_sticky"]
+qubit = "qubit3"
+barrier_gate = "B2_sticky"
+sweep_gates = ["P3_sticky", "P2_sticky"]
 tank_circuit = "tank_circuit1"
 threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
 num_output_streams = 3
 x180 = "x180_square"
+
+
+###################
+# Sweep Parameters
+###################
+
+n_avg = 3  # Number of averages
 
 voltages_B = np.arange(0.0, 0.4, 0.01)
 freqs = np.arange(140e6, 190e6, 2e6)

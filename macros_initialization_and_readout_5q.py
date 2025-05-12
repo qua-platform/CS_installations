@@ -14,11 +14,9 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import (fetching_tool, progress_counter,
                                    wait_until_job_is_paused)
 
-from configuration_with_lffem_csrack import *
+from configuration_with_lffem import *
+from macros import get_other_elements
 from macros_voltage_gate_sequence import VoltageGateSequence
-
-# from configuration_with_lffem import *
-
 
 ##################
 #   Parameters   #
@@ -103,7 +101,6 @@ seq.add_points("wait_P4-P5", level_waits["P4-P5"], duration_wait)
 ###################
 #  Util funciton  #
 ###################
-
 
 def adjust_all_elements(removes=[], adds=[], all_elements=all_elements):
     if isinstance(removes, str):
@@ -230,8 +227,8 @@ def read_init12(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st, init_singlet=
     qua_st_vars1 = I1_st, Q1_st, P1_st
     qua_st_vars2 = I2_st, Q2_st, P2_st
 
-    qubit = "qubit1"
-    tank_circuit = "tank_circuit1"
+    qubit = "qubit4"
+    tank_circuit = "tank_circuit2"
     plungers = "P1-P2"  # "full", "P1-P2", "P4-P5"
     threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
     other_elements = get_other_elements(elements_in_use=[qubit, tank_circuit] + sweep_gates, all_elements=all_elements)
@@ -255,8 +252,8 @@ def read_init45(I, Q, P, I1_st, Q1_st, P1_st, I2_st, Q2_st, P2_st, init_singlet=
     qua_st_vars1 = I1_st, Q1_st, P1_st
     qua_st_vars2 = I2_st, Q2_st, P2_st
 
-    qubit = "qubit1"
-    tank_circuit = "tank_circuit1"
+    qubit = "qubit5"
+    tank_circuit = "tank_circuit2"
     plungers = "P4-P5"  # "full", "P1-P2", "P4-P5"
     threshold = TANK_CIRCUIT_CONSTANTS[tank_circuit]["threshold"]
     other_elements = get_other_elements(elements_in_use=[qubit, tank_circuit] + sweep_gates, all_elements=all_elements)
@@ -348,7 +345,7 @@ def measure_parity(I, Q, P, I_st, Q_st, P_st, plungers, tank_circuit, threshold)
     wait(delay_read_reflec_end * u.ns, tank_circuit) if delay_read_reflec_end >= 16 else None
     wait(delay_stream * u.ns, tank_circuit) if delay_read_reflec_end >= 16 else None
 
-    assign(P, I > threshold)  # TODO: I > threashold is even?
+    assign(P, Q > threshold)  # TODO: I > threashold is even?
 
     if I_st is not None:
         save(I, I_st)

@@ -62,6 +62,7 @@ set_init_as_dc_offset = True
 level_init_arr = np.array([-0.02, 0.02]) * AMP_SCALING
 level_readout_arr = np.array([-0.00, 0.00]) * AMP_SCALING
 
+
 ###################
 # Gate Sequences
 ###################

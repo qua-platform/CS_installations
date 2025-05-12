@@ -262,7 +262,7 @@ DO_CONSTANTS = {
 }
 
 PLUNGER_CONSTANTS = {
-    "P2": {
+    "P1": {
         "con": con1,
         "fem": lffem2,
         "ao": 1,
@@ -270,7 +270,7 @@ PLUNGER_CONSTANTS = {
         "step_len": STEP_LEN,
         "delay": 0,
     },
-    "P3": {
+    "P2": {
         "con": con1,
         "fem": lffem2,
         "ao": 2,
@@ -376,18 +376,24 @@ CROT_CONSTANTS = {
             "IF": QUBIT_CONSTANTS[f"qubit{c}"]["IF"],
             "mixer_g": QUBIT_CONSTANTS[f"qubit{c}"]["mixer_g"],
             "mixer_phi": QUBIT_CONSTANTS[f"qubit{c}"]["mixer_phi"],
-            "square_pi_amp": CROT_PI_AMP,
-            "square_pi_len": CROT_PI_LEN,
-            "square_pi_half_amp": CROT_PI_HALF_AMP,
-            "square_pi_half_len": CROT_PI_HALF_LEN,
-            "kaiser_pi_amp": CROT_PI_AMP,
-            "kaiser_pi_len": CROT_PI_LEN,
-            "kaiser_pi_half_amp": CROT_PI_HALF_AMP,
-            "kaiser_pi_half_len": CROT_PI_HALF_LEN,
-            "gauss_pi_amp": CROT_PI_AMP,
-            "gauss_pi_len": CROT_PI_LEN,
-            "gauss_pi_half_amp": CROT_PI_HALF_AMP,
-            "gauss_pi_half_len": CROT_PI_HALF_LEN,
+            "square": {
+                "pi_amp": CROT_PI_AMP,
+                "pi_len": CROT_PI_LEN,
+                "pi_half_amp": CROT_PI_HALF_AMP,
+                "pi_half_len": CROT_PI_HALF_LEN,
+            },
+            "kaiser": {
+                "pi_amp": CROT_PI_AMP,
+                "pi_len": CROT_PI_LEN,
+                "pi_half_amp": CROT_PI_HALF_AMP,
+                "pi_half_len": CROT_PI_HALF_LEN,
+            },
+            "gauss": {
+                "pi_amp": CROT_PI_AMP,
+                "pi_len": CROT_PI_LEN,
+                "pi_half_amp": CROT_PI_HALF_AMP,
+                "pi_half_len": CROT_PI_HALF_LEN,
+            },
         }
         for c, t in qubit_pairs
     }
@@ -790,7 +796,13 @@ config = {
                         f"{axis}{angle}_{shape}": f"{axis}{angle}_{shape}_pulse_{qb}" # e.g. x180_kaiser_pulse_q1
                         for shape in ["kaiser", "gauss", "square"]
                         for axis in ["x", "y"]
-                        for angle in ["180", "90", "-90"]
+                        for angle in ["180", "90"]
+                    },
+                    **{
+                        f"{axis}{angle}_{shape}": f"{axis}{angle}_{shape}_pulse_{qb}" # e.g. x180_kaiser_pulse_q1
+                        for shape in ["kaiser", "gauss", "square"]
+                        for axis in ["minus_x", "minus_y"]
+                        for angle in ["90"]
                     },
                 },
                 # "thread": qb,
@@ -871,7 +883,7 @@ config = {
         **{
             f"{rk}_{wf}_pulse_{qb}": {
                 "operation": "control",
-                "length": val[f"{wf}_pi_len"],
+                "length": val[wf]["pi_len"],
                 "waveforms": {
                     "I": f"{rk}_{wf}_I_wf_{qb}",
                     "Q": f"{rk}_{wf}_Q_wf_{qb}",
@@ -884,7 +896,7 @@ config = {
         **{
             f"{rk}_{wf}_pulse_{qb}": {
                 "operation": "control",
-                "length": val[f"{wf}_pi_half_len"],
+                "length": val[wf]["pi_half_len"],
                 "waveforms": {
                     "I": f"{rk}_{wf}_I_wf_{qb}",
                     "Q": f"{rk}_{wf}_Q_wf_{qb}",

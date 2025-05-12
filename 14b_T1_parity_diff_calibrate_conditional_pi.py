@@ -1,27 +1,5 @@
 # %%
 """
-        RAMSEY-LIKE CHEVRON - using standard QUA (pulse > 16ns and 4ns granularity)
-The goal of the script is to acquire exchange driven coherent oscillations by sweeping the idle time and detuning.
-The QUA program is divided into three sections:
-    1) step between the initialization, idle and measurement points using sticky elements (long timescale).
-    2) apply two delta-g driven pi-half pulses separated by a low detuning pulse to increase J, using non-sticky elements (short timescale).
-    3) measure the state of the qubit using either RF reflectometry or dc current sensing via PSB or Elzerman readout.
-A compensation pulse can be added to the long timescale sequence in order to ensure 0 DC voltage on the fast line of
-the bias-tee. Alternatively one can obtain the same result by changing the offset of the slow line of the bias-tee.
-
-In the current implementation, the qubit pulses are played using the real-time pulse manipulation of the OPX, which is
-fast and can be arbitrarily long. However, the minimum pulse length is 16ns and the sweep step must be larger than 4ns.
-Also note that the qubit pulses are played at the end of the global "idle" level whose duration is fixed.
-
-Prerequisites:
-    - Readout calibration (resonance frequency for RF reflectometry and sensor operating point for DC current sensing).
-    - Setting the DC offsets of the external DC voltage source.
-    - Connecting the OPX to the fast line of the plunger gates.
-    - Having calibrated the initialization and readout point from the charge stability map and updated the configuration.
-    - Having calibrated the delta-g driven pi-half parameters (detuning level and duration).
-
-Before proceeding to the next node:
-    - Extract the qubit frequency and T2*...
 """
 
 import matplotlib

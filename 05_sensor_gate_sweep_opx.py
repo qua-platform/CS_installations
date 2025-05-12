@@ -38,7 +38,6 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 # The QUA program #
 ###################
 
-run_live = False  # True
 sd_sticky = "Psd1_sticky"
 tank_circuit = "tank_circuit1"
 step_amp = PLUNGER_SD_CONSTANTS[sd_sticky.replace("_sticky", "")]["step_amp"]
@@ -48,6 +47,7 @@ step_amp = PLUNGER_SD_CONSTANTS[sd_sticky.replace("_sticky", "")]["step_amp"]
 # Sweep Parameters
 ###################
 
+run_live = False  # True
 n_avg = 1000000 if run_live else 100  # Number of averaging loops
 offset_max = +0.2
 offset_min = -offset_max

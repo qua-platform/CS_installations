@@ -50,7 +50,7 @@ tank_circuit = "tank_circuit1"
 ###################
 
 run_live = False  # True
-n_avg = 1000000 if run_live else 100  # Number of averaging loops
+n_avg = 100 if run_live else 100  # Number of averaging loops
 v_span = 0.08
 n_voltages_Px = 101
 n_voltages_Py = 101
