@@ -292,9 +292,7 @@ else:
         if save_data:
             # Open the log file in append mode and write the log
             with open(data_handler.path / "log.txt", encoding="utf8", mode="a") as f:
-                f.write(
-                    _log_this.replace("_", "") + "\n"
-                )  # Append the log message to the file
+                f.write(_log_this.replace("_", "") + "\n")  # Append the log message to the file
 
             # Data to save
             np.savez(
