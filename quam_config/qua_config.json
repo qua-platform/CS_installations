@@ -1,0 +1,1855 @@
+{
+    "version": 1,
+    "controllers": {
+        "con1": {
+            "fems": {
+                "7": {
+                    "type": "LF",
+                    "analog_outputs": {
+                        "1": {
+                            "delay": 0,
+                            "shareable": false,
+                            "sampling_rate": 1000000000.0,
+                            "upsampling_mode": "pulse",
+                            "output_mode": "direct",
+                            "offset": 0.0
+                        },
+                        "2": {
+                            "delay": 0,
+                            "shareable": false,
+                            "sampling_rate": 1000000000.0,
+                            "upsampling_mode": "pulse",
+                            "output_mode": "direct",
+                            "offset": 0.0
+                        }
+                    }
+                },
+                "2": {
+                    "type": "MW",
+                    "analog_outputs": {
+                        "1": {
+                            "band": 2,
+                            "delay": 0,
+                            "shareable": false,
+                            "sampling_rate": 1000000000.0,
+                            "full_scale_power_dbm": 16,
+                            "upconverter_frequency": 7380000000
+                        },
+                        "2": {
+                            "band": 1,
+                            "delay": 0,
+                            "shareable": false,
+                            "sampling_rate": 1000000000.0,
+                            "full_scale_power_dbm": -2,
+                            "upconverter_frequency": 4800000000.0
+                        },
+                        "3": {
+                            "band": 2,
+                            "delay": 0,
+                            "shareable": false,
+                            "sampling_rate": 1000000000.0,
+                            "full_scale_power_dbm": -2,
+                            "upconverter_frequency": 5590000000.0
+                        }
+                    },
+                    "analog_inputs": {
+                        "1": {
+                            "band": 2,
+                            "downconverter_frequency": 7380000000,
+                            "sampling_rate": 1000000000.0,
+                            "shareable": false
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "elements": {
+        "qC1.xy": {
+            "operations": {
+                "saturation": "qC1.xy.saturation.pulse",
+                "x180_DragCosine": "qC1.xy.x180_DragCosine.pulse",
+                "x90_DragCosine": "qC1.xy.x90_DragCosine.pulse",
+                "-x90_DragCosine": "qC1.xy.-x90_DragCosine.pulse",
+                "y180_DragCosine": "qC1.xy.y180_DragCosine.pulse",
+                "y90_DragCosine": "qC1.xy.y90_DragCosine.pulse",
+                "-y90_DragCosine": "qC1.xy.-y90_DragCosine.pulse",
+                "x180": "qC1.xy.x180_Square.pulse",
+                "x90": "qC1.xy.x90_Square.pulse",
+                "-x90": "qC1.xy.-x90_Square.pulse",
+                "y180": "qC1.xy.y180_Square.pulse",
+                "y90": "qC1.xy.y90_Square.pulse",
+                "-y90": "qC1.xy.-y90_Square.pulse",
+                "x180_Square": "qC1.xy.x180_Square.pulse",
+                "x90_Square": "qC1.xy.x90_Square.pulse",
+                "-x90_Square": "qC1.xy.-x90_Square.pulse",
+                "y180_Square": "qC1.xy.y180_Square.pulse",
+                "y90_Square": "qC1.xy.y90_Square.pulse",
+                "-y90_Square": "qC1.xy.-y90_Square.pulse",
+                "const": "qC1.xy.const.pulse"
+            },
+            "intermediate_frequency": 177461563.0,
+            "MWInput": {
+                "port": [
+                    "con1",
+                    2,
+                    2
+                ],
+                "upconverter": 1
+            }
+        },
+        "qC1.resonator": {
+            "operations": {
+                "readout": "qC1.resonator.readout.pulse",
+                "const": "qC1.resonator.const.pulse"
+            },
+            "intermediate_frequency": -226808736,
+            "MWOutput": {
+                "port": [
+                    "con1",
+                    2,
+                    1
+                ]
+            },
+            "smearing": 0,
+            "time_of_flight": 32,
+            "MWInput": {
+                "port": [
+                    "con1",
+                    2,
+                    1
+                ],
+                "upconverter": 1
+            }
+        },
+        "qC1.z": {
+            "operations": {
+                "const": "qC1.z.const.pulse"
+            },
+            "singleInput": {
+                "port": [
+                    "con1",
+                    7,
+                    1
+                ]
+            }
+        },
+        "qC2.xy": {
+            "operations": {
+                "saturation": "qC2.xy.saturation.pulse",
+                "x180_DragCosine": "qC2.xy.x180_DragCosine.pulse",
+                "x90_DragCosine": "qC2.xy.x90_DragCosine.pulse",
+                "-x90_DragCosine": "qC2.xy.-x90_DragCosine.pulse",
+                "y180_DragCosine": "qC2.xy.y180_DragCosine.pulse",
+                "y90_DragCosine": "qC2.xy.y90_DragCosine.pulse",
+                "-y90_DragCosine": "qC2.xy.-y90_DragCosine.pulse",
+                "x180": "qC2.xy.x180_Square.pulse",
+                "x90": "qC2.xy.x90_Square.pulse",
+                "-x90": "qC2.xy.-x90_Square.pulse",
+                "y180": "qC2.xy.y180_Square.pulse",
+                "y90": "qC2.xy.y90_Square.pulse",
+                "-y90": "qC2.xy.-y90_Square.pulse",
+                "x180_Square": "qC2.xy.x180_Square.pulse",
+                "x90_Square": "qC2.xy.x90_Square.pulse",
+                "-x90_Square": "qC2.xy.-x90_Square.pulse",
+                "y180_Square": "qC2.xy.y180_Square.pulse",
+                "y90_Square": "qC2.xy.y90_Square.pulse",
+                "-y90_Square": "qC2.xy.-y90_Square.pulse",
+                "const": "qC2.xy.const.pulse"
+            },
+            "intermediate_frequency": 298582486.0,
+            "MWInput": {
+                "port": [
+                    "con1",
+                    2,
+                    3
+                ],
+                "upconverter": 1
+            }
+        },
+        "qC2.resonator": {
+            "operations": {
+                "readout": "qC2.resonator.readout.pulse",
+                "const": "qC2.resonator.const.pulse"
+            },
+            "intermediate_frequency": 40522726,
+            "MWOutput": {
+                "port": [
+                    "con1",
+                    2,
+                    1
+                ]
+            },
+            "smearing": 0,
+            "time_of_flight": 32,
+            "MWInput": {
+                "port": [
+                    "con1",
+                    2,
+                    1
+                ],
+                "upconverter": 1
+            }
+        },
+        "qC2.z": {
+            "operations": {
+                "const": "qC2.z.const.pulse"
+            },
+            "singleInput": {
+                "port": [
+                    "con1",
+                    7,
+                    2
+                ]
+            }
+        }
+    },
+    "pulses": {
+        "const_pulse": {
+            "operation": "control",
+            "length": 1000,
+            "waveforms": {
+                "I": "const_wf",
+                "Q": "zero_wf"
+            }
+        },
+        "qC1.xy.saturation.pulse": {
+            "operation": "control",
+            "length": 20000,
+            "waveforms": {
+                "I": "qC1.xy.saturation.wf.I",
+                "Q": "qC1.xy.saturation.wf.Q"
+            }
+        },
+        "qC1.xy.x180_DragCosine.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC1.xy.x180_DragCosine.wf.I",
+                "Q": "qC1.xy.x180_DragCosine.wf.Q"
+            }
+        },
+        "qC1.xy.x90_DragCosine.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC1.xy.x90_DragCosine.wf.I",
+                "Q": "qC1.xy.x90_DragCosine.wf.Q"
+            }
+        },
+        "qC1.xy.-x90_DragCosine.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC1.xy.-x90_DragCosine.wf.I",
+                "Q": "qC1.xy.-x90_DragCosine.wf.Q"
+            }
+        },
+        "qC1.xy.y180_DragCosine.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC1.xy.y180_DragCosine.wf.I",
+                "Q": "qC1.xy.y180_DragCosine.wf.Q"
+            }
+        },
+        "qC1.xy.y90_DragCosine.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC1.xy.y90_DragCosine.wf.I",
+                "Q": "qC1.xy.y90_DragCosine.wf.Q"
+            }
+        },
+        "qC1.xy.-y90_DragCosine.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC1.xy.-y90_DragCosine.wf.I",
+                "Q": "qC1.xy.-y90_DragCosine.wf.Q"
+            }
+        },
+        "qC1.xy.x180_Square.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC1.xy.x180_Square.wf.I",
+                "Q": "qC1.xy.x180_Square.wf.Q"
+            }
+        },
+        "qC1.xy.x90_Square.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC1.xy.x90_Square.wf.I",
+                "Q": "qC1.xy.x90_Square.wf.Q"
+            }
+        },
+        "qC1.xy.-x90_Square.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC1.xy.-x90_Square.wf.I",
+                "Q": "qC1.xy.-x90_Square.wf.Q"
+            }
+        },
+        "qC1.xy.y180_Square.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC1.xy.y180_Square.wf.I",
+                "Q": "qC1.xy.y180_Square.wf.Q"
+            }
+        },
+        "qC1.xy.y90_Square.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC1.xy.y90_Square.wf.I",
+                "Q": "qC1.xy.y90_Square.wf.Q"
+            }
+        },
+        "qC1.xy.-y90_Square.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC1.xy.-y90_Square.wf.I",
+                "Q": "qC1.xy.-y90_Square.wf.Q"
+            }
+        },
+        "qC1.xy.const.pulse": {
+            "operation": "control",
+            "length": 100,
+            "waveforms": {
+                "I": "qC1.xy.const.wf.I",
+                "Q": "qC1.xy.const.wf.Q"
+            }
+        },
+        "qC1.resonator.readout.pulse": {
+            "operation": "measurement",
+            "length": 1500,
+            "digital_marker": "ON",
+            "waveforms": {
+                "I": "qC1.resonator.readout.wf.I",
+                "Q": "qC1.resonator.readout.wf.Q"
+            },
+            "integration_weights": {
+                "iw1": "qC1.resonator.readout.iw1",
+                "iw2": "qC1.resonator.readout.iw2",
+                "iw3": "qC1.resonator.readout.iw3"
+            }
+        },
+        "qC1.resonator.const.pulse": {
+            "operation": "control",
+            "length": 100,
+            "waveforms": {
+                "I": "qC1.resonator.const.wf.I",
+                "Q": "qC1.resonator.const.wf.Q"
+            }
+        },
+        "qC1.z.const.pulse": {
+            "operation": "control",
+            "length": 100,
+            "waveforms": {
+                "single": "qC1.z.const.wf"
+            }
+        },
+        "qC2.xy.saturation.pulse": {
+            "operation": "control",
+            "length": 20000,
+            "waveforms": {
+                "I": "qC2.xy.saturation.wf.I",
+                "Q": "qC2.xy.saturation.wf.Q"
+            }
+        },
+        "qC2.xy.x180_DragCosine.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC2.xy.x180_DragCosine.wf.I",
+                "Q": "qC2.xy.x180_DragCosine.wf.Q"
+            }
+        },
+        "qC2.xy.x90_DragCosine.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC2.xy.x90_DragCosine.wf.I",
+                "Q": "qC2.xy.x90_DragCosine.wf.Q"
+            }
+        },
+        "qC2.xy.-x90_DragCosine.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC2.xy.-x90_DragCosine.wf.I",
+                "Q": "qC2.xy.-x90_DragCosine.wf.Q"
+            }
+        },
+        "qC2.xy.y180_DragCosine.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC2.xy.y180_DragCosine.wf.I",
+                "Q": "qC2.xy.y180_DragCosine.wf.Q"
+            }
+        },
+        "qC2.xy.y90_DragCosine.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC2.xy.y90_DragCosine.wf.I",
+                "Q": "qC2.xy.y90_DragCosine.wf.Q"
+            }
+        },
+        "qC2.xy.-y90_DragCosine.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC2.xy.-y90_DragCosine.wf.I",
+                "Q": "qC2.xy.-y90_DragCosine.wf.Q"
+            }
+        },
+        "qC2.xy.x180_Square.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC2.xy.x180_Square.wf.I",
+                "Q": "qC2.xy.x180_Square.wf.Q"
+            }
+        },
+        "qC2.xy.x90_Square.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC2.xy.x90_Square.wf.I",
+                "Q": "qC2.xy.x90_Square.wf.Q"
+            }
+        },
+        "qC2.xy.-x90_Square.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC2.xy.-x90_Square.wf.I",
+                "Q": "qC2.xy.-x90_Square.wf.Q"
+            }
+        },
+        "qC2.xy.y180_Square.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC2.xy.y180_Square.wf.I",
+                "Q": "qC2.xy.y180_Square.wf.Q"
+            }
+        },
+        "qC2.xy.y90_Square.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC2.xy.y90_Square.wf.I",
+                "Q": "qC2.xy.y90_Square.wf.Q"
+            }
+        },
+        "qC2.xy.-y90_Square.pulse": {
+            "operation": "control",
+            "length": 40,
+            "waveforms": {
+                "I": "qC2.xy.-y90_Square.wf.I",
+                "Q": "qC2.xy.-y90_Square.wf.Q"
+            }
+        },
+        "qC2.xy.const.pulse": {
+            "operation": "control",
+            "length": 100,
+            "waveforms": {
+                "I": "qC2.xy.const.wf.I",
+                "Q": "qC2.xy.const.wf.Q"
+            }
+        },
+        "qC2.resonator.readout.pulse": {
+            "operation": "measurement",
+            "length": 1500,
+            "digital_marker": "ON",
+            "waveforms": {
+                "I": "qC2.resonator.readout.wf.I",
+                "Q": "qC2.resonator.readout.wf.Q"
+            },
+            "integration_weights": {
+                "iw1": "qC2.resonator.readout.iw1",
+                "iw2": "qC2.resonator.readout.iw2",
+                "iw3": "qC2.resonator.readout.iw3"
+            }
+        },
+        "qC2.resonator.const.pulse": {
+            "operation": "control",
+            "length": 100,
+            "waveforms": {
+                "I": "qC2.resonator.const.wf.I",
+                "Q": "qC2.resonator.const.wf.Q"
+            }
+        },
+        "qC2.z.const.pulse": {
+            "operation": "control",
+            "length": 100,
+            "waveforms": {
+                "single": "qC2.z.const.wf"
+            }
+        }
+    },
+    "waveforms": {
+        "zero_wf": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "const_wf": {
+            "type": "constant",
+            "sample": 0.1
+        },
+        "qC1.xy.saturation.wf.I": {
+            "type": "constant",
+            "sample": 0.03981071705534972
+        },
+        "qC1.xy.saturation.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "qC1.xy.x180_DragCosine.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0025776916503157127,
+                0.01024400574151878,
+                0.022800388765576485,
+                0.03992163699773022,
+                0.061164319102145016,
+                0.08597826077058386,
+                0.11372079394799796,
+                0.14367340159757425,
+                0.17506032691456946,
+                0.20706866502006654,
+                0.23886941677033918,
+                0.2696389593992218,
+                0.29858037791512293,
+                0.3249441047807083,
+                0.3480473333183877,
+                0.36729170204460276,
+                0.3821787919179461,
+                0.3923230351305265,
+                0.3974617011116639,
+                0.39746170111166396,
+                0.3923230351305265,
+                0.3821787919179461,
+                0.3672917020446029,
+                0.34804733331838783,
+                0.3249441047807083,
+                0.2985803779151228,
+                0.26963895939922183,
+                0.23886941677033927,
+                0.20706866502006654,
+                0.17506032691456963,
+                0.14367340159757439,
+                0.11372079394799806,
+                0.08597826077058393,
+                0.06116431910214504,
+                0.03992163699773022,
+                0.022800388765576465,
+                0.010244005741518757,
+                0.0025776916503157127,
+                0.0
+            ]
+        },
+        "qC1.xy.x180_DragCosine.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "qC1.xy.x90_DragCosine.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0012888458251578564,
+                0.00512200287075939,
+                0.011400194382788243,
+                0.01996081849886511,
+                0.030582159551072508,
+                0.04298913038529193,
+                0.05686039697399898,
+                0.07183670079878712,
+                0.08753016345728473,
+                0.10353433251003327,
+                0.11943470838516959,
+                0.1348194796996109,
+                0.14929018895756146,
+                0.16247205239035414,
+                0.17402366665919386,
+                0.18364585102230138,
+                0.19108939595897306,
+                0.19616151756526326,
+                0.19873085055583195,
+                0.19873085055583198,
+                0.19616151756526326,
+                0.19108939595897306,
+                0.18364585102230144,
+                0.17402366665919392,
+                0.16247205239035414,
+                0.1492901889575614,
+                0.13481947969961092,
+                0.11943470838516963,
+                0.10353433251003327,
+                0.08753016345728482,
+                0.07183670079878719,
+                0.05686039697399903,
+                0.042989130385291965,
+                0.03058215955107252,
+                0.01996081849886511,
+                0.011400194382788232,
+                0.005122002870759378,
+                0.0012888458251578564,
+                0.0
+            ]
+        },
+        "qC1.xy.x90_DragCosine.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "qC1.xy.-x90_DragCosine.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                -0.0012888458251578564,
+                -0.00512200287075939,
+                -0.011400194382788243,
+                -0.01996081849886511,
+                -0.030582159551072508,
+                -0.04298913038529193,
+                -0.05686039697399898,
+                -0.07183670079878712,
+                -0.08753016345728473,
+                -0.10353433251003327,
+                -0.11943470838516959,
+                -0.1348194796996109,
+                -0.14929018895756146,
+                -0.16247205239035414,
+                -0.17402366665919386,
+                -0.18364585102230138,
+                -0.19108939595897306,
+                -0.19616151756526326,
+                -0.19873085055583195,
+                -0.19873085055583198,
+                -0.19616151756526326,
+                -0.19108939595897306,
+                -0.18364585102230144,
+                -0.17402366665919392,
+                -0.16247205239035414,
+                -0.1492901889575614,
+                -0.13481947969961092,
+                -0.11943470838516963,
+                -0.10353433251003327,
+                -0.08753016345728482,
+                -0.07183670079878719,
+                -0.05686039697399903,
+                -0.042989130385291965,
+                -0.03058215955107252,
+                -0.01996081849886511,
+                -0.011400194382788232,
+                -0.005122002870759378,
+                -0.0012888458251578564,
+                0.0
+            ]
+        },
+        "qC1.xy.-x90_DragCosine.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                1.578380914373998e-19,
+                6.27264442089904e-19,
+                1.3961211560539257e-18,
+                2.4444952482996434e-18,
+                3.745234380523461e-18,
+                5.2646500924475986e-18,
+                6.96339031524557e-18,
+                8.797458569454076e-18,
+                1.0719353450680837e-17,
+                1.2679298891027e-17,
+                1.462653333309955e-17,
+                1.6510624427684005e-17,
+                1.8282775205098117e-17,
+                1.9897087891074827e-17,
+                2.1311752635006774e-17,
+                2.2490130363115307e-17,
+                2.3401701711215753e-17,
+                2.4022857460218697e-17,
+                2.433751000250306e-17,
+                2.4337510002503062e-17,
+                2.4022857460218697e-17,
+                2.3401701711215753e-17,
+                2.2490130363115313e-17,
+                2.131175263500678e-17,
+                1.9897087891074827e-17,
+                1.828277520509811e-17,
+                1.651062442768401e-17,
+                1.4626533333099555e-17,
+                1.2679298891027e-17,
+                1.0719353450680847e-17,
+                8.797458569454085e-18,
+                6.963390315245576e-18,
+                5.264650092447603e-18,
+                3.7452343805234614e-18,
+                2.4444952482996434e-18,
+                1.3961211560539245e-18,
+                6.272644420899027e-19,
+                1.578380914373998e-19,
+                0.0
+            ]
+        },
+        "qC1.xy.y180_DragCosine.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                1.578380914373998e-19,
+                6.27264442089904e-19,
+                1.3961211560539257e-18,
+                2.4444952482996434e-18,
+                3.745234380523461e-18,
+                5.2646500924475986e-18,
+                6.96339031524557e-18,
+                8.797458569454076e-18,
+                1.0719353450680837e-17,
+                1.2679298891027e-17,
+                1.462653333309955e-17,
+                1.6510624427684005e-17,
+                1.8282775205098117e-17,
+                1.9897087891074827e-17,
+                2.1311752635006774e-17,
+                2.2490130363115307e-17,
+                2.3401701711215753e-17,
+                2.4022857460218697e-17,
+                2.433751000250306e-17,
+                2.4337510002503062e-17,
+                2.4022857460218697e-17,
+                2.3401701711215753e-17,
+                2.2490130363115313e-17,
+                2.131175263500678e-17,
+                1.9897087891074827e-17,
+                1.828277520509811e-17,
+                1.651062442768401e-17,
+                1.4626533333099555e-17,
+                1.2679298891027e-17,
+                1.0719353450680847e-17,
+                8.797458569454085e-18,
+                6.963390315245576e-18,
+                5.264650092447603e-18,
+                3.7452343805234614e-18,
+                2.4444952482996434e-18,
+                1.3961211560539245e-18,
+                6.272644420899027e-19,
+                1.578380914373998e-19,
+                0.0
+            ]
+        },
+        "qC1.xy.y180_DragCosine.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0025776916503157127,
+                0.01024400574151878,
+                0.022800388765576485,
+                0.03992163699773022,
+                0.061164319102145016,
+                0.08597826077058386,
+                0.11372079394799796,
+                0.14367340159757425,
+                0.17506032691456946,
+                0.20706866502006654,
+                0.23886941677033918,
+                0.2696389593992218,
+                0.29858037791512293,
+                0.3249441047807083,
+                0.3480473333183877,
+                0.36729170204460276,
+                0.3821787919179461,
+                0.3923230351305265,
+                0.3974617011116639,
+                0.39746170111166396,
+                0.3923230351305265,
+                0.3821787919179461,
+                0.3672917020446029,
+                0.34804733331838783,
+                0.3249441047807083,
+                0.2985803779151228,
+                0.26963895939922183,
+                0.23886941677033927,
+                0.20706866502006654,
+                0.17506032691456963,
+                0.14367340159757439,
+                0.11372079394799806,
+                0.08597826077058393,
+                0.06116431910214504,
+                0.03992163699773022,
+                0.022800388765576465,
+                0.010244005741518757,
+                0.0025776916503157127,
+                0.0
+            ]
+        },
+        "qC1.xy.y90_DragCosine.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                7.89190457186999e-20,
+                3.13632221044952e-19,
+                6.980605780269628e-19,
+                1.2222476241498217e-18,
+                1.8726171902617303e-18,
+                2.6323250462237993e-18,
+                3.481695157622785e-18,
+                4.398729284727038e-18,
+                5.359676725340419e-18,
+                6.3396494455135e-18,
+                7.313266666549774e-18,
+                8.255312213842003e-18,
+                9.141387602549059e-18,
+                9.948543945537414e-18,
+                1.0655876317503387e-17,
+                1.1245065181557654e-17,
+                1.1700850855607877e-17,
+                1.2011428730109348e-17,
+                1.216875500125153e-17,
+                1.2168755001251531e-17,
+                1.2011428730109348e-17,
+                1.1700850855607877e-17,
+                1.1245065181557657e-17,
+                1.065587631750339e-17,
+                9.948543945537414e-18,
+                9.141387602549055e-18,
+                8.255312213842004e-18,
+                7.313266666549777e-18,
+                6.3396494455135e-18,
+                5.359676725340423e-18,
+                4.3987292847270425e-18,
+                3.481695157622788e-18,
+                2.6323250462238016e-18,
+                1.8726171902617307e-18,
+                1.2222476241498217e-18,
+                6.980605780269622e-19,
+                3.1363222104495134e-19,
+                7.89190457186999e-20,
+                0.0
+            ]
+        },
+        "qC1.xy.y90_DragCosine.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0012888458251578564,
+                0.00512200287075939,
+                0.011400194382788243,
+                0.01996081849886511,
+                0.030582159551072508,
+                0.04298913038529193,
+                0.05686039697399898,
+                0.07183670079878712,
+                0.08753016345728473,
+                0.10353433251003327,
+                0.11943470838516959,
+                0.1348194796996109,
+                0.14929018895756146,
+                0.16247205239035414,
+                0.17402366665919386,
+                0.18364585102230138,
+                0.19108939595897306,
+                0.19616151756526326,
+                0.19873085055583195,
+                0.19873085055583198,
+                0.19616151756526326,
+                0.19108939595897306,
+                0.18364585102230144,
+                0.17402366665919392,
+                0.16247205239035414,
+                0.1492901889575614,
+                0.13481947969961092,
+                0.11943470838516963,
+                0.10353433251003327,
+                0.08753016345728482,
+                0.07183670079878719,
+                0.05686039697399903,
+                0.042989130385291965,
+                0.03058215955107252,
+                0.01996081849886511,
+                0.011400194382788232,
+                0.005122002870759378,
+                0.0012888458251578564,
+                0.0
+            ]
+        },
+        "qC1.xy.-y90_DragCosine.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                7.89190457186999e-20,
+                3.13632221044952e-19,
+                6.980605780269628e-19,
+                1.2222476241498217e-18,
+                1.8726171902617303e-18,
+                2.6323250462237993e-18,
+                3.481695157622785e-18,
+                4.398729284727038e-18,
+                5.359676725340419e-18,
+                6.3396494455135e-18,
+                7.313266666549774e-18,
+                8.255312213842003e-18,
+                9.141387602549059e-18,
+                9.948543945537414e-18,
+                1.0655876317503387e-17,
+                1.1245065181557654e-17,
+                1.1700850855607877e-17,
+                1.2011428730109348e-17,
+                1.216875500125153e-17,
+                1.2168755001251531e-17,
+                1.2011428730109348e-17,
+                1.1700850855607877e-17,
+                1.1245065181557657e-17,
+                1.065587631750339e-17,
+                9.948543945537414e-18,
+                9.141387602549055e-18,
+                8.255312213842004e-18,
+                7.313266666549777e-18,
+                6.3396494455135e-18,
+                5.359676725340423e-18,
+                4.3987292847270425e-18,
+                3.481695157622788e-18,
+                2.6323250462238016e-18,
+                1.8726171902617307e-18,
+                1.2222476241498217e-18,
+                6.980605780269622e-19,
+                3.1363222104495134e-19,
+                7.89190457186999e-20,
+                0.0
+            ]
+        },
+        "qC1.xy.-y90_DragCosine.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                -0.0012888458251578564,
+                -0.00512200287075939,
+                -0.011400194382788243,
+                -0.01996081849886511,
+                -0.030582159551072508,
+                -0.04298913038529193,
+                -0.05686039697399898,
+                -0.07183670079878712,
+                -0.08753016345728473,
+                -0.10353433251003327,
+                -0.11943470838516959,
+                -0.1348194796996109,
+                -0.14929018895756146,
+                -0.16247205239035414,
+                -0.17402366665919386,
+                -0.18364585102230138,
+                -0.19108939595897306,
+                -0.19616151756526326,
+                -0.19873085055583195,
+                -0.19873085055583198,
+                -0.19616151756526326,
+                -0.19108939595897306,
+                -0.18364585102230144,
+                -0.17402366665919392,
+                -0.16247205239035414,
+                -0.1492901889575614,
+                -0.13481947969961092,
+                -0.11943470838516963,
+                -0.10353433251003327,
+                -0.08753016345728482,
+                -0.07183670079878719,
+                -0.05686039697399903,
+                -0.042989130385291965,
+                -0.03058215955107252,
+                -0.01996081849886511,
+                -0.011400194382788232,
+                -0.005122002870759378,
+                -0.0012888458251578564,
+                0.0
+            ]
+        },
+        "qC1.xy.x180_Square.wf.I": {
+            "type": "constant",
+            "sample": 0.3981071705534972
+        },
+        "qC1.xy.x180_Square.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "qC1.xy.x90_Square.wf.I": {
+            "type": "constant",
+            "sample": 0.1990535852767486
+        },
+        "qC1.xy.x90_Square.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "qC1.xy.-x90_Square.wf.I": {
+            "type": "constant",
+            "sample": -0.1990535852767486
+        },
+        "qC1.xy.-x90_Square.wf.Q": {
+            "type": "constant",
+            "sample": 2.4377033606797487e-17
+        },
+        "qC1.xy.y180_Square.wf.I": {
+            "type": "constant",
+            "sample": 2.4377033606797487e-17
+        },
+        "qC1.xy.y180_Square.wf.Q": {
+            "type": "constant",
+            "sample": 0.3981071705534972
+        },
+        "qC1.xy.y90_Square.wf.I": {
+            "type": "constant",
+            "sample": 1.2188516803398744e-17
+        },
+        "qC1.xy.y90_Square.wf.Q": {
+            "type": "constant",
+            "sample": 0.1990535852767486
+        },
+        "qC1.xy.-y90_Square.wf.I": {
+            "type": "constant",
+            "sample": 1.2188516803398744e-17
+        },
+        "qC1.xy.-y90_Square.wf.Q": {
+            "type": "constant",
+            "sample": -0.1990535852767486
+        },
+        "qC1.xy.const.wf.I": {
+            "type": "constant",
+            "sample": 0.125
+        },
+        "qC1.xy.const.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "qC1.resonator.readout.wf.I": {
+            "type": "constant",
+            "sample": 0.0446683592150963
+        },
+        "qC1.resonator.readout.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "qC1.resonator.const.wf.I": {
+            "type": "constant",
+            "sample": 0.125
+        },
+        "qC1.resonator.const.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "qC1.z.const.wf": {
+            "type": "constant",
+            "sample": 0.1
+        },
+        "qC2.xy.saturation.wf.I": {
+            "type": "constant",
+            "sample": 0.03981071705534972
+        },
+        "qC2.xy.saturation.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "qC2.xy.x180_DragCosine.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0025776916503157127,
+                0.01024400574151878,
+                0.022800388765576485,
+                0.03992163699773022,
+                0.061164319102145016,
+                0.08597826077058386,
+                0.11372079394799796,
+                0.14367340159757425,
+                0.17506032691456946,
+                0.20706866502006654,
+                0.23886941677033918,
+                0.2696389593992218,
+                0.29858037791512293,
+                0.3249441047807083,
+                0.3480473333183877,
+                0.36729170204460276,
+                0.3821787919179461,
+                0.3923230351305265,
+                0.3974617011116639,
+                0.39746170111166396,
+                0.3923230351305265,
+                0.3821787919179461,
+                0.3672917020446029,
+                0.34804733331838783,
+                0.3249441047807083,
+                0.2985803779151228,
+                0.26963895939922183,
+                0.23886941677033927,
+                0.20706866502006654,
+                0.17506032691456963,
+                0.14367340159757439,
+                0.11372079394799806,
+                0.08597826077058393,
+                0.06116431910214504,
+                0.03992163699773022,
+                0.022800388765576465,
+                0.010244005741518757,
+                0.0025776916503157127,
+                0.0
+            ]
+        },
+        "qC2.xy.x180_DragCosine.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "qC2.xy.x90_DragCosine.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0012888458251578564,
+                0.00512200287075939,
+                0.011400194382788243,
+                0.01996081849886511,
+                0.030582159551072508,
+                0.04298913038529193,
+                0.05686039697399898,
+                0.07183670079878712,
+                0.08753016345728473,
+                0.10353433251003327,
+                0.11943470838516959,
+                0.1348194796996109,
+                0.14929018895756146,
+                0.16247205239035414,
+                0.17402366665919386,
+                0.18364585102230138,
+                0.19108939595897306,
+                0.19616151756526326,
+                0.19873085055583195,
+                0.19873085055583198,
+                0.19616151756526326,
+                0.19108939595897306,
+                0.18364585102230144,
+                0.17402366665919392,
+                0.16247205239035414,
+                0.1492901889575614,
+                0.13481947969961092,
+                0.11943470838516963,
+                0.10353433251003327,
+                0.08753016345728482,
+                0.07183670079878719,
+                0.05686039697399903,
+                0.042989130385291965,
+                0.03058215955107252,
+                0.01996081849886511,
+                0.011400194382788232,
+                0.005122002870759378,
+                0.0012888458251578564,
+                0.0
+            ]
+        },
+        "qC2.xy.x90_DragCosine.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "qC2.xy.-x90_DragCosine.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                -0.0012888458251578564,
+                -0.00512200287075939,
+                -0.011400194382788243,
+                -0.01996081849886511,
+                -0.030582159551072508,
+                -0.04298913038529193,
+                -0.05686039697399898,
+                -0.07183670079878712,
+                -0.08753016345728473,
+                -0.10353433251003327,
+                -0.11943470838516959,
+                -0.1348194796996109,
+                -0.14929018895756146,
+                -0.16247205239035414,
+                -0.17402366665919386,
+                -0.18364585102230138,
+                -0.19108939595897306,
+                -0.19616151756526326,
+                -0.19873085055583195,
+                -0.19873085055583198,
+                -0.19616151756526326,
+                -0.19108939595897306,
+                -0.18364585102230144,
+                -0.17402366665919392,
+                -0.16247205239035414,
+                -0.1492901889575614,
+                -0.13481947969961092,
+                -0.11943470838516963,
+                -0.10353433251003327,
+                -0.08753016345728482,
+                -0.07183670079878719,
+                -0.05686039697399903,
+                -0.042989130385291965,
+                -0.03058215955107252,
+                -0.01996081849886511,
+                -0.011400194382788232,
+                -0.005122002870759378,
+                -0.0012888458251578564,
+                0.0
+            ]
+        },
+        "qC2.xy.-x90_DragCosine.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                1.578380914373998e-19,
+                6.27264442089904e-19,
+                1.3961211560539257e-18,
+                2.4444952482996434e-18,
+                3.745234380523461e-18,
+                5.2646500924475986e-18,
+                6.96339031524557e-18,
+                8.797458569454076e-18,
+                1.0719353450680837e-17,
+                1.2679298891027e-17,
+                1.462653333309955e-17,
+                1.6510624427684005e-17,
+                1.8282775205098117e-17,
+                1.9897087891074827e-17,
+                2.1311752635006774e-17,
+                2.2490130363115307e-17,
+                2.3401701711215753e-17,
+                2.4022857460218697e-17,
+                2.433751000250306e-17,
+                2.4337510002503062e-17,
+                2.4022857460218697e-17,
+                2.3401701711215753e-17,
+                2.2490130363115313e-17,
+                2.131175263500678e-17,
+                1.9897087891074827e-17,
+                1.828277520509811e-17,
+                1.651062442768401e-17,
+                1.4626533333099555e-17,
+                1.2679298891027e-17,
+                1.0719353450680847e-17,
+                8.797458569454085e-18,
+                6.963390315245576e-18,
+                5.264650092447603e-18,
+                3.7452343805234614e-18,
+                2.4444952482996434e-18,
+                1.3961211560539245e-18,
+                6.272644420899027e-19,
+                1.578380914373998e-19,
+                0.0
+            ]
+        },
+        "qC2.xy.y180_DragCosine.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                1.578380914373998e-19,
+                6.27264442089904e-19,
+                1.3961211560539257e-18,
+                2.4444952482996434e-18,
+                3.745234380523461e-18,
+                5.2646500924475986e-18,
+                6.96339031524557e-18,
+                8.797458569454076e-18,
+                1.0719353450680837e-17,
+                1.2679298891027e-17,
+                1.462653333309955e-17,
+                1.6510624427684005e-17,
+                1.8282775205098117e-17,
+                1.9897087891074827e-17,
+                2.1311752635006774e-17,
+                2.2490130363115307e-17,
+                2.3401701711215753e-17,
+                2.4022857460218697e-17,
+                2.433751000250306e-17,
+                2.4337510002503062e-17,
+                2.4022857460218697e-17,
+                2.3401701711215753e-17,
+                2.2490130363115313e-17,
+                2.131175263500678e-17,
+                1.9897087891074827e-17,
+                1.828277520509811e-17,
+                1.651062442768401e-17,
+                1.4626533333099555e-17,
+                1.2679298891027e-17,
+                1.0719353450680847e-17,
+                8.797458569454085e-18,
+                6.963390315245576e-18,
+                5.264650092447603e-18,
+                3.7452343805234614e-18,
+                2.4444952482996434e-18,
+                1.3961211560539245e-18,
+                6.272644420899027e-19,
+                1.578380914373998e-19,
+                0.0
+            ]
+        },
+        "qC2.xy.y180_DragCosine.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0025776916503157127,
+                0.01024400574151878,
+                0.022800388765576485,
+                0.03992163699773022,
+                0.061164319102145016,
+                0.08597826077058386,
+                0.11372079394799796,
+                0.14367340159757425,
+                0.17506032691456946,
+                0.20706866502006654,
+                0.23886941677033918,
+                0.2696389593992218,
+                0.29858037791512293,
+                0.3249441047807083,
+                0.3480473333183877,
+                0.36729170204460276,
+                0.3821787919179461,
+                0.3923230351305265,
+                0.3974617011116639,
+                0.39746170111166396,
+                0.3923230351305265,
+                0.3821787919179461,
+                0.3672917020446029,
+                0.34804733331838783,
+                0.3249441047807083,
+                0.2985803779151228,
+                0.26963895939922183,
+                0.23886941677033927,
+                0.20706866502006654,
+                0.17506032691456963,
+                0.14367340159757439,
+                0.11372079394799806,
+                0.08597826077058393,
+                0.06116431910214504,
+                0.03992163699773022,
+                0.022800388765576465,
+                0.010244005741518757,
+                0.0025776916503157127,
+                0.0
+            ]
+        },
+        "qC2.xy.y90_DragCosine.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                7.89190457186999e-20,
+                3.13632221044952e-19,
+                6.980605780269628e-19,
+                1.2222476241498217e-18,
+                1.8726171902617303e-18,
+                2.6323250462237993e-18,
+                3.481695157622785e-18,
+                4.398729284727038e-18,
+                5.359676725340419e-18,
+                6.3396494455135e-18,
+                7.313266666549774e-18,
+                8.255312213842003e-18,
+                9.141387602549059e-18,
+                9.948543945537414e-18,
+                1.0655876317503387e-17,
+                1.1245065181557654e-17,
+                1.1700850855607877e-17,
+                1.2011428730109348e-17,
+                1.216875500125153e-17,
+                1.2168755001251531e-17,
+                1.2011428730109348e-17,
+                1.1700850855607877e-17,
+                1.1245065181557657e-17,
+                1.065587631750339e-17,
+                9.948543945537414e-18,
+                9.141387602549055e-18,
+                8.255312213842004e-18,
+                7.313266666549777e-18,
+                6.3396494455135e-18,
+                5.359676725340423e-18,
+                4.3987292847270425e-18,
+                3.481695157622788e-18,
+                2.6323250462238016e-18,
+                1.8726171902617307e-18,
+                1.2222476241498217e-18,
+                6.980605780269622e-19,
+                3.1363222104495134e-19,
+                7.89190457186999e-20,
+                0.0
+            ]
+        },
+        "qC2.xy.y90_DragCosine.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0012888458251578564,
+                0.00512200287075939,
+                0.011400194382788243,
+                0.01996081849886511,
+                0.030582159551072508,
+                0.04298913038529193,
+                0.05686039697399898,
+                0.07183670079878712,
+                0.08753016345728473,
+                0.10353433251003327,
+                0.11943470838516959,
+                0.1348194796996109,
+                0.14929018895756146,
+                0.16247205239035414,
+                0.17402366665919386,
+                0.18364585102230138,
+                0.19108939595897306,
+                0.19616151756526326,
+                0.19873085055583195,
+                0.19873085055583198,
+                0.19616151756526326,
+                0.19108939595897306,
+                0.18364585102230144,
+                0.17402366665919392,
+                0.16247205239035414,
+                0.1492901889575614,
+                0.13481947969961092,
+                0.11943470838516963,
+                0.10353433251003327,
+                0.08753016345728482,
+                0.07183670079878719,
+                0.05686039697399903,
+                0.042989130385291965,
+                0.03058215955107252,
+                0.01996081849886511,
+                0.011400194382788232,
+                0.005122002870759378,
+                0.0012888458251578564,
+                0.0
+            ]
+        },
+        "qC2.xy.-y90_DragCosine.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                7.89190457186999e-20,
+                3.13632221044952e-19,
+                6.980605780269628e-19,
+                1.2222476241498217e-18,
+                1.8726171902617303e-18,
+                2.6323250462237993e-18,
+                3.481695157622785e-18,
+                4.398729284727038e-18,
+                5.359676725340419e-18,
+                6.3396494455135e-18,
+                7.313266666549774e-18,
+                8.255312213842003e-18,
+                9.141387602549059e-18,
+                9.948543945537414e-18,
+                1.0655876317503387e-17,
+                1.1245065181557654e-17,
+                1.1700850855607877e-17,
+                1.2011428730109348e-17,
+                1.216875500125153e-17,
+                1.2168755001251531e-17,
+                1.2011428730109348e-17,
+                1.1700850855607877e-17,
+                1.1245065181557657e-17,
+                1.065587631750339e-17,
+                9.948543945537414e-18,
+                9.141387602549055e-18,
+                8.255312213842004e-18,
+                7.313266666549777e-18,
+                6.3396494455135e-18,
+                5.359676725340423e-18,
+                4.3987292847270425e-18,
+                3.481695157622788e-18,
+                2.6323250462238016e-18,
+                1.8726171902617307e-18,
+                1.2222476241498217e-18,
+                6.980605780269622e-19,
+                3.1363222104495134e-19,
+                7.89190457186999e-20,
+                0.0
+            ]
+        },
+        "qC2.xy.-y90_DragCosine.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                -0.0012888458251578564,
+                -0.00512200287075939,
+                -0.011400194382788243,
+                -0.01996081849886511,
+                -0.030582159551072508,
+                -0.04298913038529193,
+                -0.05686039697399898,
+                -0.07183670079878712,
+                -0.08753016345728473,
+                -0.10353433251003327,
+                -0.11943470838516959,
+                -0.1348194796996109,
+                -0.14929018895756146,
+                -0.16247205239035414,
+                -0.17402366665919386,
+                -0.18364585102230138,
+                -0.19108939595897306,
+                -0.19616151756526326,
+                -0.19873085055583195,
+                -0.19873085055583198,
+                -0.19616151756526326,
+                -0.19108939595897306,
+                -0.18364585102230144,
+                -0.17402366665919392,
+                -0.16247205239035414,
+                -0.1492901889575614,
+                -0.13481947969961092,
+                -0.11943470838516963,
+                -0.10353433251003327,
+                -0.08753016345728482,
+                -0.07183670079878719,
+                -0.05686039697399903,
+                -0.042989130385291965,
+                -0.03058215955107252,
+                -0.01996081849886511,
+                -0.011400194382788232,
+                -0.005122002870759378,
+                -0.0012888458251578564,
+                0.0
+            ]
+        },
+        "qC2.xy.x180_Square.wf.I": {
+            "type": "constant",
+            "sample": 0.3981071705534972
+        },
+        "qC2.xy.x180_Square.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "qC2.xy.x90_Square.wf.I": {
+            "type": "constant",
+            "sample": 0.1990535852767486
+        },
+        "qC2.xy.x90_Square.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "qC2.xy.-x90_Square.wf.I": {
+            "type": "constant",
+            "sample": -0.1990535852767486
+        },
+        "qC2.xy.-x90_Square.wf.Q": {
+            "type": "constant",
+            "sample": 2.4377033606797487e-17
+        },
+        "qC2.xy.y180_Square.wf.I": {
+            "type": "constant",
+            "sample": 2.4377033606797487e-17
+        },
+        "qC2.xy.y180_Square.wf.Q": {
+            "type": "constant",
+            "sample": 0.3981071705534972
+        },
+        "qC2.xy.y90_Square.wf.I": {
+            "type": "constant",
+            "sample": 1.2188516803398744e-17
+        },
+        "qC2.xy.y90_Square.wf.Q": {
+            "type": "constant",
+            "sample": 0.1990535852767486
+        },
+        "qC2.xy.-y90_Square.wf.I": {
+            "type": "constant",
+            "sample": 1.2188516803398744e-17
+        },
+        "qC2.xy.-y90_Square.wf.Q": {
+            "type": "constant",
+            "sample": -0.1990535852767486
+        },
+        "qC2.xy.const.wf.I": {
+            "type": "constant",
+            "sample": 0.125
+        },
+        "qC2.xy.const.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "qC2.resonator.readout.wf.I": {
+            "type": "constant",
+            "sample": 0.0446683592150963
+        },
+        "qC2.resonator.readout.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "qC2.resonator.const.wf.I": {
+            "type": "constant",
+            "sample": 0.125
+        },
+        "qC2.resonator.const.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "qC2.z.const.wf": {
+            "type": "constant",
+            "sample": 0.1
+        }
+    },
+    "digital_waveforms": {
+        "ON": {
+            "samples": [
+                [
+                    1,
+                    0
+                ]
+            ]
+        }
+    },
+    "integration_weights": {
+        "qC1.resonator.readout.iw1": {
+            "cosine": [
+                [
+                    1.0,
+                    1500
+                ]
+            ],
+            "sine": [
+                [
+                    -0.0,
+                    1500
+                ]
+            ]
+        },
+        "qC1.resonator.readout.iw2": {
+            "cosine": [
+                [
+                    0.0,
+                    1500
+                ]
+            ],
+            "sine": [
+                [
+                    1.0,
+                    1500
+                ]
+            ]
+        },
+        "qC1.resonator.readout.iw3": {
+            "cosine": [
+                [
+                    -0.0,
+                    1500
+                ]
+            ],
+            "sine": [
+                [
+                    -1.0,
+                    1500
+                ]
+            ]
+        },
+        "qC2.resonator.readout.iw1": {
+            "cosine": [
+                [
+                    1.0,
+                    1500
+                ]
+            ],
+            "sine": [
+                [
+                    -0.0,
+                    1500
+                ]
+            ]
+        },
+        "qC2.resonator.readout.iw2": {
+            "cosine": [
+                [
+                    0.0,
+                    1500
+                ]
+            ],
+            "sine": [
+                [
+                    1.0,
+                    1500
+                ]
+            ]
+        },
+        "qC2.resonator.readout.iw3": {
+            "cosine": [
+                [
+                    -0.0,
+                    1500
+                ]
+            ],
+            "sine": [
+                [
+                    -1.0,
+                    1500
+                ]
+            ]
+        }
+    },
+    "mixers": {},
+    "oscillators": {}
+}
