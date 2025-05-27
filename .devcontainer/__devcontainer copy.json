@@ -1,0 +1,13 @@
+{
+	"name": "Python 3",
+	"image": "mcr.microsoft.com/devcontainers/python:0-3.11",
+	"remoteUser": "root",
+    "workspaceFolder": "/workspaces",
+    "mounts": [
+        "source=/mnt/c/Users/hiroyukii/Documents/Codes/qua-platform/py-qua-tools,target=/workspaces/py-qua-tools,type=bind"
+    ],
+    "containerEnv": {
+        "PYTHONPATH": "/workspaces/py-qua-tools",
+        "QUAM_STATE_PATH": "/workspaces/qua-libs/Quantum-Control-Applications-QuAM/Superconducting/configuration/quam_state"
+    }
+}
