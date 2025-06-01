@@ -19,14 +19,14 @@ import time
 
 matplotlib.use('TkAgg')
 
-
 ##################
 #   Parameters   #
 ##################
 
 # Qubits and resonators 
-qc = 4 # index of control qubit
-qt = 3 # index of target qubit
+qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
+# qubits = ["q1_xy", "q2_xy"]
+resonators = [QUBIT_RR_MAP[qb] for qb in qubits]
 
 # Parameters Definition
 n_avg = 10_000
@@ -35,15 +35,6 @@ n_avg = 10_000
 weights = "rotated_" # ["", "rotated_", "opt_"]
 reset_method = "wait" # ["wait", "active"]
 readout_operation = "readout" # ["readout", "midcircuit_readout"]
-
-# Derived parameters
-qc_xy = f"q{qc}_xy"
-qt_xy = f"q{qt}_xy"
-# qubits = [f"q{i}_xy" for i in [qc, qt]]
-# resonators = [f"q{i}_rr" for i in [qc, qt]]
-qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
-qubits_to_play = ['q4_xy']
-resonators = [key for key in RR_CONSTANTS.keys()]
 
 # Assertion
 # assert n_avg <= 10_000, "revise your number of shots"
@@ -121,7 +112,7 @@ with program() as PROGRAM:
         for i in range(len(sequence)):
 
             align()
-            for qb in qubits_to_play:
+            for qb in qubits:
                 allXY(sequence[i], qb)
 
             align()
@@ -218,6 +209,6 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 # %%

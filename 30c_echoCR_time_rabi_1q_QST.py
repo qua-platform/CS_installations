@@ -1,38 +1,20 @@
 # %%
 """
-                                 CR_calib_unit_hamiltonian_tomography
-
-    The CR_calib scripts are designed for calibrating cross-resonance (CR) gates involving a system
-with a control qubit and a target qubit. These scripts help estimate the parameters of a Hamiltonian,
-which is represented as:
-        H = I ⊗ (a_X X + a_Y Y + a_Z Z) + Z ⊗ (b_X X + b_Y Y + b_Z Z)
-
-For the calibration sequences, we employ echoed CR drive.
-                                   ____      ____ 
-            Control(fC): _________| pi |____| pi |________________
-                             ____                     
-                 CR(fT): ___| CR |_____      _____________________
-                                       |____|     _____
-             Target(fT): ________________________| QST |__________
-                                                         ______
-            Readout(fR): _______________________________|  RR  |__
-
-Each sequence, which varies in the duration of the CR drive, ends with state tomography of the target state
-(across X, Y, and Z bases). This process is repeated with the control state in both |0> and |1> states.
-We fit the two sets of CR duration versus tomography data to a theoretical model,
-yielding two sets of three parameters: delta, omega_x, and omega_y.
-Using these parameters, we estimate the interaction coefficients of the Hamiltonian.
-We consider this method a form of unit Hamiltonian tomography.
+                                    Cross-Resonance Time Rabi
+The sequence consists two consecutive pulse sequences with the qubit's thermal decay in between.
+In the first sequence, we set the control qubit in |g> and play a rectangular cross-resonance pulse to
+the target qubit; the cross-resonance pulse has a variable duration. In the second sequence, we initialize the control
+qubit in |e> and play the variable duration cross-resonance pulse to the target qubit. Note that in
+the second sequence after the cross-resonance pulse we send a x180_c pulse. With it, the target qubit starts
+in |g> in both sequences when CR lenght -> zero.
 
 Prerequisites:
     - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
     - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy, rabi_chevron, power_rabi and updated the config.
     - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
 
-Next steps before going to the next node:
-    - This is only to test that you can obtain the data and fit to it successfully.
+Reference: A. D. Corcoles et al., Phys. Rev. A 87, 030301 (2013)
 
-Reference: Sarah Sheldon, Easwar Magesan, Jerry M. Chow, and Jay M. Gambetta Phys. Rev. A 93, 060302(R) (2016)
 """
 
 from qm.qua import *
@@ -46,18 +28,11 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import progress_counter
 from macros import qua_declaration, multiplexed_readout, active_reset
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
 import time
-import warnings
-import matplotlib
-from macros import qua_declaration, multiplexed_readout
-from cr_hamiltonian_tomography import (
-    CRHamiltonianTomographyAnalysis,
-    plot_crqst_result_2D, plot_crqst_result_3D,
-)
-
-import matplotlib
 
 matplotlib.use('TkAgg')
+
 ##################
 #   Parameters   #
 ##################
@@ -67,13 +42,10 @@ qc = 4 # index of control qubit
 qt = 3 # index of target qubit
 
 # Parameters Definition
-n_avg = 20
-cr_type = "direct+cancel" # "direct" "direct+cancel", "direct+cancel+echo"
-cr_drive_amp = 1.0 # ratio
-cr_drive_phase = 0.0 # in units of 2pi
-cr_cancel_amp = 1.0 # ratio
-cr_cancel_phase = 0.0 # in units of 2pi
-ts_cycles = np.arange(4, 100, 1) # in clock cylcle = 4ns
+n_avg = 100
+cr_cancel_amp = 0.8 # ratio
+cr_cancel_phase = 0.5 # in units of 2pi
+ts_cycles = np.arange(4, 400, 4) # in clock cylcle = 4ns
 
 # Readout Parameters
 weights = "rotated_" # ["", "rotated_", "opt_"]
@@ -91,9 +63,8 @@ ts_ns = 4 * ts_cycles # in clock cylcle = 4ns
 
 # Assertion
 assert n_avg <= 10_000, "revise your number of shots"
-# assert np.all(ts_cycles % 2 == 0) and (ts_cycles.min() >= 4), "ts_cycles should only have even numbers if play echoes"
 
-# Data to save
+# Data to save        
 save_data_dict = {
     "qubits": qubits,
     "resonators": resonators,
@@ -101,6 +72,8 @@ save_data_dict = {
     "qt_xy": qt_xy,
     "cr_drive": cr_drive,
     "cr_cancel": cr_cancel,
+    "cr_cancel_amp": cr_cancel_amp,
+    "cr_cancel_phase": cr_cancel_phase,
     "ts_ns": ts_ns,
     "n_avg": n_avg,
     "config": config,
@@ -116,7 +89,6 @@ with program() as PROGRAM:
     state = [declare(bool) for _ in range(len(resonators))]
     state_st = [declare_stream() for _ in range(len(resonators))]
     t = declare(int)
-    t_half = declare(int)
     s = declare(int)  # QUA variable for the control state
     c = declare(int)  # QUA variable for the projection index in QST
 
@@ -129,48 +101,29 @@ with program() as PROGRAM:
                         play("x180", qc_xy)
                         align(qc_xy, cr_drive)
 
-                    if cr_type == "direct":
-                        align(qc_xy, cr_drive)
-                        play("square_positive", cr_drive, duration=t)
-                        align(qt_xy, cr_drive)
-                    
-                    elif cr_type == "direct+cancel":
-                        # phase shift for cancel drive
-                        frame_rotation_2pi(cr_drive_phase, cr_drive)
-                        frame_rotation_2pi(cr_cancel_phase, cr_cancel)
-                        # direct + cancel
-                        align(qc_xy, cr_drive, cr_cancel)
-                        play("square_positive"*amp(cr_drive_amp), cr_drive, duration=t)
-                        play("square_positive"*amp(cr_cancel_amp), cr_cancel, duration=t)
-                        # align for the next step and clear the phase shift
-                        align(qt_xy, cr_drive, cr_cancel)
-                        reset_frame(cr_drive)
-                        reset_frame(cr_cancel)
+                    # phase shift for cancel drive
+                    frame_rotation_2pi(cr_cancel_phase, cr_cancel)
 
-                    elif cr_type == "direct+cancel+echo":
-                        # phase shift for cancel drive
-                        frame_rotation_2pi(cr_drive_phase, cr_drive)
-                        frame_rotation_2pi(cr_cancel_phase, cr_cancel)
-                        # direct + cancel
-                        align(qc_xy, cr_drive, cr_cancel)
-                        play("square_positive", cr_drive, duration=t)
-                        play("square_positive" * amp(cr_cancel_amp), cr_cancel, duration=t)
-                        # pi pulse on control
-                        align(qc_xy, cr_drive, cr_cancel)
-                        play("x180", qc_xy)
-                        # echoed direct + cancel
-                        align(qc_xy, cr_drive, cr_cancel)
-                        play("square_negative", cr_drive, duration=t)
-                        play("square_negative" * amp(cr_cancel_amp), cr_cancel, duration=t)
-                        # pi pulse on control
-                        align(qc_xy, cr_drive, cr_cancel)
-                        play("x180", qc_xy)
-                        # align for the next step and clear the phase shift
-                        align(qc_xy, qt_xy)
-                        reset_frame(cr_drive)
-                        reset_frame(cr_cancel)
+                    # direct + cancel
+                    align(qc_xy, qt_xy, cr_drive, cr_cancel)
+                    play("square_positive", cr_drive, duration=t)
+                    play("square_positive" * amp(cr_cancel_amp), cr_cancel, duration=t)
+
+                    # pi pulse on control
+                    align(qc_xy, cr_drive, cr_cancel)
+                    play("x180", qc_xy)
+
+                    # echoed direct + cancel
+                    align(qc_xy, cr_drive, cr_cancel)
+                    play("square_negative", cr_drive, duration=t)
+                    play("square_negative" * amp(cr_cancel_amp), cr_cancel, duration=t)
+
+                    # pi pulse on control
+                    align(qc_xy, cr_drive, cr_cancel)
+                    play("x180", qc_xy)
 
                     # QST on Target
+                    align(qc_xy, qt_xy)
                     with switch_(c):
                         with case_(0):  # projection along X
                             play("-y90", qt_xy)
@@ -183,6 +136,9 @@ with program() as PROGRAM:
 
                     # Measure the state of the resonators
                     multiplexed_readout(I, I_st, Q, Q_st, state, state_st, resonators=resonators, weights=weights)
+
+                    # reset phase shift for cancel drive
+                    reset_frame(cr_cancel)
 
                     # Wait for the qubit to decay to the ground state - Can be replaced by active reset
                     if reset_method == "wait":
@@ -218,17 +174,12 @@ if __name__ == "__main__":
 
     else:
         try:
-            # from qm import generate_qua_script
-            # sourceFile = open('debug.py', 'w')
-            # print(generate_qua_script(cr_calib, config), file=sourceFile) 
-            # sourceFile.close()
-
             # Open the quantum machine
             qm = qmm.open_qm(config)
             # Send the QUA program to the OPX, which compiles and executes it
             job = qm.execute(PROGRAM)
             # Prepare the figure for live plotting
-            fig, axss = plt.subplots(4, 2, figsize=(10, 10))
+            fig, axss = plt.subplots(3, 2, figsize=(8, 8), sharex=True)
             interrupt_on_close(fig, job)
             # Tool to easily fetch results from the OPX (results_handle used in it)
             fetch_names = ["iteration"]
@@ -243,38 +194,38 @@ if __name__ == "__main__":
                 # Fetch results
                 res = results.fetch_all()
                 for ind, rr in enumerate(resonators):
-                    save_data_dict[f"I_{rr}"] = u.demod2volts(res[3*ind + 1], READOUT_LEN)
-                    save_data_dict[f"Q_{rr}"] = u.demod2volts(res[3*ind + 2], READOUT_LEN)
+                    save_data_dict[f"I_{rr}"] = res[3*ind + 1]
+                    save_data_dict[f"Q_{rr}"] = res[3*ind + 2]
                     save_data_dict[rr+"_state"] = res[3*ind + 3]
-                iterations, _, _, state_c, _, _, state_t = res
+                iterations, I1, Q1, state1, I2, Q2, state2 = res
 
                 # Progress bar
                 progress_counter(iterations, n_avg, start_time=results.start_time)
                 # calculate the elapsed time
                 elapsed_time = time.time() - start_time
-                # plotting data
-                # control qubit
-                fig = plot_crqst_result_2D(ts_ns, state_c, state_t, fig, axss)
+                # Convert the results into Volts
+                I1, Q1 = u.demod2volts(I1, READOUT_LEN), u.demod2volts(Q1, READOUT_LEN)
+                I2, Q2 = u.demod2volts(I2, READOUT_LEN), u.demod2volts(Q2, READOUT_LEN)
+                # Plots
+                plt.suptitle("echo CR Time Rabi")
+                for i, (axs, bss) in enumerate(zip(axss, ["X", "y", "z"])):
+                    for ax, q in zip(axs, ["c", "t"]):
+                        I = I1 if q == "c" else I2
+                        ax.cla()
+                        for j, st in enumerate(["0", "1"]):
+                            ax.plot(ts_ns, I[:, i, j], label=[f"|{st}>"])
+                        ax.legend(["0", "1"])
+                        ax.set_title(f"Q_{q}") if i == 0 else None
+                        ax.set_xlabel("cr durations [ns]") if i == 2 else None
+                        ax.set_ylabel(f"I quadrature of <{bss}> [V]") if q == "c" else None
                 plt.tight_layout()
                 plt.pause(2)
 
-            # cross resonance Hamiltonian tomography analysis
-            crht = CRHamiltonianTomographyAnalysis(
-                ts=ts_ns,
-                data=state_t,  # target data
-            )
-            crht.fit_params()
-            fig_analysis = crht.plot_fit_result()
-            
-            # plot 3D
-            fig_3d = plot_crqst_result_3D(ts_ns, state_t)
-    
             # Save results
             script_name = Path(__file__).name
             data_handler = DataHandler(root_data_folder=save_dir)
-            save_data_dict.update({"fig_live": fig})
             data_handler.additional_files = {script_name: script_name, **default_additional_files}
-            data_handler.save_data(data=save_data_dict, name="cr_calib_ham_tomo")
+            data_handler.save_data(data=save_data_dict, name="cr_echo_time_rabi")
 
         except Exception as e:
             print(f"An exception occurred: {e}")
@@ -282,6 +233,6 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 # %%

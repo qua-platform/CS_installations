@@ -51,16 +51,13 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import progress_counter
 from macros import qua_declaration, multiplexed_readout, active_reset
 from qualang_tools.results.data_handler import DataHandler
-import time
-import warnings
-import matplotlib
 from macros import qua_declaration, multiplexed_readout
 from cr_hamiltonian_tomography import (
     CRHamiltonianTomographyAnalysis, plot_cr_duration_vs_scan_param, 
     plot_interaction_coeffs, plot_crqst_result_3D, PAULI_2Q
 )
-
 import matplotlib
+import time
 
 matplotlib.use('TkAgg')
 
@@ -312,6 +309,6 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 # %%

@@ -20,7 +20,6 @@ Reference: A. D. Corcoles et al., Phys. Rev. A 87, 030301 (2013)
 from qm.qua import *
 from qm import QuantumMachinesManager
 from configuration_mw_fem import *
-# from configuration_opxplus_without_octave import *
 import matplotlib.pyplot as plt
 from qm import SimulationConfig
 from qualang_tools.loops import from_array
@@ -29,40 +28,22 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.results import progress_counter
 from macros import qua_declaration, multiplexed_readout, active_reset
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib
 import time
-from qualang_tools.bakery import baking
 
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
 ##################
 
 # Qubits and resonators 
-qc = 1 # index of control qubit
-qt = 2 # index of target qubit
+qc = 4 # index of control qubit
+qt = 3 # index of target qubit
 
 # Parameters Definition
 n_avg = 100
-
-cr_flattop_amp = 0.2
-cr_drive_amp = cr_flattop_amp
-cr_cancel_amp = 0.6 * cr_flattop_amp
-cr_flattop_len = 100
-cr_gaussian_rise_fall_amp = cr_flattop_amp
-cr_gaussian_rise_fall_len = 40
-cr_gaussian_rise_fall_pad_len = 0 if cr_gaussian_rise_fall_len % 4 == 0 else (4 - cr_gaussian_rise_fall_len % 4)
-cr_square_phase = 0.0
-cr_flattop_phase = 0.0
-cr_gaussian_flattop_phase = 0.0
-# readout_gaussian_flattop_total_len
-cr_gaussian_flattop_total_amp = cr_flattop_amp
-cr_gaussian_flattop_total_len = 2 * cr_gaussian_rise_fall_len + cr_flattop_len
-
-t_min_flattop = 4 // 4
-t_max_flattop = 204 // 4
-dt = 1 # 4 // 4
-ts_cycles_flattop = np.arange(t_min_flattop, t_max_flattop, dt) # in clock cylcle = 4ns
-ts_cycles = (2 * cr_gaussian_rise_fall_len // 4) + np.arange(t_min_flattop, t_max_flattop, dt) # in clock cylcle = 4ns
+ts_cycles = np.arange(4, 400, 4) # in clock cylcle = 4ns
 
 # Readout Parameters
 weights = "rotated_" # ["", "rotated_", "opt_"]
@@ -76,14 +57,9 @@ cr_drive = f"cr_drive_c{qc}t{qt}"
 cr_cancel = f"cr_cancel_c{qc}t{qt}"
 qubits = [f"q{i}_xy" for i in [qc, qt]]
 resonators = [f"q{i}_rr" for i in [qc, qt]]
-ts_ns_flattop = 4 * ts_cycles_flattop
 ts_ns = 4 * ts_cycles # in clock cylcle = 4ns
 
-cr_drive_constants = CR_DRIVE_CONSTANTS[cr_drive]
-cr_cancel_constants = CR_CANCEL_CONSTANTS[cr_cancel]
-
-# Assert
-assert ts_ns.min() > 16, ""
+# Assertion
 
 # Data to save        
 save_data_dict = {
@@ -100,49 +76,6 @@ save_data_dict = {
 
 
 ###################
-#   QUA Bakery    #
-###################
-
-def get_flattop_gaussian(cr_amp, cr_flattop_len, cr_rise_fall_len, cr_rise_fall_pad_len):
-    cr_lpad = [0] * cr_rise_fall_pad_len
-    cr_rpad = cr_lpad
-    cr_gf = flattop_gaussian_waveform(
-        cr_amp,
-        cr_flattop_len, # cr_constants["flattop_len"],
-        cr_rise_fall_len,
-        return_part="all",
-    )
-    cr_wf_I = cr_lpad + cr_gf + cr_rpad
-    cr_wf_Q = [0.0] * len(cr_wf_I)
-    return cr_wf_I, cr_wf_Q
-
-
-baked_flattop_gaussians = []
-for t in ts_ns_flattop:
-    with baking(config, padding_method="right") as b:
-        # generate wf
-        cr_drive_wf_I, cr_drive_wf_Q = get_flattop_gaussian(
-            cr_drive_amp,
-            t, # cr_flattop_len,
-            cr_gaussian_rise_fall_len,
-            cr_gaussian_rise_fall_pad_len,
-        )
-        cr_cancel_wf_I, cr_cancel_wf_Q = get_flattop_gaussian(
-            cr_cancel_amp,
-            t, #cr_flattop_len,
-            cr_gaussian_rise_fall_len,
-            cr_gaussian_rise_fall_pad_len,
-        )
-        # add operations
-        b.add_op("fg_drive", cr_drive, [cr_drive_wf_I, cr_drive_wf_Q])
-        b.add_op("fg_cancel", cr_cancel, [cr_cancel_wf_I, cr_cancel_wf_Q])
-        # play baked pulses
-        b.play("fg_drive", cr_drive)
-        b.play("fg_cancel", cr_cancel)
-    baked_flattop_gaussians.append(b)
-
-
-###################
 #   QUA Program   #
 ###################
 
@@ -150,25 +83,21 @@ with program() as PROGRAM:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(resonators)
     state = [declare(bool) for _ in range(len(resonators))]
     state_st = [declare_stream() for _ in range(len(resonators))]
-    ti = declare(int)
+    t = declare(int)
     s = declare(int)  # QUA variable for the control state
     c = declare(int)  # QUA variable for the projection index in QST
 
     with for_(n, 0, n < n_avg, n + 1):
         save(n, n_st)
-        with for_(ti, 0, ti < len(ts_cycles), ti + 1):
+        with for_(*from_array(t, ts_cycles)):
             with for_(c, 0, c < 3, c + 1): # bases 
                 with for_(s, 0, s < 2, s + 1): # states
-
                     with if_(s == 1):
                         play("x180", qc_xy)
                         align(qc_xy, cr_drive)
 
-                    # switch case to select the baked waveform corresponding to the burst duration
-                    with switch_(ti, unsafe=False):
-                        for ii in range(len(ts_cycles)):
-                            with case_(ii):
-                                baked_flattop_gaussians[ii].run()
+                    # Control
+                    play("square_positive", cr_drive, duration=t)
 
                     align(cr_drive, qt_xy)
                     with switch_(c):
@@ -186,8 +115,7 @@ with program() as PROGRAM:
 
                     # Wait for the qubit to decay to the ground state - Can be replaced by active reset
                     if reset_method == "wait":
-                        # wait(qb_reset_time >> 2)
-                        wait(200 >> 2)
+                        wait(qb_reset_time >> 2)
                     elif reset_method == "active":
                         global_state = active_reset(I, None, Q, None, state, None, resonators, qubits, state_to="ground", weights=weights)
 
@@ -208,11 +136,11 @@ if __name__ == "__main__":
     ###########################
     # Run or Simulate Program #
     ###########################
-    simulate = True
+    simulate = False
 
     if simulate:
         # Simulates the QUA program for the specified duration
-        simulation_config = SimulationConfig(duration=200)  # In clock cycles = 4ns
+        simulation_config = SimulationConfig(duration=3_000)  # In clock cycles = 4ns
         job = qmm.simulate(config, PROGRAM, simulation_config)
         job.get_simulated_samples().con1.plot(analog_ports=['1', '2', '3', '4', '5', '6'])
         plt.show()
@@ -279,6 +207,6 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 # %%

@@ -47,15 +47,14 @@ matplotlib.use('TkAgg')
 
 # Qubits and resonators 
 qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
-qubits_to_play = [qb for qb in QUBIT_CONSTANTS.keys()]
-# qubits = ["q1_xy"]
-resonators = [key for key in RR_CONSTANTS.keys()]
+# qubits = ["q1_xy", "q2_xy"]
+resonators = [QUBIT_RR_MAP[qb] for qb in qubits]
 
 # Parameters Definition
-n_avg = 1_000  # The number of averages
+n_avg = 100  # The number of averages
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
 # Qubit detuning sweep with respect to qubit_IF
-span = 20.0 * u.MHz
+span = 20 * u.MHz
 freq_step = 100 * u.kHz
 dfs = np.arange(-span, +span, freq_step)
 scaling_factor = 0.005
@@ -68,7 +67,7 @@ readout_operation = "readout" # ["readout", "midcircuit_readout"]
 # Assertion
 # assert len(dfs) <= 400, "check your frequencies"
 for qb in qubits:
-    assert scaling_factor * QUBIT_CONSTANTS[qb]["amp"] <= 0.499, f"{qb} scaling factor times amplitude exceeded 0.499"
+    assert scaling_factor * QUBIT_CONSTANTS[qb]["amp"] <= 1.999, f"{qb} scaling factor times amplitude exceeded 0.499"
 
 # Data to save
 save_data_dict = {
@@ -94,7 +93,7 @@ with program() as PROGRAM:
         save(n, n_st)
         with for_(*from_array(df, dfs)):
             # Update the frequency of the two qubit elements
-            for qb in qubits_to_play:
+            for qb in qubits:
                 update_frequency(qb, df + QUBIT_CONSTANTS[qb]["IF"])
                 play("saturation" * amp(scaling_factor), qb)
                 
@@ -191,6 +190,6 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 # %%

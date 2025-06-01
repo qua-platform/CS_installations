@@ -36,8 +36,9 @@ matplotlib.use('TkAgg')
 ##################
 
 # Qubits and resonators 
-qc = 4 # index of control qubit
-qt = 3 # index of target qubit
+qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
+# qubits = ["q1_xy", "q2_xy"]
+resonators = [QUBIT_RR_MAP[qb] for qb in qubits]
 
 # Parameters Definition
 n_avg = 10  # The number of averages
@@ -55,16 +56,6 @@ t_delays = np.arange(t_min, t_max, t_step)  # Idle time sweep in clock cycles (N
 weights = "rotated_" # ["", "rotated_", "opt_"]
 reset_method = "wait" # ["wait", "active"]
 readout_operation = "readout" # ["readout", "midcircuit_readout"]
-
-# Derived parameters
-qc_xy = f"q{qc}_xy"
-qt_xy = f"q{qt}_xy"
-# qubits = [f"q{i}_xy" for i in [qc, qt]]
-# resonators = [f"q{i}_rr" for i in [qc, qt]]
-qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
-qubits_to_play = [qb for qb in QUBIT_CONSTANTS.keys()]
-resonators = [key for key in RR_CONSTANTS.keys()]
-
 
 # Assertion
 assert len(t_delays) <= 76_000, "check your delays"
@@ -100,7 +91,7 @@ with program() as PROGRAM:
 
             with for_(*from_array(t, t_delays)):
                 # with strict_timing_():
-                for qb in qubits_to_play:
+                for qb in qubits:
                     play('x90', qb)
                     wait(t, qb)
                     play('x90', qb)
@@ -207,6 +198,6 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 # %%

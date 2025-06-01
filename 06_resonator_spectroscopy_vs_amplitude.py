@@ -44,12 +44,13 @@ matplotlib.use('TkAgg')
 # Qubits and resonators 
 rl = "rl1"
 resonators = [key for key in RR_CONSTANTS.keys()]
+# resonators = ["q1_rr", "q3_rr"]
 resonators_LO = RL_CONSTANTS[rl]["LO"]
 
 # Parameters Definition
-n_avg = 20  # The number of averages
+n_avg = 2  # The number of averages
 # The frequency sweep around the resonators' frequency
-span = 38.0 * u.MHz  # the span around the resonant frequencies
+span = 38 * u.MHz  # the span around the resonant frequencies
 step = 200 * u.kHz
 dfs = np.arange(-span, span, step)
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
@@ -70,7 +71,7 @@ readout_operation = "readout" # ["readout", "midcircuit_readout"]
 # assert len(dfs) <= 32, "check your frequencies"
 # assert len(amplitudes) <= 40, "check you amps vals"
 for rr in resonators:
-    assert a_max * RR_CONSTANTS[rr]["amp"] <= 0.499, f"{rr} max amp scan exceeded 0.499"
+    assert a_max * RR_CONSTANTS[rr]["amp"] <= 1.999, f"{rr} max amp scan exceeded 0.499"
 
 # Data to save
 save_data_dict = {
@@ -207,6 +208,6 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 # %%

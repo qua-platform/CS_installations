@@ -27,40 +27,31 @@ from macros import qua_declaration, multiplexed_readout, active_reset
 import math
 from qualang_tools.results.data_handler import DataHandler
 import matplotlib
+import time
 
 matplotlib.use('TkAgg')
 
-###################
-# The QUA program #
+
+##################
+#   Parameters   #
 ##################
 
 # Qubits and resonators 
-qc = 4 # index of control qubit
-qt = 3 # index of target qubit
+qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
+# qubits = ["q1_xy", "q2_xy"]
+resonators = [QUBIT_RR_MAP[qb] for qb in qubits]
 
 # Parameters Definition
-n_avg = 8*60  # The number of averages
-t_max = 8_000
+n_avg = 100
+t_max = 100_000
 t_min = 4
-t_step = 120
-t_delays = np.arange(t_min, t_max, t_step)  # Idle time sweep in clock cycles (Needs to be a list of integers)
-freq_detuning = 0.5 * u.MHz
-delta_phase = 4e-09 * freq_detuning * t_step
+# t_step = 1
+t_delays = np.geomspace(t_min, t_max, 100).astype(int) # np.arange(t_min, t_max, t_step)
 
 # Readout Parameters
 weights = "rotated_" # ["", "rotated_", "opt_"]
 reset_method = "wait" # ["wait", "active"]
 readout_operation = "readout" # ["readout", "midcircuit_readout"]
-
-# Derived parameters
-qc_xy = f"q{qc}_xy"
-qt_xy = f"q{qt}_xy"
-qubits = [f"q{i}_xy" for i in [qc, qt]]
-qubits_to_play = ["q4_xy"]
-resonators = ['q4_rr'] #[f"q{i}_rr" for i in [qc, qt]]
-
-# Assertion
-assert len(t_delays) <= 76_000, "check your delays"
 
 # Data to save
 save_data_dict = {
@@ -68,7 +59,6 @@ save_data_dict = {
     "resonators": resonators,
     "n_avg": n_avg,
     "t_delays": t_delays,
-    "detuning": freq_detuning,
     "config": config,
 }
 
@@ -87,35 +77,24 @@ with program() as PROGRAM:
     with for_(n, 0, n < n_avg, n + 1):
         # Save the averaging iteration to get the progress bar
         save(n, n_st)
-        assign(phase, 0)
 
-        with for_(*from_array(t, t_delays)):
+        with for_each_(t, t_delays.tolist()):
 
-            assign(phase, phase + delta_phase)
-
-            for qb in qubits_to_play:
-                play('x90', qb)
+            for qb in qubits:
+                play('x180', qb)
                 wait(t, qb)
-                frame_rotation_2pi(phase, qb)
-                play('x90', qb)
 
             # Align the elements to measure after having waited a time "tau" after the qubit pulses.
             align()
 
-            wait(4)
-
             # Measure the state of the resonators
-            multiplexed_readout(I, I_st, Q, Q_st, None, None, resonators=resonators, weights=weights)
+            multiplexed_readout(I, I_st, Q, Q_st, None, None, resonators=resonators, weights=weights)            
 
             # Wait for the qubit to decay to the ground state
             if reset_method == "wait":
                 wait(qb_reset_time >> 2)
             elif reset_method == "active":
                 global_state = active_reset(I, None, Q, None, state, None, resonators, qubits, state_to="ground", weights=weights)
-
-            for qb in qubits:
-                reset_frame(qb)
-
 
     with stream_processing():
         n_st.save("iteration")
@@ -168,10 +147,11 @@ if __name__ == "__main__":
                 # Progress bar
                 progress_counter(res[0], n_avg, start_time=results.start_time)
 
-                plt.suptitle("Multiplexed ramsey chevron - I")
+                plt.suptitle("Multiplexed T1 - I")
 
                 for ind, (qb, rr) in enumerate(zip(qubits, resonators)):
                     # Data analysis
+                    I = res[2*ind+1]
                     S = res[2*ind+1] + 1j * res[2*ind+2]
 
                     save_data_dict[f"I_{rr}"] = res[2*ind + 1]
@@ -181,27 +161,30 @@ if __name__ == "__main__":
                     plt.subplot(num_rows, num_cols, ind + 1)
                     plt.cla()
                     plt.plot(t_delays * 4, np.real(S), color='r')
+                    # plt.yscale("log")
                     lo_val = QUBIT_CONSTANTS[qb]["LO"] / u.GHz
                     plt.title(f"Qb - {qb}, LO {lo_val}")
-                    plt.ylabel("Freqs [MHz]")
+                    plt.ylabel("I [a.u.]")
 
                 plt.tight_layout()
                 plt.pause(2)
 
-            from qualang_tools.plot.fitting import Fit
-            fit = Fit()
-            fig_analysis = plt.figure(figsize=(6,6))
-            ramsey_fit = fit.ramsey(4 * t_delays, np.real(S), plot=True)
-            # qubit_T2 = np.abs(ramsey_fit["T2"][0])
-            # qubit_detuning = ramsey_fit["f"][0] * u.GHz - delta_phase
-            # plt.xlabel("Idle time [ns]")
-            # plt.ylabel("I quadrature [V]")
+            # Fit the data
+            try:
+                from qualang_tools.plot.fitting import Fit
+                for ind, (qb, rr) in enumerate(zip(qubits, resonators)):c
+            except:
+                pass
+
+            elapsed_time = time.time() - results.start_time
+            save_data_dict["elapsed_time"] = elapsed_time
+
             # Save results
             script_name = Path(__file__).name
             data_handler = DataHandler(root_data_folder=save_dir)
             save_data_dict.update({"fig_live": fig})
             data_handler.additional_files = {script_name: script_name, **default_additional_files}
-            data_handler.save_data(data=save_data_dict, name="ramsey")
+            data_handler.save_data(data=save_data_dict, name="T1")
 
         except Exception as e:
             print(f"An exception occurred: {e}")
@@ -209,6 +192,6 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 # %%

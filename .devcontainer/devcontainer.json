@@ -2,7 +2,7 @@
 	"name": "Python 3",
 	"image": "mcr.microsoft.com/devcontainers/python:0-3.11",
 	"remoteUser": "root",
-    "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces,type=bind,consistency=cached",
-    "postCreateCommand": "apt-get update && apt-get install -y python3-tk tk && cd /workspaces && pip install -U pip && pip install qm-qua qualang-tools ipykernel",
-    "workspaceFolder": "/workspaces"
+	"workspaceFolder": "/workspaces",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspaces,type=bind,consistency=cached",
+	"postCreateCommand": "apt-get update && apt-get install -y python3-tk tk curl && curl -LsSf https://astral.sh/uv/install.sh | bash && uv pip install --system qm-qua qualang-tools ipykernel"
 }

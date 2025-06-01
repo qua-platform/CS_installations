@@ -1,16 +1,69 @@
 #!/bin/bash
 
-# Loop over the numeric prefixes from 21 to 17 (in reverse)
-for i in $(seq 22 -1 18); do
-  next=$((i - 1))
-  # Use a pattern to find files that start with the current number and follow the specific format
-  for file in ${i}[a-z]_*; do
-    # Check if the file exists
-    if [[ -e "$file" ]]; then
-      # Generate the new file name by replacing the numeric prefix
-      new_name="${next}${file:2}"
-      echo "Renaming $file to $new_name"
-      git mv "$file" "$new_name"
+rename_files() {
+    local from=$1
+    local to=$2
+    local increment=$3
+
+    if [[ -z $from || -z $to || -z $increment ]]; then
+        echo "Usage: $0 from=<start_range> to=<end_range> increment=<True|False>"
+        exit 1
     fi
-  done
+
+    # Determine direction based on increment
+    if [[ $increment == "True" ]]; then
+        step=1
+        sequence=$(seq "$to" -1 "$from") # Reverse loop for incrementing
+    elif [[ $increment == "False" ]]; then
+        step=-1
+        sequence=$(seq "$from" 1 "$to") # Forward loop for decrementing
+    else
+        echo "Invalid value for increment: $increment. Use True or False."
+        exit 1
+    fi
+
+    # Process files in the specified range
+    for i in $sequence; do
+        current=$(printf "%02d" "$i")
+        next=$(printf "%02d" "$((i + step))")
+        
+        for file in "${current}"_*.py; do
+            if [[ -e $file ]]; then
+                new_file="${file/$current/$next}"
+                echo "Renaming: $file -> $new_file"
+                git mv "$file" "$new_file"
+            else
+                echo "No files found for pattern: ${current}_*.py"
+            fi
+        done
+    done
+}
+
+if [[ $# -ne 3 ]]; then
+    echo "Usage: $0 from=<start_range> to=<end_range> increment=<True|False>"
+    exit 1
+fi
+
+from=
+to=
+increment=
+
+for arg in "$@"; do
+    case $arg in
+        from=*)
+            from="${arg#*=}"
+            ;;
+        to=*)
+            to="${arg#*=}"
+            ;;
+        increment=*)
+            increment="${arg#*=}"
+            ;;
+        *)
+            echo "Unknown argument: $arg"
+            exit 1
+            ;;
+    esac
 done
+
+rename_files "$from" "$to" "$increment"

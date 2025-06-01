@@ -17,7 +17,7 @@ u = unit(coerce_to_integer=True)
 # Network parameters #
 ######################
 qop_ip = "172.16.33.115"  # Write the QM router IP address
-cluster_name = 'CS_4'  # Write your cluster_name if version >= QOP220
+cluster_name = 'CS_3'  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 octave_config = None
 
@@ -27,7 +27,7 @@ octave_config = None
 #############
 
 # Path to save data
-save_dir = Path(r"/workspaces")
+save_dir = Path(r"/workspaces/data")
 save_dir.mkdir(exist_ok=True)
 
 default_additional_files = {
@@ -76,7 +76,7 @@ QUBIT_CONSTANTS = {
         "fem": 1,
         "ao": 2,
         "band": 2,
-        "full_scale_power_dbm": 1,
+        "full_scale_power_dbm": -11,
         "delay": 0,
         "core": "fem1-thread1",
     },
@@ -93,7 +93,7 @@ QUBIT_CONSTANTS = {
         "fem": 1,
         "ao": 3,
         "band": 2,
-        "full_scale_power_dbm": 1,
+        "full_scale_power_dbm": -11,
         "delay": 0,
         "core": "fem1-thread2",
     },
@@ -110,7 +110,7 @@ QUBIT_CONSTANTS = {
         "fem": 1,
         "ao": 4,
         "band": 2,
-        "full_scale_power_dbm": 1,
+        "full_scale_power_dbm": -11,
         "delay": 0,
         "core": "fem1-thread3",
     },
@@ -127,7 +127,7 @@ QUBIT_CONSTANTS = {
         "fem": 1,
         "ao": 5,
         "band": 2,
-        "full_scale_power_dbm": 1,
+        "full_scale_power_dbm": -11,
         "delay": 0,
         "core": "fem1-thread4",
     },
@@ -144,7 +144,7 @@ QUBIT_CONSTANTS = {
         "fem": 1,
         "ao": 6,
         "band": 2,
-        "full_scale_power_dbm": 1,
+        "full_scale_power_dbm": -11,
         "delay": 0,
         "core": "fem1-thread5",
     },
@@ -161,7 +161,7 @@ QUBIT_CONSTANTS = {
         "fem": 1,
         "ao": 7,
         "band": 2,
-        "full_scale_power_dbm": 1,
+        "full_scale_power_dbm": -11,
         "delay": 0,
         "core": "fem1-thread6",
     },
@@ -178,7 +178,7 @@ QUBIT_CONSTANTS = {
         "fem": 1,
         "ao": 8,
         "band": 2,
-        "full_scale_power_dbm": 1,
+        "full_scale_power_dbm": -11,
         "delay": 0,
         "core": "fem1-thread7",
     },
@@ -555,6 +555,27 @@ RL_CONSTANTS = {
     },
 }
 
+RR_QUBIT_MAP = {
+    "q1_rr": "q1_xy",
+    "q2_rr": "q2_xy",
+    "q3_rr": "q3_xy",
+    "q4_rr": "q4_xy",
+    "q5_rr": "q5_xy",
+    "q6_rr": "q6_xy",
+    "q7_rr": "q7_xy",
+    "q8_rr": "q8_xy",
+}
+QUBIT_RR_MAP = {
+    "q1_xy": "q1_rr",
+    "q2_xy": "q2_rr",
+    "q3_xy": "q3_rr",
+    "q4_xy": "q4_rr",
+    "q5_xy": "q5_rr",
+    "q6_xy": "q6_rr",
+    "q7_xy": "q7_rr",
+    "q8_xy": "q8_rr",
+}
+
 RR_CONSTANTS = {
     "q1_rr": {
         # main
@@ -822,6 +843,9 @@ else:
     }
 
 
+QUBITS_ALL = [qb for qb in QUBIT_CONSTANTS.keys()]
+RESONATORS_ALL = [key for key in RR_CONSTANTS.keys()]
+
 
 # MARK: CONFIGURATION
 #############################################
@@ -850,7 +874,7 @@ config = {
                         **{
                             v["ao"]: {
                                 "sampling_rate": 1e9,
-                                "full_scale_power_dbm": v["band"],
+                                "full_scale_power_dbm": v["full_scale_power_dbm"],
                                 "band": v["band"],
                                 "delay": v["delay"],
                                 "upconverters": {
@@ -862,7 +886,7 @@ config = {
                         **{
                             v["ao"]: {
                                 "sampling_rate": 1e9,
-                                "full_scale_power_dbm": v["band"],
+                                "full_scale_power_dbm": v["full_scale_power_dbm"],
                                 "band": v["band"],
                                 "delay": v["delay"],
                                 "upconverters": {

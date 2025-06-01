@@ -40,8 +40,9 @@ matplotlib.use('TkAgg')
 ##################
 
 # Qubits and resonators 
-qc = 4 # index of control qubit
-qt = 3 # index of target qubit
+qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
+# qubits = ["q1_xy", "q2_xy"]
+resonators = [QUBIT_RR_MAP[qb] for qb in qubits]
 
 # Parameters Definition
 n_avg = 10  # The number of averages
@@ -54,15 +55,6 @@ detunings = np.arange(-5e6, 5e6, 0.1e6) # Detuning to compensate for the AC STar
 weights = "rotated_" # ["", "rotated_", "opt_"]
 reset_method = "wait" # ["wait", "active"]
 readout_operation = "readout" # ["readout", "midcircuit_readout"]
-
-# Derived parameters
-qc_xy = f"q{qc}_xy"
-qt_xy = f"q{qt}_xy"
-# qubits = [f"q{i}_xy" for i in [qc, qt]]
-# resonators = [f"q{i}_rr" for i in [qc, qt]]
-qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
-qubits_to_play = ['q4_xy']
-resonators = [key for key in RR_CONSTANTS.keys()]
 
 # Assertion
 # for qb in qubits:
@@ -102,13 +94,13 @@ with program() as PROGRAM:
             with for_(*from_array(df, detunings)):
                 # Update the frequency of the two qubit elements
 
-                for qb in qubits_to_play:
+                for qb in qubits:
                     update_frequency(qb, df + QUBIT_CONSTANTS[qb]["IF"])
 
                 # Loop for error amplification (perform many qubit pulses)
 
                 with for_(count, 0, count < npi, count + 1):
-                    for qb in qubits_to_play:
+                    for qb in qubits:
                         play("x180" * amp(1), qb)
                         play("x180" * amp(-1), qb)
 
@@ -118,7 +110,7 @@ with program() as PROGRAM:
                 multiplexed_readout(I, I_st, Q, Q_st, state, state_st, resonators=resonators, weights=weights)
                 
                 # Update the frequency of the two qubit elements
-                for qb in qubits_to_play:
+                for qb in qubits:
                     update_frequency(qb, QUBIT_CONSTANTS[qb]["IF"])
 
                 # Wait for the qubit to decay to the ground state
@@ -234,6 +226,6 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 # %%

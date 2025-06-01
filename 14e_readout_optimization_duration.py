@@ -19,8 +19,9 @@ from qualang_tools.results.data_handler import DataHandler
 ##################
 
 # Qubits and resonators 
-qc = 4 # index of control qubit
-qt = 3 # index of target qubit
+qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
+# qubits = ["q1_xy", "q2_xy"]
+resonators = [QUBIT_RR_MAP[qb] for qb in qubits]
 
 # Parameters Definition
 n_avg = 10  # Number of runs
@@ -36,12 +37,6 @@ print("The readout has been sliced in the following number of divisions", number
 weights = "rotated_" # ["", "rotated_", "opt_"]
 reset_method = "wait" # ["wait", "active"]
 readout_operation = "readout" # ["readout", "midcircuit_readout"]
-
-# Derived parameters
-qc_xy = f"q{qc}_xy"
-qt_xy = f"q{qt}_xy"
-qubits = [f"q{i}_xy" for i in [qc, qt]]
-resonators = [f"q{i}_rr" for i in [qc, qt]]
 
 # Assertion
 assert number_of_divisions <= 4_000, "check the number of divisions"
@@ -193,7 +188,11 @@ if __name__ == "__main__":
                 for ind, (qb, rr) in enumerate(zip(qubits, resonators)):
 
                     max_len = len(res[4*ind + 1])
-                    _, _, iq_blobs_result = iq_blobs_analysis(res[4*ind + 1][:max_len], res[4*ind + 2][:max_len], res[4*ind + 3][:max_len], res[4*ind + 4][:max_len], method=iq_blobs_analysis_method)
+                    Ig = res[4*ind + 1][:max_len]
+                    Qg = res[4*ind + 2][:max_len]
+                    Ie = res[4*ind + 3][:max_len]
+                    Qe = res[4*ind + 4][:max_len]
+                    _, _, iq_blobs_result = iq_blobs_analysis(Ig, Qg, Ie, Qe, method=iq_blobs_analysis_method)
 
                     save_data_dict[rr+"_I_g"] = res[4*ind + 1]
                     save_data_dict[rr+"_Q_g"] = res[4*ind + 2]
@@ -221,6 +220,6 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 # %%

@@ -37,8 +37,9 @@ matplotlib.use('TkAgg')
 ##################
 
 # Qubits and resonators 
-qc = 4 # index of control qubit
-qt = 3 # index of target qubit
+qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
+# qubits = ["q1_xy", "q2_xy"]
+resonators = [QUBIT_RR_MAP[qb] for qb in qubits]
 
 # Parameters Definition
 n_avg = 10  # The number of averages
@@ -54,15 +55,6 @@ nb_of_pulses = np.arange(0, max_nb_of_pulses + 0.1, 1)  # Always play an odd/eve
 weights = "rotated_" # ["", "rotated_", "opt_"]
 reset_method = "wait" # ["wait", "active"]
 readout_operation = "readout" # ["readout", "midcircuit_readout"]
-
-# Derived parameters
-qc_xy = f"q{qc}_xy"
-qt_xy = f"q{qt}_xy"
-# qubits = [f"q{i}_xy" for i in [qc, qt]]
-# resonators = [f"q{i}_rr" for i in [qc, qt]]
-qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
-qubits_to_play = qubits #['q2_xy']
-resonators = [key for key in RR_CONSTANTS.keys()]
 
 # Assertion
 assert len(nb_of_pulses)*len(amps) <= 76_000, "check your frequencies and amps"
@@ -103,7 +95,7 @@ with program() as PROGRAM:
             with for_(*from_array(a, amps)):
                 # Loop for error amplification (perform many qubit pulses)
                 with for_(count, 0, count < npi, count + 1):
-                    for qb in qubits_to_play:
+                    for qb in qubits:
                         play("x180" * amp(1, 0, 0, a), qb)
                         play("x180" * amp(-1, 0, 0, -a), qb)
 
@@ -228,6 +220,6 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 # %%

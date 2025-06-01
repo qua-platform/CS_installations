@@ -41,9 +41,9 @@ resonators = [key for key in RR_CONSTANTS.keys()]
 resonators_LO = RL_CONSTANTS[rl]["LO"]
 
 # Parameters Definition
-n_avg = 1_000  # The number of averages
+n_avg = 100  # The number of averages
 # The frequency sweep parameters (for both resonators)
-span = 30.0 * u.MHz  # the span around the resonant frequencies
+span = 30 * u.MHz  # the span around the resonant frequencies
 step = 100 * u.kHz
 dfs = np.arange(-span, span, step)
 
@@ -90,7 +90,6 @@ with program() as PROGRAM:
             multiplexed_readout(I, I_st, Q, Q_st, None, None, resonators)
         
     with stream_processing():
-
         for ind, rr in enumerate(resonators):
             I_st[ind].buffer(len(dfs)).average().save(f"I_{rr}")
             Q_st[ind].buffer(len(dfs)).average().save(f"Q_{rr}")
@@ -168,7 +167,7 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 
 # %%

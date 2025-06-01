@@ -55,23 +55,23 @@ with program() as PROGRAM:
 
     with for_(n, 0, n < n_avg, n + 1):
         # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
-        reset_if_phase("q1_rr")
-        reset_if_phase("q2_rr")
-        reset_if_phase("q3_rr")
-        reset_if_phase("q4_rr")
+        reset_if_phase(rr)
         # Sends the readout pulse and stores the raw ADC traces in the stream called "adc_st"
-        measure("readout", "q1_rr", adc_st)
-        # play("readout", "q2_rr")
-        # play("readout", "q3_rr")
-        # play("readout", "q4_rr")
+        measure("readout", rr, adc_st)
         # Wait for the rr to deplete
         wait(depletion_time * u.ns, rr)
 
     with stream_processing():
-        # Will save average:
-        adc_st.input2().average().save("adc1")
-        # # Will save only last run:
-        adc_st.input2().save("adc1_single_run")
+        if RL_CONSTANTS[rl]["ai"] == 1:
+            # Will save average:
+            adc_st.input1().average().save(f"adc")
+            # Will save only last run:
+            adc_st.input1().save(f"adc_single_run")
+        else:
+            # Will save average:
+            adc_st.input2().average().save(f"adc")
+            # Will save only last run:
+            adc_st.input2().save(f"adc_single_run")
 
 
 if __name__ == "__main__":
@@ -105,8 +105,8 @@ if __name__ == "__main__":
             # Waits (blocks the Python console) until all results have been acquired
             res_handles.wait_for_all_values()
             # Fetch the raw ADC traces and convert them into Volts
-            adc1 = u.raw2volts(res_handles.get("adc1").fetch_all())
-            adc1_single_run = u.raw2volts(res_handles.get("adc1_single_run").fetch_all())
+            adc1 = u.raw2volts(res_handles.get("adc").fetch_all())
+            adc1_single_run = u.raw2volts(res_handles.get("adc_single_run").fetch_all())
 
             save_data_dict[rl+"_adc1"] = adc1
             save_data_dict[rl+"_adc1_single"] = adc1_single_run

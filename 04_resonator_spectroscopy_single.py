@@ -33,7 +33,7 @@ matplotlib.use('TkAgg')
 ##################
 
 rl = "rl1"
-resonator = "q4_rr"
+resonator = "q1_rr"
 resonator_LO = RL_CONSTANTS[rl]["LO"]
 
 n_avg = 200  # The number of averages
@@ -42,6 +42,10 @@ frequencies = {
     "q2_rr": np.arange(-50e6, +50e6, 100e3),
     "q3_rr": np.arange(-50e6, +50e6, 100e3),
     "q4_rr": np.arange(-50e6, +50e6, 100e3),
+    "q5_rr": np.arange(-50e6, +50e6, 100e3),
+    "q6_rr": np.arange(-50e6, +50e6, 100e3),
+    "q7_rr": np.arange(-50e6, +50e6, 100e3),
+    "q8_rr": np.arange(-50e6, +50e6, 100e3),
 }[resonator]
 
 print("Number of frequencies is", len(frequencies))
@@ -154,6 +158,6 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 # %%

@@ -305,6 +305,6 @@ if __name__ == "__main__":
         finally:
             # qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 # %%

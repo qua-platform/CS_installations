@@ -1,6 +1,6 @@
 # %%
 """
-        SINGLE QUBIT INTERLEAVED RANDOMIZED BENCHMARKING
+        SINGLE QUBIT RANDOMIZED BENCHMARKING
 """
 
 from qm.qua import *
@@ -15,39 +15,34 @@ from qualang_tools.plot import interrupt_on_close
 from macros import multiplexed_readout, qua_declaration, active_reset
 import math
 from qualang_tools.results.data_handler import DataHandler
+from scipy.optimize import curve_fit
+import matplotlib
+import time
+
+matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
 ##################
 
 # Qubits and resonators 
-qc = 4 # index of control qubit
-qt = 3 # index of target qubit
+qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
+# qubits = ["q1_xy", "q2_xy"]
+resonators = [QUBIT_RR_MAP[qb] for qb in qubits]
 
 # Parameters Definition
-num_of_sequences = 10  # Number of random sequences
-n_avg = 3  # Number of averaging loops for each random sequence
-max_circuit_depth = 20  # Maximum circuit depth
-delta_clifford = 2  #  Play each sequence with a depth step equals to 'delta_clifford - Must be > 1
+num_of_sequences = 50  # Number of random sequences
+n_avg = 10  # Number of averaging loops for each random sequence
+max_circuit_depth = 2000  # Maximum circuit depth
+delta_clifford = 20  #  Play each sequence with a depth step equals to 'delta_clifford - Must be > 1
 seed = 345324  # Pseudo-random number generator seed
 # List of recovery gates from the lookup table
 inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
-# index of the gate to interleave from the play_sequence() function defined below
-# Correspondence table:
-#  0: identity |  1: x180 |  2: y180
-# 12: x90      | 13: -x90 | 14: y90 | 15: -y90 |
-interleaved_gate_index = 0
 
 # Readout Parameters
 weights = "rotated_" # ["", "rotated_", "opt_"]
 reset_method = "wait" # ["wait", "active"]
 readout_operation = "readout" # ["readout", "midcircuit_readout"]
-
-# Derived parameters
-qc_xy = f"q{qc}_xy"
-qt_xy = f"q{qt}_xy"
-qubits = [f"q{i}_xy" for i in [qc, qt]]
-resonators = [f"q{i}_rr" for i in [qc, qt]]
 
 # Assertion
 assert (max_circuit_depth / delta_clifford).is_integer(), "max_circuit_depth / delta_clifford must be an integer."
@@ -63,50 +58,31 @@ save_data_dict = {
     "max_circuit_depth": max_circuit_depth,
     "weights": weights,
     "reset_method": reset_method,
-    "interleaved_gate_index": interleaved_gate_index,
 }
 
 
 ###################################
 # Helper functions and QUA macros #
 ###################################
-def get_interleaved_gate(gate_index):
-    if gate_index == 0:
-        return "I"
-    elif gate_index == 1:
-        return "x180"
-    elif gate_index == 2:
-        return "y180"
-    elif gate_index == 12:
-        return "x90"
-    elif gate_index == 13:
-        return "-x90"
-    elif gate_index == 14:
-        return "y90"
-    elif gate_index == 15:
-        return "-y90"
+def power_law(power, a, b, p):
+    return a * (p**power) + b
 
-def generate_sequence(interleaved_gate_index):
+def generate_sequence():
     cayley = declare(int, value=c1_table.flatten().tolist())
     inv_list = declare(int, value=inv_gates)
     current_state = declare(int)
     step = declare(int)
-    sequence = declare(int, size=2 * max_circuit_depth + 1)
-    inv_gate = declare(int, size=2 * max_circuit_depth + 1)
+    sequence = declare(int, size=max_circuit_depth + 1)
+    inv_gate = declare(int, size=max_circuit_depth + 1)
     i = declare(int)
     rand = Random(seed=seed)
 
     assign(current_state, 0)
-    with for_(i, 0, i < 2 * max_circuit_depth, i + 2):
+    with for_(i, 0, i < max_circuit_depth, i + 1):
         assign(step, rand.rand_int(24))
         assign(current_state, cayley[current_state * 24 + step])
         assign(sequence[i], step)
         assign(inv_gate[i], inv_list[current_state])
-        # interleaved gate
-        assign(step, interleaved_gate_index)
-        assign(current_state, cayley[current_state * 24 + step])
-        assign(sequence[i + 1], step)
-        assign(inv_gate[i + 1], inv_list[current_state])
 
     return sequence, inv_gate
 
@@ -116,7 +92,7 @@ def play_sequence(sequence_list, depth, qb):
     with for_(i, 0, i <= depth, i + 1):
         with switch_(sequence_list[i], unsafe=True):
             with case_(0):
-                wait(PI_LEN >> 2, qb)
+                wait(PI_LEN // 4, qb)
             with case_(1):
                 play("x180", qb)
             with case_(2):
@@ -186,7 +162,7 @@ def play_sequence(sequence_list, depth, qb):
                 play("-x90", qb)
 
 
-# TODO: delta clifford to delta depth
+
 ###################
 #   QUA Program   #
 ###################
@@ -205,58 +181,62 @@ with program() as PROGRAM:
     with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
         # Save the counter for the progress bar
         save(m, m_st)
-        # Generates the RB sequence with a gate interleaved after each Clifford
-        sequence_list, inv_gate_list = generate_sequence(interleaved_gate_index=interleaved_gate_index)
-        # Depth_target is used to always play the gates by pairs [(random_gate-interleaved_gate)^depth/2-inv_gate]
-        assign(depth_target, 0)
+        sequence_list, inv_gate_list = generate_sequence()  # Generate the random sequence of length max_circuit_depth
 
-        with for_(depth, 1, depth <= 2 * max_circuit_depth, depth + 1):
+        assign(depth_target, 0)  # Initialize the current depth to 0
+
+        with for_(depth, 1, depth <= max_circuit_depth, depth + 1):  # Loop over the depths
             # Replacing the last gate in the sequence with the sequence's inverse gate
             # The original gate is saved in 'saved_gate' and is being restored at the end
             assign(saved_gate, sequence_list[depth])
             assign(sequence_list[depth], inv_gate_list[depth - 1])
             # Only played the depth corresponding to target_depth
 
-            with if_((depth == 2) | (depth == depth_target)):
-                
+            with if_((depth == 1) | (depth == depth_target)):
+
                 with for_(n, 0, n < n_avg, n + 1):  # Averaging loop
-                    # Can replace by active reset
                     if reset_method == "wait":
                         wait(qb_reset_time >> 2)
                     elif reset_method == "active":
-                        global_state = active_reset(I, None, Q, None, state, None, resonators, qubits, state_to="ground", weights=weights)
+                        global_state = active_reset(I, None, Q, None, state, None, resonators, qubits, state_to="ground", weights=weights,delay=187)
                     # Align the two elements to play the sequence after qubit initialization
                     align()
                     # The strict_timing ensures that the sequence will be played without gaps
-                    # TODO: check weather it's more efficient to put strict timing before or after for_loop line
                     for qb in qubits:
-                        with strict_timing_():
-                            # Play the random sequence of desired depth
-                            play_sequence(sequence_list, depth, qb)
+                        # with strict_timing_():
+                        # Play the random sequence of desired depth
+                        play_sequence(sequence_list, depth, qb)
                     # Align the two elements to measure after playing the circuit.
                     align()
                     multiplexed_readout(I, I_st, Q, Q_st, state, state_st, resonators=resonators, weights=weights)
-                # always play the random gate followed by the interleaved gate. The factor of 2 is there to always
-                # play the gates by pairs [(random_gate-interleaved_gate)^depth/2-inv_gate]
-                assign(depth_target, depth_target + 2 * delta_clifford)
+
+                # Go to the next depth
+                assign(depth_target, depth_target + delta_clifford)
+
             # Reset the last gate of the sequence back to the original Clifford gate
             # (that was replaced by the recovery gate at the beginning)
             assign(sequence_list[depth], saved_gate)
 
     with stream_processing():
         m_st.save("iteration")
+        # NOTE: need to discuss if we do qubit by qubit or multiplexed
         for ind, rr in enumerate(resonators):
-            I_st[ind].buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford + 1).buffer(
-                num_of_sequences
-            ).save(f"I_{rr}")
-            Q_st[ind].buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford + 1).buffer(
-                num_of_sequences
-            ).save(f"Q_{rr}")
-            I_st[ind].buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford + 1).average().save(f"I_avg_{rr}")
-            Q_st[ind].buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford + 1).average().save(f"Q_avg_{rr}")
-            state_st[ind].boolean_to_int().buffer(n_avg).map(FUNCTIONS.average()).buffer(
-                max_circuit_depth / delta_clifford + 1
-            ).buffer(num_of_sequences).save(f"state_{rr}")
+            # I_st[ind].buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford + 1).buffer(
+            #     num_of_sequences
+            # ).save(f"I_{rr}")
+            # Q_st[ind].buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford + 1).buffer(
+            #     num_of_sequences
+            # ).save(f"Q_{rr}")
+            # state_st[ind].boolean_to_int().buffer(n_avg).map(FUNCTIONS.average()).buffer(
+            #     max_circuit_depth / delta_clifford + 1
+            # ).buffer(num_of_sequences).save(f"state_{rr}")
+            
+            I_st[ind].buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford + 1).average().save(
+                f"I_avg_{rr}"
+            )
+            Q_st[ind].buffer(n_avg).map(FUNCTIONS.average()).buffer(max_circuit_depth / delta_clifford + 1).average().save(
+                f"Q_avg_{rr}"
+            )
             state_st[ind].boolean_to_int().buffer(n_avg).map(FUNCTIONS.average()).buffer(
                 max_circuit_depth / delta_clifford + 1
             ).average().save(f"state_avg_{rr}")
@@ -281,7 +261,8 @@ if __name__ == "__main__":
         job.get_simulated_samples().con1.plot()
         plt.plot(block=False)
     else:
-        try:# Open the quantum machine
+        try:
+            # Open the quantum machine
             qm = qmm.open_qm(config)
             
             # Send the QUA program to the OPX, which compiles and executes it
@@ -289,9 +270,9 @@ if __name__ == "__main__":
 
             fetch_names = ["iteration"]
             for rr in resonators:
-                fetch_names.append(f"I_{rr}")
-                fetch_names.append(f"Q_{rr}")
-                fetch_names.append(f"state_{rr}")
+                # fetch_names.append(f"I_{rr}")
+                # fetch_names.append(f"Q_{rr}")
+                # fetch_names.append(f"state_{rr}")
                 fetch_names.append(f"I_avg_{rr}")
                 fetch_names.append(f"Q_avg_{rr}")
                 fetch_names.append(f"state_avg_{rr}")
@@ -306,7 +287,7 @@ if __name__ == "__main__":
             num_cols = math.ceil(num_resonators / num_rows)
             # Live plotting
 
-            x = np.arange(0, 2 * max_circuit_depth + 0.1, 2 * delta_clifford)
+            x = np.arange(0, max_circuit_depth + 0.1, delta_clifford)
             x[0] = 1  # to set the first value of 'x' to be depth = 1 as in the experiment
 
             while results.is_processing():
@@ -316,10 +297,10 @@ if __name__ == "__main__":
                 # Progress bar
                 progress_counter(res[0], num_of_sequences, start_time=results.start_time)
 
-                plt.suptitle("interleaved-RB")
+                plt.suptitle("RB")
                 for ind, (qb, rr) in enumerate(zip(qubits, resonators)):
 
-                    S = res[6*ind + 6]
+                    S = res[3*ind + 3]
                     # Plot
                     plt.subplot(num_rows, num_cols, ind + 1)
                     plt.cla()
@@ -331,20 +312,57 @@ if __name__ == "__main__":
                 plt.tight_layout()
                 plt.pause(2)
 
+            # data analysis
+            ind = 3
+            value_avg = res[3*ind + 3]
+            pars, cov = curve_fit(
+                f=power_law,
+                xdata=x,
+                ydata=value_avg,
+                p0=[0.5, 0.5, 0.9],
+                bounds=(-np.inf, np.inf),
+                maxfev=2000,
+            )
+            stdevs = np.sqrt(np.diag(cov))
+
+            one_minus_p = 1 - pars[2]
+            r_c = one_minus_p * (1 - 1 / 2**1)
+            r_g = r_c / 1.875  # 1.875 is the average number of gates in clifford operation
+            r_c_std = stdevs[2] * (1 - 1 / 2**1)
+            r_g_std = r_c_std / 1.875
+
+            print("#########################")
+            print("### Useful Parameters ###")
+            print("#########################")
+            print(
+                f"Error rate: 1-p = {np.format_float_scientific(one_minus_p, precision=2)} ({stdevs[2]:.1})\n"
+                f"Clifford set infidelity: r_c = {np.format_float_scientific(r_c, precision=2)} ({r_c_std:.1})\n"
+                f"Gate infidelity: r_g = {np.format_float_scientific(r_g, precision=2)}  ({r_g_std:.1})\n"
+                f"Gate fidelity: = {np.format_float_scientific((1-r_g)*100, precision=3)}  ({r_g_std:.1})"
+            )
+
             for ind, rr in enumerate(resonators):
-                save_data_dict[f"I_{rr}"] = res[6*ind + 1]
-                save_data_dict[f"Q_{rr}"] = res[6*ind + 2]
-                save_data_dict[rr+"_state"] = res[6*ind + 3]
-                save_data_dict[rr+"_I_avg"] = res[6*ind + 4]
-                save_data_dict[rr+"_Q_avg"] = res[6*ind + 5]
-                save_data_dict[rr+"_state_avg"] = res[6*ind + 6]
+                # save_data_dict[rr+"_I"] = res[6*ind + 1]
+                # save_data_dict[rr+"_Q"] = res[6*ind + 2]
+                # save_data_dict[rr+"_state"] = res[6*ind + 3]
+                save_data_dict[rr+"_I_avg"] = res[3*ind + 1]
+                save_data_dict[rr+"_Q_avg"] = res[3*ind + 2]
+                save_data_dict[rr+"_state_avg"] = res[3*ind + 3]
+
+            elapsed_time = time.time() - results.start_time
+            save_data_dict["elapsed_time"] = elapsed_time
+            save_data_dict["error_rate"] = one_minus_p
+            save_data_dict['clifford_infidelity'] = r_c
+            save_data_dict['gate_infidelity'] = r_g
+            save_data_dict['gate_fidelity'] = (1-r_g)*100
+            save_data_dict['index_to_fit'] = ind
 
             # Save results
             script_name = Path(__file__).name
             data_handler = DataHandler(root_data_folder=save_dir)
             save_data_dict.update({"fig_live": fig})
             data_handler.additional_files = {script_name: script_name, **default_additional_files}
-            data_handler.save_data(data=save_data_dict, name="rb_interleaved")
+            data_handler.save_data(data=save_data_dict, name="rb")
 
         except Exception as e:
             print(f"An exception occurred: {e}")
@@ -352,6 +370,6 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 # %%

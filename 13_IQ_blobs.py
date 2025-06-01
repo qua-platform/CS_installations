@@ -38,25 +38,17 @@ matplotlib.use('TkAgg')
 ##################
 
 # Qubits and resonators 
-qc = 4 # index of control qubit
-qt = 3 # index of target qubit
+qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
+# qubits = ["q1_xy", "q2_xy"]
+resonators = [QUBIT_RR_MAP[qb] for qb in qubits]
 
 # Parameters Definition
-n_runs = 10_000  # Number of runs
+n_runs = 1_000  # Number of runs
 
 # Readout Parameters
 weights = "rotated_" # ["", "rotated_", "opt_"]
 reset_method = "wait" #["wait", "active"]
 readout_operation = "readout" # ["readout", "midcircuit_readout"]
-
-# Derived parameters
-qc_xy = f"q{qc}_xy"
-qt_xy = f"q{qt}_xy"
-# qubits = [f"q{i}_xy" for i in [qc, qt]]
-# resonators = [f"q{i}_rr" for i in [qc, qt]]
-qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
-qubits_to_play = ["q4_xy"]
-resonators = [key for key in RR_CONSTANTS.keys()]
 
 # Assertion
 assert n_runs < 20_000, "check the number of shots"
@@ -103,7 +95,7 @@ with program() as PROGRAM:
         if reset_method == "wait":
             wait(qb_reset_time // 4)
             # Play the qubit pi pulses
-            for qb in qubits_to_play:
+            for qb in qubits:
                 play("x180", qb)
         elif reset_method == "active":
             global_state = active_reset(
@@ -175,12 +167,15 @@ if __name__ == "__main__":
             num_resonators = len(resonators)
             num_rows = math.ceil(math.sqrt(num_resonators))
             num_cols = math.ceil(num_resonators / num_rows)
+            fig, axss = plt.subplots(num_rows, num_cols)
 
-            for ind, (qb, rr) in enumerate(zip(qubits, resonators)):
+            for ind, (ax, qb, rr) in enumerate(zip(axss.ravel(), qubits, resonators)):
 
                 rr_qubit_match = False
 
                 angle_val, threshold_val, fidelity_val, gg, ge, eg, ee = two_state_discriminator(res[4*ind + 1], res[4*ind + 2], res[4*ind + 3], res[4*ind + 4], b_print=False, b_plot=True)
+                this_fig = plt.gcf()
+                save_data_dict.update({f"fig_analysis_{rr}": this_fig})
                 save_data_dict[rr+"_gg"] = gg
                 save_data_dict[rr+"_ge"] = ge
                 save_data_dict[rr+"_eg"] = eg
@@ -194,16 +189,15 @@ if __name__ == "__main__":
                 save_data_dict[rr+"_Ie"] = res[4*ind + 3]
                 save_data_dict[rr+"_Qe"] = res[4*ind + 4]
 
-                plt.subplot(num_rows, num_cols, ind + 1)
-                plt.plot(res[4*ind + 1], res[4*ind + 2], ".", alpha=0.1, markersize=2)
-                plt.plot(res[4*ind + 3], res[4*ind + 4], ".", alpha=0.1, markersize=2)
-                plt.axis('equal')
-                plt.axvline(x=0, linestyle='--', color='k')
-                plt.axhline(y=0, linestyle='--', color='k')
-                plt.title(f"Qb - {qb}")
+                ax.plot(res[4*ind + 1], res[4*ind + 2], ".", alpha=0.1, markersize=2)
+                ax.plot(res[4*ind + 3], res[4*ind + 4], ".", alpha=0.1, markersize=2)
+                ax.axis('equal')
+                ax.axvline(x=0, linestyle='--', color='k')
+                ax.axhline(y=0, linestyle='--', color='k')
+                ax.set_title(f"Qb - {qb}")
 
             plt.tight_layout()
-            fig = plt.gcf()
+            save_data_dict.update({f"fig_live": fig})
 
             fig2 = plt.figure()
             for ind, (qb, rr) in enumerate(zip(qubits, resonators)):
@@ -235,6 +229,6 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 # %%

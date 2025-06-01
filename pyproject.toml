@@ -1,0 +1,20 @@
+[project]
+name = "eval-prep"
+version = "0.0.1"
+requires-python = ">=3.9,<3.13"
+dependencies = [
+    "qm-qua>=1.2.1",
+    "qualang-tools>=0.19.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "ipykernel>=7.0.0a1",
+    "pytest>=8.3.5"
+]
+
+[tool.uv]
+prerelease = "allow"
+
+[tool.black]
+line-length = 120

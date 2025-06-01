@@ -58,6 +58,8 @@ from cr_hamiltonian_tomography import (
 import matplotlib
 
 matplotlib.use('TkAgg')
+
+
 ##################
 #   Parameters   #
 ##################
@@ -293,6 +295,6 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
 # %%

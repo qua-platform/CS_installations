@@ -57,8 +57,9 @@ def plot_three_complex_arrays(x, aq1_rr, aq2_rr, aq3_rr, axs):
 ##################
 
 # Qubits and resonators 
-qc = 4 # index of control qubit
-qt = 3 # index of target qubit
+qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
+# qubits = ["q1_xy", "q2_xy"]
+resonators = [QUBIT_RR_MAP[qb] for qb in qubits]
 
 # Parameters Definition
 n_avg = 1e3  # number of averages
@@ -75,22 +76,12 @@ weights = "rotated_" # ["", "rotated_", "opt_"]
 reset_method = "wait" # ["wait", "active"]
 readout_operation = "readout" # ["readout", "midcircuit_readout"]
 
-# Derived parameters
-qc_xy = f"q{qc}_xy"
-qt_xy = f"q{qt}_xy"
-# qubits = [f"q{i}_xy" for i in [qc, qt]]
-# resonators = [f"q{i}_rr" for i in [qc, qt]]
-qubits = [qb for qb in QUBIT_CONSTANTS.keys()]
-qubits_to_play = ["q1_xy"]
-resonators = ["q1_rr"]
-
 # Assertion
 assert number_of_divisions <= 4_000, "check the number of divisions"
 
 # Data to save
 save_data_dict = {
     "qubits": qubits,
-    "qubits_to_play": qubits_to_play,
     "resonators": resonators,
     "n_avg": n_avg,
     "division_length": division_length,
@@ -151,7 +142,7 @@ with program() as PROGRAM:
         wait(qb_reset_time >> 2)
 
         # Measure the excited IQ blobs
-        for qb in qubits_to_play:
+        for qb in qubits:
             play("x180", qb)
         align()
         # Loop over the two resonators
@@ -275,6 +266,6 @@ if __name__ == "__main__":
         finally:
             qm.close()
             print("Experiment QM is now closed")
-            plt.show(block=True)
+            plt.show()
 
     # %%
