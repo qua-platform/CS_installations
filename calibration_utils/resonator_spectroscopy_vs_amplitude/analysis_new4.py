@@ -15,25 +15,7 @@ def prepare_data(ds, qubit):
 
 
 def detect_peak_regions_with_kde(data, freq, power, delta_power_idx=2):
-    """
-    Applies KDE along freq axis for each power strip, detects peaks, and finds the contiguous
-    region along power where peaks stay close to x1 (within delta).
-
-    Parameters:
-    - data: 2D array (freq × power)
-    - freq: 1D array of frequency values
-    - power: 1D array of power values
-    - delta_x: resolution of KDE sampling grid
-    - bandwidth: optional float or 'scott'/'silverman' for KDE
-    - x1: reference peak position (if None, auto-detect top 1 or 2 modes)
-    - delta: closeness threshold for determining x1-like region
-
-    Returns:
-    - x1: the most common peak position
-    - peak_freqs: detected peak freq per power strip
-    - (start_power, end_power): bounds of contiguous x1-like region
-    """
-    num_power = data.shape[1]
+    num_power = len(power)
     peak_freqs = []
     peak_freqs_idx = []
 
@@ -56,10 +38,10 @@ def detect_peak_regions_with_kde(data, freq, power, delta_power_idx=2):
     # return x1, x2, peak_freqs, xs, density
 
     for i in range(num_power):
-        i1 = i - delta_power_idx if i - delta_power_idx < 0 else 0
-        i2 = i + delta_power_idx if i + delta_power_idx > num_power else num_power
+        i1 = i - delta_power_idx if (i - delta_power_idx) > 0 else 0
+        i2 = i + delta_power_idx if (i + delta_power_idx) < num_power else num_power
         data_sliced = data[:, i1:i2].mean(axis=1)
-        print(i, i1, i2)
+        # print(i, i1, i2)
         # Detect peaks
         peaks, _ = find_peaks(data_sliced, prominence=0.05)  # tune threshold if needed
         if len(peaks) == 0:
@@ -69,27 +51,51 @@ def detect_peak_regions_with_kde(data, freq, power, delta_power_idx=2):
         peak_idx = peaks[np.argmax(data_sliced[peaks])]
         peak_freqs.append(freq[peak_idx])
         peak_freqs_idx.append(peak_idx)
-        print(i, peak_idx)
+        # print(i, peak_idx)
         
-        plt.plot(freq, data_sliced)
-        plt.axvline(x=freq[peak_idx], ymin=0, ymax=1, color="r")
-        plt.show()
-        plt.pause(0.5)
+        # plt.plot(freq, data_sliced)
+        # plt.axvline(x=freq[peak_idx], ymin=0, ymax=1, color="r")
+        # plt.show()
+        # plt.pause(0.5)
 
     return peak_freqs, peak_freqs_idx
 
-    #     weights = strip - strip.min()  # subtract background
-    #     if np.sum(weights) == 0:
-    #         peak_freqs.append(np.nan)
-    #         continue
-    #     kde = gaussian_kde(freq, weights=weights, bw_method=bandwidth)
-    #     density = kde(freq_grid)
-    #     peak_idx = np.argmax(density)
-    #     peak_freqs.append(freq_grid[peak_idx])
+def apply_kde(peak_freqs, freq):
+
+    kde = gaussian_kde(peak_freqs, bw_method=0.3)
+    xs = np.linspace(min(freq), max(freq), 1000)
+    density = kde(xs)
+
+    # Find peaks in KDE
+    kde_peaks, _ = find_peaks(density)
+    peak_freqs_estimated = xs[kde_peaks]
+    peak_freqs_estimated = peak_freqs_estimated[np.argsort(density[kde_peaks])]
+    
+    if len(peak_freqs_estimated) < 2:
+        top_two = np.insert(peak_freqs_estimated, 0, 0)
+    else:
+        top_two = peak_freqs_estimated[-2:]
+
+    # Ensure x1 > x2
+    f1, f2 = sorted(top_two, reverse=True)
+
+    plt.figure(figsize=(8, 4))
+    plt.hist(peak_freqs, bins=50, alpha=0.3, label="Peak freq histogram")
+    plt.plot(xs, density * len(peak_freqs), label="KDE", color='red')
+    plt.axvline(f1, color='green', linestyle='--', label=f'f1 = {f1:.3f}')
+    plt.axvline(f2, color='blue', linestyle='--', label=f'f2 = {f2:.3f}')
+    plt.xlabel("Frequency")
+    plt.ylabel("Count / Density")
+    plt.legend()
+    plt.title("Peak frequency distribution across power slices")
+    plt.tight_layout()
+    plt.show()
+    
+    return f1, f2, density
 
     # peak_freqs = np.array(peak_freqs)
 
-    # # Automatically find the two most common peaks via histogram if x1 not given
+    # # Automatically find the two most common peaks via histogram if f1 not given
     # if x1 is None:
     #     hist, bin_edges = np.histogram(peak_freqs[~np.isnan(peak_freqs)], bins=100)
     #     bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
@@ -132,7 +138,7 @@ for path in paths:
         data = data.max() - data
         
         peak_freqs, peak_freqs_idx = detect_peak_regions_with_kde(data, freq, power, delta_power_idx=2)
-
+        f1, f2, density = apply_kde(peak_freqs, freq)
         # x1, peak_freqs, region, pick_idx = detect_peak_regions_with_kde(data, freq, power, delta=0.1)
 
 
@@ -146,9 +152,8 @@ for path in paths:
         # Overlay the detected peak positions
         plt.plot(power, peak_freqs, color='red', label='Detected peak')
 
-        # # Mark x1-like region with vertical lines
-        # if region:
-        #     plt.axhline(y=x1, color='m', linestyle='--', label='dispersive regime')
+        # Mark x1-like region with vertical lines
+        plt.axhline(y=f1, color='m', linestyle='--', label='dispersive regime')
         #     plt.axvline(region[0], color='orange', linestyle='--', label='x1-like region start')
         #     plt.axvline(region[1], color='orange', linestyle='--', label='x1-like region end')
         #     plt.plot(power[pick_idx], x1, marker="*", color="r", markersize=15, label="Chosen Point")
@@ -159,5 +164,8 @@ for path in paths:
         plt.legend()
         plt.tight_layout()
         plt.show()
+
+        print("=" * 100)
+        print("=" * 100)
 
 # %%

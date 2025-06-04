@@ -101,7 +101,7 @@ for qubit in ["qC1", "qC2"]:
         # (1, 1): Deviation
         axs[1, 1].plot(power, power_deviation, color="m", label="Deviation = all - cut")
         axs[1, 1].axvline(x=power[top_power_index], color="k", linestyle="--", label="Peak")
-        axs[1, 1].axvline(x=power[power_pick_index], color="m", linestyle="--", label="Picked Power")
+        axs[1, 1].axvline(x=power[power_pick_index], color="r", linestyle="--", label="Picked Power")
         axs[1, 1].set_title("Deviation from Mean Power Response")
         axs[1, 1].set_xlabel("Power")
         axs[1, 1].legend()

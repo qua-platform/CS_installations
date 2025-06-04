@@ -203,7 +203,9 @@ plt.show()
 
 
 # %%
+import glob
 import numpy as np
+import xarray as xr
 from scipy.stats import gaussian_kde
 from itertools import groupby
 from operator import itemgetter
@@ -287,7 +289,7 @@ for path in paths:
         data = data / data.mean(axis=0, keepdims=True)
         data = data.max() - data
 
-        x1, peak_freqs, region, pick_idx = detect_peak_regions_with_kde(data, freq, power, delta=0.3)
+        x1, peak_freqs, region, pick_idx = detect_peak_regions_with_kde(data, freq, power, delta=0.1, delta_x=3)
 
 
         import matplotlib.pyplot as plt
@@ -302,6 +304,7 @@ for path in paths:
 
         # Mark x1-like region with vertical lines
         if region:
+            plt.axhline(y=x1, color='m', linestyle='--', label='dispersive regime')
             plt.axvline(region[0], color='orange', linestyle='--', label='x1-like region start')
             plt.axvline(region[1], color='orange', linestyle='--', label='x1-like region end')
             plt.plot(power[pick_idx], x1, marker="*", color="r", markersize=15, label="Chosen Point")

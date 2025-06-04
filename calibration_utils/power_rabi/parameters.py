@@ -16,7 +16,7 @@ class NodeSpecificParameters(RunnableParameters):
     """Maximum amplitude factor for the operation. Default is 1.99."""
     amp_factor_step: float = 0.005
     """Step size for the amplitude factor. Default is 0.005."""
-    max_number_pulses_per_sweep: int = 1
+    max_number_pulses_per_sweep: int = 40
     """Maximum number of Rabi pulses per sweep. Default is 1."""
     update_x90: bool = True
     """Flag to update the x90 pulse amplitude. Default is True."""

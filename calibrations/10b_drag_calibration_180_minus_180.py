@@ -129,7 +129,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                         for i, qubit in multiplexed_qubits.items():
                             # Loop for error amplification (perform many qubit pulses)
                             with for_(count, 0, count < npi, count + 1):
-                                if node.parameters.operation == "x180":
+                                if node.parameters.operation == "x180_DragCosine":
                                     play(
                                         node.parameters.operation * amp(1, 0, 0, a),
                                         qubit.xy.name,
@@ -198,22 +198,40 @@ def execute_qua_program(node: QualibrationNode[Parameters, Quam]):
     qmm = node.machine.connect()
     # Get the config from the machine
     config = node.machine.generate_config()
-    # Execute the QUA program only if the quantum machine is available (this is to avoid interrupting running jobs).
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        # The job is stored in the node namespace to be reused in the fetching_data run_action
-        node.namespace["job"] = job = qm.execute(node.namespace["qua_program"])
-        # Display the progress bar
-        data_fetcher = XarrayDataFetcher(job, node.namespace["sweep_axes"])
-        for dataset in data_fetcher:
-            progress_counter(
-                data_fetcher["n"],
-                node.parameters.num_shots,
-                start_time=data_fetcher.t_start,
-            )
+
+    # Execute the QUA program
+    qm = qmm.open_qm(config, close_other_machines=False)
+    # The job is stored in the node namespace to be reused in the fetching_data run_action
+    node.namespace["job"] = job = qm.execute(node.namespace["qua_program"])
+    # Display the progress bar
+    data_fetcher = XarrayDataFetcher(job, node.namespace["sweep_axes"])
+    for dataset in data_fetcher:
+        progress_counter(
+            data_fetcher["n"],
+            node.parameters.num_shots,
+            start_time=data_fetcher.t_start,
+        )
         # Display the execution report to expose possible runtime errors
-        node.log(job.execution_report())
+        # node.log(job.execution_report())
     # Register the raw dataset
     node.results["ds_raw"] = dataset
+
+    # # Execute the QUA program only if the quantum machine is available (this is to avoid interrupting running jobs).
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    #     # The job is stored in the node namespace to be reused in the fetching_data run_action
+    #     node.namespace["job"] = job = qm.execute(node.namespace["qua_program"])
+    #     # Display the progress bar
+    #     data_fetcher = XarrayDataFetcher(job, node.namespace["sweep_axes"])
+    #     for dataset in data_fetcher:
+    #         progress_counter(
+    #             data_fetcher["n"],
+    #             node.parameters.num_shots,
+    #             start_time=data_fetcher.t_start,
+    #         )
+    #     # Display the execution report to expose possible runtime errors
+    #     node.log(job.execution_report())
+    # # Register the raw dataset
+    # node.results["ds_raw"] = dataset
 
 
 # %% {Load_data}

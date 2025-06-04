@@ -19,7 +19,7 @@ class NodeSpecificParameters(RunnableParameters):
     """
 
     num_shots: int = 10
-    operation: str = "x180"
+    operation: str = "x180_DragCosine"
     min_amp_factor: float = -1
     max_amp_factor: float = 2.0
     amp_factor_step: float = 0.02
