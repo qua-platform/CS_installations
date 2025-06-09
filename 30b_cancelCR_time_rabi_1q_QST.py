@@ -33,7 +33,6 @@ import time
 
 matplotlib.use('TkAgg')
 
-
 ##################
 #   Parameters   #
 ##################
