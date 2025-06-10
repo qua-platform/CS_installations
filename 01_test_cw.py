@@ -16,10 +16,11 @@ import time
 
 with program() as hello_QUA:
     with infinite_loop_():
-        for i in range(n_tweezers):
-            play("const" * amp((i + 1) / n_tweezers), f"col_selector_{i + 1:02d}")
-            play("const" * amp((i + 1) / n_tweezers), f"row_selector_{i + 1:02d}")
-            wait(250_000)
+        play("const", "col_selector_01")
+        # for i in range(n_tweezers):
+        #     play("const" * amp((i + 1) / n_tweezers), f"col_selector_{i + 1:02d}")
+        #     play("const" * amp((i + 1) / n_tweezers), f"row_selector_{i + 1:02d}")
+        #     wait(250_000)
 
 
 #####################################
@@ -35,7 +36,7 @@ qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
 qm = qmm.open_qm(config)  # , close_other_machines=False)
 job = qm.execute(hello_QUA)
-# time.sleep(5)
+time.sleep(5)
 job.halt()
 qm.close()
 

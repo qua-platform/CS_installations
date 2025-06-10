@@ -80,21 +80,21 @@ def print_2d(matrix):
 
 # --> Array geometry
 # Number of cols
-num_cols = 7
+num_cols = 4
 # Number of rows
-num_rows = 7
+num_rows = 4
 # Maximum number of tweezers available
-max_num_tweezers = 7
+max_num_tweezers = 4
 # Number of configured tweezers, if it increases don't forget to update the "align" in the QUA program
-n_tweezers = 7
+n_tweezers = 4
 n_segment_py = 50
 
 # --> Chirp pulse
 # Amplitude of each individual tweezer
 # WARNING: total output cannot exceed 0.5V
-const_pulse_amp = 0.45 / max_num_tweezers  # Must be < 0.49/max_num_tweezers
+const_pulse_amp = 0.5 / max_num_tweezers  # Must be < 0.49/max_num_tweezers
 # Duration of tweezer frequency chirp
-const_pulse_len = 400 * u.us
+const_pulse_len = 100 * u.ms
 # Analog readout threshold discriminating between atom and no-atom [V]
 threshold = 0.0000
 
@@ -110,11 +110,11 @@ sampling_rate = 100 * u.MHz  # Used for Blackman_long_pulse_len
 phases_list = [0.1, 0.4, 0.9, 0.3, 0.7, 0.2, 0.5, 0.8, 0.0, 0.6]
 # --> Col frequencies
 col_spacing = -1.0 * u.MHz  # in Hz
-col_IF_01 = 80 * u.MHz  # in Hz
+col_IF_01 = 100 * u.MHz  # in Hz
 col_IFs = [int(col_IF_01 + col_spacing * i) for i in range(num_cols)]
 # --> Row frequencies
-row_spacing = 1.0 * u.MHz  # in Hz
-row_IF_01 = 70 * u.MHz  # in Hz
+row_spacing = -1.0 * u.MHz  # in Hz
+row_IF_01 = 100 * u.MHz  # in Hz
 row_IFs = [row_IF_01 + row_spacing * x for x in range(num_rows)]
 
 # Readout time of the occupation matrix sent by fpga
@@ -177,7 +177,11 @@ config = {
                 "port": ("con1", 9),
             },  # Fake output port for measurement
             "intermediate_frequency": 0,
-            "operations": {"const": "const_pulse", "on": "unit_pulse", "off": "zero_pulse"},
+            "operations": {
+                "const": "const_pulse",
+                "on": "unit_pulse",
+                "off": "zero_pulse"
+            },
         },
         # fpga is used to read the occupation matrix sent by fpga
         "fpga": {
@@ -220,8 +224,8 @@ config = {
                 },
                 "intermediate_frequency": row_IFs[i],
                 "operations": {
-                    "blackman_up": "blackman_up_pulse",
-                    "blackman_down": "blackman_down_pulse",
+                    # "blackman_up": "blackman_up_pulse",
+                    # "blackman_down": "blackman_down_pulse",
                     "const": "const_pulse",
                 },
             }
@@ -235,8 +239,8 @@ config = {
                 },
                 "intermediate_frequency": col_IFs[i],
                 "operations": {
-                    "blackman_up": "blackman_up_pulse",
-                    "blackman_down": "blackman_down_pulse",
+                    # "blackman_up": "blackman_up_pulse",
+                    # "blackman_down": "blackman_down_pulse",
                     "const": "const_pulse",
                 },
             }
@@ -298,22 +302,22 @@ config = {
             },
             "digital_marker": "ON",
         },
-        "blackman_up_pulse": {
-            "operation": "control",
-            "length": blackman_pulse_len,
-            "waveforms": {
-                "single": "blackman_up_wf",
-            },
-            "digital_marker": "ON",
-        },
-        "blackman_down_pulse": {
-            "operation": "control",
-            "length": blackman_pulse_len,
-            "waveforms": {
-                "single": "blackman_down_wf",
-            },
-            "digital_marker": "ON",
-        },
+        # "blackman_up_pulse": {
+        #     "operation": "control",
+        #     "length": blackman_pulse_len,
+        #     "waveforms": {
+        #         "single": "blackman_up_wf",
+        #     },
+        #     "digital_marker": "ON",
+        # },
+        # "blackman_down_pulse": {
+        #     "operation": "control",
+        #     "length": blackman_pulse_len,
+        #     "waveforms": {
+        #         "single": "blackman_down_wf",
+        #     },
+        #     "digital_marker": "ON",
+        # },
         "const_pulse": {
             "operation": "control",
             "length": const_pulse_len,
@@ -346,16 +350,16 @@ config = {
         # },
     },
     "waveforms": {
-        "blackman_up_wf": {
-            "type": "arbitrary",
-            "samples": blackman(blackman_pulse_len / (1e9 / sampling_rate), 0, blackman_amp),
-            "sampling_rate": sampling_rate,
-        },
-        "blackman_down_wf": {
-            "type": "arbitrary",
-            "samples": blackman(blackman_pulse_len / (1e9 / sampling_rate), blackman_amp, 0),
-            "sampling_rate": sampling_rate,
-        },
+        # "blackman_up_wf": {
+        #     "type": "arbitrary",
+        #     "samples": blackman(blackman_pulse_len / (1e9 / sampling_rate), 0, blackman_amp),
+        #     "sampling_rate": sampling_rate,
+        # },
+        # "blackman_down_wf": {
+        #     "type": "arbitrary",
+        #     "samples": blackman(blackman_pulse_len / (1e9 / sampling_rate), blackman_amp, 0),
+        #     "sampling_rate": sampling_rate,
+        # },
         "const_wf": {
             "type": "constant",
             "sample": const_pulse_amp,
