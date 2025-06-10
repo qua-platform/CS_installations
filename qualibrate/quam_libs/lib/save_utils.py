@@ -60,6 +60,77 @@ def fetch_results_as_xarray(handles, qubits, measurement_axis):
     return ds
 
 
+def fetch_results_as_xarray_heralding(handles, qubits, measurement_axis):
+    """
+    Fetches measurement results as an xarray dataset.
+    Parameters:
+    - handles : A dictionary containing stream handles, obtained through handles = job.result_handles after the execution of the program.
+    - qubits (list): A list of qubits.
+    - measurement_axis (dict): A dictionary containing measurement axis information, e.g. {"frequency" : freqs, "flux",}.
+    Returns:
+    - ds (xarray.Dataset): An xarray dataset containing the fetched measurement results.
+    """
+
+    stream_handles = handles.keys()
+    meas_vars = list(set([extract_string(handle) for handle in stream_handles if extract_string(handle) is not None]))
+
+    values = [
+        [handles.get(f"{meas_var}{i + 1}").fetch_all() for i, qubit in enumerate(qubits)] for meas_var in meas_vars
+    ]
+
+    # replacing -1 with Nan
+    def replace_minus1_with_nan(values):
+        result = []
+        for row in values:
+            new_row = []
+            for arr in row:
+                field_shape = arr.dtype['value'].shape
+                # Convert to float and replace -1 with NaN
+                float_vals = arr['value'].astype(float)
+                float_vals[float_vals == -1] = np.nan
+                # Repack into a structured array with same shape and new float dtype
+                updated_arr = np.array(list(zip(float_vals)), dtype=[('value', 'f8', field_shape)])
+                new_row.append(updated_arr)
+            result.append(new_row)
+        return result
+
+    values_with_nan = replace_minus1_with_nan(values)
+
+    # average values
+    def average_columns(values_with_nan):
+        result = []
+        for row in values_with_nan:
+            new_row = []
+            for arr in row:
+                field_shape = arr.dtype['value'].shape
+                data = arr['value']
+                # Compute nanmean across axis 0 (i.e., over the N entries)
+                avg = np.nanmean(data, axis=0)
+                averaged_struct = np.array([(avg,)], dtype=[('value', 'f8', field_shape)])
+                new_row.append(averaged_struct)
+            result.append(new_row)
+        return result
+
+    averaged_values = average_columns(values_with_nan)
+
+    if np.array(averaged_values).shape[-1] == 1:
+        averaged_values = np.array(averaged_values).squeeze(axis=-1)
+    measurement_axis["qubit"] = [qubit.name for qubit in qubits]
+    measurement_axis = {key: measurement_axis[key] for key in reversed(measurement_axis.keys())}
+
+    new_values = [
+        [entry['value'] for entry in row]  # extracts shape (1,) array -> returns value with shape (field_shape,)
+        for row in averaged_values
+    ]
+    new_values = np.array(new_values)  # shape: (n_meas_vars, n_qubits, *field_shape)
+
+    ds = xr.Dataset(
+        {f"{meas_var}": ([key for key in measurement_axis.keys()], new_values[i]) for i, meas_var in enumerate(meas_vars)},
+        coords=measurement_axis,
+    )
+
+    return ds
+
 def fetch_results_as_xarray_CZ(handles, qubits, measurement_axis):
     """
     Fetches measurement results as an xarray dataset.
