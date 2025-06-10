@@ -8,11 +8,6 @@ from qm import SimulationConfig, LoopbackInterface
 from configuration import *
 import matplotlib.pyplot as plt
 import time
-from qualang_tools.results import fetching_tool
-from qualang_tools.loops import from_array
-import matplotlib.pyplot as plt
-from scipy import signal
-from qualang_tools.results.data_handler import DataHandler
 
 
 ###################
@@ -20,37 +15,27 @@ from qualang_tools.results.data_handler import DataHandler
 ###################
 
 n_avg = 100
-threashold = -0.2290
-occupation_matrix_dummy = np.random.randint(low=0, high=2, size=num_cols * num_rows)
-
+readout_threshold = -0.0008
+num_sites = num_cols * num_rows
 
 with program() as PROGRAM:
-    n = declare(int)
     I = declare(fixed)  # integrated I for occupation matrix readout
-    I_st = declare_stream()
-    do_play = declare(int)
-    occupied = declare(bool)
-    occupied_st = declare_stream()
+    I_st = declare_stream()  # integrated I for occupation matrix readout
+    counter = declare(int)  # Counter for keeping track of the received locations
+    readout_done = declare(bool)
 
-    with for_(n, 0, n < n_avg, n + 1):
-        with for_each_(do_play, occupation_matrix_dummy):
-            with if_(do_play == 1):
-                play("on", "occupation_matrix_dummy")
-                wait(100, "fpga")
-            with else_():
-                play("off", "occupation_matrix_dummy")
-                wait(100, "fpga")
+    assign(readout_done, False)
+    assign(counter, 0)
+    with while_(~readout_done):
+        wait_for_trigger("fpga")
 
-            measure("readout_fpga", "fpga", None, integration.full("const", I, "out1"))
-
-            save(I, I_st)
-            assign(occupied, I < threashold)
-            save(occupied, occupied_st)
-            wait(2_500)
+        measure("readout_fpga", "fpga", None, integration.full("constant", I, "out1"))
+        save(I, I_st)
+        assign(counter, counter + 1)
+        assign(readout_done, counter == num_sites)
 
     with stream_processing():
-        I_st.buffer(num_cols * num_rows).average().save("I")
-        occupied_st.boolean_to_int().buffer(num_cols * num_rows).average().save("occupied")
+        I_st.buffer(num_sites).average().save("I")
 
 
 if __name__ == "__main__":
@@ -91,10 +76,9 @@ if __name__ == "__main__":
             ax1 = plt.subplot(211)
             xs = np.arange(len(I))
             plt.plot(xs, I, ".")
-            plt.axhline(y=threashold, linestyle="--")
+            plt.axhline(y=readout_threshold, linestyle="--")
             plt.ylabel("I [V]")
             plt.subplot(212, sharex=ax1)
-            plt.plot(xs, occupation_matrix_dummy, ".", markersize=20, alpha=0.5)
             plt.plot(xs, is_occupied, "*", color="r")
             plt.ylabel(r"Occupied")
             plt.legend(["preset", "data"])

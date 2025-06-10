@@ -15,20 +15,26 @@ import time
 ###################
 
 with program() as PROG:
+    # n = declare(int)  # QUA variable for the averaging loop
+    # adc_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace
 
-    play("const", f"col_selector_01", chirp=(+1, "GHz/sec"))
-    play("const", f"row_selector_01", chirp=(-1, "GHz/sec"))
-
+    # update_frequency("col_selector_01", 100e6)
+    # update_frequency("row_selector_01", 100e6)
+    with infinite_loop_():
+        play("const", "col_selector_01", chirp=(+100, "MHz/sec"))
+        play("const", "col_selector_01", chirp=(-100, "MHz/sec"))
+        play("const", "row_selector_01", chirp=(+100, "MHz/sec"))
+        play("const", "row_selector_01", chirp=(-100, "MHz/sec"))
     # with infinite_loop_():
     #     for i in range(n_tweezers):
     #         # col
-    #         play("const", f"col_selector_{i + 1:02d}", chirp=(+25, "Hz/nsec"))
-    #         play("const", f"col_selector_{i + 1:02d}", chirp=(-25, "Hz/nsec"))
-    #         # row
-    #         play("const", f"row_selector_{i + 1:02d}", chirp=(+25, "Hz/nsec"))
-    #         play("const", f"row_selector_{i + 1:02d}", chirp=(-25, "Hz/nsec"))
+    #         play("const", f"col_selector_{i + 1:02d}", chirp=(+100, "MHz/sec"))
+    #         play("const", f"col_selector_{i + 1:02d}", chirp=(-100, "MHz/sec"))
+    #         # # row
+    #         # play("const", f"row_selector_{i + 1:02d}", chirp=(+100, "MHz/sec"))
+    #         # play("const", f"row_selector_{i + 1:02d}", chirp=(-100, "MHz/sec"))
     #         # done
-    #         wait(250_000)
+    #         # wait(2_500) # 10 us
     #         align()
 
 #####################################
@@ -37,11 +43,6 @@ with program() as PROG:
 
 qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
-from qm import generate_qua_script
-sourceFile = open('debug.py', 'w')
-print(generate_qua_script(PROG, config), file=sourceFile) 
-sourceFile.close()
-
 # sim_config = SimulationConfig(duration=1000)
 # job_sim = qmm.simulate(config, hello_QUA, sim_config)
 # job_sim.get_simulated_samples().con2.plot()
@@ -49,7 +50,7 @@ sourceFile.close()
 
 qm = qmm.open_qm(config)  # , close_other_machines=False)
 job = qm.execute(PROG)
-time.sleep(5)
+time.sleep(1000)
 job.halt()
 qm.close()
 

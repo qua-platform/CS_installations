@@ -24,11 +24,14 @@ time_vec = dt * np.array(range(n_segs + 1))
 freq_vec = a * time_vec**2 + f_start
 rates = (np.diff(freq_vec) / (pulse_duration / n_segs)).astype(int).tolist()
 units = "Hz/nsec"
+
+
 with program() as prog:
     for i in range(n_tweezers):
         col_sel = f"col_selector_{i + 1:02d}"
         update_frequency(col_sel, f_start + i * 10e6)
         play("const", col_sel, chirp=(rates, units))
+
 
 job = qmm.simulate(config, prog, SimulationConfig(int(pulse_duration // 4)))  # in clock cycles, 4 ns
 

@@ -26,18 +26,18 @@ from qualang_tools.results.data_handler import DataHandler
 import matplotlib
 import time
 
-# matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')
 
 
 ##################
 #   Parameters   #
 ##################
 
-n_avg = 5000  # The number of averages
+n_avg = 100  # The number of averages
 elem = "detector"
 
 save_data_dict = {
-    "detector": elem,
+    "detecotr": elem,
     "n_avg": n_avg,
     "config": config,
 }
@@ -52,11 +52,13 @@ with program() as PROGRAM:
     adc_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace
 
     with for_(n, 0, n < n_avg, n + 1):
+        
         # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
         reset_if_phase(elem)
+        reset_if_phase("col_selector_01")
         # Sends the readout pulse and stores the raw ADC traces in the stream called "adc_st"
-        play("on", "occupation_matrix_dummy")
-        measure("short_readout", elem, adc_stream=adc_st)
+        play("const", "col_selector_01")
+        measure("readout", elem, adc_stream=adc_st)
         # Wait for saving
         wait(1 * u.us, elem)
 
@@ -107,6 +109,7 @@ if __name__ == "__main__":
             adc0 = u.raw2volts(res_handles.get("adc").fetch_all())
             adc0_single_run = u.raw2volts(res_handles.get("adc_single_run").fetch_all())
 
+            print(f"len of adc: {len(adc0)}")
             save_data_dict["adc"] = adc0
             save_data_dict["adc_single"] = adc0_single_run
 
@@ -136,7 +139,7 @@ if __name__ == "__main__":
             # Plot for averaged run
             plt.subplot(122)
             plt.title("Averaged run")
-            plt.plot(adc0, label="Input")
+            plt.plot(adc0_unbiased, label="Input")
             plt.axhline(y=0)
             plt.xlabel("Time [ns]")
             plt.legend()

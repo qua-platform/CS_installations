@@ -20,8 +20,8 @@ u = unit(coerce_to_integer=True)
 ######################
 # Network parameters #
 ######################
-qop_ip = "172.16.33.101"  # Write the QM router IP address
-cluster_name = "CS_2"  # Write your cluster_name if version >= QOP220
+qop_ip = "192.168.88.252"  # Write the QM router IP address
+cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 octave_config = None
 
@@ -31,7 +31,7 @@ octave_config = None
 #############
 
 # Path to save data
-save_dir = Path(r"/workspaces/data")
+save_dir = Path(r"C:\Users\OhmoriG-X1\Desktop\CS_installations-HI_10Jun2025/data")
 save_dir.mkdir(exist_ok=True)
 
 default_additional_files = {
@@ -94,7 +94,7 @@ n_segment_py = 50
 # WARNING: total output cannot exceed 0.5V
 const_pulse_amp = 0.5 / max_num_tweezers  # Must be < 0.49/max_num_tweezers
 # Duration of tweezer frequency chirp
-const_pulse_len = 100 * u.ms
+const_pulse_len = 100 * u.us
 # Analog readout threshold discriminating between atom and no-atom [V]
 threshold = 0.0000
 
@@ -109,18 +109,18 @@ sampling_rate = 100 * u.MHz  # Used for Blackman_long_pulse_len
 # Tweezer col phases
 phases_list = [0.1, 0.4, 0.9, 0.3, 0.7, 0.2, 0.5, 0.8, 0.0, 0.6]
 # --> Col frequencies
-col_spacing = -1.0 * u.MHz  # in Hz
-col_IF_01 = 100 * u.MHz  # in Hz
+col_spacing = -10 * u.MHz  # in Hz
+col_IF_01 = 200 * u.MHz  # in Hz
 col_IFs = [int(col_IF_01 + col_spacing * i) for i in range(num_cols)]
 # --> Row frequencies
-row_spacing = -1.0 * u.MHz  # in Hz
-row_IF_01 = 100 * u.MHz  # in Hz
+row_spacing = -10 * u.MHz  # in Hz
+row_IF_01 = 200 * u.MHz  # in Hz
 row_IFs = [row_IF_01 + row_spacing * x for x in range(num_rows)]
 
 # Readout time of the occupation matrix sent by fpga
 readout_fpga_len = 60
 # Readout duration for acquiring the spectrographs
-readout_pulse_len = blackman_pulse_len * 2 + const_pulse_len
+readout_pulse_len = 2 * u.us # blackman_pulse_len * 2 + const_pulse_len
 short_readout_pulse_len = 0.4 * u.us
 
 occupation_matrix_pulse_len = 3 * readout_fpga_len + 200
@@ -159,14 +159,14 @@ config = {
                 # mw_I: {"offset": mw_I_voltage_offset},  # MW I port
                 # mw_Q: {"offset": mw_Q_voltage_offset},  # MW Q port
                 9: {"offset": 0.0},  # Fake port for measurement
-                10: {"offset": 0.0},  # Fake port for measurement
+                10: {"offset": 0.008},  # Fake port for measurement
             },
             "digital_outputs": {
                 1: {},
             },  # Not used yet
             "analog_inputs": {
                 1: {"offset": 0.0},  # Analog input 1 used for fpga readout
-                2: {"offset": 0.0},  # Not used yet
+                # 2: {"offset": 0.0},  # Not used yet
             },
         },
     },
@@ -177,11 +177,7 @@ config = {
                 "port": ("con1", 9),
             },  # Fake output port for measurement
             "intermediate_frequency": 0,
-            "operations": {
-                "const": "const_pulse",
-                "on": "unit_pulse",
-                "off": "zero_pulse"
-            },
+            "operations": {"const": "const_pulse", "on": "unit_pulse", "off": "zero_pulse"},
         },
         # fpga is used to read the occupation matrix sent by fpga
         "fpga": {
@@ -196,7 +192,7 @@ config = {
             "outputs": {
                 "out1": ("con1", 1),
             },
-            "time_of_flight": 24 + 140,
+            "time_of_flight": 24 + 176,
             "smearing": 0,
         },
         # detector is used to acquire the spectrographs for debuging
@@ -213,7 +209,7 @@ config = {
             "outputs": {
                 "out1": ("con1", 1),
             },
-            "time_of_flight": 24 + 140,
+            "time_of_flight": 24 + 176, # with ext. trigger: 24 + 176 ns
             "smearing": 0,
         },
         # row_selector is used to control the row AOD
@@ -275,7 +271,7 @@ config = {
             },
             "digital_marker": "ON",
             "integration_weights": {
-                "const": "const_weights",
+                "const_fpga": "const_fpga_weights",
             },
         },
         "readout_pulse": {
@@ -287,6 +283,7 @@ config = {
             "integration_weights": {
                 "cos": "cosine_weights",
                 "sin": "sine_weights",
+                "const": "const_weights",
             },
             "digital_marker": "ON",
         },
@@ -381,9 +378,13 @@ config = {
         "ON": {"samples": [(1, 0)]},
     },
     "integration_weights": {
-        "const_weights": {
+        "const_fpga_weights": {
             "cosine": [(1.0, readout_fpga_len)],
             "sine": [(0.0, readout_fpga_len)],
+        },
+        "const_weights": {
+            "cosine": [(1.0, readout_pulse_len)],
+            "sine": [(0.0, readout_pulse_len)],
         },
         "cosine_weights": {
             "cosine": [(1.0, readout_pulse_len)],

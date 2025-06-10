@@ -26,18 +26,18 @@ from qualang_tools.results.data_handler import DataHandler
 import matplotlib
 import time
 
-# matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')
 
 
 ##################
 #   Parameters   #
 ##################
 
-n_avg = 5000  # The number of averages
+n_avg = 1  # The number of averages
 elem = "detector"
 
 save_data_dict = {
-    "detector": elem,
+    "detecotr": elem,
     "n_avg": n_avg,
     "config": config,
 }
@@ -55,10 +55,14 @@ with program() as PROGRAM:
         wait_for_trigger(elem)
         # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
         reset_if_phase(elem)
+        reset_if_phase("col_selector_01")
+        align(elem, "col_selector_01")
         # Sends the readout pulse and stores the raw ADC traces in the stream called "adc_st"
-        measure("short_readout", elem, adc_st)
+        play("const", "col_selector_01")
+        # Sends the readout pulse and stores the raw ADC traces in the stream called "adc_st"
+        measure("readout", elem, adc_st)
         # Wait for saving
-        wait(10 * u.us, elem)
+        wait(10 * u.us)
 
     with stream_processing():
         if config["elements"]["detector"]["outputs"]["out1"][1] == 1:
@@ -149,7 +153,7 @@ if __name__ == "__main__":
             data_handler = DataHandler(root_data_folder=save_dir)
             save_data_dict.update({"fig_live": fig})
             data_handler.additional_files = {script_name: script_name, **default_additional_files}
-            data_handler.save_data(data=save_data_dict, name="time_of_flight")
+            data_handler.save_data(data=save_data_dict, name="wait_for_trigger")
 
         except Exception as e:
             print(f"An exception occurred: {e}")
