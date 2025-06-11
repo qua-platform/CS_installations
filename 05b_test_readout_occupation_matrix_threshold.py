@@ -30,7 +30,7 @@ with program() as PROG:
     assign(counter, 0)
     with while_(~readout_done):
         wait_for_trigger("detector")
-        wait(5 * u.us, "detector")
+        wait(2 * u.us, "detector")
         measure(
             "readout",
             "detector",
@@ -95,6 +95,9 @@ if __name__ == "__main__":
             occupation = job.result_handles.get("occupation").fetch_all()
             # is_occupied = job.result_handles.get("occupied").fetch_all()
 
+            # plt.plot(occupation, ".")
+            plt.plot(I, ".")
+
             # fig = plt.figure()
             # ys = I[0][0]
             # plt.scatter(x=np.arange(len(ys)), y=ys)
@@ -135,8 +138,5 @@ if __name__ == "__main__":
             qm.close()
             print("Experiment QM is now closed")
             plt.show()
-
-# %%
-
 
 # %%

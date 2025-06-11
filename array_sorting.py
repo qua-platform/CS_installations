@@ -41,7 +41,7 @@ with program() as atom_sorting:
     # QUA variable containing the row frequencies
     row_freqs_qua = declare(int, value=[int(x) for x in row_IFs])
     # QUA variable containing the column frequencies
-    column_freqs_qua = declare(int, value=[int(x) for x in col_IFs])
+    col_freqs_qua = declare(int, value=[int(x) for x in col_IFs])
     # QUA variable containing the tweezer phases
     tweezer_phases_qua = declare(fixed, value=phases_list)
 
@@ -83,7 +83,7 @@ with program() as atom_sorting:
                         num_tweezers,
                         max_num_tweezers,
                         atom_location_qua,
-                        column_freqs_qua,
+                        col_freqs_qua,
                         target_freqs_qua,
                         tweezer_phases_qua,
                     )
@@ -92,7 +92,7 @@ with program() as atom_sorting:
                         num_tweezers,
                         max_num_tweezers,
                         atom_location_qua,
-                        column_freqs_qua,
+                        col_freqs_qua,
                         target_freqs_qua,
                         tweezer_phases_qua,
                     )
@@ -132,24 +132,24 @@ with program() as atom_sorting:
                     )
 
                 # chirp tweezers
-                play("constant", "row_selector")
+                play("const", "row_selector")
                 for element_idx in range(max_num_tweezers):
                     if piecewise_chirp:
                         play(
-                            "constant" * amp(amp_qua[element_idx]),
+                            "const" * amp(amp_qua[element_idx]),
                             f"col_selector_{element_idx + 1}",
                             chirp=(piecewise_chirp_rates_qua[element_idx], "mHz/nsec"),
                         )  # chirp is 1D vector
                     else:
                         if max_chirp_rate is None:
                             play(
-                                "constant" * amp(amp_qua[element_idx]),
+                                "const" * amp(amp_qua[element_idx]),
                                 f"col_selector_{element_idx + 1}",
                                 chirp=(const_chirp_rates_qua[element_idx], "mHz/nsec"),
                             )
                         else:
                             play(
-                                "constant" * amp(amp_qua[element_idx]),
+                                "const" * amp(amp_qua[element_idx]),
                                 f"col_selector_{element_idx + 1}",
                                 duration=chirp_pulse_duration_qua,
                                 chirp=(const_chirp_rates_qua[element_idx], "mHz/nsec"),

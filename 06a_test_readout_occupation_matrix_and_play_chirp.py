@@ -53,6 +53,28 @@ with program() as PROG:
     is_matched = declare(bool)
     is_rearranged = declare(bool, value=False)
 
+    # Variables that need resetting
+    received_full_array = declare(bool, value=False)  # Flag indicating the end of occupation matrix readout
+
+    # Debug variables
+    raw_adc = declare_stream(adc_trace=True)  # Raw ADC trace for spectrograms or occupation matrix readout
+    data_stream = declare_stream()  # stream used to extract variables for debug
+    infinite_run = declare(bool, value=True)  # Flag used to perform the sorting only once instead of infinite_loop_()
+
+    # QUA variable representing the current row
+    current_row = declare(int)
+    # QUA variable containing the full 1D target locations
+    atom_target_full_qua = declare(int, value=atom_target_1d_py)
+    # QUA variable containing the full 1D target frequencies
+    target_freqs_full_qua = declare(int, value=target_freqs_1d)
+    # QUA variable containing the row frequencies
+    row_freqs_qua = declare(int, value=[int(x) for x in row_IFs])
+    # QUA variable containing the column frequencies
+    col_freqs_qua = declare(int, value=[int(x) for x in col_IFs])
+    # QUA variable containing the tweezer phases
+    tweezer_phases_qua = declare(fixed, value=phases_list)
+
+
     with while_(~is_rearranged):
 
         ########################################################
@@ -92,9 +114,11 @@ with program() as PROG:
 
 
         ########################################################
-        # Play chirp based on the measured occupation matrix
+        # Rearrange atoms based on the measured occupation matrix
         ########################################################
 
+        # Get the current and target locations and target frequencies of the current row
+        atom_location_full = measured_occupations
 
         # Loop over the rows
         with for_(current_row, 0, current_row < num_rows, current_row + 1):
@@ -118,6 +142,8 @@ with program() as PROG:
                     col_freqs_qua,
                     target_freqs_qua,
                     tweezer_phases_qua,
+                    atom_target_qua,
+                    data_stream,
                 )
             else:
                 amp_qua, frequency_qua, phase_qua, detuning_qua = assign_tweezers_to_atoms(
@@ -127,6 +153,7 @@ with program() as PROG:
                     col_freqs_qua,
                     target_freqs_qua,
                     tweezer_phases_qua,
+                    data_stream,
                 )
 
             # Derive the chirp pulse duration from the default pulse length of the maximum chirp rate if not None.
@@ -160,7 +187,7 @@ with program() as PROG:
             for element_idx in range(max_num_tweezers):
                 play(
                     "blackman_up" * amp(amp_qua[element_idx]),
-                    f"col_selector_{element_idx + 1}",
+                    f"col_selector_{element_idx + 1:02d}",
                 )
 
             # chirp tweezers
@@ -169,20 +196,20 @@ with program() as PROG:
                 if piecewise_chirp:
                     play(
                         "const" * amp(amp_qua[element_idx]),
-                        f"col_selector_{element_idx + 1}",
+                        f"col_selector_{element_idx + 1:02d}",
                         chirp=(piecewise_chirp_rates_qua[element_idx], "mHz/nsec"),
                     )  # chirp is 1D vector
                 else:
                     if max_chirp_rate is None:
                         play(
                             "const" * amp(amp_qua[element_idx]),
-                            f"col_selector_{element_idx + 1}",
+                            f"col_selector_{element_idx + 1:02d}",
                             chirp=(const_chirp_rates_qua[element_idx], "mHz/nsec"),
                         )
                     else:
                         play(
                             "const" * amp(amp_qua[element_idx]),
-                            f"col_selector_{element_idx + 1}",
+                            f"col_selector_{element_idx + 1:02d}",
                             duration=chirp_pulse_duration_qua,
                             chirp=(const_chirp_rates_qua[element_idx], "mHz/nsec"),
                         )
@@ -192,7 +219,7 @@ with program() as PROG:
             for element_idx in range(max_num_tweezers):
                 play(
                     "blackman_down" * amp(amp_qua[element_idx]),
-                    f"col_selector_{element_idx + 1}",
+                    f"col_selector_{element_idx + 1:02d}",
                 )
 
             # Measure raw adc trace for spectrograms
@@ -260,34 +287,6 @@ if __name__ == "__main__":
             # ys = I[0][0]
             # plt.scatter(x=np.arange(len(ys)), y=ys)
 
-            # for adc_ in adc:
-            #     fig = plt.figure()
-            #     plt.plot(adc_)
-            # # plotting
-            # fig = plt.figure()
-            # # plt.suptitle(f"Resonator spectroscopy for {resonator} - LO = {resonator_LO / u.GHz} GHz")
-            # ax1 = plt.subplot(211)
-            # xs = np.arange(len(I))
-            # plt.plot(xs, I, ".")
-            # plt.axhline(y=threashold, linestyle="--")
-            # plt.ylabel("I [V]")
-            # plt.subplot(212, sharex=ax1)
-            # plt.plot(xs, occupation_matrix_dummy, ".", markersize=20, alpha=0.5)
-            # plt.plot(xs, is_occupied, "*", color="r")
-            # plt.ylabel(r"Occupied")
-            # plt.legend(["preset", "data"])
-            # plt.xlabel("Atom Site Index")
-            # plt.tight_layout()
-
-            # save_data_dict[resonator+"_I"] = I
-            # save_data_dict[resonator+"_Q"] = Q
-
-            # # Save results
-            # script_name = Path(__file__).name
-            # data_handler = DataHandler(root_data_folder=save_dir)
-            # save_data_dict.update({"fig_live": fig})
-            # data_handler.additional_files = {script_name: script_name, **default_additional_files}
-            # data_handler.save_data(data=save_data_dict, name="resonator_spectroscopy_single")
 
         except Exception as e:
             print(f"An exception occurred: {e}")
@@ -297,5 +296,5 @@ if __name__ == "__main__":
             print("Experiment QM is now closed")
             plt.show()
 
-# %%
+# %%``
 

@@ -25,13 +25,14 @@ atom_location_list_1d = [j for sub in atom_location_list for j in sub]
 
 # Target occupation matrix in 2D   TODO fill this
 goal = [
-    ["1", "X", "X", "X", "X", "X", "1"],
-    ["X", "1", "X", "X", "X", "1", "X"],
-    ["X", "X", "1", "1", "1", "X", "X"],
-    ["X", "X", "1", "1", "1", "X", "X"],
-    ["X", "X", "1", "1", "1", "X", "X"],
-    ["X", "1", "X", "X", "X", "1", "X"],
-    ["1", "X", "X", "X", "X", "X", "1"],
+    ["1", "X", "X", "X", "X", "X", "1", "x"],
+    ["X", "1", "X", "X", "X", "1", "X", "x"],
+    ["X", "X", "1", "1", "1", "X", "X", "x"],
+    ["X", "X", "1", "1", "1", "X", "X", "x"],
+    ["X", "X", "1", "1", "1", "X", "X", "x"],
+    ["X", "1", "X", "X", "X", "1", "X", "x"],
+    ["1", "X", "X", "X", "X", "X", "1", "x"],
+    ["x", "X", "X", "X", "X", "X", "1", "x"],
 ]
 
 atom_target_list = [[1 if goal[j][i] == "1" else 0 for i in range(num_cols)] for j in range(num_rows)]
@@ -50,7 +51,7 @@ target_freqs_1d = [j for sub in target_freqs_full_py for j in sub]
 
 # Get all relevant elements in a list for easy align
 elements = list(config["elements"].keys())
-elements.remove("qubit")
+# elements.remove("qubit")
 
 
 #############################################
@@ -203,7 +204,7 @@ def assign_tweezers_to_atoms(
 
 
 def assign_tweezers_to_atoms_collision_free(
-    num_tweezers, num_tweezers_py, atoms_in_current_row, current_freqs, target_freqs, tweezer_phases, data_stream
+    num_tweezers, num_tweezers_py, atoms_in_current_row, current_freqs, target_freqs, tweezer_phases, atom_target_qua, data_stream
 ):
     """
     This function finds the atoms in the row and assign one tweezer to each with the corresponding initial frequency
@@ -434,6 +435,6 @@ def set_tweezers_freqs_and_phases(num_tweezers_py, current_freqs, row_frequency,
     # set the phases and frequencies of the tweezers
     update_frequency("row_selector", row_frequency)
     for index in range(num_tweezers_py):
-        reset_frame(f"col_selector_{index + 1}")
-        frame_rotation(tweezer_phases[index + 1], f"col_selector_{index + 1}")
-        update_frequency(f"col_selector_{index + 1}", current_freqs[index])
+        reset_frame(f"col_selector_{index + 1:20d}")
+        frame_rotation(tweezer_phases[index + 1], f"col_selector_{index + 1:20d}")
+        update_frequency(f"col_selector_{index + 1:20d}", current_freqs[index])

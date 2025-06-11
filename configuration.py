@@ -20,8 +20,10 @@ u = unit(coerce_to_integer=True)
 ######################
 # Network parameters #
 ######################
-qop_ip = "192.168.88.252"  # Write the QM router IP address
-cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
+# qop_ip = "192.168.88.252"  # Write the QM router IP address
+# cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
+qop_ip = "172.16.33.101"  # Write the QM router IP address
+cluster_name = "CS_2"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 octave_config = None
 
@@ -31,7 +33,9 @@ octave_config = None
 #############
 
 # Path to save data
-save_dir = Path(r"C:\Users\OhmoriG-X1\Desktop\CS_installations-HI_10Jun2025/data")
+# save_dir = Path(r"C:\Users\OhmoriG-X1\Desktop\CS_installations-HI_10Jun2025/data")
+save_dir = Path("/workspaces/data")
+
 save_dir.mkdir(exist_ok=True)
 
 default_additional_files = {
@@ -80,13 +84,13 @@ def print_2d(matrix):
 
 # --> Array geometry
 # Number of cols
-num_cols = 4
+num_cols = 8
 # Number of rows
-num_rows = 4
+num_rows = 8
 # Maximum number of tweezers available
-max_num_tweezers = 4
+max_num_tweezers = 8
 # Number of configured tweezers, if it increases don't forget to update the "align" in the QUA program
-n_tweezers = 4
+n_tweezers = 8
 n_segment_py = 50
 
 # --> Chirp pulse
@@ -120,11 +124,13 @@ row_IFs = [row_IF_01 + row_spacing * x for x in range(num_rows)]
 # Readout time of the occupation matrix sent by fpga
 readout_fpga_len = 60
 # Readout duration for acquiring the spectrographs
-readout_pulse_len = 2 * u.us # blackman_pulse_len * 2 + const_pulse_len
+readout_pulse_len = blackman_pulse_len * 2 + const_pulse_len # 2 * u.us
 short_readout_pulse_len = 0.4 * u.us
 
 occupation_matrix_pulse_len = 3 * readout_fpga_len + 200
 occupation_matrix_pulse_amp = 0.5
+
+artiq_trigger_len = 20_000
 
 # # Qubit Drive RF
 # qubit_LO = 9.4e9  # Hz
@@ -220,8 +226,8 @@ config = {
                 },
                 "intermediate_frequency": row_IFs[i],
                 "operations": {
-                    # "blackman_up": "blackman_up_pulse",
-                    # "blackman_down": "blackman_down_pulse",
+                    "blackman_up": "blackman_up_pulse",
+                    "blackman_down": "blackman_down_pulse",
                     "const": "const_pulse",
                 },
             }
@@ -235,12 +241,24 @@ config = {
                 },
                 "intermediate_frequency": col_IFs[i],
                 "operations": {
-                    # "blackman_up": "blackman_up_pulse",
-                    # "blackman_down": "blackman_down_pulse",
+                    "blackman_up": "blackman_up_pulse",
+                    "blackman_down": "blackman_down_pulse",
                     "const": "const_pulse",
                 },
             }
             for i in range(n_tweezers)
+        },
+        "trigger_artiq": {
+            "digitalInputs": {
+                "marker": {
+                    "port": ("con1", 1),
+                    "delay": 0,
+                    "buffer": 0,
+                },
+            },
+            "operations": {
+                "on": "artiq_trigger_ON",
+            },
         },
         # "qubit": {
         #     "mixInputs": {
@@ -299,22 +317,22 @@ config = {
             },
             "digital_marker": "ON",
         },
-        # "blackman_up_pulse": {
-        #     "operation": "control",
-        #     "length": blackman_pulse_len,
-        #     "waveforms": {
-        #         "single": "blackman_up_wf",
-        #     },
-        #     "digital_marker": "ON",
-        # },
-        # "blackman_down_pulse": {
-        #     "operation": "control",
-        #     "length": blackman_pulse_len,
-        #     "waveforms": {
-        #         "single": "blackman_down_wf",
-        #     },
-        #     "digital_marker": "ON",
-        # },
+        "blackman_up_pulse": {
+            "operation": "control",
+            "length": blackman_pulse_len,
+            "waveforms": {
+                "single": "blackman_up_wf",
+            },
+            "digital_marker": "ON",
+        },
+        "blackman_down_pulse": {
+            "operation": "control",
+            "length": blackman_pulse_len,
+            "waveforms": {
+                "single": "blackman_down_wf",
+            },
+            "digital_marker": "ON",
+        },
         "const_pulse": {
             "operation": "control",
             "length": const_pulse_len,
@@ -339,6 +357,11 @@ config = {
             },
             "digital_marker": "ON",
         },
+        "artiq_trigger_ON": {
+            "operation": "control",
+            "length": artiq_trigger_len,
+            "digital_marker": "ON",
+        },
         # "const_mw_pulse": {
         #     "operation": "control",
         #     "length": const_mw_pulse_len,
@@ -347,16 +370,16 @@ config = {
         # },
     },
     "waveforms": {
-        # "blackman_up_wf": {
-        #     "type": "arbitrary",
-        #     "samples": blackman(blackman_pulse_len / (1e9 / sampling_rate), 0, blackman_amp),
-        #     "sampling_rate": sampling_rate,
-        # },
-        # "blackman_down_wf": {
-        #     "type": "arbitrary",
-        #     "samples": blackman(blackman_pulse_len / (1e9 / sampling_rate), blackman_amp, 0),
-        #     "sampling_rate": sampling_rate,
-        # },
+        "blackman_up_wf": {
+            "type": "arbitrary",
+            "samples": blackman(blackman_pulse_len / (1e9 / sampling_rate), 0, blackman_amp),
+            "sampling_rate": sampling_rate,
+        },
+        "blackman_down_wf": {
+            "type": "arbitrary",
+            "samples": blackman(blackman_pulse_len / (1e9 / sampling_rate), blackman_amp, 0),
+            "sampling_rate": sampling_rate,
+        },
         "const_wf": {
             "type": "constant",
             "sample": const_pulse_amp,
