@@ -633,7 +633,7 @@ if not Simulation:
         print("raw adc acquisition")
         fs = 14
         # raw1 = res.raw_data.fetch_all()["value"]
-        raw1 = np.ones(int(constant_pulse_length))
+        raw1 = [np.ones(int(constant_pulse_length)) for _ in range(number_of_rows)]
         print("finished fetching")
         plt.figure(figsize=(25, 12))
         for i in range(number_of_rows):
