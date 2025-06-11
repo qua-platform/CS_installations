@@ -633,7 +633,8 @@ if not Simulation:
         print("raw adc acquisition")
         fs = 14
         # raw1 = res.raw_data.fetch_all()["value"]
-        raw1 = [np.ones(int(constant_pulse_length)) for _ in range(number_of_rows)]
+        # dummy signal no chirp
+        raw1 = [np.cos(2* np.pi*(70e6 + i * 1e6) * np.arange(constant_pulse_length) * 1e-9) for i in range(number_of_rows)]
         print("finished fetching")
         plt.figure(figsize=(25, 12))
         for i in range(number_of_rows):
