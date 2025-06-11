@@ -204,7 +204,8 @@ def assign_tweezers_to_atoms(
 
 
 def assign_tweezers_to_atoms_collision_free(
-    num_tweezers, num_tweezers_py, atoms_in_current_row, current_freqs, target_freqs, tweezer_phases, atom_target_qua, data_stream
+    num_tweezers, num_tweezers_py, atoms_in_current_row, current_freqs,
+    target_freqs, tweezer_phases, atom_target_qua, data_stream
 ):
     """
     This function finds the atoms in the row and assign one tweezer to each with the corresponding initial frequency

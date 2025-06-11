@@ -257,3 +257,5 @@ else:
             simulation_interface=LoopbackInterface([("con1", 1, "con1", 1), ("con1", 2, "con1", 2)]),
         ),
     )
+
+# %%
