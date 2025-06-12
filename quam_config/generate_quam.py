@@ -131,12 +131,12 @@ for (qc, qt) in qubit_pairs:
     )
     allocate_wiring(connectivity, instruments, block_used_channels=False)
 
-    # Add ZZ lines
-    connectivity.add_qubit_pair_zz_drive_lines(
-        qubit_pairs=qubit_pairs[i],
-        constraints=mw_fem_spec(con=con, slot=xy_slots[idc], out_port=xy_ports[idc]),
-    )
-    allocate_wiring(connectivity, instruments, block_used_channels=False)
+    # # Add ZZ lines
+    # connectivity.add_qubit_pair_zz_drive_lines(
+    #     qubit_pairs=qubit_pairs[i],
+    #     constraints=mw_fem_spec(con=con, slot=xy_slots[idc], out_port=xy_ports[idc]),
+    # )
+    # allocate_wiring(connectivity, instruments, block_used_channels=False)
 
 # View wiring schematic
 visualize(connectivity.elements, available_channels=instruments.available_channels)

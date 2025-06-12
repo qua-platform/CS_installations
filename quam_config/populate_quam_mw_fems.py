@@ -103,9 +103,20 @@ def get_full_scale_power_dBm_and_amplitude(desired_power: float, max_amplitude: 
 # Note that the "coupled" ports O1 & I1, O2 & O3, O4 & O5, O6 & O7, and O8 & I2 must be in the same band.
 
 # Resonator frequencies
-rr_freq = np.array([7.1, 7.2, 7.3, 7.4]) * u.GHz
-rr_LO = 7.05 * u.GHz
+rr_freq = np.array([
+    7.05, 7.10, 7.15, 7.20, 7.30, 7.35, 7.40, 7.45, 
+    8.05, 8.10, 8.15, 8.20, 8.30, 8.35, 8.40, 8.45, 
+    9.05, 9.10, 9.15, 9.20, 9.30, 9.35, 9.40, 9.45, 
+]) * u.GHz
+
+rr_LO = np.array([
+    7.25, 7.25, 7.25, 7.25, 7.25, 7.25, 7.25, 7.25,
+    8.25, 8.25, 8.25, 8.25, 8.25, 8.25, 8.25, 8.25,
+    9.25, 9.25, 9.25, 9.25, 9.25, 9.25, 9.25, 9.25,
+]) * u.GHz
+
 rr_if = rr_freq - rr_LO  # The intermediate frequency is inferred from the LO and readout frequencies
+
 assert np.all(np.abs(rr_if) < 400 * u.MHz), (
     "The resonator intermediate frequency must be within [-400; 400] MHz. \n"
     f"Readout frequencies: {rr_freq} \n"
@@ -125,9 +136,9 @@ for k, qubit in enumerate(machine.qubits.values()):
     qubit.resonator.f_01 = rr_freq.tolist()[k]  # Resonator frequency optimized for discriminating 0 (|g>) and 1 (|e>)
     qubit.resonator.RF_frequency = qubit.resonator.f_01  # Readout frequency
     qubit.resonator.opx_output.full_scale_power_dbm = rr_full_scale  # Max readout power in dBm
-    qubit.resonator.opx_output.upconverter_frequency = rr_LO  # Readout up-converter frequency
-    qubit.resonator.opx_input.band = get_band(rr_LO)  # Readout band for the up-conversion
-    qubit.resonator.opx_output.band = get_band(rr_LO)  # Readout band for the down-conversion
+    qubit.resonator.opx_output.upconverter_frequency = rr_LO[k]  # Readout up-converter frequency
+    qubit.resonator.opx_input.band = get_band(rr_LO[k])  # Readout band for the up-conversion
+    qubit.resonator.opx_output.band = get_band(rr_LO[k])  # Readout band for the down-conversion
 
 
 ########################################################################################################################
@@ -140,8 +151,18 @@ for k, qubit in enumerate(machine.qubits.values()):
 # Note that the "coupled" ports O1 & I1, O2 & O3, O4 & O5, O6 & O7, and O8 & I2 must be in the same band.
 
 # Qubit drive frequencies
-xy_freq = np.array([5.1, 5.2, 5.3, 5.4]) * u.GHz
-xy_LO = np.array([5.05, 5.05, 5.05, 5.05]) * u.GHz
+xy_freq = np.array([
+    5.05, 5.10, 5.15, 5.20, 5.30, 5.35, 5.40, 5.45, 
+    5.05, 5.10, 5.15, 5.20, 5.30, 5.35, 5.40, 5.45, 
+    5.05, 5.10, 5.15, 5.20, 5.30, 5.35, 5.40, 5.45, 
+]) * u.GHz
+
+xy_LO = np.array([
+    5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25,
+    5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25,
+    5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25,
+]) * u.GHz
+
 xy_if = xy_freq - xy_LO  # The intermediate frequency is inferred from the LO and qubit frequencies
 assert np.all(np.abs(xy_if) < 400 * u.MHz), (
     "The xy intermediate frequency must be within [-400; 400] MHz. \n"
@@ -150,7 +171,11 @@ assert np.all(np.abs(xy_if) < 400 * u.MHz), (
     f"Qubit drive IF frequencies: {xy_if} \n"
 )
 # Transmon anharmonicity
-anharmonicity = -np.array([250, 250, 250, 250]) * u.MHz
+anharmonicity = np.array([
+    250, 250, 250, 250, 250, 250, 250, 250,
+    250, 250, 250, 250, 250, 250, 250, 250,
+    250, 250, 250, 250, 250, 250, 250, 250,
+]) * u.MHz
 
 # Desired output power in dBm
 drive_power = -11
@@ -181,7 +206,11 @@ for k, qubit in enumerate(machine.qubits.values()):
 #
 # Represented in row,major order from top row (3) to bottom row (0)
 
-grid_locations = ["0,1", "1,1", "0,0", "1,0"]
+grid_locations = [
+    "0,7", "0,6", "0,5", "0,4", "0,3", "0,2", "0,1",
+    "1,7", "1,6", "1,5", "1,4", "1,3", "1,2", "1,1",
+    "2,7", "2,6", "2,5", "2,4", "2,3", "2,2", "2,1",
+]
 for gd, qubit in zip(grid_locations, machine.qubits.values()):
     qubit.grid_location = gd  # Qubit grid location for plotting as "column,row"
 
