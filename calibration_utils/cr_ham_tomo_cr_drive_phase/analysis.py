@@ -72,26 +72,35 @@ def fit_raw_data(ds: xr.Dataset, node: QualibrationNode) -> Tuple[xr.Dataset, di
     })
     # Extract the relevant fitted parameters
     fit_data, fit_results = _extract_relevant_fit_parameters(ds_fit, node)
+    
+    phases = fit_data.coords["phase"].values
 
     if node.parameters.use_state_discrimination:
         for qp in node.namespace["qubit_pairs"]:
             # Perform CR Hamiltonian tomography
-            print("-" * 40)
-            print(f"fitting for {qp.name}")
-            fit_data_qp = fit_data.sel(qubit_pair=qp.name)
-            crht = CRHamiltonianTomographyAnalysis(
-                ts=fit_data_qp.pulse_duration.data,
-                data=fit_data_qp[f"bloch_t_{qp.name}"].data,  # target data: len(cr_drive_phases) x len(t_vec_cycle) x 3 x 2
-            )
-            try:
-                crht.fit_params()
-                fig_analysis = crht.plot_fit_result(do_show=False)
-                node.results[f"figure_analysis_{qp.name}"] = fig_analysis
-            except:
-                print(f"-> failed")
-                crht.interaction_coeffs_MHz = {p: None for p in PAULI_2Q}
-        
-            node.results[f"interaction_coefficients_{qp.name}"] = crht.interaction_coeffs_MHz
+            coeffs = []
+            for idx, _ph in enumerate(phases):
+                print("-" * 40)
+                print(f"fitting for {qp.name}")
+
+                fit_data_qp = fit_data.sel(qubit_pair=qp.name, phase=_ph)
+                crht = CRHamiltonianTomographyAnalysis(
+                    ts=fit_data_qp.pulse_duration.data,
+                    data=fit_data_qp[f"bloch_t_{qp.name}"].data,  # target data: len(cr_drive_phases) x len(t_vec_cycle) x 3 x 2
+                )
+                try:
+                    crht.fit_params()
+                    coeffs.append(crht.interaction_coeffs_MHz)
+                    fig_analysis = crht.plot_fit_result(do_show=False)
+                    node.results[f"figure_analysis_{qp.name}_phase={_ph:5.4f}".replace(".", "-")] = fig_analysis
+                except:
+                    print(f"-> failed")
+                    crht.interaction_coeffs_MHz = {p: None for p in PAULI_2Q}
+                    coeffs.append({p: None for p in PAULI_2Q})
+
+            # Plot the estimated interaction coefficients
+            fig_summary = plot_interaction_coeffs(coeffs, phases, xlabel="cr drive phase")
+            node.results[f"figure_summary_{qp.name}"] = fig_summary
 
     return fit_data, fit_results
 

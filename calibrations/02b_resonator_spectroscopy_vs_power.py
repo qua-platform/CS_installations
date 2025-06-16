@@ -1,5 +1,7 @@
 # %% {Imports}
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('TkAgg')
 import numpy as np
 import xarray as xr
 from dataclasses import asdict
@@ -63,8 +65,54 @@ node = QualibrationNode[Parameters, Quam](
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
     # You can get type hinting in your IDE by typing node.parameters.
-    # node.parameters.qubits = ["q1", "q2", "q3"]
-    pass
+    node.parameters.multiplexed = True
+    # node.parameters.qubits = ["q1", "q2"]
+    node.parameters.qubits = [
+        # "q1", "q2",  "q3",  "q4",  "q5",  "q6",  "q7", "q8", # "q9",
+        # "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
+        # "q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26", # "q27", 
+    ]
+    node.parameters.qubits = [
+        # "q1",
+        # "q2",
+        # "q3",
+        # "q4",
+        # "q5",
+        # "q6",
+        # "q7",
+        # "q8", 
+        # "q9",
+        
+        # "q10",
+        # "q11",
+        # "q12",
+        # "q13",
+        # "q14",
+        # "q15",
+        # "q16",
+        # "q17",
+        # "q18",
+        
+        # "q19",
+        # "q20",
+        # "q21",
+        # "q22",
+        # "q23",
+        # "q24",
+        # "q25",
+        # "q26",
+        "q27", 
+    ]
+    node.parameters.num_shots = 30
+
+    node.parameters.num_power_points = 51
+    node.parameters.max_power_dbm = -10
+    node.parameters.min_power_dbm = -50
+    node.parameters.max_amp = 0.08
+
+    node.parameters.frequency_span_in_mhz = 6
+    node.parameters.frequency_step_in_mhz = 0.2
+    # pass
 
 
 # Instantiate the QUAM class from the state file
@@ -103,7 +151,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
     # The frequency sweep around the resonator resonance frequency
     span = node.parameters.frequency_span_in_mhz * u.MHz
     step = node.parameters.frequency_step_in_mhz * u.MHz
-    dfs = np.arange(-span / 2, +span / 2, step)
+    dfs = np.arange(-span/2, +span/2, step)
 
     # Register the sweep axes to be added to the dataset when fetching data
     node.namespace["sweep_axes"] = {
@@ -174,19 +222,23 @@ def execute_qua_program(node: QualibrationNode[Parameters, Quam]):
     # Get the config from the machine
     config = node.machine.generate_config()
     # Execute the QUA program only if the quantum machine is available (this is to avoid interrupting running jobs).
-    with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
-        # The job is stored in the node namespace to be reused in the fetching_data run_action
-        node.namespace["job"] = job = qm.execute(node.namespace["qua_program"])
-        # Display the progress bar
-        data_fetcher = XarrayDataFetcher(job, node.namespace["sweep_axes"])
-        for dataset in data_fetcher:
-            progress_counter(
-                data_fetcher["n"],
-                node.parameters.num_shots,
-                start_time=data_fetcher.t_start,
-            )
-        # Display the execution report to expose possible runtime errors
-        node.log(job.execution_report())
+    # with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
+    qmm.close_all_qms()
+    qmm.clear_all_job_results()
+    qm = qmm.open_qm(config, close_other_machines=True)
+    # The job is stored in the node namespace to be reused in the fetching_data run_action
+    node.namespace["job"] = job = qm.execute(node.namespace["qua_program"])
+    # Display the progress bar
+    data_fetcher = XarrayDataFetcher(job, node.namespace["sweep_axes"])
+    for dataset in data_fetcher:
+        progress_counter(
+            data_fetcher["n"],
+            node.parameters.num_shots,
+            start_time=data_fetcher.t_start,
+        )
+        # pass
+    # Display the execution report to expose possible runtime errors
+    node.log(job.execution_report())
     # Register the raw dataset
     node.results["ds_raw"] = dataset
 
@@ -245,7 +297,6 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
         for q in node.namespace["qubits"]:
             if node.outcomes[q.name] == "failed":
                 continue
-
             # Update the readout power
             q.resonator.set_output_power(
                 power_in_dbm=node.results["fit_results"][q.name]["optimal_power"],

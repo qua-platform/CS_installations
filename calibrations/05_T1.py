@@ -53,8 +53,62 @@ node = QualibrationNode[Parameters, Quam](
 @node.run_action(skip_if=node.modes.external)
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     # You can get type hinting in your IDE by typing node.parameters.
-    # node.parameters.qubits = ["q1", "q2"]
-    pass
+
+    node.parameters.num_shots = 500
+    node.parameters.min_wait_time_in_ns = 24
+
+    node.parameters.multiplexed = False #True
+        # node.parameters.multiplexed = True
+    node.parameters.qubits = [
+        "q1", "q2", 
+        #"q3", "q4", 
+        "q5",  "q6",  "q7", "q8",  "q9",
+        # "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
+        # "q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26", #"q27", 
+    ]
+    # node.parameters.qubits = [
+    #     # "q1",
+    #     # # "q2", xxxx
+    #     # # "q3", xxxx
+    #     # "q4",
+    #     # "q5",
+    #     # "q6",
+    #     # "q7",
+    #     # "q8", 
+    #     # "q9",
+        
+    #     # "q10",
+    #     # # "q11", xxxx
+    #     # "q12",
+    #     # "q13",
+    #     # # "q14",
+    #     # "q15",
+    #     # "q16",
+    #     # # "q17", xxxx
+    #     # "q18",
+        
+    #     "q19",
+    #     # "q20", xxxx
+    #     "q21",
+    #     "q22",
+    #     "q23",
+    #     "q24",
+    #     "q25",
+    #     # "q26", xxxx
+    #     "q27", 
+    # ]
+    # node.parameters.qubits = [
+    #     # "q1",  "q2",  "q3",  "q4", "q5",  "q6",  "q7", "q8", # "q9",
+    #     # "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
+    #     # "q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26", # "q27", 
+    # ]
+    # node.parameters.qubits = [
+    #     "q1", "q2",  "q3",  "q4",  "q5",  "q6",  "q7", "q8", # "q9",
+    # ]
+    # node.parameters.qubits = ["q9", "q14", "q27"]
+    # node.parameters.qubits = ["q1"]
+
+    # pass
 
 
 # Instantiate the QUAM class from the state file
@@ -72,6 +126,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
     num_qubits = len(node.namespace["qubits"])
     # Extract the sweep parameters and axes from the node parameters
     n_avg = node.parameters.num_shots
+    # print(node.parameters)
     idle_times = get_idle_times_in_clock_cycles(node.parameters)
     # Register the sweep axes to be added to the dataset when fetching data
     node.namespace["sweep_axes"] = {

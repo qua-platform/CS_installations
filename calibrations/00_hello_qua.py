@@ -31,9 +31,21 @@ node = QualibrationNode[Parameters, Quam](name="00_hello_qua", description=descr
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
     # You can get type hinting in your IDE by typing node.parameters.
-    # node.parameters.multiplexed = True
-    # node.parameters.num_shots = 2
-    pass
+    node.parameters.multiplexed = True
+    node.parameters.qubits = [
+        "q1",  "q2",  "q3",  "q4",  "q5",  "q6",  "q7", "q8", "q9",
+        # "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", "q14",
+        # "q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26", "q27", 
+    ]
+    # node.parameters.qubits = [
+    #     "q8",
+    #     # "q9",
+    #     # "q18",
+    #     # "q26",
+    #     # "q27",
+    #     # "q14",
+    # ]
+    # pass
 
 
 # Instantiate the QUAM class from the state file
@@ -74,7 +86,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                     for i, qubit in multiplexed_qubits.items():
                         # qubit.z.play("const", duration=qubit.xy.operations["x180"].length * u.ns)
                         qubit.xy.play("x180", amplitude_scale=a)
-                        qubit.wait(250 * u.ns)
+                        qubit.xy.wait(250 * u.ns)
                     align()
 
         with stream_processing():
@@ -106,6 +118,12 @@ def execute_qua_program(node: QualibrationNode[Parameters, Quam]):
     qmm = node.machine.connect()
     # Get the config from the machine
     config = node.machine.generate_config()
+
+    from qm import generate_qua_script
+    sourceFile = open('debug.py', 'w')
+    print(generate_qua_script(node.namespace["qua_program"], config), file=sourceFile) 
+    sourceFile.close()
+
     # Execute the QUA program only if the quantum machine is available (this is to avoid interrupting running jobs).
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         # The job is stored in the node namespace to be reused in the fetching_data run_action

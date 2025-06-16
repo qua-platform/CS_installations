@@ -1,5 +1,7 @@
 # %% {Imports}
 import matplotlib.pyplot as plt
+# import matplotlib
+# matplotlib.use('TkAgg')
 import numpy as np
 import xarray as xr
 from dataclasses import asdict
@@ -57,9 +59,22 @@ node = QualibrationNode[Parameters, Quam](
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
     # You can get type hinting in your IDE by typing node.parameters.
-    # node.parameters.qubits = ["q1", "q2"]
     node.parameters.multiplexed = True
-    # pass
+    node.parameters.frequency_span_in_mhz = 5
+    node.parameters.frequency_step_in_mhz = 0.05
+    node.parameters.qubits = [
+        "q1", "q4",
+        # "q1",  "q2",  "q3", "q4",
+        # "q5",  "q6",  "q7", "q8", 
+        
+        # "q10", "q11", "q12", "q13",
+        # "q15", "q16", "q17", "q18",
+        
+        # "q19", "q20", "q21", "q22",
+        # "q23", "q24", "q25", "q26",
+
+        # "q9", "q14", "q27", 
+    ]
 
 
 # Instantiate the QUAM class from the state file
@@ -98,7 +113,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                 node.machine.initialize_qpu(target=qubit)
             align()
             with for_(n, 0, n < n_avg, n + 1):
-                save(n, n_st)
+                # save(n, n_st)
                 with for_(*from_array(df, dfs)):
                     for i, qubit in multiplexed_qubits.items():
                         rr = qubit.resonator
@@ -114,7 +129,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                     align()
 
         with stream_processing():
-            n_st.save("n")
+            # n_st.save("n")
             for i in range(num_qubits):
                 I_st[i].buffer(len(dfs)).average().save(f"I{i + 1}")
                 Q_st[i].buffer(len(dfs)).average().save(f"Q{i + 1}")
@@ -149,11 +164,12 @@ def execute_qua_program(node: QualibrationNode[Parameters, Quam]):
         # Display the progress bar
         data_fetcher = XarrayDataFetcher(job, node.namespace["sweep_axes"])
         for dataset in data_fetcher:
-            progress_counter(
-                data_fetcher["n"],
-                node.parameters.num_shots,
-                start_time=data_fetcher.t_start,
-            )
+            # progress_counter(
+            #     data_fetcher["n"],
+            #     node.parameters.num_shots,
+            #     start_time=data_fetcher.t_start,
+            # )
+            pass
         # Display the execution report to expose possible runtime errors
         node.log(job.execution_report())
     # Register the raw dataset

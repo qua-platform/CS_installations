@@ -28,7 +28,7 @@ def instrument_limits(channel: Union[IQChannel, MWChannel]) -> InstrumentLimits:
             # MW-FEM max normalized amplitude
             max_wf_amplitude=1,
             # A subjective "safe" value for x180 pulses
-            max_x180_wf_amplitude=0.6,
+            max_x180_wf_amplitude=1.1,
             # A subjective "safe" value assuming up to 10 qubits on the same channel
             max_readout_amplitude=0.1,
             units="(scaled by `full_scale_power_dbm`)",

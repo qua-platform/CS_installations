@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from dataclasses import asdict
+import matplotlib
+matplotlib.use('TkAgg')
 
 from qm.qua import *
 
@@ -61,11 +63,65 @@ def custom_param(node: QualibrationNode[Parameters, Quam]):
     """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
     # You can get type hinting in your IDE by typing node.parameters.
     # node.parameters.qubits = ["q1", "q2"]
+    
     # node.parameters.max_number_pulses_per_sweep = 100
     # node.parameters.min_amp_factor = 0.8
     # node.parameters.max_amp_factor = 1.2
     # node.parameters.amp_factor_step = 0.01
-    pass
+    node.parameters.num_shots = 40
+    node.parameters.operation = "x180"
+    # node.parameters.min_amp_factor = 0.10
+    # node.parameters.max_amp_factor = 1.90
+    # node.parameters.amp_factor_step = 0.01
+    node.parameters.min_amp_factor = 0.5
+    node.parameters.max_amp_factor = 1.55
+    node.parameters.amp_factor_step = 0.02
+    node.parameters.max_number_pulses_per_sweep = 40
+    # node.parameters.update_x90 = True
+
+    node.parameters.multiplexed = False # False
+    node.parameters.qubits = [
+        "q1", "q2", 
+        #"q3", "q4", 
+        "q5",  "q6",  "q7", "q8",  "q9",
+        "q10", "q11", "q12", "q13", "q15", "q16", "q17", 
+        "q18", # "q14",
+        "q19", "q20", "q21", "q22", "q23", "q24", "q25",
+        "q26", #"q27", 
+    ]
+    # # node.parameters.qubits = ["q1"]
+
+    # node.parameters.qubits = [
+    #     # "q1",
+    #     # "q2", xxxx
+    #     # "q3", xxxx
+    #     "q4",
+    #     # "q5",
+    #     # "q6",
+    #     # "q7",
+    #     # "q8", 
+    #     # "q9",
+        
+    #     # "q10",
+    #     # "q11", xxxx
+    #     # "q12",
+    #     # "q13",
+    #     # "q14",
+    #     # "q15",
+    #     # "q16",
+    #     # "q17", xxxx
+    #     # "q18",
+        
+    #     # "q19",
+    #     # "q20", xxxx
+    #     # "q21",
+    #     # "q22",
+    #     # "q23",
+    #     # "q24",
+    #     # "q25",
+    #     # "q26", xxxx
+    #     # "q27", 
+    # ]
 
 
 # Instantiate the QUAM class from the state file
@@ -121,14 +177,14 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                         # Qubit initialization
                         for i, qubit in multiplexed_qubits.items():
                             qubit.reset(node.parameters.reset_type, node.parameters.simulate)
-                        align()
+                            qubit.align()
 
                         # Qubit manipulation
                         for i, qubit in multiplexed_qubits.items():
                             # Loop for error amplification (perform many qubit pulses)
                             with for_(count, 0, count < npi, count + 1):
                                 qubit.xy.play(operation, amplitude_scale=a)
-                        align()
+                            qubit.align()
 
                         # Qubit readout
                         for i, qubit in multiplexed_qubits.items():
@@ -139,7 +195,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                                 save(I[i], I_st[i])
                                 save(Q[i], Q_st[i])
-                        align()
+                        #align()
 
         with stream_processing():
             n_st.save("n")
@@ -262,3 +318,5 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
 @node.run_action()
 def save_results(node: QualibrationNode[Parameters, Quam]):
     node.save()
+
+# %%

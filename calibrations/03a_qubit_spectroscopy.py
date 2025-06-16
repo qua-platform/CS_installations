@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from dataclasses import asdict
+import matplotlib
+matplotlib.use('TkAgg')
 
 from qm.qua import *
 
@@ -65,8 +67,36 @@ node = QualibrationNode[Parameters, Quam](
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
     # You can get type hinting in your IDE by typing node.parameters.
-    # node.parameters.qubits = ["q1", "q2"]
-    pass
+    node.parameters.multiplexed = True
+    # node.parameters.qubits = [
+    #     ["q1",  "q2",  "q3",  "q4",  "q5",  "q6",  "q7",  "q8"], # "q9"],
+    #     ["q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18"], # "q14"],
+    #     ["q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26"], # "q27"], 
+    # ]
+    # node.parameters.qubits = [
+    #     "q9", "q14", "q27", 
+    # ]
+    
+    node.parameters.qubits = [
+        # "q1", "q4"
+        "q1",  "q2",  "q3", "q4",
+        "q5",  "q6",  "q7", "q8", 
+        
+        "q10", "q11", "q12", "q13",
+        "q15", "q16", "q17", "q18",
+
+        "q19", "q20", "q21", "q22",
+        "q23", "q24", "q25", "q26",
+
+        # "q9", "q14", "q27", 
+    ]
+    node.parameters.num_shots = 1000
+
+    node.parameters.operation_amplitude_factor = 0.02
+    node.parameters.frequency_span_in_mhz = 10
+    node.parameters.frequency_step_in_mhz = 0.1
+    node.parameters.target_peak_width = 4e5
+    # pass
 
 
 # Instantiate the QUAM class from the state file
@@ -125,7 +155,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                             amplitude_scale=operation_amp,
                             duration=duration // 4,
                         )
-                    align()
+                        qubit.align()
 
                     for i, qubit in multiplexed_qubits.items():
                         # readout the resonator
@@ -135,7 +165,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                         # save data
                         save(I[i], I_st[i])
                         save(Q[i], Q_st[i])
-                    align()
+                    # align()
 
         with stream_processing():
             n_st.save("n")
@@ -232,7 +262,8 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
         for q in node.namespace["qubits"]:
             if node.outcomes[q.name] == "failed":
                 continue
-
+            
+            # pass
             # Update the readout frequency for the given flux point
             q.f_01 = node.results["fit_results"][q.name]["frequency"]
             q.xy.RF_frequency = node.results["fit_results"][q.name]["frequency"]
@@ -252,3 +283,5 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
 @node.run_action()
 def save_results(node: QualibrationNode[Parameters, Quam]):
     node.save()
+
+#%%

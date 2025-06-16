@@ -68,7 +68,20 @@ node = QualibrationNode[Parameters, Quam](
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     # You can get type hinting in your IDE by typing node.parameters.
     # node.parameters.qubits = ["q1", "q2"]
-    pass
+    node.parameters.multiplexed = True
+    node.parameters.use_state_discrimination = True
+    
+    node.parameters.qubits = [
+        "q1", "q2", 
+        # "q3", "q4", 
+        "q5",  "q6",  "q7", "q8",  "q9",
+        "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
+        "q19", "q20", "q21", "q22", "q23", "q24", "q25","q26", #"q27", 
+        # 8 at a time
+    ]
+    node.parameters.delta_clifford = 40
+    node.parameters.max_circuit_depth = 1600
+    
 
 
 # Instantiate the QUAM class from the state file
@@ -235,7 +248,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                             for i, qubit in multiplexed_qubits.items():
                                 qubit.reset(node.parameters.reset_type, node.parameters.simulate)
                                 # Align the two elements to play the sequence after qubit initialization
-                            align()
+                                qubit.align()
                             # Manipulate the qubits
                             for i, qubit in multiplexed_qubits.items():
                                 # The strict_timing ensures that the sequence will be played without gaps
@@ -245,7 +258,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                                         play_sequence(sequence_list, depth, qubit)
                                 else:
                                     play_sequence(sequence_list, depth, qubit)
-                            align()
+                                qubit.align()
                             # Readout the qubits
                             for i, qubit in multiplexed_qubits.items():
                                 if node.parameters.use_state_discrimination:
@@ -255,7 +268,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                                     qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                                     save(I[i], I_st[i])
                                     save(Q[i], Q_st[i])
-                            align()
+                            # align()
                         # Go to the next depth
                         assign(depth_target, depth_target + delta_clifford)
                     # Reset the last gate of the sequence back to the original Clifford gate

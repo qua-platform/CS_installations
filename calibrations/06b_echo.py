@@ -50,7 +50,15 @@ node = QualibrationNode[Parameters, Quam](name="06b_echo", description=descripti
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     # You can get type hinting in your IDE by typing node.parameters.
     # node.parameters.qubits = ["q1", "q2"]
-    pass
+    node.parameters.multiplexed = False #True
+        # node.parameters.multiplexed = True
+    node.parameters.qubits = [
+        "q1", "q2", 
+        #"q3", "q4", 
+        "q5",  "q6",  "q7", "q8",  "q9",
+        # "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
+        # "q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26", #"q27", 
+    ]
 
 
 # Instantiate the QUAM class from the state file
@@ -100,7 +108,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                         for i, qubit in multiplexed_qubits.items():
                             reset_frame(qubit.xy.name)
                             qubit.reset(node.parameters.reset_type, node.parameters.simulate)
-                        align()
+                            qubit.align()
 
                         # Qubit manipulation
                         for i, qubit in multiplexed_qubits.items():
@@ -110,7 +118,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                             qubit.xy.wait(t)
                             qubit.xy.play("-x90")
                             qubit.align()
-                        align()
+                        #align()
 
                         # Qubit readout
                         for i, qubit in multiplexed_qubits.items():

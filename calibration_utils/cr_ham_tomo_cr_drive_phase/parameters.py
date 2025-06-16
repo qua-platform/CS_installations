@@ -28,6 +28,9 @@ class NodeSpecificParameters(RunnableParameters):
     cr_drive_phase: float = 1.0
     cr_cancel_amp_scaling: float = 0.0
     cr_cancel_phase: float = 0.0
+    min_cr_drive_phase: float = 0.0
+    max_cr_drive_phase: float = 2.0
+    step_cr_drive_phase: float = 0.05
 
 class Parameters(
     NodeParameters,

@@ -54,9 +54,47 @@ node = QualibrationNode[Parameters, Quam](name="06a_ramsey", description=descrip
 @node.run_action(skip_if=node.modes.external)
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     # You can get type hinting in your IDE by typing node.parameters.
-    # node.parameters.qubits = ["q1", "q2"]
-    pass
-
+    node.parameters.multiplexed = False #True
+    node.parameters.frequency_detuning_in_mhz = 0.2
+        # node.parameters.multiplexed = True
+    node.parameters.qubits = [
+        "q1", "q2", 
+        #"q3", "q4", 
+        "q5",  "q6",  "q7", "q8",  "q9",
+        # "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
+        # "q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26", #"q27", 
+    ]
+    # node.parameters.qubits = [
+    #     # "q1",
+    #     # # "q2", xxxx
+    #     # # "q3", xxxx
+    #     # "q4",
+    #     # "q5",
+    #     # "q6",
+    #     # "q7",
+    #     # "q8", 
+    #     # "q9",
+        
+    #     "q10",
+    #     # "q11", xxxx
+    #     "q12",
+    #     "q13",
+    #     # "q14",
+    #     "q15",
+    #     "q16",
+    #     # "q17", xxxx
+    #     "q18",
+        
+    #     # "q19",
+    #     # # "q20", xxxx
+    #     # "q21",
+    #     # "q22",
+    #     # "q23",
+    #     # "q24",
+    #     # "q25",
+    #     # # "q26", xxxx
+    #     # "q27", 
+    # ]
 
 ## Instantiate the QUAM class from the state file
 node.machine = Quam.load()
@@ -109,7 +147,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                         for i, qubit in multiplexed_qubits.items():
                             reset_frame(qubit.xy.name)
                             qubit.reset(node.parameters.reset_type, node.parameters.simulate)
-                        align()
+                            qubit.align()
                         # Qubit manipulation
                         for i, qubit in multiplexed_qubits.items():
                             with if_(detuning_sign == 1):
@@ -129,7 +167,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                             qubit.xy.wait(idle_time)
                             qubit.xy.play("x90")
 
-                        align()
+                            qubit.align()
                         for i, qubit in multiplexed_qubits.items():
                             if node.parameters.use_state_discrimination:
                                 qubit.readout_state(state[i])
@@ -138,7 +176,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                                 save(I[i], I_st[i])
                                 save(Q[i], Q_st[i])
-                        align()
+                        #align()
 
         with stream_processing():
             n_st.save("n")

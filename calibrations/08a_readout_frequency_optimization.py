@@ -56,7 +56,17 @@ node = QualibrationNode[Parameters, Quam](
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     # You can get type hinting in your IDE by typing node.parameters.
     # node.parameters.qubits = ["q1", "q2"]
-    pass
+        
+    node.parameters.multiplexed = True #True
+    node.parameters.qubits = [
+        "q1", "q2", 
+        # "q3", "q4", 
+        "q5",  "q6",  "q7", "q8",  "q9",
+        # "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
+        # "q19", "q20", "q21", "q22", "q23", "q24", "q25","q26", #"q27", 
+        # 8 at a time
+    ]
+    # pass
 
 
 ## Instantiate the QUAM class from the state file
@@ -111,7 +121,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                         # Update the resonator frequencies
                         update_frequency(qubit.resonator.name, df + qubit.resonator.intermediate_frequency)
                         qubit.reset(node.parameters.reset_type, node.parameters.simulate)
-                    align()
+                        qubit.align()
 
                     # Qubit readout - |g> state
                     for i, qubit in multiplexed_qubits.items():
@@ -119,12 +129,12 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                         qubit.resonator.measure("readout", qua_vars=(I_g[i], Q_g[i]))
                         save(I_g[i], I_g_st[i])
                         save(Q_g[i], Q_g_st[i])
-                    align()
+                    # align()
 
                     # Qubit initialization
                     for i, qubit in multiplexed_qubits.items():
                         qubit.reset(node.parameters.reset_type, node.parameters.simulate)
-                    align()
+                        qubit.align()
                     # Qubit readout - |e> state
                     for i, qubit in multiplexed_qubits.items():
                         # Play the x180 gate to put the qubits in the excited state

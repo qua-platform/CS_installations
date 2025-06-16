@@ -18,7 +18,30 @@ g = QualibrationGraph(
     nodes={
         "resonator_spectroscopy": library.nodes["02a_resonator_spectroscopy"].copy(name="resonator_spectroscopy"),
         # "resonator_spectroscopy_vs_power": library.nodes["02b_resonator_spectroscopy_vs_power"].copy(name="resonator_spectroscopy_vs_power"),
-        "qubit_spectroscopy": library.nodes["03a_qubit_spectroscopy"].copy(name="qubit_spectroscopy"),
+        "qubit_spectroscopy": library.nodes["03a_qubit_spectroscopy"].copy(
+            name="qubit_spectroscopy",
+            qubits=[
+                "q1", "q2",  "q3",  "q4",  "q5",  "q6",  "q7", "q8", # "q9",
+            ],
+    #     "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
+    #     "q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26", # "q27", ]
+        ),
+        "qubit_spectroscopy": library.nodes["03a_qubit_spectroscopy"].copy(
+            name="qubit_spectroscopy",
+            qubits=[
+                "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
+            ],
+    #     "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
+    #     "q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26", # "q27", ]
+        ),
+        "qubit_spectroscopy": library.nodes["03a_qubit_spectroscopy"].copy(
+            name="qubit_spectroscopy",
+            qubits=[
+                "q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26", # "q27",
+            ],
+    #     "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
+    #     "q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26", # "q27", ]
+        ),
         "rabi_chevron": library.nodes["04a_rabi_chevron"].copy(name="rabi_chevron"),
         "power_rabi": library.nodes["04b_power_rabi"].copy(name="power_rabi"),
         "readout_power_optimization": library.nodes["08b_readout_power_optimization"].copy(

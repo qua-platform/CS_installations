@@ -58,8 +58,21 @@ def custom_param(node: QualibrationNode[Parameters, Quam]):
     """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
     # You can get type hinting in your IDE by typing node.parameters.
     # node.parameters.qubits = ["q1", "q2"]
-    pass
+    node.parameters.multiplexed = True #False
+    # node.parameters.qubits = [
+    #     "q1", "q2",  "q3",  "q4",  "q5",  "q6",  "q7", "q8", # "q9",
+    #     "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
+    #     "q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26", # "q27", 
+    # ]
+    # node.parameters.qubits = [
+    #     "q1", "q2",  "q3",  "q4",  "q5",  "q6",  "q7", "q8", # "q9",
+    #     # "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
+    #     # "q19", "q20", "q21", "q22", "q23", "q24", "q25","q26", # "q27", 
+    # ]
 
+    node.parameters.qubits = [
+        "q4",
+    ]
 
 # Instantiate the QUAM class from the state file
 node.machine = Quam.load()
@@ -127,11 +140,11 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                             qubit.reset(node.parameters.reset_type, node.parameters.simulate)
                             # Update the xy drive frequency
                             qubit.xy.update_frequency(df + qubit.xy.intermediate_frequency)
-                        align()
+                            qubit.align()
                         # Qubit manipulation
                         for i, qubit in multiplexed_qubits.items():
                             qubit.xy.play("x180", duration=t)
-                        align()
+                            qubit.align()
 
                         # Qubit readout
                         for i, qubit in multiplexed_qubits.items():
@@ -142,7 +155,8 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                                 save(I[i], I_st[i])
                                 save(Q[i], Q_st[i])
-                        align()
+                            # qubit.resonator.wait(250)
+                        # align()
 
         with stream_processing():
             n_st.save("n")

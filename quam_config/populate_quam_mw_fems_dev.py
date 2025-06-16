@@ -90,15 +90,6 @@ def get_full_scale_power_dBm_and_amplitude(desired_power: float, max_amplitude: 
             f"The desired power is outside the specifications ([-11; +16]dBm, [-1; +1]), got ({full_scale_power_dBm}; {amplitude})"
         )
 
-# LOAD YAML file
-import yaml
-
-with open(r"C:\Users\wook9\codes\QM_New\CS_installations-HI_16Jun2025\workspaces\setup_info\250613_YD27Q_OPX1K.yaml") as stream:
-    try:
-        config_yaml = yaml.safe_load(stream)
-    except yaml.YAMLError as exc:
-        print(exc)
-
 
 
 ########################################################################################################################
@@ -112,70 +103,14 @@ with open(r"C:\Users\wook9\codes\QM_New\CS_installations-HI_16Jun2025\workspaces
 # Note that the "coupled" ports O1 & I1, O2 & O3, O4 & O5, O6 & O7, and O8 & I2 must be in the same band.
 
 # Resonator frequencies
-# for k,v in config_yaml["individual"].items():
-#     q_idx = int(k.split("q")[-1])
-#     print(f"{v['ro_freq'] / 1e9:4.3f}, # {k}")
 rr_freq = np.array([
-    7.003, # q1
-    7.037, # q2
-    7.075, # q3
-    7.114, # q4
-    7.154, # q5
-    7.188, # q6
-    7.231, # q7
-    7.271, # q8
-    7.311, # q9
-    6.997, # q10
-    7.035, # q11
-    7.076, # q12
-    7.114, # q13
-    7.151, # q14
-    7.193, # q15
-    7.229, # q16
-    7.272, # q17
-    7.307, # q18
-    6.997, # q19
-    7.035, # q20
-    7.071, # q21
-    7.110, # q22
-    7.149, # q23
-    7.189, # q24
-    7.228, # q25
-    7.269, # q26
-    7.307, # q27
+    7.05, 7.10, 7.15, 7.20, 7.30, 7.35, 7.40,
+    8.05, 8.10, 8.15, 8.20, 8.30, 8.35, 8.40,
 ]) * u.GHz
 
-# for k,v in config_yaml["individual"].items():
-#     q_idx = int(k.split("q")[-1])
-#     print(f"{float(v['ro_lo_freq']) / 1e9:4.3f}, # {k}")
 rr_LO = np.array([
-    6.950, # q1
-    6.950, # q2
-    6.950, # q3
-    6.950, # q4
-    6.950, # q5
-    6.950, # q6
-    6.950, # q7
-    6.950, # q8
-    6.950, # q9
-    6.950, # q10
-    6.950, # q11
-    6.950, # q12
-    6.950, # q13
-    6.950, # q14
-    6.950, # q15
-    6.950, # q16
-    6.950, # q17
-    6.950, # q18
-    6.950, # q19
-    6.950, # q20
-    6.950, # q21
-    6.950, # q22
-    6.950, # q23
-    6.950, # q24
-    6.950, # q25
-    6.950, # q26
-    6.950, # q27
+    7.25, 7.25, 7.25, 7.25, 7.25, 7.25, 7.25,
+    8.25, 8.25, 8.25, 8.25, 8.25, 8.25, 8.25,
 ]) * u.GHz
 
 rr_if = rr_freq - rr_LO  # The intermediate frequency is inferred from the LO and readout frequencies
@@ -214,70 +149,14 @@ for k, qubit in enumerate(machine.qubits.values()):
 # Note that the "coupled" ports O1 & I1, O2 & O3, O4 & O5, O6 & O7, and O8 & I2 must be in the same band.
 
 # Qubit drive frequencies
-# for k,v in config_yaml["individual"].items():
-#     q_idx = int(k.split("q")[-1])
-#     print(f"{float(v['gate_freq']) / 1e9:4.3f}, # {k}")
 xy_freq = np.array([
-    5.250, # q1
-    5.123, # q2
-    5.124, # q3
-    5.080, # q4
-    5.101, # q5
-    5.070, # q6
-    5.247, # q7
-    5.188, # q8
-    5.191, # q9
-    5.042, # q10
-    4.916, # q11
-    5.222, # q12
-    4.980, # q13
-    5.200, # q14
-    5.120, # q15
-    5.249, # q16
-    5.142, # q17
-    5.042, # q18
-    5.173, # q19
-    5.092, # q20
-    5.032, # q21
-    5.034, # q22
-    5.003, # q23
-    5.146, # q24
-    5.205, # q25
-    5.065, # q26
-    5.074, # q27
+    5.05, 5.10, 5.15, 5.20, 5.30, 5.35, 5.40,
+    5.05, 5.10, 5.15, 5.20, 5.30, 5.35, 5.40,
 ]) * u.GHz
 
-# for k,v in config_yaml["individual"].items():
-#     q_idx = int(k.split("q")[-1])
-#     print(f"{float(v['drv_lo_freq']) / 1e9:4.3f}, # {k}")
 xy_LO = np.array([
-    5.050, # q1
-    5.050, # q2
-    5.000, # q3
-    5.000, # q4
-    5.000, # q5
-    5.000, # q6
-    5.050, # q7
-    5.050, # q8
-    4.950, # q9
-    5.100, # q10
-    5.100, # q11
-    5.050, # q12
-    5.050, # q13
-    5.050, # q14
-    5.050, # q15
-    5.050, # q16
-    5.050, # q17
-    4.950, # q18
-    5.000, # q19
-    5.000, # q20
-    4.950, # q21
-    4.950, # q22
-    4.950, # q23
-    4.950, # q24
-    5.050, # q25
-    5.000, # q26
-    5.000, # q27
+    5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25,
+    5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25,
 ]) * u.GHz
 
 xy_if = xy_freq - xy_LO  # The intermediate frequency is inferred from the LO and qubit frequencies
@@ -288,37 +167,9 @@ assert np.all(np.abs(xy_if) < 400 * u.MHz), (
     f"Qubit drive IF frequencies: {xy_if} \n"
 )
 # Transmon anharmonicity
-# for k,v in config_yaml["individual"].items():
-#     q_idx = int(k.split("q")[-1])
-#     print(f"{-float(v['anharmonicity']) / 1e6:4.1f}, # {k}")
 anharmonicity = np.array([
-    260.0, # q1
-    260.0, # q2
-    280.0, # q3
-    280.0, # q4
-    280.0, # q5
-    260.0, # q6
-    260.0, # q7
-    260.0, # q8
-    260.0, # q9
-    260.0, # q10
-    260.0, # q11
-    260.0, # q12
-    260.0, # q13
-    260.0, # q14
-    260.0, # q15
-    260.0, # q16
-    260.0, # q17
-    260.0, # q18
-    260.0, # q19
-    260.0, # q20
-    260.0, # q21
-    260.0, # q22
-    260.0, # q23
-    260.0, # q24
-    260.0, # q25
-    260.0, # q26
-    260.0, # q27
+    250, 250, 250, 250, 250, 250, 250,
+    250, 250, 250, 250, 250, 250, 250,
 ]) * u.MHz
 
 # Desired output power in dBm
@@ -334,21 +185,18 @@ for k, qubit in enumerate(machine.qubits.values()):
     qubit.xy.opx_output.upconverter_frequency = xy_LO.tolist()[k]  # Qubit drive up-converter frequency
     qubit.xy.opx_output.band = get_band(xy_LO.tolist()[k])  # Qubit drive band for the up-conversion
 
-
-
-rr_slots = [
-    3, 3, 3, 3, 3, 3, 3, 3, 3,
-    4, 4, 4, 4, 4, 4, 4, 4, 4,
-    5, 5, 5, 5, 5, 5, 5, 5, 5,
-]
-xy_slots = [
-    3, 3, 3, 3, 3, 3, 3, 2, 2,
-    4, 4, 4, 4, 2, 4, 4, 4, 2,
-    5, 5, 5, 5, 5, 5, 5, 2, 2,
-]
+# Assign shared cores
 for k, qubit in enumerate(machine.qubits.values()):
-    qubit.resonator.core = f"{qubit.name}_slot{rr_slots[k]}"
-    qubit.xy.core = f"{qubit.name}_slot{xy_slots[k]}"
+    rr = qubit.resonator
+    xy = qubit.xy
+    qubit.resonator.core = f"{qubit.name}_slot{rr.opx_output.fem_id}"
+    qubit.xy.core = f"{qubit.name}_slot{xy.opx_output.fem_id}"
+
+for k, qp in enumerate(machine.qubit_pairs.values()):
+    cr = qp.qubit_control
+    qc = qp.qubit_control
+    qp.cross_resonance.core = f"{qc.name}_slot{qc.xy.opx_output.fem_id}"
+    
 
 ########################################################################################################################
 # %%                                        Plot parameters
@@ -365,9 +213,8 @@ for k, qubit in enumerate(machine.qubits.values()):
 # Represented in row,major order from top row (3) to bottom row (0)
 
 grid_locations = [
-    "0,8", "0,7", "0,6", "0,5", "0,4", "0,3", "0,2", "0,1", "0,0",
-    "1,8", "1,7", "1,6", "1,5", "1,4", "1,3", "1,2", "1,1", "1,0",
-    "2,8", "2,7", "2,6", "2,5", "2,4", "2,3", "2,2", "2,1", "2,0",
+    "0,6", "0,5", "0,4", "0,3", "0,2", "0,1",
+    "1,6", "1,5", "1,4", "1,3", "1,2", "1,1",
 ]
 for gd, qubit in zip(grid_locations, machine.qubits.values()):
     qubit.grid_location = gd  # Qubit grid location for plotting as "column,row"
