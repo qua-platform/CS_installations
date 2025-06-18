@@ -124,7 +124,7 @@ row_IFs = [row_IF_01 + row_spacing * x for x in range(num_rows)]
 # Readout time of the occupation matrix sent by fpga
 readout_fpga_len = 60
 # Readout duration for acquiring the spectrographs
-readout_pulse_len = blackman_pulse_len * 2 + const_pulse_len # 2 * u.us
+readout_pulse_len = blackman_pulse_len * 2 + const_pulse_len  # 2 * u.us
 short_readout_pulse_len = 0.4 * u.us
 
 occupation_matrix_pulse_len = 3 * readout_fpga_len + 200
@@ -183,7 +183,11 @@ config = {
                 "port": ("con1", 9),
             },  # Fake output port for measurement
             "intermediate_frequency": 0,
-            "operations": {"const": "const_pulse", "on": "unit_pulse", "off": "zero_pulse"},
+            "operations": {
+                "const": "const_pulse",
+                "on": "unit_pulse",
+                "off": "zero_pulse",
+            },
         },
         # fpga is used to read the occupation matrix sent by fpga
         "fpga": {
@@ -215,7 +219,7 @@ config = {
             "outputs": {
                 "out1": ("con1", 1),
             },
-            "time_of_flight": 24 + 176, # with ext. trigger: 24 + 176 ns
+            "time_of_flight": 24 + 176,  # with ext. trigger: 24 + 176 ns
             "smearing": 0,
         },
         # row_selector is used to control the row AOD
@@ -372,12 +376,16 @@ config = {
     "waveforms": {
         "blackman_up_wf": {
             "type": "arbitrary",
-            "samples": blackman(blackman_pulse_len / (1e9 / sampling_rate), 0, blackman_amp),
+            "samples": blackman(
+                blackman_pulse_len / (1e9 / sampling_rate), 0, blackman_amp
+            ),
             "sampling_rate": sampling_rate,
         },
         "blackman_down_wf": {
             "type": "arbitrary",
-            "samples": blackman(blackman_pulse_len / (1e9 / sampling_rate), blackman_amp, 0),
+            "samples": blackman(
+                blackman_pulse_len / (1e9 / sampling_rate), blackman_amp, 0
+            ),
             "sampling_rate": sampling_rate,
         },
         "const_wf": {

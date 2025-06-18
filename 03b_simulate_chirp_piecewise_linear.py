@@ -33,7 +33,9 @@ with program() as prog:
         play("const", col_sel, chirp=(rates, units))
 
 
-job = qmm.simulate(config, prog, SimulationConfig(int(pulse_duration // 4)))  # in clock cycles, 4 ns
+job = qmm.simulate(
+    config, prog, SimulationConfig(int(pulse_duration // 4))
+)  # in clock cycles, 4 ns
 
 samples = job.get_simulated_samples()
 
@@ -42,7 +44,9 @@ NFFT = 2**10
 Fs = 1e9
 plt.figure()
 ax1 = plt.subplot(111)
-Pxx, freqs, bins, im = plt.specgram(x, NFFT=NFFT, Fs=Fs, noverlap=1000, cmap=plt.cm.gist_heat)
+Pxx, freqs, bins, im = plt.specgram(
+    x, NFFT=NFFT, Fs=Fs, noverlap=1000, cmap=plt.cm.gist_heat
+)
 ax1.set_xticklabels((ax1.get_xticks() * 1e6).astype(int))
 ax1.set_yticklabels((ax1.get_yticks() / 1e6).astype(int))
 plt.title("Quadratic Chirp")

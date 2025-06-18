@@ -26,7 +26,7 @@ from qualang_tools.results.data_handler import DataHandler
 import matplotlib
 import time
 
-matplotlib.use('TkAgg')
+matplotlib.use("TkAgg")
 
 
 ##################
@@ -52,7 +52,6 @@ with program() as PROGRAM:
     adc_st = declare_stream(adc_trace=True)  # The stream to store the raw ADC trace
 
     with for_(n, 0, n < n_avg, n + 1):
-        
         # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
         reset_if_phase(elem)
         reset_if_phase("col_selector_01")
@@ -149,7 +148,10 @@ if __name__ == "__main__":
             script_name = Path(__file__).name
             data_handler = DataHandler(root_data_folder=save_dir)
             save_data_dict.update({"fig_live": fig})
-            data_handler.additional_files = {script_name: script_name, **default_additional_files}
+            data_handler.additional_files = {
+                script_name: script_name,
+                **default_additional_files,
+            }
             data_handler.save_data(data=save_data_dict, name="time_of_flight")
 
         except Exception as e:

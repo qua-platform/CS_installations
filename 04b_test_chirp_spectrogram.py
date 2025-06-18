@@ -21,7 +21,6 @@ with program() as PROG:
     adc_st = declare_stream(adc_trace=True)
 
     with for_(n, 0, n < n_avg, n + 1):
-
         reset_if_phase("detector")
         for i in range(n_tweezers):
             col_sel = f"col_selector_{i + 1:02d}"
@@ -115,11 +114,12 @@ if __name__ == "__main__":
             plt.legend()
             plt.tight_layout()
 
-
             NFFT = 2**10
             Fs = 1e9
             ax1 = plt.subplot(111)
-            Pxx, freqs, bins, im = plt.specgram(x=adc0, NFFT=NFFT, Fs=Fs, noverlap=100, cmap=plt.cm.gist_heat)
+            Pxx, freqs, bins, im = plt.specgram(
+                x=adc0, NFFT=NFFT, Fs=Fs, noverlap=100, cmap=plt.cm.gist_heat
+            )
             ax1.set_xticklabels((ax1.get_xticks() * 1e6).astype(int))
             ax1.set_yticklabels((ax1.get_yticks() / 1e6).astype(int))
             plt.xlabel("t [us]")

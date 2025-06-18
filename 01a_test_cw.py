@@ -15,8 +15,6 @@ import time
 ###################
 
 with program() as hello_QUA:
-
-    
     # play("const", "col_selector_01")
     with infinite_loop_():
         # # col
@@ -44,8 +42,9 @@ with program() as hello_QUA:
 qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
 from qm import generate_qua_script
-sourceFile = open('debug.py', 'w')
-print(generate_qua_script(hello_QUA, config), file=sourceFile) 
+
+sourceFile = open("debug.py", "w")
+print(generate_qua_script(hello_QUA, config), file=sourceFile)
 sourceFile.close()
 
 

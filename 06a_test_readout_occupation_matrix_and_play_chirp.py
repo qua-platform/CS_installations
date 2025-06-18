@@ -20,22 +20,79 @@ readout_threshold = -0.112
 delay_from_ext_trigger = 5 * u.us
 raw_adc_acquisition = True
 
-col_selectors = [f"col_selector_{i + 1:02d}" for i in range(num_cols)] # elements
-row_selectors = [f"row_selector_{i + 1:02d}" for i in range(num_rows)] # elements
+col_selectors = [f"col_selector_{i + 1:02d}" for i in range(num_cols)]  # elements
+row_selectors = [f"row_selector_{i + 1:02d}" for i in range(num_rows)]  # elements
 
 target_occupations = [
-    1, 0, 0, 0, 0, 0, 1, 0,
-    0, 1, 0, 0, 0, 1, 0, 0,
-    0, 0, 1, 1, 1, 0, 0, 0,
-    0, 0, 1, 1, 1, 0, 0, 0,
-    0, 0, 1, 1, 1, 0, 0, 0,
-    0, 1, 0, 0, 0, 1, 0, 0,
-    1, 0, 0, 0, 0, 0, 1, 0,
-    0, 0, 1, 0, 1, 0, 0, 0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1,
+    0,
+    1,
+    0,
+    0,
+    0,
 ]
 
-assert len(target_occupations) == num_sites, "the length is not consisitent with the expected number of sites!"
-
+assert (
+    len(target_occupations) == num_sites
+), "the length is not consisitent with the expected number of sites!"
 
 
 with program() as PROG:
@@ -54,12 +111,18 @@ with program() as PROG:
     is_rearranged = declare(bool, value=False)
 
     # Variables that need resetting
-    received_full_array = declare(bool, value=False)  # Flag indicating the end of occupation matrix readout
+    received_full_array = declare(
+        bool, value=False
+    )  # Flag indicating the end of occupation matrix readout
 
     # Debug variables
-    raw_adc = declare_stream(adc_trace=True)  # Raw ADC trace for spectrograms or occupation matrix readout
+    raw_adc = declare_stream(
+        adc_trace=True
+    )  # Raw ADC trace for spectrograms or occupation matrix readout
     data_stream = declare_stream()  # stream used to extract variables for debug
-    infinite_run = declare(bool, value=True)  # Flag used to perform the sorting only once instead of infinite_loop_()
+    infinite_run = declare(
+        bool, value=True
+    )  # Flag used to perform the sorting only once instead of infinite_loop_()
 
     # QUA variable representing the current row
     current_row = declare(int)
@@ -74,9 +137,7 @@ with program() as PROG:
     # QUA variable containing the tweezer phases
     tweezer_phases_qua = declare(fixed, value=phases_list)
 
-
     with while_(~is_rearranged):
-
         ########################################################
         # Read occupation matrix
         ########################################################
@@ -84,7 +145,7 @@ with program() as PROG:
         assign(readout_done, False)
         assign(counter, 0)
         with while_(~readout_done):
-        # with for=...
+            # with for=...
             wait_for_trigger("detector")
             wait(delay_from_ext_trigger, "detector")
             measure(
@@ -105,13 +166,11 @@ with program() as PROG:
             save(I, I_st)
             wait(250)
 
-
         # this makes sure to wait for any operation on "detector" to finish
         # reminder: element <=> core
         # align("detector", *col_selectors, *row_selectors) # to be explict
-        
-        align() # this aligns all the elements involved in this protocol 
 
+        align()  # this aligns all the elements involved in this protocol
 
         ########################################################
         # Rearrange atoms based on the measured occupation matrix
@@ -131,11 +190,18 @@ with program() as PROG:
                 target_freqs_full_qua,
             )
             # Derive number of required tweezers
-            num_tweezers = find_num_tweezers(atom_location_qua, atom_target_qua, max_num_tweezers)
+            num_tweezers = find_num_tweezers(
+                atom_location_qua, atom_target_qua, max_num_tweezers
+            )
             # Assign the tweezers amplitude, initial frequency, phase and detuning using either a dummy logic that
             # will only avoid collisions on left compact targets, or a smarter collision-free algorithm
             if collision_free:
-                amp_qua, frequency_qua, phase_qua, detuning_qua = assign_tweezers_to_atoms_collision_free(
+                (
+                    amp_qua,
+                    frequency_qua,
+                    phase_qua,
+                    detuning_qua,
+                ) = assign_tweezers_to_atoms_collision_free(
                     num_tweezers,
                     max_num_tweezers,
                     atom_location_qua,
@@ -146,7 +212,12 @@ with program() as PROG:
                     data_stream,
                 )
             else:
-                amp_qua, frequency_qua, phase_qua, detuning_qua = assign_tweezers_to_atoms(
+                (
+                    amp_qua,
+                    frequency_qua,
+                    phase_qua,
+                    detuning_qua,
+                ) = assign_tweezers_to_atoms(
                     num_tweezers,
                     max_num_tweezers,
                     atom_location_qua,
@@ -157,12 +228,17 @@ with program() as PROG:
                 )
 
             # Derive the chirp pulse duration from the default pulse length of the maximum chirp rate if not None.
-            chirp_pulse_duration_qua = calculate_pulse_len(detuning_qua, const_pulse_len, max_rate=max_chirp_rate)
+            chirp_pulse_duration_qua = calculate_pulse_len(
+                detuning_qua, const_pulse_len, max_rate=max_chirp_rate
+            )
 
             # Derive the chirp rates defined as piecewise or constant
             if piecewise_chirp:
                 piecewise_chirp_rates_qua = calculate_piecewise_chirp_rates(
-                    max_num_tweezers, detuning_qua, chirp_pulse_duration_qua, n_segment_py
+                    max_num_tweezers,
+                    detuning_qua,
+                    chirp_pulse_duration_qua,
+                    n_segment_py,
                 )
             else:
                 const_chirp_rates_qua = calculate_chirp_rates(
@@ -170,7 +246,9 @@ with program() as PROG:
                 )
 
             # Assign the frequencies and phases to the tweezers
-            set_tweezers_freqs_and_phases(max_num_tweezers, frequency_qua, row_freqs_qua[current_row], phase_qua)
+            set_tweezers_freqs_and_phases(
+                max_num_tweezers, frequency_qua, row_freqs_qua[current_row], phase_qua
+            )
 
             # Convert the chirp pulse duration in clock cycles
             assign(chirp_pulse_duration_qua, chirp_pulse_duration_qua >> 2)
@@ -226,13 +304,11 @@ with program() as PROG:
             if raw_adc_acquisition:
                 measure("readout", "detector", raw_adc)
 
-
         # verify the rearrangement is done
         assign(is_rearranged, True)
         with for_(j, 0, j < num_sites, j + 1):
             assign(is_matched, measured_occupations[j] == target_occupations[j])
             assign(is_rearranged, is_rearranged & is_matched)
-
 
     ########################################################
     # Play chirp based on the measured occupation matrix
@@ -241,8 +317,6 @@ with program() as PROG:
     align()
 
     play("on", "trigger_artiq")
-
-
 
     with stream_processing():
         # I_st.buffer(num_sites).save("I")
@@ -264,7 +338,7 @@ if __name__ == "__main__":
     if simulate:
         # Simulates the QUA program for the specified duration
         simulation_config = SimulationConfig(duration=1_000)  # In clock cycles = 4ns
-        # Simulate blocks python until the simulation is done 
+        # Simulate blocks python until the simulation is done
         job = qmm.simulate(config, PROG, simulation_config)
         # Plot the simulated samples
         job.get_simulated_samples().con1.plot()
@@ -287,7 +361,6 @@ if __name__ == "__main__":
             # ys = I[0][0]
             # plt.scatter(x=np.arange(len(ys)), y=ys)
 
-
         except Exception as e:
             print(f"An exception occurred: {e}")
 
@@ -297,4 +370,3 @@ if __name__ == "__main__":
             plt.show()
 
 # %%``
-

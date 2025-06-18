@@ -50,7 +50,9 @@ with program() as PROGRAM:
 
     with stream_processing():
         I_st.buffer(num_cols * num_rows).average().save("I")
-        occupied_st.boolean_to_int().buffer(num_cols * num_rows).average().save("occupied")
+        occupied_st.boolean_to_int().buffer(num_cols * num_rows).average().save(
+            "occupied"
+        )
 
 
 if __name__ == "__main__":
