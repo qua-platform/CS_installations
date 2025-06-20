@@ -21,8 +21,6 @@ from calibration_utils.cr_ham_tomo_cr_drive_amp_scaling import (
     plot_raw_data_with_fit,
 )
 from calibration_utils.cr_utils import *
-import sys
-sys.path.append("/workspaces/qualibration-libs")
 from qualibration_libs.parameters import get_qubit_pairs, get_qubits
 from qualibration_libs.runtime import simulate_and_plot
 from qualibration_libs.data import XarrayDataFetcher
@@ -67,9 +65,15 @@ node = QualibrationNode[Parameters, Quam](
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
     # You can get type hinting in your IDE by typing node.parameters.
-    node.parameters.qubit_pairs = ["q1-2", "q6-7"]
+    node.parameters.qubit_pairs = ["q1-2"]
     node.parameters.use_state_discrimination = True
-    # pass
+
+    node.parameters.wf_type = "cosine"
+    node.parameters.cr_type = "direct+cancel+echo"
+    node.parameters.cr_drive_amp_scaling = [1.0, 1.0]
+    node.parameters.cr_drive_phase = [0.0, 0.0]
+    node.parameters.cr_cancel_amp_scaling = [0.1, 0.1]
+    node.parameters.cr_cancel_phase = [0.0, 0.0]
 
 
 # Instantiate the QUAM class from the state file
@@ -94,13 +98,12 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
     node.namespace["tracked_qubit_pairs"] = []
     for qp in qubit_pairs:
         with tracked_updates(qp, auto_revert=False) as qp:
-            qp.qubit_control.xy.operations["x180"].length = 16
-            qp.cross_resonance.operations["square"].axis_angle = 0
-            qp.qubit_target.xy.operations["cr_square"].axis_angle = 0
+            pass
         node.namespace["tracked_qubit_pairs"].append(qp)
 
     n_avg = node.parameters.num_shots  # The number of averages
     state_discrimination = node.parameters.use_state_discrimination
+    wf_type = node.parameters.wf_type
     cr_type = node.parameters.cr_type
     cr_drive_amp_scaling = node.parameters.cr_drive_amp_scaling
     cr_drive_phase = node.parameters.cr_drive_phase
@@ -109,9 +112,9 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
 
     # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
     pulse_durations = np.arange(
-        node.parameters.min_wait_time_in_ns,
-        node.parameters.max_wait_time_in_ns,
-        node.parameters.time_step_in_ns,
+        node.parameters.min_wait_time_in_ns // 4,
+        node.parameters.max_wait_time_in_ns // 4,
+        node.parameters.time_step_in_ns // 4,
     )
     amp_scalings = np.arange(
         node.parameters.min_cr_drive_amp_scaling,
@@ -176,19 +179,13 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
 
                                 with if_(s == 1):
                                     for i, qp in multiplexed_qubit_pairs.items():
-                                        qc = qp.qubit_control
-                                        qt = qp.qubit_target
-                                        cr = qp.cross_resonance
-                                        elems = [qc.xy.name, qt.xy.name, cr.name]
+                                        qc, qt, cr, cr_elems = get_cr_elements(qp)
 
                                         qc.xy.play("x180")
-                                        align(*elems)
+                                        align(*cr_elems)
 
                                 for i, qp in multiplexed_qubit_pairs.items():
-                                    qc = qp.qubit_control
-                                    qt = qp.qubit_target
-                                    cr = qp.cross_resonance
-                                    elems = [qc.xy.name, qt.xy.name, cr.name]
+                                    qc, qt, cr, cr_elems = get_cr_elements(qp)
 
                                     play_cross_resonance(
                                         qc=qc,
@@ -196,20 +193,19 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                                         cr=cr,
                                         cr_type=cr_type,
                                         cr_drive_amp_scaling=amp_scaling_qua,
-                                        cr_drive_phase=cr_drive_phase,
-                                        cr_cancel_amp_scaling=cr_cancel_amp_scaling,
-                                        cr_cancel_phase=cr_cancel_phase,
+                                        cr_drive_phase=cr_drive_phase[i],
+                                        cr_cancel_amp_scaling=cr_cancel_amp_scaling[i],
+                                        cr_cancel_phase=cr_cancel_phase[i],
+                                        cr_duration_clock_cycles=t,
+                                        wf_type=wf_type,
                                     )
-                                    align(*elems)
+                                    align(*cr_elems)
 
                                 for i, qp in multiplexed_qubit_pairs.items():
-                                    qc = qp.qubit_control
-                                    qt = qp.qubit_target
-                                    cr = qp.cross_resonance
-                                    elems = [qc.xy.name, qt.xy.name, cr.name]
+                                    qc, qt, cr, cr_elems = get_cr_elements(qp)
 
                                     # QST on Target
-                                    align(*elems)
+                                    align(*cr_elems)
                                     with switch_(c):
                                         with case_(0):  # projection along X
                                             qc.xy.play("-y90")
@@ -223,8 +219,8 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
 
                                 # Measure the state of the resonators
                                 for i, qp in multiplexed_qubit_pairs.items():
-                                    qc = qp.qubit_control
-                                    qt = qp.qubit_target
+                                    qc, qt, cr, cr_elems = get_cr_elements(qp)
+                                    
                                     cr = qp.cross_resonance
                                     elems = [qc.xy.name, qt.xy.name, cr.name, qc.resonator.name, qt.resonator.name]
                                     align(*elems)
@@ -344,6 +340,7 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
     # Revert the change done at the beginning of the node
     for tracked_qubit_pair in node.namespace.get("tracked_qubit_pairs", []):
         tracked_qubit_pair.cross_resonance.revert_changes()
+        tracked_qubit_pair.qubit_control.revert_changes()
         tracked_qubit_pair.qubit_target.revert_changes()
 
     with node.record_state_updates():

@@ -50,6 +50,7 @@ def plot_raw_data_with_fit(ds: xr.Dataset, qubit_pairs: List[AnyTransmonPair], f
         qc = qp.qubit_control
         qt = qp.qubit_target
         fig, axss = plt.subplots(3, 4, figsize=(12, 9), sharex=True, sharey=True)
+        fig.suptitle(f"Qc: {qc.name}, Qt: {qt.name}")
 
         # Prepare the figure for live plotting
         ds_sliced = ds.sel(qubit_pair=qp.name)

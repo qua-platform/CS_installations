@@ -351,14 +351,13 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
 
         return fig
 
-    def plot_fit_result(self, do_show=False):
+    def plot_fit_result(self, fig, axs, do_show=False):
         """
         Plot the original measurement data along with the fitted data and interaction rates.
 
         :return: The matplotlib figure object containing the plots.
         """
-        fig, axs = plt.subplots(4, 1, figsize=(10, 10), sharex=True, sharey=True)
-
+        
         if self.params_fitted["0"] is None or self.params_fitted["1"] is None:
             raise RuntimeError("fitting has not been done yet")
 
@@ -417,9 +416,6 @@ class CRHamiltonianTomographyAnalysis(CRHamiltonianTomographyFunctions):
         axs[3].plot(self.ts, R, "k")
         axs[3].set_xlabel("time")
         axs[3].set_ylabel("R", fontsize=16)
-        plt.tight_layout()
-        if do_show:
-            plt.show(block=False)
 
         return fig
 
@@ -452,13 +448,13 @@ def plot_cr_duration_vs_scan_param(data_c, data_t, ts_ns, scan_param, scan_param
             ax.cla()
             ax.pcolor(ts_ns, scan_param, dt[:, :, i, j % 2])
             if i == 0 and j < 2:
-                ax.set_title(f"Q_C w/ Q_C={st}")
+                ax.set_title(f"Q_C={st}")
             if i == 0 and j >= 2:
-                ax.set_title(f"Q_T w/ Q_C={st}")
+                ax.set_title(f"Q_T with Q_C={st}")
             if j == 0:
-                ax.set_ylabel(f"<{bss}(t)>\n{scan_param_name}", fontsize=14)
+                ax.set_ylabel(f"<{bss}>\n{scan_param_name}", fontsize=14)
             if i == 2:
-                ax.set_xlabel(f"time [ns]", fontsize=14)
+                ax.set_xlabel(f"time [ns] (direct only)", fontsize=14)
     plt.tight_layout()
 
 
@@ -476,7 +472,7 @@ def plot_crqst_result_2D(ts_ns, data_c, data_t, fig, axss):
     return fig
 
 
-def plot_crqst_result_3D(ts_ns, data_t):
+def plot_crqst_result_3D(ts_ns, data_t, title):
     # Axes properties
     conf = {
         "projection": "3d",
@@ -494,10 +490,13 @@ def plot_crqst_result_3D(ts_ns, data_t):
 
     # Create the figure and 3D subplots
     fig = plt.figure(figsize=(16, 10))
+    fig.suptitle(title)
 
     # Create two 3D subplots
     ax1 = fig.add_subplot(121, projection=conf["projection"])
     ax2 = fig.add_subplot(122, projection=conf["projection"])
+    ax1.set_title("Qc = 0")
+    ax2.set_title("Qc = 1")
 
     # Generate data for the wireframe of the sphere
     u = np.linspace(0, 2 * np.pi, 100)  # Longitude values

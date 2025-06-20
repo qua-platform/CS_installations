@@ -10,79 +10,145 @@ from qm.qua._dsl import QuaExpression, QuaVariable
 
 qua_T = QuaVariable | QuaExpression
 
+
+def get_cr_elements(qp: AnyTransmonPair):
+    qc = qp.qubit_control
+    qt = qp.qubit_target
+    cr = qp.cross_resonance
+    cr_elems = [qc.xy.name, qt.xy.name, cr.name]
+    return qc, qt, cr, cr_elems
+
+
 def play_cross_resonance(
-    qc: AnyTransmon, 
+    qc: AnyTransmon,
     qt: AnyTransmon,
     cr: CrossResonanceMW | CrossResonanceIQ,
     cr_type: Literal["direct", "direct+cancel", "direct+echo", "direct+cancel+echo"] = "direct",
-    cr_drive_amp_scaling: float |qua_T = 1.0,
-    cr_drive_phase: float | qua_T = 1.0,
-    cr_cancel_amp_scaling: float | qua_T = 0.0,
-    cr_cancel_phase: float | qua_T = 0.0,
+    cr_drive_amp_scaling: Optional[float | qua_T] = None,
+    cr_drive_phase: Optional[float | qua_T] = None,
+    cr_cancel_amp_scaling: Optional[float | qua_T] = None,
+    cr_cancel_phase: Optional[float | qua_T] = None,
+    cr_duration_clock_cycles: Optional[float | qua_T] = None,
+    wf_type: Literal["square", "cosine", "gauss", "flattop"] = "square",
 ):
     elems = [qc.xy.name, qt.xy.name, cr.name]
 
-    if cr_type == "direct":
-        # phase shift for cr drive
+    def _shift_phase(
+        elem,
+        phase: Optional[float | qua_T],
+    ):
+        if phase is not None:
+            elem.frame_rotation_2pi(phase)
+
+    def _play_cr_pulse(
+        elem,
+        wf_type: str,
+        amp_scale: Optional[float | qua_T],
+        duration: Optional[float | qua_T],
+        sgn: int = 1,
+    ):
+        if amp_scale is None and duration is None:
+            elem.play(wf_type)
+        elif amp_scale is None:
+            elem.play(wf_type, duration=duration)
+        elif duration is None:
+            elem.play(wf_type, amplitude_scale=sgn * amp_scale)
+        else:
+            elem.play(wf_type, amplitude_scale=sgn * amp_scale, duration=duration)
+
+    def cr_drive_shift_phase():
         cr.frame_rotation_2pi(cr_drive_phase)
+
+
+    def cr_cancel_shift_phase():
+        qt.xy.frame_rotation_2pi(cr_cancel_phase)
+        
+
+    def cr_drive_play(
+        sgn: Literal["direct", "echo"] = "direct",
+        wf_type=wf_type,
+    ):
+        _play_cr_pulse(
+            elem=cr,
+            wf_type=wf_type,
+            amp_scale=cr_drive_amp_scaling,
+            duration=cr_duration_clock_cycles,
+            sgn=1 if sgn == "direct" else -1,
+        )
+
+    def cr_cancel_play(
+        sgn: Literal["direct", "echo"] = "direct",
+        wf_type=wf_type,
+    ):
+        _play_cr_pulse(
+            elem=qt.xy,
+            wf_type=f"cr_{wf_type}",
+            amp_scale=cr_cancel_amp_scaling,
+            duration=cr_duration_clock_cycles,
+            sgn=1 if sgn == "direct" else -1,
+        )
+
+    if cr_type == "direct":
+        cr_drive_shift_phase()
         align(*elems)
-        cr.play("square", amplitude_scale=cr_drive_amp_scaling)
+
+        cr_drive_play(sgn="direct")
         align(*elems)
-        reset_frame(cr.name)
+
+        reset_phase(cr.name)
+        align(*elems)
 
     elif cr_type == "direct+echo":
-        # phase shift for cr drive
-        cr.frame_rotation_2pi(cr_drive_phase)
-        qt.xy.frame_rotation_2pi(cr_cancel_phase)
-        # direct + cancel
+        cr_drive_shift_phase()
         align(*elems)
-        cr.play("square", amplitude_scale=cr_drive_amp_scaling)
-        # pi pulse on control
+
+        cr_drive_play(sgn="direct")
         align(*elems)
+
         qc.xy.play("x180")
-        # echoed direct + cancel
         align(*elems)
-        cr.play("square", amplitude_scale=-cr_drive_amp_scaling)
-        # pi pulse on control
+
+        cr_drive_play(sgn="echo")
         align(*elems)
+
         qc.xy.play("x180")
-        # align for the next step and clear the phase shift
         align(*elems)
-        reset_frame(cr.name)
-        reset_frame(qt.xy.name)
+
+        reset_phase(cr.name)
+        align(*elems)
 
     elif cr_type == "direct+cancel":
-        # phase shift for cr drive
-        cr.frame_rotation_2pi(cr_drive_phase)
-        qt.xy.frame_rotation_2pi(cr_cancel_phase)
-        # direct + cancel
+        cr_drive_shift_phase()
+        cr_cancel_shift_phase()
         align(*elems)
-        cr.play("square", amplitude_scale=cr_drive_amp_scaling)
-        qt.xy.play(f"{cr.name}_Square", amplitude_scale=cr_cancel_amp_scaling)
-        # align for the next step and clear the phase shift
+
+        cr_drive_play(sgn="direct")
+        cr_cancel_play(sgn="direct")
         align(*elems)
-        reset_frame(cr.name)
-        reset_frame(qt.xy.name)
+
+        reset_phase(cr.name)
+        reset_phase(qt.xy.name)
+        align(*elems)
 
     elif cr_type == "direct+cancel+echo":
-        # phase shift for cr drive
-        cr.frame_rotation_2pi(cr_drive_phase)
-        qt.xy.frame_rotation_2pi(cr_cancel_phase)
-        # direct + cancel
+        cr_drive_shift_phase()
+        cr_cancel_shift_phase()
         align(*elems)
-        cr.play("square", amplitude_scale=cr_drive_amp_scaling)
-        qt.xy.play(f"{cr.name}_Square", amplitude_scale=cr_cancel_amp_scaling)
-        # pi pulse on control
+
+        cr_drive_play(sgn="direct")
+        cr_cancel_play(sgn="direct")
         align(*elems)
+
         qc.xy.play("x180")
-        # echoed direct + cancel
         align(*elems)
-        cr.play("square", amplitude_scale=-cr_drive_amp_scaling)
-        qt.xy.play(f"{cr.name}_Square", amplitude_scale=-cr_cancel_amp_scaling)
-        # pi pulse on control
+
+        cr_drive_play(sgn="echo")
+        cr_cancel_play(sgn="echo")
         align(*elems)
+
         qc.xy.play("x180")
-        # align for the next step and clear the phase shift
         align(*elems)
-        reset_frame(cr.name)
-        reset_frame(qt.xy.name)
+
+        reset_phase(cr.name)
+        reset_phase(qt.xy.name)
+        align(*elems)

@@ -31,6 +31,8 @@ class NodeSpecificParameters(RunnableParameters):
     min_cr_drive_amp_scaling: float = 0.01
     max_cr_drive_amp_scaling: float = 1.0
     step_cr_drive_amp_scaling: float = 0.05
+    wf_type: Literal["square", "cosine", "gauss", "flattop"] = "square"
+
 
 class Parameters(
     NodeParameters,

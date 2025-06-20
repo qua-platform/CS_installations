@@ -15,7 +15,10 @@ readout and saturation pulses.
 import json
 from qualang_tools.units import unit
 from quam_config import Quam
-from quam_builder.builder.superconducting.pulses import add_DragCosine_pulses, add_default_transmon_pair_pulses
+from quam_builder.builder.superconducting.pulses import (
+    add_DragCosine_pulses,
+    add_default_transmon_pair_pulses,
+)
 from quam.components import pulses
 import numpy as np
 from pprint import pprint
@@ -90,14 +93,14 @@ def get_full_scale_power_dBm_and_amplitude(desired_power: float, max_amplitude: 
             f"The desired power is outside the specifications ([-11; +16]dBm, [-1; +1]), got ({full_scale_power_dBm}; {amplitude})"
         )
 
-# LOAD YAML file
-import yaml
+# # LOAD YAML file
+# import yaml
 
-with open(r"C:\Users\wook9\codes\QM_New\CS_installations-HI_16Jun2025\workspaces\setup_info\250613_YD27Q_OPX1K.yaml") as stream:
-    try:
-        config_yaml = yaml.safe_load(stream)
-    except yaml.YAMLError as exc:
-        print(exc)
+# with open(r"C:\Users\wook9\codes\QM_New\CS_installations-HI_16Jun2025\workspaces\setup_info\250613_YD27Q_OPX1K.yaml") as stream:
+#     try:
+#         config_yaml = yaml.safe_load(stream)
+#     except yaml.YAMLError as exc:
+#         print(exc)
 
 
 
@@ -420,19 +423,77 @@ for k, q in enumerate(machine.qubits):
 
 for k, qp in enumerate(machine.qubit_pairs):
     add_default_transmon_pair_pulses(qp)
-    machine.qubit_pairs[qp].cross_resonance.operations["square"].axis_angle = 0
-    machine.qubit_pairs[qp].qubit_target.xy.operations["cr_square"] = pulses.SquarePulse(
-        amplitude=0.1, length=100, axis_angle=0,
+    qb_pair = machine.qubit_pairs[qp]
+    qbt = qb_pair.qubit_target
+    qb_pair.cross_resonance.target_qubit_LO_frequency = f"#/qubits/{qbt.name}/xy/LO_frequency"
+    qb_pair.cross_resonance.target_qubit_IF_frequency = f"#/qubits/{qbt.name}/xy/intermediate_frequency"
+    qb_pair.cross_resonance.intermediate_frequency = f"#./inferred_intermediate_frequency"
+
+    # square
+    qb_pair.cross_resonance.operations["square"] = pulses.SquarePulse(
+        length=16,
+        amplitude=1.0,
+        axis_angle=0.0,
     )
+    qb_pair.qubit_target.xy.operations["cr_square"] = pulses.SquarePulse(
+        length=16,
+        amplitude=1.0,
+        axis_angle=0.0,
+    )
+    # cosine
+    qb_pair.cross_resonance.operations["cosine"] = pulses.DragCosinePulse(
+        length=16,
+        amplitude=1.0,
+        axis_angle=0.0,
+        anharmonicity=260 * u.MHz,
+        alpha=0.0,
+        detuning=0,
+    )
+    qb_pair.qubit_target.xy.operations["cr_cosine"]= pulses.DragCosinePulse(
+        length=16,
+        amplitude=1.0,
+        axis_angle=0.0,
+        anharmonicity=260 * u.MHz,
+        alpha=0.0,
+        detuning=0,
+    )
+    # gauss
+    qb_pair.cross_resonance.operations["gauss"] = pulses.DragGaussianPulse(
+        length=16,
+        sigma=16/5,
+        amplitude=1.0,
+        axis_angle=0.0,
+        anharmonicity=260 * u.MHz,
+        alpha=0.0,
+        detuning=0,
+    )
+    qb_pair.qubit_target.xy.operations["cr_gauss"]= pulses.DragGaussianPulse(
+        length=16,
+        sigma=16/5,
+        amplitude=1.0,
+        axis_angle=0.0,
+        anharmonicity=260 * u.MHz,
+        alpha=0.0,
+        detuning=0,
+    )
+
+    # flattop
     rise_fall_len = 8
     flattop_lens = np.arange(0, 80, 20).tolist() # must be python list (not numpy array)
     for flattop_len in flattop_lens:
-        machine.qubit_pairs[qp].cross_resonance.operations[f"flattop_{flattop_len:04d}"] = pulses.FlatTopGaussianPulse(
-            amplitude=0.1, length=2 * rise_fall_len + flattop_len, flat_length=flattop_len, axis_angle=0.0
+        qb_pair.cross_resonance.operations[f"flattop_{flattop_len:04d}"] = pulses.FlatTopGaussianPulse(
+            amplitude=1.0,
+            length=rise_fall_len + flattop_len + rise_fall_len,
+            flat_length=flattop_len,
+            axis_angle=0.0, 
         )
-        machine.qubit_pairs[qp].qubit_target.xy.operations[f"cr_flattop_{flattop_len:04d}"] = pulses.FlatTopGaussianPulse(
-            amplitude=0.1, length=2 * rise_fall_len + flattop_len, flat_length=flattop_len, axis_angle=0.0
-        )       
+        qb_pair.qubit_target.xy.operations[f"cr_flattop_{flattop_len:04d}"] = pulses.FlatTopGaussianPulse(
+            amplitude=1.0,
+            length=rise_fall_len + flattop_len + rise_fall_len,
+            flat_length=flattop_len,
+            axis_angle=0.0, 
+        )
+
 
 
 

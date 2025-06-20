@@ -31,6 +31,8 @@ class NodeSpecificParameters(RunnableParameters):
     min_cr_cancel_phase: float = 0.0
     max_cr_cancel_phase: float = 2.0
     step_cr_cancel_phase: float = 0.05
+    wf_type: Literal["square", "cosine", "gauss", "flattop"] = "square"
+
 
 class Parameters(
     NodeParameters,

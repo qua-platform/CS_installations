@@ -13,7 +13,7 @@ from qualang_tools.units import unit
 
 from qualibrate import QualibrationNode
 from quam_config import Quam
-from calibration_utils.cr_ham_tomo_cr_cancel_phase import (
+from calibration_utils.cr_time_rabi import (
     Parameters,
     process_raw_dataset,
     fit_raw_data,
@@ -21,6 +21,8 @@ from calibration_utils.cr_ham_tomo_cr_cancel_phase import (
     plot_raw_data_with_fit,
 )
 from calibration_utils.cr_utils import *
+import sys
+sys.path.append("/workspaces/qualibration-libs")
 from qualibration_libs.parameters import get_qubit_pairs, get_qubits
 from qualibration_libs.runtime import simulate_and_plot
 from qualibration_libs.data import XarrayDataFetcher
@@ -53,7 +55,7 @@ Reference: A. D. Corcoles et al., Phys. Rev. A 87, 030301 (2013)
 
 # Be sure to include [Parameters, Quam] so the node has proper type hinting
 node = QualibrationNode[Parameters, Quam](
-    name="31c_CR_hamiltonian_tomography_vs_cr_cancel_phase",  # Name should be unique
+    name="30a_CR_time_rabi_1q_QST",  # Name should be unique
     description=description,  # Describe what the node is doing, which is also reflected in the QUAlibrate GUI
     parameters=Parameters(),  # Node parameters defined under quam_experiment/experiments/node_name
 )
@@ -65,15 +67,9 @@ node = QualibrationNode[Parameters, Quam](
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
     # You can get type hinting in your IDE by typing node.parameters.
-    node.parameters.qubit_pairs = ["q1-2"]
+    node.parameters.qubit_pairs = ["q1-2", "q6-7"]
     node.parameters.use_state_discrimination = True
-
-    node.parameters.wf_type = "square"
-    node.parameters.cr_type = "direct+cancel+echo"
-    node.parameters.cr_drive_amp_scaling = 1.0
-    node.parameters.cr_drive_phase = 0.0
-    node.parameters.cr_cancel_amp_scaling = 0.1
-    node.parameters.cr_cancel_phase = 0.0
+    # pass
 
 
 # Instantiate the QUAM class from the state file
@@ -98,12 +94,13 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
     node.namespace["tracked_qubit_pairs"] = []
     for qp in qubit_pairs:
         with tracked_updates(qp, auto_revert=False) as qp:
-            pass
+            qp.qubit_control.xy.operations["x180"].length = 16
+            qp.cross_resonance.operations["square"].axis_angle = 0
+            qp.qubit_target.xy.operations["cr_square"].axis_angle = 0
         node.namespace["tracked_qubit_pairs"].append(qp)
 
     n_avg = node.parameters.num_shots  # The number of averages
     state_discrimination = node.parameters.use_state_discrimination
-    wf_type = node.parameters.wf_type
     cr_type = node.parameters.cr_type
     cr_drive_amp_scaling = node.parameters.cr_drive_amp_scaling
     cr_drive_phase = node.parameters.cr_drive_phase
@@ -112,25 +109,16 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
 
     # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
     pulse_durations = np.arange(
-        node.parameters.min_wait_time_in_ns // 4,
-        node.parameters.max_wait_time_in_ns // 4,
-        node.parameters.time_step_in_ns // 4,
-    )
-    phases = np.arange(
-        node.parameters.min_cr_cancel_phase,
-        node.parameters.max_cr_cancel_phase,
-        node.parameters.step_cr_cancel_phase,
+        node.parameters.min_wait_time_in_ns,
+        node.parameters.max_wait_time_in_ns,
+        node.parameters.time_step_in_ns,
     )
     qst_basis = np.array([0, 1, 2])
     control_state = np.array([0, 1])
 
-    if not node.parameters.use_state_discrimination:
-        raise ValueError("use_state_discrimination must be True for Hamiltonian Tomography!")
-
     # Register the sweep axes to be added to the dataset when fetching data
     node.namespace["sweep_axes"] = {
         "qubit_pair": xr.DataArray(qubit_pairs.get_names()),
-        "phase": xr.DataArray(phases, attrs={"long_name": "cr drive phase"}),
         "pulse_duration": xr.DataArray(pulse_durations, attrs={"long_name": "qubit pulse duration", "units": "ns"}),
         "qst_basis": xr.DataArray(qst_basis, attrs={"long_name": "qst basis"}),
         "control_state": xr.DataArray(control_state, attrs={"long_name": "control state"}),
@@ -147,7 +135,6 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
         t = declare(int)
         s = declare(int)  # QUA variable for the control state
         c = declare(int)  # QUA variable for the projection index in QST
-        phase_qua = declare(fixed)
 
         for multiplexed_qubit_pairs in qubit_pairs.batch():
             # Initialize the QPU in terms of flux points (flux tunable transmons and/or tunable couplers)
@@ -159,91 +146,108 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
             with for_(n, 0, n < n_avg, n + 1):
                 save(n, n_st)
 
-                with for_(*from_array(phase_qua, phases)):
-                    with for_(*from_array(t, pulse_durations)):
-                        with for_(c, 0, c < 3, c + 1):  # bases
-                            with for_(s, 0, s < 2, s + 1):  # states
-                            
-                                # Reset the qubits to the ground state
+                with for_(*from_array(t, pulse_durations)):
+                    with for_(c, 0, c < 3, c + 1):  # bases
+                        with for_(s, 0, s < 2, s + 1):  # states
+                        
+                            # Reset the qubits to the ground state
+                            for i, qp in multiplexed_qubit_pairs.items():
+                                qp.qubit_control.reset(
+                                    node.parameters.reset_type,
+                                    node.parameters.simulate,
+                                    log_callable=node.log,
+                                )
+                                qp.qubit_target.reset(
+                                    node.parameters.reset_type,
+                                    node.parameters.simulate,
+                                    log_callable=node.log,
+                                )
+
+                            with if_(s == 1):
                                 for i, qp in multiplexed_qubit_pairs.items():
-                                    qp.qubit_control.reset(
-                                        node.parameters.reset_type,
-                                        node.parameters.simulate,
-                                        log_callable=node.log,
-                                    )
-                                    qp.qubit_target.reset(
-                                        node.parameters.reset_type,
-                                        node.parameters.simulate,
-                                        log_callable=node.log,
-                                    )
+                                    qc = qp.qubit_control
+                                    qt = qp.qubit_target
+                                    cr = qp.cross_resonance
+                                    elems = [qc.xy.name, qt.xy.name, cr.name]
 
-                                with if_(s == 1):
-                                    for i, qp in multiplexed_qubit_pairs.items():
-                                        qc, qt, cr, cr_elems = get_cr_elements(qp)
-                                        qc.xy.play("x180")
-                                        align(*cr_elems)
-
-                                for i, qp in multiplexed_qubit_pairs.items():
-                                    qc, qt, cr, cr_elems = get_cr_elements(qp)
-                                    play_cross_resonance(
-                                        qc=qc,
-                                        qt=qt,
-                                        cr=cr,
-                                        cr_type=cr_type,
-                                        cr_drive_amp_scaling=cr_drive_amp_scaling,
-                                        cr_drive_phase=cr_drive_phase,
-                                        cr_cancel_amp_scaling=cr_cancel_amp_scaling,
-                                        cr_cancel_phase=phase_qua,
-                                        cr_duration_clock_cycles=t,
-                                        wf_type=wf_type,
-                                    )
-                                    align(*cr_elems)
-
-                                for i, qp in multiplexed_qubit_pairs.items():
-                                    qc, qt, cr, cr_elems = get_cr_elements(qp)
-
-                                    # QST on Target
-                                    align(*cr_elems)
-                                    with switch_(c):
-                                        with case_(0):  # projection along X
-                                            qc.xy.play("-y90")
-                                            qt.xy.play("-y90")
-                                        with case_(1):  # projection along Y
-                                            qc.xy.play("x90")
-                                            qt.xy.play("x90")
-                                        with case_(2):  # projection along Z
-                                            qc.xy.wait(qc.xy.operations["x180"].length * u.ns)
-                                            qt.xy.wait(qt.xy.operations["x180"].length * u.ns)
-
-                                # Measure the state of the resonators
-                                for i, qp in multiplexed_qubit_pairs.items():
-                                    qc, qt, cr, cr_elems = get_cr_elements(qp)
-                                    elems = [qc.xy.name, qt.xy.name, cr.name, qc.resonator.name, qt.resonator.name]
+                                    qc.xy.play("x180")
                                     align(*elems)
 
-                                    if node.parameters.use_state_discrimination:
-                                        qc.readout_state(state_c[i])
-                                        qt.readout_state(state_t[i])
-                                        save(state_c[i], state_c_st[i])
-                                        save(state_t[i], state_t_st[i])
-                                    else:
-                                        qc.resonator.measure("readout", qua_vars=(I_c[i], Q_c[i]))
-                                        qt.resonator.measure("readout", qua_vars=(I_t[i], Q_t[i]))
-                                        # save data
-                                        save(I_c[i], I_c_st[i])
-                                        save(Q_c[i], Q_c_st[i])
-                                        save(I_t[i], I_t_st[i])
-                                        save(Q_t[i], Q_t_st[i])
+                            for i, qp in multiplexed_qubit_pairs.items():
+                                qc = qp.qubit_control
+                                qt = qp.qubit_target
+                                cr = qp.cross_resonance
+                                elems = [qc.xy.name, qt.xy.name, cr.name]
 
-                                    # Wait for the qubit to decay to the ground state - Can be replaced by active reset
-                                    qc.resonator.wait(qc.resonator.depletion_time * u.ns)
-                                    qt.resonator.wait(qt.resonator.depletion_time * u.ns)
+                                play_cross_resonance(
+                                    qc=qc,
+                                    qt=qt,
+                                    cr=cr,
+                                    cr_type=cr_type,
+                                    cr_drive_amp_scaling=cr_drive_amp_scaling,
+                                    cr_drive_phase=cr_drive_phase,
+                                    cr_cancel_amp_scaling=cr_cancel_amp_scaling,
+                                    cr_cancel_phase=cr_cancel_phase,
+                                )
+                                align(*elems)
+
+                            for i, qp in multiplexed_qubit_pairs.items():
+                                qc = qp.qubit_control
+                                qt = qp.qubit_target
+                                cr = qp.cross_resonance
+                                elems = [qc.xy.name, qt.xy.name, cr.name]
+
+                                # QST on Target
+                                align(*elems)
+                                with switch_(c):
+                                    with case_(0):  # projection along X
+                                        qc.xy.play("-y90")
+                                        qt.xy.play("-y90")
+                                    with case_(1):  # projection along Y
+                                        qc.xy.play("x90")
+                                        qt.xy.play("x90")
+                                    with case_(2):  # projection along Z
+                                        qc.xy.wait(qc.xy.operations["x180"].length * u.ns)
+                                        qt.xy.wait(qt.xy.operations["x180"].length * u.ns)
+
+                            # Measure the state of the resonators
+                            for i, qp in multiplexed_qubit_pairs.items():
+                                qc = qp.qubit_control
+                                qt = qp.qubit_target
+                                cr = qp.cross_resonance
+                                elems = [qc.xy.name, qt.xy.name, cr.name, qc.resonator.name, qt.resonator.name]
+                                align(*elems)
+
+                                if node.parameters.use_state_discrimination:
+                                    qc.readout_state(state_c[i])
+                                    qt.readout_state(state_t[i])
+                                    save(state_c[i], state_c_st[i])
+                                    save(state_t[i], state_t_st[i])
+                                else:
+                                    qc.resonator.measure("readout", qua_vars=(I_c[i], Q_c[i]))
+                                    qt.resonator.measure("readout", qua_vars=(I_t[i], Q_t[i]))
+                                    # save data
+                                    save(I_c[i], I_c_st[i])
+                                    save(Q_c[i], Q_c_st[i])
+                                    save(I_t[i], I_t_st[i])
+                                    save(Q_t[i], Q_t_st[i])
+
+                                # Wait for the qubit to decay to the ground state - Can be replaced by active reset
+                                qc.resonator.wait(qc.resonator.depletion_time * u.ns)
+                                qt.resonator.wait(qt.resonator.depletion_time * u.ns)
 
         with stream_processing():
             n_st.save("n")
             for i, qp in enumerate(qubit_pairs):
-                state_c_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).buffer(len(phases)).average().save(f"state_c_{qp.name}")
-                state_t_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).buffer(len(phases)).average().save(f"state_t_{qp.name}")
+                if node.parameters.use_state_discrimination:
+                    state_c_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"state_c_{qp.name}")
+                    state_t_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"state_t_{qp.name}")
+                else:
+                    I_c_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"I_c_{qp.name}")
+                    Q_c_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"Q_c_{qp.name}")
+                    I_t_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"I_t_{qp.name}")
+                    Q_t_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"Q_t_{qp.name}")
+
 
 
 # %% {Simulate}
@@ -319,7 +323,7 @@ def analyse_data(node: QualibrationNode[Parameters, Quam]):
 @node.run_action(skip_if=node.parameters.simulate)
 def plot_data(node: QualibrationNode[Parameters, Quam]):
     """Plot the raw and fitted data in specific figures whose shape is given by qubit.grid_location."""
-    figs_raw_fit = plot_raw_data_with_fit(node.results["ds_raw"], node.namespace["qubit_pairs"], node.results["ds_fit"])
+    figs_raw_fit = plot_raw_data_with_fit(node, node.results["ds_raw"], node.namespace["qubit_pairs"], node.results["ds_fit"])
     plt.show()
     # Store the generated figures
     node.results["figures"] = {
@@ -336,7 +340,6 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
     # Revert the change done at the beginning of the node
     for tracked_qubit_pair in node.namespace.get("tracked_qubit_pairs", []):
         tracked_qubit_pair.cross_resonance.revert_changes()
-        tracked_qubit_pair.qubit_control.revert_changes()
         tracked_qubit_pair.qubit_target.revert_changes()
 
     with node.record_state_updates():
@@ -349,5 +352,3 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
 @node.run_action()
 def save_results(node: QualibrationNode[Parameters, Quam]):
     node.save()
-
-# %%

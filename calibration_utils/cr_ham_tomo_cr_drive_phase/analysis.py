@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Tuple, Dict
 import numpy as np
 import xarray as xr
+import matplotlib.pyplot as plt
 
 from qualibrate import QualibrationNode
 from qualibration_libs.data import convert_IQ_to_V
@@ -91,7 +92,10 @@ def fit_raw_data(ds: xr.Dataset, node: QualibrationNode) -> Tuple[xr.Dataset, di
                 try:
                     crht.fit_params()
                     coeffs.append(crht.interaction_coeffs_MHz)
-                    fig_analysis = crht.plot_fit_result(do_show=False)
+                    fig_analysis, axs = plt.subplots(4, 1, figsize=(10, 10), sharex=True, sharey=True)
+                    fig_analysis.suptitle(f"Qc: {qp.qubit_control.name}, Qt: {qp.qubit_target.name}")
+                    fig_analysis = crht.plot_fit_result(fig_analysis, axs, do_show=False)
+                    plt.tight_layout()
                     node.results[f"figure_analysis_{qp.name}_phase={_ph:5.4f}".replace(".", "-")] = fig_analysis
                 except:
                     print(f"-> failed")
@@ -100,6 +104,8 @@ def fit_raw_data(ds: xr.Dataset, node: QualibrationNode) -> Tuple[xr.Dataset, di
 
             # Plot the estimated interaction coefficients
             fig_summary = plot_interaction_coeffs(coeffs, phases, xlabel="cr drive phase")
+            fig_summary.suptitle(f"Qc: {qp.qubit_control.name}, Qt: {qp.qubit_target.name}")
+    
             node.results[f"figure_summary_{qp.name}"] = fig_summary
 
     return fit_data, fit_results

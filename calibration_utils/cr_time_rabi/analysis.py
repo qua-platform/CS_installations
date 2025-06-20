@@ -91,6 +91,10 @@ def fit_raw_data(ds: xr.Dataset, node: QualibrationNode) -> Tuple[xr.Dataset, di
                 print(f"-> failed")
                 crht.interaction_coeffs_MHz = {p: None for p in PAULI_2Q}
         
+            # # plot 3D
+            # fig_3d = plot_crqst_result_3D(fit_data_qp.pulse_duration.data, fit_data_qp[f"bloch_t_{qp.name}"].data, title=f"Qc: {qp.qubit_control.name}, Qt: {qp.qubit_target.name}")
+            # node.results[f"figure_3d_{qp.name}"] = fig_3d
+
             node.results[f"interaction_coefficients_{qp.name}"] = crht.interaction_coeffs_MHz
 
     return fit_data, fit_results
