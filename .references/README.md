@@ -17,14 +17,6 @@ These packages provide access to the following features:
  - **qcodes_contrib_drivers**: Contains an open-source driver for connecting to and controlling the QDAC-I.
 
 ## Experiments
-### Hello QUA
-This is a dummy script demonstrating the basics of a QUA experiment for controlling quantum dots. In this script, you will:
- - Set coordinates in voltage space across two plunger gates.
- - Define a program which cycles between these points for some duration
- - Applies a compensation pulse to discharge the bias-tee capacitor.
- - Generate an interactive waveform simulation
-
-
 ### Tank-circuit Spectroscopy
 **Purpose**: to verify the functionality of the instrument and components at room temperature.
 

@@ -1,0 +1,10 @@
+[project]
+name = "cs-installations"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "qm-qua==1.2.2",
+    "qualang-tools>=0.19.5",
+]
