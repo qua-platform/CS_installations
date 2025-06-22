@@ -34,7 +34,7 @@ octave_config = None
 
 # Path to save data
 # save_dir = Path(r"C:\Users\OhmoriG-X1\Desktop\CS_installations-HI_10Jun2025/data")
-save_dir = Path("/workspaces/data")
+save_dir = Path(__file__).resolve().parent.joinpath("data")
 
 save_dir.mkdir(exist_ok=True)
 
