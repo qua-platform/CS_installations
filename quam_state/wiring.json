@@ -19,7 +19,7 @@
                     "opx_output": "#/ports/mw_outputs/con1/3/3"
                 }
             },
-            "q3": {
+            "q8": {
                 "rr": {
                     "opx_input": "#/ports/mw_inputs/con1/3/1",
                     "opx_output": "#/ports/mw_outputs/con1/3/1"
@@ -28,7 +28,7 @@
                     "opx_output": "#/ports/mw_outputs/con1/3/4"
                 }
             },
-            "q4": {
+            "q9": {
                 "rr": {
                     "opx_input": "#/ports/mw_inputs/con1/3/1",
                     "opx_output": "#/ports/mw_outputs/con1/3/1"
@@ -64,24 +64,6 @@
                     "opx_output": "#/ports/mw_outputs/con1/3/8"
                 }
             },
-            "q8": {
-                "rr": {
-                    "opx_input": "#/ports/mw_inputs/con1/3/1",
-                    "opx_output": "#/ports/mw_outputs/con1/3/1"
-                },
-                "xy": {
-                    "opx_output": "#/ports/mw_outputs/con1/2/1"
-                }
-            },
-            "q9": {
-                "rr": {
-                    "opx_input": "#/ports/mw_inputs/con1/3/1",
-                    "opx_output": "#/ports/mw_outputs/con1/3/1"
-                },
-                "xy": {
-                    "opx_output": "#/ports/mw_outputs/con1/2/2"
-                }
-            },
             "q10": {
                 "rr": {
                     "opx_input": "#/ports/mw_inputs/con1/4/1",
@@ -109,22 +91,13 @@
                     "opx_output": "#/ports/mw_outputs/con1/4/4"
                 }
             },
-            "q13": {
+            "q18": {
                 "rr": {
                     "opx_input": "#/ports/mw_inputs/con1/4/1",
                     "opx_output": "#/ports/mw_outputs/con1/4/1"
                 },
                 "xy": {
                     "opx_output": "#/ports/mw_outputs/con1/4/5"
-                }
-            },
-            "q14": {
-                "rr": {
-                    "opx_input": "#/ports/mw_inputs/con1/4/1",
-                    "opx_output": "#/ports/mw_outputs/con1/4/1"
-                },
-                "xy": {
-                    "opx_output": "#/ports/mw_outputs/con1/2/6"
                 }
             },
             "q15": {
@@ -154,15 +127,6 @@
                     "opx_output": "#/ports/mw_outputs/con1/4/8"
                 }
             },
-            "q18": {
-                "rr": {
-                    "opx_input": "#/ports/mw_inputs/con1/4/1",
-                    "opx_output": "#/ports/mw_outputs/con1/4/1"
-                },
-                "xy": {
-                    "opx_output": "#/ports/mw_outputs/con1/2/3"
-                }
-            },
             "q19": {
                 "rr": {
                     "opx_input": "#/ports/mw_inputs/con1/5/1",
@@ -190,7 +154,7 @@
                     "opx_output": "#/ports/mw_outputs/con1/5/4"
                 }
             },
-            "q22": {
+            "q26": {
                 "rr": {
                     "opx_input": "#/ports/mw_inputs/con1/5/1",
                     "opx_output": "#/ports/mw_outputs/con1/5/1"
@@ -225,24 +189,6 @@
                 "xy": {
                     "opx_output": "#/ports/mw_outputs/con1/5/8"
                 }
-            },
-            "q26": {
-                "rr": {
-                    "opx_input": "#/ports/mw_inputs/con1/5/1",
-                    "opx_output": "#/ports/mw_outputs/con1/5/1"
-                },
-                "xy": {
-                    "opx_output": "#/ports/mw_outputs/con1/2/4"
-                }
-            },
-            "q27": {
-                "rr": {
-                    "opx_input": "#/ports/mw_inputs/con1/5/1",
-                    "opx_output": "#/ports/mw_outputs/con1/5/1"
-                },
-                "xy": {
-                    "opx_output": "#/ports/mw_outputs/con1/2/5"
-                }
             }
         },
         "qubit_pairs": {
@@ -258,48 +204,6 @@
                     "control_qubit": "#/qubits/q2",
                     "target_qubit": "#/qubits/q1",
                     "opx_output": "#/ports/mw_outputs/con1/3/3"
-                }
-            },
-            "q2-3": {
-                "cr": {
-                    "control_qubit": "#/qubits/q2",
-                    "target_qubit": "#/qubits/q3",
-                    "opx_output": "#/ports/mw_outputs/con1/3/3"
-                }
-            },
-            "q3-2": {
-                "cr": {
-                    "control_qubit": "#/qubits/q3",
-                    "target_qubit": "#/qubits/q2",
-                    "opx_output": "#/ports/mw_outputs/con1/3/4"
-                }
-            },
-            "q3-4": {
-                "cr": {
-                    "control_qubit": "#/qubits/q3",
-                    "target_qubit": "#/qubits/q4",
-                    "opx_output": "#/ports/mw_outputs/con1/3/4"
-                }
-            },
-            "q4-3": {
-                "cr": {
-                    "control_qubit": "#/qubits/q4",
-                    "target_qubit": "#/qubits/q3",
-                    "opx_output": "#/ports/mw_outputs/con1/3/5"
-                }
-            },
-            "q4-5": {
-                "cr": {
-                    "control_qubit": "#/qubits/q4",
-                    "target_qubit": "#/qubits/q5",
-                    "opx_output": "#/ports/mw_outputs/con1/3/5"
-                }
-            },
-            "q5-4": {
-                "cr": {
-                    "control_qubit": "#/qubits/q5",
-                    "target_qubit": "#/qubits/q4",
-                    "opx_output": "#/ports/mw_outputs/con1/3/6"
                 }
             },
             "q5-6": {
@@ -341,35 +245,35 @@
                 "cr": {
                     "control_qubit": "#/qubits/q8",
                     "target_qubit": "#/qubits/q7",
-                    "opx_output": "#/ports/mw_outputs/con1/2/1"
+                    "opx_output": "#/ports/mw_outputs/con1/3/4"
                 }
             },
             "q8-9": {
                 "cr": {
                     "control_qubit": "#/qubits/q8",
                     "target_qubit": "#/qubits/q9",
-                    "opx_output": "#/ports/mw_outputs/con1/2/1"
+                    "opx_output": "#/ports/mw_outputs/con1/3/4"
                 }
             },
             "q9-8": {
                 "cr": {
                     "control_qubit": "#/qubits/q9",
                     "target_qubit": "#/qubits/q8",
-                    "opx_output": "#/ports/mw_outputs/con1/2/2"
+                    "opx_output": "#/ports/mw_outputs/con1/3/5"
                 }
             },
             "q9-18": {
                 "cr": {
                     "control_qubit": "#/qubits/q9",
                     "target_qubit": "#/qubits/q18",
-                    "opx_output": "#/ports/mw_outputs/con1/2/2"
+                    "opx_output": "#/ports/mw_outputs/con1/3/5"
                 }
             },
             "q18-9": {
                 "cr": {
                     "control_qubit": "#/qubits/q18",
                     "target_qubit": "#/qubits/q9",
-                    "opx_output": "#/ports/mw_outputs/con1/2/3"
+                    "opx_output": "#/ports/mw_outputs/con1/4/5"
                 }
             },
             "q10-11": {
@@ -398,20 +302,6 @@
                     "control_qubit": "#/qubits/q12",
                     "target_qubit": "#/qubits/q11",
                     "opx_output": "#/ports/mw_outputs/con1/4/4"
-                }
-            },
-            "q12-13": {
-                "cr": {
-                    "control_qubit": "#/qubits/q12",
-                    "target_qubit": "#/qubits/q13",
-                    "opx_output": "#/ports/mw_outputs/con1/4/4"
-                }
-            },
-            "q13-12": {
-                "cr": {
-                    "control_qubit": "#/qubits/q13",
-                    "target_qubit": "#/qubits/q12",
-                    "opx_output": "#/ports/mw_outputs/con1/4/5"
                 }
             },
             "q15-16": {
@@ -453,7 +343,7 @@
                 "cr": {
                     "control_qubit": "#/qubits/q18",
                     "target_qubit": "#/qubits/q17",
-                    "opx_output": "#/ports/mw_outputs/con1/2/3"
+                    "opx_output": "#/ports/mw_outputs/con1/4/5"
                 }
             },
             "q10-19": {
@@ -498,34 +388,6 @@
                     "opx_output": "#/ports/mw_outputs/con1/5/4"
                 }
             },
-            "q21-22": {
-                "cr": {
-                    "control_qubit": "#/qubits/q21",
-                    "target_qubit": "#/qubits/q22",
-                    "opx_output": "#/ports/mw_outputs/con1/5/4"
-                }
-            },
-            "q22-21": {
-                "cr": {
-                    "control_qubit": "#/qubits/q22",
-                    "target_qubit": "#/qubits/q21",
-                    "opx_output": "#/ports/mw_outputs/con1/5/5"
-                }
-            },
-            "q22-23": {
-                "cr": {
-                    "control_qubit": "#/qubits/q22",
-                    "target_qubit": "#/qubits/q23",
-                    "opx_output": "#/ports/mw_outputs/con1/5/5"
-                }
-            },
-            "q23-22": {
-                "cr": {
-                    "control_qubit": "#/qubits/q23",
-                    "target_qubit": "#/qubits/q22",
-                    "opx_output": "#/ports/mw_outputs/con1/5/6"
-                }
-            },
             "q23-24": {
                 "cr": {
                     "control_qubit": "#/qubits/q23",
@@ -565,21 +427,7 @@
                 "cr": {
                     "control_qubit": "#/qubits/q26",
                     "target_qubit": "#/qubits/q25",
-                    "opx_output": "#/ports/mw_outputs/con1/2/4"
-                }
-            },
-            "q26-27": {
-                "cr": {
-                    "control_qubit": "#/qubits/q26",
-                    "target_qubit": "#/qubits/q27",
-                    "opx_output": "#/ports/mw_outputs/con1/2/4"
-                }
-            },
-            "q27-26": {
-                "cr": {
-                    "control_qubit": "#/qubits/q27",
-                    "target_qubit": "#/qubits/q26",
-                    "opx_output": "#/ports/mw_outputs/con1/2/5"
+                    "opx_output": "#/ports/mw_outputs/con1/5/5"
                 }
             }
         }

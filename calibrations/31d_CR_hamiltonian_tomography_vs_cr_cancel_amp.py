@@ -70,10 +70,10 @@ def custom_param(node: QualibrationNode[Parameters, Quam]):
 
     node.parameters.wf_type = "square"
     node.parameters.cr_type = "direct+cancel+echo"
-    node.parameters.cr_drive_amp_scaling = 1.0
-    node.parameters.cr_drive_phase = 0.0
-    node.parameters.cr_cancel_amp_scaling = 0.1
-    node.parameters.cr_cancel_phase = 0.0
+    node.parameters.cr_drive_amp_scaling = 1.0 # None : setting None to use the amp from the config
+    node.parameters.cr_drive_phase = 0.0 # None : setting None to use the amp from the config
+    node.parameters.cr_cancel_amp_scaling = 0.1 # None : setting None to use the amp from the config
+    node.parameters.cr_cancel_phase = 0.0 # None : setting None to use the amp from the config
 
 
 # Instantiate the QUAM class from the state file
@@ -342,6 +342,15 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
         for qp in node.namespace["qubit_pairs"]:
             if node.outcomes[qp.name] == "failed":
                 continue
+
+            # cr drive
+            operation = qp.cross_resonance.operations[node.parameters.wf_type]
+            operation.amplitude = node.parameters.cr_drive_amp_scaling * operation.amplitude
+            operation.axis_angle = node.parameters.cr_drive_phase
+            # cr cancel 
+            operation = qp.qubit_target.xy.operations[f"cr_{node.parameters.wf_type}"]
+            operation.amplitude = node.parameters.cr_cancel_amp_scaling * operation.amplitude
+            operation.axis_angle = node.parameters.cr_cancel_phase
 
 
 # %% {Save_results}
