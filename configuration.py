@@ -13,8 +13,8 @@ from pathlib import Path
 ######################
 # Network parameters #
 ######################
-qop_ip = "127.0.0.1"  # Write the QM router IP address
-cluster_name = None  # Write your cluster_name if version >= QOP220
+qop_ip = "172.16.33.115"  # Write the QM router IP address
+cluster_name = "CS_3"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 # In QOP versions > 2.2.2, the Octave is automatically deteced by the QOP.
 # For QOP versions <= 2.2.2, see Tutorials/intro-to-octave/qop 222 and below.
@@ -27,7 +27,7 @@ qmm_settings = dict(
 )
 
 # Path to save data
-save_dir = Path(__file__).parent.resolve() / "Data"
+save_dir = Path(__file__).parent.resolve() / "data"
 save_dir.mkdir(exist_ok=True)
 
 
@@ -36,7 +36,7 @@ save_dir.mkdir(exist_ok=True)
 #####################
 con = "con1"  # name of the OPX1000
 octave = "oct1"  # name of the connected Octave
-fem = 1  # slot index of the lf-fem inside the chassis
+fem = 3  # slot index of the lf-fem inside the chassis
 
 
 ######################
@@ -55,22 +55,52 @@ qdac_channel_mapping = {
 u = unit(coerce_to_integer=True)
 
 # DC readout parameters
-tia_iv_scale_factor = 1e-9  # from spec (Femto LCA-200-10G Transimpedance in A/V)
-tia_bandwidth = 200  # in Hz, from spec
+tia_iv_scale_factor = 1e-9  # from spec (Femto DDPCA-300 Transimpedance in A/V at V/A = 10^9)
+tia_bandwidth = 150  # in Hz, from spec
 readout_amp = 0.0  # should be 0 since the OPX doesn't ouptut voltage when measuring transport current
-readout_len = 0.1 * u.ms  # should be greater than the time-constant, which is 1 / (2*pi*bandwidth)
+readout_len = 0.2 * u.ms  # should be greater than the time-constant, which is 1 / (2*pi*bandwidth)
 # Note: if average drain current exceeds 10mV, 4ms integration can lead to fixed-point overflow
 
 lock_in_freq = 200 * u.Hz
 lock_in_amp = 450 * u.mV
 lock_in_length = 1 * u.ms
 
-time_of_flight = 24
+time_of_flight = 28
 
-# RF parameters
+####################
+#      QUBIT       #
+####################
 qubit_LO = 13 * u.GHz
 qubit_1_IF = 50 * u.MHz
 qubit_2_IF = 50 * u.MHz
+
+# Continuous wave
+const_len = 100
+const_amp = 0.1
+
+saturation_len = 10 * u.us
+saturation_amp = 0.1
+
+square_pi_len = 100
+square_pi_amp = 0.1
+
+x180_len = 40
+x180_amp = 0.35
+
+x90_len = x180_len
+x90_amp = x180_amp / 2
+
+minus_x90_len = x180_len
+minus_x90_amp = -x90_amp
+
+y180_len = x180_len
+y180_amp = x180_amp
+
+y90_len = x180_len
+y90_amp = y180_amp / 2
+
+minus_y90_len = y180_len
+minus_y90_amp = -y90_amp
 
 
 #######################
@@ -95,6 +125,7 @@ config = {
             "type": "opx1000",
             "fems":{
                 fem: {
+                    "type": "LF",
                     "analog_outputs": {
                         1: {"offset": 0.0, "upsampling_mode": "mw"},  # Qubit RF I-Quadrature
                         2: {"offset": 0.0, "upsampling_mode": "mw"},  # Qubit RF Q-Quadrature
@@ -108,6 +139,7 @@ config = {
                     },
                     "analog_inputs": {
                         1: {"offset": 0.0, "gain_db": 0},  # Source Gate TIA
+                        2: {"offset": 0.0, "gain_db": 0},  # (Must be defined for Octave mixer calibration)
                     },
                 }
             }
@@ -118,12 +150,28 @@ config = {
             "RF_inputs": {"port": ("oct1", 1)},
             "intermediate_frequency": qubit_1_IF,
             "operations": {
+                "cw": "const_pulse_q1",
+                "saturation": "saturation_pulse_q1",
+                "x90": "x90_pulse_q1",
+                "x180": "x180_pulse_q1",
+                "-x90": "-x90_pulse_q1",
+                "y90": "y90_pulse_q1",
+                "y180": "y180_pulse_q1",
+                "-y90": "-y90_pulse_q1",
             },
         },
         "qubit_2": {
             "RF_inputs": {"port": ("oct1", 1)},
             "intermediate_frequency": qubit_2_IF,
             "operations": {
+                "cw": "const_pulse_q2",
+                "saturation": "saturation_pulse_q2",
+                "x90": "x90_pulse_q2",
+                "x180": "x180_pulse_q2",
+                "-x90": "-x90_pulse_q2",
+                "y90": "y90_pulse_q2",
+                "y180": "y180_pulse_q2",
+                "-y90": "-y90_pulse_q2",
             },
         },
         "P1": {
@@ -219,6 +267,128 @@ config = {
         }
     },
     "pulses": {
+        "const_pulse_q1": {
+            "operation": "control",
+            "length": const_len,
+            "waveforms": {
+                "I": "const_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "saturation_pulse_q1": {
+            "operation": "control",
+            "length": saturation_len,
+            "waveforms": {"I": "saturation_drive_wf", "Q": "zero_wf"},
+        },
+        "x90_pulse_q1": {
+            "operation": "control",
+            "length": x90_len,
+            "waveforms": {
+                "I": "x90_I_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "x180_pulse_q1": {
+            "operation": "control",
+            "length": x180_len,
+            "waveforms": {
+                "I": "x180_I_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "-x90_pulse_q1": {
+            "operation": "control",
+            "length": minus_x90_len,
+            "waveforms": {
+                "I": "minus_x90_I_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "y90_pulse_q1": {
+            "operation": "control",
+            "length": y90_len,
+            "waveforms": {
+                "I": "zero_wf",
+                "Q": "y90_Q_wf",
+            },
+        },
+        "y180_pulse_q1": {
+            "operation": "control",
+            "length": y180_len,
+            "waveforms": {
+                "I": "zero_wf",
+                "Q": "y180_Q_wf",
+            },
+        },
+        "-y90_pulse_q1": {
+            "operation": "control",
+            "length": minus_y90_len,
+            "waveforms": {
+                "I": "zero_wf",
+                "Q": "minus_y90_Q_wf",
+            },
+        },
+        "const_pulse_q2": {
+            "operation": "control",
+            "length": const_len,
+            "waveforms": {
+                "I": "const_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "saturation_pulse_q2": {
+            "operation": "control",
+            "length": saturation_len,
+            "waveforms": {"I": "saturation_drive_wf", "Q": "zero_wf"},
+        },
+        "x90_pulse_q2": {
+            "operation": "control",
+            "length": x90_len,
+            "waveforms": {
+                "I": "x90_I_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "x180_pulse_q2": {
+            "operation": "control",
+            "length": x180_len,
+            "waveforms": {
+                "I": "x180_I_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "-x90_pulse_q2": {
+            "operation": "control",
+            "length": minus_x90_len,
+            "waveforms": {
+                "I": "minus_x90_I_wf",
+                "Q": "zero_wf",
+            },
+        },
+        "y90_pulse_q2": {
+            "operation": "control",
+            "length": y90_len,
+            "waveforms": {
+                "I": "zero_wf",
+                "Q": "y90_Q_wf",
+            },
+        },
+        "y180_pulse_q2": {
+            "operation": "control",
+            "length": y180_len,
+            "waveforms": {
+                "I": "zero_wf",
+                "Q": "y180_Q_wf",
+            },
+        },
+        "-y90_pulse_q2": {
+            "operation": "control",
+            "length": minus_y90_len,
+            "waveforms": {
+                "I": "zero_wf",
+                "Q": "minus_y90_Q_wf",
+            },
+        },
         "P1_step_pulse": {
             "operation": "control",
             "length": step_length,
@@ -270,6 +440,15 @@ config = {
         "SET_step_wf": {"type": "constant", "sample": SET_step_amp},
         "lock_in_wf": {"type": "constant", "sample": lock_in_amp},
         "readout_pulse_wf": {"type": "constant", "sample": readout_amp},
+        "const_wf": {"type": "constant", "sample": const_amp},
+        "saturation_drive_wf": {"type": "constant", "sample": saturation_amp},
+        "zero_wf": {"type": "constant", "sample": 0.0},
+        "x90_I_wf": {"type": "constant", "sample": x90_amp},
+        "x180_I_wf": {"type": "constant", "sample": x180_amp},
+        "minus_x90_I_wf": {"type": "constant", "sample": minus_x90_amp},
+        "y90_Q_wf": {"type": "constant", "sample": y90_amp},
+        "y180_Q_wf": {"type": "constant", "sample": y180_amp},
+        "minus_y90_Q_wf": {"type": "constant", "sample": minus_y90_amp},
     },
     "digital_waveforms": {
         "ON": {"samples": [(1, 0)]},
