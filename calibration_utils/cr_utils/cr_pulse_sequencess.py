@@ -50,11 +50,13 @@ def play_cross_resonance(
             elem.play(wf_type, amplitude_scale=sgn * amp_scale, duration=duration)
 
     def cr_drive_shift_phase():
-        cr.frame_rotation_2pi(cr_drive_phase)
+        if cr_drive_phase is not None:
+            cr.frame_rotation_2pi(cr_drive_phase)
 
 
     def cr_cancel_shift_phase():
-        qt.xy.frame_rotation_2pi(cr_cancel_phase)
+        if cr_cancel_phase is not None:
+            qt.xy.frame_rotation_2pi(cr_cancel_phase)
         
 
     def cr_drive_play(

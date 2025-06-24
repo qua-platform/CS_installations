@@ -13,7 +13,7 @@ from qualang_tools.units import unit
 
 from qualibrate import QualibrationNode
 from quam_config import Quam
-from calibration_utils.cr_ham_tomo_cr_cancel_amp_scaling import (
+from calibration_utils.cr_correction_phase import (
     Parameters,
     process_raw_dataset,
     fit_raw_data,
@@ -53,7 +53,7 @@ Reference: A. D. Corcoles et al., Phys. Rev. A 87, 030301 (2013)
 
 # Be sure to include [Parameters, Quam] so the node has proper type hinting
 node = QualibrationNode[Parameters, Quam](
-    name="31d_CR_hamiltonian_tomography_vs_cr_cancel_amp_scaling",  # Name should be unique
+    name="31e_CR_phase_correction",  # Name should be unique
     description=description,  # Describe what the node is doing, which is also reflected in the QUAlibrate GUI
     parameters=Parameters(),  # Node parameters defined under quam_experiment/experiments/node_name
 )
@@ -65,7 +65,7 @@ node = QualibrationNode[Parameters, Quam](
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
     # You can get type hinting in your IDE by typing node.parameters.
-    node.parameters.qubit_pairs = ["q1-2"]
+    node.parameters.qubit_pairs = [["q1-2", "q3-4"], ["q2-1", "q4-3"]]
 
     node.parameters.wf_type = "square"
     node.parameters.cr_type = "direct+cancel+echo"
@@ -130,7 +130,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
         state_t_st = [declare_stream() for _ in range(num_qubit_pairs)]
         n = declare(int)
         n_st = declare_stream()
-        ph = declare(int)
+        ph = declare(fixed)
         s = declare(int)  # QUA variable for the projection index in QST
 
         for multiplexed_qubit_pairs in qubit_pairs.batch():
@@ -160,6 +160,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                                 log_callable=node.log,
                             )
 
+                            # Prepare Qc at 0/1
                             with if_(s == 1):
                                 qc.xy.play("x180")
                                 align(*cr_elems)
@@ -168,7 +169,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                             qc.xy.play("y90")
                             align(*cr_elems)
 
-                            # cr
+                            # Play CR
                             play_cross_resonance(
                                 qc=qc,
                                 qt=qt,
@@ -179,7 +180,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                             align(*cr_elems)
 
                             # phase shift
-                            frame_rotation_2pi(ph, qc.name)
+                            frame_rotation_2pi(ph, qc.xy.name)
 
                             # -y90
                             qc.xy.play("-y90")
@@ -276,7 +277,7 @@ def analyse_data(node: QualibrationNode[Parameters, Quam]):
 def plot_data(node: QualibrationNode[Parameters, Quam]):
     """Plot the raw and fitted data in specific figures whose shape is given by qubit.grid_location."""
     figs_raw_fit = plot_raw_data_with_fit(node.results["ds_raw"], node.namespace["qubit_pairs"], node.results["ds_fit"])
-    plt.show()
+    ds = node.results["ds_raw"]
     # Store the generated figures
     node.results["figures"] = {f"IQ_{qp.name}": fig for fig, qp in zip(figs_raw_fit, node.namespace["qubit_pairs"])}
 
@@ -299,12 +300,8 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
 
             # cr drive
             operation = qp.cross_resonance.operations[node.parameters.wf_type]
-            operation.amplitude = node.parameters.cr_drive_amp_scaling * operation.amplitude
-            operation.axis_angle = node.parameters.cr_drive_phase
-            # cr cancel
-            operation = qp.qubit_target.xy.operations[f"cr_{node.parameters.wf_type}"]
-            operation.amplitude = node.parameters.cr_cancel_amp_scaling * operation.amplitude
-            operation.axis_angle = node.parameters.cr_cancel_phase
+            operation.amplitude = 0.2345
+            operation.correction_phase = 0.0
 
 
 # %% {Save_results}

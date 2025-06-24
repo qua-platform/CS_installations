@@ -36,26 +36,23 @@ def plot_raw_data_with_fit(ds: xr.Dataset, qubit_pairs: List[AnyTransmonPair], f
     - The function creates a grid of subplots, one for each qubit.
     - Each subplot contains the raw data and the fitted curve.
     """
-    
+
     figs = []
     for qp in qubit_pairs:
         qc = qp.qubit_control
         qt = qp.qubit_target
-        fig, axss = plt.subplots(3, 4, figsize=(12, 9), sharex=True, sharey=True)
+        fig, ax = plt.subplots(1, 1, figsize=(7, 6))
         fig.suptitle(f"Qc: {qc.name}, Qt: {qt.name}")
 
         # Prepare the figure for live plotting
         ds_sliced = ds.sel(qubit_pair=qp.name)
-        amp_scalings = ds_sliced.coords["amp_scaling"].values
+        corr_phase = ds_sliced.coords["corr_phase"].values
         # plotting data
-        plot_cr_duration_vs_scan_param(
-            ds_sliced[f"state_c_{qp.name}"].data,
-            ds_sliced[f"state_t_{qp.name}"].data,
-            ds_sliced.pulse_duration.data,
-            amp_scalings,
-            "cr cancel amp scaling",
-            axss,
-        )
+        ax.plot(corr_phase, ds_sliced.sel(control_state=0)[f"state_c_{qp.name}"].data)
+        ax.plot(corr_phase, ds_sliced.sel(control_state=1)[f"state_c_{qp.name}"].data)
+        ax.set_xlabel("correction phase on Qc [2pi]")
+        ax.set_ylabel("control state")
+        ax.legend(["Qc=0", "Qc=1"])
         plt.tight_layout()
         figs.append(fig)
     return figs

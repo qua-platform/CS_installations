@@ -247,7 +247,7 @@
                     },
                     "cr_square": {
                         "length": 16,
-                        "amplitude": 0.1,
+                        "amplitude": 1.0,
                         "axis_angle": 0.0,
                         "__class__": "quam.components.pulses.SquarePulse"
                     },

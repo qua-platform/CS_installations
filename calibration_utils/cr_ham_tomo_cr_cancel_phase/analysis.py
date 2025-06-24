@@ -43,9 +43,6 @@ def process_raw_dataset(ds: xr.Dataset, node: QualibrationNode):
             qps,
             IQ_list=IQ_c_list + IQ_t_list,
         )
-    # full_freq = np.array([ds.detuning + q.xy.RF_frequency for q in node.namespace["qubits"]])
-    # ds = ds.assign_coords(full_freq=(["qubit", "detuning"], full_freq))
-    # ds.full_freq.attrs = {"long_name": "RF frequency", "units": "Hz"}
     return ds
 
 

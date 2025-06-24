@@ -279,6 +279,7 @@ for k, qp in enumerate(machine.qubit_pairs):
         amplitude=1.0,
         axis_angle=0.0,
     )
+    qb_pair.cross_resonance.operations["square"].correction_phase = 0.0
     qb_pair.qubit_target.xy.operations["cr_square"] = pulses.SquarePulse(
         length=16,
         amplitude=1.0,
