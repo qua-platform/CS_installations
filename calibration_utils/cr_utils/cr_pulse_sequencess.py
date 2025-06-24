@@ -33,13 +33,6 @@ def play_cross_resonance(
 ):
     elems = [qc.xy.name, qt.xy.name, cr.name]
 
-    def _shift_phase(
-        elem,
-        phase: Optional[float | qua_T],
-    ):
-        if phase is not None:
-            elem.frame_rotation_2pi(phase)
-
     def _play_cr_pulse(
         elem,
         wf_type: str,

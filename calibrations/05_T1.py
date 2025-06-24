@@ -59,55 +59,16 @@ def custom_param(node: QualibrationNode[Parameters, Quam]):
 
     node.parameters.multiplexed = False #True
         # node.parameters.multiplexed = True
-    node.parameters.qubits = [
-        "q1", "q2", 
-        #"q3", "q4", 
-        "q5",  "q6",  "q7", "q8",  "q9",
-        # "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
-        # "q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26", #"q27", 
-    ]
-    # node.parameters.qubits = [
-    #     # "q1",
-    #     # # "q2", xxxx
-    #     # # "q3", xxxx
-    #     # "q4",
-    #     # "q5",
-    #     # "q6",
-    #     # "q7",
-    #     # "q8", 
-    #     # "q9",
-        
-    #     # "q10",
-    #     # # "q11", xxxx
-    #     # "q12",
-    #     # "q13",
-    #     # # "q14",
-    #     # "q15",
-    #     # "q16",
-    #     # # "q17", xxxx
-    #     # "q18",
-        
-    #     "q19",
-    #     # "q20", xxxx
-    #     "q21",
-    #     "q22",
-    #     "q23",
-    #     "q24",
-    #     "q25",
-    #     # "q26", xxxx
-    #     "q27", 
-    # ]
-    # node.parameters.qubits = [
-    #     # "q1",  "q2",  "q3",  "q4", "q5",  "q6",  "q7", "q8", # "q9",
+    node.parameters.qubits = [["q1", "q2"], ["q3", "q4", "q5"]]
+    # [
+    #     "q1", "q2", 
+    #     #"q3", "q4", 
+    #     "q5",  "q6",  "q7", "q8",  "q9",
     #     # "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
-    #     # "q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26", # "q27", 
+    #     # "q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26", #"q27", 
     # ]
-    # node.parameters.qubits = [
-    #     "q1", "q2",  "q3",  "q4",  "q5",  "q6",  "q7", "q8", # "q9",
-    # ]
-    # node.parameters.qubits = ["q9", "q14", "q27"]
-    # node.parameters.qubits = ["q1"]
 
+    # [["q1", "q2"], ["q3", "q4"]]
     # pass
 
 
@@ -123,6 +84,12 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
     u = unit(coerce_to_integer=True)
     # Get the active qubits from the node and organize them by batches
     node.namespace["qubits"] = qubits = get_qubits(node)
+    print("qubits :", qubits)
+    for qb_grp in qubits.batch():
+        for i, qb in qb_grp.items():
+            print(i, qb)
+        
+    print("qubits batch:", qubits.batch())
     num_qubits = len(node.namespace["qubits"])
     # Extract the sweep parameters and axes from the node parameters
     n_avg = node.parameters.num_shots
@@ -146,6 +113,8 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
             # Initialize the QPU in terms of flux points (flux tunable transmons and/or tunable couplers)
             for qubit in multiplexed_qubits.values():
                 node.machine.initialize_qpu(target=qubit)
+
+            align()
 
             with for_(n, 0, n < n_avg, n + 1):
                 save(n, n_st)
