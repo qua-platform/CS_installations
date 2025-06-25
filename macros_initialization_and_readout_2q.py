@@ -15,7 +15,7 @@ from macros_voltage_gate_sequence import VoltageGateSequence
 ##################
 
 qubits = ["qubit1", "qubit2"]
-sweep_gates = ["P0_sticky", "P1_sticky"]
+sweep_gates = ["P1_sticky", "P2_sticky"]
 tank_circuits = ["tank_circuit1"]
 num_tank_circuits = len(TANK_CIRCUIT_CONSTANTS)
 all_elements = qubits + sweep_gates + tank_circuits

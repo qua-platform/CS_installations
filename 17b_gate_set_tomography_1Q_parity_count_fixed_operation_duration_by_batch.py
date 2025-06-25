@@ -31,8 +31,6 @@ def get_dataframe_encoded_sequence(pi_half_len):
     df = pd.read_csv(path, header=0)  # Use header=0 to indicate the first row is the header
     df["full_gate_sequence_duration"] = pi_half_len * df["full_native_gate_count"]
     df.reset_index(inplace=True)
-    df = df.head(33)
-    # df = df.head(10)
     return df
 
 
@@ -87,8 +85,8 @@ do_simulate = False
 wf_type = "square"
 x90 = f"x90_{wf_type}"
 y90 = f"y90_{wf_type}"
-pi_half_len = QUBIT_CONSTANTS[qubit][f"{wf_type}_pi_half_len"]
-pi_half_amp = QUBIT_CONSTANTS[qubit][f"{wf_type}_pi_half_amp"]
+pi_half_len = QUBIT_CONSTANTS[qubit][wf_type]["pi_half_len"]
+pi_half_amp = QUBIT_CONSTANTS[qubit][wf_type]["pi_half_amp"]
 
 
 n_shots_max = 1000
@@ -334,7 +332,6 @@ if simulate:
 
 else:
     from qm import generate_qua_script
-
     sourceFile = open(f"debug_{Path(__file__).stem}.py", "w")
     print(generate_qua_script(PROGRAM_GST, config), file=sourceFile)
     sourceFile.close()
@@ -355,7 +352,7 @@ else:
         data_handler = DataHandler(root_data_folder=save_dir)
         data_handler.create_data_folder(name=Path(__file__).stem)
 
-    def get_print_this_log(n_shots, i_row, start_time, seq_len, C, P, G, d, M, Ph4, Ph):
+    def get_print_this_log(n_shots, i_batch, i_row, start_time, seq_len, C, P, G, d, M, Ph4, Ph):
         current_datetime = datetime.now()
         current_datetime_str = current_datetime.strftime("%Y/%m/%d-%H:%M:%S")
         elapsed_time = current_datetime - start_time
@@ -367,10 +364,10 @@ else:
     ress = []
     start_time = datetime.now()
     for _n_shots in list_n_shots:
-        i_batch = 1
+        _i_batch = 1
         this_df = df_enc_seqs.sample(frac=1, random_state=_n_shots)
 
-        for i_row, (_, row) in enumerate(this_df.iterrows()):
+        for _i_row, (_, row) in enumerate(this_df.iterrows()):
             # Get encoded circuit
             _encoded_circuit, seq_len, C, P, G, d, M, Ph4, Ph = get_encoded_circuit(row)
 
@@ -378,11 +375,10 @@ else:
             job.push_to_input_stream("_encoded_circuit", _encoded_circuit)
             # print(len(_encoded_circuit))
 
-
             # Fetch Data by chunk
             if job.is_paused():
                 # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
-                if (_n_shots == list_n_shots[0]) and (i_batch == 1):
+                if (_n_shots == list_n_shots[0]) and (_i_batch == 1):
                     print("get a fetching tool")
                     results = fetching_tool(job, data_list=fetch_names, mode="live")
 
@@ -394,12 +390,12 @@ else:
 
                 # Data to save
                 print("save result!")
-                np.savez(file=data_handler.path / f"data_n-shots={_n_shots:06d}_batch={i_batch:06d}.npz", **data_dict)
-                i_batch += 1
+                np.savez(file=data_handler.path / f"data_n-shots={_n_shots:06d}_batch={_i_batch:06d}.npz", **data_dict)
+                _i_batch += 1
                 job.resume()
 
             # Get log
-            _this_log = get_print_this_log(n_shots=_n_shots, i_row=i_row, start_time=start_time, seq_len=seq_len, C=C, P=P, G=G, d=d, M=M, Ph4=Ph4, Ph=Ph)
+            _this_log = get_print_this_log(n_shots=_n_shots, i_batch=_i_batch, i_row=_i_row, start_time=start_time, seq_len=seq_len, C=C, P=P, G=G, d=d, M=M, Ph4=Ph4, Ph=Ph)
             with open(data_handler.path / "log.txt", encoding="utf8", mode="a") as f:
                 f.write(_this_log.replace("_", "") + "\n")  # Append the log message to the file
 
