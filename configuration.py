@@ -9,6 +9,7 @@ import numpy as np
 from qualang_tools.units import unit
 from qualang_tools.voltage_gates import VoltageGateSequence
 from pathlib import Path
+from qdac import QDACWithChannelLookup as QDAC
 
 ######################
 # Network parameters #
@@ -44,10 +45,22 @@ fem = 3  # slot index of the lf-fem inside the chassis
 ######################
 qdac_ip = "127.0.0.2"  # Write the QDAC instrument IP address here
 qdac_channel_mapping = {
-    "B20": 1, "P20": 2, "B21": 3,
+    "B20": 1, "P20": 2, "B21": 3, "B30": 4, "P30": 5, "B31": 6,
     "B1": 9, "P1": 10, "B2": 11, "P2": 12, "B3": 13,
-    "S2": 17,
+    "S1": 17, "S2": 18, "S3": 19, "P3": 21, "B4": 22, "P4": 23, "B5": 24
 }
+
+
+def get_qdac() -> QDAC:
+    qdac = QDAC(name='qdac', address=f'TCPIP::{qdac_ip}::5025::SOCKET', update_currents=False)
+
+    # set global channel settings
+    for i in range(24):
+        ch = qdac.get_channel_by_index(i)
+
+        ch.slope(0.1)  # set to something "safe" in units of V/s
+
+    return qdac
 
 ######################
 #       READOUT      #
