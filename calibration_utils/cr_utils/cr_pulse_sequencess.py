@@ -90,7 +90,7 @@ def play_cross_resonance(
         cr_drive_play(sgn="direct")
         align(*elems)
 
-        reset_phase(cr.name)
+        reset_frame(cr.name)
         align(*elems)
 
     elif cr_type == "direct+echo":
@@ -109,7 +109,7 @@ def play_cross_resonance(
         qc.xy.play("x180")
         align(*elems)
 
-        reset_phase(cr.name)
+        reset_frame(cr.name)
         align(*elems)
 
     elif cr_type == "direct+cancel":
@@ -121,8 +121,8 @@ def play_cross_resonance(
         cr_cancel_play(sgn="direct")
         align(*elems)
 
-        reset_phase(cr.name)
-        reset_phase(qt.xy.name)
+        reset_frame(cr.name)
+        reset_frame(qt.xy.name)
         align(*elems)
 
     elif cr_type == "direct+cancel+echo":
@@ -144,6 +144,6 @@ def play_cross_resonance(
         qc.xy.play("x180")
         align(*elems)
 
-        reset_phase(cr.name)
-        reset_phase(qt.xy.name)
+        reset_frame(cr.name)
+        reset_frame(qt.xy.name)
         align(*elems)
