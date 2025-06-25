@@ -39,8 +39,13 @@ def process_raw_dataset(ds: xr.Dataset, node: QualibrationNode):
         IQ_t_list = [f"{V}_t_{qp.name}" for qp in qps for V in ["I", "Q"]] 
         ds = convert_IQ_to_V(
             ds,
-            qps,
-            IQ_list=IQ_c_list + IQ_t_list,
+            [qp.qubit_control for qp in qps],
+            IQ_list=IQ_c_list,
+        )
+        ds = convert_IQ_to_V(
+            ds,
+            [qp.qubit_target for qp in qps],
+            IQ_list=IQ_t_list,
         )
     return ds
 

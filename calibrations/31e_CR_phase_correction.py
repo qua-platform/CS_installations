@@ -300,8 +300,7 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
 
             # cr drive
             operation = qp.cross_resonance.operations[node.parameters.wf_type]
-            operation.amplitude = 0.2345
-            operation.correction_phase = 0.0
+            operation.correction_phase = 0.123
 
 
 # %% {Save_results}

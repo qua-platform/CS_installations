@@ -54,12 +54,12 @@ node = QualibrationNode[Parameters, Quam](
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     # You can get type hinting in your IDE by typing node.parameters.
 
-    node.parameters.num_shots = 500
-    node.parameters.min_wait_time_in_ns = 24
+    node.parameters.num_shots = 100
+    # node.parameters.min_wait_time_in_ns = 24
 
-    node.parameters.multiplexed = False #True
-        # node.parameters.multiplexed = True
-    node.parameters.qubits = [["q1", "q2"], ["q3", "q4", "q5"]]
+    # node.parameters.multiplexed = False #True
+    #     # node.parameters.multiplexed = True
+    # node.parameters.qubits = [["q1", "q2"], ["q3", "q4", "q5"]]
     # [
     #     "q1", "q2", 
     #     #"q3", "q4", 
@@ -177,6 +177,12 @@ def execute_qua_program(node: QualibrationNode[Parameters, Quam]):
     qmm = node.machine.connect()
     # Get the config from the machine
     config = node.machine.generate_config()
+    
+    from qm import generate_qua_script
+    sourceFile = open('debug_21Qs_1chassis_3fems_T1.py', 'w')
+    print(generate_qua_script(node.namespace["qua_program"], config), file=sourceFile) 
+    sourceFile.close()
+
     # Execute the QUA program only if the quantum machine is available (this is to avoid interrupting running jobs).
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         # The job is stored in the node namespace to be reused in the fetching_data run_action
