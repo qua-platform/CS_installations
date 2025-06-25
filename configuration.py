@@ -10,13 +10,17 @@ from qualang_tools.units import unit
 from qualang_tools.voltage_gates import VoltageGateSequence
 from pathlib import Path
 from qdac import QDACWithChannelLookup as QDAC
+import matplotlib.pyplot as plt
+plt.rcParams['image.cmap'] = 'plasma'
+
+u = unit(coerce_to_integer=True)
 
 ######################
 # Network parameters #
 ######################
 qop_ip = "172.16.33.115"  # Write the QM router IP address
 cluster_name = "CS_3"  # Write your cluster_name if version >= QOP220
-qop_port = None  # Write the QOP port if version < QOP220
+qop_port = 9510  # Write the QOP port if version < QOP220
 # In QOP versions > 2.2.2, the Octave is automatically deteced by the QOP.
 # For QOP versions <= 2.2.2, see Tutorials/intro-to-octave/qop 222 and below.
 # Below you can specify the path for the Octave mixer calibration's database file.
@@ -47,32 +51,40 @@ qdac_ip = "127.0.0.2"  # Write the QDAC instrument IP address here
 qdac_channel_mapping = {
     "B20": 1, "P20": 2, "B21": 3, "B30": 4, "P30": 5, "B31": 6,
     "B1": 9, "P1": 10, "B2": 11, "P2": 12, "B3": 13,
-    "S1": 17, "S2": 18, "S3": 19, "P3": 21, "B4": 22, "P4": 23, "B5": 24
+    "AC1": 17, "AC0": 18, "AC3": 19, "P3": 21, "B4": 22, "P4": 23, "B5": 24
+}
+
+qdac_turn_on_voltages = {
+    "B20": 0.0, "P20": 0.0, "B21": 0.0, "B30": 0.0, "P30": 0.0, "B31": 0.0,
+    "B1": 0.0, "P1": 0.0, "B2": 0.0, "P2": 0.0, "B3": 0.0,
+    "AC1": 0.0, "AC0": 0.0, "AC3": 0.0, "P3": 0.0, "B4": 0.0, "P4": 0.0, "B5": 0.0
 }
 
 
+settle_time = 1 * u.ms  # Assumes a voltage source bandwidth of 1 kHz
+
+
 def get_qdac() -> QDAC:
-    qdac = QDAC(name='qdac', address=f'TCPIP::{qdac_ip}::5025::SOCKET', update_currents=False)
+    qdac = QDAC(name='qdac', address=f'TCPIP::{qdac_ip}::5025::SOCKET', update_currents=False,
+                qdac_channel_mapping=qdac_channel_mapping, qdac_turn_on_voltages=qdac_turn_on_voltages)
 
     # set global channel settings
     for i in range(24):
         ch = qdac.get_channel_by_index(i)
-
         ch.slope(0.1)  # set to something "safe" in units of V/s
+        # todo: do we need to set the output mode?
 
     return qdac
 
 ######################
 #       READOUT      #
 ######################
-u = unit(coerce_to_integer=True)
-
 # DC readout parameters
 tia_iv_scale_factor = 1e-9  # from spec (Femto DDPCA-300 Transimpedance in A/V at V/A = 10^9)
 tia_bandwidth = 150  # in Hz, from spec
 readout_amp = 0.0  # should be 0 since the OPX doesn't ouptut voltage when measuring transport current
 readout_len = 0.2 * u.ms  # should be greater than the time-constant, which is 1 / (2*pi*bandwidth)
-# Note: if average drain current exceeds 10mV, 4ms integration can lead to fixed-point overflow
+# Note: if average source current exceeds 10mV, 4ms integration can lead to fixed-point overflow
 
 lock_in_freq = 200 * u.Hz
 lock_in_amp = 450 * u.mV
@@ -145,7 +157,7 @@ config = {
                         3: {"offset": 0.0, "upsampling_mode": "pulse"},  # Plunger Gate Qubit 1 (P1)
                         4: {"offset": 0.0, "upsampling_mode": "pulse"},  # Plunger Gate Qubit 2 (P2)
                         5: {"offset": 0.0, "upsampling_mode": "pulse"},  # SET Plunger Gate (P20)
-                        6: {"offset": 0.0, "upsampling_mode": "pulse"},  # Source Gate (S2)
+                        6: {"offset": 0.0, "upsampling_mode": "mw"},  # Drain Gate (AC0)
                     },
                     "digital_outputs": {
                         1: {},  # Octave Trigger
@@ -160,7 +172,7 @@ config = {
     },
     "elements": {
         "qubit_1": {
-            "RF_inputs": {"port": ("oct1", 1)},
+            "RF_inputs": {"port": (octave, 1)},
             "intermediate_frequency": qubit_1_IF,
             "operations": {
                 "cw": "const_pulse_q1",
@@ -174,7 +186,7 @@ config = {
             },
         },
         "qubit_2": {
-            "RF_inputs": {"port": ("oct1", 1)},
+            "RF_inputs": {"port": (octave, 1)},
             "intermediate_frequency": qubit_2_IF,
             "operations": {
                 "cw": "const_pulse_q2",
