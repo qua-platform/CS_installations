@@ -99,6 +99,11 @@ qubit_LO = 13 * u.GHz
 qubit_1_IF = 50 * u.MHz
 qubit_2_IF = 50 * u.MHz
 
+photon_assisted_tunneling_LO = 10 * u.GHz
+photon_assisted_tunneling_IF = 50 * u.MHz
+photon_assisted_tunneling_length = 1 * u.ms
+photon_assisted_tunneling_amp = 100 * u.mV
+
 # Continuous wave
 const_len = 100
 const_amp = 0.1
@@ -211,9 +216,22 @@ config = {
                 "-y90": "-y90_pulse_q2",
             },
         },
+        "P2_RF": {
+            # "RF_inputs": {"port": (octave, 1)},
+            'mixInputs': {
+                'I': (con, fem, 3),
+                'Q': (con, fem, 4),
+                'lo_frequency': photon_assisted_tunneling_LO,
+                'mixer': 'mixer_pat'
+            },
+            "intermediate_frequency": photon_assisted_tunneling_IF,
+            "operations": {
+                "photon_assisted_tunneling": "const_pulse_pat",
+            },
+        },
         "P1": {
             "singleInput": {
-                "port": (con, fem, 3),
+                "port": (con, fem, 5),
             },
             "operations": {
                 "step": "P1_step_pulse",
@@ -221,7 +239,7 @@ config = {
         },
         "P1_sticky": {
             "singleInput": {
-                "port": (con, fem, 3),
+                "port": (con, fem, 5),
             },
             "sticky": {"analog": True, "duration": hold_offset_duration},
             "operations": {
@@ -230,7 +248,7 @@ config = {
         },
         "P2": {
             "singleInput": {
-                "port": (con, fem, 4),
+                "port": (con, fem, 6),
             },
             "operations": {
                 "step": "P2_step_pulse",
@@ -238,7 +256,7 @@ config = {
         },
         "P2_sticky": {
             "singleInput": {
-                "port": (con, fem, 4),
+                "port": (con, fem, 6),
             },
             "sticky": {"analog": True, "duration": hold_offset_duration},
             "operations": {
@@ -247,7 +265,7 @@ config = {
         },
         "SET": {
             "singleInput": {
-                "port": (con, fem, 5),
+                "port": (con, fem, 7),
             },
             "operations": {
                 "step": "SET_step_pulse",
@@ -255,7 +273,7 @@ config = {
         },
         "SET_sticky": {
             "singleInput": {
-                "port": (con, fem, 5),
+                "port": (con, fem, 7),
             },
             "sticky": {"analog": True, "duration": hold_offset_duration},
             "operations": {
@@ -277,7 +295,7 @@ config = {
         },
         "source_tia_lock_in": {
             "singleInput": {
-                "port": (con, fem, 1),
+                "port": (con, fem, 8),
             },
             "intermediate_frequency": lock_in_freq,
             "operations": {
@@ -447,6 +465,14 @@ config = {
                 "single": "SET_step_wf",
             },
         },
+        "const_pulse_pat": {
+            "operation": "control",
+            "length": photon_assisted_tunneling_length,
+            "waveforms": {
+                "I": "const_pat_wf",
+                "Q": "zero_wf",
+            },
+        },
         "lock_in_pulse": {
             "operation": "measurement",
             "length": lock_in_length,
@@ -478,6 +504,7 @@ config = {
         "lock_in_wf": {"type": "constant", "sample": lock_in_amp},
         "readout_pulse_wf": {"type": "constant", "sample": readout_amp},
         "const_wf": {"type": "constant", "sample": const_amp},
+        "const_pat_wf": {"type": "constant", "sample": photon_assisted_tunneling_amp},
         "saturation_drive_wf": {"type": "constant", "sample": saturation_amp},
         "zero_wf": {"type": "constant", "sample": 0.0},
         "x90_I_wf": {"type": "constant", "sample": x90_amp},
@@ -505,6 +532,9 @@ config = {
         },
     },
     "mixers": {
+        'mixer_pat': [
+            {'intermediate_frequency': photon_assisted_tunneling_IF, 'lo_frequency': photon_assisted_tunneling_LO, 'correction': [1.0, 0.0, 0.0, 1.0]},
+        ],
         'mixer_qubit': [
             {'intermediate_frequency': qubit_1_IF, 'lo_frequency': qubit_LO, 'correction': [1.0, 0.0, 0.0, 1.0]},
         ],
