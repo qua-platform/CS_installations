@@ -22,7 +22,7 @@ from qualang_tools.results import wait_until_job_is_paused, fetching_tool, progr
 from configuration import *
 import matplotlib.pyplot as plt
 
-from macros import measure_current, fetch_results_current
+from macros import measure_current, measure_lock_in, fetch_results_current, fetch_results_lock_in
 
 ###################
 # The QUA program #
@@ -30,6 +30,7 @@ from macros import measure_current, fetch_results_current
 n_avg = 100  # The number of averages
 plunger_gate = "P1"
 barrier_gate = "B2"
+measurement_type = "lock-in"  # "current" or "lock-in"
 
 # Surrounding voltage gates to be set to their turn-on voltage
 surrounding_gates = ["B1", "P2", "B3"]
@@ -50,7 +51,7 @@ barrier_gate_dc_offsets = np.arange(
 
 simulate = False
 
-with program() as coulomb_peaks_program:
+with program() as prog:
     n = declare(int)  # QUA variable for the averaging loop
     i = declare(int)  # QUA variable for indexing the left barrier gate voltage step
     j = declare(int)  # QUA variable for indexing the right barrier gate voltage step
@@ -65,12 +66,19 @@ with program() as coulomb_peaks_program:
                 wait(settle_time)
 
             with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
-                i_source_st = measure_current()
+                if measurement_type == "current":
+                    i_source_st = measure_current()
+                elif measurement_type == "lock-in":
+                    I_st, Q_st = measure_lock_in()
 
             save(i, n_st)
 
     with stream_processing():
-        i_source_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(len(barrier_gate_dc_offsets)).save_all("i_source")
+        if measurement_type == "current":
+            i_source_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(len(barrier_gate_dc_offsets)).save_all("i_source")
+        elif measurement_type == "lock-in":
+            I_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(len(barrier_gate_dc_offsets)).save_all("I")
+            Q_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(len(barrier_gate_dc_offsets)).save_all("Q")
 
         n_st.save("iteration")
 
@@ -87,7 +95,7 @@ if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=1_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
-    job = qmm.simulate(config, coulomb_peaks_program, simulation_config)
+    job = qmm.simulate(config, prog, simulation_config)
     # Get the simulated samples
     samples = job.get_simulated_samples()
     # Get the waveform report object
@@ -108,7 +116,7 @@ else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(coulomb_peaks_program)
+    job = qm.execute(prog)
     # Live plotting
     fig, ax = plt.subplots(1, 1)
     ax = [ax]
@@ -125,13 +133,21 @@ else:
             # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
             wait_until_job_is_paused(job)
 
+            if measurement_type == "current":
+                measurement_data_list = ["i_source"]
+            else:
+                measurement_data_list = ["I", "Q"]
+
             if i == 0:
                 # Get results from QUA program and initialize live plotting
-                results = fetching_tool(job, data_list=["i_source", "iteration"], mode="live")
+                results = fetching_tool(job, data_list=measurement_data_list + ["iteration"], mode="live")
 
             # Fetch the data from the last OPX run corresponding to the current slow axis iteration
             iteration = results.fetch_all()[-1]
-            measurement_data = fetch_results_current(results)
+            if measurement_type == "current":
+                measurement_data = fetch_results_current(results)
+            else:
+                measurement_data = fetch_results_lock_in(results)
 
         # Progress bar
         progress_counter(iteration, len(plunger_gate_dc_offsets))
@@ -139,7 +155,7 @@ else:
         # Plot results
         for k, (name, result) in enumerate(measurement_data.items()):
             axis_title = " ".join(name.split("_")[:-1]).capitalize() + f' [{name.split("_")[-1]}]'
-            fig.suptitle(f"{plunger_gate}-{barrier_gate} Gate Sweep (Current)")
+            fig.suptitle(f"{plunger_gate}-{barrier_gate} Gate Sweep ({measurement_type.capitalize()})")
             ax[k].cla()
             map = ax[k].pcolormesh(barrier_gate_dc_offsets, plunger_gate_dc_offsets[: iteration + 1], result)
             ax[k].set_xlabel(f"{plunger_gate} Gate Voltage [V]")
@@ -160,8 +176,8 @@ else:
         "figure": fig
     }
     # Save results
-    data_folder = data_handler.save_data(data=data, name=f"{plunger_gate}_{barrier_gate}_coulomb_peaks_current")
+    data_folder = data_handler.save_data(data=data, name=f"{plunger_gate}_{barrier_gate}_charge_sensing_{measurement_type}")
 
-    # qdac.close()
+    qdac.close()
 
 plt.show()

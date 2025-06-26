@@ -39,7 +39,7 @@ measurement_type = "lock-in"  # "current" or "lock-in"
 
 simulate = False
 
-with program() as turn_on_measurements_program:
+with program() as prog:
     n = declare(int)  # QUA variable for the averaging loop
     i = declare(int)  # QUA variable for indexing the QDAC-I voltage step
     n_st = declare_stream()
@@ -81,7 +81,7 @@ if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=1_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
-    job = qmm.simulate(config, turn_on_measurements_program, simulation_config)
+    job = qmm.simulate(config, prog, simulation_config)
     # Get the simulated samples
     samples = job.get_simulated_samples()
     # Get the waveform report object
@@ -97,7 +97,7 @@ else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(turn_on_measurements_program)
+    job = qm.execute(prog)
     # Live plotting
     if measurement_type == "current":
         fig, ax = plt.subplots(1, 1)

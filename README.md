@@ -43,4 +43,18 @@ This file
 └── README.md
 
 ```
+## Setup
+![](.img/Slide2.jpg)
+![](.img/Slide3.jpg)
+![](.img/Slide4.jpg)
+![](.img/Slide5.jpg)
+
 ## Experiments
+![](.img/Slide6.jpg)
+![](.img/Slide7.jpg)
+![](.img/Slide8.jpg)
+![](.img/Slide9.jpg)
+![](.img/Slide10.jpg)
+![](.img/Slide11.jpg)
+![](.img/Slide12.jpg)
+![](.img/Slide13.jpg)

@@ -172,7 +172,13 @@ config = {
     },
     "elements": {
         "qubit_1": {
-            "RF_inputs": {"port": (octave, 1)},
+            # "RF_inputs": {"port": (octave, 1)},
+            'mixInputs': {
+                'I': (con, fem, 1),
+                'Q': (con, fem, 2),
+                'lo_frequency': qubit_LO,
+                'mixer': 'mixer_qubit'
+            },
             "intermediate_frequency": qubit_1_IF,
             "operations": {
                 "cw": "const_pulse_q1",
@@ -186,7 +192,13 @@ config = {
             },
         },
         "qubit_2": {
-            "RF_inputs": {"port": (octave, 1)},
+            # "RF_inputs": {"port": (octave, 1)},
+            'mixInputs': {
+                'I': (con, fem, 1),
+                'Q': (con, fem, 2),
+                'lo_frequency': qubit_LO,
+                'mixer': 'mixer_qubit'
+            },
             "intermediate_frequency": qubit_2_IF,
             "operations": {
                 "cw": "const_pulse_q2",
@@ -278,19 +290,19 @@ config = {
             "smearing": 0,
         },
     },
-    "octaves": {
-        "oct1": {
-            "RF_outputs": {
-                1: {
-                    "LO_frequency": qubit_LO,
-                    "LO_source": "internal",
-                    "output_mode": "always_on",
-                    "gain": 0,
-                }
-            },
-            "connectivity": (con, fem),
-        }
-    },
+    # "octaves": {
+    #     "oct1": {
+    #         "RF_outputs": {
+    #             1: {
+    #                 "LO_frequency": qubit_LO,
+    #                 "LO_source": "internal",
+    #                 "output_mode": "always_on",
+    #                 "gain": 0,
+    #             }
+    #         },
+    #         "connectivity": (con, fem),
+    #     }
+    # },
     "pulses": {
         "const_pulse_q1": {
             "operation": "control",
@@ -492,4 +504,9 @@ config = {
             "sine": [(1.0, lock_in_length)],
         },
     },
+    "mixers": {
+        'mixer_qubit': [
+            {'intermediate_frequency': qubit_1_IF, 'lo_frequency': qubit_LO, 'correction': [1.0, 0.0, 0.0, 1.0]},
+        ],
+    }
 }
