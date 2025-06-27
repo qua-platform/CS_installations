@@ -128,6 +128,7 @@ readout_power = -11
 rr_full_scale, rr_amplitude = get_full_scale_power_dBm_and_amplitude(
     readout_power, max_amplitude=0.25 / len(machine.qubits)
 )
+rr_full_scale = 10 if rr_full_scale > 10 else rr_full_scale
 
 # Update qubit rr freq and power
 for k, qubit in enumerate(machine.qubits.values()):
@@ -265,6 +266,27 @@ for k, q in enumerate(machine.qubits):
         axis_angle=0.0,
     )
 
+
+
+# from quam.core import QuamComponent, quam_dataclass
+
+# @quam_dataclass
+# class CRSquarePulse(pulses.SquarePulse):
+#     """Cross-resonance square pulse with a correction phase."""
+#     correction_phase: float = 0.0
+
+# @quam_dataclass
+# class CRDragCosinePulse(pulses.DragCosinePulse):
+#     """Cross-resonance DragCosine pulse with a correction phase."""
+#     correction_phase: float = 0.0
+
+# @quam_dataclass
+# class CRDragGaussianPulse(pulses.DragGaussianPulse):
+#     """Cross-resonance DragCosine pulse with a correction phase."""
+#     correction_phase: float = 0.0
+
+from my_quam import CRSquareMacro
+
 for k, qp in enumerate(machine.qubit_pairs):
     add_default_transmon_pair_pulses(qp)
     qb_pair = machine.qubit_pairs[qp]
@@ -273,14 +295,15 @@ for k, qp in enumerate(machine.qubit_pairs):
     qb_pair.cross_resonance.target_qubit_IF_frequency = f"#/qubits/{qbt.name}/xy/intermediate_frequency"
     qb_pair.cross_resonance.intermediate_frequency = f"#./inferred_intermediate_frequency"
 
+    qb_pair.macros["cr"] = CRSquareMacro(qc_correction_phase=0.0)
+
     # square
     qb_pair.cross_resonance.operations["square"] = pulses.SquarePulse(
         length=16,
         amplitude=1.0,
         axis_angle=0.0,
     )
-    qb_pair.cross_resonance.operations["square"].correction_phase = 0.0
-    qb_pair.qubit_target.xy.operations["cr_square"] = pulses.SquarePulse(
+    qb_pair.qubit_target.xy.operations[f"cr_square_{qb_pair.name}"] = pulses.SquarePulse(
         length=16,
         amplitude=1.0,
         axis_angle=0.0,
@@ -293,8 +316,9 @@ for k, qp in enumerate(machine.qubit_pairs):
         anharmonicity=260 * u.MHz,
         alpha=0.0,
         detuning=0,
+        # correction_phase=0.0,
     )
-    qb_pair.qubit_target.xy.operations["cr_cosine"]= pulses.DragCosinePulse(
+    qb_pair.qubit_target.xy.operations[f"cr_cosine_{qb_pair.name}"]= pulses.DragCosinePulse(
         length=16,
         amplitude=1.0,
         axis_angle=0.0,
@@ -311,8 +335,9 @@ for k, qp in enumerate(machine.qubit_pairs):
         anharmonicity=260 * u.MHz,
         alpha=0.0,
         detuning=0,
+        # correction_phase=0.0,
     )
-    qb_pair.qubit_target.xy.operations["cr_gauss"]= pulses.DragGaussianPulse(
+    qb_pair.qubit_target.xy.operations[f"cr_gauss_{qb_pair.name}"]= pulses.DragGaussianPulse(
         length=16,
         sigma=16/5,
         amplitude=1.0,

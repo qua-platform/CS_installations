@@ -146,7 +146,7 @@ build_quam(machine)
 from pathlib import Path
 import subprocess
 
-script = "populate_quam_mw_fems_dev.py"
+script = "populate_quam_mw_fems_csrack.py"
 path_config = Path.cwd()
 print(f"Running: {script}")
 subprocess.run(["python", path_config / script], check=True)
