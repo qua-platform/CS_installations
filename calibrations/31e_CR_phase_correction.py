@@ -65,7 +65,7 @@ node = QualibrationNode[Parameters, Quam](
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
     # You can get type hinting in your IDE by typing node.parameters.
-    node.parameters.qubit_pairs = [["q1-2", "q3-4"], ["q2-1", "q4-3"]]
+    node.parameters.qubit_pairs = ["q1-2", "q3-4"]
 
     node.parameters.wf_type = "square"
     node.parameters.cr_type = "direct+cancel+echo"
@@ -295,6 +295,7 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
 
     with node.record_state_updates():
         for qp in node.namespace["qubit_pairs"]:
+            print(qp.name)
             if node.outcomes[qp.name] == "failed":
                 continue
 

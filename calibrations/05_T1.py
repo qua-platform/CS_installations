@@ -84,12 +84,6 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
     u = unit(coerce_to_integer=True)
     # Get the active qubits from the node and organize them by batches
     node.namespace["qubits"] = qubits = get_qubits(node)
-    print("qubits :", qubits)
-    for qb_grp in qubits.batch():
-        for i, qb in qb_grp.items():
-            print(i, qb)
-        
-    print("qubits batch:", qubits.batch())
     num_qubits = len(node.namespace["qubits"])
     # Extract the sweep parameters and axes from the node parameters
     n_avg = node.parameters.num_shots

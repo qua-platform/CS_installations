@@ -36,18 +36,14 @@ def log_fitted_results(fit_results: Dict, log_callable=None):
 def process_raw_dataset(ds: xr.Dataset, node: QualibrationNode):
     if not node.parameters.use_state_discrimination:
         qps = node.namespace["qubit_pairs"]
-        IQ_c_list = [f"{V}_c_{qp.name}" for qp in qps for V in ["I", "Q"]]
-        IQ_t_list = [f"{V}_t_{qp.name}" for qp in qps for V in ["I", "Q"]]
-        ds = convert_IQ_to_V(
-            ds,
-            [qp.qubit_control for qp in qps],
-            IQ_list=IQ_c_list,
-        )
-        ds = convert_IQ_to_V(
-            ds,
-            [qp.qubit_target for qp in qps],
-            IQ_list=IQ_t_list,
-        )
+        all_qubits = [qp.qubit_control for qp in qps] + [qp.qubit_target for qp in qps]
+        all_IQ_keys = [
+            f"{V}_{role}_{qp.name}"
+            for qp in qps
+            for role in ["c", "t"]
+            for V in ["I", "Q"]
+        ]
+        ds = convert_IQ_to_V(ds, all_qubits, IQ_list=all_IQ_keys)
     return ds
 
 

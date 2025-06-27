@@ -67,15 +67,15 @@ def custom_param(node: QualibrationNode[Parameters, Quam]):
     node.parameters.num_shots = 100
     node.parameters.max_wait_time_in_ns = 2000
 
-    node.parameters.qubit_pairs = ["q1-2", "q3-4", "q2-1", "q4-3", "q6-7"]
+    node.parameters.qubit_pairs = ["q1-2", "q3-4"]
     node.parameters.use_state_discrimination = False
 
     node.parameters.wf_type = "square"
     node.parameters.cr_type = "direct+cancel+echo"
-    node.parameters.cr_drive_amp_scaling = [0.89, 0.89, 0.89, 0.89, 0.89] # None : setting None to use the amp from the config
-    node.parameters.cr_drive_phase = [0.12, 0.12, 0.12, 0.12, 0.12] # None : setting None to use the amp from the config
-    node.parameters.cr_cancel_amp_scaling = [0.34, 0.34, 0.34, 0.34, 0.34] # None : setting None to use the amp from the config
-    node.parameters.cr_cancel_phase = [0.23, 0.23, 0.23, 0.23, 0.23] # None : setting None to use the amp from the config
+    node.parameters.cr_drive_amp_scaling = [0.89, 0.89] # None : setting None to use the amp from the config
+    node.parameters.cr_drive_phase = [0.12, 0.12] # None : setting None to use the amp from the config
+    node.parameters.cr_cancel_amp_scaling = [0.34, 0.34] # None : setting None to use the amp from the config
+    node.parameters.cr_cancel_phase = [0.23, 0.23] # None : setting None to use the amp from the config
 
 
 # Instantiate the QUAM class from the state file
@@ -172,19 +172,29 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                                     qc.xy.play("x180")
                                     align(*cr_elems)
 
-                                # Play CR
-                                play_cross_resonance(
-                                    qc=qc,
-                                    qt=qt,
-                                    cr=cr,
+                                # # Play CR
+                                qp.apply("cr",
                                     cr_type=cr_type,
+                                    wf_type=wf_type,
                                     cr_drive_amp_scaling=cr_drive_amp_scaling[i],
                                     cr_drive_phase=cr_drive_phase[i],
                                     cr_cancel_amp_scaling=cr_cancel_amp_scaling[i],
                                     cr_cancel_phase=cr_cancel_phase[i],
                                     cr_duration_clock_cycles=t,
-                                    wf_type=wf_type,
                                 )
+                                
+                                # play_cross_resonance(
+                                #     qc=qc,
+                                #     qt=qt,
+                                #     cr=cr,
+                                #     cr_type=cr_type,
+                                #     cr_drive_amp_scaling=cr_drive_amp_scaling[i],
+                                #     cr_drive_phase=cr_drive_phase[i],
+                                #     cr_cancel_amp_scaling=cr_cancel_amp_scaling[i],
+                                #     cr_cancel_phase=cr_cancel_phase[i],
+                                #     cr_duration_clock_cycles=t,
+                                #     wf_type=wf_type,
+                                # )
 
                                 # QST on qt
                                 align(*cr_elems)
@@ -336,11 +346,11 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
                 # cr drive
                 operation = qp.cross_resonance.operations[node.parameters.wf_type]
                 operation.amplitude = node.parameters.cr_drive_amp_scaling[i] * operation.amplitude
-                operation.axis_angle = node.parameters.cr_drive_phase[i]
-                # cr cancel 
+                operation.axis_angle = node.parameters.cr_drive_phase[i] * 2 * np.pi
+                # cr cancel wat
                 operation = qp.qubit_target.xy.operations[f"cr_{node.parameters.wf_type}"]
                 operation.amplitude = node.parameters.cr_cancel_amp_scaling[i] * operation.amplitude
-                operation.axis_angle = node.parameters.cr_cancel_phase[i]
+                operation.axis_angle = node.parameters.cr_cancel_phase[i] * 2 * np.pi
 
 
 # %% {Save_results}
