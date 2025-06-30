@@ -9,9 +9,10 @@ class QDACWithChannelLookup(QDac):
     name.
     """
     def __init__(self, name: str, address: str, **kwargs: Any):
+        self.qdac_channel_mapping = kwargs.pop("qdac_channel_mapping", None)
+        self.qdac_turn_on_voltages = kwargs.pop("qdac_turn_on_voltages", None)
+
         super().__init__(name, address, **kwargs)
-        self.qdac_channel_mapping = kwargs.get("qdac_channel_mapping")
-        self.qdac_turn_on_voltages = kwargs.get("qdac_turn_on_voltages")
 
     def get_channel_from_gate(self, gate: str) -> QDacChannel:
         """ Returns the QDAC channel attribute corresponding to the given gate. """

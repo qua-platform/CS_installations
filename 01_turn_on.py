@@ -139,10 +139,10 @@ else:
             axis_title = " ".join(name.split("_")[:-1]).capitalize() + f' [{name.split("_")[-1]}]'
             fig.suptitle(f"{gate_to_sweep.capitalize()} Gate Sweep ({measurement_type.capitalize()})")
             ax[j].cla()
+            plt.yscale('log')  # set the y-axis scaling to be logarithmic
             ax[j].plot(gate_dc_offsets[: iteration + 1], result)
             ax[j].set_xlabel("Gate Voltage [V]")
             ax[j].set_ylabel(axis_title)
-            plt.yscale('log')  # set the y-axis scaling to be logarithmic
 
         fig.tight_layout()
         plt.pause(1)
