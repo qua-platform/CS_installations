@@ -1,0 +1,8 @@
+[submodule "qua-dashboards"]
+	path = qua-dashboards
+	url = https://github.com/qua-platform/qua-dashboards
+	branch = feat/virtual_gating
+[submodule "quam-builder"]
+	path = quam-builder
+	url = https://github.com/qua-platform/quam-builder
+	branch = feat/qdac+opx-quam
