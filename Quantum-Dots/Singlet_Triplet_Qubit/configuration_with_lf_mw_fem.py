@@ -297,8 +297,6 @@ config = {
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
-
-
         "TIA": {
             "singleInput": {
                 "port": (con, lffem1, 8),
@@ -313,8 +311,6 @@ config = {
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
-
-
     },
     "pulses": {
         "P1_pi_pulse": {
