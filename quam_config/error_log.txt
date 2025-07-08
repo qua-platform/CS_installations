@@ -1,0 +1,207 @@
+2025-06-27 06:16:44,330 - qualibrate - INFO - Creating node 30_CR_time_rabi_QST
+/usr/local/lib/python3.11/site-packages/quam/core/quam_instantiation.py:366: UserWarning: Could not instantiate Quam.qubit_pairs["q1-2"].macros["cr"] with class my_quam.CRGate, falling back to Any
+  warnings.warn(
+---------------------------------------------------------------------------
+TypeError                                 Traceback (most recent call last)
+Cell In[2], line 50
+     46     node.parameters.cr_cancel_phase = [0.23, 0.23] # None : setting None to use the amp from the config
+     49 # Instantiate the QUAM class from the state file
+---> 50 node.machine = Quam.load()
+
+File /usr/local/lib/python3.11/site-packages/quam_builder/architecture/superconducting/qpu/fixed_frequency_quam.py:40, in FixedFrequencyQuam.load(cls, *args, **kwargs)
+     38 @classmethod
+     39 def load(cls, *args, **kwargs) -> "FixedFrequencyQuam":
+---> 40     return super().load(*args, **kwargs)
+
+File /usr/local/lib/python3.11/site-packages/quam/core/quam_classes.py:794, in QuamRoot.load(cls, filepath_or_dict, validate_type, fix_attrs)
+    791     serialiser = cls.get_serialiser()
+    792     contents, _ = serialiser.load(filepath_or_dict)
+--> 794 return instantiate_quam_class(
+    795     quam_class=cls,
+    796     contents=contents,
+    797     fix_attrs=fix_attrs,
+    798     validate_type=validate_type,
+    799 )
+
+File /usr/local/lib/python3.11/site-packages/quam/core/quam_instantiation.py:379, in instantiate_quam_class(quam_class, contents, fix_attrs, validate_type, str_repr)
+    372     raise TypeError(
+    373         f"contents must be a dict, not {type(contents)}, could not instantiate"
+    374         f" {str_repr}. Contents: {contents}"
+    375     )
+    377 attr_annotations = get_dataclass_attr_annotations(quam_class)
+--> 379 instantiated_attrs = instantiate_attrs(
+    380     attr_annotations=attr_annotations,
+    381     contents=contents,
+    382     fix_attrs=fix_attrs,
+    383     validate_type=validate_type,
+    384     str_repr=str_repr,
+    385 )
+    387 quam_component = quam_class(
+    388     **{**instantiated_attrs["required"], **instantiated_attrs["optional"]}
+    389 )
+    391 if fix_attrs:
+
+File /usr/local/lib/python3.11/site-packages/quam/core/quam_instantiation.py:304, in instantiate_attrs(attr_annotations, contents, fix_attrs, validate_type, str_repr)
+    301 else:
+    302     expected_type = attr_annotations["allowed"][attr_name]
+--> 304 instantiated_attr = instantiate_attr(
+    305     attr_val=attr_val,
+    306     expected_type=expected_type,
+    307     allow_none=attr_name not in attr_annotations["required"],
+    308     fix_attrs=fix_attrs,
+    309     validate_type=validate_type,
+    310     str_repr=f"{str_repr}.{attr_name}",
+    311 )
+    313 if attr_name in attr_annotations["required"]:
+    314     instantiated_attrs["required"][attr_name] = instantiated_attr
+
+File /usr/local/lib/python3.11/site-packages/quam/core/quam_instantiation.py:195, in instantiate_attr(attr_val, expected_type, allow_none, fix_attrs, validate_type, str_repr)
+    187     instantiated_attr = instantiate_quam_class(
+    188         quam_class=expected_type,
+    189         contents=attr_val,
+   (...)    192         str_repr=str_repr,
+    193     )
+    194 elif isinstance(expected_type, dict) or typing.get_origin(expected_type) == dict:
+--> 195     instantiated_attr = instantiate_attrs_from_dict(
+    196         attr_dict=attr_val,
+    197         required_type=expected_type,
+    198         fix_attrs=fix_attrs,
+    199         validate_type=validate_type,
+    200         str_repr=str_repr,
+    201     )
+    202     if typing.get_origin(expected_type) == dict:
+    203         expected_type = dict
+
+File /usr/local/lib/python3.11/site-packages/quam/core/quam_instantiation.py:70, in instantiate_attrs_from_dict(attr_dict, required_type, fix_attrs, validate_type, str_repr)
+     68 instantiated_attr_dict = {}
+     69 for attr_name, attr_val in attr_dict.items():
+---> 70     instantiated_attr_dict[attr_name] = instantiate_attr(
+     71         attr_val=attr_val,
+     72         expected_type=required_subtype,
+     73         allow_none=False,
+     74         fix_attrs=fix_attrs,
+     75         validate_type=validate_type if required_subtype is not None else False,
+     76         str_repr=f'{str_repr}["{attr_name}"]',
+     77     )
+     79 return instantiated_attr_dict
+
+File /usr/local/lib/python3.11/site-packages/quam/core/quam_instantiation.py:179, in instantiate_attr(attr_val, expected_type, allow_none, fix_attrs, validate_type, str_repr)
+    177     instantiated_attr = attr_val
+    178 elif isclass(expected_type) and issubclass(expected_type, QuamComponent):
+--> 179     instantiated_attr = instantiate_quam_class(
+    180         quam_class=expected_type,
+    181         contents=attr_val,
+    182         fix_attrs=fix_attrs,
+    183         validate_type=validate_type,
+    184         str_repr=str_repr,
+    185     )
+    186 elif isinstance(attr_val, dict) and "__class__" in attr_val:
+    187     instantiated_attr = instantiate_quam_class(
+    188         quam_class=expected_type,
+    189         contents=attr_val,
+   (...)    192         str_repr=str_repr,
+    193     )
+
+File /usr/local/lib/python3.11/site-packages/quam/core/quam_instantiation.py:379, in instantiate_quam_class(quam_class, contents, fix_attrs, validate_type, str_repr)
+    372     raise TypeError(
+    373         f"contents must be a dict, not {type(contents)}, could not instantiate"
+    374         f" {str_repr}. Contents: {contents}"
+    375     )
+    377 attr_annotations = get_dataclass_attr_annotations(quam_class)
+--> 379 instantiated_attrs = instantiate_attrs(
+    380     attr_annotations=attr_annotations,
+    381     contents=contents,
+    382     fix_attrs=fix_attrs,
+    383     validate_type=validate_type,
+    384     str_repr=str_repr,
+    385 )
+    387 quam_component = quam_class(
+    388     **{**instantiated_attrs["required"], **instantiated_attrs["optional"]}
+    389 )
+    391 if fix_attrs:
+
+File /usr/local/lib/python3.11/site-packages/quam/core/quam_instantiation.py:304, in instantiate_attrs(attr_annotations, contents, fix_attrs, validate_type, str_repr)
+    301 else:
+    302     expected_type = attr_annotations["allowed"][attr_name]
+--> 304 instantiated_attr = instantiate_attr(
+    305     attr_val=attr_val,
+    306     expected_type=expected_type,
+    307     allow_none=attr_name not in attr_annotations["required"],
+    308     fix_attrs=fix_attrs,
+    309     validate_type=validate_type,
+    310     str_repr=f"{str_repr}.{attr_name}",
+    311 )
+    313 if attr_name in attr_annotations["required"]:
+    314     instantiated_attrs["required"][attr_name] = instantiated_attr
+
+File /usr/local/lib/python3.11/site-packages/quam/core/quam_instantiation.py:195, in instantiate_attr(attr_val, expected_type, allow_none, fix_attrs, validate_type, str_repr)
+    187     instantiated_attr = instantiate_quam_class(
+    188         quam_class=expected_type,
+    189         contents=attr_val,
+   (...)    192         str_repr=str_repr,
+    193     )
+    194 elif isinstance(expected_type, dict) or typing.get_origin(expected_type) == dict:
+--> 195     instantiated_attr = instantiate_attrs_from_dict(
+    196         attr_dict=attr_val,
+    197         required_type=expected_type,
+    198         fix_attrs=fix_attrs,
+    199         validate_type=validate_type,
+    200         str_repr=str_repr,
+    201     )
+    202     if typing.get_origin(expected_type) == dict:
+    203         expected_type = dict
+
+File /usr/local/lib/python3.11/site-packages/quam/core/quam_instantiation.py:70, in instantiate_attrs_from_dict(attr_dict, required_type, fix_attrs, validate_type, str_repr)
+     68 instantiated_attr_dict = {}
+     69 for attr_name, attr_val in attr_dict.items():
+---> 70     instantiated_attr_dict[attr_name] = instantiate_attr(
+     71         attr_val=attr_val,
+     72         expected_type=required_subtype,
+     73         allow_none=False,
+     74         fix_attrs=fix_attrs,
+     75         validate_type=validate_type if required_subtype is not None else False,
+     76         str_repr=f'{str_repr}["{attr_name}"]',
+     77     )
+     79 return instantiated_attr_dict
+
+File /usr/local/lib/python3.11/site-packages/quam/core/quam_instantiation.py:187, in instantiate_attr(attr_val, expected_type, allow_none, fix_attrs, validate_type, str_repr)
+    179     instantiated_attr = instantiate_quam_class(
+    180         quam_class=expected_type,
+    181         contents=attr_val,
+   (...)    184         str_repr=str_repr,
+    185     )
+    186 elif isinstance(attr_val, dict) and "__class__" in attr_val:
+--> 187     instantiated_attr = instantiate_quam_class(
+    188         quam_class=expected_type,
+    189         contents=attr_val,
+    190         fix_attrs=fix_attrs,
+    191         validate_type=validate_type,
+    192         str_repr=str_repr,
+    193     )
+    194 elif isinstance(expected_type, dict) or typing.get_origin(expected_type) == dict:
+    195     instantiated_attr = instantiate_attrs_from_dict(
+    196         attr_dict=attr_val,
+    197         required_type=expected_type,
+   (...)    200         str_repr=str_repr,
+    201     )
+
+File /usr/local/lib/python3.11/site-packages/quam/core/quam_instantiation.py:387, in instantiate_quam_class(quam_class, contents, fix_attrs, validate_type, str_repr)
+    377 attr_annotations = get_dataclass_attr_annotations(quam_class)
+    379 instantiated_attrs = instantiate_attrs(
+    380     attr_annotations=attr_annotations,
+    381     contents=contents,
+   (...)    384     str_repr=str_repr,
+    385 )
+--> 387 quam_component = quam_class(
+    388     **{**instantiated_attrs["required"], **instantiated_attrs["optional"]}
+    389 )
+    391 if fix_attrs:
+    392     assert not instantiated_attrs["extra"]
+
+File /usr/local/lib/python3.11/typing.py:514, in Any.__new__(cls, *args, **kwargs)
+    512 def __new__(cls, *args, **kwargs):
+    513     if cls is Any:
+--> 514         raise TypeError("Any cannot be instantiated")
+    515     return super().__new__(cls, *args, **kwargs)
+
+TypeError: Any cannot be instantiated
