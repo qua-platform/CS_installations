@@ -1,0 +1,125 @@
+2025-06-27 00:45:50,506 - qm - INFO     - Starting session: 14f7b26d-7901-47c2-83cf-a400160cc955
+2025-06-27 00:46:00,831 - qm - INFO     - Performing health check
+2025-06-27 00:46:01,926 - qm - INFO     - Health check passed
+2025-06-27 00:46:04,423 - qm - INFO     - Sending program to QOP for compilation
+2025-06-27 00:46:18,218 - qm - INFO     - Executing program
+    start!!
+
+rep=0
+    here1
+        I=-0.00029964
+        Q=-0.00013829
+        V_change=2.03600000
+        amplitude=8.05682755492766e-08
+    here2
+    here3
+    here4
+
+rep=1
+    here1
+        I=-0.00026568
+        Q=-0.00015149
+        V_change=2.03600000
+        amplitude=7.466668649439034e-08
+    here2
+    here3
+    here4
+
+rep=2
+    here1
+        I=-0.00020317
+        Q=-0.00006267
+        V_change=2.03600000
+        amplitude=5.1908825123600006e-08
+    here2
+    here3
+    here4
+
+rep=3
+    here1
+        I=-0.00019589
+        Q=-0.00011035
+        V_change=2.03600000
+        amplitude=5.4891150642139654e-08
+    here2
+    here3
+    here4
+
+rep=4
+    here1
+        I=-0.00027009
+        Q=-0.00004767
+        V_change=2.03600000
+        amplitude=6.69585676988548e-08
+    here2
+    here3
+    here4
+
+rep=5
+    here1
+        I=-0.00023185
+        Q=-0.00014752
+        V_change=2.03600000
+        amplitude=6.709013718969535e-08
+    here2
+    here3
+    here4
+
+rep=6
+    here1
+        I=-0.00032943
+        Q=-0.00009779
+        V_change=2.03600000
+        amplitude=8.389729316459248e-08
+    here2
+    here3
+    here4
+
+rep=7
+    here1
+        I=-0.00034131
+        Q=-0.00009228
+        V_change=2.03600000
+        amplitude=8.631863746032483e-08
+    here2
+    here3
+    here4
+
+rep=8
+    here1
+        I=-0.00028136
+        Q=-0.00012896
+        V_change=2.03600000
+        amplitude=7.556326787122788e-08
+    here2
+    here3
+    here4
+
+rep=9
+    here1
+        I=-0.00021666
+        Q=-0.00012084
+        V_change=2.03600000
+        amplitude=6.056519047367598e-08
+    here2
+    here3
+    here4
+
+rep=10
+    here1
+        I=-0.00024014
+        Q=-0.00018328
+        V_change=2.03600000
+        amplitude=7.375262424270116e-08
+    here2
+    here3
+    here4
+
+rep=11
+    here1
+        I=-0.00030421
+        Q=-0.00011693
+        V_change=2.03600000
+        amplitude=7.956766503078626e-08
+    here2
+break!!
