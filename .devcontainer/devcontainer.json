@@ -1,0 +1,8 @@
+{
+	"name": "Python 3",
+	"image": "mcr.microsoft.com/devcontainers/python:0-3.11",
+	"remoteUser": "root",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces,type=bind,consistency=cached",
+    "postCreateCommand": "apt-get update && apt-get install -y python3-tk tk && cd /workspaces && pip install -U pip && pip install qm-qua qualang-tools qm-saas ipykernel",
+    "workspaceFolder": "/workspaces"
+}
