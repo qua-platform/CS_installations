@@ -34,10 +34,10 @@ from macros import measure_current, measure_lock_in, fetch_results_current, fetc
 ###################
 n_avg = 100  # The number of averages
 gate_dc_offsets = np.arange(0, 0.5, 0.05)
-gate_to_sweep = "P20"
+gates_to_sweep = ["P20", "B20", "B21"]
 measurement_type = "lock-in"  # "current" or "lock-in"
 
-simulate = False
+simulate = True
 
 with program() as prog:
     n = declare(int)  # QUA variable for the averaging loop
@@ -79,7 +79,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 #######################
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=1_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=5_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, prog, simulation_config)
     # Get the simulated samples
@@ -93,7 +93,9 @@ if simulate:
 else:
     # Initialize QDAC
     qdac = get_qdac()
-    gate = qdac.get_channel_from_gate(gate_to_sweep)
+    # gate = qdac.get_channel_from_gate(gate_to_sweep)
+    # gates = [qdac.get_channel_from_gate(gate) for gate in list(qdac_channel_mapping.keys())]
+    gates = [qdac.get_channel_from_gate(gate) for gate in gates_to_sweep]
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
@@ -109,7 +111,8 @@ else:
 
     for i in range(len(gate_dc_offsets)):  # Loop over voltages
         # Set voltage
-        gate.v(gate_dc_offsets[i])  # set the channel voltage
+        for gate in gates:
+            gate.v(gate_dc_offsets[i]) # set the channel voltage
         # Resume the QUA program (escape the 'pause' statement)
         job.resume()
         # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
@@ -137,7 +140,8 @@ else:
         # Plot results
         for j, (name, result) in enumerate(measurement_data.items()):
             axis_title = " ".join(name.split("_")[:-1]).capitalize() + f' [{name.split("_")[-1]}]'
-            fig.suptitle(f"{gate_to_sweep.capitalize()} Gate Sweep ({measurement_type.capitalize()})")
+            # fig.suptitle(f"{gate_to_sweep.capitalize()} Gate Sweep ({measurement_type.capitalize()})")
+            fig.suptitle(f"{gates_to_sweep} Gate Sweep ({measurement_type.capitalize()})")
             ax[j].cla()
             plt.yscale('log')  # set the y-axis scaling to be logarithmic
             ax[j].plot(gate_dc_offsets[: iteration + 1], result)
@@ -150,12 +154,12 @@ else:
     data_handler = DataHandler(root_data_folder=save_dir)
     data = {
         **measurement_data,
-        "swept_gate": gate_to_sweep,
+        "swept_gate": gates_to_sweep,
         "gate_dc_offsets": gate_dc_offsets,
         "figure": fig
     }
     # Save results
-    data_folder = data_handler.save_data(data=data, name=f"{gate_to_sweep}_turn_on_measurements")
+    data_folder = data_handler.save_data(data=data, name=f"{gates_to_sweep}_turn_on_measurements")
 
     qdac.close()
 

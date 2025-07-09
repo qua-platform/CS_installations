@@ -18,9 +18,9 @@ u = unit(coerce_to_integer=True)
 ######################
 # Network parameters #
 ######################
-qop_ip = "172.16.33.115"  # Write the QM router IP address
+qop_ip = "ip_adress"  # Write the QM router IP address
 cluster_name = "CS_3"  # Write your cluster_name if version >= QOP220
-qop_port = 9510  # Write the QOP port if version < QOP220
+qop_port = 80  # Write the QOP port if version < QOP220
 # In QOP versions > 2.2.2, the Octave is automatically deteced by the QOP.
 # For QOP versions <= 2.2.2, see Tutorials/intro-to-octave/qop 222 and below.
 # Below you can specify the path for the Octave mixer calibration's database file.
@@ -47,7 +47,7 @@ fem = 3  # slot index of the lf-fem inside the chassis
 ######################
 # QDAC-I parameters  #
 ######################
-qdac_ip = "127.0.0.2"  # Write the QDAC instrument IP address here
+qdac_ip = "127.000.000.000"  # Write the QDAC instrument IP address here
 qdac_channel_mapping = {
     "B20": 1, "P20": 2, "B21": 3, "B30": 4, "P30": 5, "B31": 6,
     "B1": 9, "P1": 10, "B2": 11, "P2": 12, "B3": 13,
@@ -69,13 +69,12 @@ def get_qdac() -> QDAC:
                 qdac_channel_mapping=qdac_channel_mapping, qdac_turn_on_voltages=qdac_turn_on_voltages)
 
     # set global channel settings
-    for i in range(24):
+    for i in range(1,25):
         ch = qdac.get_channel_by_index(i)
         ch.slope(0.1)  # set to something "safe" in units of V/s
         # todo: do we need to set the output mode?
 
     return qdac
-
 ######################
 #       READOUT      #
 ######################
@@ -159,10 +158,12 @@ config = {
                     "analog_outputs": {
                         1: {"offset": 0.0, "upsampling_mode": "mw"},  # Qubit RF I-Quadrature
                         2: {"offset": 0.0, "upsampling_mode": "mw"},  # Qubit RF Q-Quadrature
-                        3: {"offset": 0.0, "upsampling_mode": "pulse"},  # Plunger Gate Qubit 1 (P1)
-                        4: {"offset": 0.0, "upsampling_mode": "pulse"},  # Plunger Gate Qubit 2 (P2)
-                        5: {"offset": 0.0, "upsampling_mode": "pulse"},  # SET Plunger Gate (P20)
-                        6: {"offset": 0.0, "upsampling_mode": "mw"},  # Drain Gate (AC0)
+                        3: {"offset": 0.0, "upsampling_mode": "mw"},  # P2 RF I-Quadrature
+                        4: {"offset": 0.0, "upsampling_mode": "mw"},  # P2 RF Q-Quadrature
+                        5: {"offset": 0.0, "upsampling_mode": "pulse"},  # Plunger Gate Qubit 1 (P1)
+                        6: {"offset": 0.0, "upsampling_mode": "pulse"},  # Plunger Gate Qubit 2 (P2)
+                        7: {"offset": 0.0, "upsampling_mode": "pulse"},  # SET Plunger Gate (P20)
+                        8: {"offset": 0.0, "upsampling_mode": "mw"},  # Drain Gate (AC0)
                     },
                     "digital_outputs": {
                         1: {},  # Octave Trigger
@@ -177,13 +178,13 @@ config = {
     },
     "elements": {
         "qubit_1": {
-            # "RF_inputs": {"port": (octave, 1)},
-            'mixInputs': {
-                'I': (con, fem, 1),
-                'Q': (con, fem, 2),
-                'lo_frequency': qubit_LO,
-                'mixer': 'mixer_qubit'
-            },
+            "RF_inputs": {"port": (octave, 1)},
+            # 'mixInputs': {
+            #     'I': (con, fem, 1),
+            #     'Q': (con, fem, 2),
+            #     'lo_frequency': qubit_LO,
+            #     'mixer': 'mixer_qubit'
+            # },
             "intermediate_frequency": qubit_1_IF,
             "operations": {
                 "cw": "const_pulse_q1",
@@ -197,13 +198,13 @@ config = {
             },
         },
         "qubit_2": {
-            # "RF_inputs": {"port": (octave, 1)},
-            'mixInputs': {
-                'I': (con, fem, 1),
-                'Q': (con, fem, 2),
-                'lo_frequency': qubit_LO,
-                'mixer': 'mixer_qubit'
-            },
+            "RF_inputs": {"port": (octave, 1)},
+            # 'mixInputs': {
+            #     'I': (con, fem, 1),
+            #     'Q': (con, fem, 2),
+            #     'lo_frequency': qubit_LO,
+            #     'mixer': 'mixer_qubit'
+            # },
             "intermediate_frequency": qubit_2_IF,
             "operations": {
                 "cw": "const_pulse_q2",
@@ -217,13 +218,13 @@ config = {
             },
         },
         "P2_RF": {
-            # "RF_inputs": {"port": (octave, 1)},
-            'mixInputs': {
-                'I': (con, fem, 3),
-                'Q': (con, fem, 4),
-                'lo_frequency': photon_assisted_tunneling_LO,
-                'mixer': 'mixer_pat'
-            },
+            "RF_inputs": {"port": (octave, 2)},
+            # 'mixInputs': {
+            #     'I': (con, fem, 3),
+            #     'Q': (con, fem, 4),
+            #     'lo_frequency': photon_assisted_tunneling_LO,
+            #     'mixer': 'mixer_pat'
+            # },
             "intermediate_frequency": photon_assisted_tunneling_IF,
             "operations": {
                 "photon_assisted_tunneling": "const_pulse_pat",
@@ -308,19 +309,25 @@ config = {
             "smearing": 0,
         },
     },
-    # "octaves": {
-    #     "oct1": {
-    #         "RF_outputs": {
-    #             1: {
-    #                 "LO_frequency": qubit_LO,
-    #                 "LO_source": "internal",
-    #                 "output_mode": "always_on",
-    #                 "gain": 0,
-    #             }
-    #         },
-    #         "connectivity": (con, fem),
-    #     }
-    # },
+    "octaves": {
+        "oct1": {
+            "RF_outputs": {
+                1: {
+                    "LO_frequency": qubit_LO,
+                    "LO_source": "internal",
+                    "output_mode": "always_on",
+                    "gain": 0,
+                },
+                2: {
+                    "LO_frequency": qubit_LO,
+                    "LO_source": "internal",
+                    "output_mode": "always_on",
+                    "gain": 0,
+                }
+            },
+            "connectivity": (con, fem),
+        }
+    },
     "pulses": {
         "const_pulse_q1": {
             "operation": "control",
