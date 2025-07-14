@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 10  # Number of averaging loops
+n_avg = 100000000  # Number of averaging loops
 
 ###################
 # The QUA program #
@@ -18,7 +18,9 @@ with program() as prog:
     n = declare(int)  # QUA variable for the averaging loop
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
-        play('arb', 'low_freq')
+        # play('arb', 'low_freq')
+        play('const', 'low_freq')
+        play('const', 'low_freq_2')
         wait(50)
 
 #####################################
@@ -29,7 +31,7 @@ qmm = QuantumMachinesManager(**qmm_settings)
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration

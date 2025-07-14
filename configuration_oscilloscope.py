@@ -16,8 +16,8 @@ u = unit(coerce_to_integer=True)
 ######################
 # Network parameters #
 ######################
-qop_ip = "ip_adress"  # Write the QM router IP address
-cluster_name = "CS_3"  # Write your cluster_name if version >= QOP220
+qop_ip = "192.168.88.247"  # Write the QM router IP address
+cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None # Write the QOP port if version < QOP220
 # In QOP versions > 2.2.2, the Octave is automatically deteced by the QOP.
 # For QOP versions <= 2.2.2, see Tutorials/intro-to-octave/qop 222 and below.
@@ -45,19 +45,19 @@ fem = 3  # slot index of the lf-fem inside the chassis
 ######################
 #       READOUT      #
 ######################
-time_of_flight = 28
-pulse_length = 1000 *u.ns
-pulse_amp = 0.5
+time_of_flight = 280
+pulse_length = 300 *u.ns
+pulse_amp = 0.45
 
 # DC readout parameters
-tia_iv_scale_factor = 1e-9  # from spec (Femto DDPCA-300 Transimpedance in A/V at V/A = 10^9)
-tia_bandwidth = 150  # in Hz, from spec
+tia_iv_scale_factor = 1e-6  # from spec (Femto DDPCA-300 Transimpedance in A/V at V/A = 10^9)
+tia_bandwidth = 500  # in Hz, from spec
 
-lock_in_freq = 200 * u.Hz
-lock_in_amp = 450 * u.mV
+lock_in_freq = 10 * u.kHz
+lock_in_amp = 400 * u.mV
 lock_in_length = 10 * u.ms
-
-time_of_flight = 28
+DC_offest = 0
+DC_pulse_amp = 0.4
 ####################
 #      QUBIT       #
 ####################
@@ -72,7 +72,7 @@ P2_step_amp = 0.1  # in V
 SET_step_amp = 0.1  # in V
 
 # Time to ramp down to zero for sticky elements in ns
-hold_offset_duration = 4
+hold_offset_duration = 60
 bias_tee_cut_off_frequency = 10 * u.kHz
 
 #######################
@@ -88,9 +88,9 @@ bias_tee_cut_off_frequency = 10 * u.kHz
 # Ref: https://doi.org/10.1103/PhysRevA.95.062325
 
 f_0       = 10 *u.MHz      # base frequency
-k_max     = 3           
-a_k       = [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]   # total_range:= -0.5 ~ 0.5 
-m_k       = [1, 2, 3, 4, 5, 6, 7, 8] 
+k_max     = 1       
+a_k       = [0.25,]# 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]   # total_range:= -0.5 ~ 0.5 
+m_k       = [1,]#3, 4, 5, 6, 7, 8] 
 dt       = 1       # each waveform sample length, Note: need to check the port sampling rate
 
 assert sum(a_k) < 0.5 and sum(a_k) > -0.5, "out of voltage range"
@@ -118,21 +118,26 @@ config = {
                             "offset": 0.0, 
                             "upsampling_mode": "mw"
                         },  # IF Q-Quadrature
+                        4: {
+                            "offset": 0.0, 
+                            "sampling_rate": 1e9, # default is 1 GSa/s
+                        }, #low freq single input
                         5: {
                             "offset": 0.0, 
                             "sampling_rate": 1e9, # default is 1 GSa/s
                         }, #low freq single input
                         6: {
                             "offset": 0.0, 
-                            "upsampling_mode": "pulse"
+                            "upsampling_mode": "pulse" # comment out if use 2e9 sampling_rate
                         },  # P1 Sticky
                         7: {
                             "offset": 0.0, 
                             "upsampling_mode": "pulse"
                         },  # P2 Sticky
                         8: {
-                            "offset": 0.0, 
-                            "upsampling_mode": "mw"
+                            "offset": DC_offest, 
+                            "upsampling_mode": "mw",
+                            'output_mode': 'amplified', #direct / amplified
                         },  # lock-in measurement
                         
                     },
@@ -140,7 +145,7 @@ config = {
                         1: {},  # Octave Trigger
                     },
                     "analog_inputs": {
-                        1: {"offset": 0.0, "gain_db": 0},  # Source Gate TIA
+                        1: {"offset":0.0, "gain_db": 0},  # Source Gate TIA
                         2: {"offset": 0.0, "gain_db": 0},  # (Must be defined for Octave mixer calibration)
                     },
                 }
@@ -150,7 +155,7 @@ config = {
     "elements": {
         "high_freq": {
             "RF_inputs": {"port": (octave, 1)},
-            "intermediate_frequency": 300 *u.MHz,
+            "intermediate_frequency": -300 *u.MHz,
             "operations": {
                 "arb": "arb_pulse_high_freq",
                 "cw": "const",
@@ -160,7 +165,17 @@ config = {
             "singleInput": {
                 "port": (con, fem, 5),
             },
-            "intermediate_frequency": 300 *u.MHz,
+            "intermediate_frequency": 0 *u.MHz,
+            "operations": {
+                "arb": "arb_pulse_low_freq",
+                "const": "const_pulse"
+            },
+        },
+        "low_freq_2": {
+            "singleInput": {
+                "port": (con, fem, 4),
+            },
+            "intermediate_frequency": 0 *u.MHz,
             "operations": {
                 "arb": "arb_pulse_low_freq",
                 "const": "const_pulse"
@@ -179,6 +194,15 @@ config = {
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
+        },
+        "lockin_DC": {
+            "singleInput": {
+                "port": (con, fem, 8),
+            },
+            "intermediate_frequency": 0 *u.MHz,
+            "operations": {
+                "const_DC": "const_DC_pulse"
+            },
         },
         "P1_sticky": {
             "singleInput": {
@@ -203,7 +227,7 @@ config = {
         "oct1": {
             "RF_outputs": {
                 1: {
-                    "LO_frequency": 3 *u.GHz,
+                    "LO_frequency": 2 *u.GHz,
                     "LO_source": "internal",
                     "output_mode": "always_on",
                     "gain": 0,
@@ -244,6 +268,13 @@ config = {
                 "single": "const_wf",
             },
         },
+        "const_DC_pulse": {
+            "operation": "control",
+            "length": lock_in_length,
+            "waveforms": {
+                "single": "const_DC_wf",
+            },
+        },
          "lock_in_pulse": {
             "operation": "measurement",
             "length": lock_in_length,
@@ -273,6 +304,7 @@ config = {
     },
     "waveforms": {
         "const_wf": {"type": "constant", "sample": pulse_amp},
+        "const_DC_wf": {"type": "constant", "sample": DC_pulse_amp},
         "zero_wf": {"type": "constant", "sample": 0.0},
         "lock_in_wf": {"type": "constant", "sample": lock_in_amp},
         "P1_step_wf": {"type": "constant", "sample": P1_step_amp},
@@ -286,12 +318,12 @@ config = {
 
     "integration_weights": {
         "cosine_weights": {
-            "cosine": [(1.0, lock_in_length)],
+            "cosine": [(1.0, lock_in_length)], #Reduce it when using long readout lengths to avoid overflow. 
             "sine": [(0.0, lock_in_length)],
         },
         "sine_weights": {
             "cosine": [(0.0, lock_in_length)],
-            "sine": [(1.0, lock_in_length)],
+            "sine": [(1.0, lock_in_length)],  #Reduce it when using long readout lengths to avoid overflow.
         },
     },
 }

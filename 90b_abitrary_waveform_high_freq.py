@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 10  # Number of averaging loops
+n_avg = 100  # Number of averaging loops
 
 ###################
 # The QUA program #

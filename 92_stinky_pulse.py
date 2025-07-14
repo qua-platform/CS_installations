@@ -10,13 +10,15 @@ from configuration_oscilloscope import *
 ##################
 #   Parameters   #
 ##################
+n_avg = 1000000000  
+
 # Parameters Definition
-level_init = [0.1, -0.1]
-level_manip = [0.2, -0.2]
-level_readout = [0.1, -0.1]
-duration_init = 200
-duration_manip = 800
-duration_readout = 500
+level_init = [0.3, -0.1]
+level_manip = [0.4, -0.2]
+level_readout = [0.3, -0.1]
+duration_init = 2000
+duration_manip = 5000
+duration_readout = 1000
 
 # Add the relevant voltage points describing the "slow" sequence (no qubit pulse)
 seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
@@ -28,14 +30,16 @@ seq.add_points("readout", level_readout, duration_readout)
 # The QUA program #
 ###################
 with program() as hello_qua:
-    t = declare(int, value=16)
+    n = declare(int)  # QUA variable for the averaging loop
+    t = declare(int, value=600)
     i = declare(int)
-    with strict_timing_():
-        seq.add_step(voltage_point_name="initialization")
-        seq.add_step(voltage_point_name="idle", duration=t)
-        seq.add_step(voltage_point_name="readout")
-        seq.add_compensation_pulse(duration=2_000)
-    seq.ramp_to_zero()
+    with for_(n, 0, n < n_avg, n + 1):
+        with strict_timing_():
+            seq.add_step(voltage_point_name="initialization")
+            seq.add_step(voltage_point_name="idle", duration=t)
+            seq.add_step(voltage_point_name="readout")
+            seq.add_compensation_pulse(duration=2_000)
+        seq.ramp_to_zero()
 
 #####################################
 #  Open Communication with the QOP  #
@@ -46,7 +50,7 @@ qmm = QuantumMachinesManager(**qmm_settings)
 # Run or Simulate Program #
 ###########################
 
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration

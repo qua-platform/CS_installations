@@ -15,12 +15,12 @@ from macros import measure_current, measure_lock_in, fetch_results_current, fetc
 # The QUA program #
 ###################
 # Parameters Definition
-n_avg = 100  # The number of averages
+n_avg = 300  # The number of averages
 
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-0.5; 0.5)
-a_min = 0.5
-a_max = 1
-amplitudes = np.geomspace(a_min, a_max, 20)
+a_min = -1.99
+a_max = 1.99
+amplitudes = np.linspace(a_min, a_max, 30)
 
 with program() as prog:
     n = declare(int)  # QUA variable for the averaging loop
@@ -34,8 +34,9 @@ with program() as prog:
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_each_(a, amplitudes):
             # and demodulate the signals to get the 'I' & 'Q' quadratures)
+            play("const_DC"*amp(a),"lockin_DC")
             measure(
-                "readout" * amp(a),
+                "readout",
                 "resistance_tia_lock_in",
                 None,
                 demod.full("cos", I, "out1"),
@@ -87,40 +88,37 @@ else:
     # Get results from QUA program
     results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
     # Live plotting
-    fig = plt.figure()
+    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=False)
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch results
         I, Q, iteration = results.fetch_all()
         # Convert results into Volts
         S = u.demod2volts(I + 1j * Q, lock_in_length)
-        R = np.abs(S)  # Amplitude
+        R = np.abs(S)  # Amplitude 
         R_A = R * tia_iv_scale_factor
         phase = np.angle(S)  # Phase
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
-        plt.suptitle(f"Resistance lock-in measurement")
-        ax1 = plt.subplot(211)
-        plt.cla()
-        plt.plot(amplitudes, R, ".")
-        plt.ylabel("TIA Receive Volatage [V]")
-        plt.subplot(212, sharex=ax1)
-        plt.cla()
-        # plt.plot(amplitudes, signal.detrend(np.unwrap(phase)), ".")
-        plt.plot(amplitudes, R_A, ".")
-        plt.xlabel("Output Volatage")
-        plt.ylabel("Current [A]")
+        ax1.cla()
+        ax2.cla()
+        fig.suptitle(f"lock-in amp = {lock_in_amp:.2f} V / Resistance lock-in measurement")
+        ax1.plot(amplitudes * DC_pulse_amp, R, ".")
+        ax1.set_ylabel("TIA Receive Voltage [V]")
+        ax2.plot(amplitudes * DC_pulse_amp, R_A, ".")
+        ax2.set_xlabel("bias-voltage (V)")
+        ax2.set_ylabel("Current [A]")
+        fig.tight_layout()
         plt.pause(0.1)
-        plt.tight_layout()
-
     data_handler = DataHandler(root_data_folder=save_dir)
     data = {
         "I_data": I,
         "Q_data": Q,
-        "figure": fig
+        "figure": fig, 
+        "config": config
     }
     # Save results
-    data_folder = data_handler.save_data(data=data, name=f"Resistance_measurements")
+    data_folder = data_handler.save_data(data=data, name=f"Resistance_measurements_scan_offest")
 
 plt.show()
