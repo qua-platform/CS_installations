@@ -16,6 +16,7 @@ import json
 from qualang_tools.units import unit
 from quam_config import Quam
 from quam_builder.builder.superconducting.pulses import add_DragCosine_pulses, add_default_transmon_pair_pulses
+from quam_builder.architecture.superconducting.custom_gates import cross_resonance
 from quam.components import pulses
 import numpy as np
 from pprint import pprint
@@ -285,7 +286,6 @@ for k, q in enumerate(machine.qubits):
 #     """Cross-resonance DragCosine pulse with a correction phase."""
 #     correction_phase: float = 0.0
 
-from my_quam import CRSquareMacro
 
 for k, qp in enumerate(machine.qubit_pairs):
     add_default_transmon_pair_pulses(qp)
@@ -295,7 +295,7 @@ for k, qp in enumerate(machine.qubit_pairs):
     qb_pair.cross_resonance.target_qubit_IF_frequency = f"#/qubits/{qbt.name}/xy/intermediate_frequency"
     qb_pair.cross_resonance.intermediate_frequency = f"#./inferred_intermediate_frequency"
 
-    qb_pair.macros["cr"] = CRSquareMacro(qc_correction_phase=0.0)
+    qb_pair.macros["cr"] = cross_resonance.CRGate(qc_correction_phase=0.0)
 
     # square
     qb_pair.cross_resonance.operations["square"] = pulses.SquarePulse(
@@ -363,9 +363,6 @@ for k, qp in enumerate(machine.qubit_pairs):
             flat_length=flattop_len,
             axis_angle=0.0, 
         )
-
-
-
 
 
 ########################################################################################################################

@@ -28,9 +28,9 @@ class NodeSpecificParameters(RunnableParameters):
     cr_drive_phase: Union[float, List[float]] = 1.0
     cr_cancel_amp_scaling: Union[float, List[float]] = 0.0
     cr_cancel_phase: Union[float, List[float]] = 0.0
-    min_cr_drive_amp_scaling: float = 0.01
+    min_cr_drive_amp_scaling: float = 0.0
     max_cr_drive_amp_scaling: float = 1.0
-    step_cr_drive_amp_scaling: float = 0.05
+    step_cr_drive_amp_scaling: float = 0.1
     wf_type: Literal["square", "cosine", "gauss", "flattop"] = "square"
 
 

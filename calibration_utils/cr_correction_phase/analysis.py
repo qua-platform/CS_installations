@@ -1,13 +1,14 @@
 import logging
 from dataclasses import dataclass
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Literal
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
 
 from qualibrate import QualibrationNode
 from qualibration_libs.data import convert_IQ_to_V
-from calibration_utils.cr_utils import *
+from ..cr_utils import *
+from ..utils_2q import reshape_control_target_val2dim 
 
 
 @dataclass
@@ -34,16 +35,11 @@ def log_fitted_results(fit_results: Dict, log_callable=None):
 
 
 def process_raw_dataset(ds: xr.Dataset, node: QualibrationNode):
-    if not node.parameters.use_state_discrimination:
-        qps = node.namespace["qubit_pairs"]
-        all_qubits = [qp.qubit_control for qp in qps] + [qp.qubit_target for qp in qps]
-        all_IQ_keys = [
-            f"{V}_{role}_{qp.name}"
-            for qp in qps
-            for role in ["c", "t"]
-            for V in ["I", "Q"]
-        ]
-        ds = convert_IQ_to_V(ds, all_qubits, IQ_list=all_IQ_keys)
+    if node.parameters.use_state_discrimination:
+        ds = reshape_control_target_val2dim(ds, state_discrimination=node.parameters.use_state_discrimination)
+    else:
+        ds = reshape_control_target_val2dim(ds, state_discrimination=node.parameters.use_state_discrimination)
+        ds = convert_IQ_to_V(ds, qubits=None, qubit_pairs=node.namespace["qubit_pairs"])
     return ds
 
 

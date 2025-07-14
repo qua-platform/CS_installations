@@ -30,7 +30,7 @@ class NodeSpecificParameters(RunnableParameters):
     cr_cancel_phase: Union[float, List[float]] = 0.0
     min_corr_phase: float = 0.0
     max_corr_phase: float = 1.0
-    step_corr_phase: float = 0.05
+    step_corr_phase: float = 0.1
     wf_type: Literal["square", "cosine", "gauss", "flattop"] = "square"
 
 

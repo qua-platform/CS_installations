@@ -26,9 +26,6 @@ from qualibration_libs.runtime import simulate_and_plot
 from qualibration_libs.data import XarrayDataFetcher
 from qualibration_libs.core import tracked_updates
 
-# import matplotlib
-# matplotlib.use("TkAgg")
-
 
 # %% {Description}
 description =  """
@@ -64,11 +61,11 @@ node = QualibrationNode[Parameters, Quam](
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
     # You can get type hinting in your IDE by typing node.parameters.
-    node.parameters.num_shots = 100
-    node.parameters.max_wait_time_in_ns = 2000
+    node.parameters.num_shots = 3
+    node.parameters.max_wait_time_in_ns = 100
 
     node.parameters.qubit_pairs = ["q1-2", "q3-4"]
-    node.parameters.use_state_discrimination = False
+    node.parameters.use_state_discrimination = True # False
 
     node.parameters.wf_type = "square"
     node.parameters.cr_type = "direct+cancel+echo"
@@ -151,6 +148,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                     with for_(c, 0, c < 3, c + 1):  # bases
                         with for_(s, 0, s < 2, s + 1):  # states
                         
+                            # Reset the qubits to the ground state
                             for i, qp in multiplexed_qubit_pairs.items():
                                 qc, qt, cr, cr_elems = get_cr_elements(qp)
 
@@ -172,7 +170,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                                     qc.xy.play("x180")
                                     align(*cr_elems)
 
-                                # # Play CR
+                                # Play CR
                                 qp.apply("cr",
                                     cr_type=cr_type,
                                     wf_type=wf_type,
@@ -182,19 +180,6 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                                     cr_cancel_phase=cr_cancel_phase[i],
                                     cr_duration_clock_cycles=t,
                                 )
-                                
-                                # play_cross_resonance(
-                                #     qc=qc,
-                                #     qt=qt,
-                                #     cr=cr,
-                                #     cr_type=cr_type,
-                                #     cr_drive_amp_scaling=cr_drive_amp_scaling[i],
-                                #     cr_drive_phase=cr_drive_phase[i],
-                                #     cr_cancel_amp_scaling=cr_cancel_amp_scaling[i],
-                                #     cr_cancel_phase=cr_cancel_phase[i],
-                                #     cr_duration_clock_cycles=t,
-                                #     wf_type=wf_type,
-                                # )
 
                                 # QST on qt
                                 align(*cr_elems)
@@ -234,14 +219,13 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
             n_st.save("n")
             for i, qp in enumerate(qubit_pairs):
                 if node.parameters.use_state_discrimination:
-                    state_c_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"state_c_{qp.name}")
-                    state_t_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"state_t_{qp.name}")
+                    state_c_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"state_c{i}")
+                    state_t_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"state_t{i}")
                 else:
-                    I_c_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"I_c_{qp.name}")
-                    Q_c_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"Q_c_{qp.name}")
-                    I_t_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"I_t_{qp.name}")
-                    Q_t_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"Q_t_{qp.name}")
-
+                    I_c_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"I_c{i}")
+                    Q_c_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"Q_c{i}")
+                    I_t_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"I_t{i}")
+                    Q_t_st[i].buffer(2).buffer(3).buffer(len(pulse_durations)).average().save(f"Q_t{i}")
 
 
 # %% {Simulate}
@@ -273,6 +257,7 @@ def execute_qua_program(node: QualibrationNode[Parameters, Quam]):
         # Display the progress bar
         data_fetcher = XarrayDataFetcher(job, node.namespace["sweep_axes"])
         for dataset in data_fetcher:
+            print("f: ", dataset)
             progress_counter(
                 data_fetcher["n"],
                 node.parameters.num_shots,
@@ -348,7 +333,7 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
                 operation.amplitude = node.parameters.cr_drive_amp_scaling[i] * operation.amplitude
                 operation.axis_angle = node.parameters.cr_drive_phase[i] * 2 * np.pi
                 # cr cancel wat
-                operation = qp.qubit_target.xy.operations[f"cr_{node.parameters.wf_type}"]
+                operation = qp.qubit_target.xy.operations[f"cr_{node.parameters.wf_type}_{qp.name}"]
                 operation.amplitude = node.parameters.cr_cancel_amp_scaling[i] * operation.amplitude
                 operation.axis_angle = node.parameters.cr_cancel_phase[i] * 2 * np.pi
 

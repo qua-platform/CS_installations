@@ -45,11 +45,11 @@ def plot_raw_data_with_fit(ds: xr.Dataset, qubit_pairs: List[AnyTransmonPair], f
         fig.suptitle(f"Qc: {qc.name}, Qt: {qt.name}")
 
         # Prepare the figure for live plotting
-        ds_sliced = ds.sel(qubit_pair=qp.name)
+        ds_sliced = ds.sel(qubit_pair=qp.name, control_target="c")
         corr_phase = ds_sliced.coords["corr_phase"].values
         # plotting data
-        ax.plot(corr_phase, ds_sliced.sel(control_state=0)[f"state_c_{qp.name}"].data)
-        ax.plot(corr_phase, ds_sliced.sel(control_state=1)[f"state_c_{qp.name}"].data)
+        ax.plot(corr_phase, ds_sliced.sel(control_state=0)["state"].data)
+        ax.plot(corr_phase, ds_sliced.sel(control_state=1)["state"].data)
         ax.set_xlabel("correction phase on Qc [2pi]")
         ax.set_ylabel("control state")
         ax.legend(["Qc=0", "Qc=1"])

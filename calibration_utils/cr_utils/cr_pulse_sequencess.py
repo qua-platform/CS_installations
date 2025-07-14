@@ -8,6 +8,7 @@ from quam_builder.architecture.superconducting.qubit_pair import AnyTransmonPair
 from quam_builder.architecture.superconducting.components.cross_resonance import CrossResonanceMW, CrossResonanceIQ
 from qm.qua._dsl import QuaExpression, QuaVariable
 
+
 qua_T = QuaVariable | QuaExpression
 
 
@@ -20,9 +21,7 @@ def get_cr_elements(qp: AnyTransmonPair):
 
 
 def play_cross_resonance(
-    qc: AnyTransmon,
-    qt: AnyTransmon,
-    cr: CrossResonanceMW | CrossResonanceIQ,
+    qubit_pair: AnyTransmonPair,
     cr_type: Literal["direct", "direct+cancel", "direct+echo", "direct+cancel+echo"] = "direct",
     cr_drive_amp_scaling: Optional[float | qua_T] = None,
     cr_drive_phase: Optional[float | qua_T] = None,
@@ -31,7 +30,7 @@ def play_cross_resonance(
     cr_duration_clock_cycles: Optional[float | qua_T] = None,
     wf_type: Literal["square", "cosine", "gauss", "flattop"] = "square",
 ):
-    elems = [qc.xy.name, qt.xy.name, cr.name]
+    qc, qt, cr, elems = get_cr_elements(qubit_pair)
 
     def _play_cr_pulse(
         elem,
@@ -77,7 +76,7 @@ def play_cross_resonance(
     ):
         _play_cr_pulse(
             elem=qt.xy,
-            wf_type=f"cr_{wf_type}",
+            wf_type=f"cr_{wf_type}_{qubit_pair.name}",
             amp_scale=cr_cancel_amp_scaling,
             duration=cr_duration_clock_cycles,
             sgn=1 if sgn == "direct" else -1,

@@ -11,7 +11,7 @@
                             "delay": 0,
                             "shareable": false,
                             "sampling_rate": 1000000000.0,
-                            "full_scale_power_dbm": 16,
+                            "full_scale_power_dbm": 10,
                             "upconverter_frequency": 7250000000.0
                         },
                         "2": {
@@ -88,7 +88,7 @@
                             "delay": 0,
                             "shareable": false,
                             "sampling_rate": 1000000000.0,
-                            "full_scale_power_dbm": 16,
+                            "full_scale_power_dbm": 10,
                             "upconverter_frequency": 8250000000.0
                         },
                         "2": {
@@ -177,9 +177,9 @@
                 "y90": "q1.xy.y90_DragCosine.pulse",
                 "-y90": "q1.xy.-y90_DragCosine.pulse",
                 "const": "q1.xy.const.pulse",
-                "cr_square": "q1.xy.cr_square.pulse",
-                "cr_cosine": "q1.xy.cr_cosine.pulse",
-                "cr_gauss": "q1.xy.cr_gauss.pulse",
+                "cr_square_q2-1": "q1.xy.cr_square_q2-1.pulse",
+                "cr_cosine_q2-1": "q1.xy.cr_cosine_q2-1.pulse",
+                "cr_gauss_q2-1": "q1.xy.cr_gauss_q2-1.pulse",
                 "cr_flattop_0000": "q1.xy.cr_flattop_0000.pulse",
                 "cr_flattop_0020": "q1.xy.cr_flattop_0020.pulse",
                 "cr_flattop_0040": "q1.xy.cr_flattop_0040.pulse",
@@ -237,13 +237,16 @@
                 "y90": "q2.xy.y90_DragCosine.pulse",
                 "-y90": "q2.xy.-y90_DragCosine.pulse",
                 "const": "q2.xy.const.pulse",
-                "cr_square": "q2.xy.cr_square.pulse",
-                "cr_cosine": "q2.xy.cr_cosine.pulse",
-                "cr_gauss": "q2.xy.cr_gauss.pulse",
+                "cr_square_q1-2": "q2.xy.cr_square_q1-2.pulse",
+                "cr_cosine_q1-2": "q2.xy.cr_cosine_q1-2.pulse",
+                "cr_gauss_q1-2": "q2.xy.cr_gauss_q1-2.pulse",
                 "cr_flattop_0000": "q2.xy.cr_flattop_0000.pulse",
                 "cr_flattop_0020": "q2.xy.cr_flattop_0020.pulse",
                 "cr_flattop_0040": "q2.xy.cr_flattop_0040.pulse",
-                "cr_flattop_0060": "q2.xy.cr_flattop_0060.pulse"
+                "cr_flattop_0060": "q2.xy.cr_flattop_0060.pulse",
+                "cr_square_q3-2": "q2.xy.cr_square_q3-2.pulse",
+                "cr_cosine_q3-2": "q2.xy.cr_cosine_q3-2.pulse",
+                "cr_gauss_q3-2": "q2.xy.cr_gauss_q3-2.pulse"
             },
             "intermediate_frequency": -150000000.0,
             "core": "q2_slot1",
@@ -297,13 +300,16 @@
                 "y90": "q3.xy.y90_DragCosine.pulse",
                 "-y90": "q3.xy.-y90_DragCosine.pulse",
                 "const": "q3.xy.const.pulse",
-                "cr_square": "q3.xy.cr_square.pulse",
-                "cr_cosine": "q3.xy.cr_cosine.pulse",
-                "cr_gauss": "q3.xy.cr_gauss.pulse",
+                "cr_square_q2-3": "q3.xy.cr_square_q2-3.pulse",
+                "cr_cosine_q2-3": "q3.xy.cr_cosine_q2-3.pulse",
+                "cr_gauss_q2-3": "q3.xy.cr_gauss_q2-3.pulse",
                 "cr_flattop_0000": "q3.xy.cr_flattop_0000.pulse",
                 "cr_flattop_0020": "q3.xy.cr_flattop_0020.pulse",
                 "cr_flattop_0040": "q3.xy.cr_flattop_0040.pulse",
-                "cr_flattop_0060": "q3.xy.cr_flattop_0060.pulse"
+                "cr_flattop_0060": "q3.xy.cr_flattop_0060.pulse",
+                "cr_square_q4-3": "q3.xy.cr_square_q4-3.pulse",
+                "cr_cosine_q4-3": "q3.xy.cr_cosine_q4-3.pulse",
+                "cr_gauss_q4-3": "q3.xy.cr_gauss_q4-3.pulse"
             },
             "intermediate_frequency": -100000000.0,
             "core": "q3_slot1",
@@ -357,13 +363,16 @@
                 "y90": "q4.xy.y90_DragCosine.pulse",
                 "-y90": "q4.xy.-y90_DragCosine.pulse",
                 "const": "q4.xy.const.pulse",
-                "cr_square": "q4.xy.cr_square.pulse",
-                "cr_cosine": "q4.xy.cr_cosine.pulse",
-                "cr_gauss": "q4.xy.cr_gauss.pulse",
+                "cr_square_q3-4": "q4.xy.cr_square_q3-4.pulse",
+                "cr_cosine_q3-4": "q4.xy.cr_cosine_q3-4.pulse",
+                "cr_gauss_q3-4": "q4.xy.cr_gauss_q3-4.pulse",
                 "cr_flattop_0000": "q4.xy.cr_flattop_0000.pulse",
                 "cr_flattop_0020": "q4.xy.cr_flattop_0020.pulse",
                 "cr_flattop_0040": "q4.xy.cr_flattop_0040.pulse",
-                "cr_flattop_0060": "q4.xy.cr_flattop_0060.pulse"
+                "cr_flattop_0060": "q4.xy.cr_flattop_0060.pulse",
+                "cr_square_q5-4": "q4.xy.cr_square_q5-4.pulse",
+                "cr_cosine_q5-4": "q4.xy.cr_cosine_q5-4.pulse",
+                "cr_gauss_q5-4": "q4.xy.cr_gauss_q5-4.pulse"
             },
             "intermediate_frequency": -50000000.0,
             "core": "q4_slot1",
@@ -417,13 +426,16 @@
                 "y90": "q5.xy.y90_DragCosine.pulse",
                 "-y90": "q5.xy.-y90_DragCosine.pulse",
                 "const": "q5.xy.const.pulse",
-                "cr_square": "q5.xy.cr_square.pulse",
-                "cr_cosine": "q5.xy.cr_cosine.pulse",
-                "cr_gauss": "q5.xy.cr_gauss.pulse",
+                "cr_square_q4-5": "q5.xy.cr_square_q4-5.pulse",
+                "cr_cosine_q4-5": "q5.xy.cr_cosine_q4-5.pulse",
+                "cr_gauss_q4-5": "q5.xy.cr_gauss_q4-5.pulse",
                 "cr_flattop_0000": "q5.xy.cr_flattop_0000.pulse",
                 "cr_flattop_0020": "q5.xy.cr_flattop_0020.pulse",
                 "cr_flattop_0040": "q5.xy.cr_flattop_0040.pulse",
-                "cr_flattop_0060": "q5.xy.cr_flattop_0060.pulse"
+                "cr_flattop_0060": "q5.xy.cr_flattop_0060.pulse",
+                "cr_square_q6-5": "q5.xy.cr_square_q6-5.pulse",
+                "cr_cosine_q6-5": "q5.xy.cr_cosine_q6-5.pulse",
+                "cr_gauss_q6-5": "q5.xy.cr_gauss_q6-5.pulse"
             },
             "intermediate_frequency": 50000000.0,
             "core": "q5_slot1",
@@ -477,13 +489,16 @@
                 "y90": "q6.xy.y90_DragCosine.pulse",
                 "-y90": "q6.xy.-y90_DragCosine.pulse",
                 "const": "q6.xy.const.pulse",
-                "cr_square": "q6.xy.cr_square.pulse",
-                "cr_cosine": "q6.xy.cr_cosine.pulse",
-                "cr_gauss": "q6.xy.cr_gauss.pulse",
+                "cr_square_q5-6": "q6.xy.cr_square_q5-6.pulse",
+                "cr_cosine_q5-6": "q6.xy.cr_cosine_q5-6.pulse",
+                "cr_gauss_q5-6": "q6.xy.cr_gauss_q5-6.pulse",
                 "cr_flattop_0000": "q6.xy.cr_flattop_0000.pulse",
                 "cr_flattop_0020": "q6.xy.cr_flattop_0020.pulse",
                 "cr_flattop_0040": "q6.xy.cr_flattop_0040.pulse",
-                "cr_flattop_0060": "q6.xy.cr_flattop_0060.pulse"
+                "cr_flattop_0060": "q6.xy.cr_flattop_0060.pulse",
+                "cr_square_q7-6": "q6.xy.cr_square_q7-6.pulse",
+                "cr_cosine_q7-6": "q6.xy.cr_cosine_q7-6.pulse",
+                "cr_gauss_q7-6": "q6.xy.cr_gauss_q7-6.pulse"
             },
             "intermediate_frequency": 100000000.0,
             "core": "q6_slot1",
@@ -537,9 +552,9 @@
                 "y90": "q7.xy.y90_DragCosine.pulse",
                 "-y90": "q7.xy.-y90_DragCosine.pulse",
                 "const": "q7.xy.const.pulse",
-                "cr_square": "q7.xy.cr_square.pulse",
-                "cr_cosine": "q7.xy.cr_cosine.pulse",
-                "cr_gauss": "q7.xy.cr_gauss.pulse",
+                "cr_square_q6-7": "q7.xy.cr_square_q6-7.pulse",
+                "cr_cosine_q6-7": "q7.xy.cr_cosine_q6-7.pulse",
+                "cr_gauss_q6-7": "q7.xy.cr_gauss_q6-7.pulse",
                 "cr_flattop_0000": "q7.xy.cr_flattop_0000.pulse",
                 "cr_flattop_0020": "q7.xy.cr_flattop_0020.pulse",
                 "cr_flattop_0040": "q7.xy.cr_flattop_0040.pulse",
@@ -597,9 +612,9 @@
                 "y90": "q9.xy.y90_DragCosine.pulse",
                 "-y90": "q9.xy.-y90_DragCosine.pulse",
                 "const": "q9.xy.const.pulse",
-                "cr_square": "q9.xy.cr_square.pulse",
-                "cr_cosine": "q9.xy.cr_cosine.pulse",
-                "cr_gauss": "q9.xy.cr_gauss.pulse",
+                "cr_square_q10-9": "q9.xy.cr_square_q10-9.pulse",
+                "cr_cosine_q10-9": "q9.xy.cr_cosine_q10-9.pulse",
+                "cr_gauss_q10-9": "q9.xy.cr_gauss_q10-9.pulse",
                 "cr_flattop_0000": "q9.xy.cr_flattop_0000.pulse",
                 "cr_flattop_0020": "q9.xy.cr_flattop_0020.pulse",
                 "cr_flattop_0040": "q9.xy.cr_flattop_0040.pulse",
@@ -657,13 +672,16 @@
                 "y90": "q10.xy.y90_DragCosine.pulse",
                 "-y90": "q10.xy.-y90_DragCosine.pulse",
                 "const": "q10.xy.const.pulse",
-                "cr_square": "q10.xy.cr_square.pulse",
-                "cr_cosine": "q10.xy.cr_cosine.pulse",
-                "cr_gauss": "q10.xy.cr_gauss.pulse",
+                "cr_square_q9-10": "q10.xy.cr_square_q9-10.pulse",
+                "cr_cosine_q9-10": "q10.xy.cr_cosine_q9-10.pulse",
+                "cr_gauss_q9-10": "q10.xy.cr_gauss_q9-10.pulse",
                 "cr_flattop_0000": "q10.xy.cr_flattop_0000.pulse",
                 "cr_flattop_0020": "q10.xy.cr_flattop_0020.pulse",
                 "cr_flattop_0040": "q10.xy.cr_flattop_0040.pulse",
-                "cr_flattop_0060": "q10.xy.cr_flattop_0060.pulse"
+                "cr_flattop_0060": "q10.xy.cr_flattop_0060.pulse",
+                "cr_square_q11-10": "q10.xy.cr_square_q11-10.pulse",
+                "cr_cosine_q11-10": "q10.xy.cr_cosine_q11-10.pulse",
+                "cr_gauss_q11-10": "q10.xy.cr_gauss_q11-10.pulse"
             },
             "intermediate_frequency": -150000000.0,
             "core": "q10_slot2",
@@ -717,13 +735,16 @@
                 "y90": "q11.xy.y90_DragCosine.pulse",
                 "-y90": "q11.xy.-y90_DragCosine.pulse",
                 "const": "q11.xy.const.pulse",
-                "cr_square": "q11.xy.cr_square.pulse",
-                "cr_cosine": "q11.xy.cr_cosine.pulse",
-                "cr_gauss": "q11.xy.cr_gauss.pulse",
+                "cr_square_q10-11": "q11.xy.cr_square_q10-11.pulse",
+                "cr_cosine_q10-11": "q11.xy.cr_cosine_q10-11.pulse",
+                "cr_gauss_q10-11": "q11.xy.cr_gauss_q10-11.pulse",
                 "cr_flattop_0000": "q11.xy.cr_flattop_0000.pulse",
                 "cr_flattop_0020": "q11.xy.cr_flattop_0020.pulse",
                 "cr_flattop_0040": "q11.xy.cr_flattop_0040.pulse",
-                "cr_flattop_0060": "q11.xy.cr_flattop_0060.pulse"
+                "cr_flattop_0060": "q11.xy.cr_flattop_0060.pulse",
+                "cr_square_q12-11": "q11.xy.cr_square_q12-11.pulse",
+                "cr_cosine_q12-11": "q11.xy.cr_cosine_q12-11.pulse",
+                "cr_gauss_q12-11": "q11.xy.cr_gauss_q12-11.pulse"
             },
             "intermediate_frequency": -100000000.0,
             "core": "q11_slot2",
@@ -777,13 +798,16 @@
                 "y90": "q12.xy.y90_DragCosine.pulse",
                 "-y90": "q12.xy.-y90_DragCosine.pulse",
                 "const": "q12.xy.const.pulse",
-                "cr_square": "q12.xy.cr_square.pulse",
-                "cr_cosine": "q12.xy.cr_cosine.pulse",
-                "cr_gauss": "q12.xy.cr_gauss.pulse",
+                "cr_square_q11-12": "q12.xy.cr_square_q11-12.pulse",
+                "cr_cosine_q11-12": "q12.xy.cr_cosine_q11-12.pulse",
+                "cr_gauss_q11-12": "q12.xy.cr_gauss_q11-12.pulse",
                 "cr_flattop_0000": "q12.xy.cr_flattop_0000.pulse",
                 "cr_flattop_0020": "q12.xy.cr_flattop_0020.pulse",
                 "cr_flattop_0040": "q12.xy.cr_flattop_0040.pulse",
-                "cr_flattop_0060": "q12.xy.cr_flattop_0060.pulse"
+                "cr_flattop_0060": "q12.xy.cr_flattop_0060.pulse",
+                "cr_square_q13-12": "q12.xy.cr_square_q13-12.pulse",
+                "cr_cosine_q13-12": "q12.xy.cr_cosine_q13-12.pulse",
+                "cr_gauss_q13-12": "q12.xy.cr_gauss_q13-12.pulse"
             },
             "intermediate_frequency": -50000000.0,
             "core": "q12_slot2",
@@ -837,13 +861,16 @@
                 "y90": "q13.xy.y90_DragCosine.pulse",
                 "-y90": "q13.xy.-y90_DragCosine.pulse",
                 "const": "q13.xy.const.pulse",
-                "cr_square": "q13.xy.cr_square.pulse",
-                "cr_cosine": "q13.xy.cr_cosine.pulse",
-                "cr_gauss": "q13.xy.cr_gauss.pulse",
+                "cr_square_q12-13": "q13.xy.cr_square_q12-13.pulse",
+                "cr_cosine_q12-13": "q13.xy.cr_cosine_q12-13.pulse",
+                "cr_gauss_q12-13": "q13.xy.cr_gauss_q12-13.pulse",
                 "cr_flattop_0000": "q13.xy.cr_flattop_0000.pulse",
                 "cr_flattop_0020": "q13.xy.cr_flattop_0020.pulse",
                 "cr_flattop_0040": "q13.xy.cr_flattop_0040.pulse",
-                "cr_flattop_0060": "q13.xy.cr_flattop_0060.pulse"
+                "cr_flattop_0060": "q13.xy.cr_flattop_0060.pulse",
+                "cr_square_q14-13": "q13.xy.cr_square_q14-13.pulse",
+                "cr_cosine_q14-13": "q13.xy.cr_cosine_q14-13.pulse",
+                "cr_gauss_q14-13": "q13.xy.cr_gauss_q14-13.pulse"
             },
             "intermediate_frequency": 50000000.0,
             "core": "q13_slot2",
@@ -897,13 +924,16 @@
                 "y90": "q14.xy.y90_DragCosine.pulse",
                 "-y90": "q14.xy.-y90_DragCosine.pulse",
                 "const": "q14.xy.const.pulse",
-                "cr_square": "q14.xy.cr_square.pulse",
-                "cr_cosine": "q14.xy.cr_cosine.pulse",
-                "cr_gauss": "q14.xy.cr_gauss.pulse",
+                "cr_square_q13-14": "q14.xy.cr_square_q13-14.pulse",
+                "cr_cosine_q13-14": "q14.xy.cr_cosine_q13-14.pulse",
+                "cr_gauss_q13-14": "q14.xy.cr_gauss_q13-14.pulse",
                 "cr_flattop_0000": "q14.xy.cr_flattop_0000.pulse",
                 "cr_flattop_0020": "q14.xy.cr_flattop_0020.pulse",
                 "cr_flattop_0040": "q14.xy.cr_flattop_0040.pulse",
-                "cr_flattop_0060": "q14.xy.cr_flattop_0060.pulse"
+                "cr_flattop_0060": "q14.xy.cr_flattop_0060.pulse",
+                "cr_square_q15-14": "q14.xy.cr_square_q15-14.pulse",
+                "cr_cosine_q15-14": "q14.xy.cr_cosine_q15-14.pulse",
+                "cr_gauss_q15-14": "q14.xy.cr_gauss_q15-14.pulse"
             },
             "intermediate_frequency": 100000000.0,
             "core": "q14_slot2",
@@ -957,9 +987,9 @@
                 "y90": "q15.xy.y90_DragCosine.pulse",
                 "-y90": "q15.xy.-y90_DragCosine.pulse",
                 "const": "q15.xy.const.pulse",
-                "cr_square": "q15.xy.cr_square.pulse",
-                "cr_cosine": "q15.xy.cr_cosine.pulse",
-                "cr_gauss": "q15.xy.cr_gauss.pulse",
+                "cr_square_q14-15": "q15.xy.cr_square_q14-15.pulse",
+                "cr_cosine_q14-15": "q15.xy.cr_cosine_q14-15.pulse",
+                "cr_gauss_q14-15": "q15.xy.cr_gauss_q14-15.pulse",
                 "cr_flattop_0000": "q15.xy.cr_flattop_0000.pulse",
                 "cr_flattop_0020": "q15.xy.cr_flattop_0020.pulse",
                 "cr_flattop_0040": "q15.xy.cr_flattop_0040.pulse",
@@ -1579,28 +1609,28 @@
                 "Q": "q1.xy.const.wf.Q"
             }
         },
-        "q1.xy.cr_square.pulse": {
+        "q1.xy.cr_square_q2-1.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q1.xy.cr_square.wf.I",
-                "Q": "q1.xy.cr_square.wf.Q"
+                "I": "q1.xy.cr_square_q2-1.wf.I",
+                "Q": "q1.xy.cr_square_q2-1.wf.Q"
             }
         },
-        "q1.xy.cr_cosine.pulse": {
+        "q1.xy.cr_cosine_q2-1.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q1.xy.cr_cosine.wf.I",
-                "Q": "q1.xy.cr_cosine.wf.Q"
+                "I": "q1.xy.cr_cosine_q2-1.wf.I",
+                "Q": "q1.xy.cr_cosine_q2-1.wf.Q"
             }
         },
-        "q1.xy.cr_gauss.pulse": {
+        "q1.xy.cr_gauss_q2-1.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q1.xy.cr_gauss.wf.I",
-                "Q": "q1.xy.cr_gauss.wf.Q"
+                "I": "q1.xy.cr_gauss_q2-1.wf.I",
+                "Q": "q1.xy.cr_gauss_q2-1.wf.Q"
             }
         },
         "q1.xy.cr_flattop_0000.pulse": {
@@ -1721,28 +1751,28 @@
                 "Q": "q2.xy.const.wf.Q"
             }
         },
-        "q2.xy.cr_square.pulse": {
+        "q2.xy.cr_square_q1-2.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q2.xy.cr_square.wf.I",
-                "Q": "q2.xy.cr_square.wf.Q"
+                "I": "q2.xy.cr_square_q1-2.wf.I",
+                "Q": "q2.xy.cr_square_q1-2.wf.Q"
             }
         },
-        "q2.xy.cr_cosine.pulse": {
+        "q2.xy.cr_cosine_q1-2.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q2.xy.cr_cosine.wf.I",
-                "Q": "q2.xy.cr_cosine.wf.Q"
+                "I": "q2.xy.cr_cosine_q1-2.wf.I",
+                "Q": "q2.xy.cr_cosine_q1-2.wf.Q"
             }
         },
-        "q2.xy.cr_gauss.pulse": {
+        "q2.xy.cr_gauss_q1-2.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q2.xy.cr_gauss.wf.I",
-                "Q": "q2.xy.cr_gauss.wf.Q"
+                "I": "q2.xy.cr_gauss_q1-2.wf.I",
+                "Q": "q2.xy.cr_gauss_q1-2.wf.Q"
             }
         },
         "q2.xy.cr_flattop_0000.pulse": {
@@ -1775,6 +1805,30 @@
             "waveforms": {
                 "I": "q2.xy.cr_flattop_0060.wf.I",
                 "Q": "q2.xy.cr_flattop_0060.wf.Q"
+            }
+        },
+        "q2.xy.cr_square_q3-2.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q2.xy.cr_square_q3-2.wf.I",
+                "Q": "q2.xy.cr_square_q3-2.wf.Q"
+            }
+        },
+        "q2.xy.cr_cosine_q3-2.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q2.xy.cr_cosine_q3-2.wf.I",
+                "Q": "q2.xy.cr_cosine_q3-2.wf.Q"
+            }
+        },
+        "q2.xy.cr_gauss_q3-2.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q2.xy.cr_gauss_q3-2.wf.I",
+                "Q": "q2.xy.cr_gauss_q3-2.wf.Q"
             }
         },
         "q2.resonator.readout.pulse": {
@@ -1863,28 +1917,28 @@
                 "Q": "q3.xy.const.wf.Q"
             }
         },
-        "q3.xy.cr_square.pulse": {
+        "q3.xy.cr_square_q2-3.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q3.xy.cr_square.wf.I",
-                "Q": "q3.xy.cr_square.wf.Q"
+                "I": "q3.xy.cr_square_q2-3.wf.I",
+                "Q": "q3.xy.cr_square_q2-3.wf.Q"
             }
         },
-        "q3.xy.cr_cosine.pulse": {
+        "q3.xy.cr_cosine_q2-3.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q3.xy.cr_cosine.wf.I",
-                "Q": "q3.xy.cr_cosine.wf.Q"
+                "I": "q3.xy.cr_cosine_q2-3.wf.I",
+                "Q": "q3.xy.cr_cosine_q2-3.wf.Q"
             }
         },
-        "q3.xy.cr_gauss.pulse": {
+        "q3.xy.cr_gauss_q2-3.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q3.xy.cr_gauss.wf.I",
-                "Q": "q3.xy.cr_gauss.wf.Q"
+                "I": "q3.xy.cr_gauss_q2-3.wf.I",
+                "Q": "q3.xy.cr_gauss_q2-3.wf.Q"
             }
         },
         "q3.xy.cr_flattop_0000.pulse": {
@@ -1917,6 +1971,30 @@
             "waveforms": {
                 "I": "q3.xy.cr_flattop_0060.wf.I",
                 "Q": "q3.xy.cr_flattop_0060.wf.Q"
+            }
+        },
+        "q3.xy.cr_square_q4-3.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q3.xy.cr_square_q4-3.wf.I",
+                "Q": "q3.xy.cr_square_q4-3.wf.Q"
+            }
+        },
+        "q3.xy.cr_cosine_q4-3.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q3.xy.cr_cosine_q4-3.wf.I",
+                "Q": "q3.xy.cr_cosine_q4-3.wf.Q"
+            }
+        },
+        "q3.xy.cr_gauss_q4-3.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q3.xy.cr_gauss_q4-3.wf.I",
+                "Q": "q3.xy.cr_gauss_q4-3.wf.Q"
             }
         },
         "q3.resonator.readout.pulse": {
@@ -2005,28 +2083,28 @@
                 "Q": "q4.xy.const.wf.Q"
             }
         },
-        "q4.xy.cr_square.pulse": {
+        "q4.xy.cr_square_q3-4.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q4.xy.cr_square.wf.I",
-                "Q": "q4.xy.cr_square.wf.Q"
+                "I": "q4.xy.cr_square_q3-4.wf.I",
+                "Q": "q4.xy.cr_square_q3-4.wf.Q"
             }
         },
-        "q4.xy.cr_cosine.pulse": {
+        "q4.xy.cr_cosine_q3-4.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q4.xy.cr_cosine.wf.I",
-                "Q": "q4.xy.cr_cosine.wf.Q"
+                "I": "q4.xy.cr_cosine_q3-4.wf.I",
+                "Q": "q4.xy.cr_cosine_q3-4.wf.Q"
             }
         },
-        "q4.xy.cr_gauss.pulse": {
+        "q4.xy.cr_gauss_q3-4.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q4.xy.cr_gauss.wf.I",
-                "Q": "q4.xy.cr_gauss.wf.Q"
+                "I": "q4.xy.cr_gauss_q3-4.wf.I",
+                "Q": "q4.xy.cr_gauss_q3-4.wf.Q"
             }
         },
         "q4.xy.cr_flattop_0000.pulse": {
@@ -2059,6 +2137,30 @@
             "waveforms": {
                 "I": "q4.xy.cr_flattop_0060.wf.I",
                 "Q": "q4.xy.cr_flattop_0060.wf.Q"
+            }
+        },
+        "q4.xy.cr_square_q5-4.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q4.xy.cr_square_q5-4.wf.I",
+                "Q": "q4.xy.cr_square_q5-4.wf.Q"
+            }
+        },
+        "q4.xy.cr_cosine_q5-4.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q4.xy.cr_cosine_q5-4.wf.I",
+                "Q": "q4.xy.cr_cosine_q5-4.wf.Q"
+            }
+        },
+        "q4.xy.cr_gauss_q5-4.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q4.xy.cr_gauss_q5-4.wf.I",
+                "Q": "q4.xy.cr_gauss_q5-4.wf.Q"
             }
         },
         "q4.resonator.readout.pulse": {
@@ -2147,28 +2249,28 @@
                 "Q": "q5.xy.const.wf.Q"
             }
         },
-        "q5.xy.cr_square.pulse": {
+        "q5.xy.cr_square_q4-5.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q5.xy.cr_square.wf.I",
-                "Q": "q5.xy.cr_square.wf.Q"
+                "I": "q5.xy.cr_square_q4-5.wf.I",
+                "Q": "q5.xy.cr_square_q4-5.wf.Q"
             }
         },
-        "q5.xy.cr_cosine.pulse": {
+        "q5.xy.cr_cosine_q4-5.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q5.xy.cr_cosine.wf.I",
-                "Q": "q5.xy.cr_cosine.wf.Q"
+                "I": "q5.xy.cr_cosine_q4-5.wf.I",
+                "Q": "q5.xy.cr_cosine_q4-5.wf.Q"
             }
         },
-        "q5.xy.cr_gauss.pulse": {
+        "q5.xy.cr_gauss_q4-5.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q5.xy.cr_gauss.wf.I",
-                "Q": "q5.xy.cr_gauss.wf.Q"
+                "I": "q5.xy.cr_gauss_q4-5.wf.I",
+                "Q": "q5.xy.cr_gauss_q4-5.wf.Q"
             }
         },
         "q5.xy.cr_flattop_0000.pulse": {
@@ -2201,6 +2303,30 @@
             "waveforms": {
                 "I": "q5.xy.cr_flattop_0060.wf.I",
                 "Q": "q5.xy.cr_flattop_0060.wf.Q"
+            }
+        },
+        "q5.xy.cr_square_q6-5.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q5.xy.cr_square_q6-5.wf.I",
+                "Q": "q5.xy.cr_square_q6-5.wf.Q"
+            }
+        },
+        "q5.xy.cr_cosine_q6-5.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q5.xy.cr_cosine_q6-5.wf.I",
+                "Q": "q5.xy.cr_cosine_q6-5.wf.Q"
+            }
+        },
+        "q5.xy.cr_gauss_q6-5.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q5.xy.cr_gauss_q6-5.wf.I",
+                "Q": "q5.xy.cr_gauss_q6-5.wf.Q"
             }
         },
         "q5.resonator.readout.pulse": {
@@ -2289,28 +2415,28 @@
                 "Q": "q6.xy.const.wf.Q"
             }
         },
-        "q6.xy.cr_square.pulse": {
+        "q6.xy.cr_square_q5-6.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q6.xy.cr_square.wf.I",
-                "Q": "q6.xy.cr_square.wf.Q"
+                "I": "q6.xy.cr_square_q5-6.wf.I",
+                "Q": "q6.xy.cr_square_q5-6.wf.Q"
             }
         },
-        "q6.xy.cr_cosine.pulse": {
+        "q6.xy.cr_cosine_q5-6.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q6.xy.cr_cosine.wf.I",
-                "Q": "q6.xy.cr_cosine.wf.Q"
+                "I": "q6.xy.cr_cosine_q5-6.wf.I",
+                "Q": "q6.xy.cr_cosine_q5-6.wf.Q"
             }
         },
-        "q6.xy.cr_gauss.pulse": {
+        "q6.xy.cr_gauss_q5-6.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q6.xy.cr_gauss.wf.I",
-                "Q": "q6.xy.cr_gauss.wf.Q"
+                "I": "q6.xy.cr_gauss_q5-6.wf.I",
+                "Q": "q6.xy.cr_gauss_q5-6.wf.Q"
             }
         },
         "q6.xy.cr_flattop_0000.pulse": {
@@ -2343,6 +2469,30 @@
             "waveforms": {
                 "I": "q6.xy.cr_flattop_0060.wf.I",
                 "Q": "q6.xy.cr_flattop_0060.wf.Q"
+            }
+        },
+        "q6.xy.cr_square_q7-6.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q6.xy.cr_square_q7-6.wf.I",
+                "Q": "q6.xy.cr_square_q7-6.wf.Q"
+            }
+        },
+        "q6.xy.cr_cosine_q7-6.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q6.xy.cr_cosine_q7-6.wf.I",
+                "Q": "q6.xy.cr_cosine_q7-6.wf.Q"
+            }
+        },
+        "q6.xy.cr_gauss_q7-6.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q6.xy.cr_gauss_q7-6.wf.I",
+                "Q": "q6.xy.cr_gauss_q7-6.wf.Q"
             }
         },
         "q6.resonator.readout.pulse": {
@@ -2431,28 +2581,28 @@
                 "Q": "q7.xy.const.wf.Q"
             }
         },
-        "q7.xy.cr_square.pulse": {
+        "q7.xy.cr_square_q6-7.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q7.xy.cr_square.wf.I",
-                "Q": "q7.xy.cr_square.wf.Q"
+                "I": "q7.xy.cr_square_q6-7.wf.I",
+                "Q": "q7.xy.cr_square_q6-7.wf.Q"
             }
         },
-        "q7.xy.cr_cosine.pulse": {
+        "q7.xy.cr_cosine_q6-7.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q7.xy.cr_cosine.wf.I",
-                "Q": "q7.xy.cr_cosine.wf.Q"
+                "I": "q7.xy.cr_cosine_q6-7.wf.I",
+                "Q": "q7.xy.cr_cosine_q6-7.wf.Q"
             }
         },
-        "q7.xy.cr_gauss.pulse": {
+        "q7.xy.cr_gauss_q6-7.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q7.xy.cr_gauss.wf.I",
-                "Q": "q7.xy.cr_gauss.wf.Q"
+                "I": "q7.xy.cr_gauss_q6-7.wf.I",
+                "Q": "q7.xy.cr_gauss_q6-7.wf.Q"
             }
         },
         "q7.xy.cr_flattop_0000.pulse": {
@@ -2573,28 +2723,28 @@
                 "Q": "q9.xy.const.wf.Q"
             }
         },
-        "q9.xy.cr_square.pulse": {
+        "q9.xy.cr_square_q10-9.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q9.xy.cr_square.wf.I",
-                "Q": "q9.xy.cr_square.wf.Q"
+                "I": "q9.xy.cr_square_q10-9.wf.I",
+                "Q": "q9.xy.cr_square_q10-9.wf.Q"
             }
         },
-        "q9.xy.cr_cosine.pulse": {
+        "q9.xy.cr_cosine_q10-9.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q9.xy.cr_cosine.wf.I",
-                "Q": "q9.xy.cr_cosine.wf.Q"
+                "I": "q9.xy.cr_cosine_q10-9.wf.I",
+                "Q": "q9.xy.cr_cosine_q10-9.wf.Q"
             }
         },
-        "q9.xy.cr_gauss.pulse": {
+        "q9.xy.cr_gauss_q10-9.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q9.xy.cr_gauss.wf.I",
-                "Q": "q9.xy.cr_gauss.wf.Q"
+                "I": "q9.xy.cr_gauss_q10-9.wf.I",
+                "Q": "q9.xy.cr_gauss_q10-9.wf.Q"
             }
         },
         "q9.xy.cr_flattop_0000.pulse": {
@@ -2715,28 +2865,28 @@
                 "Q": "q10.xy.const.wf.Q"
             }
         },
-        "q10.xy.cr_square.pulse": {
+        "q10.xy.cr_square_q9-10.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q10.xy.cr_square.wf.I",
-                "Q": "q10.xy.cr_square.wf.Q"
+                "I": "q10.xy.cr_square_q9-10.wf.I",
+                "Q": "q10.xy.cr_square_q9-10.wf.Q"
             }
         },
-        "q10.xy.cr_cosine.pulse": {
+        "q10.xy.cr_cosine_q9-10.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q10.xy.cr_cosine.wf.I",
-                "Q": "q10.xy.cr_cosine.wf.Q"
+                "I": "q10.xy.cr_cosine_q9-10.wf.I",
+                "Q": "q10.xy.cr_cosine_q9-10.wf.Q"
             }
         },
-        "q10.xy.cr_gauss.pulse": {
+        "q10.xy.cr_gauss_q9-10.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q10.xy.cr_gauss.wf.I",
-                "Q": "q10.xy.cr_gauss.wf.Q"
+                "I": "q10.xy.cr_gauss_q9-10.wf.I",
+                "Q": "q10.xy.cr_gauss_q9-10.wf.Q"
             }
         },
         "q10.xy.cr_flattop_0000.pulse": {
@@ -2769,6 +2919,30 @@
             "waveforms": {
                 "I": "q10.xy.cr_flattop_0060.wf.I",
                 "Q": "q10.xy.cr_flattop_0060.wf.Q"
+            }
+        },
+        "q10.xy.cr_square_q11-10.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q10.xy.cr_square_q11-10.wf.I",
+                "Q": "q10.xy.cr_square_q11-10.wf.Q"
+            }
+        },
+        "q10.xy.cr_cosine_q11-10.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q10.xy.cr_cosine_q11-10.wf.I",
+                "Q": "q10.xy.cr_cosine_q11-10.wf.Q"
+            }
+        },
+        "q10.xy.cr_gauss_q11-10.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q10.xy.cr_gauss_q11-10.wf.I",
+                "Q": "q10.xy.cr_gauss_q11-10.wf.Q"
             }
         },
         "q10.resonator.readout.pulse": {
@@ -2857,28 +3031,28 @@
                 "Q": "q11.xy.const.wf.Q"
             }
         },
-        "q11.xy.cr_square.pulse": {
+        "q11.xy.cr_square_q10-11.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q11.xy.cr_square.wf.I",
-                "Q": "q11.xy.cr_square.wf.Q"
+                "I": "q11.xy.cr_square_q10-11.wf.I",
+                "Q": "q11.xy.cr_square_q10-11.wf.Q"
             }
         },
-        "q11.xy.cr_cosine.pulse": {
+        "q11.xy.cr_cosine_q10-11.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q11.xy.cr_cosine.wf.I",
-                "Q": "q11.xy.cr_cosine.wf.Q"
+                "I": "q11.xy.cr_cosine_q10-11.wf.I",
+                "Q": "q11.xy.cr_cosine_q10-11.wf.Q"
             }
         },
-        "q11.xy.cr_gauss.pulse": {
+        "q11.xy.cr_gauss_q10-11.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q11.xy.cr_gauss.wf.I",
-                "Q": "q11.xy.cr_gauss.wf.Q"
+                "I": "q11.xy.cr_gauss_q10-11.wf.I",
+                "Q": "q11.xy.cr_gauss_q10-11.wf.Q"
             }
         },
         "q11.xy.cr_flattop_0000.pulse": {
@@ -2911,6 +3085,30 @@
             "waveforms": {
                 "I": "q11.xy.cr_flattop_0060.wf.I",
                 "Q": "q11.xy.cr_flattop_0060.wf.Q"
+            }
+        },
+        "q11.xy.cr_square_q12-11.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q11.xy.cr_square_q12-11.wf.I",
+                "Q": "q11.xy.cr_square_q12-11.wf.Q"
+            }
+        },
+        "q11.xy.cr_cosine_q12-11.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q11.xy.cr_cosine_q12-11.wf.I",
+                "Q": "q11.xy.cr_cosine_q12-11.wf.Q"
+            }
+        },
+        "q11.xy.cr_gauss_q12-11.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q11.xy.cr_gauss_q12-11.wf.I",
+                "Q": "q11.xy.cr_gauss_q12-11.wf.Q"
             }
         },
         "q11.resonator.readout.pulse": {
@@ -2999,28 +3197,28 @@
                 "Q": "q12.xy.const.wf.Q"
             }
         },
-        "q12.xy.cr_square.pulse": {
+        "q12.xy.cr_square_q11-12.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q12.xy.cr_square.wf.I",
-                "Q": "q12.xy.cr_square.wf.Q"
+                "I": "q12.xy.cr_square_q11-12.wf.I",
+                "Q": "q12.xy.cr_square_q11-12.wf.Q"
             }
         },
-        "q12.xy.cr_cosine.pulse": {
+        "q12.xy.cr_cosine_q11-12.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q12.xy.cr_cosine.wf.I",
-                "Q": "q12.xy.cr_cosine.wf.Q"
+                "I": "q12.xy.cr_cosine_q11-12.wf.I",
+                "Q": "q12.xy.cr_cosine_q11-12.wf.Q"
             }
         },
-        "q12.xy.cr_gauss.pulse": {
+        "q12.xy.cr_gauss_q11-12.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q12.xy.cr_gauss.wf.I",
-                "Q": "q12.xy.cr_gauss.wf.Q"
+                "I": "q12.xy.cr_gauss_q11-12.wf.I",
+                "Q": "q12.xy.cr_gauss_q11-12.wf.Q"
             }
         },
         "q12.xy.cr_flattop_0000.pulse": {
@@ -3053,6 +3251,30 @@
             "waveforms": {
                 "I": "q12.xy.cr_flattop_0060.wf.I",
                 "Q": "q12.xy.cr_flattop_0060.wf.Q"
+            }
+        },
+        "q12.xy.cr_square_q13-12.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q12.xy.cr_square_q13-12.wf.I",
+                "Q": "q12.xy.cr_square_q13-12.wf.Q"
+            }
+        },
+        "q12.xy.cr_cosine_q13-12.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q12.xy.cr_cosine_q13-12.wf.I",
+                "Q": "q12.xy.cr_cosine_q13-12.wf.Q"
+            }
+        },
+        "q12.xy.cr_gauss_q13-12.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q12.xy.cr_gauss_q13-12.wf.I",
+                "Q": "q12.xy.cr_gauss_q13-12.wf.Q"
             }
         },
         "q12.resonator.readout.pulse": {
@@ -3141,28 +3363,28 @@
                 "Q": "q13.xy.const.wf.Q"
             }
         },
-        "q13.xy.cr_square.pulse": {
+        "q13.xy.cr_square_q12-13.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q13.xy.cr_square.wf.I",
-                "Q": "q13.xy.cr_square.wf.Q"
+                "I": "q13.xy.cr_square_q12-13.wf.I",
+                "Q": "q13.xy.cr_square_q12-13.wf.Q"
             }
         },
-        "q13.xy.cr_cosine.pulse": {
+        "q13.xy.cr_cosine_q12-13.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q13.xy.cr_cosine.wf.I",
-                "Q": "q13.xy.cr_cosine.wf.Q"
+                "I": "q13.xy.cr_cosine_q12-13.wf.I",
+                "Q": "q13.xy.cr_cosine_q12-13.wf.Q"
             }
         },
-        "q13.xy.cr_gauss.pulse": {
+        "q13.xy.cr_gauss_q12-13.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q13.xy.cr_gauss.wf.I",
-                "Q": "q13.xy.cr_gauss.wf.Q"
+                "I": "q13.xy.cr_gauss_q12-13.wf.I",
+                "Q": "q13.xy.cr_gauss_q12-13.wf.Q"
             }
         },
         "q13.xy.cr_flattop_0000.pulse": {
@@ -3195,6 +3417,30 @@
             "waveforms": {
                 "I": "q13.xy.cr_flattop_0060.wf.I",
                 "Q": "q13.xy.cr_flattop_0060.wf.Q"
+            }
+        },
+        "q13.xy.cr_square_q14-13.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q13.xy.cr_square_q14-13.wf.I",
+                "Q": "q13.xy.cr_square_q14-13.wf.Q"
+            }
+        },
+        "q13.xy.cr_cosine_q14-13.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q13.xy.cr_cosine_q14-13.wf.I",
+                "Q": "q13.xy.cr_cosine_q14-13.wf.Q"
+            }
+        },
+        "q13.xy.cr_gauss_q14-13.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q13.xy.cr_gauss_q14-13.wf.I",
+                "Q": "q13.xy.cr_gauss_q14-13.wf.Q"
             }
         },
         "q13.resonator.readout.pulse": {
@@ -3283,28 +3529,28 @@
                 "Q": "q14.xy.const.wf.Q"
             }
         },
-        "q14.xy.cr_square.pulse": {
+        "q14.xy.cr_square_q13-14.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q14.xy.cr_square.wf.I",
-                "Q": "q14.xy.cr_square.wf.Q"
+                "I": "q14.xy.cr_square_q13-14.wf.I",
+                "Q": "q14.xy.cr_square_q13-14.wf.Q"
             }
         },
-        "q14.xy.cr_cosine.pulse": {
+        "q14.xy.cr_cosine_q13-14.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q14.xy.cr_cosine.wf.I",
-                "Q": "q14.xy.cr_cosine.wf.Q"
+                "I": "q14.xy.cr_cosine_q13-14.wf.I",
+                "Q": "q14.xy.cr_cosine_q13-14.wf.Q"
             }
         },
-        "q14.xy.cr_gauss.pulse": {
+        "q14.xy.cr_gauss_q13-14.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q14.xy.cr_gauss.wf.I",
-                "Q": "q14.xy.cr_gauss.wf.Q"
+                "I": "q14.xy.cr_gauss_q13-14.wf.I",
+                "Q": "q14.xy.cr_gauss_q13-14.wf.Q"
             }
         },
         "q14.xy.cr_flattop_0000.pulse": {
@@ -3337,6 +3583,30 @@
             "waveforms": {
                 "I": "q14.xy.cr_flattop_0060.wf.I",
                 "Q": "q14.xy.cr_flattop_0060.wf.Q"
+            }
+        },
+        "q14.xy.cr_square_q15-14.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q14.xy.cr_square_q15-14.wf.I",
+                "Q": "q14.xy.cr_square_q15-14.wf.Q"
+            }
+        },
+        "q14.xy.cr_cosine_q15-14.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q14.xy.cr_cosine_q15-14.wf.I",
+                "Q": "q14.xy.cr_cosine_q15-14.wf.Q"
+            }
+        },
+        "q14.xy.cr_gauss_q15-14.pulse": {
+            "operation": "control",
+            "length": 16,
+            "waveforms": {
+                "I": "q14.xy.cr_gauss_q15-14.wf.I",
+                "Q": "q14.xy.cr_gauss_q15-14.wf.Q"
             }
         },
         "q14.resonator.readout.pulse": {
@@ -3425,28 +3695,28 @@
                 "Q": "q15.xy.const.wf.Q"
             }
         },
-        "q15.xy.cr_square.pulse": {
+        "q15.xy.cr_square_q14-15.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q15.xy.cr_square.wf.I",
-                "Q": "q15.xy.cr_square.wf.Q"
+                "I": "q15.xy.cr_square_q14-15.wf.I",
+                "Q": "q15.xy.cr_square_q14-15.wf.Q"
             }
         },
-        "q15.xy.cr_cosine.pulse": {
+        "q15.xy.cr_cosine_q14-15.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q15.xy.cr_cosine.wf.I",
-                "Q": "q15.xy.cr_cosine.wf.Q"
+                "I": "q15.xy.cr_cosine_q14-15.wf.I",
+                "Q": "q15.xy.cr_cosine_q14-15.wf.Q"
             }
         },
-        "q15.xy.cr_gauss.pulse": {
+        "q15.xy.cr_gauss_q14-15.pulse": {
             "operation": "control",
             "length": 16,
             "waveforms": {
-                "I": "q15.xy.cr_gauss.wf.I",
-                "Q": "q15.xy.cr_gauss.wf.Q"
+                "I": "q15.xy.cr_gauss_q14-15.wf.I",
+                "Q": "q15.xy.cr_gauss_q14-15.wf.Q"
             }
         },
         "q15.xy.cr_flattop_0000.pulse": {
@@ -5413,15 +5683,15 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q1.xy.cr_square.wf.I": {
+        "q1.xy.cr_square_q2-1.wf.I": {
             "type": "constant",
             "sample": 1.0
         },
-        "q1.xy.cr_square.wf.Q": {
+        "q1.xy.cr_square_q2-1.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
-        "q1.xy.cr_cosine.wf.I": {
+        "q1.xy.cr_cosine_q2-1.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -5442,7 +5712,7 @@
                 0.0
             ]
         },
-        "q1.xy.cr_cosine.wf.Q": {
+        "q1.xy.cr_cosine_q2-1.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -5463,7 +5733,7 @@
                 0.0
             ]
         },
-        "q1.xy.cr_gauss.wf.I": {
+        "q1.xy.cr_gauss_q2-1.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -5484,7 +5754,7 @@
                 0.0
             ]
         },
-        "q1.xy.cr_gauss.wf.Q": {
+        "q1.xy.cr_gauss_q2-1.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -6485,15 +6755,15 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q2.xy.cr_square.wf.I": {
+        "q2.xy.cr_square_q1-2.wf.I": {
             "type": "constant",
             "sample": 1.0
         },
-        "q2.xy.cr_square.wf.Q": {
+        "q2.xy.cr_square_q1-2.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
-        "q2.xy.cr_cosine.wf.I": {
+        "q2.xy.cr_cosine_q1-2.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -6514,7 +6784,7 @@
                 0.0
             ]
         },
-        "q2.xy.cr_cosine.wf.Q": {
+        "q2.xy.cr_cosine_q1-2.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -6535,7 +6805,7 @@
                 0.0
             ]
         },
-        "q2.xy.cr_gauss.wf.I": {
+        "q2.xy.cr_gauss_q1-2.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -6556,7 +6826,7 @@
                 0.0
             ]
         },
-        "q2.xy.cr_gauss.wf.Q": {
+        "q2.xy.cr_gauss_q1-2.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -6967,6 +7237,98 @@
                 0.0,
                 0.0,
                 0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q2.xy.cr_square_q3-2.wf.I": {
+            "type": "constant",
+            "sample": 1.0
+        },
+        "q2.xy.cr_square_q3-2.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q2.xy.cr_cosine_q3-2.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.04322727117869957,
+                0.16543469682057088,
+                0.3454915028125263,
+                0.5522642316338267,
+                0.7499999999999999,
+                0.9045084971874737,
+                0.9890738003669028,
+                0.9890738003669028,
+                0.9045084971874737,
+                0.7500000000000002,
+                0.5522642316338271,
+                0.3454915028125264,
+                0.16543469682057077,
+                0.04322727117869951,
+                0.0
+            ]
+        },
+        "q2.xy.cr_cosine_q3-2.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q2.xy.cr_gauss_q3-2.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.06292693160740791,
+                0.1641632941971467,
+                0.30788744745412655,
+                0.4856841457502258,
+                0.672847074827685,
+                0.8318098825092423,
+                0.9237204338306744,
+                0.9237204338306744,
+                0.8318098825092423,
+                0.672847074827685,
+                0.4856841457502258,
+                0.30788744745412655,
+                0.1641632941971467,
+                0.06292693160740791,
+                0.0
+            ]
+        },
+        "q2.xy.cr_gauss_q3-2.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
                 0.0,
                 0.0,
                 0.0,
@@ -7557,15 +7919,15 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q3.xy.cr_square.wf.I": {
+        "q3.xy.cr_square_q2-3.wf.I": {
             "type": "constant",
             "sample": 1.0
         },
-        "q3.xy.cr_square.wf.Q": {
+        "q3.xy.cr_square_q2-3.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
-        "q3.xy.cr_cosine.wf.I": {
+        "q3.xy.cr_cosine_q2-3.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -7586,7 +7948,7 @@
                 0.0
             ]
         },
-        "q3.xy.cr_cosine.wf.Q": {
+        "q3.xy.cr_cosine_q2-3.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -7607,7 +7969,7 @@
                 0.0
             ]
         },
-        "q3.xy.cr_gauss.wf.I": {
+        "q3.xy.cr_gauss_q2-3.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -7628,7 +7990,7 @@
                 0.0
             ]
         },
-        "q3.xy.cr_gauss.wf.Q": {
+        "q3.xy.cr_gauss_q2-3.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -8039,6 +8401,98 @@
                 0.0,
                 0.0,
                 0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q3.xy.cr_square_q4-3.wf.I": {
+            "type": "constant",
+            "sample": 1.0
+        },
+        "q3.xy.cr_square_q4-3.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q3.xy.cr_cosine_q4-3.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.04322727117869957,
+                0.16543469682057088,
+                0.3454915028125263,
+                0.5522642316338267,
+                0.7499999999999999,
+                0.9045084971874737,
+                0.9890738003669028,
+                0.9890738003669028,
+                0.9045084971874737,
+                0.7500000000000002,
+                0.5522642316338271,
+                0.3454915028125264,
+                0.16543469682057077,
+                0.04322727117869951,
+                0.0
+            ]
+        },
+        "q3.xy.cr_cosine_q4-3.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q3.xy.cr_gauss_q4-3.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.06292693160740791,
+                0.1641632941971467,
+                0.30788744745412655,
+                0.4856841457502258,
+                0.672847074827685,
+                0.8318098825092423,
+                0.9237204338306744,
+                0.9237204338306744,
+                0.8318098825092423,
+                0.672847074827685,
+                0.4856841457502258,
+                0.30788744745412655,
+                0.1641632941971467,
+                0.06292693160740791,
+                0.0
+            ]
+        },
+        "q3.xy.cr_gauss_q4-3.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
                 0.0,
                 0.0,
                 0.0,
@@ -8629,15 +9083,15 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q4.xy.cr_square.wf.I": {
+        "q4.xy.cr_square_q3-4.wf.I": {
             "type": "constant",
             "sample": 1.0
         },
-        "q4.xy.cr_square.wf.Q": {
+        "q4.xy.cr_square_q3-4.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
-        "q4.xy.cr_cosine.wf.I": {
+        "q4.xy.cr_cosine_q3-4.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -8658,7 +9112,7 @@
                 0.0
             ]
         },
-        "q4.xy.cr_cosine.wf.Q": {
+        "q4.xy.cr_cosine_q3-4.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -8679,7 +9133,7 @@
                 0.0
             ]
         },
-        "q4.xy.cr_gauss.wf.I": {
+        "q4.xy.cr_gauss_q3-4.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -8700,7 +9154,7 @@
                 0.0
             ]
         },
-        "q4.xy.cr_gauss.wf.Q": {
+        "q4.xy.cr_gauss_q3-4.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -9111,6 +9565,98 @@
                 0.0,
                 0.0,
                 0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q4.xy.cr_square_q5-4.wf.I": {
+            "type": "constant",
+            "sample": 1.0
+        },
+        "q4.xy.cr_square_q5-4.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q4.xy.cr_cosine_q5-4.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.04322727117869957,
+                0.16543469682057088,
+                0.3454915028125263,
+                0.5522642316338267,
+                0.7499999999999999,
+                0.9045084971874737,
+                0.9890738003669028,
+                0.9890738003669028,
+                0.9045084971874737,
+                0.7500000000000002,
+                0.5522642316338271,
+                0.3454915028125264,
+                0.16543469682057077,
+                0.04322727117869951,
+                0.0
+            ]
+        },
+        "q4.xy.cr_cosine_q5-4.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q4.xy.cr_gauss_q5-4.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.06292693160740791,
+                0.1641632941971467,
+                0.30788744745412655,
+                0.4856841457502258,
+                0.672847074827685,
+                0.8318098825092423,
+                0.9237204338306744,
+                0.9237204338306744,
+                0.8318098825092423,
+                0.672847074827685,
+                0.4856841457502258,
+                0.30788744745412655,
+                0.1641632941971467,
+                0.06292693160740791,
+                0.0
+            ]
+        },
+        "q4.xy.cr_gauss_q5-4.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
                 0.0,
                 0.0,
                 0.0,
@@ -9701,15 +10247,15 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q5.xy.cr_square.wf.I": {
+        "q5.xy.cr_square_q4-5.wf.I": {
             "type": "constant",
             "sample": 1.0
         },
-        "q5.xy.cr_square.wf.Q": {
+        "q5.xy.cr_square_q4-5.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
-        "q5.xy.cr_cosine.wf.I": {
+        "q5.xy.cr_cosine_q4-5.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -9730,7 +10276,7 @@
                 0.0
             ]
         },
-        "q5.xy.cr_cosine.wf.Q": {
+        "q5.xy.cr_cosine_q4-5.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -9751,7 +10297,7 @@
                 0.0
             ]
         },
-        "q5.xy.cr_gauss.wf.I": {
+        "q5.xy.cr_gauss_q4-5.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -9772,7 +10318,7 @@
                 0.0
             ]
         },
-        "q5.xy.cr_gauss.wf.Q": {
+        "q5.xy.cr_gauss_q4-5.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -10183,6 +10729,98 @@
                 0.0,
                 0.0,
                 0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q5.xy.cr_square_q6-5.wf.I": {
+            "type": "constant",
+            "sample": 1.0
+        },
+        "q5.xy.cr_square_q6-5.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q5.xy.cr_cosine_q6-5.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.04322727117869957,
+                0.16543469682057088,
+                0.3454915028125263,
+                0.5522642316338267,
+                0.7499999999999999,
+                0.9045084971874737,
+                0.9890738003669028,
+                0.9890738003669028,
+                0.9045084971874737,
+                0.7500000000000002,
+                0.5522642316338271,
+                0.3454915028125264,
+                0.16543469682057077,
+                0.04322727117869951,
+                0.0
+            ]
+        },
+        "q5.xy.cr_cosine_q6-5.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q5.xy.cr_gauss_q6-5.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.06292693160740791,
+                0.1641632941971467,
+                0.30788744745412655,
+                0.4856841457502258,
+                0.672847074827685,
+                0.8318098825092423,
+                0.9237204338306744,
+                0.9237204338306744,
+                0.8318098825092423,
+                0.672847074827685,
+                0.4856841457502258,
+                0.30788744745412655,
+                0.1641632941971467,
+                0.06292693160740791,
+                0.0
+            ]
+        },
+        "q5.xy.cr_gauss_q6-5.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
                 0.0,
                 0.0,
                 0.0,
@@ -10773,15 +11411,15 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q6.xy.cr_square.wf.I": {
+        "q6.xy.cr_square_q5-6.wf.I": {
             "type": "constant",
             "sample": 1.0
         },
-        "q6.xy.cr_square.wf.Q": {
+        "q6.xy.cr_square_q5-6.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
-        "q6.xy.cr_cosine.wf.I": {
+        "q6.xy.cr_cosine_q5-6.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -10802,7 +11440,7 @@
                 0.0
             ]
         },
-        "q6.xy.cr_cosine.wf.Q": {
+        "q6.xy.cr_cosine_q5-6.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -10823,7 +11461,7 @@
                 0.0
             ]
         },
-        "q6.xy.cr_gauss.wf.I": {
+        "q6.xy.cr_gauss_q5-6.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -10844,7 +11482,7 @@
                 0.0
             ]
         },
-        "q6.xy.cr_gauss.wf.Q": {
+        "q6.xy.cr_gauss_q5-6.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -11255,6 +11893,98 @@
                 0.0,
                 0.0,
                 0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q6.xy.cr_square_q7-6.wf.I": {
+            "type": "constant",
+            "sample": 1.0
+        },
+        "q6.xy.cr_square_q7-6.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q6.xy.cr_cosine_q7-6.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.04322727117869957,
+                0.16543469682057088,
+                0.3454915028125263,
+                0.5522642316338267,
+                0.7499999999999999,
+                0.9045084971874737,
+                0.9890738003669028,
+                0.9890738003669028,
+                0.9045084971874737,
+                0.7500000000000002,
+                0.5522642316338271,
+                0.3454915028125264,
+                0.16543469682057077,
+                0.04322727117869951,
+                0.0
+            ]
+        },
+        "q6.xy.cr_cosine_q7-6.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q6.xy.cr_gauss_q7-6.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.06292693160740791,
+                0.1641632941971467,
+                0.30788744745412655,
+                0.4856841457502258,
+                0.672847074827685,
+                0.8318098825092423,
+                0.9237204338306744,
+                0.9237204338306744,
+                0.8318098825092423,
+                0.672847074827685,
+                0.4856841457502258,
+                0.30788744745412655,
+                0.1641632941971467,
+                0.06292693160740791,
+                0.0
+            ]
+        },
+        "q6.xy.cr_gauss_q7-6.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
                 0.0,
                 0.0,
                 0.0,
@@ -11845,15 +12575,15 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q7.xy.cr_square.wf.I": {
+        "q7.xy.cr_square_q6-7.wf.I": {
             "type": "constant",
             "sample": 1.0
         },
-        "q7.xy.cr_square.wf.Q": {
+        "q7.xy.cr_square_q6-7.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
-        "q7.xy.cr_cosine.wf.I": {
+        "q7.xy.cr_cosine_q6-7.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -11874,7 +12604,7 @@
                 0.0
             ]
         },
-        "q7.xy.cr_cosine.wf.Q": {
+        "q7.xy.cr_cosine_q6-7.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -11895,7 +12625,7 @@
                 0.0
             ]
         },
-        "q7.xy.cr_gauss.wf.I": {
+        "q7.xy.cr_gauss_q6-7.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -11916,7 +12646,7 @@
                 0.0
             ]
         },
-        "q7.xy.cr_gauss.wf.Q": {
+        "q7.xy.cr_gauss_q6-7.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -12917,15 +13647,15 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q9.xy.cr_square.wf.I": {
+        "q9.xy.cr_square_q10-9.wf.I": {
             "type": "constant",
             "sample": 1.0
         },
-        "q9.xy.cr_square.wf.Q": {
+        "q9.xy.cr_square_q10-9.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
-        "q9.xy.cr_cosine.wf.I": {
+        "q9.xy.cr_cosine_q10-9.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -12946,7 +13676,7 @@
                 0.0
             ]
         },
-        "q9.xy.cr_cosine.wf.Q": {
+        "q9.xy.cr_cosine_q10-9.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -12967,7 +13697,7 @@
                 0.0
             ]
         },
-        "q9.xy.cr_gauss.wf.I": {
+        "q9.xy.cr_gauss_q10-9.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -12988,7 +13718,7 @@
                 0.0
             ]
         },
-        "q9.xy.cr_gauss.wf.Q": {
+        "q9.xy.cr_gauss_q10-9.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -13989,15 +14719,15 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q10.xy.cr_square.wf.I": {
+        "q10.xy.cr_square_q9-10.wf.I": {
             "type": "constant",
             "sample": 1.0
         },
-        "q10.xy.cr_square.wf.Q": {
+        "q10.xy.cr_square_q9-10.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
-        "q10.xy.cr_cosine.wf.I": {
+        "q10.xy.cr_cosine_q9-10.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -14018,7 +14748,7 @@
                 0.0
             ]
         },
-        "q10.xy.cr_cosine.wf.Q": {
+        "q10.xy.cr_cosine_q9-10.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -14039,7 +14769,7 @@
                 0.0
             ]
         },
-        "q10.xy.cr_gauss.wf.I": {
+        "q10.xy.cr_gauss_q9-10.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -14060,7 +14790,7 @@
                 0.0
             ]
         },
-        "q10.xy.cr_gauss.wf.Q": {
+        "q10.xy.cr_gauss_q9-10.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -14471,6 +15201,98 @@
                 0.0,
                 0.0,
                 0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q10.xy.cr_square_q11-10.wf.I": {
+            "type": "constant",
+            "sample": 1.0
+        },
+        "q10.xy.cr_square_q11-10.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q10.xy.cr_cosine_q11-10.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.04322727117869957,
+                0.16543469682057088,
+                0.3454915028125263,
+                0.5522642316338267,
+                0.7499999999999999,
+                0.9045084971874737,
+                0.9890738003669028,
+                0.9890738003669028,
+                0.9045084971874737,
+                0.7500000000000002,
+                0.5522642316338271,
+                0.3454915028125264,
+                0.16543469682057077,
+                0.04322727117869951,
+                0.0
+            ]
+        },
+        "q10.xy.cr_cosine_q11-10.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q10.xy.cr_gauss_q11-10.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.06292693160740791,
+                0.1641632941971467,
+                0.30788744745412655,
+                0.4856841457502258,
+                0.672847074827685,
+                0.8318098825092423,
+                0.9237204338306744,
+                0.9237204338306744,
+                0.8318098825092423,
+                0.672847074827685,
+                0.4856841457502258,
+                0.30788744745412655,
+                0.1641632941971467,
+                0.06292693160740791,
+                0.0
+            ]
+        },
+        "q10.xy.cr_gauss_q11-10.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
                 0.0,
                 0.0,
                 0.0,
@@ -15061,15 +15883,15 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q11.xy.cr_square.wf.I": {
+        "q11.xy.cr_square_q10-11.wf.I": {
             "type": "constant",
             "sample": 1.0
         },
-        "q11.xy.cr_square.wf.Q": {
+        "q11.xy.cr_square_q10-11.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
-        "q11.xy.cr_cosine.wf.I": {
+        "q11.xy.cr_cosine_q10-11.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -15090,7 +15912,7 @@
                 0.0
             ]
         },
-        "q11.xy.cr_cosine.wf.Q": {
+        "q11.xy.cr_cosine_q10-11.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -15111,7 +15933,7 @@
                 0.0
             ]
         },
-        "q11.xy.cr_gauss.wf.I": {
+        "q11.xy.cr_gauss_q10-11.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -15132,7 +15954,7 @@
                 0.0
             ]
         },
-        "q11.xy.cr_gauss.wf.Q": {
+        "q11.xy.cr_gauss_q10-11.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -15543,6 +16365,98 @@
                 0.0,
                 0.0,
                 0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q11.xy.cr_square_q12-11.wf.I": {
+            "type": "constant",
+            "sample": 1.0
+        },
+        "q11.xy.cr_square_q12-11.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q11.xy.cr_cosine_q12-11.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.04322727117869957,
+                0.16543469682057088,
+                0.3454915028125263,
+                0.5522642316338267,
+                0.7499999999999999,
+                0.9045084971874737,
+                0.9890738003669028,
+                0.9890738003669028,
+                0.9045084971874737,
+                0.7500000000000002,
+                0.5522642316338271,
+                0.3454915028125264,
+                0.16543469682057077,
+                0.04322727117869951,
+                0.0
+            ]
+        },
+        "q11.xy.cr_cosine_q12-11.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q11.xy.cr_gauss_q12-11.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.06292693160740791,
+                0.1641632941971467,
+                0.30788744745412655,
+                0.4856841457502258,
+                0.672847074827685,
+                0.8318098825092423,
+                0.9237204338306744,
+                0.9237204338306744,
+                0.8318098825092423,
+                0.672847074827685,
+                0.4856841457502258,
+                0.30788744745412655,
+                0.1641632941971467,
+                0.06292693160740791,
+                0.0
+            ]
+        },
+        "q11.xy.cr_gauss_q12-11.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
                 0.0,
                 0.0,
                 0.0,
@@ -16133,15 +17047,15 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q12.xy.cr_square.wf.I": {
+        "q12.xy.cr_square_q11-12.wf.I": {
             "type": "constant",
             "sample": 1.0
         },
-        "q12.xy.cr_square.wf.Q": {
+        "q12.xy.cr_square_q11-12.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
-        "q12.xy.cr_cosine.wf.I": {
+        "q12.xy.cr_cosine_q11-12.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -16162,7 +17076,7 @@
                 0.0
             ]
         },
-        "q12.xy.cr_cosine.wf.Q": {
+        "q12.xy.cr_cosine_q11-12.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -16183,7 +17097,7 @@
                 0.0
             ]
         },
-        "q12.xy.cr_gauss.wf.I": {
+        "q12.xy.cr_gauss_q11-12.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -16204,7 +17118,7 @@
                 0.0
             ]
         },
-        "q12.xy.cr_gauss.wf.Q": {
+        "q12.xy.cr_gauss_q11-12.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -16615,6 +17529,98 @@
                 0.0,
                 0.0,
                 0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q12.xy.cr_square_q13-12.wf.I": {
+            "type": "constant",
+            "sample": 1.0
+        },
+        "q12.xy.cr_square_q13-12.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q12.xy.cr_cosine_q13-12.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.04322727117869957,
+                0.16543469682057088,
+                0.3454915028125263,
+                0.5522642316338267,
+                0.7499999999999999,
+                0.9045084971874737,
+                0.9890738003669028,
+                0.9890738003669028,
+                0.9045084971874737,
+                0.7500000000000002,
+                0.5522642316338271,
+                0.3454915028125264,
+                0.16543469682057077,
+                0.04322727117869951,
+                0.0
+            ]
+        },
+        "q12.xy.cr_cosine_q13-12.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q12.xy.cr_gauss_q13-12.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.06292693160740791,
+                0.1641632941971467,
+                0.30788744745412655,
+                0.4856841457502258,
+                0.672847074827685,
+                0.8318098825092423,
+                0.9237204338306744,
+                0.9237204338306744,
+                0.8318098825092423,
+                0.672847074827685,
+                0.4856841457502258,
+                0.30788744745412655,
+                0.1641632941971467,
+                0.06292693160740791,
+                0.0
+            ]
+        },
+        "q12.xy.cr_gauss_q13-12.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
                 0.0,
                 0.0,
                 0.0,
@@ -17205,15 +18211,15 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q13.xy.cr_square.wf.I": {
+        "q13.xy.cr_square_q12-13.wf.I": {
             "type": "constant",
             "sample": 1.0
         },
-        "q13.xy.cr_square.wf.Q": {
+        "q13.xy.cr_square_q12-13.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
-        "q13.xy.cr_cosine.wf.I": {
+        "q13.xy.cr_cosine_q12-13.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -17234,7 +18240,7 @@
                 0.0
             ]
         },
-        "q13.xy.cr_cosine.wf.Q": {
+        "q13.xy.cr_cosine_q12-13.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -17255,7 +18261,7 @@
                 0.0
             ]
         },
-        "q13.xy.cr_gauss.wf.I": {
+        "q13.xy.cr_gauss_q12-13.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -17276,7 +18282,7 @@
                 0.0
             ]
         },
-        "q13.xy.cr_gauss.wf.Q": {
+        "q13.xy.cr_gauss_q12-13.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -17687,6 +18693,98 @@
                 0.0,
                 0.0,
                 0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q13.xy.cr_square_q14-13.wf.I": {
+            "type": "constant",
+            "sample": 1.0
+        },
+        "q13.xy.cr_square_q14-13.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q13.xy.cr_cosine_q14-13.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.04322727117869957,
+                0.16543469682057088,
+                0.3454915028125263,
+                0.5522642316338267,
+                0.7499999999999999,
+                0.9045084971874737,
+                0.9890738003669028,
+                0.9890738003669028,
+                0.9045084971874737,
+                0.7500000000000002,
+                0.5522642316338271,
+                0.3454915028125264,
+                0.16543469682057077,
+                0.04322727117869951,
+                0.0
+            ]
+        },
+        "q13.xy.cr_cosine_q14-13.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q13.xy.cr_gauss_q14-13.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.06292693160740791,
+                0.1641632941971467,
+                0.30788744745412655,
+                0.4856841457502258,
+                0.672847074827685,
+                0.8318098825092423,
+                0.9237204338306744,
+                0.9237204338306744,
+                0.8318098825092423,
+                0.672847074827685,
+                0.4856841457502258,
+                0.30788744745412655,
+                0.1641632941971467,
+                0.06292693160740791,
+                0.0
+            ]
+        },
+        "q13.xy.cr_gauss_q14-13.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
                 0.0,
                 0.0,
                 0.0,
@@ -18277,15 +19375,15 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q14.xy.cr_square.wf.I": {
+        "q14.xy.cr_square_q13-14.wf.I": {
             "type": "constant",
             "sample": 1.0
         },
-        "q14.xy.cr_square.wf.Q": {
+        "q14.xy.cr_square_q13-14.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
-        "q14.xy.cr_cosine.wf.I": {
+        "q14.xy.cr_cosine_q13-14.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -18306,7 +19404,7 @@
                 0.0
             ]
         },
-        "q14.xy.cr_cosine.wf.Q": {
+        "q14.xy.cr_cosine_q13-14.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -18327,7 +19425,7 @@
                 0.0
             ]
         },
-        "q14.xy.cr_gauss.wf.I": {
+        "q14.xy.cr_gauss_q13-14.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -18348,7 +19446,7 @@
                 0.0
             ]
         },
-        "q14.xy.cr_gauss.wf.Q": {
+        "q14.xy.cr_gauss_q13-14.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -18759,6 +19857,98 @@
                 0.0,
                 0.0,
                 0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q14.xy.cr_square_q15-14.wf.I": {
+            "type": "constant",
+            "sample": 1.0
+        },
+        "q14.xy.cr_square_q15-14.wf.Q": {
+            "type": "constant",
+            "sample": 0.0
+        },
+        "q14.xy.cr_cosine_q15-14.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.04322727117869957,
+                0.16543469682057088,
+                0.3454915028125263,
+                0.5522642316338267,
+                0.7499999999999999,
+                0.9045084971874737,
+                0.9890738003669028,
+                0.9890738003669028,
+                0.9045084971874737,
+                0.7500000000000002,
+                0.5522642316338271,
+                0.3454915028125264,
+                0.16543469682057077,
+                0.04322727117869951,
+                0.0
+            ]
+        },
+        "q14.xy.cr_cosine_q15-14.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "q14.xy.cr_gauss_q15-14.wf.I": {
+            "type": "arbitrary",
+            "samples": [
+                0.0,
+                0.06292693160740791,
+                0.1641632941971467,
+                0.30788744745412655,
+                0.4856841457502258,
+                0.672847074827685,
+                0.8318098825092423,
+                0.9237204338306744,
+                0.9237204338306744,
+                0.8318098825092423,
+                0.672847074827685,
+                0.4856841457502258,
+                0.30788744745412655,
+                0.1641632941971467,
+                0.06292693160740791,
+                0.0
+            ]
+        },
+        "q14.xy.cr_gauss_q15-14.wf.Q": {
+            "type": "arbitrary",
+            "samples": [
                 0.0,
                 0.0,
                 0.0,
@@ -19349,15 +20539,15 @@
             "type": "constant",
             "sample": 0.0
         },
-        "q15.xy.cr_square.wf.I": {
+        "q15.xy.cr_square_q14-15.wf.I": {
             "type": "constant",
             "sample": 1.0
         },
-        "q15.xy.cr_square.wf.Q": {
+        "q15.xy.cr_square_q14-15.wf.Q": {
             "type": "constant",
             "sample": 0.0
         },
-        "q15.xy.cr_cosine.wf.I": {
+        "q15.xy.cr_cosine_q14-15.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -19378,7 +20568,7 @@
                 0.0
             ]
         },
-        "q15.xy.cr_cosine.wf.Q": {
+        "q15.xy.cr_cosine_q14-15.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -19399,7 +20589,7 @@
                 0.0
             ]
         },
-        "q15.xy.cr_gauss.wf.I": {
+        "q15.xy.cr_gauss_q14-15.wf.I": {
             "type": "arbitrary",
             "samples": [
                 0.0,
@@ -19420,7 +20610,7 @@
                 0.0
             ]
         },
-        "q15.xy.cr_gauss.wf.Q": {
+        "q15.xy.cr_gauss_q14-15.wf.Q": {
             "type": "arbitrary",
             "samples": [
                 0.0,

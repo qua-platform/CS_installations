@@ -66,17 +66,18 @@ def custom_param(node: QualibrationNode[Parameters, Quam]):
     """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
     # You can get type hinting in your IDE by typing node.parameters.
     node.parameters.qubit_pairs = ["q1-2", "q3-4"]
+    node.parameters.use_state_discrimination = True
 
     node.parameters.wf_type = "square"
     node.parameters.cr_type = "direct+cancel+echo"
-    node.parameters.cr_drive_amp_scaling = 1.0  # None : setting None to use the amp from the config
-    node.parameters.cr_drive_phase = 0.0  # None : setting None to use the amp from the config
-    node.parameters.cr_cancel_amp_scaling = 0.1  # None : setting None to use the amp from the config
-    node.parameters.cr_cancel_phase = 0.0  # None : setting None to use the amp from the config
+    node.parameters.cr_drive_amp_scaling = [0.89, 0.89] # None : setting None to use the amp from the config
+    node.parameters.cr_drive_phase = [0.12, 0.12] # None : setting None to use the amp from the config
+    node.parameters.cr_cancel_amp_scaling = [0.34, 0.34] # None : setting None to use the amp from the config
+    node.parameters.cr_cancel_phase = [0.23, 0.23] # None : setting None to use the amp from the config
 
     node.parameters.min_corr_phase = 0.0
     node.parameters.max_corr_phase = 1.0
-    node.parameters.step_corr_phase = 0.01
+    node.parameters.step_corr_phase = 0.1
 
 
 # Instantiate the QUAM class from the state file
@@ -170,12 +171,14 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                             align(*cr_elems)
 
                             # Play CR
-                            play_cross_resonance(
-                                qc=qc,
-                                qt=qt,
-                                cr=cr,
+                            qp.apply("cr",
                                 cr_type=cr_type,
                                 wf_type=wf_type,
+                                cr_drive_amp_scaling=cr_drive_amp_scaling[i],
+                                cr_drive_phase=cr_drive_phase[i],
+                                cr_cancel_amp_scaling=cr_cancel_amp_scaling[i],
+                                cr_cancel_phase=cr_cancel_phase[i],
+                                qc_correction_phase=ph,
                             )
                             align(*cr_elems)
 
@@ -199,8 +202,8 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
         with stream_processing():
             n_st.save("n")
             for i, qp in enumerate(qubit_pairs):
-                state_c_st[i].buffer(2).buffer(len(corr_phases)).average().save(f"state_c_{qp.name}")
-                state_t_st[i].buffer(2).buffer(len(corr_phases)).average().save(f"state_t_{qp.name}")
+                state_c_st[i].buffer(2).buffer(len(corr_phases)).average().save(f"state_c{i}")
+                state_t_st[i].buffer(2).buffer(len(corr_phases)).average().save(f"state_t{i}")
 
 
 # %% {Simulate}
@@ -295,13 +298,11 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
 
     with node.record_state_updates():
         for qp in node.namespace["qubit_pairs"]:
-            print(qp.name)
             if node.outcomes[qp.name] == "failed":
                 continue
 
             # cr drive
-            operation = qp.cross_resonance.operations[node.parameters.wf_type]
-            operation.correction_phase = 0.123
+            qp.macros.cr.qc_correction_phase = 0.123
 
 
 # %% {Save_results}

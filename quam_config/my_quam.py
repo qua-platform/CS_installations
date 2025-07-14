@@ -31,6 +31,7 @@ class CRGate(QubitPairMacro):
         cr_duration_clock_cycles: Optional[float | qua_T] = None,
         qc_correction_phase: Optional[float | qua_T] = None
     ) -> None:
+
         qc = self.qubit_pair.qubit_control
         qt = self.qubit_pair.qubit_target
         cr = self.qubit_pair.cross_resonance
