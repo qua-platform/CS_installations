@@ -2,14 +2,17 @@
 from qm import QuantumMachinesManager
 from qm.qua import *
 from qm import SimulationConfig, LoopbackInterface
-from configuration import *
+from configuration_intro import *
 import matplotlib.pyplot as plt
 from qm_saas import QOPVersion, QmSaas
+import matplotlib
+
+matplotlib.use("TkAgg")
 
 
 # Initialize QOP simulator client
 client = QmSaas(email=EMAIL, password=PWD, host=HOST)
-
+client.close_all()
 
 with client.simulator(QOPVersion(QOP_VER)) as instance:
     # Initialize QuantumMachinesManager with the simulation instance details
@@ -22,9 +25,16 @@ with client.simulator(QOPVersion(QOP_VER)) as instance:
     # intro to time alignment managment - run simulation
     # message: easy to align signals - perhaps example of CR gates?
     with program() as prog:
-        play("gauss", "qubit_1")
+        # play("gauss", "qubit_1")
+        # align("qubit_1", "qubit_2")
+        # play("gauss", "qubit_2")
+
+        update_frequency("qubit_1", 0)
+        update_frequency("qubit_2", 0)
+
+        play("x180", "qubit_1")
         align("qubit_1", "qubit_2")
-        play("gauss", "qubit_2")
+        play("x180", "qubit_2")
 
 
     #####################################

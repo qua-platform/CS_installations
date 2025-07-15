@@ -6,6 +6,11 @@ from configuration_octave import *
 from qm import SimulationConfig
 import time
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib
+import os
+
+matplotlib.use("TkAgg")
 
 amp_list = np.linspace(0.1, 1, 10)
 
@@ -41,6 +46,7 @@ if simulate:
     simulation_config = SimulationConfig(duration=400)  # in clock cycles
     job_sim = qmm.simulate(config, prog, simulation_config)
     job_sim.get_simulated_samples().con1.plot()
+    plt.show()
 else:
     qm = qmm.open_qm(config)
     job = qm.execute(prog)
