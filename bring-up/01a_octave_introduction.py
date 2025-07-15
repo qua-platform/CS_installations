@@ -41,7 +41,7 @@ def run(qua_prog, sleep_time=None):
 ###################
 # The QUA program #
 ###################
-elements = config["elements"].keys()
+elements = list(config["elements"].keys())
 with program() as hello_octave:
     with infinite_loop_():
         for el in elements:
@@ -164,7 +164,7 @@ job = qm.execute(hello_octave)
 time.sleep(10)  # The program will run for 10 seconds
 job.halt()
 # Step 5.2: Run this in order to calibrate
-for element in elements[:1]:  # Only calibrate the first element
+for element in [elements[1]]:  # Only calibrate the qubit1
     print("-" * 37 + f" Calibrates {element}")
     qm.calibrate_element(element, {qubit_LO: (qubit_IF,)})
     # can provide many IFs for specific LO
