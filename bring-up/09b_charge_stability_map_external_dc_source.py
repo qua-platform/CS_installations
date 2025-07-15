@@ -126,7 +126,9 @@ with program() as charge_stability_prog:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
+qmm = QuantumMachinesManager(
+    host=qop_ip, cluster_name=cluster_name, octave_calibration_db_path=os.getcwd()
+)
 
 ###########################
 # Run or Simulate Program #

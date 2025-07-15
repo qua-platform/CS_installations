@@ -1,31 +1,28 @@
+# %%
 """
-        CHARGE STABILITY MAP - fast and slow axes: QDAC2 set to trigger mode
-The goal of the script is to acquire the charge stability map.
-Here two channels of the QDAC2 are parametrized to step though two preloaded voltage lists on the event of two digital
-markers provided by the OPX (connected to ext1 and ext2). This method allows the fast acquisition of a 2D voltage map
-and the data can be fetched from the OPX in real time to enable live plotting.
-The speed can also be further improved by removing the live plotting and increasing the QDAC2 bandwidth.
+        Pauli Spin Blockade search
+The goal of the script is to find the PSB region according to the protocol described in Nano Letters 2020 20 (2), 947-952.
+To do so, the charge stability map is acquired by scanning the voltages provided by the QDAC2,
+to the DC part of the bias-tees connected to the plunger gates, while 2 OPX channels are stepping the voltages on the fast
+lines of the bias-tees to navigate through the triangle in voltage space (empty - random initialization - measurement).
 
-The QUA program consists in sending the triggers to the QDAC2 to increment the voltages and measure the charge of the dot
-either via dc current sensing or RF reflectometry.
-On top of the DC voltage sweeps, the OPX can output a continuous square wave (Coulomb pulse) through the AC line of the
-bias-tee. This allows to check the coupling of the fast line to the sample and measure the lever arms between the DC and
-AC lines.
+Depending on the cut-off frequency of the bias-tee, it may be necessary to adjust the barycenter (voltage offset) of each
+triangle so that the fast line of the bias-tees sees zero voltage in average. Otherwise, the high-pass filtering effect
+of the bias-tee will distort the fast pulses over time. A function has been written for this.
 
-A global average is performed (averaging on the most outer loop) and the data is extracted while the program is running
-to display the full charge stability map with increasing SNR.
+In the current implementation, the OPX is also measuring (either with DC current sensing or RF-reflectometry) during the
+readout window (last segment of the triangle).
+A single-point averaging is performed and the data is extracted while the program is running to display the results line-by-line.
 
 Prerequisites:
     - Readout calibration (resonance frequency for RF reflectometry and sensor operating point for DC current sensing).
     - Setting the parameters of the QDAC2 and preloading the two voltages lists for the slow and fast axes.
     - Connect the two plunger gates (DC line of the bias-tee) to the QDAC2 and two digital markers from the OPX to the
       QDAC2 external trigger ports.
-    - (optional) Connect the OPX to the fast line of the plunger gates for playing the Coulomb pulse and calibrate the
-      lever arm.
+    - Connect the OPX to the fast line of the plunger gates for playing the triangle pulse sequence.
 
 Before proceeding to the next node:
-    - Identify the different charge occupation regions.
-    - Update the config with the lever-arms.
+    - Identify the PSB region and update the config.
 """
 
 from qm.qua import *
@@ -50,11 +47,20 @@ n_points_fast = 100  # Number of points for the fast axis
 Coulomb_amp = 0.0  # amplitude of the Coulomb pulse
 # How many Coulomb pulse periods to last the whole program
 N = (
-    (int((readout_len + 1_000) / (2 * step_len)) + 1)
+    (int((readout_len + 1_000) / (2 * step_length)) + 1)
     * n_points_fast
     * n_points_slow
     * n_avg
 )
+
+# Points in the charge stability map [V1, V2]
+level_empty = [-0.2, 0.0]
+duration_empty = 5000
+
+seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
+seq.add_points("empty", level_empty, duration_empty)
+seq.add_points("initialization", level_init, duration_init)
+seq.add_points("readout", level_readout, duration_readout)
 
 # Voltages in Volt
 voltage_values_slow = np.linspace(-1.5, 1.5, n_points_slow)
@@ -73,7 +79,7 @@ save_data_dict = {
 ###################
 # The QUA program #
 ###################
-with program() as charge_stability_prog:
+with program() as PSB_search_prog:
     n = declare(int)  # QUA integer used as an index for the averaging loop
     counter = declare(int)  # QUA integer used as an index for the Coulomb pulse
     i = declare(int)  # QUA integer used as an index to loop over the voltage points
@@ -85,58 +91,63 @@ with program() as charge_stability_prog:
 
     # Ensure that the result variables are assign to the pulse processor used for readout
     assign_variables_to_element("tank_circuit", I, Q)
-    assign_variables_to_element("TIA", dc_signal)
-    # Play the Coulomb pulse continuously for the whole sequence
-    #      ____      ____      ____      ____
-    #     |    |    |    |    |    |    |    |
-    # ____|    |____|    |____|    |____|    |...
-    with for_(counter, 0, counter < N, counter + 1):
-        # The Coulomb pulse
-        play("coulomb_step" * amp(Coulomb_amp / P1_step_amp), "P1")
-        play("coulomb_step" * amp(-Coulomb_amp / P1_step_amp), "P1")
+    # assign_variables_to_element("TIA", dc_signal)
 
-    with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
-        with for_(i, 0, i < n_points_slow, i + 1):
+    with for_(i, 0, i < n_points_slow, i + 1):
+        # Trigger the QDAC2 channel to output the next voltage level from the list
+        play("trigger", "qdac_trigger2")
+        with for_(j, 0, j < n_points_fast, j + 1):
             # Trigger the QDAC2 channel to output the next voltage level from the list
-            play("trigger", "qdac_trigger2")
-            with for_(j, 0, j < n_points_fast, j + 1):
-                # Trigger the QDAC2 channel to output the next voltage level from the list
-                play("trigger", "qdac_trigger1")
-                # Wait for the voltages to settle (depends on the channel bandwidth)
-                wait(300 * u.us, "tank_circuit", "TIA")
+            play("trigger", "qdac_trigger1")
+            # Wait for the voltages to settle (depends on the channel bandwidth)
+            # wait(300 * u.us, "tank_circuit", "TIA", "P1_sticky", "P2_sticky")
+            wait(300 * u.us, "tank_circuit", "P1_sticky", "P2_sticky")
+
+            with for_(n, 0, n < n_avg, n + 1):  # The averaging loop
+                # Play the triangle
+                seq.add_step(voltage_point_name="empty")
+                seq.add_step(voltage_point_name="initialization")
+                seq.add_step(voltage_point_name="readout")
+                seq.add_compensation_pulse(duration=duration_compensation_pulse)
+                # Measure the dot right after the qubit manipulation
+                # wait((duration_init + duration_empty) * u.ns, "tank_circuit", "TIA")
+                wait((duration_init + duration_empty) * u.ns, "tank_circuit")
                 # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
                 # frequency and the integrated quadratures are stored in "I" and "Q"
                 I, Q, I_st, Q_st = RF_reflectometry_macro(I=I, Q=Q)
-                # # DC current sensing: the voltage measured by the analog input 1 is recorded and the integrated result
-                # # is stored in "dc_signal"
+                # DC current sensing: the voltage measured by the analog input 1 is recorded and the integrated result
+                # is stored in "dc_signal"
                 # dc_signal, dc_signal_st = DC_current_sensing_macro(dc_signal=dc_signal)
                 # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
                 # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
                 # process them which can cause the OPX to crash.
                 wait(1_000 * u.ns, "tank_circuit")
+                # Ramp the voltage down to zero at the end of the triangle (needed with sticky elements)
+                seq.ramp_to_zero()
         # Save the LO iteration to get the progress bar
-        save(n, n_st)
+        save(i, n_st)
 
     # Stream processing section used to process the data before saving it.
     with stream_processing():
         n_st.save("iteration")
         # Cast the data into a 2D matrix and performs a global averaging of the received 2D matrices together.
         # RF reflectometry
-        I_st.buffer(n_points_fast).buffer(n_points_slow).average().save("I")
-        Q_st.buffer(n_points_fast).buffer(n_points_slow).average().save("Q")
-        # # DC current sensing
-        # dc_signal_st.buffer(n_points_fast).buffer(n_points_slow).average().save("dc_signal")
+        I_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(n_points_fast).save_all("I")
+        Q_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(n_points_fast).save_all("Q")
+        # DC current sensing
+        # dc_signal_st.buffer(n_avg).map(FUNCTIONS.average()).buffer(
+        #     n_points_fast
+        # ).save_all("dc_signal")
 
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 ## QDAC2 section
-# Create the qdac instrument
-qdac = QDACII("Ethernet", IP_address="127.0.0.1", port=5025)  # Using Ethernet protocol
-# qdac = QDACII("USB", USB_device=4)  # Using USB protocol
 # Set up the qdac and load the voltage list
 load_voltage_list(
     qdac,
@@ -168,7 +179,7 @@ if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
-    job = qmm.simulate(config, charge_stability_prog, simulation_config)
+    job = qmm.simulate(config, PSB_search_prog, simulation_config)
     # Get the simulated samples
     samples = job.get_simulated_samples()
     # Plot the simulated samples
@@ -185,35 +196,44 @@ else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(charge_stability_prog)
+    job = qm.execute(PSB_search_prog)
     # Get results from QUA program and initialize live plotting
-    results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
-    # results = fetching_tool(job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live")
+    results = fetching_tool(
+        # job, data_list=["I", "Q", "dc_signal", "iteration"], mode="live"
+        job,
+        data_list=["I", "Q", "iteration"],
+        mode="live",
+    )
     # Live plotting
     fig = plt.figure()
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch the data from the last OPX run corresponding to the current slow axis iteration
-        I, Q, iteration = results.fetch_all()
         # I, Q, DC_signal, iteration = results.fetch_all()
+        I, Q, iteration = results.fetch_all()
         # Convert results into Volts
-        S = u.demod2volts(I + 1j * Q, readout_len, single_demod=True)
+        min_idx = min(I.shape[0], Q.shape[0])
+        S = u.demod2volts(
+            I[:min_idx, :] + 1j * Q[:min_idx, :],
+            reflectometry_readout_length,
+            single_demod=True,
+        )
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
         # DC_signal = u.demod2volts(DC_signal, readout_len, single_demod=True)
         # Progress bar
-        progress_counter(iteration, n_points_slow, start_time=results.start_time)
+        progress_counter(iteration, n_points_slow)
         # Plot data
         plt.subplot(121)
         plt.cla()
         plt.title(r"$R=\sqrt{I^2 + Q^2}$ [V]")
-        plt.pcolor(voltage_values_fast, voltage_values_slow, R)
+        plt.pcolor(voltage_values_fast, voltage_values_slow[:min_idx], R)
         plt.xlabel("Fast voltage axis [V]")
         plt.ylabel("Slow voltage axis [V]")
         plt.subplot(122)
         plt.cla()
         plt.title("Phase [rad]")
-        plt.pcolor(voltage_values_fast, voltage_values_slow, phase)
+        plt.pcolor(voltage_values_fast, voltage_values_slow[:min_idx], phase)
         plt.xlabel("Fast voltage axis [V]")
         plt.ylabel("Slow voltage axis [V]")
         plt.tight_layout()

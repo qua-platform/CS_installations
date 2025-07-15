@@ -10,6 +10,7 @@ from qualang_tools.units import unit
 from qualang_tools.voltage_gates import VoltageGateSequence
 from scipy.signal.windows import gaussian
 from set_octave import OctaveUnit, octave_declaration
+from qdac2_driver import QDACII
 
 pio.renderers.default = "browser"
 #######################
@@ -21,18 +22,24 @@ u = unit(coerce_to_integer=True)
 ######################
 # Network parameters #
 ######################
-# qop_ip = "172.16.33.101"  # Write the QM router IP address
-# octave_port = (
-#     11232  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
-# )
-# cluster_name = "CS_1"  # Write your cluster_name if version >= QOP220
-qop_ip = "192.168.88.249"  # Write the QM router IP address
+qop_ip = "172.16.33.101"  # Write the QM router IP address
 octave_port = (
-    11251  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
+    11232  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
 )
+cluster_name = "CS_1"  # Write your cluster_name if version >= QOP220
+# qop_ip = "192.168.88.249"  # Write the QM router IP address
+# octave_port = (
+#     11251  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
+# )
 
-cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
+# cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
+
+# Create the qdac instrument
+qdac = QDACII(
+    "Ethernet", IP_address="172.16.33.101", port=5025
+)  # Using Ethernet protocol
+# qdac = QDACII("USB", USB_device=4)  # Using USB protocol
 
 #############
 # Save Path #
@@ -50,10 +57,10 @@ default_additional_files = {
 # OPX/octave configuration #
 ############################
 con = "con1"
-octave = "oct1"
+oct = "oct1"
 
 # Add the octaves
-octaves = [OctaveUnit(octave, qop_ip, port=octave_port, con=con)]
+octaves = [OctaveUnit(oct, qop_ip, port=octave_port, con=con)]
 # Configure the Octaves
 octave_config = octave_declaration(octaves)
 
@@ -151,7 +158,7 @@ P2_step_amp = 0.25
 config = {
     "version": 1,
     "controllers": {
-        "con1": {
+        con: {
             "analog_outputs": {
                 1: {"offset": 0.0},  # P1
                 2: {"offset": 0.0},  # P2
@@ -174,7 +181,7 @@ config = {
     "elements": {
         "P1": {
             "singleInput": {
-                "port": ("con1", 1),
+                "port": (con, 1),
             },
             "operations": {
                 "step": "P1_step_pulse",
@@ -183,7 +190,7 @@ config = {
         },
         "P1_sticky": {
             "singleInput": {
-                "port": ("con1", 1),
+                "port": (con, 1),
             },
             "sticky": {"analog": True, "duration": hold_offset_duration},
             "operations": {
@@ -192,7 +199,7 @@ config = {
         },
         "P2": {
             "singleInput": {
-                "port": ("con1", 2),
+                "port": (con, 2),
             },
             "operations": {
                 "step": "P2_step_pulse",
@@ -201,7 +208,7 @@ config = {
         },
         "P2_sticky": {
             "singleInput": {
-                "port": ("con1", 2),
+                "port": (con, 2),
             },
             "sticky": {"analog": True, "duration": hold_offset_duration},
             "operations": {
@@ -210,7 +217,7 @@ config = {
         },
         "sensor_gate": {
             "singleInput": {
-                "port": ("con1", 5),
+                "port": (con, 5),
             },
             "operations": {
                 "step": "bias_charge_pulse",
@@ -218,7 +225,7 @@ config = {
         },
         "sensor_gate_sticky": {
             "singleInput": {
-                "port": ("con1", 5),
+                "port": (con, 5),
             },
             "sticky": {"analog": True, "duration": hold_offset_duration},
             "operations": {
@@ -228,7 +235,7 @@ config = {
         "qdac_trigger1": {
             "digitalInputs": {
                 "trigger": {
-                    "port": ("con1", 1),
+                    "port": (con, 1),
                     "delay": 0,
                     "buffer": 0,
                 }
@@ -240,7 +247,7 @@ config = {
         "qdac_trigger2": {
             "digitalInputs": {
                 "trigger": {
-                    "port": ("con1", 2),
+                    "port": (con, 2),
                     "delay": 0,
                     "buffer": 0,
                 }
@@ -250,7 +257,7 @@ config = {
             },
         },
         "qubit": {
-            "RF_inputs": {"port": ("octave1", 2)},
+            "RF_inputs": {"port": (oct, 2)},
             "intermediate_frequency": qubit_IF,
             "operations": {
                 "cw": "cw_pulse",
@@ -266,36 +273,36 @@ config = {
         },
         "tank_circuit": {
             "singleInput": {
-                "port": ("con1", 5),
+                "port": (con, 5),
             },
             "intermediate_frequency": resonator_IF,
             "operations": {
                 "readout": "reflectometry_readout_pulse",
             },
             "outputs": {
-                "out1": ("con1", 1),
-                "out2": ("con1", 2),
+                "out1": (con, 1),
+                "out2": (con, 2),
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
-        "TIA": {
-            "singleInput": {
-                "port": ("con1", 6),
-            },
-            "operations": {
-                "readout": "readout_pulse",
-            },
-            "outputs": {
-                "out1": ("con1", 1),
-                "out2": ("con1", 2),
-            },
-            "time_of_flight": time_of_flight,
-            "smearing": 0,
-        },
+        # "TIA": {
+        #     "singleInput": {
+        #         "port": (con, 6),
+        #     },
+        #     "operations": {
+        #         "readout": "readout_pulse",
+        #     },
+        #     "outputs": {
+        #         "out1": (con, 1),
+        #         "out2": (con, 2),
+        #     },
+        #     "time_of_flight": time_of_flight,
+        #     "smearing": 0,
+        # },
     },
     "octaves": {
-        "octave1": {
+        oct: {
             "RF_outputs": {
                 2: {
                     "LO_frequency": qubit_LO,
@@ -304,7 +311,7 @@ config = {
                     "gain": octave_gain,
                 },
             },
-            "connectivity": "con1",
+            "connectivity": con,
         }
     },
     "pulses": {
