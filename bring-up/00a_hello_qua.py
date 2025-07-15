@@ -24,8 +24,8 @@ qmm = QuantumMachinesManager(
 ###################
 with program() as hello_octave:
     with infinite_loop_():
-        play("cw", "qubit1")
-        # play("cw_w_trig", "qubit1", duration=100)
+        play("cw", "qubit")
+        # play("cw_w_trig", "qubit", duration=100)
         # wait(100)
 
 #######################################

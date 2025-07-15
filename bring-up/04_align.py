@@ -29,11 +29,11 @@ with program() as prog:
     # with for_each_(a, amp_list):
     with infinite_loop_():
         with for_(a, 0, a < 1, a + 0.1):
-            play("pi", "qubit1")
+            play("gauss", "qubit")
             align()
-            # # align("qubit1", "qubit2")
+            # # align("qubit", "qubit2")
             # wait(20, "qubit2")
-            play("pi", "qubit2")
+            play("gauss", "qubit2")
 
             wait(25)
         wait(100)

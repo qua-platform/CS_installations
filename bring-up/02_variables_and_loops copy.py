@@ -28,8 +28,8 @@ with program() as prog:
     with infinite_loop_():
         with for_(a, 0, a < 2, a + 0.25):
             with for_(b, 0, b < 400, b + 100):
-                play("x180" * amp(a), "qubit1", duration=b)
-                # play("x180" * amp(a), "qubit1", duration=b, condition=b < 250)
+                play("x180" * amp(a), "qubit", duration=b)
+                # play("x180" * amp(a), "qubit", duration=b, condition=b < 250)
                 wait(25)
 
 #######################################

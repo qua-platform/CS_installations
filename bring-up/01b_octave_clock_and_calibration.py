@@ -37,8 +37,8 @@ if calibration:
     # convert the existing calibration_db.json to calibration_db.old.json
     # if os.path.exists("calibration_db.json"):
     #     os.rename("calibration_db.json", "calibration_db.old.json")
-    # elements = ["qubit1"]
-    elements = list(config["elements"].keys())[1:]
+    # elements = config["elements"].keys()
+    elements = ["qubit"]
     for element in elements:
         print("-" * 37 + f" Calibrates {element}")
         qm.calibrate_element(element)

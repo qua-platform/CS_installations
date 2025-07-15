@@ -38,11 +38,11 @@ with program() as tof_prog:
 
     with for_(n, 0, n < n_avg, n + 1):
         # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
-        reset_phase("resonator")
+        reset_phase("tank_circuit")
         # Sends the readout pulse and stores the raw ADC traces in the stream called "adc_st"
-        measure("readout", "resonator", adc_st)
+        measure("readout", "tank_circuit", adc_st)
         # Wait for the resonator to deplete
-        wait(1_000 * u.ns, "resonator")
+        wait(1_000 * u.ns, "tank_circuit")
 
     with stream_processing():
         # Please adjust the analog inputs according to the connectivity (input1/2 -> rf)

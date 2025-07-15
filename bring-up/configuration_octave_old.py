@@ -20,13 +20,17 @@ u = unit(coerce_to_integer=True)
 ######################
 # Network parameters #
 ######################
-qop_ip = "172.16.33.101"  # Write the QM router IP address
+# qop_ip = "172.16.33.101"  # Write the QM router IP address
+# octave_port = (
+#     11232  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
+# )
+# cluster_name = "CS_1"  # Write your cluster_name if version >= QOP220
+qop_ip = "192.168.88.249"  # Write the QM router IP address
 octave_port = (
-    11232  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
+    11251  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
 )
-cluster_name = "CS_1"  # Write your cluster_name if version >= QOP220
-# qop_ip = "127.0.0.1"  # Write the QM router IP address
-# cluster_name = None  # Write your cluster_name if version >= QOP220
+
+cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 #############
@@ -45,7 +49,7 @@ default_additional_files = {
 # OPX/octave configuration #
 ############################
 con = "con1"
-octave = "octave1"
+octave = "oct1"
 
 # Add the octaves
 octaves = [OctaveUnit(octave, qop_ip, port=octave_port, con=con)]
@@ -55,7 +59,7 @@ octave_config = octave_declaration(octaves)
 #############################################
 #                  Qubits                   #
 #############################################
-qubit_LO = 7 * u.GHz
+qubit_LO = 4 * u.GHz
 qubit_IF = 50 * u.MHz
 
 qubit_T1 = int(10 * u.us)
@@ -63,7 +67,7 @@ thermalization_time = 5 * qubit_T1
 
 # Continuous wave
 const_len = 100
-const_amp = 0.1
+const_amp = 0.2
 # Saturation_pulse
 saturation_len = 10 * u.us
 saturation_amp = 0.1
@@ -166,7 +170,7 @@ resonator_IF = 60 * u.MHz
 readout_len = 5000
 readout_amp = 0.2
 
-time_of_flight = 28
+time_of_flight = 180
 depletion_time = 2 * u.us
 
 opt_weights = False
@@ -200,7 +204,8 @@ ge_threshold = 0.0
 
 hold_offset_duration = 4
 step_len = 1000
-step_amp = 0.25
+P1_step_amp = 0.25
+P2_step_amp = 0.25
 
 
 #############################################
@@ -230,35 +235,33 @@ config = {
     },
     # Define qubit elements separately
     "elements": {
-        # "resonator": {
-        #     "RF_inputs": {"port": (octave, 1)},
-        #     "RF_outputs": {"port": (octave, 1)},
-        #     "intermediate_frequency": resonator_IF,
-        #     "operations": {
-        #         "cw": "const_pulse",
-        #         "cw_w_trig": "const_w_trig_pulse",
-        #         "readout": "readout_pulse",
-        #     },
-        #     "time_of_flight": time_of_flight,
-        #     "smearing": 0,
-        # },
         "resonator": {
-            "singleInput": {
-                "port": (con, 1),
-            },
+            "RF_inputs": {"port": (octave, 1)},
+            "RF_outputs": {"port": (octave, 1)},
             "intermediate_frequency": resonator_IF,
             "operations": {
+                "cw": "const_pulse",
+                "cw_w_trig": "const_w_trig_pulse",
                 "readout": "readout_pulse",
-            },
-            "outputs": {
-                "out1": (con, 1),
-                "out2": (con, 2),
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
+        # "TIA": {
+        #     "singleInput": {
+        #         "port": (con, 2),
+        #     },
+        #     "operations": {
+        #         "readout": "readout_pulse",
+        #     },
+        #     "outputs": {
+        #         "out2": (con, 2),
+        #     },
+        #     "time_of_flight": time_of_flight,
+        #     "smearing": 0,
+        # },
         "qubit": {
-            "RF_inputs": {"port": (octave, i)},
+            "RF_inputs": {"port": (octave, 2)},
             "intermediate_frequency": qubit_IF,
             "operations": {
                 "cw": "const_pulse",
@@ -275,7 +278,7 @@ config = {
             },
             "digitalInputs": {
                 "switch": {
-                    "port": (con, 2),  # 2, 3, 4, 5 -> 1, 3, 5, 7
+                    "port": (con, 3),
                     "delay": 57,  # Suggested delay and buffer values
                     "buffer": 18,  # https://docs.quantum-machines.co/latest/docs/Guides/octave/?h=octave#calibrating-the-digital-pulse
                 },
@@ -318,27 +321,27 @@ config = {
     },
     "octaves": {
         octave: {
-            # "RF_inputs": {
-            #     1: {
-            #         "LO_frequency": resonator_LO,
-            #         "LO_source": "internal",  # internal is the default
-            #         "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". direct is default
-            #         "IF_mode_Q": "direct",
-            #     },
-            #     2: {
-            #         "LO_frequency": resonator_LO,
-            #         "LO_source": "external",  # external is the default
-            #         "IF_mode_I": "direct",
-            #         "IF_mode_Q": "direct",
-            #     },
-            # },
+            "RF_inputs": {
+                1: {
+                    "LO_frequency": resonator_LO,
+                    "LO_source": "internal",  # internal is the default
+                    "IF_mode_I": "direct",  # can be: "direct" / "mixer" / "envelope" / "off". direct is default
+                    "IF_mode_Q": "direct",
+                },
+                2: {
+                    "LO_frequency": resonator_LO,
+                    "LO_source": "external",  # external is the default
+                    "IF_mode_I": "direct",
+                    "IF_mode_Q": "direct",
+                },
+            },
             "RF_outputs": {
-                # 1: {
-                #     "LO_frequency": resonator_LO,
-                #     "LO_source": "internal",
-                #     "output_mode": "always_on",
-                #     "gain": 0,
-                # },
+                1: {
+                    "LO_frequency": resonator_LO,
+                    "LO_source": "internal",
+                    "output_mode": "always_on",
+                    "gain": 0,
+                },
                 2: {
                     "LO_frequency": qubit_LO,
                     "LO_source": "internal",
@@ -352,7 +355,7 @@ config = {
     "pulses": {
         "const_pulse": {
             "operation": "control",
-            "length": const_len,
+            "length": const_len,  # in ns
             "waveforms": {
                 "I": "const_wf",
                 "Q": "zero_wf",
@@ -440,9 +443,8 @@ config = {
             "operation": "measurement",
             "length": readout_len,
             "waveforms": {
-                # "I": "readout_wf",
-                # "Q": "zero_wf",
-                "single": "readout_wf",
+                "I": "readout_wf",
+                "Q": "zero_wf",
             },
             "integration_weights": {
                 "cos": "cosine_weights",
@@ -478,8 +480,8 @@ config = {
         "square_pi_wf": {"type": "constant", "sample": square_pi_amp},
         "square_pi_half_wf": {"type": "constant", "sample": square_pi_amp / 2},
         "zero_wf": {"type": "constant", "sample": 0.0},
-        "P1_step_wf": {"type": "constant", "sample": step_amp},
-        "P2_step_wf": {"type": "constant", "sample": step_amp},
+        "P1_step_wf": {"type": "constant", "sample": P1_step_amp},
+        "P2_step_wf": {"type": "constant", "sample": P2_step_amp},
         "x90_I_wf": {"type": "arbitrary", "samples": x90_I_wf.tolist()},
         "x90_Q_wf": {"type": "arbitrary", "samples": x90_Q_wf.tolist()},
         "x180_I_wf": {"type": "arbitrary", "samples": x180_I_wf.tolist()},

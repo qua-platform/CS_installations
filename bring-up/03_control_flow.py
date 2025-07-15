@@ -29,7 +29,7 @@ with program() as prog:
     with for_each_((t, cond), (t_list, cond_list)):
         # Play a pulse if the condition is True
         with if_(cond):
-            play("cw", "qubit1", duration=t)
+            play("cw", "qubit", duration=t)
         with else_():
             wait(t)
 

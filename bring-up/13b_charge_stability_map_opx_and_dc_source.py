@@ -22,11 +22,19 @@ from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from configuration_octave import *
-from qualang_tools.results import progress_counter, fetching_tool, wait_until_job_is_paused
+from qualang_tools.results import (
+    progress_counter,
+    fetching_tool,
+    wait_until_job_is_paused,
+)
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
-from macros import RF_reflectometry_macro, DC_current_sensing_macro, get_filtered_voltage
+from macros import (
+    RF_reflectometry_macro,
+    DC_current_sensing_macro,
+    get_filtered_voltage,
+)
 from qualang_tools.results.data_handler import DataHandler
 
 ##################
@@ -44,7 +52,9 @@ voltage_values_slow = np.linspace(-1.5, 1.5, n_points_slow)
 voltage_values_fast = np.linspace(-0.2, 0.2, n_points_fast)
 # TODO: set DC offset on the external source for the fast gate
 # One can check the expected voltage levels after the bias-tee using the following function:
-_, _ = get_filtered_voltage(voltage_values_fast, step_duration=1e-6, bias_tee_cut_off_frequency=1e3, plot=True)
+_, _ = get_filtered_voltage(
+    voltage_values_fast, step_duration=1e-6, bias_tee_cut_off_frequency=1e3, plot=True
+)
 
 # Data to save
 save_data_dict = {
@@ -60,7 +70,9 @@ save_data_dict = {
 with program() as charge_stability_prog:
     n = declare(int)  # QUA integer used as an index for the averaging loop
     i = declare(int)  # QUA integer used as an index to loop over the voltage points
-    Vfast = declare(fixed)  # QUA fixed to increment the voltage offset handled by one OPX channel
+    Vfast = declare(
+        fixed
+    )  # QUA fixed to increment the voltage offset handled by one OPX channel
     n_st = declare_stream()  # Stream for the iteration number (progress bar)
 
     with for_(i, 0, i < n_points_slow + 1, i + 1):
@@ -81,7 +93,7 @@ with program() as charge_stability_prog:
                 # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
                 # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
                 # process them which can cause the OPX to crash.
-                wait(1_000 * u.ns, "resonator")
+                wait(1_000 * u.ns, "tank_circuit")
         # Save the LO iteration to get the progress bar
         save(i, n_st)
 
@@ -121,7 +133,9 @@ if simulate:
     # Cast the waveform report to a python dictionary
     waveform_dict = waveform_report.to_dict()
     # Visualize and save the waveform report
-    waveform_report.create_plot(samples, plot=True, save_path=str(Path(__file__).resolve()))
+    waveform_report.create_plot(
+        samples, plot=True, save_path=str(Path(__file__).resolve())
+    )
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -174,5 +188,10 @@ else:
     save_data_dict.update({"Q_data": Q})
     save_data_dict.update({"DC_signal_data": DC_signal})
     save_data_dict.update({"fig_live": fig})
-    data_handler.additional_files = {script_name: script_name, **default_additional_files}
-    data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+    data_handler.additional_files = {
+        script_name: script_name,
+        **default_additional_files,
+    }
+    data_handler.save_data(
+        data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0]
+    )

@@ -27,7 +27,11 @@ from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from configuration_octave import *
-from qualang_tools.results import progress_counter, fetching_tool, wait_until_job_is_paused
+from qualang_tools.results import (
+    progress_counter,
+    fetching_tool,
+    wait_until_job_is_paused,
+)
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.addons.variables import assign_variables_to_element
 import matplotlib.pyplot as plt
@@ -73,7 +77,7 @@ with program() as charge_stability_prog:
     dc_signal = declare(fixed)
 
     # Ensure that the result variables are assign to the pulse processor used for readout
-    assign_variables_to_element("resonator", I, Q)
+    assign_variables_to_element("tank_circuit", I, Q)
     assign_variables_to_element("TIA", dc_signal)
 
     with for_(i, 0, i < n_points_slow + 1, i + 1):
@@ -103,7 +107,7 @@ with program() as charge_stability_prog:
                 # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
                 # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
                 # process them which can cause the OPX to crash.
-                wait(1_000 * u.ns, "resonator")
+                wait(1_000 * u.ns, "tank_circuit")
         # Save the LO iteration to get the progress bar
         save(i, n_st)
 
@@ -143,7 +147,9 @@ if simulate:
     # Cast the waveform report to a python dictionary
     waveform_dict = waveform_report.to_dict()
     # Visualize and save the waveform report
-    waveform_report.create_plot(samples, plot=True, save_path=str(Path(__file__).resolve()))
+    waveform_report.create_plot(
+        samples, plot=True, save_path=str(Path(__file__).resolve())
+    )
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -201,5 +207,10 @@ else:
     save_data_dict.update({"Q_data": Q})
     # save_data_dict.update({"DC_signal_data": DC_signal})
     save_data_dict.update({"fig_live": fig})
-    data_handler.additional_files = {script_name: script_name, **default_additional_files}
-    data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+    data_handler.additional_files = {
+        script_name: script_name,
+        **default_additional_files,
+    }
+    data_handler.save_data(
+        data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0]
+    )

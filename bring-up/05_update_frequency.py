@@ -26,9 +26,9 @@ with program() as hello_octave:
     with infinite_loop_():
         with for_(a, 1, a < 10, a + 1):
             update_frequency(
-                "qubit1", a * 1e6
+                "qubit", a * 1e6
             )  # Update the IF frequency of the qubit element
-            play("cw", "qubit1", duration=50)  # Play a CW pulse on the qubit element
+            play("cw", "qubit", duration=50)  # Play a CW pulse on the qubit element
         wait(200)
 
 #######################################

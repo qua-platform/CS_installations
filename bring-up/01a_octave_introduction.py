@@ -166,7 +166,7 @@ job = qm.execute(hello_octave)
 time.sleep(10)  # The program will run for 10 seconds
 job.halt()
 # Step 5.2: Run this in order to calibrate
-for element in [elements[1]]:  # Only calibrate the qubit1
+for element in [elements[1]]:  # Only calibrate the qubit
     print("-" * 37 + f" Calibrates {element}")
     qm.calibrate_element(element, {qubit_LO: (qubit_IF,)})
     # can provide many IFs for specific LO

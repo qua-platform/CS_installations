@@ -1,5 +1,5 @@
 """
-        CHARGE STABILITY DIAGRAM
+CHARGE STABILITY DIAGRAM
 """
 
 from qm.qua import *
@@ -19,7 +19,7 @@ def round_to_fixed(x, number_of_bits=12):
 
 def RF_reflectometry_macro(
     operation: str = "readout",
-    element: str = "resonator",
+    element: str = "tank_circuit",
     element_output: str = "out1",
     I=None,
     Q=None,
@@ -44,7 +44,6 @@ def RF_reflectometry_macro(
     save(I, I_st)
     save(Q, Q_st)
     return I, Q, I_st, Q_st
-
 
 
 def DC_current_sensing_macro(
@@ -96,5 +95,5 @@ def get_filtered_voltage(
         plt.xlabel("Time [ns]")
         plt.ylabel("Voltage [V]")
         plt.legend()
-    print(f"Error: {np.mean(np.abs((y-y_filtered)/(max(y)-min(y))))*100:.2f} %")
+    print(f"Error: {np.mean(np.abs((y - y_filtered) / (max(y) - min(y)))) * 100:.2f} %")
     return y, y_filtered

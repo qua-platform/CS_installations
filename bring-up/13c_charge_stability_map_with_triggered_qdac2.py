@@ -49,7 +49,12 @@ n_points_slow = 101  # Number of points for the slow axis
 n_points_fast = 100  # Number of points for the fast axis
 Coulomb_amp = 0.0  # amplitude of the Coulomb pulse
 # How many Coulomb pulse periods to last the whole program
-N = (int((readout_len + 1_000) / (2 * step_len)) + 1) * n_points_fast * n_points_slow * n_avg
+N = (
+    (int((readout_len + 1_000) / (2 * step_len)) + 1)
+    * n_points_fast
+    * n_points_slow
+    * n_avg
+)
 
 # Voltages in Volt
 voltage_values_slow = np.linspace(-1.5, 1.5, n_points_slow)
@@ -79,7 +84,7 @@ with program() as charge_stability_prog:
     dc_signal = declare(fixed)
 
     # Ensure that the result variables are assign to the pulse processor used for readout
-    assign_variables_to_element("resonator", I, Q)
+    assign_variables_to_element("tank_circuit", I, Q)
     assign_variables_to_element("TIA", dc_signal)
     # Play the Coulomb pulse continuously for the whole sequence
     #      ____      ____      ____      ____
@@ -98,7 +103,7 @@ with program() as charge_stability_prog:
                 # Trigger the QDAC2 channel to output the next voltage level from the list
                 play("trigger", "qdac_trigger1")
                 # Wait for the voltages to settle (depends on the channel bandwidth)
-                wait(300 * u.us, "resonator", "TIA")
+                wait(300 * u.us, "tank_circuit", "TIA")
                 # RF reflectometry: the voltage measured by the analog input 2 is recorded, demodulated at the readout
                 # frequency and the integrated quadratures are stored in "I" and "Q"
                 I, Q, I_st, Q_st = RF_reflectometry_macro(I=I, Q=Q)
@@ -108,7 +113,7 @@ with program() as charge_stability_prog:
                 # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
                 # per µs to the stream processing. Otherwise, the processor will receive the samples faster than it can
                 # process them which can cause the OPX to crash.
-                wait(1_000 * u.ns, "resonator")
+                wait(1_000 * u.ns, "tank_circuit")
         # Save the LO iteration to get the progress bar
         save(n, n_st)
 
@@ -173,7 +178,9 @@ if simulate:
     # Cast the waveform report to a python dictionary
     waveform_dict = waveform_report.to_dict()
     # Visualize and save the waveform report
-    waveform_report.create_plot(samples, plot=True, save_path=str(Path(__file__).resolve()))
+    waveform_report.create_plot(
+        samples, plot=True, save_path=str(Path(__file__).resolve())
+    )
 else:
     # Open the quantum machine
     qm = qmm.open_qm(config)
@@ -218,5 +225,10 @@ else:
     save_data_dict.update({"Q_data": Q})
     # save_data_dict.update({"DC_signal_data": DC_signal})
     save_data_dict.update({"fig_live": fig})
-    data_handler.additional_files = {script_name: script_name, **default_additional_files}
-    data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+    data_handler.additional_files = {
+        script_name: script_name,
+        **default_additional_files,
+    }
+    data_handler.save_data(
+        data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0]
+    )
