@@ -1,5 +1,6 @@
 ## Requirements
-QOP version: Please refer to this: https://docs.quantum-machines.co/1.2.2/docs/Releases/qop3_releases/
+QOP version: Please refer to this: https://docs.quantum-machines.co/1.2.2/docs/Releases/qop3_releases/.
+
 Start by [installing Anaconda 3](https://www.anaconda.com/download) if you have not done so already.
 
 Then, from an Anaconda terminal, run the following commands:
