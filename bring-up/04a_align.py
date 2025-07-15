@@ -6,19 +6,26 @@ from configuration import *
 from qm import SimulationConfig
 import time
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib
+
+matplotlib.use("TkAgg")
 
 amp_list = np.linspace(0, 1, 10)
 
 ###################################
 # Open Communication with the QOP #
 ###################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, octave=octave_config)
+# qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port)
 
 ###################
 # The QUA program #
 ###################
 with program() as prog:
     a = declare(fixed)  # QUA variable
+    update_frequency("qubit1", 0)
+    update_frequency("qubit2", 0)
     with for_each_((a,), (amp_list,)):
         play("pi" * amp(a), "qubit1")
         align("qubit1", "qubit2")
@@ -34,6 +41,7 @@ if simulate:
     simulation_config = SimulationConfig(duration=400)  # in clock cycles
     job_sim = qmm.simulate(config, prog, simulation_config)
     job_sim.get_simulated_samples().con1.plot()
+    plt.show()
 else:
     qm = qmm.open_qm(config)
     job = qm.execute(prog)

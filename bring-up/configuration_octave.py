@@ -45,7 +45,7 @@ default_additional_files = {
 # OPX/octave configuration #
 ############################
 con = "con1"
-octave = "octave1"
+octave = "oct1"
 
 # Add the octaves
 octaves = [OctaveUnit(octave, qop_ip, port=octave_port, con=con)]
@@ -194,6 +194,15 @@ else:
 rotation_angle = (0.0 / 180) * np.pi
 ge_threshold = 0.0
 
+#############################################
+#              Plunger Gates                #
+#############################################
+
+hold_offset_duration = 4
+step_len = 1000
+P1_step_amp = 0.25
+P2_step_amp = 0.25
+
 
 #############################################
 #                  Config                   #
@@ -211,19 +220,12 @@ config = {
                 2: {"offset": 0.0},  # Q resonator
                 3: {"offset": 0.0},  # I qubit
                 4: {"offset": 0.0},  # Q qubit
-                5: {"offset": 0.0},  # I qubit
-                6: {"offset": 0.0},  # Q qubit
-                7: {"offset": 0.0},  # I qubit
-                8: {"offset": 0.0},  # Q qubit
-                9: {"offset": 0.0},  # I qubit
-                10: {"offset": 0.0},  # Q qubit
+                5: {"offset": 0.0},  # P1
+                6: {"offset": 0.0},  # P2
             },
             "digital_outputs": {
                 1: {},
                 3: {},
-                5: {},
-                7: {},
-                9: {},
             },
         }
     },
@@ -241,32 +243,76 @@ config = {
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
-        **{
-            f"qubit{i - 1}": {
-                "RF_inputs": {"port": (octave, i)},
-                "intermediate_frequency": qubit_IF,
-                "operations": {
-                    "cw": "const_pulse",
-                    "cw_w_trig": "const_w_trig_pulse",
-                    "saturation": "saturation_pulse",
-                    "pi": "square_pi_pulse",
-                    "pi_half": "square_pi_half_pulse",
-                    "x90": "x90_pulse",
-                    "x180": "x180_pulse",
-                    "-x90": "-x90_pulse",
-                    "y90": "y90_pulse",
-                    "y180": "y180_pulse",
-                    "-y90": "-y90_pulse",
+        # "TIA": {
+        #     "singleInput": {
+        #         "port": (con, 2),
+        #     },
+        #     "operations": {
+        #         "readout": "readout_pulse",
+        #     },
+        #     "outputs": {
+        #         "out2": (con, 2),
+        #     },
+        #     "time_of_flight": time_of_flight,
+        #     "smearing": 0,
+        # },
+        "qubit": {
+            "RF_inputs": {"port": (octave, 2)},
+            "intermediate_frequency": qubit_IF,
+            "operations": {
+                "cw": "const_pulse",
+                "cw_w_trig": "const_w_trig_pulse",
+                "saturation": "saturation_pulse",
+                "pi": "square_pi_pulse",
+                "pi_half": "square_pi_half_pulse",
+                "x90": "x90_pulse",
+                "x180": "x180_pulse",
+                "-x90": "-x90_pulse",
+                "y90": "y90_pulse",
+                "y180": "y180_pulse",
+                "-y90": "-y90_pulse",
+            },
+            "digitalInputs": {
+                "switch": {
+                    "port": (con, 3),  # 2, 3, 4, 5 -> 1, 3, 5, 7
+                    "delay": 57,  # Suggested delay and buffer values
+                    "buffer": 18,  # https://docs.quantum-machines.co/latest/docs/Guides/octave/?h=octave#calibrating-the-digital-pulse
                 },
-                "digitalInputs": {
-                    "switch": {
-                        "port": (con, 2 * i - 3),  # 2, 3, 4, 5 -> 1, 3, 5, 7
-                        "delay": 57,  # Suggested delay and buffer values
-                        "buffer": 18,  # https://docs.quantum-machines.co/latest/docs/Guides/octave/?h=octave#calibrating-the-digital-pulse
-                    },
-                },
-            }
-            for i in range(2, 6)
+            },
+        },
+        "P1": {
+            "singleInput": {
+                "port": (con, 5),
+            },
+            "operations": {
+                "step": "P1_step_pulse",
+            },
+        },
+        "P1_sticky": {
+            "singleInput": {
+                "port": (con, 5),
+            },
+            "sticky": {"analog": True, "duration": hold_offset_duration},
+            "operations": {
+                "step": "P1_step_pulse",
+            },
+        },
+        "P2": {
+            "singleInput": {
+                "port": (con, 6),
+            },
+            "operations": {
+                "step": "P1_step_pulse",
+            },
+        },
+        "P2_sticky": {
+            "singleInput": {
+                "port": (con, 6),
+            },
+            "sticky": {"analog": True, "duration": hold_offset_duration},
+            "operations": {
+                "step": "P2_step_pulse",
+            },
         },
     },
     "octaves": {
@@ -292,14 +338,11 @@ config = {
                     "output_mode": "always_on",
                     "gain": 0,
                 },
-                **{
-                    i: {
-                        "LO_frequency": qubit_LO,
-                        "LO_source": "internal",
-                        "output_mode": "always_on",
-                        "gain": 0,
-                    }
-                    for i in range(2, 6)
+                2: {
+                    "LO_frequency": qubit_LO,
+                    "LO_source": "internal",
+                    "output_mode": "always_on",
+                    "gain": 0,
                 },
             },
             "connectivity": con,
@@ -412,6 +455,20 @@ config = {
             },
             "digital_marker": "ON",
         },
+        "P1_step_pulse": {
+            "operation": "control",
+            "length": step_len,
+            "waveforms": {
+                "single": "P1_step_wf",
+            },
+        },
+        "P2_step_pulse": {
+            "operation": "control",
+            "length": step_len,
+            "waveforms": {
+                "single": "P2_step_wf",
+            },
+        },
     },
     "waveforms": {
         "const_wf": {"type": "constant", "sample": const_amp},
@@ -419,6 +476,8 @@ config = {
         "square_pi_wf": {"type": "constant", "sample": square_pi_amp},
         "square_pi_half_wf": {"type": "constant", "sample": square_pi_amp / 2},
         "zero_wf": {"type": "constant", "sample": 0.0},
+        "P1_step_wf": {"type": "constant", "sample": P1_step_amp},
+        "P2_step_wf": {"type": "constant", "sample": P2_step_amp},
         "x90_I_wf": {"type": "arbitrary", "samples": x90_I_wf.tolist()},
         "x90_Q_wf": {"type": "arbitrary", "samples": x90_Q_wf.tolist()},
         "x180_I_wf": {"type": "arbitrary", "samples": x180_I_wf.tolist()},
