@@ -19,7 +19,9 @@ from configuration_octave import *
 ###################################
 # Open Communication with the QOP #
 ###################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, octave=octave_config)
+qmm = QuantumMachinesManager(
+    host=qop_ip, cluster_name=cluster_name, octave_calibration_db_path=os.getcwd()
+)
 qm = qmm.open_qm(config)
 
 simulate = False
@@ -174,3 +176,5 @@ print("-" * 37 + " Play after calibration")
 job = qm.execute(hello_octave)
 time.sleep(30)  # The program will run for 30 seconds
 job.halt()
+
+# %%

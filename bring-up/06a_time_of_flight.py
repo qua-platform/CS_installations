@@ -18,9 +18,10 @@ The data undergoes post-processing to calibrate three distinct parameters:
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from configuration import *
+from configuration_octave import *
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
+import os
 
 ##################
 #   Parameters   #
@@ -55,7 +56,7 @@ with program() as tof_prog:
 #  Open Communication with the QOP  #
 #####################################
 qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+    host=qop_ip, cluster_name=cluster_name, octave_calibration_db_path=os.getcwd()
 )
 
 #######################
@@ -124,6 +125,7 @@ else:
     plt.plot(xl, adc1_mean * np.ones(2), "k--")
     plt.plot(delay * np.ones(2), yl, "k--")
     plt.xlabel("Time [ns]")
+    plt.xlim(0, 500)
     plt.legend()
     plt.grid("all")
     plt.tight_layout()

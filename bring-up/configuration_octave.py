@@ -20,13 +20,17 @@ u = unit(coerce_to_integer=True)
 ######################
 # Network parameters #
 ######################
-qop_ip = "172.16.33.101"  # Write the QM router IP address
+# qop_ip = "172.16.33.101"  # Write the QM router IP address
+# octave_port = (
+#     11232  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
+# )
+# cluster_name = "CS_1"  # Write your cluster_name if version >= QOP220
+qop_ip = "192.168.88.249"  # Write the QM router IP address
 octave_port = (
-    11232  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
+    11251  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
 )
-cluster_name = "CS_1"  # Write your cluster_name if version >= QOP220
-# qop_ip = "127.0.0.1"  # Write the QM router IP address
-# cluster_name = None  # Write your cluster_name if version >= QOP220
+
+cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 #############
@@ -45,7 +49,7 @@ default_additional_files = {
 # OPX/octave configuration #
 ############################
 con = "con1"
-octave = "octave1"
+octave = "oct1"
 
 # Add the octaves
 octaves = [OctaveUnit(octave, qop_ip, port=octave_port, con=con)]
@@ -55,7 +59,7 @@ octave_config = octave_declaration(octaves)
 #############################################
 #                  Qubits                   #
 #############################################
-qubit_LO = 7 * u.GHz
+qubit_LO = 4 * u.GHz
 qubit_IF = 50 * u.MHz
 
 qubit_T1 = int(10 * u.us)
@@ -63,7 +67,7 @@ thermalization_time = 5 * qubit_T1
 
 # Continuous wave
 const_len = 100
-const_amp = 0.1
+const_amp = 0.2
 # Saturation_pulse
 saturation_len = 10 * u.us
 saturation_amp = 0.1
@@ -166,7 +170,7 @@ resonator_IF = 60 * u.MHz
 readout_len = 5000
 readout_amp = 0.2
 
-time_of_flight = 28
+time_of_flight = 180
 depletion_time = 2 * u.us
 
 opt_weights = False
@@ -260,7 +264,7 @@ config = {
                 },
                 "digitalInputs": {
                     "switch": {
-                        "port": (con, 2 * i - 3),  # 2, 3, 4, 5 -> 1, 3, 5, 7
+                        "port": (con, 2 * i - 1),  # 2, 3, 4, 5 -> 3, 5, 7, 9
                         "delay": 57,  # Suggested delay and buffer values
                         "buffer": 18,  # https://docs.quantum-machines.co/latest/docs/Guides/octave/?h=octave#calibrating-the-digital-pulse
                     },
@@ -308,7 +312,7 @@ config = {
     "pulses": {
         "const_pulse": {
             "operation": "control",
-            "length": const_len,
+            "length": const_len,  # in ns
             "waveforms": {
                 "I": "const_wf",
                 "Q": "zero_wf",

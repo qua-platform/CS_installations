@@ -18,13 +18,14 @@ Before proceeding to the next node:
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
-from configuration import *
+from configuration_octave import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
+import os
 
 ##################
 #   Parameters   #
@@ -84,8 +85,9 @@ with program() as reflectometry_spectro:
 #  Open Communication with the QOP  #
 #####################################
 qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+    host=qop_ip, cluster_name=cluster_name, octave_calibration_db_path=os.getcwd()
 )
+
 
 #######################
 # Simulate or execute #
