@@ -22,24 +22,26 @@ u = unit(coerce_to_integer=True)
 ######################
 # Network parameters #
 ######################
-qop_ip = "172.16.33.101"  # Write the QM router IP address
-octave_port = (
-    11232  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
-)
-cluster_name = "CS_1"  # Write your cluster_name if version >= QOP220
-# qop_ip = "192.168.88.249"  # Write the QM router IP address
+# qop_ip = "172.16.33.101"  # Write the QM router IP address
 # octave_port = (
-#     11251  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
+#     11232  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
 # )
-
-# cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
+# cluster_name = "CS_1"  # Write your cluster_name if version >= QOP220
+qop_ip = "192.168.88.249"  # Write the QM router IP address
+octave_port = (
+    11251  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
+)
+cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
-
 # Create the qdac instrument
-qdac = QDACII(
-    "Ethernet", IP_address="172.16.33.101", port=5025
-)  # Using Ethernet protocol
-# qdac = QDACII("USB", USB_device=4)  # Using USB protocol
+# qdac = QDACII(
+#     "Ethernet",
+#     IP_address="224.0.0.251",
+#     port=5025,
+#     # "Ethernet", IP_address="172.16.33.101", port=5025
+# )  # Using Ethernet protocol
+qdac = QDACII("USB", USB_device=8)  # Using USB protocol
+
 
 #############
 # Save Path #
@@ -73,7 +75,8 @@ readout_amp = 0.0
 IV_scale_factor = 0.5e-9  # in A/V
 
 # Reflectometry
-resonator_IF = 151 * u.MHz
+resonator_IF = 10 * u.MHz
+# resonator_IF = 151 * u.MHz
 reflectometry_readout_length = 1 * u.us
 reflectometry_readout_amp = 30 * u.mV
 
@@ -165,12 +168,12 @@ config = {
                 3: {"offset": 0.0},  # EDSR I quadrature
                 4: {"offset": 0.0},  # EDSR Q quadrature
                 5: {"offset": 0.0},  # Sensor gate
-                9: {"offset": 0.0},  # RF reflectometry
-                10: {"offset": 0.0},  # DC readout
+                6: {"offset": 0.0},  # Dummy
             },
             "digital_outputs": {
                 1: {},  # TTL for QDAC
                 2: {},  # TTL for QDAC
+                3: {},  # TTL for qubit
             },
             "analog_inputs": {
                 1: {"offset": 0.0, "gain_db": 0},  # RF reflectometry input
@@ -270,10 +273,34 @@ config = {
                 "-y90": "-y90_pulse",
                 "gauss": "gaussian_pulse",
             },
+            "digitalInputs": {
+                "switch": {
+                    "port": (con, 3),
+                    # "delay": 57,  # Suggested delay and buffer values
+                    # "buffer": 18,  # https://docs.quantum-machines.co/latest/docs/Guides/octave/?h=octave#calibrating-the-digital-pulse
+                    "delay": 0,  # Suggested delay and buffer values
+                    "buffer": 0,  # https://docs.quantum-machines.co/latest/docs/Guides/octave/?h=octave#calibrating-the-digital-pulse
+                },
+            },
         },
         "tank_circuit": {
             "singleInput": {
                 "port": (con, 5),
+            },
+            "intermediate_frequency": resonator_IF,
+            "operations": {
+                "readout": "reflectometry_readout_pulse",
+            },
+            "outputs": {
+                "out1": (con, 1),
+                "out2": (con, 2),
+            },
+            "time_of_flight": time_of_flight,
+            "smearing": 0,
+        },
+        "tank_circuit_dummy": {
+            "singleInput": {
+                "port": (con, 6),
             },
             "intermediate_frequency": resonator_IF,
             "operations": {

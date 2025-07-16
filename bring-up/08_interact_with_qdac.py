@@ -18,22 +18,17 @@ from qualang_tools.results.data_handler import DataHandler
 
 ##########################################################################################
 ## QDAC2 section
-# Create the qdac instrument
-qdac = QDACII(
-    "Ethernet", IP_address="172.16.33.101", port=5025
-)  # Using Ethernet protocol
-# qdac = QDACII("USB", USB_device=4)  # Using USB protocol
 
 ###########################
 # Voltage scan triggering #
 ###########################
 # Voltages in Volt
-n_points_fast = 10
+n_points_fast = 100
 voltage_values_fast = np.linspace(-1.5, 1.5, n_points_fast)
 load_voltage_list(
     qdac,
     channel=1,
-    dwell=2e-6,
+    dwell=2e-5,
     slew_rate=2e7,
     trigger_port="ext1",
     output_range="low",
@@ -44,7 +39,7 @@ load_voltage_list(
 ###############
 # Set voltage #
 ###############
-set_qdac_voltage(qdac, channel=2, voltage=1)
+set_qdac_voltage(qdac, channel=2, voltage=0.5)
 
 ## QDAC2 section
 ##########################################################################################
@@ -66,7 +61,7 @@ with program() as prog:
         # Connect trigger2 to oscilloscope to monitor the trigger
         play("trigger", "qdac_trigger2")
         # Wait for the QDAC to finish the scan
-        wait(10_000, "qdac_trigger1")
+        wait(100_000)
 
 #######################################
 # Execute or Simulate the QUA program #
@@ -82,5 +77,7 @@ else:
     job = qm.execute(prog)
     # Execute does not block python! As this is an infinite loop, the job would run forever.
     # In this case, we've put a 10 seconds sleep and then halted the job.
-    time.sleep(10)
+    time.sleep(600)
     job.halt()
+
+# %%

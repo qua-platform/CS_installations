@@ -36,6 +36,7 @@ from qdac2_driver import QDACII, load_voltage_list
 import matplotlib.pyplot as plt
 from macros import RF_reflectometry_macro, DC_current_sensing_macro
 from qualang_tools.results.data_handler import DataHandler
+import os
 
 ##################
 #   Parameters   #
@@ -144,7 +145,7 @@ with program() as PSB_search_prog:
 #  Open Communication with the QOP  #
 #####################################
 qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+    host=qop_ip, cluster_name=cluster_name, octave_calibration_db_path=os.getcwd()
 )
 
 ## QDAC2 section
