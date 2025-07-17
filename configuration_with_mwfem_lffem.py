@@ -13,16 +13,16 @@ from typing import Union
 ######################
 # Network parameters #
 ######################
-qop_ip = "172.16.33.115"  # Write the QM router IP address
-cluster_name = "CS_3"  # Write your cluster_name if version >= QOP220
+qop_ip = "192.168.88.253"  # Write the QM router IP address
+cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 
 
 #####################
 # OPX configuration #
 #####################
 con = "con1"
-mw_fem = 1
-lf_fem = 5
+mw_fem = 2
+lf_fem = 1
 
 
 #############
@@ -92,16 +92,16 @@ def generate_waveforms(qubit, rotation_keys, amp, pi_len, pi_sigma):
 u = unit(coerce_to_integer=True)
 
 # Reflectometry
-resonator_IF = 186 * u.MHz  # L
+resonator_IF = 192.5 * u.MHz  # L
 
-reflectometry_readout_length = 1 * u.us
+reflectometry_readout_length = 2 * u.us
 readout_len = reflectometry_readout_length
 measurement_delay = 300 * u.ns
 reflectometry_readout_long_length = 200 * u.us
-reflectometry_readout_amp = 0.0316  # V -20dB
+reflectometry_readout_amp = 0.25  # V -20dB
 
 # Time of flight
-time_of_flight = 28
+time_of_flight = 180
 
 
 ######################
@@ -133,8 +133,9 @@ bias_tee_cut_off_frequency = 10 * u.kHz
 #    QUBIT PULSES    #
 ######################
 qubit = "qubit"
-qubit_LO = 8 * u.GHz
-qubit_IF = 100 * u.MHz
+qubit_LO = 3 * u.GHz
+qubit_band = 1
+qubit_IF = 10 * u.MHz
 qubit_full_scale_power_dbm = 1  # power in dBm at waveform amp = 1 (steps of 3 dB)
 
 # Note: amplitudes can be -1..1 and are scaled up to `qubit_power` at amp=1
@@ -181,7 +182,7 @@ config = {
                         1: {
                             "sampling_rate": 1e9,
                             "full_scale_power_dbm": qubit_full_scale_power_dbm,
-                            "band": 3,
+                            "band": qubit_band,
                             "delay": 0,
                             "upconverters": {
                                 1: {"frequency": qubit_LO},
@@ -190,7 +191,14 @@ config = {
                         }
                     },
                     "digital_outputs": {},
-                    "analog_inputs": {}
+                    "analog_inputs": {
+                            2: {
+                                "sampling_rate": 1e9,
+                                "band": qubit_band,
+                            "gain_db": 0,
+                            "downconverter_frequency": qubit_LO,
+                            }
+                    },
                 },
                 lf_fem: {
                     "type": "LF",
@@ -361,10 +369,22 @@ config = {
                 "trigger": "trigger_pulse",
             },
         },
-        "qdac_trigger2": {
+        "qdac_trigger3": {
             "digitalInputs": {
                 "trigger": {
                     "port": (con, lf_fem, 3),
+                    "delay": 0,
+                    "buffer": 0,
+                }
+            },
+            "operations": {
+                "trigger": "trigger_pulse",
+            },
+        },
+        "qdac_trigger4": {
+            "digitalInputs": {
+                "trigger": {
+                    "port": (con, lf_fem, 4),
                     "delay": 0,
                     "buffer": 0,
                 }
@@ -387,6 +407,21 @@ config = {
                 "y90": f"y90_pulse",
                 "y180": f"y180_pulse",
                 "-y90": f"-y90_pulse",
+            },
+        },
+        "qubit_readout": {
+            "MWInput": {
+                "port": (con, mw_fem, 1),
+                "upconverter": 1,
+            },
+            "intermediate_frequency": qubit_IF,
+            "MWOutput": {
+                "port": (con, mw_fem, 2),
+            },
+			'time_of_flight': 28,
+            'smearing': 0,
+            "operations": {
+                "readout": "qubit_readout_pulse",
             },
         },
         "tank_circuit": {
@@ -488,6 +523,26 @@ config = {
                 "Q": f"minus_y90_Q_wf"
             }
         },
+        "qubit_readout_pulse": {
+                "operation": "measurement",
+                "length": reflectometry_readout_length,
+                "waveforms": {
+                    "I": f"reflect_wf",
+                    "Q": "zero_wf"
+                },
+                "integration_weights": {
+                    "cos": "cosine_weights",
+                    "sin": "sine_weights",
+                    "minus_sin": "minus_sine_weights",
+                    "rotated_cos": f"rotated_cosine_weights",
+                    "rotated_sin": f"rotated_sine_weights",
+                    "rotated_minus_sin": f"rotated_minus_sine_weights",
+                    "opt_cos": f"opt_cosine_weights",
+                    "opt_sin": f"opt_sine_weights",
+                    "opt_minus_sin": f"opt_minus_sine_weights",
+                },
+                "digital_marker": "ON",
+            },
         "reflectometry_readout_pulse": {
             "operation": "measurement",
             "length": reflectometry_readout_length,

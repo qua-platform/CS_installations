@@ -30,7 +30,7 @@ from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
-from HI_20241204_JunYoneda._macros import (
+from macros import (
     RF_reflectometry_macro,
     DC_current_sensing_macro,
 )
@@ -132,7 +132,7 @@ if simulate:
         ["readout", "manip", "init", "0", "init", "manip", "readout"],
     )
     plt.legend("")
-    from HI_20241204_JunYoneda._macros import get_filtered_voltage
+    from macros import get_filtered_voltage
 
     plt.subplot(212)
     get_filtered_voltage(

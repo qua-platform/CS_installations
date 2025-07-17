@@ -32,7 +32,7 @@ from configuration_with_mwfem_lffem import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.addons.variables import assign_variables_to_element
-from qdac2_driver import QDACII, load_voltage_list
+from qdac2_driver import QDACII, load_voltage_list, set_qdac_voltage
 import matplotlib.pyplot as plt
 from macros import RF_reflectometry_macro
 import matplotlib
@@ -43,17 +43,17 @@ matplotlib.use("TkAgg")
 ###################
 # The QUA program #
 ###################
-n_avg = 2  # Number of averages
-n_points_right = 1001  # Number of points for the slow axis
-n_points_left = 1001  # Number of points for the fast axis
+n_avg = 10  # Number of averages
+n_points_right = 101  # Number of points for the slow axis
+n_points_left = 101  # Number of points for the fast axis
 Coulomb_amp = 0.0  # amplitude of the Coulomb pulse
-# How many Coulomb pulse periods to last the whole program
-N = (
-    (int((reflectometry_readout_length + 1_000) / (2 * step_length)) + 1)
-    * n_points_left
-    * n_points_right
-    * n_avg
-)
+# # How many Coulomb pulse periods to last the whole program
+# N = (
+#     (int((reflectometry_readout_length + 1_000) / (2 * step_length)) + 1)
+#     * n_points_left
+#     * n_points_right
+#     * n_avg
+# )
 
 # Voltages in Volt
 # voltage_values_right = np.linspace(0.05, 0.25, n_points_right)
@@ -62,12 +62,12 @@ N = (
 # voltage_values_right = np.linspace(0.2, 0.23, n_points_right)
 # voltage_values_right = np.linspace(0.2, 0.21, n_points_right)
 # voltage_values_right = np.linspace(0, 0.50, n_points_right)
-voltage_values_right = np.linspace(0.20, 0.40, n_points_right)
+voltage_values_right = np.linspace(0., 1.0, n_points_right)
 
 # voltage_values_left = np.linspace(0.11, 0.14, n_points_left)
 # voltage_values_left = np.linspace(0.115, 0.125, n_points_left)
 # voltage_values_left = np.linspace(0, 0.50, n_points_left)
-voltage_values_left = np.linspace(0.20, 0.40, n_points_left)
+voltage_values_left = np.linspace(0., 1.0, n_points_left)
 
 with program() as charge_stability_prog:
     n = declare(int)  # QUA integer used as an index for the averaging loop
@@ -170,19 +170,22 @@ for vol_c in vol_center:
     # import pyvisa
 
     # rm = pyvisa.ResourceManager("")
-    # qdac = rm.open_resource("ASRL7::INSTR")
+    # qdac = rm.open_resource("ASRL5::INSTR")
     # qdac.flush()
-    qdac = QDACII("USB", USB_device=7)  # Using USB protocol
+    qdac = QDACII("USB", USB_device=5)  # Using USB protocol
     # Set up the qdac and load the voltage list
+
+    set_qdac_voltage(qdac, channel=4, voltage=0.388)
+    set_qdac_voltage(qdac, channel=5, voltage=0.2)
 
     # 15, 21, 24, 7, 19, 3, 1, 5, 2
     # left QD
     load_voltage_list(
         qdac,
-        channel=19,
+        channel=16,
         dwell=2e-6,
         slew_rate=10,
-        trigger_port="ext1",
+        trigger_port="ext3",
         # trigger_port=None,
         output_range="High",
         output_filter="med",
@@ -192,10 +195,10 @@ for vol_c in vol_center:
     # right QD
     load_voltage_list(
         qdac,
-        channel=1,
+        channel=14,
         dwell=2e-6,
         slew_rate=10,
-        trigger_port="ext2",
+        trigger_port="ext4",
         # trigger_port=None,
         output_range="High",
         output_filter="med",
@@ -203,84 +206,84 @@ for vol_c in vol_center:
         # voltage_list=[vol_c],
     )
 
-    # set up other DC voltages
-    load_voltage_list(
-        qdac,
-        channel=15,
-        dwell=2e-6,
-        slew_rate=10,
-        trigger_port=None,
-        output_range="High",
-        output_filter="med",
-        voltage_list=[3],
-    )
-    load_voltage_list(
-        qdac,
-        channel=21,
-        dwell=2e-6,
-        slew_rate=10,
-        trigger_port=None,
-        output_range="High",
-        output_filter="med",
-        voltage_list=[3],
-    )
-    load_voltage_list(
-        qdac,
-        channel=24,
-        dwell=2e-6,
-        slew_rate=10,
-        trigger_port=None,
-        output_range="High",
-        output_filter="med",
-        voltage_list=[3],
-    )
-    load_voltage_list(
-        qdac,
-        channel=7,
-        dwell=2e-6,
-        slew_rate=10,
-        trigger_port=None,
-        # trigger_port="ext1",
-        output_range="High",
-        output_filter="med",
-        voltage_list=[0.33],
-        # voltage_list=voltage_values_left,
-    )
+    # # set up other DC voltages
+    # load_voltage_list(
+    #     qdac,
+    #     channel=15,
+    #     dwell=2e-6,
+    #     slew_rate=10,
+    #     trigger_port=None,
+    #     output_range="High",
+    #     output_filter="med",
+    #     voltage_list=[3],
+    # )
+    # load_voltage_list(
+    #     qdac,
+    #     channel=21,
+    #     dwell=2e-6,
+    #     slew_rate=10,
+    #     trigger_port=None,
+    #     output_range="High",
+    #     output_filter="med",
+    #     voltage_list=[3],
+    # )
+    # load_voltage_list(
+    #     qdac,
+    #     channel=24,
+    #     dwell=2e-6,
+    #     slew_rate=10,
+    #     trigger_port=None,
+    #     output_range="High",
+    #     output_filter="med",
+    #     voltage_list=[3],
+    # )
+    # load_voltage_list(
+    #     qdac,
+    #     channel=7,
+    #     dwell=2e-6,
+    #     slew_rate=10,
+    #     trigger_port=None,
+    #     # trigger_port="ext1",
+    #     output_range="High",
+    #     output_filter="med",
+    #     voltage_list=[0.33],
+    #     # voltage_list=voltage_values_left,
+    # )
 
-    # center barrier gate
-    load_voltage_list(
-        qdac,
-        channel=3,
-        dwell=2e-6,
-        slew_rate=10,
-        trigger_port=None,
-        output_range="High",
-        output_filter="med",
-        voltage_list=[vol_c],
-    )
+    # # center barrier gate
+    # load_voltage_list(
+    #     qdac,
+    #     channel=3,
+    #     dwell=2e-6,
+    #     slew_rate=10,
+    #     trigger_port=None,
+    #     output_range="High",
+    #     output_filter="med",
+    #     voltage_list=[vol_c],
+    # )
 
-    load_voltage_list(
-        qdac,
-        channel=5,
-        dwell=2e-6,
-        slew_rate=10,
-        trigger_port=None,
-        # trigger_port="ext2",
-        output_range="High",
-        output_filter="med",
-        voltage_list=[0.30],
-        # voltage_list=voltage_values_right,
-    )
-    load_voltage_list(
-        qdac,
-        channel=2,
-        dwell=2e-6,
-        slew_rate=10,
-        trigger_port=None,
-        output_range="High",
-        output_filter="med",
-        voltage_list=[3],
-    )
+    # load_voltage_list(
+    #     qdac,
+    #     channel=5,
+    #     dwell=2e-6,
+    #     slew_rate=10,
+    #     trigger_port=None,
+    #     # trigger_port="ext2",
+    #     output_range="High",
+    #     output_filter="med",
+    #     voltage_list=[0.30],
+    #     # voltage_list=voltage_values_right,
+    # )
+    # load_voltage_list(
+    #     qdac,
+    #     channel=2,
+    #     dwell=2e-6,
+    #     slew_rate=10,
+    #     trigger_port=None,
+    #     output_range="High",
+    #     output_filter="med",
+    #     voltage_list=[3],
+    # )
 
     ###########################
     # Run or Simulate Program #
@@ -357,5 +360,6 @@ for vol_c in vol_center:
 
         # plt.show()
         qm.close()
+        qdac._visa.close()
 
 # %%

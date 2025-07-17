@@ -13,8 +13,8 @@ from typing import Union
 ######################
 # Network parameters #
 ######################
-qop_ip = "172.16.33.115"  # Write the QM router IP address
-cluster_name = "CS_3"  # Write your cluster_name if version >= QOP220
+qop_ip = "192.168.88.253"  # Write the QM router IP address
+cluster_name = "Cluster_2"  # Write your cluster_name if version >= QOP220
 
 
 #####################
@@ -22,7 +22,7 @@ cluster_name = "CS_3"  # Write your cluster_name if version >= QOP220
 #####################
 con = "con1"
 lf_fem = 1
-mw_fem = 5
+# mw_fem = 5
 
 
 #############
@@ -145,8 +145,8 @@ bias_tee_cut_off_frequency = 10 * u.kHz
 # pi_half_amp = 0.7  # in arb.
 # pi_half_length = 16  # in ns
 # # CW pulse
-# const_amp = 0.85  # in arb.
-# const_length = 100  # in ns
+const_amp = 0.85  # in arb.
+const_length = 100  # in ns
 
 # qubit_rotation_keys = ["x180", "x90", "minus_x90", "y180", "y90", "minus_y90"]
 # waveforms = generate_waveforms(qubit, qubit_rotation_keys, pi_amp, pi_length, pi_length / 5)
@@ -361,7 +361,7 @@ config = {
                 "trigger": "trigger_pulse",
             },
         },
-        "qdac_trigger2": {
+        "qdac_trigger3": {
             "digitalInputs": {
                 "trigger": {
                     "port": (con, lf_fem, 3),

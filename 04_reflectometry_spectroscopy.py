@@ -32,9 +32,9 @@ matplotlib.use("TkAgg")
 ###################
 # The QUA program #
 ###################
-n_avg = 10000  # Number of averaging loops
+n_avg = 200  # Number of averaging loops
 # The frequency axis
-frequencies = np.linspace(175 * u.MHz, 185 * u.MHz, 11)
+frequencies = np.linspace(100 * u.MHz, 250 * u.MHz, 1501)
 
 with program() as reflectometry_spectro:
     f = declare(int)  # QUA variable for the frequency sweep

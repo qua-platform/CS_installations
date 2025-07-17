@@ -27,7 +27,7 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
 from qualang_tools.voltage_gates import VoltageGateSequence
 from qualang_tools.addons.variables import assign_variables_to_element
-from HI_20241204_JunYoneda._macros import (
+from macros import (
     RF_reflectometry_macro,
     DC_current_sensing_macro,
 )

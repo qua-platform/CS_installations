@@ -26,10 +26,10 @@ class QDACII:
         rm = visa.ResourceManager(lib)  # To use pyvisa-py backend, use argument '@py'
         if communication_type == "Ethernet":
             self._visa = rm.open_resource(f"TCPIP::{IP_address}::{port}::SOCKET")
-            self._visa.baud_rate = 921600
             # self._visa.send_end = False
         elif communication_type == "USB":
             self._visa = rm.open_resource(f"ASRL{USB_device}::INSTR")
+        self._visa.baud_rate = 921600
 
         self._visa.write_termination = "\n"
         self._visa.read_termination = "\n"
@@ -97,3 +97,20 @@ def load_voltage_list(
     print(
         f"Set-up QDAC2 channel {channel} to step voltages from a list of {len(voltage_list)} items on trigger events from the {trigger_port} port with a {qdac.query(f'sour{channel}:dc:list:dwell?')} s dwell time."
     )
+
+# set the QDAC voltage to a specific value
+def set_qdac_voltage(
+    qdac,
+    channel: int,
+    voltage: float,
+):
+    """
+    Configure a QDAC2 channel to play a specific voltage, using pyvisa commands.
+
+    :param qdac: the QDAC2 object.
+    :param channel: the QDAC2 channel that will output the desired voltage.
+    :param voltage: the desired voltage to output from the QDAC channel in units of Volts.
+    :return:
+    """
+    qdac.write(f"sour{channel}:dc:mode FIX")
+    qdac.write(f"sour{channel}:volt {voltage}")

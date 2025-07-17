@@ -36,19 +36,19 @@ with program() as tof_prog:
 
     with for_(n, 0, n < n_avg, n + 1):
         # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
-        reset_phase("tank_circuit")
+        reset_global_phase()
         # Sends the readout pulse and stores the raw ADC traces in the stream called "adc_st"
         # measure("readout", "TIA", adc_st)
-        measure("readout", "tank_circuit", adc_st)
+        measure("readout", "qubit_readout", adc_st)
         # Wait for the resonator to deplete
-        wait(1_000 * u.ns, "tank_circuit")
+        wait(1_000 * u.ns, "qubit_readout")
 
     with stream_processing():
         # Please adjust the analog inputs according to the connectivity (input1/2 -> rf)
         # Will save average:
-        adc_st.input1().average().save("adc1")
+        adc_st.input2().average().save("adc1")
         # Will save only last run:
-        adc_st.input1().save("adc1_single_run")
+        adc_st.input2().save("adc1_single_run")
 
 
 #####################################
@@ -101,8 +101,11 @@ else:
     plt.plot(adc1_single_run, "r", label="Input 2")
     xl = plt.xlim()
     yl = plt.ylim()
-    plt.axhline(y=0.5)
-    plt.axhline(y=-0.5)
+    power_mw = 10**(qubit_full_scale_power_dbm / 10)
+    max_voltage_amp = np.sqrt(2 * power_mw * 50 / 1000)
+    amp_in_volts = reflectometry_readout_amp * max_voltage_amp
+    plt.axhline(y=amp_in_volts)
+    plt.axhline(y=-amp_in_volts)
     plt.plot(xl, adc1_mean * np.ones(2), "k--")
     plt.plot(delay * np.ones(2), yl, "k--")
     plt.xlabel("Time [ns]")
@@ -115,34 +118,35 @@ else:
     yl = plt.ylim()
     plt.plot(xl, adc1_mean * np.ones(2), "k--")
     plt.plot(delay * np.ones(2), yl, "k--")
+    plt.xlim(0, )
     plt.xlabel("Time [ns]")
     plt.legend()
     plt.grid("all")
     plt.tight_layout()
-    # plt.show()
+    plt.show()
 
     # Update the config
     print(f"DC offset to add to Q in the config: {-adc1_mean:.6f} V")
     print(f"Time Of Flight to add in the config: {delay} ns")
 
-    if save_data:
-        from qualang_tools.results.data_handler import DataHandler
+    # if save_data:
+    #     from qualang_tools.results.data_handler import DataHandler
 
-        # Data to save
-        save_data_dict = {}
-        # save_data_dict["elapsed_time"] =  np.array([elapsed_time])
-        save_data_dict["adc_rf"] = adc1_mean
-        save_data_dict["adc_rf_single_run"] = adc1_single_run
+    #     # Data to save
+    #     save_data_dict = {}
+    #     # save_data_dict["elapsed_time"] =  np.array([elapsed_time])
+    #     save_data_dict["adc_rf"] = adc1_mean
+    #     save_data_dict["adc_rf_single_run"] = adc1_single_run
 
-        # Save results
-        script_name = Path(__file__).name
-        data_handler = DataHandler(root_data_folder=save_dir)
-        save_data_dict.update({"fig_live": fig})
-        data_handler.additional_files = {
-            script_name: script_name,
-            **default_additional_files,
-        }
-        data_handler.save_data(data=save_data_dict, name="time_of_flight_RF")
+    #     # Save results
+    #     script_name = Path(__file__).name
+    #     data_handler = DataHandler(root_data_folder=save_dir)
+    #     save_data_dict.update({"fig_live": fig})
+    #     data_handler.additional_files = {
+    #         script_name: script_name,
+    #         **default_additional_files,
+    #     }
+    #     data_handler.save_data(data=save_data_dict, name="time_of_flight_RF")
 
     # plt.show()
     qm.close()
