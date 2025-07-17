@@ -613,8 +613,8 @@
         }
     },
     "network": {
-        "host": "192.168.88.53",
+        "host": "192.168.88.xxxxxxx",
         "port": null,
-        "cluster_name": "Cluster_1"
+        "cluster_name": "xxxxxxxxxx"
     }
 }
