@@ -13,8 +13,8 @@ from typing import Union
 ######################
 # Network parameters #
 ######################
-qop_ip = "192.168.88.253"  # Write the QM router IP address
-cluster_name = "Cluster_2"  # Write your cluster_name if version >= QOP220
+qop_ip = "172.16.33.115"  # Write the QM router IP address
+cluster_name = "CS_3"  # Write your cluster_name if version >= QOP220
 
 
 #####################
@@ -22,7 +22,7 @@ cluster_name = "Cluster_2"  # Write your cluster_name if version >= QOP220
 #####################
 con = "con1"
 lf_fem = 1
-# mw_fem = 5
+mw_fem = 5
 
 
 #############
@@ -361,7 +361,7 @@ config = {
                 "trigger": "trigger_pulse",
             },
         },
-        "qdac_trigger3": {
+        "qdac_trigger2": {
             "digitalInputs": {
                 "trigger": {
                     "port": (con, lf_fem, 3),
@@ -555,3 +555,5 @@ config = {
         },
     },
 }
+
+# %%
