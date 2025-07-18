@@ -32,7 +32,7 @@ cd qua-libs/qualibration_graphs/superconducting
 pip install -e .
 ```
 
-### 2. QUAlibrate 코드 클론 및 QUAlibrate Config 설정
+### 2. (QUAlibrate 코드를 저장할 원하는 폴더로 이동 후) 코드 클론 및 QUAlibate Config 실행
 ```bash
 git clone https://github.com/Kyung-hoon-Jung0/CS_installations.git
 cd CS_installations/KH_20250717
