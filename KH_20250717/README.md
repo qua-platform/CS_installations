@@ -1,4 +1,3 @@
-```markdown
 # CS_installations - Qualibrate Setup Guide / 설치 가이드
 
 This repository contains configuration files and setup instructions for Qualibrate experiments with quantum computing hardware.
@@ -127,4 +126,3 @@ poetry install
 ## License
 This project is licensed under the BSD-3 Clause License.
 </details>
-```
