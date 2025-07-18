@@ -17,6 +17,11 @@ Qualibrate 실험을 위한 설정 파일 및 설치 방법을 담은 저장소�
 - Python 3.9.0 ~ 3.12.0 
 - 참고: (2025.07.18 기준) 3.9.0 / 3.10.0 / 3.10.18 / 3.11.13 / 3.12.0 설치 및 작동 확인
 > ⚠️ **중요**: Python 버전이 맞지 않으면 설치 중 오류 발생.
+> ```bash
+> python -m venv qualibrate
+> or
+> conda create -n qualibrate python==3.11.13
+> ```
 
 ## 설치 순서
 
@@ -78,8 +83,10 @@ This repository contains configuration files and setup instructions for Qualibra
 ### Python Version (Required)
 - Python 3.9.0 ~ 3.12.0
 - Note: (As of 2025.07.18) Tested and confirmed working with 3.9.0 / 3.10.0 / 3.10.18 / 3.11.13 / 3.12.0
-> ⚠️ **Important**: Installation errors will occur if Python version is incompatible.
+> ⚠️ **Important**: Installation errors will occur if Python version is incompatible. Please refee the following example to create a python environment.
 > ```bash
+> python -m venv qualibrate
+> or
 > conda create -n qualibrate python==3.11.13
 > ```
 
