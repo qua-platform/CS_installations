@@ -79,6 +79,9 @@ This repository contains configuration files and setup instructions for Qualibra
 - Python 3.9.0 ~ 3.12.0
 - Note: (As of 2025.07.18) Tested and confirmed working with 3.9.0 / 3.10.0 / 3.10.18 / 3.11.13 / 3.12.0
 > ⚠️ **Important**: Installation errors will occur if Python version is incompatible.
+> ```bash
+> conda
+> ```
 
 ## Installation Steps
 
