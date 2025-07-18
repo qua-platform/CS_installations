@@ -54,18 +54,9 @@ qualibrate start
 ```
 표시된 주소를 웹 브라우저로 실행 후 Node가 정상 로드되는지 확인할 것.
 
-## 문제 해결
-
 ### 설정 관련 참고사항
 - 초기 설정값(wiring, qubit frequency, resonator frequency)은 임의값으로 설정됨
 - 실험 setup에 맞게 생성된 config 파일에서 수정 필요
-
-### 패키지 누락 오류
-패키지가 없다는 오류가 나오면:
-```bash
-pip install poetry
-poetry install
-```
 
 ## 라이선스
 이 프로젝트는 BSD-3 Clause 라이선스를 따릅니다.
@@ -100,7 +91,7 @@ cd qua-libs/qualibration_graphs/superconducting
 pip install -e .
 ```
 
-### 2. Clone QUAlibrate Code and Setup QUAlibrate Config
+### 2. (Move where you want to install QUAlibrate code) Clone Code and Setup QUAlibrate Config
 ```bash
 git clone https://github.com/Kyung-hoon-Jung0/CS_installations.git
 cd CS_installations/KH_20250717
@@ -109,6 +100,7 @@ setup-qualibrate-config
 
 ### 3. Generate QUAM Config
 ```bash
+cd quam_config
 python generate_quam.py
 ```
 When executed successfully:
@@ -126,13 +118,6 @@ Open the displayed URL in a web browser and verify that nodes are loading correc
 ### Configuration Notes
 - Initial config values (wiring, qubit frequency, resonator frequency) are set to default values
 - Modify these in the generated config files according to your experimental setup
-
-### Missing Dependencies
-If you encounter missing package errors:
-```bash
-pip install poetry
-poetry install
-```
 
 ## License
 This project is licensed under the BSD-3 Clause License.
