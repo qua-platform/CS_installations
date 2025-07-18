@@ -41,6 +41,7 @@ setup-qualibrate-config
 
 ### 3. QUAM Config 생성
 ```bash
+cd quam_config
 python generate_quam.py
 ```
 정상적으로 실행되면,
