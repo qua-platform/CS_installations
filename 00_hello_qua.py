@@ -12,27 +12,24 @@ from configuration import *
 # The QUA program #
 ###################
 with program() as hello_qua:
-    a = declare(fixed)
-    with infinite_loop_():
-        with for_(a, 0, a < 1.1, a + 0.05):
-            play("pi" * amp(a), "qubit")
-        wait(25, "qubit")
+    set_dc_offset("q1_z", "single", 0.153)
+    play("cw", "q1_xy")
+
 
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 
 ###########################
 # Run or Simulate Program #
 ###########################
 
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-    # Simulate blocks python until the simulation is done
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, hello_qua, simulation_config)
     # Get the simulated samples
