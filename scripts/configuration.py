@@ -67,7 +67,7 @@ config = {
             },
             "digital_outputs": {
                 1: {},
-                2: {},
+                10: {},
             },
             "analog_inputs": {
                 1: {"offset": 0.0, "gain_db": 0},
@@ -95,6 +95,11 @@ config = {
             "digitalInputs": {
                 "activate": {
                     "port": ("con1", 1),
+                    "delay": 0,
+                    "buffer": 0,
+                },
+                "activate2": {
+                    "port": ("con1", 10),
                     "delay": 0,
                     "buffer": 0,
                 },

@@ -25,7 +25,6 @@ with program() as hello_qua:
 
 with program() as external_trigger:
     play("ON", "trigger")
-    play("const", "AOM", duration=4)
     wait_for_trigger("AOM")
     play("const", "AOM")
 ################################
