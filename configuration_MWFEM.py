@@ -19,8 +19,8 @@ u = unit(coerce_to_integer=True)
 # Network parameters #
 ######################
 qop_ip = "172.16.33.114"  # Write the QM router IP address
-# qop_ip = "172.16.33.115"  # Write the QM router IP address
 cluster_name = "CS_4"  # Write your cluster_name if version >= QOP220
+# qop_ip = "172.16.33.115"  # Write the QM router IP address
 # cluster_name = "CS_3"  # Write your cluster_name if version >= QOP220
 mw_fem_slot = 1
 
@@ -57,7 +57,8 @@ off_pump_len = 16 * u.ns
 storage_off_pump_amp = 0.1
 # Continuous wave
 storage_const_len = 200
-storage_const_amp = 0.02
+# storage_const_amp = 0.02
+storage_const_amp = 0.1
 
 # Fock state n=1 parameters
 # beta1_wave

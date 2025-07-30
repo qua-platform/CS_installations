@@ -67,7 +67,7 @@ with program() as resonator_spec:
             update_frequency("resonator", f)
             # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
             measure(
-                "readout",
+                "readout" * amp(2),  # The readout pulse amplitude is set to 0
                 "resonator",
                 None,
                 dual_demod.full("cos", "sin", I),

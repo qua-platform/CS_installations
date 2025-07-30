@@ -1,8 +1,0 @@
-{
-    "fig_live": "./fig_live.png",
-    "fs": "./arrays.npz#fs",
-    "phases": "./arrays.npz#phases",
-    "I": "./arrays.npz#I",
-    "Q": "./arrays.npz#Q",
-    "R": "./arrays.npz#R"
-}

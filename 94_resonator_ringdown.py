@@ -54,15 +54,19 @@ with program() as ringdown:
     measure(
         "readout",
         "resonator",
-        demod.full("cos", I[0], "out2"),
-        demod.full("sin", Q[0], "out2"),
+        # demod.full("cos", I[0], "out2"),
+        # demod.full("sin", Q[0], "out2"),
+        dual_demod.full("cos", "sin", I[0]),
+        dual_demod.full("minus_sin", "cos", Q[0]),
     )
     wait(readout_time, "resonator2")  # needed to delay second for_ loop
     measure(
         "readout",
         "resonator",
-        demod.full("cos", I[0], "out2"),
-        demod.full("sin", Q[0], "out2"),
+        # demod.full("cos", I[0], "out2"),
+        # demod.full("sin", Q[0], "out2"),
+        dual_demod.full("cos", "sin", I[1]),
+        dual_demod.full("minus_sin", "cos", Q[1]),
     )
 
     wait(readout_time, "resonator2")  # needed to delay second for_ loop
@@ -71,8 +75,10 @@ with program() as ringdown:
         measure(
             "readout" * amp(0),
             "resonator",
-            demod.full("cos", I[0], "out2"),
-            demod.full("sin", Q[0], "out2"),
+            # demod.full("cos", I[0], "out2"),
+            # demod.full("sin", Q[0], "out2"),
+            dual_demod.full("cos", "sin", I[0]),
+            dual_demod.full("minus_sin", "cos", Q[0]),
         )
         save(I[0], I_st[0])
         save(Q[0], Q_st[0])
@@ -83,8 +89,10 @@ with program() as ringdown:
         measure(
             "readout" * amp(0),
             "resonator2",
-            demod.full("cos", I[1], "out2"),
-            demod.full("sin", Q[1], "out2"),
+            # demod.full("cos", I[1], "out2"),
+            # demod.full("sin", Q[1], "out2"),
+            dual_demod.full("cos", "sin", I[1]),
+            dual_demod.full("minus_sin", "cos", Q[1]),
         )
         save(I[1], I_st[1])
         save(Q[1], Q_st[1])

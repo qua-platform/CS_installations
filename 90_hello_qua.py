@@ -12,12 +12,18 @@ from configuration_MWFEM import *
 ###################
 # The QUA program #
 ###################
+amp_list = np.linspace(0, 1, 5)
+dur_step = 4
+dur_list = np.arange(dur_step, (len(amp_list) + 1) * dur_step, dur_step, dtype=int)
+if_list = np.linspace(-300, 300, len(amp_list), dtype=int) * u.MHz
 with program() as hello_qua:
     a = declare(fixed)
+    b = declare(int)
     with infinite_loop_():
-        with for_(a, 0, a < 1.1, a + 0.05):
-            play("pi" * amp(a), "qubit")
-        wait(25, "qubit")
+        with for_each_((a, b), (amp_list, if_list)):
+            update_frequency("qubit", b)
+            play("cw" * amp(a), "qubit")
+        wait(30, "qubit")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -33,7 +39,7 @@ simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=1_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, hello_qua, simulation_config)
     # Get the simulated samples
