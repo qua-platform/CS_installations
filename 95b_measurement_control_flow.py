@@ -34,8 +34,6 @@ with program() as flow:
         measure(
             "readout" * amp(b),
             "resonator",
-            # demod.full("cos", I, "out2"),
-            # demod.full("sin", Q, "out2"),
             dual_demod.full("cos", "sin", I),
             dual_demod.full("minus_sin", "cos", Q),
         )
@@ -62,7 +60,7 @@ qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 #######################
 # Simulate or execute #
 #######################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration

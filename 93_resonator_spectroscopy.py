@@ -60,6 +60,7 @@ with program() as resonator_spec:
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
+        reset_global_phase()
         with for_(
             *from_array(f, frequencies)
         ):  # QUA for_ loop for sweeping the frequency
