@@ -15,14 +15,16 @@ from configuration_MWFEM import *
 amp_list = np.linspace(0, 1, 5)
 dur_step = 4
 dur_list = np.arange(dur_step, (len(amp_list) + 1) * dur_step, dur_step, dtype=int)
-if_list = np.linspace(-300, 300, len(amp_list), dtype=int) * u.MHz
+if_list = np.linspace(-300, 300, len(amp_list)) * u.MHz
+if_list = list(map(int, if_list))
 with program() as hello_qua:
     a = declare(fixed)
     b = declare(int)
+    c = declare(int)
     with infinite_loop_():
-        with for_each_((a, b), (amp_list, if_list)):
-            update_frequency("qubit", b)
-            play("cw" * amp(a), "qubit")
+        with for_each_((a, b, c), (amp_list, dur_list, if_list)):
+            update_frequency("qubit", c)
+            play("cw" * amp(a), "qubit", duration=b)
         wait(30, "qubit")
 
 #####################################
@@ -59,3 +61,5 @@ else:
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it - Execute does not block python!
     job = qm.execute(hello_qua)
+
+# %%

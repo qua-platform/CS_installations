@@ -33,9 +33,9 @@ from qualang_tools.results.data_handler import DataHandler
 # Parameters Definition
 n_avg = 1000  # The number of averages
 # The frequency sweep parameters, bandwidth around 800 MHz
-f_min = -400 * u.MHz
-f_max = 400 * u.MHz
-df = 1000 * u.kHz
+f_min = -200 * u.MHz
+f_max = 200 * u.MHz
+df = 500 * u.kHz
 frequencies = np.arange(
     f_min, f_max + 0.1, df
 )  # The frequency vector (+ 0.1 to add f_max to frequencies)

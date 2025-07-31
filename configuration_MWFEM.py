@@ -18,8 +18,10 @@ u = unit(coerce_to_integer=True)
 ######################
 # Network parameters #
 ######################
-qop_ip = "172.16.33.114"  # Write the QM router IP address
-cluster_name = "CS_4"  # Write your cluster_name if version >= QOP220
+qop_ip = "192.168.88.251"  # Write the QM router IP address
+cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
+# qop_ip = "172.16.33.114"  # Write the QM router IP address
+# cluster_name = "CS_4"  # Write your cluster_name if version >= QOP220
 # qop_ip = "172.16.33.115"  # Write the QM router IP address
 # cluster_name = "CS_3"  # Write your cluster_name if version >= QOP220
 mw_fem_slot = 1
@@ -221,16 +223,17 @@ minus_y90_Q_wf = minus_y90_wf
 #############################################
 #                Resonators                 #
 #############################################
-resonator_LO = 6.9 * u.GHz
+resonator_LO = 6 * u.GHz
+# resonator_LO = 6.9 * u.GHz
 resonator_IF = 150 * u.MHz
 resonator_band = choose_band(resonator_LO)
-resonator_port = 8
+resonator_port = 1
 resonator_readout_port = 2
 
 resonator_off_pump_amp = 0.45
 
 readout_len = 1000
-readout_amp = 0.05
+readout_amp = 0.5
 
 time_of_flight = 28
 depletion_time = 2 * u.us
@@ -283,6 +286,9 @@ pdh_mod_low_amp = -0.5 * pdh_mod_amp * readout_amp
 #############################################
 #                  Config                   #
 #############################################
+assert len(np.unique([resonator_port, qubit_port, storage_port])) == 3, (
+    "use unique ports"
+)
 config = {
     "version": 1,
     "controllers": {
@@ -294,23 +300,24 @@ config = {
                     "analog_outputs": {
                         resonator_port: {
                             "band": resonator_band,
-                            "full_scale_power_dbm": 0,  # Default is -11
+                            "full_scale_power_dbm": -11,  # Default is -11
                             "upconverter_frequency": resonator_LO,
                         },
                         qubit_port: {
                             "band": qubit_band,
-                            "full_scale_power_dbm": 0,
+                            "full_scale_power_dbm": -11,
                             "upconverter_frequency": qubit_LO,
                         },
                         storage_port: {
                             "band": storage_band,
-                            "full_scale_power_dbm": 0,
+                            "full_scale_power_dbm": -11,
                             "upconverter_frequency": storage_LO,
                         },
                     },
                     "digital_outputs": {},
                     "analog_inputs": {
                         resonator_readout_port: {
+                            "gain_db": 10,
                             "band": resonator_band,
                             "downconverter_frequency": resonator_LO,
                         },

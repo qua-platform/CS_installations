@@ -84,7 +84,8 @@ with program() as PDH_spectroscopy:
                 # reset the phase of elements so that we always start with the same phase
                 reset_global_phase()
                 # set a relative phase between carrier and modulation
-                frame_rotation_2pi(ph, "resonator")
+                frame_rotation_2pi(+ph, "resonator_sb_high")
+                frame_rotation_2pi(-ph, "resonator_sb_high")
 
                 # align all the elements so that they all start after the first play() command
                 align()

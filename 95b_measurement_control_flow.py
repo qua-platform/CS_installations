@@ -34,8 +34,8 @@ with program() as flow:
         measure(
             "readout" * amp(b),
             "resonator",
-            # demod.full("cos", I[0], "out2"),
-            # demod.full("sin", Q[0], "out2"),
+            # demod.full("cos", I, "out2"),
+            # demod.full("sin", Q, "out2"),
             dual_demod.full("cos", "sin", I),
             dual_demod.full("minus_sin", "cos", Q),
         )
