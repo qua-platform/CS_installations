@@ -1,0 +1,135 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "q1": {
+            "opt_amp_prefactor": 1.0000000000000002,
+            "opt_amp": 0.43806542210707666,
+            "operation": "x90",
+            "success": true
+        },
+        "q2": {
+            "opt_amp_prefactor": 0.9600000000000002,
+            "opt_amp": 0.3814252050442708,
+            "operation": "x90",
+            "success": true
+        },
+        "q5": {
+            "opt_amp_prefactor": 1.0000000000000002,
+            "opt_amp": 0.2527952906939886,
+            "operation": "x90",
+            "success": true
+        },
+        "q6": {
+            "opt_amp_prefactor": 1.0000000000000002,
+            "opt_amp": 0.3167592214472473,
+            "operation": "x90",
+            "success": true
+        },
+        "q7": {
+            "opt_amp_prefactor": 1.0000000000000002,
+            "opt_amp": 0.28813773327302317,
+            "operation": "x90",
+            "success": true
+        },
+        "q8": {
+            "opt_amp_prefactor": 0.9800000000000002,
+            "opt_amp": 0.2412196510530368,
+            "operation": "x90",
+            "success": true
+        },
+        "q9": {
+            "opt_amp_prefactor": 0.9800000000000002,
+            "opt_amp": 0.181888000000001,
+            "operation": "x90",
+            "success": true
+        },
+        "q10": {
+            "opt_amp_prefactor": 1.0000000000000002,
+            "opt_amp": 0.15701908020277122,
+            "operation": "x90",
+            "success": true
+        },
+        "q11": {
+            "opt_amp_prefactor": 1.0000000000000002,
+            "opt_amp": 0.1254204271430649,
+            "operation": "x90",
+            "success": true
+        },
+        "q12": {
+            "opt_amp_prefactor": 0.9800000000000002,
+            "opt_amp": 0.3864664496658014,
+            "operation": "x90",
+            "success": true
+        },
+        "q15": {
+            "opt_amp_prefactor": 1.0000000000000002,
+            "opt_amp": 0.1960000000000002,
+            "operation": "x90",
+            "success": true
+        },
+        "q16": {
+            "opt_amp_prefactor": 1.0000000000000002,
+            "opt_amp": 0.28500000000000025,
+            "operation": "x90",
+            "success": true
+        },
+        "q17": {
+            "opt_amp_prefactor": 1.0000000000000002,
+            "opt_amp": 0.2685944032934414,
+            "operation": "x90",
+            "success": true
+        },
+        "q18": {
+            "opt_amp_prefactor": 1.0000000000000002,
+            "opt_amp": 0.29430782976000136,
+            "operation": "x90",
+            "success": true
+        },
+        "q19": {
+            "opt_amp_prefactor": 0.9800000000000002,
+            "opt_amp": 0.29664374254099346,
+            "operation": "x90",
+            "success": true
+        },
+        "q20": {
+            "opt_amp_prefactor": 1.0000000000000002,
+            "opt_amp": 0.2600000000000002,
+            "operation": "x90",
+            "success": true
+        },
+        "q21": {
+            "opt_amp_prefactor": 0.9800000000000002,
+            "opt_amp": 0.37787751650880214,
+            "operation": "x90",
+            "success": true
+        },
+        "q23": {
+            "opt_amp_prefactor": 1.0000000000000002,
+            "opt_amp": 0.43920842232960267,
+            "operation": "x90",
+            "success": true
+        },
+        "q24": {
+            "opt_amp_prefactor": 0.9800000000000002,
+            "opt_amp": 0.3106113617376016,
+            "operation": "x90",
+            "success": true
+        },
+        "q25": {
+            "opt_amp_prefactor": 1.0000000000000002,
+            "opt_amp": 0.28274400000000127,
+            "operation": "x90",
+            "success": true
+        },
+        "q26": {
+            "opt_amp_prefactor": 1.0000000000000002,
+            "opt_amp": 0.322545743850001,
+            "operation": "x90",
+            "success": true
+        }
+    },
+    "figures": {
+        "amplitude": "./figures.amplitude.png"
+    }
+}

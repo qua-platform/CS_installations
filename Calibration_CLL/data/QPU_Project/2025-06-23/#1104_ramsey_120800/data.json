@@ -1,0 +1,135 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "q1": {
+            "freq_offset": 2239.1263790034704,
+            "decay": 1.6717958988072346e-05,
+            "decay_error": 1.0204441811632189e-06,
+            "success": true
+        },
+        "q2": {
+            "freq_offset": 332.1778461447353,
+            "decay": 1.721310623616529e-05,
+            "decay_error": 2.706579046900992e-06,
+            "success": true
+        },
+        "q5": {
+            "freq_offset": 27490.524079316237,
+            "decay": 2.4174239924891267e-05,
+            "decay_error": 2.489451550970108e-06,
+            "success": true
+        },
+        "q6": {
+            "freq_offset": -7585.595460392152,
+            "decay": 1.6953093843830962e-05,
+            "decay_error": 1.257505649260534e-06,
+            "success": true
+        },
+        "q7": {
+            "freq_offset": -2032.7646888478437,
+            "decay": 2.7134640922728598e-05,
+            "decay_error": 1.685245435988069e-06,
+            "success": true
+        },
+        "q8": {
+            "freq_offset": -50033.100816002196,
+            "decay": 3.178038075164512e-05,
+            "decay_error": 2.0309988487702746e-06,
+            "success": true
+        },
+        "q9": {
+            "freq_offset": -51954.5508879671,
+            "decay": 3.8066363648111424e-05,
+            "decay_error": 3.906400786960705e-06,
+            "success": true
+        },
+        "q10": {
+            "freq_offset": 148948.4006750977,
+            "decay": 1.6927427847596943e-05,
+            "decay_error": 1.0551960563351014e-06,
+            "success": true
+        },
+        "q11": {
+            "freq_offset": -99344.37555233463,
+            "decay": 6.71996604828866e-05,
+            "decay_error": 7.965936986164625e-06,
+            "success": true
+        },
+        "q12": {
+            "freq_offset": -48710.83314454493,
+            "decay": 3.8795731396509746e-05,
+            "decay_error": 2.468177325732693e-06,
+            "success": true
+        },
+        "q15": {
+            "freq_offset": -56635.69367808522,
+            "decay": 5.144422234459122e-05,
+            "decay_error": 4.603940155583988e-06,
+            "success": true
+        },
+        "q16": {
+            "freq_offset": 1377.2173838903996,
+            "decay": 4.161134930199345e-05,
+            "decay_error": 2.6913397504231226e-06,
+            "success": true
+        },
+        "q17": {
+            "freq_offset": -3480.0182152270568,
+            "decay": 4.593806317420596e-05,
+            "decay_error": 3.937557698962838e-06,
+            "success": true
+        },
+        "q18": {
+            "freq_offset": 4759.421255890373,
+            "decay": 5.058416978074557e-05,
+            "decay_error": 4.06818902594903e-06,
+            "success": true
+        },
+        "q19": {
+            "freq_offset": 3263.815692089705,
+            "decay": 2.9053810651678784e-05,
+            "decay_error": 2.635571505338215e-06,
+            "success": true
+        },
+        "q20": {
+            "freq_offset": -34498.4833115126,
+            "decay": 5.730532374795879e-05,
+            "decay_error": 4.7632493037857825e-06,
+            "success": true
+        },
+        "q21": {
+            "freq_offset": -51004.701245054675,
+            "decay": 8.455476959728334e-05,
+            "decay_error": 8.202344621221932e-06,
+            "success": true
+        },
+        "q23": {
+            "freq_offset": -15677.384509786227,
+            "decay": 6.730641410447248e-05,
+            "decay_error": 6.02241477962784e-06,
+            "success": true
+        },
+        "q24": {
+            "freq_offset": 3363.016612473158,
+            "decay": 3.407347768058165e-05,
+            "decay_error": 2.1478190499121494e-06,
+            "success": true
+        },
+        "q25": {
+            "freq_offset": 33557.69990626427,
+            "decay": 5.93553446455711e-06,
+            "decay_error": 7.577926612026938e-07,
+            "success": true
+        },
+        "q26": {
+            "freq_offset": 1468.1820254276831,
+            "decay": 7.049171916383693e-05,
+            "decay_error": 7.782374322251775e-06,
+            "success": true
+        }
+    },
+    "figures": {
+        "amplitude": "./figures.amplitude.png"
+    }
+}
