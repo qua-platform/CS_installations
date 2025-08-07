@@ -1,0 +1,115 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "q1": {
+            "frequency": 7003542323.0,
+            "fwhm": 1264301.8555205388,
+            "success": true
+        },
+        "q2": {
+            "frequency": 7037119771.0,
+            "fwhm": 1862722.9348009252,
+            "success": true
+        },
+        "q5": {
+            "frequency": 7153531663.0,
+            "fwhm": 816680.128798356,
+            "success": true
+        },
+        "q6": {
+            "frequency": 7188233052.0,
+            "fwhm": 747107.7372753534,
+            "success": true
+        },
+        "q7": {
+            "frequency": 7230843422.0,
+            "fwhm": 835843.5162167624,
+            "success": true
+        },
+        "q8": {
+            "frequency": 7270908371.0,
+            "fwhm": 1037209.7834115962,
+            "success": true
+        },
+        "q9": {
+            "frequency": 7310850000.0,
+            "fwhm": 1155591.6730522348,
+            "success": true
+        },
+        "q10": {
+            "frequency": 6996545462.0,
+            "fwhm": 982374.8521167474,
+            "success": true
+        },
+        "q11": {
+            "frequency": 7035625236.0,
+            "fwhm": 1083507.2338762786,
+            "success": true
+        },
+        "q12": {
+            "frequency": 7075785782.0,
+            "fwhm": 1187240.1603336143,
+            "success": true
+        },
+        "q15": {
+            "frequency": 7193371942.0,
+            "fwhm": 1038072.4194816444,
+            "success": true
+        },
+        "q16": {
+            "frequency": 7228892605.0,
+            "fwhm": 901720.2645111382,
+            "success": true
+        },
+        "q17": {
+            "frequency": 7272295453.0,
+            "fwhm": 846913.7716621496,
+            "success": true
+        },
+        "q18": {
+            "frequency": 7307600000.0,
+            "fwhm": 839358.5251383769,
+            "success": true
+        },
+        "q19": {
+            "frequency": 6997245562.0,
+            "fwhm": 1061534.7639567987,
+            "success": true
+        },
+        "q20": {
+            "frequency": 7034891652.0,
+            "fwhm": 1313325.3278539192,
+            "success": true
+        },
+        "q21": {
+            "frequency": 7071250000.0,
+            "fwhm": 871538.3255891552,
+            "success": true
+        },
+        "q23": {
+            "frequency": 7148717118.0,
+            "fwhm": 820172.4456983343,
+            "success": true
+        },
+        "q24": {
+            "frequency": 7189022206.0,
+            "fwhm": 966067.404035617,
+            "success": true
+        },
+        "q25": {
+            "frequency": 7228000000.0,
+            "fwhm": 780747.0143551661,
+            "success": true
+        },
+        "q26": {
+            "frequency": 7268958341.0,
+            "fwhm": 831871.0049655173,
+            "success": true
+        }
+    },
+    "figures": {
+        "phase": "./figures.phase.png",
+        "amplitude": "./figures.amplitude.png"
+    }
+}

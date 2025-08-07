@@ -1,0 +1,204 @@
+{
+    "created_at": "2025-06-23T12:08:00+09:00",
+    "metadata": {
+        "description": "\n        RAMSEY WITH VIRTUAL Z ROTATIONS\nThe program consists in playing a Ramsey sequence (x90 - idle_time - x90/y90 - measurement) for different idle times.\nInstead of detuning the qubit gates, the frame of the second x90 pulse is rotated (de-phased) to mimic an accumulated\nphase acquired for a given detuning after the idle time.\nThis method has the advantage of playing gates on resonance as opposed to the detuned Ramsey.\n\nFrom the results, one can fit the Ramsey oscillations and precisely measure the qubit resonance frequency and T2*.\n\nPrerequisites:\n    - Having calibrated the mixer or the Octave (nodes 01a or 01b).\n    - Having calibrated the readout parameters (nodes 02a, 02b and/or 02c).\n    - Having calibrated the qubit x180 pulse parameters (nodes 03a_qubit_spectroscopy.py and 04b_power_rabi.py).\n    - (optional) Having optimized the readout parameters (nodes 08a, 08b and 08c).\n    - Having specified the desired flux point if relevant (qubit.z.flux_point).\n\nState update:\n    - The qubit 0->1 frequency: qubit.f_01 & qubit.xy.RF_frequency\n    - T2*: qubit.T2ramsey.\n",
+        "run_start": "2025-06-23T12:05:01.871+09:00",
+        "run_end": "2025-06-23T12:08:00.893+09:00",
+        "name": "ramsey",
+        "data_path": "2025-06-23/#1104_ramsey_120800"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "multiplexed": false,
+                "use_state_discrimination": true,
+                "reset_type": "thermal",
+                "qubits": [
+                    "q1",
+                    "q2",
+                    "q5",
+                    "q6",
+                    "q7",
+                    "q8",
+                    "q9",
+                    "q10",
+                    "q11",
+                    "q12",
+                    "q15",
+                    "q16",
+                    "q17",
+                    "q18",
+                    "q19",
+                    "q20",
+                    "q21",
+                    "q23",
+                    "q24",
+                    "q25",
+                    "q26"
+                ],
+                "num_shots": 50,
+                "frequency_detuning_in_mhz": 0.5,
+                "log_or_linear_sweep": "linear",
+                "min_wait_time_in_ns": 16,
+                "max_wait_time_in_ns": 50000,
+                "wait_time_num_points": 250,
+                "simulate": false,
+                "simulation_duration_ns": 30000,
+                "use_waveform_report": true,
+                "timeout": 1200,
+                "load_data_id": null
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "multiplexed": {
+                        "default": false,
+                        "description": "Whether to play control pulses, readout pulses and active/thermal reset at the same time for all qubits (True)\nor to play the experiment sequentially for each qubit (False). Default is False.",
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    },
+                    "use_state_discrimination": {
+                        "default": true,
+                        "description": "Whether to use on-the-fly state discrimination and return the qubit 'state', or simply return the demodulated\nquadratures 'I' and 'Q'. Default is False.",
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "description": "The qubit reset method to use. Must be implemented as a method of Quam.qubit. Can be \"thermal\", \"active\", or\n\"active_gef\". Default is \"thermal\".",
+                        "enum": [
+                            "thermal",
+                            "active",
+                            "active_gef"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "A list of qubit names which should participate in the execution of the node. Default is None.",
+                        "title": "Qubits"
+                    },
+                    "num_shots": {
+                        "default": 50,
+                        "description": "Number of averages to perform. Default is 100.",
+                        "title": "Num Shots",
+                        "type": "integer"
+                    },
+                    "frequency_detuning_in_mhz": {
+                        "default": 0.5,
+                        "description": "Frequency detuning in MHz. Default is 1.0 MHz.",
+                        "title": "Frequency Detuning In Mhz",
+                        "type": "number"
+                    },
+                    "log_or_linear_sweep": {
+                        "default": "linear",
+                        "description": "Type of sweep, either \"log\" (logarithmic) or \"linear\". Default is \"log\".",
+                        "enum": [
+                            "log",
+                            "linear"
+                        ],
+                        "title": "Log Or Linear Sweep",
+                        "type": "string"
+                    },
+                    "min_wait_time_in_ns": {
+                        "default": 16,
+                        "description": "Minimum wait time in nanoseconds. Default is 16.",
+                        "title": "Min Wait Time In Ns",
+                        "type": "integer"
+                    },
+                    "max_wait_time_in_ns": {
+                        "default": 50000,
+                        "description": "Maximum wait time in nanoseconds. Default is 30000.",
+                        "title": "Max Wait Time In Ns",
+                        "type": "integer"
+                    },
+                    "wait_time_num_points": {
+                        "default": 250,
+                        "description": "Number of points for the wait time scan. Default is 500.",
+                        "title": "Wait Time Num Points",
+                        "type": "integer"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "description": "Simulate the waveforms on the OPX instead of executing the program. Default is False.",
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 30000,
+                        "description": "Duration over which the simulation will collect samples (in nanoseconds). Default is 50_000 ns.",
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "use_waveform_report": {
+                        "default": true,
+                        "description": "Whether to use the interactive waveform report in simulation. Default is True.",
+                        "title": "Use Waveform Report",
+                        "type": "boolean"
+                    },
+                    "timeout": {
+                        "default": 1200,
+                        "description": "Waiting time for the OPX resources to become available before giving up (in seconds). Default is 120 s.",
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "Optional QUAlibrate node run index for loading historical data. Default is None.",
+                        "title": "Load Data Id"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "q1": "successful",
+            "q2": "successful",
+            "q5": "successful",
+            "q6": "successful",
+            "q7": "successful",
+            "q8": "successful",
+            "q9": "successful",
+            "q10": "successful",
+            "q11": "successful",
+            "q12": "successful",
+            "q15": "successful",
+            "q16": "successful",
+            "q17": "successful",
+            "q18": "successful",
+            "q19": "successful",
+            "q20": "successful",
+            "q21": "successful",
+            "q23": "successful",
+            "q24": "successful",
+            "q25": "successful",
+            "q26": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 1104,
+    "parents": [
+        1103
+    ]
+}

@@ -1,0 +1,9 @@
+dash==3.1.0
+dash_bootstrap_components==2.0.3
+dash_bootstrap_templates==2.1.0
+numpy==2.3.1
+plotly==6.2.0
+xarray==2025.6.1
+netcdf4==1.7.2
+h5netcdf==1.6.3
+gunicorn
