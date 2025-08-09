@@ -87,7 +87,9 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
             if node.parameters.time_of_flight_in_ns is not None:
                 resonator.time_of_flight = node.parameters.time_of_flight_in_ns
             resonator.operations["readout"].length = node.parameters.readout_length_in_ns
+            resonator.operations["readout"].amplitude = node.parameters.readout_amp
             resonator.set_output_power(node.parameters.readout_amplitude_in_dBm, operation="readout")
+            resonator.intermediate_frequency = int(node.parameters.if_frequency)
             node.namespace["tracked_resonators"].append(resonator)
 
     # Register the sweep axes to be added to the dataset when fetching data
