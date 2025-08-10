@@ -54,7 +54,7 @@ def process_raw_dataset(ds: xr.Dataset, node: QualibrationNode):
 
 def fit_raw_data(ds: xr.Dataset, node: QualibrationNode) -> Tuple[xr.Dataset, dict[str, FitParameters]]:
     """
-    Fit the T1 relaxation time for each qubit according to ``a * np.exp(t * decay) + offset``.
+    Needs update with correct information
 
     Parameters:
     -----------
@@ -69,7 +69,8 @@ def fit_raw_data(ds: xr.Dataset, node: QualibrationNode) -> Tuple[xr.Dataset, di
         Dataset containing the fit results.
     """
     # Fit the resonator line
-    fit_results = peaks_dips(ds.IQ_abs, "detuning")
+    # fit_results = peaks_dips(ds.IQ_abs, "detuning")
+    fit_results = peaks_dips(ds.phase_derivative, "detuning") # implemented after phase derivative calculation
     # Extract the relevant fitted parameters
     fit_data, fit_results = _extract_relevant_fit_parameters(fit_results, node)
     return fit_data, fit_results

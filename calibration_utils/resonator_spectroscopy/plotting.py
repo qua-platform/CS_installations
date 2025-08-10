@@ -113,12 +113,14 @@ def plot_individual_amplitude_with_fit(ax: Axes, ds: xr.Dataset, qubit: dict[str
         fitted_data = None
 
     # Create a first x-axis for full_freq_GHz
-    (ds.assign_coords(full_freq_GHz=ds.full_freq / u.GHz).loc[qubit].IQ_abs / u.mV).plot(ax=ax, x="full_freq_GHz")
+    # (ds.assign_coords(full_freq_GHz=ds.full_freq / u.GHz).loc[qubit].IQ_abs / u.mV).plot(ax=ax, x="full_freq_GHz")
+    (ds.assign_coords(full_freq_GHz=ds.full_freq / u.GHz).loc[qubit].phase_derivative / u.mV).plot(ax=ax, x="full_freq_GHz")
     ax.set_xlabel("RF frequency [GHz]")
     ax.set_ylabel(r"$R=\sqrt{I^2 + Q^2}$ [mV]")
     # Create a second x-axis for detuning_MHz
     ax2 = ax.twiny()
-    (ds.assign_coords(detuning_MHz=ds.detuning / u.MHz).loc[qubit].IQ_abs / u.mV).plot(ax=ax2, x="detuning_MHz")
+    # (ds.assign_coords(detuning_MHz=ds.detuning / u.MHz).loc[qubit].IQ_abs / u.mV).plot(ax=ax2, x="detuning_MHz")
+    (ds.assign_coords(detuning_MHz=ds.detuning / u.MHz).loc[qubit].phase_derivative / u.mV).plot(ax=ax2, x="detuning_MHz")
     ax2.set_xlabel("Detuning [MHz]")
     # Plot the fitted data
     if fitted_data is not None:
