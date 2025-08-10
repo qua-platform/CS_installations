@@ -1,0 +1,390 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "ds_iq_blobs": "./ds_iq_blobs.h5",
+    "fit_results": {
+        "q1": {
+            "iw_angle": 6.272770115907223,
+            "ge_threshold": 0.00015535467377060267,
+            "rus_threshold": 9.745550645071828e-05,
+            "readout_fidelity": 96.89999999999999,
+            "confusion_matrix": [
+                [
+                    0.973,
+                    0.027
+                ],
+                [
+                    0.035,
+                    0.965
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.03887
+        },
+        "q2": {
+            "iw_angle": 0.010751161446110657,
+            "ge_threshold": 0.00012085677077420248,
+            "rus_threshold": 6.084200621292865e-05,
+            "readout_fidelity": 90.45,
+            "confusion_matrix": [
+                [
+                    0.9645,
+                    0.0355
+                ],
+                [
+                    0.1555,
+                    0.8445
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.043853333333333334
+        },
+        "q5": {
+            "iw_angle": 0.0015773952253912427,
+            "ge_threshold": 9.71737816557401e-05,
+            "rus_threshold": 6.783602453631617e-05,
+            "readout_fidelity": 88.02499999999999,
+            "confusion_matrix": [
+                [
+                    0.893,
+                    0.107
+                ],
+                [
+                    0.1325,
+                    0.8675
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.014876444444444446
+        },
+        "q6": {
+            "iw_angle": 0.011719554855149195,
+            "ge_threshold": 0.0001801502171033151,
+            "rus_threshold": 0.00013214228195978955,
+            "readout_fidelity": 95.32499999999999,
+            "confusion_matrix": [
+                [
+                    0.9645,
+                    0.0355
+                ],
+                [
+                    0.058,
+                    0.942
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.02282366666666667
+        },
+        "q7": {
+            "iw_angle": 6.281018137985479,
+            "ge_threshold": 0.00014235479434254758,
+            "rus_threshold": 9.572807566291311e-05,
+            "readout_fidelity": 96.075,
+            "confusion_matrix": [
+                [
+                    0.956,
+                    0.044
+                ],
+                [
+                    0.0345,
+                    0.9655
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.02491666666666667
+        },
+        "q8": {
+            "iw_angle": 6.2057687232991405,
+            "ge_threshold": 7.157702238557802e-05,
+            "rus_threshold": 1.1261727746319817e-05,
+            "readout_fidelity": 92.525,
+            "confusion_matrix": [
+                [
+                    0.9755,
+                    0.0245
+                ],
+                [
+                    0.125,
+                    0.875
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.021775111111111113
+        },
+        "q9": {
+            "iw_angle": 0.02173399533942444,
+            "ge_threshold": 0.00012695184603511944,
+            "rus_threshold": 7.933729003655544e-05,
+            "readout_fidelity": 83.95,
+            "confusion_matrix": [
+                [
+                    0.9525,
+                    0.0475
+                ],
+                [
+                    0.2735,
+                    0.7265
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.029003
+        },
+        "q10": {
+            "iw_angle": 0.024884014306581825,
+            "ge_threshold": 0.00011427065906850867,
+            "rus_threshold": 7.254696733743619e-05,
+            "readout_fidelity": 96.55,
+            "confusion_matrix": [
+                [
+                    0.971,
+                    0.029
+                ],
+                [
+                    0.04,
+                    0.96
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.033986333333333334
+        },
+        "q11": {
+            "iw_angle": 6.14800244395367,
+            "ge_threshold": 9.048138278405798e-05,
+            "rus_threshold": 5.4616476580429336e-05,
+            "readout_fidelity": 77.975,
+            "confusion_matrix": [
+                [
+                    0.751,
+                    0.249
+                ],
+                [
+                    0.1915,
+                    0.8085
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.030549000000000003
+        },
+        "q12": {
+            "iw_angle": 0.021689134765839224,
+            "ge_threshold": 0.00017576532063427345,
+            "rus_threshold": 0.00012532546991852282,
+            "readout_fidelity": 96.32499999999999,
+            "confusion_matrix": [
+                [
+                    0.9735,
+                    0.0265
+                ],
+                [
+                    0.047,
+                    0.953
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.063806
+        },
+        "q15": {
+            "iw_angle": 0.0018729542732960347,
+            "ge_threshold": 8.62170087442556e-05,
+            "rus_threshold": 2.3229963773097317e-05,
+            "readout_fidelity": 95.52499999999999,
+            "confusion_matrix": [
+                [
+                    0.965,
+                    0.035
+                ],
+                [
+                    0.0545,
+                    0.9455
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.02759288888888889
+        },
+        "q16": {
+            "iw_angle": 0.025189605915398428,
+            "ge_threshold": 0.0001505976035766408,
+            "rus_threshold": 9.751865986548017e-05,
+            "readout_fidelity": 97.275,
+            "confusion_matrix": [
+                [
+                    0.9765,
+                    0.0235
+                ],
+                [
+                    0.031,
+                    0.969
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.03328866666666667
+        },
+        "q17": {
+            "iw_angle": 6.211592227898176,
+            "ge_threshold": 0.0001092727179197785,
+            "rus_threshold": 7.970271884569901e-05,
+            "readout_fidelity": 87.65,
+            "confusion_matrix": [
+                [
+                    0.876,
+                    0.124
+                ],
+                [
+                    0.123,
+                    0.877
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.027209
+        },
+        "q18": {
+            "iw_angle": 0.018249061995701865,
+            "ge_threshold": 0.00015066386045875415,
+            "rus_threshold": 8.947606719933229e-05,
+            "readout_fidelity": 92.225,
+            "confusion_matrix": [
+                [
+                    0.912,
+                    0.088
+                ],
+                [
+                    0.0675,
+                    0.9325
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.05720866666666667
+        },
+        "q19": {
+            "iw_angle": 0.047719279875713116,
+            "ge_threshold": 0.0003198881167274043,
+            "rus_threshold": 0.000305579565609603,
+            "readout_fidelity": 84.875,
+            "confusion_matrix": [
+                [
+                    0.841,
+                    0.159
+                ],
+                [
+                    0.1435,
+                    0.8565
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.043853333333333334
+        },
+        "q20": {
+            "iw_angle": 6.18404294092972,
+            "ge_threshold": 0.00010064424369630125,
+            "rus_threshold": 5.75698729624919e-05,
+            "readout_fidelity": 91.575,
+            "confusion_matrix": [
+                [
+                    0.9295,
+                    0.0705
+                ],
+                [
+                    0.098,
+                    0.902
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.04571111111111111
+        },
+        "q21": {
+            "iw_angle": 0.013383236430895895,
+            "ge_threshold": 0.00021698957787814188,
+            "rus_threshold": 0.00012915672444533787,
+            "readout_fidelity": 96.125,
+            "confusion_matrix": [
+                [
+                    0.996,
+                    0.004
+                ],
+                [
+                    0.0735,
+                    0.9265
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.049335000000000004
+        },
+        "q23": {
+            "iw_angle": 6.2461466975167514,
+            "ge_threshold": 0.00016411524112600067,
+            "rus_threshold": 0.00011271421655568294,
+            "readout_fidelity": 93.19999999999999,
+            "confusion_matrix": [
+                [
+                    0.943,
+                    0.057
+                ],
+                [
+                    0.079,
+                    0.921
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.019534666666666665
+        },
+        "q24": {
+            "iw_angle": 6.041321879074351,
+            "ge_threshold": 0.0001194948417207015,
+            "rus_threshold": 6.10689884012037e-05,
+            "readout_fidelity": 97.05,
+            "confusion_matrix": [
+                [
+                    0.9775,
+                    0.0225
+                ],
+                [
+                    0.0365,
+                    0.9635
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.022855555555555556
+        },
+        "q25": {
+            "iw_angle": 0.013135131298246172,
+            "ge_threshold": 0.00011716310357156222,
+            "rus_threshold": 7.353139614209085e-05,
+            "readout_fidelity": 90.375,
+            "confusion_matrix": [
+                [
+                    0.9165,
+                    0.0835
+                ],
+                [
+                    0.109,
+                    0.891
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.018637666666666667
+        },
+        "q26": {
+            "iw_angle": 6.258123792358019,
+            "ge_threshold": 9.678587876998056e-05,
+            "rus_threshold": 8.596298241748054e-05,
+            "readout_fidelity": 75.975,
+            "confusion_matrix": [
+                [
+                    0.763,
+                    0.237
+                ],
+                [
+                    0.2435,
+                    0.7565
+                ]
+            ],
+            "success": true,
+            "optimal_amplitude": 0.023476888888888887
+        }
+    },
+    "figures": {
+        "amplitude": "./figures.amplitude.png",
+        "iq_blobs": "./figures.iq_blobs.png",
+        "confusion_matrix": "./figures.confusion_matrix.png"
+    }
+}

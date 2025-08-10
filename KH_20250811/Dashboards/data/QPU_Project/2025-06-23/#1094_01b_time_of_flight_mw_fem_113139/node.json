@@ -1,0 +1,169 @@
+{
+    "created_at": "2025-06-23T11:31:39+09:00",
+    "metadata": {
+        "description": "\n        TIME OF FLIGHT - MW FEM\nThis sequence involves sending a readout pulse and capturing the raw ADC traces.\nThe data undergoes post-processing to calibrate three distinct parameters:\n    - Time of Flight: This represents the internal processing time and the propagation\n      delay of the readout pulse. Its value can be adjusted in the configuration under\n      \"time_of_flight\". This value is utilized to offset the acquisition window relative\n      to when the readout pulse is dispatched.\n\n    - Analog Inputs Gain: If a signal is constrained by digitization or if it saturates\n      the ADC, the variable gain of the OPX analog input, ranging from -12 dB to 20 dB,\n      can be modified to fit the signal within the ADC range of +/-0.5V.\n\nPrerequisites:\n    - Having initialized the Quam (quam_config/populate_quam_state_*.py).\n\nState update:\n    - The time of flight: qubit.resonator.time_of_flight\n",
+        "run_start": "2025-06-23T11:31:31.085+09:00",
+        "run_end": "2025-06-23T11:31:39.440+09:00",
+        "name": "01b_time_of_flight_mw_fem",
+        "data_path": "2025-06-23/#1094_01b_time_of_flight_mw_fem_113139"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "multiplexed": false,
+                "use_state_discrimination": false,
+                "reset_type": "thermal",
+                "qubits": [
+                    "q1",
+                    "q2"
+                ],
+                "num_shots": 100,
+                "time_of_flight_in_ns": 28,
+                "readout_amplitude_in_dBm": -12.0,
+                "readout_length_in_ns": 1000,
+                "simulate": false,
+                "simulation_duration_ns": 30000,
+                "use_waveform_report": true,
+                "timeout": 1200,
+                "load_data_id": null
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "multiplexed": {
+                        "default": false,
+                        "description": "Whether to play control pulses, readout pulses and active/thermal reset at the same time for all qubits (True)\nor to play the experiment sequentially for each qubit (False). Default is False.",
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    },
+                    "use_state_discrimination": {
+                        "default": false,
+                        "description": "Whether to use on-the-fly state discrimination and return the qubit 'state', or simply return the demodulated\nquadratures 'I' and 'Q'. Default is False.",
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "description": "The qubit reset method to use. Must be implemented as a method of Quam.qubit. Can be \"thermal\", \"active\", or\n\"active_gef\". Default is \"thermal\".",
+                        "enum": [
+                            "thermal",
+                            "active",
+                            "active_gef"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "A list of qubit names which should participate in the execution of the node. Default is None.",
+                        "title": "Qubits"
+                    },
+                    "num_shots": {
+                        "default": 100,
+                        "description": "Number of averages to perform. Default is 100.",
+                        "title": "Num Shots",
+                        "type": "integer"
+                    },
+                    "time_of_flight_in_ns": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": 28,
+                        "description": "Time of flight in nanoseconds. Default is 28 ns.",
+                        "title": "Time Of Flight In Ns"
+                    },
+                    "readout_amplitude_in_dBm": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": -12,
+                        "description": "Readout amplitude in dBm. Default is -12 dBm.",
+                        "title": "Readout Amplitude In Dbm"
+                    },
+                    "readout_length_in_ns": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": 1000,
+                        "description": "Readout length in nanoseconds. Default is 1000 ns.",
+                        "title": "Readout Length In Ns"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "description": "Simulate the waveforms on the OPX instead of executing the program. Default is False.",
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 30000,
+                        "description": "Duration over which the simulation will collect samples (in nanoseconds). Default is 50_000 ns.",
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "use_waveform_report": {
+                        "default": true,
+                        "description": "Whether to use the interactive waveform report in simulation. Default is True.",
+                        "title": "Use Waveform Report",
+                        "type": "boolean"
+                    },
+                    "timeout": {
+                        "default": 1200,
+                        "description": "Waiting time for the OPX resources to become available before giving up (in seconds). Default is 120 s.",
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "Optional QUAlibrate node run index for loading historical data. Default is None.",
+                        "title": "Load Data Id"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "q1": "successful",
+            "q2": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 1094,
+    "parents": [
+        1093
+    ]
+}

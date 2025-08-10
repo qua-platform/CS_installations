@@ -1,0 +1,368 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "q1": {
+            "iw_angle": 2.795459215834356,
+            "ge_threshold": -0.00022768751829552693,
+            "rus_threshold": -0.0003339398799149701,
+            "readout_fidelity": 96.725,
+            "confusion_matrix": [
+                [
+                    0.991,
+                    0.009
+                ],
+                [
+                    0.0565,
+                    0.9435
+                ]
+            ],
+            "success": true
+        },
+        "q2": {
+            "iw_angle": 2.1074592452434393,
+            "ge_threshold": -0.00017534943984387106,
+            "rus_threshold": -0.00032576672278719583,
+            "readout_fidelity": 88.85000000000001,
+            "confusion_matrix": [
+                [
+                    0.977,
+                    0.023
+                ],
+                [
+                    0.2,
+                    0.8
+                ]
+            ],
+            "success": true
+        },
+        "q5": {
+            "iw_angle": 1.4512828784402498,
+            "ge_threshold": 8.433099849674847e-05,
+            "rus_threshold": 4.76194151440139e-05,
+            "readout_fidelity": 82.45,
+            "confusion_matrix": [
+                [
+                    0.8215,
+                    0.1785
+                ],
+                [
+                    0.1725,
+                    0.8275
+                ]
+            ],
+            "success": true
+        },
+        "q6": {
+            "iw_angle": 5.2906080660545936,
+            "ge_threshold": 0.0001100972939866817,
+            "rus_threshold": 5.293729173174354e-05,
+            "readout_fidelity": 96.39999999999999,
+            "confusion_matrix": [
+                [
+                    0.987,
+                    0.013
+                ],
+                [
+                    0.059,
+                    0.941
+                ]
+            ],
+            "success": true
+        },
+        "q7": {
+            "iw_angle": 5.817059794922937,
+            "ge_threshold": 0.00011461476907558162,
+            "rus_threshold": 6.527708885099096e-05,
+            "readout_fidelity": 96.975,
+            "confusion_matrix": [
+                [
+                    0.977,
+                    0.023
+                ],
+                [
+                    0.0375,
+                    0.9625
+                ]
+            ],
+            "success": true
+        },
+        "q8": {
+            "iw_angle": 5.3865398594784075,
+            "ge_threshold": -1.748048558916604e-05,
+            "rus_threshold": -6.945805589494479e-05,
+            "readout_fidelity": 92.35,
+            "confusion_matrix": [
+                [
+                    0.975,
+                    0.025
+                ],
+                [
+                    0.128,
+                    0.872
+                ]
+            ],
+            "success": true
+        },
+        "q9": {
+            "iw_angle": 3.247889711165561,
+            "ge_threshold": -0.00015025933652986477,
+            "rus_threshold": -0.00021717955210975572,
+            "readout_fidelity": 84.775,
+            "confusion_matrix": [
+                [
+                    0.9815,
+                    0.0185
+                ],
+                [
+                    0.286,
+                    0.714
+                ]
+            ],
+            "success": true
+        },
+        "q10": {
+            "iw_angle": 5.790156908259505,
+            "ge_threshold": 7.892312352062269e-05,
+            "rus_threshold": 3.095713033106764e-05,
+            "readout_fidelity": 97.175,
+            "confusion_matrix": [
+                [
+                    0.9785,
+                    0.0215
+                ],
+                [
+                    0.035,
+                    0.965
+                ]
+            ],
+            "success": true
+        },
+        "q11": {
+            "iw_angle": 4.669821515029423,
+            "ge_threshold": -5.2876455629696746e-05,
+            "rus_threshold": -7.256994851623996e-05,
+            "readout_fidelity": 86.85000000000001,
+            "confusion_matrix": [
+                [
+                    0.8535,
+                    0.1465
+                ],
+                [
+                    0.1165,
+                    0.8835
+                ]
+            ],
+            "success": true
+        },
+        "q12": {
+            "iw_angle": 4.392248831564094,
+            "ge_threshold": 2.8701987098595443e-05,
+            "rus_threshold": -5.1529562650246775e-05,
+            "readout_fidelity": 98.0,
+            "confusion_matrix": [
+                [
+                    0.988,
+                    0.012
+                ],
+                [
+                    0.028,
+                    0.972
+                ]
+            ],
+            "success": true
+        },
+        "q15": {
+            "iw_angle": 0.4327849010474796,
+            "ge_threshold": 9.72399148315269e-05,
+            "rus_threshold": 4.157828517252559e-05,
+            "readout_fidelity": 94.77499999999999,
+            "confusion_matrix": [
+                [
+                    0.9555,
+                    0.0445
+                ],
+                [
+                    0.06,
+                    0.94
+                ]
+            ],
+            "success": true
+        },
+        "q16": {
+            "iw_angle": 6.261797735273824,
+            "ge_threshold": 0.0001501299995007467,
+            "rus_threshold": 0.00010191631546551595,
+            "readout_fidelity": 96.55,
+            "confusion_matrix": [
+                [
+                    0.977,
+                    0.023
+                ],
+                [
+                    0.046,
+                    0.954
+                ]
+            ],
+            "success": true
+        },
+        "q17": {
+            "iw_angle": 5.784998067841126,
+            "ge_threshold": 9.048193627377832e-05,
+            "rus_threshold": 6.554320069332183e-05,
+            "readout_fidelity": 88.325,
+            "confusion_matrix": [
+                [
+                    0.8785,
+                    0.1215
+                ],
+                [
+                    0.112,
+                    0.888
+                ]
+            ],
+            "success": true
+        },
+        "q18": {
+            "iw_angle": 4.73738522855926,
+            "ge_threshold": -9.019280067711704e-05,
+            "rus_threshold": -0.0001440165185500989,
+            "readout_fidelity": 93.72500000000001,
+            "confusion_matrix": [
+                [
+                    0.913,
+                    0.087
+                ],
+                [
+                    0.0385,
+                    0.9615
+                ]
+            ],
+            "success": true
+        },
+        "q19": {
+            "iw_angle": 3.2710179754924074,
+            "ge_threshold": -0.00018066457058971938,
+            "rus_threshold": -0.00024593178479625664,
+            "readout_fidelity": 88.3,
+            "confusion_matrix": [
+                [
+                    0.914,
+                    0.086
+                ],
+                [
+                    0.148,
+                    0.852
+                ]
+            ],
+            "success": true
+        },
+        "q20": {
+            "iw_angle": 3.7190779332594763,
+            "ge_threshold": -0.00010283916032625892,
+            "rus_threshold": -0.00016382400941655626,
+            "readout_fidelity": 94.5,
+            "confusion_matrix": [
+                [
+                    0.98,
+                    0.02
+                ],
+                [
+                    0.09,
+                    0.91
+                ]
+            ],
+            "success": true
+        },
+        "q21": {
+            "iw_angle": 0.5069520629420419,
+            "ge_threshold": 0.0002290370011253539,
+            "rus_threshold": 0.00014072639979381018,
+            "readout_fidelity": 95.925,
+            "confusion_matrix": [
+                [
+                    0.995,
+                    0.005
+                ],
+                [
+                    0.0765,
+                    0.9235
+                ]
+            ],
+            "success": true
+        },
+        "q23": {
+            "iw_angle": 0.03649457091671726,
+            "ge_threshold": 0.00015933344520909046,
+            "rus_threshold": 0.0001144457056282064,
+            "readout_fidelity": 95.25,
+            "confusion_matrix": [
+                [
+                    0.9565,
+                    0.0435
+                ],
+                [
+                    0.0515,
+                    0.9485
+                ]
+            ],
+            "success": true
+        },
+        "q24": {
+            "iw_angle": 6.279174337087263,
+            "ge_threshold": 0.00011904847475346079,
+            "rus_threshold": 6.852269029251318e-05,
+            "readout_fidelity": 96.775,
+            "confusion_matrix": [
+                [
+                    0.976,
+                    0.024
+                ],
+                [
+                    0.0405,
+                    0.9595
+                ]
+            ],
+            "success": true
+        },
+        "q25": {
+            "iw_angle": 1.5950553424911071,
+            "ge_threshold": 0.00012292823823007292,
+            "rus_threshold": 0.00010135146388443293,
+            "readout_fidelity": 85.675,
+            "confusion_matrix": [
+                [
+                    0.8575,
+                    0.1425
+                ],
+                [
+                    0.144,
+                    0.856
+                ]
+            ],
+            "success": true
+        },
+        "q26": {
+            "iw_angle": 3.742316627335698,
+            "ge_threshold": -5.8197080043586084e-05,
+            "rus_threshold": -9.368327552110282e-05,
+            "readout_fidelity": 88.175,
+            "confusion_matrix": [
+                [
+                    0.8785,
+                    0.1215
+                ],
+                [
+                    0.115,
+                    0.885
+                ]
+            ],
+            "success": true
+        }
+    },
+    "figures": {
+        "iq_blobs": "./figures.iq_blobs.png",
+        "confusion_matrix": "./figures.confusion_matrix.png",
+        "histograms": "./figures.histograms.png"
+    }
+}

@@ -1,0 +1,175 @@
+{
+    "created_at": "2025-06-23T12:01:05+09:00",
+    "metadata": {
+        "description": "\n        IQ BLOBS\nThis sequence involves measuring the state of the resonator 'N' times, first after thermalization (with the qubit in\nthe |g> state) and then after applying a x180 (pi) pulse to the qubit (bringing the qubit to the |e> state).\nThe resulting IQ blobs are displayed, and the data is processed to determine:\n    - The rotation angle required for the integration weights, ensuring that the\n      separation between |g> and |e> states aligns with the 'I' quadrature.\n    - The threshold along the 'I' quadrature for effective qubit state discrimination (at the center between the two blobs).\n    - The repeat-until-success threshold along the 'I' quadrature for effective active reset (at the center of the |g> blob).\n    - The readout confusion matrix, which is also influenced by the x180 pulse fidelity.\n\nPrerequisites:\n    - Having calibrated the readout parameters (nodes 02a, 02b and/or 02c).\n    - Having calibrated the qubit x180 pulse parameters (nodes 03a_qubit_spectroscopy.py and 04b_power_rabi.py).\n\nState update:\n    - The integration weight angle: qubit.resonator.operations[\"readout\"].integration_weights_angle\n    - the ge discrimination threshold: qubit.resonator.operations[\"readout\"].threshold\n    - the Repeat Until Success threshold: qubit.resonator.operations[\"readout\"].rus_exit_threshold\n    - The confusion matrix: qubit.resonator.operations[\"readout\"].confusion_matrix\n",
+        "run_start": "2025-06-23T11:56:58.298+09:00",
+        "run_end": "2025-06-23T12:01:05.090+09:00",
+        "name": "IQ_blobs",
+        "data_path": "2025-06-23/#1101_IQ_blobs_120105"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "multiplexed": true,
+                "use_state_discrimination": false,
+                "reset_type": "thermal",
+                "qubits": [
+                    "q1",
+                    "q2",
+                    "q5",
+                    "q6",
+                    "q7",
+                    "q8",
+                    "q9",
+                    "q10",
+                    "q11",
+                    "q12",
+                    "q15",
+                    "q16",
+                    "q17",
+                    "q18",
+                    "q19",
+                    "q20",
+                    "q21",
+                    "q23",
+                    "q24",
+                    "q25",
+                    "q26"
+                ],
+                "num_shots": 2000,
+                "operation": "readout",
+                "simulate": false,
+                "simulation_duration_ns": 30000,
+                "use_waveform_report": true,
+                "timeout": 1200,
+                "load_data_id": null
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "multiplexed": {
+                        "default": true,
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    },
+                    "use_state_discrimination": {
+                        "default": false,
+                        "description": "Whether to use on-the-fly state discrimination and return the qubit 'state', or simply return the demodulated\nquadratures 'I' and 'Q'. Default is False.",
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "description": "The qubit reset method to use. Must be implemented as a method of Quam.qubit. Can be \"thermal\", \"active\", or\n\"active_gef\". Default is \"thermal\".",
+                        "enum": [
+                            "thermal",
+                            "active",
+                            "active_gef"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "A list of qubit names which should participate in the execution of the node. Default is None.",
+                        "title": "Qubits"
+                    },
+                    "num_shots": {
+                        "default": 2000,
+                        "description": "Number of runs to perform. Default is 2000.",
+                        "title": "Num Shots",
+                        "type": "integer"
+                    },
+                    "operation": {
+                        "default": "readout",
+                        "description": "Type of operation to perform. Default is \"readout\".",
+                        "enum": [
+                            "readout",
+                            "readout_QND"
+                        ],
+                        "title": "Operation",
+                        "type": "string"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "description": "Simulate the waveforms on the OPX instead of executing the program. Default is False.",
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 30000,
+                        "description": "Duration over which the simulation will collect samples (in nanoseconds). Default is 50_000 ns.",
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "use_waveform_report": {
+                        "default": true,
+                        "description": "Whether to use the interactive waveform report in simulation. Default is True.",
+                        "title": "Use Waveform Report",
+                        "type": "boolean"
+                    },
+                    "timeout": {
+                        "default": 1200,
+                        "description": "Waiting time for the OPX resources to become available before giving up (in seconds). Default is 120 s.",
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "Optional QUAlibrate node run index for loading historical data. Default is None.",
+                        "title": "Load Data Id"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "q1": "successful",
+            "q2": "successful",
+            "q5": "successful",
+            "q6": "successful",
+            "q7": "successful",
+            "q8": "successful",
+            "q9": "successful",
+            "q10": "successful",
+            "q11": "successful",
+            "q12": "successful",
+            "q15": "successful",
+            "q16": "successful",
+            "q17": "successful",
+            "q18": "successful",
+            "q19": "successful",
+            "q20": "successful",
+            "q21": "successful",
+            "q23": "successful",
+            "q24": "successful",
+            "q25": "successful",
+            "q26": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 1101,
+    "parents": [
+        1100
+    ]
+}
