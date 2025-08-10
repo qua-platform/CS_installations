@@ -77,7 +77,8 @@ def fit_raw_data(ds: xr.Dataset, node: QualibrationNode) -> Tuple[xr.Dataset, di
     """
     ds_fit = ds
     # search for frequency for which the amplitude the farthest from the mean to indicate the approximate location of the peak
-    shifts = np.abs((ds_fit.IQ_abs - ds_fit.IQ_abs.mean(dim="detuning"))).idxmax(dim="detuning")
+    # shifts = np.abs((ds_fit.IQ_abs - ds_fit.IQ_abs.mean(dim="detuning"))).idxmax(dim="detuning")
+    shifts = np.abs((ds_fit.phase - ds_fit.phase.mean(dim="detuning"))).idxmax(dim="detuning") # does it after the phase since its centered around zero anyways
     # Find the rotation angle to align the separation along the 'I' axis
     angle = np.arctan2(
         ds_fit.sel(detuning=shifts).Q - ds_fit.Q.mean(dim="detuning"),
@@ -87,7 +88,8 @@ def fit_raw_data(ds: xr.Dataset, node: QualibrationNode) -> Tuple[xr.Dataset, di
     # rotate the data to the new I axis
     ds_fit = ds_fit.assign({"I_rot": ds_fit.I * np.cos(ds_fit.iw_angle) + ds_fit.Q * np.sin(ds_fit.iw_angle)})
     # Find the peak with minimal prominence as defined, if no such peak found, returns nan
-    fit_vals = peaks_dips(ds_fit.I_rot, dim="detuning", prominence_factor=5)
+    # fit_vals = peaks_dips(ds_fit.I_rot, dim="detuning", prominence_factor=5)
+    fit_vals = peaks_dips(ds_fit.phase, dim="detuning", prominence_factor=5) # use the phase shift to detect signal
     ds_fit = xr.merge([ds_fit, fit_vals])
     # Extract the relevant fitted parameters
     fit_data, fit_results = _extract_relevant_fit_parameters(ds_fit, node)

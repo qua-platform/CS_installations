@@ -75,12 +75,14 @@ def plot_individual_data_with_fit(ax: Axes, ds: xr.Dataset, qubit: dict[str, str
         fitted_data = None
 
     # Create a first x-axis for full_freq_GHz
-    (fit.assign_coords(full_freq_GHz=fit.full_freq / u.GHz).I_rot / u.mV).plot(ax=ax, x="full_freq_GHz")
+    # (fit.assign_coords(full_freq_GHz=fit.full_freq / u.GHz).I_rot / u.mV).plot(ax=ax, x="full_freq_GHz")
+    (fit.assign_coords(full_freq_GHz=fit.full_freq / u.GHz).phase / u.mV).plot(ax=ax, x="full_freq_GHz") # plot in phase since you may not gurantee all after I_rot, and units are rad
     ax.set_xlabel("RF frequency [GHz]")
     ax.set_ylabel("Rotated I [mV]")
     # Create a second x-axis for detuning_MHz
     ax2 = ax.twiny()
-    (fit.assign_coords(detuning_MHz=fit.detuning / u.MHz).I_rot / u.mV).plot(ax=ax2, x="detuning_MHz", label="")
+    # (fit.assign_coords(detuning_MHz=fit.detuning / u.MHz).I_rot / u.mV).plot(ax=ax2, x="detuning_MHz", label="")
+    (fit.assign_coords(detuning_MHz=fit.detuning / u.MHz).phase / u.mV).plot(ax=ax2, x="detuning_MHz", label="") # plot in phase since you may not gurantee all after I_rot, and units are rad
     ax2.set_xlabel("Detuning [MHz]")
     # Plot the fitted data
     if fitted_data is not None:
