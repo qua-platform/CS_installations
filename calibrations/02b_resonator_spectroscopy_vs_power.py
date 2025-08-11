@@ -1,7 +1,7 @@
 # %% {Imports}
 import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.use('TkAgg')
+# import matplotlib
+# matplotlib.use('TkAgg')
 import numpy as np
 import xarray as xr
 from dataclasses import asdict
@@ -25,7 +25,8 @@ from calibration_utils.resonator_spectroscopy_vs_amplitude import (
 from qualibration_libs.parameters import get_qubits
 from qualibration_libs.runtime import simulate_and_plot
 from qualibration_libs.data import XarrayDataFetcher
-from qualibration_libs.hardware.power_tools import calculate_voltage_scaling_factor
+# from qualibration_libs.hardware.power_tools import calculate_voltage_scaling_factor
+from quam_builder.tools.power_tools import calculate_voltage_scaling_factor
 from qualibration_libs.core import tracked_updates
 
 
@@ -142,6 +143,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
     n_avg = node.parameters.num_shots
     # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
     amp_min = calculate_voltage_scaling_factor(node.parameters.max_power_dbm, node.parameters.min_power_dbm)
+    # amp_min = 0.01
     amps = np.geomspace(amp_min, 1, node.parameters.num_power_points)
     power_dbm = np.linspace(
         node.parameters.min_power_dbm,
