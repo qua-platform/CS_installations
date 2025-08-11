@@ -113,7 +113,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                 node.machine.initialize_qpu(target=qubit)
             align()
             with for_(n, 0, n < n_avg, n + 1):
-                # save(n, n_st)
+                save(n, n_st)
                 with for_(*from_array(df, dfs)):
                     for i, qubit in multiplexed_qubits.items():
                         rr = qubit.resonator
@@ -129,7 +129,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                     align()
 
         with stream_processing():
-            # n_st.save("n")
+            n_st.save("n")
             for i in range(num_qubits):
                 I_st[i].buffer(len(dfs)).average().save(f"I{i + 1}")
                 Q_st[i].buffer(len(dfs)).average().save(f"Q{i + 1}")
@@ -164,12 +164,12 @@ def execute_qua_program(node: QualibrationNode[Parameters, Quam]):
         # Display the progress bar
         data_fetcher = XarrayDataFetcher(job, node.namespace["sweep_axes"])
         for dataset in data_fetcher:
-            # progress_counter(
-            #     data_fetcher["n"],
-            #     node.parameters.num_shots,
-            #     start_time=data_fetcher.t_start,
-            # )
-            pass
+            progress_counter(
+                data_fetcher["n"],
+                node.parameters.num_shots,
+                start_time=data_fetcher.t_start,
+            )
+            # pass
         # Display the execution report to expose possible runtime errors
         node.log(job.execution_report())
     # Register the raw dataset
@@ -200,7 +200,7 @@ def analyse_data(node: QualibrationNode[Parameters, Quam]):
         return np.unwrap(np.angle(x))
 
     def g(x):
-        return np.gradient(x)
+        return np.gradient(x, axis=-1)
 
     node.results["ds_raw"]["phase_derivative"] = xr.apply_ufunc(g, xr.apply_ufunc(f, s, input_core_dims=[["detuning"]], output_core_dims=[["detuning"]]), input_core_dims=[["detuning"]], output_core_dims=[["detuning"]])
 
