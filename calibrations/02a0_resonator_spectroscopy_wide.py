@@ -228,16 +228,16 @@ def plot_data(node: QualibrationNode[Parameters, Quam]):
 
 
 # %% {Update_state}
-@node.run_action(skip_if=node.parameters.simulate)
-def update_state(node: QualibrationNode[Parameters, Quam]):
-    """Update the relevant parameters if the qubit data analysis was successful."""
-    with node.record_state_updates():
-        for q in node.namespace["qubits"]:
-            if node.outcomes[q.name] == "failed":
-                continue
+# @node.run_action(skip_if=node.parameters.simulate)
+# def update_state(node: QualibrationNode[Parameters, Quam]):
+#     """Update the relevant parameters if the qubit data analysis was successful."""
+#     with node.record_state_updates():
+#         for q in node.namespace["qubits"]:
+#             if node.outcomes[q.name] == "failed":
+#                 continue
 
-            q.resonator.f_01 = float(node.results["fit_results"][q.name]["frequency"])
-            q.resonator.RF_frequency = float(node.results["fit_results"][q.name]["frequency"])
+#             q.resonator.f_01 = float(node.results["fit_results"][q.name]["frequency"])
+#             q.resonator.RF_frequency = float(node.results["fit_results"][q.name]["frequency"])
 
 
 # %% {Save_results}
