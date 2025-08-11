@@ -23,7 +23,7 @@ class NodeSpecificParameters(RunnableParameters):
     min_amp_factor: float = -1
     max_amp_factor: float = 1.0
     amp_factor_step: float = 0.1
-    max_number_pulses_per_sweep: int = 1
+    max_number_pulses_per_sweep: int = 2
     alpha_setpoint: Optional[float] = 1.0
 
 
