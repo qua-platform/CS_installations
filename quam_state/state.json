@@ -91,21 +91,21 @@
                 "f_01": 6550000000.0,
                 "confusion_matrix": [
                     [
-                        1.0,
-                        0.0
+                        0.5135,
+                        0.4865
                     ],
                     [
-                        0.3333333333333333,
-                        0.6666666666666666
+                        0.4935,
+                        0.5065
                     ]
                 ],
                 "operations": {
                     "readout": {
                         "length": 4000,
-                        "amplitude": 0.05011872336272722,
-                        "threshold": 0.0,
-                        "rus_exit_threshold": -3.2934165468875133e-05,
-                        "integration_weights_angle": 5.730525676299352,
+                        "amplitude": 0.02,
+                        "threshold": -1.7126337190217786e-06,
+                        "rus_exit_threshold": 4.4181184099590745e-06,
+                        "integration_weights_angle": -4.739772556307675,
                         "__class__": "quam.components.pulses.SquareReadoutPulse"
                     },
                     "const": {
@@ -124,7 +124,7 @@
             },
             "f_01": 4170000000.0,
             "T1": 0.0001,
-            "T2ramsey": 7.4336784616611e-06,
+            "T2ramsey": 8.707184526111155e-07,
             "T2echo": 1.2557058136876492e-06,
             "chi": -4000000.0,
             "grid_location": "0,1",
@@ -232,7 +232,7 @@
                 "operations": {
                     "readout": {
                         "length": 4000,
-                        "amplitude": 0.05011872336272722,
+                        "amplitude": 0.02,
                         "threshold": 0.0,
                         "rus_exit_threshold": -3.492215826453438e-05,
                         "integration_weights_angle": 2.6470753287819617,
@@ -361,7 +361,7 @@
                 "operations": {
                     "readout": {
                         "length": 4000,
-                        "amplitude": 0.05011872336272722,
+                        "amplitude": 0.02,
                         "threshold": 0.0,
                         "rus_exit_threshold": -5.2358523889602465e-05,
                         "integration_weights_angle": 4.038064571007137,
@@ -490,7 +490,7 @@
                 "operations": {
                     "readout": {
                         "length": 4000,
-                        "amplitude": 0.05011872336272722,
+                        "amplitude": 0.02,
                         "threshold": 0.0,
                         "rus_exit_threshold": -1.5948754162484107e-05,
                         "integration_weights_angle": 1.3345389545030482,
@@ -620,7 +620,7 @@
                 "operations": {
                     "readout": {
                         "length": 4000,
-                        "amplitude": 0.05011872336272722,
+                        "amplitude": 0.02,
                         "threshold": 0.0,
                         "rus_exit_threshold": -5.702043937528666e-05,
                         "integration_weights_angle": 4.0590119096675785,
@@ -750,7 +750,7 @@
                 "operations": {
                     "readout": {
                         "length": 4000,
-                        "amplitude": 0.05011872336272722,
+                        "amplitude": 0.02,
                         "threshold": 0.0,
                         "rus_exit_threshold": -2.5741318580059045e-05,
                         "integration_weights_angle": 2.391376649540459,
@@ -880,7 +880,7 @@
                 "operations": {
                     "readout": {
                         "length": 4000,
-                        "amplitude": 0.05011872336272722,
+                        "amplitude": 0.02,
                         "threshold": 0.0,
                         "rus_exit_threshold": -7.861862030511209e-06,
                         "integration_weights_angle": 1.7168477512420757,
@@ -1009,7 +1009,7 @@
                 "operations": {
                     "readout": {
                         "length": 4000,
-                        "amplitude": 0.05011872336272722,
+                        "amplitude": 0.02,
                         "threshold": 0.0,
                         "rus_exit_threshold": -1.159152233939176e-05,
                         "integration_weights_angle": 1.434610220248369,
