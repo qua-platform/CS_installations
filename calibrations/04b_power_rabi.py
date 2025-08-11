@@ -22,6 +22,7 @@ from calibration_utils.power_rabi import (
     fit_raw_data,
     log_fitted_results,
     plot_raw_data_with_fit,
+    plot_Q
 )
 from qualibration_libs.parameters import get_qubits
 from qualibration_libs.runtime import simulate_and_plot
@@ -250,10 +251,12 @@ def analyse_data(node: QualibrationNode[Parameters, Quam]):
 def plot_data(node: QualibrationNode[Parameters, Quam]):
     """Plot the raw and fitted data in specific figures whose shape is given by qubit.grid_location."""
     fig_raw_fit = plot_raw_data_with_fit(node.results["ds_raw"], node.namespace["qubits"], node.results["ds_fit"])
+    fig_Q = plot_Q(node.results["ds_raw"], node.namespace["qubits"]) # plots the Q quadrature but the analysis is done in I
     plt.show()
     # Store the generated figures
     node.results["figures"] = {
         "amplitude": fig_raw_fit,
+        "Q": fig_Q
     }
 
 
