@@ -79,18 +79,18 @@ def custom_param(node: QualibrationNode[Parameters, Quam]):
     
     node.parameters.qubits = [
         # "q1", "q4"
-        "q1",  "q2",  "q3", "q4",
-        "q5",  "q6",  "q7", "q8", 
+        "q1",  "q2",  "q3", "q4"
+        # "q5",  "q6",  "q7", "q8", 
         
-        "q10", "q11", "q12", "q13",
-        "q15", "q16", "q17", "q18",
+        # "q10", "q11", "q12", "q13",
+        # "q15", "q16", "q17", "q18",
 
-        "q19", "q20", "q21", "q22",
-        "q23", "q24", "q25", "q26",
+        # "q19", "q20", "q21", "q22",
+        # "q23", "q24", "q25", "q26",
 
         # "q9", "q14", "q27", 
     ]
-    node.parameters.num_shots = 1000
+    node.parameters.num_shots = 100
 
     node.parameters.operation_amplitude_factor = 0.02
     node.parameters.frequency_span_in_mhz = 10
