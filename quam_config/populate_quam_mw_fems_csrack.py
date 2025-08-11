@@ -16,7 +16,7 @@ import json
 from qualang_tools.units import unit
 from quam_config import Quam
 from quam_builder.builder.superconducting.pulses import add_DragCosine_pulses, add_default_transmon_pair_pulses
-from quam_builder.architecture.superconducting.custom_gates import cross_resonance
+# from quam_builder.architecture.superconducting.custom_gates import cross_resonance
 from quam.components import pulses
 import numpy as np
 from pprint import pprint
@@ -105,39 +105,39 @@ def get_full_scale_power_dBm_and_amplitude(desired_power: float, max_amplitude: 
 
 # Resonator frequencies
 rr_freq = np.array([
-    7.05, 7.10, 7.15, 7.20, 7.30, 7.35, 7.40,
-    8.05, 8.10, 8.15, 8.20, 8.30, 8.35, 8.40,
+    6.55, 6.6, 6.66, 6.69, 6.72, 6.79, 6.835, 6.92
 ]) * u.GHz
 
 rr_LO = np.array([
-    7.25, 7.25, 7.25, 7.25, 7.25, 7.25, 7.25,
-    8.25, 8.25, 8.25, 8.25, 8.25, 8.25, 8.25,
+    6.5, 6.5, 6.5, 6.5, 6.5, 6.5, 6.5, 6.5
 ]) * u.GHz
 
 rr_if = rr_freq - rr_LO  # The intermediate frequency is inferred from the LO and readout frequencies
 
-assert np.all(np.abs(rr_if) < 400 * u.MHz), (
-    "The resonator intermediate frequency must be within [-400; 400] MHz. \n"
+assert np.all(np.abs(rr_if) < 500 * u.MHz), (
+    "The resonator intermediate frequency must be within [-500; 500] MHz. \n"
     f"Readout frequencies: {rr_freq} \n"
     f"Readout LO frequency: {rr_LO} \n"
     f"Readout IF frequencies: {rr_if} \n"
 )
 
-# Desired output power in dBm - Must be within [-80, 16] dBm
-readout_power = -11
-# Get the full_scale_power_dBm and waveform amplitude corresponding to the desired powers
-rr_full_scale, rr_amplitude = get_full_scale_power_dBm_and_amplitude(
-    readout_power, max_amplitude=0.25 / len(machine.qubits)
-)
-rr_full_scale = 10 if rr_full_scale > 10 else rr_full_scale
+# # Desired output power in dBm - Must be within [-80, 16] dBm
+# readout_power = -34
+# # Get the full_scale_power_dBm and waveform amplitude corresponding to the desired powers
+# rr_full_scale, rr_amplitude = get_full_scale_power_dBm_and_amplitude(
+#     readout_power, max_amplitude=0.25 / len(machine.qubits)
+# )
+# rr_full_scale = 10 if rr_full_scale > 10 else rr_full_scale
 
 # Update qubit rr freq and power
 for k, qubit in enumerate(machine.qubits.values()):
     qubit.resonator.f_01 = rr_freq.tolist()[k]  # Resonator frequency optimized for discriminating 0 (|g>) and 1 (|e>)
     qubit.resonator.RF_frequency = qubit.resonator.f_01  # Readout frequency
-    qubit.resonator.opx_output.full_scale_power_dbm = rr_full_scale  # Max readout power in dBm
+    qubit.resonator.depletion_time = 4.0 * u.us
+    qubit.resonator.opx_output.full_scale_power_dbm = 1  # Max readout power in dBm
     qubit.resonator.opx_output.upconverter_frequency = rr_LO[k]  # Readout up-converter frequency
     qubit.resonator.opx_input.band = get_band(rr_LO[k])  # Readout band for the up-conversion
+    qubit.resonator.opx_input.gain_db = 20  # Readout gain for the up-conversion
     qubit.resonator.opx_output.band = get_band(rr_LO[k])  # Readout band for the down-conversion
 
 
@@ -152,38 +152,36 @@ for k, qubit in enumerate(machine.qubits.values()):
 
 # Qubit drive frequencies
 xy_freq = np.array([
-    5.05, 5.10, 5.15, 5.20, 5.30, 5.35, 5.40,
-    5.05, 5.10, 5.15, 5.20, 5.30, 5.35, 5.40,
+    4.17, 4.3, 4.23, 4.14, 4.15, 5.29, 5.29, 5.4
 ]) * u.GHz
 
 xy_LO = np.array([
-    5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25,
-    5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25,
+    4.00, 4.00, 4.00, 4.00, 4.00, 5.00, 5.00, 5.00
 ]) * u.GHz
 
 xy_if = xy_freq - xy_LO  # The intermediate frequency is inferred from the LO and qubit frequencies
-assert np.all(np.abs(xy_if) < 400 * u.MHz), (
-    "The xy intermediate frequency must be within [-400; 400] MHz. \n"
+assert np.all(np.abs(xy_if) < 500 * u.MHz), (
+    "The xy intermediate frequency must be within [-500; 500] MHz. \n"
     f"Qubit drive frequencies: {xy_freq} \n"
     f"Qubit drive LO frequencies: {xy_LO} \n"
     f"Qubit drive IF frequencies: {xy_if} \n"
 )
 # Transmon anharmonicity
 anharmonicity = np.array([
-    250, 250, 250, 250, 250, 250, 250,
-    250, 250, 250, 250, 250, 250, 250,
+    250, 250, 250, 250, 250, 250, 250, 250
 ]) * u.MHz
 
-# Desired output power in dBm
-drive_power = -11
-# Get the full_scale_power_dBm and waveform amplitude corresponding to the desired powers
-xy_full_scale, xy_amplitude = get_full_scale_power_dBm_and_amplitude(drive_power)
+# # Desired output power in dBm
+# drive_power = 1
+# # Get the full_scale_power_dBm and waveform amplitude corresponding to the desired powers
+# xy_full_scale, xy_amplitude = get_full_scale_power_dBm_and_amplitude(drive_power)
 
 # Update qubit xy freq and power
 for k, qubit in enumerate(machine.qubits.values()):
     qubit.f_01 = xy_freq.tolist()[k]  # Qubit 0 to 1 (|g> -> |e>) transition frequency
     qubit.xy.RF_frequency = qubit.f_01  # Qubit drive frequency
-    qubit.xy.opx_output.full_scale_power_dbm = xy_full_scale  # Max drive power in dBm
+    qubit.T1 = 100 * u.us
+    qubit.xy.opx_output.full_scale_power_dbm = 1  # Max drive power in dBm
     qubit.xy.opx_output.upconverter_frequency = xy_LO.tolist()[k]  # Qubit drive up-converter frequency
     qubit.xy.opx_output.band = get_band(xy_LO.tolist()[k])  # Qubit drive band for the up-conversion
 
@@ -194,10 +192,10 @@ for k, qubit in enumerate(machine.qubits.values()):
     qubit.resonator.core = f"{qubit.name}_slot{rr.opx_output.fem_id}"
     qubit.xy.core = f"{qubit.name}_slot{xy.opx_output.fem_id}"
 
-for k, qp in enumerate(machine.qubit_pairs.values()):
-    cr = qp.qubit_control
-    qc = qp.qubit_control
-    qp.cross_resonance.core = f"{qc.name}_slot{qc.xy.opx_output.fem_id}"
+# for k, qp in enumerate(machine.qubit_pairs.values()):
+#     cr = qp.qubit_control
+#     qc = qp.qubit_control
+#     qp.cross_resonance.core = f"{qc.name}_slot{qc.xy.opx_output.fem_id}"
     
 
 ########################################################################################################################
@@ -215,8 +213,7 @@ for k, qp in enumerate(machine.qubit_pairs.values()):
 # Represented in row,major order from top row (3) to bottom row (0)
 
 grid_locations = [
-    "0,6", "0,5", "0,4", "0,3", "0,2", "0,1",
-    "1,6", "1,5", "1,4", "1,3", "1,2", "1,1",
+    "0,1", "0,2", "0,3", "0,4", "1,4", "1,3", "1,2", "1,1"
 ]
 for gd, qubit in zip(grid_locations, machine.qubits.values()):
     qubit.grid_location = gd  # Qubit grid location for plotting as "column,row"
@@ -240,16 +237,16 @@ for gd, qubit in zip(grid_locations, machine.qubits.values()):
 ## Update pulses
 for k, q in enumerate(machine.qubits):
     # readout
-    machine.qubits[q].resonator.operations["readout"].length = 1.0 * u.us
-    machine.qubits[q].resonator.operations["readout"].amplitude = rr_amplitude
+    machine.qubits[q].resonator.operations["readout"].length = 4.0 * u.us
+    machine.qubits[q].resonator.operations["readout"].amplitude = 0.02
     # Qubit saturation
     machine.qubits[q].xy.operations["saturation"].length = 30 * u.us
-    machine.qubits[q].xy.operations["saturation"].amplitude = 0.5 * xy_amplitude
+    machine.qubits[q].xy.operations["saturation"].amplitude = 0.1
     # Single qubit gates - DragCosine
     add_DragCosine_pulses(
         machine.qubits[q],
-        amplitude=xy_amplitude,
-        length=40,
+        amplitude=0.3,
+        length=320,
         anharmonicity=anharmonicity.tolist()[k],
         alpha=0.0,
         detuning=0,
@@ -287,82 +284,82 @@ for k, q in enumerate(machine.qubits):
 #     correction_phase: float = 0.0
 
 
-for k, qp in enumerate(machine.qubit_pairs):
-    add_default_transmon_pair_pulses(qp)
-    qb_pair = machine.qubit_pairs[qp]
-    qbt = qb_pair.qubit_target
-    qb_pair.cross_resonance.target_qubit_LO_frequency = f"#/qubits/{qbt.name}/xy/LO_frequency"
-    qb_pair.cross_resonance.target_qubit_IF_frequency = f"#/qubits/{qbt.name}/xy/intermediate_frequency"
-    qb_pair.cross_resonance.intermediate_frequency = f"#./inferred_intermediate_frequency"
+# for k, qp in enumerate(machine.qubit_pairs):
+#     add_default_transmon_pair_pulses(qp)
+#     qb_pair = machine.qubit_pairs[qp]
+#     qbt = qb_pair.qubit_target
+#     qb_pair.cross_resonance.target_qubit_LO_frequency = f"#/qubits/{qbt.name}/xy/LO_frequency"
+#     qb_pair.cross_resonance.target_qubit_IF_frequency = f"#/qubits/{qbt.name}/xy/intermediate_frequency"
+#     qb_pair.cross_resonance.intermediate_frequency = f"#./inferred_intermediate_frequency"
 
-    qb_pair.macros["cr"] = cross_resonance.CRGate(qc_correction_phase=0.0)
+#     qb_pair.macros["cr"] = cross_resonance.CRGate(qc_correction_phase=0.0)
 
-    # square
-    qb_pair.cross_resonance.operations["square"] = pulses.SquarePulse(
-        length=16,
-        amplitude=1.0,
-        axis_angle=0.0,
-    )
-    qb_pair.qubit_target.xy.operations[f"cr_square_{qb_pair.name}"] = pulses.SquarePulse(
-        length=16,
-        amplitude=1.0,
-        axis_angle=0.0,
-    )
-    # cosine
-    qb_pair.cross_resonance.operations["cosine"] = pulses.DragCosinePulse(
-        length=16,
-        amplitude=1.0,
-        axis_angle=0.0,
-        anharmonicity=260 * u.MHz,
-        alpha=0.0,
-        detuning=0,
-        # correction_phase=0.0,
-    )
-    qb_pair.qubit_target.xy.operations[f"cr_cosine_{qb_pair.name}"]= pulses.DragCosinePulse(
-        length=16,
-        amplitude=1.0,
-        axis_angle=0.0,
-        anharmonicity=260 * u.MHz,
-        alpha=0.0,
-        detuning=0,
-    )
-    # gauss
-    qb_pair.cross_resonance.operations["gauss"] = pulses.DragGaussianPulse(
-        length=16,
-        sigma=16/5,
-        amplitude=1.0,
-        axis_angle=0.0,
-        anharmonicity=260 * u.MHz,
-        alpha=0.0,
-        detuning=0,
-        # correction_phase=0.0,
-    )
-    qb_pair.qubit_target.xy.operations[f"cr_gauss_{qb_pair.name}"]= pulses.DragGaussianPulse(
-        length=16,
-        sigma=16/5,
-        amplitude=1.0,
-        axis_angle=0.0,
-        anharmonicity=260 * u.MHz,
-        alpha=0.0,
-        detuning=0,
-    )
+#     # square
+#     qb_pair.cross_resonance.operations["square"] = pulses.SquarePulse(
+#         length=16,
+#         amplitude=1.0,
+#         axis_angle=0.0,
+#     )
+#     qb_pair.qubit_target.xy.operations[f"cr_square_{qb_pair.name}"] = pulses.SquarePulse(
+#         length=16,
+#         amplitude=1.0,
+#         axis_angle=0.0,
+#     )
+#     # cosine
+#     qb_pair.cross_resonance.operations["cosine"] = pulses.DragCosinePulse(
+#         length=16,
+#         amplitude=1.0,
+#         axis_angle=0.0,
+#         anharmonicity=260 * u.MHz,
+#         alpha=0.0,
+#         detuning=0,
+#         # correction_phase=0.0,
+#     )
+#     qb_pair.qubit_target.xy.operations[f"cr_cosine_{qb_pair.name}"]= pulses.DragCosinePulse(
+#         length=16,
+#         amplitude=1.0,
+#         axis_angle=0.0,
+#         anharmonicity=260 * u.MHz,
+#         alpha=0.0,
+#         detuning=0,
+#     )
+#     # gauss
+#     qb_pair.cross_resonance.operations["gauss"] = pulses.DragGaussianPulse(
+#         length=16,
+#         sigma=16/5,
+#         amplitude=1.0,
+#         axis_angle=0.0,
+#         anharmonicity=260 * u.MHz,
+#         alpha=0.0,
+#         detuning=0,
+#         # correction_phase=0.0,
+#     )
+#     qb_pair.qubit_target.xy.operations[f"cr_gauss_{qb_pair.name}"]= pulses.DragGaussianPulse(
+#         length=16,
+#         sigma=16/5,
+#         amplitude=1.0,
+#         axis_angle=0.0,
+#         anharmonicity=260 * u.MHz,
+#         alpha=0.0,
+#         detuning=0,
+#     )
 
-    # flattop
-    rise_fall_len = 8
-    flattop_lens = np.arange(0, 80, 20).tolist() # must be python list (not numpy array)
-    for flattop_len in flattop_lens:
-        qb_pair.cross_resonance.operations[f"flattop_{flattop_len:04d}"] = pulses.FlatTopGaussianPulse(
-            amplitude=1.0,
-            length=rise_fall_len + flattop_len + rise_fall_len,
-            flat_length=flattop_len,
-            axis_angle=0.0, 
-        )
-        qb_pair.qubit_target.xy.operations[f"cr_flattop_{flattop_len:04d}"] = pulses.FlatTopGaussianPulse(
-            amplitude=1.0,
-            length=rise_fall_len + flattop_len + rise_fall_len,
-            flat_length=flattop_len,
-            axis_angle=0.0, 
-        )
+#     # flattop
+#     rise_fall_len = 8
+#     flattop_lens = np.arange(0, 80, 20).tolist() # must be python list (not numpy array)
+#     for flattop_len in flattop_lens:
+#         qb_pair.cross_resonance.operations[f"flattop_{flattop_len:04d}"] = pulses.FlatTopGaussianPulse(
+#             amplitude=1.0,
+#             length=rise_fall_len + flattop_len + rise_fall_len,
+#             flat_length=flattop_len,
+#             axis_angle=0.0, 
+#         )
+#         qb_pair.qubit_target.xy.operations[f"cr_flattop_{flattop_len:04d}"] = pulses.FlatTopGaussianPulse(
+#             amplitude=1.0,
+#             length=rise_fall_len + flattop_len + rise_fall_len,
+#             flat_length=flattop_len,
+#             axis_angle=0.0, 
+#         )
 
 
 ########################################################################################################################

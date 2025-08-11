@@ -23,31 +23,30 @@ instruments.add_mw_fem(controller=1, slots=[1, 2])
 # %%                                 Define which qubit ids are present in the system
 ########################################################################################################################
 qubits = [
-    1, 2, 3, 4, 5, 6, 7,
-    9, 10, 11, 12, 13, 14, 15,
+    1, 2, 3, 4, 5, 6, 7, 8
 ]
 qubit_idxes = {q: i for i, q in enumerate(qubits)}
-qubit_pairs = [
-    (1, 2), (2, 1),
-    (2, 3), (3, 2),
-    (3, 4), (4, 3),
-    (4, 5), (5, 4),
-    (5, 6), (6, 5),
-    (6, 7), (7, 6),
+# qubit_pairs = [
+#     (1, 2), (2, 1),
+#     (2, 3), (3, 2),
+#     (3, 4), (4, 3),
+#     (4, 5), (5, 4),
+#     (5, 6), (6, 5),
+#     (6, 7), (7, 6),
     
-    (9, 10), (10, 9),
-    (10, 11), (11, 10),
-    (11, 12), (12, 11),
-    (12, 13), (13, 12),
-    (13, 14), (14, 13),
-    (14, 15), (15, 14),
-]
+#     (9, 10), (10, 9),
+#     (10, 11), (11, 10),
+#     (11, 12), (12, 11),
+#     (12, 13), (13, 12),
+#     (13, 14), (14, 13),
+#     (14, 15), (15, 14),
+# ]
 
-# Flatten the pairs
-flattened_qubits = {q for pair in qubit_pairs for q in pair}
+# # Flatten the pairs
+# flattened_qubits = {q for pair in qubit_pairs for q in pair}
 
-# Check if all entries are in `qubits`
-assert flattened_qubits.issubset(set(qubits))
+# # Check if all entries are in `qubits`
+# assert flattened_qubits.issubset(set(qubits))
 
 
 ########################################################################################################################
@@ -55,16 +54,13 @@ assert flattened_qubits.issubset(set(qubits))
 ########################################################################################################################
 con = 1
 rr_slots = [
-    1, 1, 1, 1, 1, 1, 1,
-    2, 2, 2, 2, 2, 2, 2,
+    1, 1, 1, 1, 1, 1, 1, 1
 ]
 rr_out_ports = [
-    1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1,
+    8, 8, 8, 8, 8, 8, 8, 8
 ]
 rr_in_ports = [
-    1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1
 ]
 
 assert len(rr_slots) == len(qubits)
@@ -72,12 +68,10 @@ assert len(rr_out_ports) == len(qubits)
 assert len(rr_in_ports) == len(qubits)
 
 xy_slots = [
-    1, 1, 1, 1, 1, 1, 1,
-    2, 2, 2, 2, 2, 2, 2,
+    1, 1, 1, 1, 2, 2, 2, 2
 ]
 xy_ports = [
-    2, 3, 4, 5, 6, 7, 8,
-    2, 3, 4, 5, 6, 7, 8,
+    2, 3, 4, 5, 4, 5, 6, 7
 ]
 
 assert len(xy_slots) == len(qubits)
@@ -104,23 +98,23 @@ for i, qb in enumerate(qubits):
     # Don't block the xy channels to connect the CR and ZZ drives to the same ports
     allocate_wiring(connectivity, instruments, block_used_channels=False)
 
-# Two-qubit drives
-for (qc, qt) in qubit_pairs:
-    idc, idt = qubit_idxes[qc], qubit_idxes[qt]
+# # Two-qubit drives
+# for (qc, qt) in qubit_pairs:
+#     idc, idt = qubit_idxes[qc], qubit_idxes[qt]
 
-    # Add CR lines
-    connectivity.add_qubit_pair_cross_resonance_lines(
-        qubit_pairs=(qc, qt),
-        constraints=mw_fem_spec(con=con, slot=xy_slots[idc], out_port=xy_ports[idc]),
-    )
-    allocate_wiring(connectivity, instruments, block_used_channels=False)
+#     # Add CR lines
+#     connectivity.add_qubit_pair_cross_resonance_lines(
+#         qubit_pairs=(qc, qt),
+#         constraints=mw_fem_spec(con=con, slot=xy_slots[idc], out_port=xy_ports[idc]),
+#     )
+#     allocate_wiring(connectivity, instruments, block_used_channels=False)
 
-    # # Add ZZ lines
-    # connectivity.add_qubit_pair_zz_drive_lines(
-    #     qubit_pairs=qubit_pairs[i],
-    #     constraints=mw_fem_spec(con=con, slot=xy_slots[idc], out_port=xy_ports[idc]),
-    # )
-    # allocate_wiring(connectivity, instruments, block_used_channels=False)
+#     # # Add ZZ lines
+#     # connectivity.add_qubit_pair_zz_drive_lines(
+#     #     qubit_pairs=qubit_pairs[i],
+#     #     constraints=mw_fem_spec(con=con, slot=xy_slots[idc], out_port=xy_ports[idc]),
+#     # )
+#     # allocate_wiring(connectivity, instruments, block_used_channels=False)
 
 # View wiring schematic
 visualize(connectivity.elements, available_channels=instruments.available_channels)

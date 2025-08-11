@@ -11,8 +11,8 @@ class NodeSpecificParameters(RunnableParameters):
     """Span of frequencies to sweep in MHz. Default is 100 MHz."""
     frequency_step_in_mhz: float = 0.25
     """Step size for frequency sweep in MHz. Default is 0.25 MHz."""
-    operation: str = "saturation"
-    """Type of operation to perform. Default is "saturation"."""
+    operation: str = "x180"
+    """Type of operation to perform. Default is "x180"."""
     operation_amplitude_factor: float = 1.0
     """Amplitude pre-factor for the operation. Default is 1.0."""
     operation_len_in_ns: Optional[int] = None

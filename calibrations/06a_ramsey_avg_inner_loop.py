@@ -46,7 +46,7 @@ State update:
     - T2*: qubit.T2ramsey.
 """
 
-node = QualibrationNode[Parameters, Quam](name="06a_ramsey", description=description, parameters=Parameters())
+node = QualibrationNode[Parameters, Quam](name="06a_ramsey_inner_loop", description=description, parameters=Parameters())
 
 
 # Any parameters that should change for debugging purposes only should go in here
@@ -57,11 +57,11 @@ def custom_param(node: QualibrationNode[Parameters, Quam]):
     node.parameters.multiplexed = False #True
     node.parameters.frequency_detuning_in_mhz = 0.2
     # node.parameters.multiplexed = True
-    node.parameters.qubits = [
-        # "q0", 
-        "q1", "q2", "q3",
-        "q4", "q5", "q6", "q7",
-    ]
+    # node.parameters.qubits = [
+    #     # "q0", 
+    #     "q1", "q2", "q3",
+    #     "q4", "q5", "q6", "q7",
+    # ]
 
 ## Instantiate the QUAM class from the state file
 node.machine = Quam.load()

@@ -55,14 +55,22 @@ node = QualibrationNode[Parameters, Quam](name="06a_ramsey", description=descrip
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     # You can get type hinting in your IDE by typing node.parameters.
     node.parameters.multiplexed = False #True
-    node.parameters.frequency_detuning_in_mhz = 0.2
+    node.parameters.frequency_detuning_in_mhz = 20
+    node.parameters.min_wait_time_in_ns = 16
+    """Minimum wait time in nanoseconds. Default is 16."""
+    node.parameters.max_wait_time_in_ns = 200
+    """Maximum wait time in nanoseconds. Default is 200."""
+    node.parameters.wait_time_num_points = 20
+    """Number of points for the wait time scan. Default is 20."""
+    node.parameters.log_or_linear_sweep = "linear"
+    """Type of sweep, either "log" (logarithmic) or "linear". Default is "log"."""
         # node.parameters.multiplexed = True
-    node.parameters.qubits = [
-        "q1", "q2", "q3", # "q4", 
-        # "q5",  "q6",  "q7", "q8",  "q9",
-        # "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
-        # "q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26", #"q27", 
-    ]
+    # node.parameters.qubits = [
+    #     "q1", "q2", "q3", # "q4", 
+    #     # "q5",  "q6",  "q7", "q8",  "q9",
+    #     # "q10", "q11", "q12", "q13", "q15", "q16", "q17", "q18", # "q14",
+    #     # "q19", "q20", "q21", "q22", "q23", "q24", "q25", "q26", #"q27", 
+    # ]
 
 ## Instantiate the QUAM class from the state file
 node.machine = Quam.load()

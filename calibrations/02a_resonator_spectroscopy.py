@@ -59,22 +59,12 @@ node = QualibrationNode[Parameters, Quam](
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
     # You can get type hinting in your IDE by typing node.parameters.
-    node.parameters.multiplexed = True
-    node.parameters.frequency_span_in_mhz = 300
-    node.parameters.frequency_step_in_mhz = 2
-    node.parameters.qubits = [
-        "q1", "q4",
-        # "q1",  "q2",  "q3", "q4",
-        # "q5",  "q6",  "q7", "q8", 
-        
-        # "q10", "q11", "q12", "q13",
-        # "q15", "q16", "q17", "q18",
-        
-        # "q19", "q20", "q21", "q22",
-        # "q23", "q24", "q25", "q26",
-
-        # "q9", "q14", "q27", 
-    ]
+    # node.parameters.multiplexed = True
+    node.parameters.frequency_span_in_mhz = 100
+    node.parameters.frequency_step_in_mhz = 1
+    # node.parameters.qubits = [
+    #     "q1"
+    # ]
 
 
 # Instantiate the QUAM class from the state file

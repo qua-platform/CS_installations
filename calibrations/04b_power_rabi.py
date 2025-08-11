@@ -76,53 +76,11 @@ def custom_param(node: QualibrationNode[Parameters, Quam]):
     node.parameters.min_amp_factor = 0.5
     node.parameters.max_amp_factor = 1.55
     node.parameters.amp_factor_step = 0.02
-    node.parameters.max_number_pulses_per_sweep = 40
+    # node.parameters.max_number_pulses_per_sweep = 40
     # node.parameters.update_x90 = True
 
     node.parameters.multiplexed = False # False
-    node.parameters.qubits = [
-        "q1", "q2", 
-        #"q3", "q4", 
-        "q5",  "q6",  "q7", "q8",  "q9",
-        "q10", "q11", "q12", "q13", "q15", "q16", "q17", 
-        "q18", # "q14",
-        "q19", "q20", "q21", "q22", "q23", "q24", "q25",
-        "q26", #"q27", 
-    ]
     # # node.parameters.qubits = ["q1"]
-
-    # node.parameters.qubits = [
-    #     # "q1",
-    #     # "q2", xxxx
-    #     # "q3", xxxx
-    #     "q4",
-    #     # "q5",
-    #     # "q6",
-    #     # "q7",
-    #     # "q8", 
-    #     # "q9",
-        
-    #     # "q10",
-    #     # "q11", xxxx
-    #     # "q12",
-    #     # "q13",
-    #     # "q14",
-    #     # "q15",
-    #     # "q16",
-    #     # "q17", xxxx
-    #     # "q18",
-        
-    #     # "q19",
-    #     # "q20", xxxx
-    #     # "q21",
-    #     # "q22",
-    #     # "q23",
-    #     # "q24",
-    #     # "q25",
-    #     # "q26", xxxx
-    #     # "q27", 
-    # ]
-
 
 # Instantiate the QUAM class from the state file
 node.machine = Quam.load()
