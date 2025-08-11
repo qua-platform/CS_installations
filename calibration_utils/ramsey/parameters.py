@@ -7,8 +7,8 @@ from qualibration_libs.parameters import QubitsExperimentNodeParameters, CommonN
 class NodeSpecificParameters(RunnableParameters):
     num_shots: int = 100
     """Number of averages to perform. Default is 100."""
-    frequency_detuning_in_mhz: float = 1.0
-    """Frequency detuning in MHz. Default is 1.0 MHz."""
+    frequency_detuning_in_mhz: float = 20.0
+    """Frequency detuning in MHz. Default is 20.0 MHz."""
 
 
 class Parameters(
