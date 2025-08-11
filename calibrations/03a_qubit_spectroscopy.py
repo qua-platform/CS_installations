@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 from dataclasses import asdict
 import matplotlib
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 from qm.qua import *
 

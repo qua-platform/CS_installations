@@ -180,7 +180,7 @@ anharmonicity = np.array([
 for k, qubit in enumerate(machine.qubits.values()):
     qubit.f_01 = xy_freq.tolist()[k]  # Qubit 0 to 1 (|g> -> |e>) transition frequency
     qubit.xy.RF_frequency = qubit.f_01  # Qubit drive frequency
-    qubit.T1 = 100 * u.us
+    qubit.T1 = 100e-06
     qubit.xy.opx_output.full_scale_power_dbm = 1  # Max drive power in dBm
     qubit.xy.opx_output.upconverter_frequency = xy_LO.tolist()[k]  # Qubit drive up-converter frequency
     qubit.xy.opx_output.band = get_band(xy_LO.tolist()[k])  # Qubit drive band for the up-conversion

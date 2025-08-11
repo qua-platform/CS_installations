@@ -87,7 +87,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
             resonator.operations["readout"].length = node.parameters.readout_length_in_ns
             resonator.operations["readout"].amplitude = node.parameters.readout_amp
             resonator.set_output_power(node.parameters.readout_amplitude_in_dBm, operation="readout")
-            resonator.intermediate_frequency = int(node.parameters.if_frequency)
+            resonator.RF_frequency =  resonator.opx_output.upconverter_frequency + int(node.parameters.if_frequency)
             node.namespace["tracked_resonators"].append(resonator)
 
     # Register the sweep axes to be added to the dataset when fetching data
