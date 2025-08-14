@@ -24,7 +24,7 @@ qb2 = f"{qb1}_twin"
 n_avg = 3  # The number of averages
 
 flattop_durations = np.arange(16, 80, 16)
-relative_phases = 2 * np.pi * np.arange(0.0, 1.1, 0.1)
+relative_phases = 2 * np.pi * np.arange(0.0, 1.1, 0.15)
 cos_py = np.cos(relative_phases).tolist()
 sin_py = np.sin(relative_phases).tolist()
 
@@ -61,7 +61,7 @@ with program() as PROGRAM:
                 wait(4, qb2)
 
                 play("flattop" * amp(cos, -sin, sin, cos), qb2, duration=t)
-                wait(t - 2, qb1)
+                wait(t - 2, qb1) # -2 to avoid gap
 
                 play("fall" * amp(cos, -sin, sin, cos), qb1)
 
