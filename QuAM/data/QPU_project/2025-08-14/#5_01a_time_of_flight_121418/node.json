@@ -1,0 +1,163 @@
+{
+    "created_at": "2025-08-14T12:14:18-07:00",
+    "metadata": {
+        "description": "\n        TIME OF FLIGHT - OPX+ & LF-FEM\nThis sequence involves sending a readout pulse and capturing the raw ADC traces.\nThe data undergoes post-processing to calibrate three distinct parameters:\n    - Time of Flight: This represents the internal processing time and the propagation\n      delay of the readout pulse. Its value can be adjusted in the configuration under\n      \"time_of_flight\". This value is utilized to offset the acquisition window relative\n      to when the readout pulse is dispatched.\n\n    - Analog Inputs Offset: Due to minor impedance mismatches, the signals captured by\n      the OPX might exhibit slight offsets.\n\n    - Analog Inputs Gain: If a signal is constrained by digitization or if it saturates\n      the ADC, the variable gain of the OPX analog input, ranging from -12 dB to 20 dB,\n      can be modified to fit the signal within the ADC range of +/-0.5V.\n\nPrerequisites:\n    - Having initialized the Quam (quam_config/populate_quam_state_*.py).\n\nState update:\n    - The time of flight: qubit.resonator.time_of_flight.\n    - The analog input offsets: qubit.resonator.opx_input_I.offset & qubit.resonator.opx_input_Q.offset.\n",
+        "run_start": "2025-08-14T12:14:06.488-07:00",
+        "run_end": "2025-08-14T12:14:18.779-07:00",
+        "name": "01a_time_of_flight",
+        "data_path": "2025-08-14/#5_01a_time_of_flight_121418"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": null,
+                "multiplexed": false,
+                "use_state_discrimination": false,
+                "reset_type": "thermal",
+                "num_shots": 100,
+                "time_of_flight_in_ns": null,
+                "readout_amplitude_in_v": 0.03,
+                "readout_length_in_ns": 1000,
+                "simulate": true,
+                "simulation_duration_ns": 20000,
+                "use_waveform_report": true,
+                "timeout": 120,
+                "load_data_id": null
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "A list of qubit names which should participate in the execution of the node. Default is None.",
+                        "title": "Qubits"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "description": "Whether to play control pulses, readout pulses and active/thermal reset at the same time for all qubits (True)\nor to play the experiment sequentially for each qubit (False). Default is False.",
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    },
+                    "use_state_discrimination": {
+                        "default": false,
+                        "description": "Whether to use on-the-fly state discrimination and return the qubit 'state', or simply return the demodulated\nquadratures 'I' and 'Q'. Default is False.",
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "description": "The qubit reset method to use. Must be implemented as a method of Quam.qubit. Can be \"thermal\", \"active\", or\n\"active_gef\". Default is \"thermal\".",
+                        "enum": [
+                            "thermal",
+                            "active",
+                            "active_gef"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "num_shots": {
+                        "default": 100,
+                        "description": "Number of averages to perform. Default is 100.",
+                        "title": "Num Shots",
+                        "type": "integer"
+                    },
+                    "time_of_flight_in_ns": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "Time of flight in nanoseconds. Default is 28 ns.",
+                        "title": "Time Of Flight In Ns"
+                    },
+                    "readout_amplitude_in_v": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": 0.03,
+                        "description": "Readout amplitude in volts. Default is 0.1 V.",
+                        "title": "Readout Amplitude In V"
+                    },
+                    "readout_length_in_ns": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": 1000,
+                        "description": "Readout length in nanoseconds. Default is the pulse predefined pulse length.",
+                        "title": "Readout Length In Ns"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "description": "Simulate the waveforms on the OPX instead of executing the program. Default is False.",
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 50000,
+                        "description": "Duration over which the simulation will collect samples (in nanoseconds). Default is 50_000 ns.",
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "use_waveform_report": {
+                        "default": true,
+                        "description": "Whether to use the interactive waveform report in simulation. Default is True.",
+                        "title": "Use Waveform Report",
+                        "type": "boolean"
+                    },
+                    "timeout": {
+                        "default": 120,
+                        "description": "Waiting time for the OPX resources to become available before giving up (in seconds). Default is 120 s.",
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "Optional QUAlibrate node run index for loading historical data. Default is None.",
+                        "title": "Load Data Id"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {},
+        "quam": "./quam_state"
+    },
+    "id": 5,
+    "parents": [
+        4
+    ]
+}

@@ -1,0 +1,153 @@
+{
+    "created_at": "2025-08-14T13:22:25-07:00",
+    "metadata": {
+        "description": "\n        T1 MEASUREMENT\nThe sequence consists in putting the qubit in the excited stated by playing the x180 pulse and measuring the resonator\nafter a varying time. The qubit T1 is extracted by fitting the exponential decay of the measured quadratures/state.\n\nPrerequisites:\n    - Having calibrated the mixer or the Octave (nodes 01a or 01b).\n    - Having calibrated the readout parameters (nodes 02a, 02b and/or 02c).\n    - Having calibrated the qubit x180 pulse parameters (nodes 03a_qubit_spectroscopy.py and 04b_power_rabi.py).\n    - (optional) Having optimized the readout parameters (nodes 08a, 08b and 08c).\n    - Having specified the desired flux point if relevant (qubit.z.flux_point).\n\nState update:\n    - The T1 relaxation time: qubit.T1\n",
+        "run_start": "2025-08-14T13:21:51.034-07:00",
+        "run_end": "2025-08-14T13:22:25.795-07:00",
+        "name": "05_T1",
+        "data_path": "2025-08-14/#24_05_T1_132225"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": null,
+                "multiplexed": false,
+                "use_state_discrimination": false,
+                "reset_type": "thermal",
+                "num_shots": 1000,
+                "min_wait_time_in_ns": 16,
+                "max_wait_time_in_ns": 30000,
+                "wait_time_num_points": 500,
+                "log_or_linear_sweep": "log",
+                "simulate": true,
+                "simulation_duration_ns": 50000,
+                "use_waveform_report": true,
+                "timeout": 120,
+                "load_data_id": null
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "A list of qubit names which should participate in the execution of the node. Default is None.",
+                        "title": "Qubits"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "description": "Whether to play control pulses, readout pulses and active/thermal reset at the same time for all qubits (True)\nor to play the experiment sequentially for each qubit (False). Default is False.",
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    },
+                    "use_state_discrimination": {
+                        "default": false,
+                        "description": "Whether to use on-the-fly state discrimination and return the qubit 'state', or simply return the demodulated\nquadratures 'I' and 'Q'. Default is False.",
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "description": "The qubit reset method to use. Must be implemented as a method of Quam.qubit. Can be \"thermal\", \"active\", or\n\"active_gef\". Default is \"thermal\".",
+                        "enum": [
+                            "thermal",
+                            "active",
+                            "active_gef"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "num_shots": {
+                        "default": 1000,
+                        "description": "Number of averages to perform. Default is 1000.",
+                        "title": "Num Shots",
+                        "type": "integer"
+                    },
+                    "min_wait_time_in_ns": {
+                        "default": 16,
+                        "description": "Minimum wait time in nanoseconds. Default is 16.",
+                        "title": "Min Wait Time In Ns",
+                        "type": "integer"
+                    },
+                    "max_wait_time_in_ns": {
+                        "default": 30000,
+                        "description": "Maximum wait time in nanoseconds. Default is 30000.",
+                        "title": "Max Wait Time In Ns",
+                        "type": "integer"
+                    },
+                    "wait_time_num_points": {
+                        "default": 500,
+                        "description": "Number of points for the wait time scan. Default is 500.",
+                        "title": "Wait Time Num Points",
+                        "type": "integer"
+                    },
+                    "log_or_linear_sweep": {
+                        "default": "log",
+                        "description": "Type of sweep, either \"log\" (logarithmic) or \"linear\". Default is \"log\".",
+                        "enum": [
+                            "log",
+                            "linear"
+                        ],
+                        "title": "Log Or Linear Sweep",
+                        "type": "string"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "description": "Simulate the waveforms on the OPX instead of executing the program. Default is False.",
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 50000,
+                        "description": "Duration over which the simulation will collect samples (in nanoseconds). Default is 50_000 ns.",
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "use_waveform_report": {
+                        "default": true,
+                        "description": "Whether to use the interactive waveform report in simulation. Default is True.",
+                        "title": "Use Waveform Report",
+                        "type": "boolean"
+                    },
+                    "timeout": {
+                        "default": 120,
+                        "description": "Waiting time for the OPX resources to become available before giving up (in seconds). Default is 120 s.",
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "Optional QUAlibrate node run index for loading historical data. Default is None.",
+                        "title": "Load Data Id"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {},
+        "quam": "./quam_state"
+    },
+    "id": 24,
+    "parents": [
+        23
+    ]
+}

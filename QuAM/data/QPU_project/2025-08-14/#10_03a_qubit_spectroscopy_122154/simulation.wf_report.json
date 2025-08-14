@@ -1,0 +1,313 @@
+{
+    "analog_waveforms": [
+        {
+            "waveform_name": "q1.xy.saturation.wf.I",
+            "pulse_name": "OriginPulseName=saturation",
+            "length": 10000,
+            "timestamp": 500,
+            "iq_info": {
+                "isPartOfIq": true,
+                "iqGroupId": 1.0,
+                "isI": true,
+                "isQ": false
+            },
+            "element": "q1.xy",
+            "output_ports": [
+                3
+            ],
+            "controller": "con1",
+            "pulser": {
+                "controllerName": "con1",
+                "femId": 0.0,
+                "pulserIndex": 2.0
+            },
+            "fem": 1,
+            "current_amp_elements": [
+                1.0,
+                0.0
+            ],
+            "current_dc_offset_by_port": {
+                "3": 0.0
+            },
+            "current_intermediate_frequency": -48000000.0,
+            "current_frame": [
+                1.0,
+                0.0
+            ],
+            "current_correction_elements": [
+                1.0,
+                0.0
+            ],
+            "chirp_info": null,
+            "current_phase": 0.0
+        },
+        {
+            "waveform_name": "q1.xy.saturation.wf.Q",
+            "pulse_name": "OriginPulseName=saturation",
+            "length": 10000,
+            "timestamp": 500,
+            "iq_info": {
+                "isPartOfIq": true,
+                "iqGroupId": 1.0,
+                "isI": false,
+                "isQ": true
+            },
+            "element": "q1.xy",
+            "output_ports": [
+                4
+            ],
+            "controller": "con1",
+            "pulser": {
+                "controllerName": "con1",
+                "femId": 0.0,
+                "pulserIndex": 3.0
+            },
+            "fem": 1,
+            "current_amp_elements": [
+                0.0,
+                1.0
+            ],
+            "current_dc_offset_by_port": {
+                "4": 0.0
+            },
+            "current_intermediate_frequency": -48000000.0,
+            "current_frame": [
+                0.0,
+                1.0
+            ],
+            "current_correction_elements": [
+                0.0,
+                1.0
+            ],
+            "chirp_info": null,
+            "current_phase": 0.0
+        },
+        {
+            "waveform_name": "q1.resonator.readout.wf.I",
+            "pulse_name": "OriginPulseName=q1.resonator.readout.pulse",
+            "length": 1000,
+            "timestamp": 10500,
+            "iq_info": {
+                "isPartOfIq": true,
+                "iqGroupId": 0.0,
+                "isI": true,
+                "isQ": false
+            },
+            "element": "q1.resonator",
+            "output_ports": [
+                1
+            ],
+            "controller": "con1",
+            "pulser": {
+                "controllerName": "con1",
+                "femId": 0.0,
+                "pulserIndex": 0.0
+            },
+            "fem": 1,
+            "current_amp_elements": [
+                1.0,
+                0.0
+            ],
+            "current_dc_offset_by_port": {
+                "1": 0.0
+            },
+            "current_intermediate_frequency": 3000000.0,
+            "current_frame": [
+                1.0,
+                0.0
+            ],
+            "current_correction_elements": [
+                1.0,
+                0.0
+            ],
+            "chirp_info": null,
+            "current_phase": 0.0
+        },
+        {
+            "waveform_name": "q1.resonator.readout.wf.Q",
+            "pulse_name": "OriginPulseName=q1.resonator.readout.pulse",
+            "length": 1000,
+            "timestamp": 10500,
+            "iq_info": {
+                "isPartOfIq": true,
+                "iqGroupId": 0.0,
+                "isI": false,
+                "isQ": true
+            },
+            "element": "q1.resonator",
+            "output_ports": [
+                2
+            ],
+            "controller": "con1",
+            "pulser": {
+                "controllerName": "con1",
+                "femId": 0.0,
+                "pulserIndex": 1.0
+            },
+            "fem": 1,
+            "current_amp_elements": [
+                1.0,
+                0.0
+            ],
+            "current_dc_offset_by_port": {
+                "2": 0.0
+            },
+            "current_intermediate_frequency": 3000000.0,
+            "current_frame": [
+                0.0,
+                1.0
+            ],
+            "current_correction_elements": [
+                0.0,
+                1.0
+            ],
+            "chirp_info": null,
+            "current_phase": 0.0
+        },
+        {
+            "waveform_name": "q1.xy.saturation.wf.I",
+            "pulse_name": "OriginPulseName=saturation",
+            "length": 10000,
+            "timestamp": 15744,
+            "iq_info": {
+                "isPartOfIq": true,
+                "iqGroupId": 1.0,
+                "isI": true,
+                "isQ": false
+            },
+            "element": "q1.xy",
+            "output_ports": [
+                3
+            ],
+            "controller": "con1",
+            "pulser": {
+                "controllerName": "con1",
+                "femId": 0.0,
+                "pulserIndex": 2.0
+            },
+            "fem": 1,
+            "current_amp_elements": [
+                1.0,
+                0.0
+            ],
+            "current_dc_offset_by_port": {
+                "3": 0.0
+            },
+            "current_intermediate_frequency": -47750000.0,
+            "current_frame": [
+                1.0,
+                0.0
+            ],
+            "current_correction_elements": [
+                1.0,
+                0.0
+            ],
+            "chirp_info": null,
+            "current_phase": 0.0
+        },
+        {
+            "waveform_name": "q1.xy.saturation.wf.Q",
+            "pulse_name": "OriginPulseName=saturation",
+            "length": 10000,
+            "timestamp": 15744,
+            "iq_info": {
+                "isPartOfIq": true,
+                "iqGroupId": 1.0,
+                "isI": false,
+                "isQ": true
+            },
+            "element": "q1.xy",
+            "output_ports": [
+                4
+            ],
+            "controller": "con1",
+            "pulser": {
+                "controllerName": "con1",
+                "femId": 0.0,
+                "pulserIndex": 3.0
+            },
+            "fem": 1,
+            "current_amp_elements": [
+                0.0,
+                1.0
+            ],
+            "current_dc_offset_by_port": {
+                "4": 0.0
+            },
+            "current_intermediate_frequency": -47750000.0,
+            "current_frame": [
+                0.0,
+                1.0
+            ],
+            "current_correction_elements": [
+                0.0,
+                1.0
+            ],
+            "chirp_info": null,
+            "current_phase": 0.0
+        }
+    ],
+    "digital_waveforms": [
+        {
+            "waveform_name": "ON",
+            "pulse_name": "OriginPulseName=q1.resonator.readout.pulse",
+            "length": 1000,
+            "timestamp": 10532,
+            "iq_info": {
+                "isPartOfIq": true,
+                "iqGroupId": 0.0,
+                "isI": true,
+                "isQ": false
+            },
+            "element": "q1.resonator",
+            "output_ports": [
+                1
+            ],
+            "controller": "con1",
+            "pulser": {
+                "controllerName": "con1",
+                "femId": 0.0,
+                "pulserIndex": 0.0
+            },
+            "fem": 1
+        }
+    ],
+    "adc_acquisitions": [
+        {
+            "start_time": 10496,
+            "end_time": 11496,
+            "process": "DualDemodIntegration",
+            "pulser": {
+                "controllerName": "con1",
+                "femId": 0.0,
+                "pulserIndex": 0.0
+            },
+            "quantum_element": "q1.resonator",
+            "adc_ports": [
+                1,
+                2
+            ],
+            "controller": "con1",
+            "fem": 1,
+            "element": "q1.resonator"
+        },
+        {
+            "start_time": 10496,
+            "end_time": 11496,
+            "process": "DualDemodIntegration",
+            "pulser": {
+                "controllerName": "con1",
+                "femId": 0.0,
+                "pulserIndex": 1.0
+            },
+            "quantum_element": "q1.resonator",
+            "adc_ports": [
+                1,
+                2
+            ],
+            "controller": "con1",
+            "fem": 1,
+            "element": "q1.resonator"
+        }
+    ]
+}
