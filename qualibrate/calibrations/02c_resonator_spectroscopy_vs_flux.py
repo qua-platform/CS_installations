@@ -4,12 +4,12 @@ import numpy as np
 import xarray as xr
 from dataclasses import asdict
 import warnings
-
+import time
 from qm.qua import *
 
 from qualang_tools.loops import from_array
 from qualang_tools.multi_user import qm_session
-from qualang_tools.results import progress_counter
+from qualang_tools.results import progress_counter, wait_until_job_is_paused
 from qualang_tools.units import unit
 
 from qualibrate import QualibrationNode
@@ -67,6 +67,8 @@ def custom_param(node: QualibrationNode[Parameters, Quam]):
     """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
     # You can get type hinting in your IDE by typing node.parameters.
     # node.parameters.qubits = ["q1", "q2"]
+    node.parameters.num_shots = 2
+    node.parameters.num_flux_points = 10
     pass
 
 
@@ -107,24 +109,21 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
     }
 
     # The QUA program stored in the node namespace to be transfer to the simulation and execution run_actions
-    with program() as node.namespace["qua_program"]:
+    with (program() as node.namespace["qua_program"]):
         I, I_st, Q, Q_st, n, n_st = node.machine.declare_qua_variables()
         dc = declare(fixed)  # QUA variable for the flux bias
         df = declare(int)  # QUA variable for the readout frequency detuning
+        c = declare(int, value=0)
+        c_st = declare_stream()
 
         for multiplexed_qubits in qubits.batch():
-            # Initialize the QPU in terms of flux points (flux tunable transmons and/or tunable couplers)
-            for qubit in multiplexed_qubits.values():
-                node.machine.initialize_qpu(target=qubit)
-            align()
-
-            with for_(n, 0, n < n_avg, n + 1):
-                save(n, n_st)
-                with for_(*from_array(dc, dcs)):
+            with for_(*from_array(dc, dcs)):
+                # Wait until it is resumed from python
+                pause()
+                with for_(n, 0, n < n_avg, n + 1):
                     for i, qubit in multiplexed_qubits.items():
                         rr = qubit.resonator
-                        # Gate voltage  sweeping by triggering the IVVC device
-                        pause()
+                        # Gate voltage by triggering the IVVC device
                         qubit.align()
                         with for_(*from_array(df, dfs)):
                             # Update the resonator frequencies for resonator
@@ -136,12 +135,13 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                             # save data
                             save(I[i], I_st[i])
                             save(Q[i], Q_st[i])
-
+                save(c, c_st)
+                assign(c, c + 1)
         with stream_processing():
-            n_st.save("n")
+            c_st.save("counter")
             for i in range(num_qubits):
-                I_st[i].buffer(len(dfs)).buffer(len(dcs)).average().save(f"I{i + 1}")
-                Q_st[i].buffer(len(dfs)).buffer(len(dcs)).average().save(f"Q{i + 1}")
+                I_st[i].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average(0)).buffer(len(dcs)).save(f"I{i + 1}")
+                Q_st[i].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average(0)).buffer(len(dcs)).save(f"Q{i + 1}")
 
 
 # %% {Simulate}
@@ -170,18 +170,32 @@ def execute_qua_program(node: QualibrationNode[Parameters, Quam]):
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:
         # The job is stored in the node namespace to be reused in the fetching_data run_action
         node.namespace["job"] = job = qm.execute(node.namespace["qua_program"])
+
         # Display the progress bar
         data_fetcher = XarrayDataFetcher(job, node.namespace["sweep_axes"])
-        for dataset in data_fetcher:
+
+        for i, voltage_gate in enumerate(node.namespace["sweep_axes"]["flux_bias"].values):
+            # Wait until the program reaches the 'pause' statement
+            wait_until_job_is_paused(job)
+            # IVCC.volt = voltage_gate # update the voltage gate of the external device
+            time.sleep(0.1)
+            # Resume the program
+            job.resume()
+            # # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
+            # wait_until_job_is_paused(job)
+
             progress_counter(
-                data_fetcher["n"],
-                node.parameters.num_shots,
+                i + 1,
+                node.parameters.num_flux_points,
                 start_time=data_fetcher.t_start,
             )
         # Display the execution report to expose possible runtime errors
         node.log(job.execution_report())
-    # Register the raw dataset
-    node.results["ds_raw"] = dataset
+        for ds in data_fetcher:
+            last_ds = ds
+            print(ds)
+        if last_ds is not None:
+            node.results["ds_raw"] = last_ds
 
 
 # %% {Load_historical_data}
@@ -234,15 +248,6 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
                 continue
 
             fit_results = node.results["fit_results"][q.name]
-
-            # Update the idle offset
-            if q.z.flux_point == "independent":
-                q.z.independent_offset = fit_results["idle_offset"]
-            else:
-                q.z.joint_offset = fit_results["idle_offset"]
-            # Update the min offset
-            if node.parameters.update_flux_min:
-                q.z.min_offset = fit_results["min_offset"]
             # Update the readout frequency for the given flux point
             q.resonator.f_01 += fit_results["frequency_shift"]
             q.resonator.RF_frequency += fit_results["frequency_shift"]

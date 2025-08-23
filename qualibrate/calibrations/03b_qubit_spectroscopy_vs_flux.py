@@ -1,14 +1,14 @@
 # %% {Imports}
 import warnings
 from dataclasses import asdict
-
+import time
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from qm.qua import *
 from qualang_tools.loops import from_array
 from qualang_tools.multi_user import qm_session
-from qualang_tools.results import progress_counter
+from qualang_tools.results import progress_counter, wait_until_job_is_paused
 from qualang_tools.units import unit
 from qualibrate import QualibrationNode
 from quam_config import Quam
@@ -33,11 +33,9 @@ Prerequisites:
     - Having calibrated the mixer or the Octave (nodes 01a or 01b).
     - Having calibrated the readout parameters (nodes 02a, 02b and/or 02c).
     - Having calibrated the qubit frequency (node 03a_qubit_spectroscopy.py).
-    - Having specified the desired flux point (qubit.z.flux_point).
 
 State update:
     - The qubit 0->1 frequency at the set flux point: qubit.f_01 & qubit.xy.RF_frequency
-    - The flux bias corresponding to the set flux point: q.z.independent_offset or q.z.joint_offset.
 """
 
 
@@ -97,26 +95,37 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
         "flux_bias": xr.DataArray(dcs, attrs={"long_name": "flux bias", "units": "V"}),
     }
 
+    ###################################
+    # Helper functions and QUA macros #
+    ###################################
+    # Get the resonator frequency vs flux trend from the node 05_resonator_spec_vs_flux.py in order to always measure on
+    # resonance while sweeping the flux
+    def cosine_func(x, amplitude, frequency, phase, offset):
+        return amplitude * np.cos(2 * np.pi * frequency * x + phase) + offset
+
+    # The fit parameters are take from the config
+    fitted_curve = cosine_func(dcs, amplitude_fit, frequency_fit, phase_fit, offset_fit) #TODO: ADD FUNCTION TO CREATE THE FITTER CURVE BASED ON RES SPEC VS FLUX PARAMETERS
+    fitted_curve = fitted_curve.astype(int)
+
     with program() as node.namespace["qua_program"]:
         # Macro to declare I, Q, n and their respective streams for a given number of qubit
         I, I_st, Q, Q_st, n, n_st = node.machine.declare_qua_variables()
         df = declare(int)  # QUA variable for the qubit frequency
         dc = declare(fixed)  # QUA variable for the flux dc level
-
+        resonator_freq = declare(int, value=fitted_curve.tolist())
+        index = declare(int, value=0)  # index to get the right resonator freq for a given flux
         for multiplexed_qubits in qubits.batch():
-            # Initialize the QPU in terms of flux points (flux tunable transmons and/or tunable couplers)
-            for qubit in multiplexed_qubits.values():
-                node.machine.initialize_qpu(target=qubit)
-            align()
-
-            with for_(n, 0, n < n_avg, n + 1):
-                save(n, n_st)
-                with for_(*from_array(df, dfs)):
-                    with for_(*from_array(dc, dcs)):
+            with for_(*from_array(dc, dcs)):
+                # Wait until it is resumed from python
+                pause()
+                with for_(n, 0, n < n_avg, n + 1):
+                    with for_(*from_array(df, dfs)):
                         # Qubit initialization
                         for i, qubit in multiplexed_qubits.items():
                             # Update the qubit frequency
                             qubit.xy.update_frequency(df + qubit.xy.intermediate_frequency)
+                            # Update the resonator frequency
+                            qubit.rr.update_frequency(resonator_freq[index] + qubit.rr.intermediate_frequency)
                             # Wait for the qubits to decay to the ground state
                             qubit.reset_qubit_thermal()
                             # Flux sweeping for a qubit
@@ -147,7 +156,8 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                             # save data
                             save(I[i], I_st[i])
                             save(Q[i], Q_st[i])
-
+                # Update the resonator frequency vs flux index
+                assign(index, index + 1)
             # Measure sequentially
             if not node.parameters.multiplexed:
                 align()
@@ -187,16 +197,29 @@ def execute_qua_program(node: QualibrationNode[Parameters, Quam]):
         node.namespace["job"] = job = qm.execute(node.namespace["qua_program"])
         # Display the progress bar
         data_fetcher = XarrayDataFetcher(job, node.namespace["sweep_axes"])
-        for dataset in data_fetcher:
+
+        for i, voltage_gate in enumerate(node.namespace["sweep_axes"]["flux_bias"].values):
+            # Wait until the program reaches the 'pause' statement
+            wait_until_job_is_paused(job)
+            # IVCC.volt = voltage_gate # update the voltage gate of the external device
+            time.sleep(0.1)
+            # Resume the program
+            job.resume()
+            # # Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
+            # wait_until_job_is_paused(job)
+
             progress_counter(
-                data_fetcher["n"],
-                node.parameters.num_shots,
+                i + 1,
+                node.parameters.num_flux_points,
                 start_time=data_fetcher.t_start,
             )
         # Display the execution report to expose possible runtime errors
         node.log(job.execution_report())
-    # Register the raw dataset
-    node.results["ds_raw"] = dataset
+        for ds in data_fetcher:
+            last_ds = ds
+            print(ds)
+        if last_ds is not None:
+            node.results["ds_raw"] = last_ds
 
 
 # %% {Load_historical_data}
@@ -251,10 +274,6 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
                 continue
             else:
                 fit_results = node.results["fit_results"][q.name]
-                if q.z.flux_point == "independent":
-                    q.z.independent_offset = fit_results["idle_offset"]
-                elif q.z.flux_point == "joint":
-                    q.z.joint_offset += fit_results["idle_offset"]
                 q.xy.RF_frequency = fit_results["qubit_frequency"]
                 q.f_01 = fit_results["qubit_frequency"]
                 # q.freq_vs_flux_01_quad_term = fit_results["quad_term"]
