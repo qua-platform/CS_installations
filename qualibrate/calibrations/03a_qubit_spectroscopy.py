@@ -106,11 +106,6 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
         df = declare(int)  # QUA variable for the qubit frequency
 
         for multiplexed_qubits in qubits.batch():
-            # Initialize the QPU in terms of flux points (flux tunable transmons and/or tunable couplers)
-            for qubit in multiplexed_qubits.values():
-                node.machine.initialize_qpu(target=qubit)
-            align()
-
             with for_(n, 0, n < n_avg, n + 1):
                 save(n, n_st)
                 with for_(*from_array(df, dfs)):

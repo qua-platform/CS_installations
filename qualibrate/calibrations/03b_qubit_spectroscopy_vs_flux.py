@@ -20,10 +20,13 @@ from calibration_utils.qubit_spectroscopy_vs_flux import (
     process_raw_dataset,
     load_ds_fit,
     get_latest_res_spec_folder,
+    get_latest_date_folder,
 )
 from qualibration_libs.parameters import get_qubits
 from qualibration_libs.runtime import simulate_and_plot
 from qualibration_libs.data import XarrayDataFetcher
+
+
 
 # %% {Description}
 description = """
@@ -54,6 +57,8 @@ node = QualibrationNode[Parameters, Quam](
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     # You can get type hinting in your IDE by typing node.parameters.
     # node.parameters.qubits = ["q1", "q3"]
+    node.parameters.num_shots = 10
+    node.parameters.num_flux_points = 10
 
     pass
 
@@ -171,11 +176,9 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
     def cosine_func(x, amplitude, frequency, phase, offset):
         return amplitude * np.cos(2 * np.pi * frequency * x + phase) + offset
 
+    latest_res_spec = get_latest_res_spec_folder()  # defaults to storage root. can also use an absolute path here
+    ds_fit, fits = load_ds_fit(latest_res_spec / "ds_fit.h5")
 
-    # Load data from latest Resonator Spectroscopy vs Flux
-    latest_res_spec = get_latest_res_spec_folder("../data", project_name="QPU_project")
-    ds_fit_path = latest_res_spec / "ds_fit.h5"
-    ds_fit, fits = load_ds_fit(ds_fit_path) # can also use an absolute path here
     # The fit parameters are take from the config
     fitted_curve = cosine_func(dcs, fits[qubits[0].id]['a'], fits[qubits[0].id]['f'], fits[qubits[0].id]['phi'], fits[qubits[0].id]['offset']) #TODO: ADD FUNCTION TO CREATE THE FITTER CURVE BASED ON RES SPEC VS FLUX PARAMETERS
     fitted_curve = fitted_curve.astype(int)
@@ -198,7 +201,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                             # Update the qubit frequency
                             qubit.xy.update_frequency(df + qubit.xy.intermediate_frequency)
                             # Update the resonator frequency
-                            qubit.rr.update_frequency(resonator_freq[index] + qubit.rr.intermediate_frequency)
+                            qubit.resonator.update_frequency(resonator_freq[index] + qubit.resonator.intermediate_frequency)
                             # Wait for the qubits to decay to the ground state
                             qubit.reset_qubit_thermal()
                             # Flux sweeping for a qubit
@@ -211,10 +214,6 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
 
                         # Qubit manipulation
                         for i, qubit in multiplexed_qubits.items():
-                            # Bring the qubit to the desired point during the saturation pulse
-                            qubit.z.play(
-                                "const", amplitude_scale=dc / qubit.z.operations["const"].amplitude, duration=duration
-                            )
                             # Apply saturation pulse to all qubits
                             qubit.xy.play(
                                 operation,
@@ -236,7 +235,6 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                 align()
 
         with stream_processing():
-            n_st.save("n")
             for i, qubit in enumerate(qubits):
                 I_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"I{i + 1}")
                 Q_st[i].buffer(len(dcs)).buffer(len(dfs)).average().save(f"Q{i + 1}")

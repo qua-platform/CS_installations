@@ -210,11 +210,6 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
         m_st = declare_stream()
 
         for multiplexed_qubits in qubits.batch():
-            # Initialize the QPU in terms of flux points (flux tunable transmons and/or tunable couplers)
-            for qubit in multiplexed_qubits.values():
-                node.machine.initialize_qpu(target=qubit)
-            align()
-
             # QUA for_ loop over the random sequences
             with for_(m, 0, m < num_of_sequences, m + 1):
                 # Save the counter for the progress bar

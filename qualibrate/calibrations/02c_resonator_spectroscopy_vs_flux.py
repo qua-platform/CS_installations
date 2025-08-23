@@ -113,8 +113,6 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
         I, I_st, Q, Q_st, n, n_st = node.machine.declare_qua_variables()
         dc = declare(fixed)  # QUA variable for the flux bias
         df = declare(int)  # QUA variable for the readout frequency detuning
-        c = declare(int, value=0)
-        c_st = declare_stream()
 
         for multiplexed_qubits in qubits.batch():
             with for_(*from_array(dc, dcs)):
@@ -135,10 +133,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                             # save data
                             save(I[i], I_st[i])
                             save(Q[i], Q_st[i])
-                save(c, c_st)
-                assign(c, c + 1)
         with stream_processing():
-            c_st.save("counter")
             for i in range(num_qubits):
                 I_st[i].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average(0)).buffer(len(dcs)).save(f"I{i + 1}")
                 Q_st[i].buffer(len(dfs)).buffer(n_avg).map(FUNCTIONS.average(0)).buffer(len(dcs)).save(f"Q{i + 1}")

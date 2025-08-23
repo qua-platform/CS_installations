@@ -91,11 +91,6 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
         a = declare(fixed)
 
         for multiplexed_qubits in qubits.batch():
-            # Initialize the QPU in terms of flux points (flux tunable transmons and/or tunable couplers)
-            for qubit in multiplexed_qubits.values():
-                node.machine.initialize_qpu(target=qubit)
-            align()
-
             with for_(n, 0, n < n_runs, n + 1):
                 # ground iq blobs for all qubits
                 save(n, n_st)
