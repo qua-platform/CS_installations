@@ -98,6 +98,7 @@ def fit_raw_data(ds: xr.Dataset, node: QualibrationNode) -> Tuple[xr.Dataset, di
     fit_results_ds = xr.merge([fit_results_da.rename("fit_results"), peak_freq.rename("peak_freq")])
     # Extract the relevant fitted parameters
     fit_dataset, fit_results = _extract_relevant_fit_parameters(fit_results_ds, node)
+
     return fit_dataset, fit_results
 
 

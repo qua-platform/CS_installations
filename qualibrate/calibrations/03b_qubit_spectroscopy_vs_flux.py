@@ -18,6 +18,8 @@ from calibration_utils.qubit_spectroscopy_vs_flux import (
     log_fitted_results,
     plot_raw_data_with_fit,
     process_raw_dataset,
+    load_ds_fit,
+    get_latest_res_spec_folder,
 )
 from qualibration_libs.parameters import get_qubits
 from qualibration_libs.runtime import simulate_and_plot
@@ -58,6 +60,72 @@ def custom_param(node: QualibrationNode[Parameters, Quam]):
 
 # Instantiate the QUAM class from the state file
 node.machine = Quam.load()
+
+
+
+#
+# def get_latest_res_spec_vs_flux_from_folder(
+#     base_path: str | Path,
+#     NodeClass: Optional[type] = None,
+# ) -> Tuple[str, xr.Dataset, Dict[str, Dict[str, float]]]:
+#     """
+#     Locate the latest 'resonator_spectroscopy_vs_flux' node under base_path,
+#     load its ds_fit, and extract per-qubit fit parameters.
+#
+#     Parameters
+#     ----------
+#     base_path : str | Path
+#         Folder containing node subfolders (e.g. '#329_02c_resonator_spectroscopy_vs_flux_133402').
+#     NodeClass : Optional[type]
+#         Your QualibrationNode class that implements .load_from_id(caller, node_id, base_path, ...).
+#         If provided, this will be used to load the node; otherwise the function
+#         loads ds_fit.nc directly with xarray.
+#
+#     Returns
+#     -------
+#     (node_name, ds_fit, fits_dict)
+#         node_name : str
+#         ds_fit    : xarray.Dataset
+#         fits_dict : {qubit: { 'a': float, 'f': float, 'phi': float, 'offset': float }, ...}
+#     """
+#     base_path = Path(base_path)
+#     latest_dir = _pick_latest_dir(base_path)
+#     node_name = latest_dir.name
+#
+#     # Load ds_fit via QualibrationNode if NodeClass is provided; else load directly.
+#     if NodeClass is not None:
+#         node_id = _extract_numeric_id(node_name)
+#         if node_id is None:
+#             # Fallback: try to parse the ID from folder name later or just direct-load ds_fit
+#             ds_fit = xr.load_dataset(latest_dir / "ds_fit.nc")
+#         else:
+#             node = NodeClass.load_from_id(NodeClass, node_id=node_id, base_path=base_path)
+#             if node is None:
+#                 raise RuntimeError(f"load_from_id returned None for node_id={node_id}")
+#             if "ds_fit" not in node.results:
+#                 raise KeyError(f"'ds_fit' not found in node.results for {node_name}")
+#             ds_fit = node.results["ds_fit"]
+#     else:
+#         ds_fit_path = latest_dir / "ds_fit.nc"
+#         if not ds_fit_path.exists():
+#             raise FileNotFoundError(f"'{ds_fit_path}' not found.")
+#         ds_fit = xr.load_dataset(ds_fit_path)
+#
+#     # Extract labeled fit values: {qubit: {a,f,phi,offset}}
+#     labels = ds_fit.fit_vals.values.tolist()  # ['a', 'f', 'phi', 'offset']
+#     fits = {
+#         qb: dict(zip(labels, ds_fit.fit_results.sel(qubit=qb).values.tolist()))
+#         for qb in ds_fit.qubit.values.tolist()
+#     }
+#     return node_name, ds_fit, fits
+#
+# # from your_module import QualibrationNode
+# node_name, ds_fit, fits = get_latest_res_spec_vs_flux_from_folder(
+#     "/path/to/data/folder",
+#     NodeClass=QualibrationNode,   # pass your class to load via API
+# )
+# print(node_name)
+# print(fits)
 
 
 # %% {Create_QUA_program}
@@ -103,8 +171,13 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
     def cosine_func(x, amplitude, frequency, phase, offset):
         return amplitude * np.cos(2 * np.pi * frequency * x + phase) + offset
 
+
+    # Load data from latest Resonator Spectroscopy vs Flux
+    latest_res_spec = get_latest_res_spec_folder("../data", project_name="QPU_project")
+    ds_fit_path = latest_res_spec / "ds_fit.h5"
+    ds_fit, fits = load_ds_fit(ds_fit_path) # can also use an absolute path here
     # The fit parameters are take from the config
-    fitted_curve = cosine_func(dcs, amplitude_fit, frequency_fit, phase_fit, offset_fit) #TODO: ADD FUNCTION TO CREATE THE FITTER CURVE BASED ON RES SPEC VS FLUX PARAMETERS
+    fitted_curve = cosine_func(dcs, fits[qubits[0].id]['a'], fits[qubits[0].id]['f'], fits[qubits[0].id]['phi'], fits[qubits[0].id]['offset']) #TODO: ADD FUNCTION TO CREATE THE FITTER CURVE BASED ON RES SPEC VS FLUX PARAMETERS
     fitted_curve = fitted_curve.astype(int)
 
     with program() as node.namespace["qua_program"]:
