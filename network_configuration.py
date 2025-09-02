@@ -5,16 +5,16 @@ from pathlib import Path
 ######################
 # Network parameters #
 ######################
-# qop_ip = "172.16.33.101"  # Write the QM router IP address
-# octave_port = (
-#     11232  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
-# )
-# cluster_name = "CS_1"  # Write your cluster_name if version >= QOP220
-qop_ip = "192.168.88.249"  # Write the QM router IP address
+qop_ip = "172.16.33.101"  # Write the QM router IP address
 octave_port = (
-    11251  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
+    11232  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
 )
-cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
+cluster_name = "CS_1"  # Write your cluster_name if version >= QOP220
+# qop_ip = "192.168.88.249"  # Write the QM router IP address
+# octave_port = (
+#     11251  # Must be 11xxx, where xxx are the last three digits of the Octave IP address
+# )
+# cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 

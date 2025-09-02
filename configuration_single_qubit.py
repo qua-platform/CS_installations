@@ -15,11 +15,19 @@ pio.renderers.default = "browser"
 #######################
 u = unit(coerce_to_integer=True)
 
+qubit_label = 0
+assert qubit_label in [1, 2, 3, 4], "Qubit label must be 1, 2, 3 or 4"
+print(f"<< Using config for q{qubit_label} >>")
+
+qubit_port_I = 3 + (qubit_label - 1) * 2
+qubit_port_Q = 4 + (qubit_label - 1) * 2
+qubit_port_octave = qubit_label
+
 #############################################
 #                  Qubits                   #
 #############################################
-qubit_LO = 7 * u.GHz
-qubit_IF = 50 * u.MHz
+qubit_LO = 5.8 * u.GHz
+qubit_IF = -100 * u.MHz
 
 qubit_T1 = int(10 * u.us)
 thermalization_time = 5 * qubit_T1
@@ -123,8 +131,8 @@ minus_y90_Q_wf = minus_y90_wf
 #############################################
 #                Resonators                 #
 #############################################
-resonator_LO = 5.5 * u.GHz
-resonator_IF = 60 * u.MHz
+resonator_LO = 3 * u.GHz
+resonator_IF = -100 * u.MHz
 
 readout_len = 5000
 readout_amp = 0.2
@@ -168,8 +176,8 @@ config = {
             "analog_outputs": {
                 1: {"offset": 0.0},  # I resonator
                 2: {"offset": 0.0},  # Q resonator
-                3: {"offset": 0.0},  # I qubit
-                4: {"offset": 0.0},  # Q qubit
+                qubit_port_I: {"offset": 0.0},  # I qubit
+                qubit_port_Q: {"offset": 0.0},  # Q qubit
             },
             "digital_outputs": {},
             "analog_inputs": {
@@ -180,7 +188,7 @@ config = {
     },
     "elements": {
         "qubit": {
-            "RF_inputs": {"port": ("octave1", 2)},
+            "RF_inputs": {"port": (oct, qubit_port_octave)},
             "intermediate_frequency": qubit_IF,
             "operations": {
                 "cw": "const_pulse",
@@ -196,8 +204,8 @@ config = {
             },
         },
         "resonator": {
-            "RF_inputs": {"port": ("octave1", 1)},
-            "RF_outputs": {"port": ("octave1", 1)},
+            "RF_inputs": {"port": (oct, 1)},
+            "RF_outputs": {"port": (oct, 1)},
             "intermediate_frequency": resonator_IF,
             "operations": {
                 "cw": "const_pulse",
@@ -208,7 +216,7 @@ config = {
         },
     },
     "octaves": {
-        "octave1": {
+        oct: {
             "RF_outputs": {
                 1: {
                     "LO_frequency": resonator_LO,
@@ -216,11 +224,11 @@ config = {
                     "output_mode": "always_on",
                     "gain": 0,
                 },
-                2: {
+                qubit_port_octave: {
                     "LO_frequency": qubit_LO,
                     "LO_source": "internal",
                     "output_mode": "always_on",
-                    "gain": 0,
+                    "gain": 6,
                 },
             },
             "RF_inputs": {
