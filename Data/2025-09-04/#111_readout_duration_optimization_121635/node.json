@@ -1,0 +1,12 @@
+{
+    "created_at": "2025-09-04T12:16:35+09:00",
+    "metadata": {
+        "name": "readout_duration_optimization",
+        "data_path": "2025-09-04/#111_readout_duration_optimization_121635"
+    },
+    "data": {},
+    "id": 111,
+    "parents": [
+        110
+    ]
+}

@@ -17,9 +17,10 @@ from configuration import *
 with program() as hello_qua:
     a = declare(fixed)
     with infinite_loop_():
-        with for_(a, 0, a < 1.1, a + 0.05):
-            play("pi" * amp(a), "qubit")
-        wait(25, "qubit")
+        play("saturation" * amp(0.01), "qubit")
+        # with for_(a, 0, a < 1.1, a + 0.05):
+        #     play("pi" * amp(a), "qubit")
+        # wait(25, "qubit")
 
 #####################################
 #  Open Communication with the QOP  #

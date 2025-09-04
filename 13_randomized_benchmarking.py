@@ -39,7 +39,7 @@ from qualang_tools.results.data_handler import DataHandler
 # Parameters Definition
 num_of_sequences = 50  # Number of random sequences
 n_avg = 20  # Number of averaging loops for each random sequence
-max_circuit_depth = 1000  # Maximum circuit depth
+max_circuit_depth = 800  # Maximum circuit depth
 delta_clifford = (
     10  #  Play each sequence with a depth step equals to 'delta_clifford - Must be > 0
 )
@@ -48,7 +48,7 @@ assert (max_circuit_depth / delta_clifford).is_integer(), (
 )
 seed = 345324  # Pseudo-random number generator seed
 # Flag to enable state discrimination if the readout has been calibrated (rotated blobs and threshold)
-state_discrimination = False
+state_discrimination = True
 # List of recovery gates from the lookup table
 inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
 
@@ -213,9 +213,11 @@ with program() as rb:
                     # Align the two elements to play the sequence after qubit initialization
                     align("resonator", "qubit")
                     # The strict_timing ensures that the sequence will be played without gaps
-                    with strict_timing_():
-                        # Play the random sequence of desired depth
-                        play_sequence(sequence_list, depth)
+                    # with strict_timing_():
+                    #     # Play the random sequence of desired depth
+                    #     play_sequence(sequence_list, depth)
+                    # Play the random sequence of desired depth
+                    play_sequence(sequence_list, depth)
                     # Align the two elements to measure after playing the circuit.
                     align("qubit", "resonator")
                     # Make sure you updated the ge_threshold and angle if you want to use state discrimination
@@ -328,7 +330,7 @@ else:
         plt.cla()
         plt.plot(x, value_avg, marker=".")
         plt.xlabel("Number of Clifford gates")
-        plt.ylabel("Sequence Fidelity")
+        plt.ylabel("Measured state/I")
         plt.title("Single qubit RB")
         plt.pause(0.1)
 

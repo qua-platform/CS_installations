@@ -39,12 +39,12 @@ from qualang_tools.results.data_handler import DataHandler
 # Parameters Definition
 n_avg = 1000  # The number of averages
 # The frequency sweep around the resonator frequency "resonator_IF"
-span = 10 * u.MHz
-df = 100 * u.kHz
+span = 5 * u.MHz
+df = 10 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
-a_min = 0.001
-a_max = 1.99
+a_min = 0.01
+a_max = 1.0
 amplitudes = np.geomspace(a_min, a_max, 20)
 
 # Data to save

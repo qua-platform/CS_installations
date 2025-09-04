@@ -1,0 +1,12 @@
+{
+    "created_at": "2025-09-04T14:02:25+09:00",
+    "metadata": {
+        "name": "resonator_depletion_time",
+        "data_path": "2025-09-04/#143_resonator_depletion_time_140225"
+    },
+    "data": {},
+    "id": 143,
+    "parents": [
+        142
+    ]
+}

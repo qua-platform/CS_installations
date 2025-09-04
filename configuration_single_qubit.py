@@ -19,9 +19,15 @@ qubit_label = 0
 assert qubit_label in [1, 2, 3, 4], "Qubit label must be 1, 2, 3 or 4"
 print(f"<< Using config for q{qubit_label} >>")
 
-qubit_port_I = 3 + (qubit_label - 1) * 2
-qubit_port_Q = 4 + (qubit_label - 1) * 2
-qubit_port_octave = qubit_label
+# default settings
+# qubit_port_I = 3 + (qubit_label - 1) * 2
+# qubit_port_Q = 4 + (qubit_label - 1) * 2
+# qubit_port_octave = qubit_label
+
+# qubit = resonator line with coupler
+qubit_port_I = 3
+qubit_port_Q = 4
+qubit_port_octave = 2
 
 #############################################
 #                  Qubits                   #
