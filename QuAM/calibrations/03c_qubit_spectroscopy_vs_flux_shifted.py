@@ -12,7 +12,7 @@ from qualang_tools.results import progress_counter
 from qualang_tools.units import unit
 from qualibrate import QualibrationNode
 from quam_config import Quam
-from calibration_utils.qubit_spectroscopy_vs_flux_fixed import (
+from calibration_utils.qubit_spectroscopy_vs_flux_shifted import (
     Parameters,
     fit_raw_data,
     log_fitted_results,
