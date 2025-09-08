@@ -147,12 +147,9 @@ interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
 while results.is_processing():
     # Fetch results
     I, Q, iteration = results.fetch_all()
-    # Convert results into Volts
-    S = u.demod2volts(I + 1j * Q, readout_len)
-    R = np.abs(S)  # Amplitude
-    phase = np.angle(S)  # Phase
     # Progress bar
     progress_counter(iteration, n_avg, start_time=results.get_start_time())
+
     # Convert results into Volts
     S = u.demod2volts(I + 1j * Q, readout_len)
     R = np.abs(S)  # Amplitude

@@ -142,12 +142,9 @@ interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
 while results.is_processing():
     # Fetch results
     I, Q, iteration = results.fetch_all()
-    # Convert results into Volts
-    S = u.demod2volts(I + 1j * Q, readout_len)
-    R = np.abs(S)  # Amplitude
-    phase = np.angle(S)  # Phase
     # Progress bar
     progress_counter(iteration, n_avg, start_time=results.get_start_time())
+
     # Convert results into Volts
     S = u.demod2volts(I + 1j * Q, readout_len)
     R = np.abs(S)  # Amplitude
@@ -156,25 +153,27 @@ while results.is_processing():
     row_sums = R.sum(axis=0)
     R /= row_sums[np.newaxis, :]
 
-# 2D spectroscopy plot
-plt.subplot(211)
-plt.suptitle(f"Qubit spectroscopy - LO = {qubit_LO / u.GHz} GHz")
-plt.cla()
-plt.title(r"$R=\sqrt{I^2 + Q^2}$ (normalized)")
-plt.pcolor(amplitudes * saturation_amp, IFs / u.MHz, R)
-plt.xscale("log")
-plt.xlim(amplitudes[0] * saturation_amp, amplitudes[-1] * saturation_amp)
-plt.ylabel("Qubit IF [MHz]")
-plt.subplot(212)
-plt.cla()
-plt.title("Phase")
-plt.pcolor(amplitudes * saturation_amp, IFs / u.MHz, signal.detrend(np.unwrap(phase)))
-plt.ylabel("Qubit IF [MHz]")
-plt.xlabel("Qubit amplitude [V]")
-plt.xscale("log")
-plt.xlim(amplitudes[0] * saturation_amp, amplitudes[-1] * readout_amp)
-plt.pause(0.1)
-plt.tight_layout()
+    # 2D spectroscopy plot
+    plt.subplot(211)
+    plt.suptitle(f"Qubit spectroscopy - LO = {qubit_LO / u.GHz} GHz")
+    plt.cla()
+    plt.title(r"$R=\sqrt{I^2 + Q^2}$ (normalized)")
+    plt.pcolor(amplitudes * saturation_amp, IFs / u.MHz, R)
+    plt.xscale("log")
+    plt.xlim(amplitudes[0] * saturation_amp, amplitudes[-1] * saturation_amp)
+    plt.ylabel("Qubit IF [MHz]")
+    plt.subplot(212)
+    plt.cla()
+    plt.title("Phase")
+    plt.pcolor(
+        amplitudes * saturation_amp, IFs / u.MHz, signal.detrend(np.unwrap(phase))
+    )
+    plt.ylabel("Qubit IF [MHz]")
+    plt.xlabel("Qubit amplitude [V]")
+    plt.xscale("log")
+    plt.xlim(amplitudes[0] * saturation_amp, amplitudes[-1] * readout_amp)
+    plt.pause(0.1)
+    plt.tight_layout()
 
 # Interrupt the FPGA program
 job.halt()
