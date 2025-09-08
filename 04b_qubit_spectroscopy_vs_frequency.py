@@ -14,7 +14,11 @@ Before proceeding to the next node:
 from qm.qua import *
 from qm import QuantumMachinesManager
 from configuration import *
-from qualang_tools.results import progress_counter, wait_until_job_is_paused
+from qualang_tools.results import (
+    progress_counter,
+    wait_until_job_is_paused,
+    fetching_tool,
+)
 from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 from scipy import signal
@@ -135,44 +139,47 @@ Q_tot = []
 fig = plt.figure()
 interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
 
-# Wait until the program reaches the 'pause' statement again, indicating that the QUA program is done
-wait_until_job_is_paused(job, timeout=300)
-# Fetch the data from the last OPX run corresponding to the current LO frequency
-res_handles.get("I").wait_for_values(i + 1)
-I = res_handles.get("I").fetch_all()["value"][i]
-Q = res_handles.get("Q").fetch_all()["value"][i]
-# Update the list of global results
-I_tot.append(I)
-Q_tot.append(Q)
-# Progress bar
-progress_counter(i, len(LOs))
-# Convert results into Volts
-S = u.demod2volts(I + 1j * Q, readout_len)
-R = np.abs(S)  # Amplitude
-phase = np.angle(S)  # Phase
-# Normalize data
-row_sums = R.sum(axis=0)
-R /= row_sums[np.newaxis, :]
 
-# 2D spectroscopy plot
-plt.subplot(211)
-plt.suptitle(f"Qubit spectroscopy - LO = {LO / u.GHz} GHz")
-plt.cla()
-plt.title(r"$R=\sqrt{I^2 + Q^2}$ (normalized)")
-plt.pcolor(resonator_f, IFs / u.MHz, R)
-plt.xscale("log")
-plt.xlim(resonator_f[0], resonator_f[-1])
-plt.ylabel("Qubit IF [MHz]")
-plt.subplot(212)
-plt.cla()
-plt.title("Phase")
-plt.pcolor(resonator_f, IFs / u.MHz, signal.detrend(np.unwrap(phase)))
-plt.ylabel("Qubit IF [MHz]")
-plt.xlabel("Resonator IF [V]")
-plt.xscale("log")
-plt.xlim(resonator_f[0], resonator_f[-1] * readout_amp)
-plt.pause(0.1)
-plt.tight_layout()
+results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
+# Live plotting
+fig = plt.figure()
+interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+while results.is_processing():
+    # Fetch results
+    I, Q, iteration = results.fetch_all()
+    # Convert results into Volts
+    S = u.demod2volts(I + 1j * Q, readout_len)
+    R = np.abs(S)  # Amplitude
+    phase = np.angle(S)  # Phase
+    # Progress bar
+    progress_counter(iteration, n_avg, start_time=results.get_start_time())
+    # Convert results into Volts
+    S = u.demod2volts(I + 1j * Q, readout_len)
+    R = np.abs(S)  # Amplitude
+    phase = np.angle(S)  # Phase
+    # Normalize data
+    row_sums = R.sum(axis=0)
+    R /= row_sums[np.newaxis, :]
+
+    # 2D spectroscopy plot
+    plt.subplot(211)
+    plt.suptitle(f"Qubit spectroscopy - LO = {qubit_LO / u.GHz} GHz")
+    plt.cla()
+    plt.title(r"$R=\sqrt{I^2 + Q^2}$ (normalized)")
+    plt.pcolor(resonator_f, IFs / u.MHz, R)
+    plt.xscale("log")
+    plt.xlim(resonator_f[0], resonator_f[-1])
+    plt.ylabel("Qubit IF [MHz]")
+    plt.subplot(212)
+    plt.cla()
+    plt.title("Phase")
+    plt.pcolor(resonator_f, IFs / u.MHz, signal.detrend(np.unwrap(phase)))
+    plt.ylabel("Qubit IF [MHz]")
+    plt.xlabel("Resonator IF [V]")
+    plt.xscale("log")
+    plt.xlim(resonator_f[0], resonator_f[-1] * readout_amp)
+    plt.pause(0.1)
+    plt.tight_layout()
 
 # Interrupt the FPGA program
 job.halt()
