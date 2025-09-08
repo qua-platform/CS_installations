@@ -58,8 +58,8 @@ def get_octave_gain_and_amplitude(desired_power: float, max_amplitude: float = 0
 # Please refer to https://docs.quantum-machines.co/latest/docs/Guides/octave/ for more details
 
 # Match "from-scratch" settings: LO = 4.0 GHz, IFs = [3, 4, 5] MHz, gain = -12 dB, readout pulse = 1 us @ 0.2
-rr_LO = 4.0 * u.GHz
-rr_if = np.array([3.0, 4.0, 5.0]) * u.MHz
+rr_LO = 8.0 * u.GHz
+rr_if = np.array([-300, -50, 200]) * u.MHz
 rr_freq = rr_LO + rr_if  # RF readout frequencies
 assert np.all(np.abs(rr_if) < 400 * u.MHz), "The resonator intermediate frequency must be within [-400; 400] MHz."
 
@@ -86,8 +86,8 @@ for k, qubit in enumerate(machine.qubits.values()):
 # Please refer to https://docs.quantum-machines.co/latest/docs/Guides/octave/ for more details
 
 # Match "from-scratch" settings: LOs = [3.5, 4.5, 5.5] GHz, IFs = [2, 4, 6] MHz, gain = -12 dB
-xy_LO = np.array([3.5, 4.5, 5.5]) * u.GHz
-xy_if = np.array([2.0, 4.0, 6.0]) * u.MHz
+xy_LO = np.array([5.5, 5.5, 6.5]) * u.GHz
+xy_if = np.array([100.0, -200.0, 300.0]) * u.MHz
 xy_freq = xy_LO + xy_if
 assert np.all(np.abs(xy_if) < 400 * u.MHz), "The xy intermediate frequency must be within [-400; 400] MHz."
 

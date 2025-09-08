@@ -33,6 +33,7 @@ def custom_param(node: QualibrationNode[Parameters, Quam]):
     # You can get type hinting in your IDE by typing node.parameters.
     # node.parameters.multiplexed = True
     # node.parameters.num_shots = 2
+    node.parameters.simulate = True
     pass
 
 
@@ -65,7 +66,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
             # Initialize the QPU in terms of flux points (flux tunable transmons and/or tunable couplers)
             for qubit in multiplexed_qubits.values():
                 node.machine.initialize_qpu(target=qubit)
-                qubit.xy.update_frequency(0)
+                #qubit.xy.update_frequency(0)
             align()
 
             with for_(n, 0, n < node.parameters.num_shots, n + 1):

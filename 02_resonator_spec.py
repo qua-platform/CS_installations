@@ -15,7 +15,7 @@ from configuration import *
 u = unit(coerce_to_integer=True)
 
 # USER / SIMULATION SETTINGS
-simulate = True   
+simulate = False   
 n_avg = 100          # averages
 
 # Frequency sweep (full range)
@@ -41,12 +41,16 @@ N_LO_SWEEPS = 1 if simulate else len(LO_array)
 freq_axis = IF_sweep + (LO_array[0] if (simulate and len(LO_array)) else 0.0)
 points_per_sweep = len(IF_sweep)
 
+# Loopback (sim) settings
+loopback_latency_ns  = 200
+loopback_noise_power = 5e-4
+
 # Pull readout / depletion from config (ns).
 READOUT_LEN_NS = int(config["pulses"]["readout_pulse"]["length"])
 DEPL_NS_CONF = int(DEPLETION_TIME)
 
 # Choice of element for resonator spectroscopy (rr1, rr2, rr3)
-RR_ELEM = "rr1"
+RR_ELEM = "rr2"
 
 # =============================================================================
 #                                QUA PROGRAM
@@ -82,47 +86,71 @@ with program() as res_spec:
         Q_st.buffer(points_per_sweep).average().save("Q")
         n_st.save("iteration")
 
-#####################################
-#  Open Communication with the QOP  #
-#####################################
-qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
 # =============================================================================
 #                           SIMULATE OR EXECUTE
 # =============================================================================
 if simulate:
+    # --- SaaS login ---
+    client = QmSaas(
+    host="qm-saas.dev.quantum-machines.co",
+    email="benjamin.safvati@quantum-machines.co",
+    password="ubq@yvm3RXP1bwb5abv"
+    )
 
-    sim_cfg = SimulationConfig(duration=20000)
+    with client.simulator(QOPVersion(os.environ.get("QM_QOP_VERSION", "v2_5_0"))) as inst:
+        inst.spawn()
+        qmm = QuantumMachinesManager(
+            host=inst.host,
+            port=inst.port,
+            connection_headers=inst.default_connection_headers,
+        )
 
-    # --- simulate ---
-    job = qmm.simulate(config, res_spec, sim_cfg)
+        # Duration estimate
+        point_ns   = READOUT_LEN_NS + DEPL_NS_CONF
+        total_ns   = point_ns * points_per_sweep * n_avg_eff * N_LO_SWEEPS
+        sim_dur_cc = max(10_000, int(total_ns / 4) + 2_000)   # 1 cc = 4 ns
 
-    # --- fetch demod results from stream_processing ---
-    res = job.result_handles
-    res.wait_for_all_values()
-    I = res.get("I").fetch_all()
-    Q = res.get("Q").fetch_all()
-    if I is None or Q is None:
-        raise RuntimeError("Streams not filled — reduce duration or points_per_sweep mismatch")
+        sim_if = LoopbackInterface(
+            [("con1", 1, "con1", 1), ("con1", 2, "con1", 2)],
+            latency=loopback_latency_ns,
+            noisePower=loopback_noise_power,
+        )
+        sim_cfg = SimulationConfig(
+            duration=sim_dur_cc,
+            simulation_interface=sim_if,
+            extraProcessingTimeoutInMs=100_000,
+        )
 
-    # Convert to Volts (complex)
-    S = u.demod2volts(I + 1j * Q, READOUT_LEN_NS)
-    # Plot
-    R = np.abs(S)
-    phase = np.angle(S)
-    plt.figure()
-    ax1 = plt.subplot(211)
-    plt.plot(freq_axis / u.MHz, R, ".")
-    plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
-    ax2 = plt.subplot(212, sharex=ax1)
-    plt.plot(freq_axis / u.MHz, signal.detrend(np.unwrap(phase)), ".")
-    plt.xlabel("Frequency [MHz]")
-    plt.ylabel("Phase [rad]")
-    plt.tight_layout()
-    plt.show()
+        # --- simulate ---
+        job = qmm.simulate(config, res_spec, sim_cfg)
+
+        # --- fetch demod results from stream_processing ---
+        res = job.result_handles
+        res.wait_for_all_values()
+        I = res.get("I").fetch_all()
+        Q = res.get("Q").fetch_all()
+        if I is None or Q is None:
+            raise RuntimeError("Streams not filled — reduce duration or points_per_sweep mismatch")
+
+        # Convert to Volts (complex)
+        S = u.demod2volts(I + 1j * Q, READOUT_LEN_NS)
+        # Plot
+        R = np.abs(S)
+        phase = np.angle(S)
+        plt.figure()
+        ax1 = plt.subplot(211)
+        plt.plot(freq_axis / u.MHz, R, ".")
+        plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
+        ax2 = plt.subplot(212, sharex=ax1)
+        plt.plot(freq_axis / u.MHz, signal.detrend(np.unwrap(phase)), ".")
+        plt.xlabel("Frequency [MHz]")
+        plt.ylabel("Phase [rad]")
+        plt.tight_layout()
+        plt.show()
 
 else:
-    qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
+    qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave_calibration_db_path=os.getcwd())
     qm = qmm.open_qm(config)
     job = qm.execute(res_spec)
     results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")

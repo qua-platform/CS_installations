@@ -61,6 +61,7 @@ node = QualibrationNode[Parameters, Quam](
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     # You can get type hinting in your IDE by typing node.parameters.
     # node.parameters.qubits = ["q1", "q3"]
+    node.parameters.simulate = True
     pass
 
 
@@ -117,7 +118,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
             align()
 
             for i, qubit in multiplexed_qubits.items():
-                qubit.readout_state(init_state[i])
+                qubit.readout_state(init_state[i], threshold = .02)
 
             with for_(n, 0, n < n_avg, n + 1):
                 save(n, n_st)
@@ -134,15 +135,13 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                                 qubit.xy.frame_rotation_2pi(phi)
                                 qubit.xy.wait(t + 1)
                                 qubit.z.wait(duration=qubit.xy.operations["x90"].length)
-                                qubit.z.play(
-                                    "const", amplitude_scale=flux / qubit.z.operations["const"].amplitude, duration=t
-                                )
+                                qubit.z.play("const", amplitude_scale=flux / qubit.z.operations["const"].amplitude, duration=t)
                                 qubit.xy.play("x90")
                         align()
 
                         # Qubit readout
                         for i, qubit in multiplexed_qubits.items():
-                            qubit.readout_state(current_state[i])
+                            qubit.readout_state(current_state[i], threshold=0.02)
                             assign(state[i], init_state[i] ^ current_state[i])
                             assign(init_state[i], current_state[i])
                             save(state[i], state_st[i])

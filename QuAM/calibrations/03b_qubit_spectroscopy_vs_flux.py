@@ -54,7 +54,8 @@ node = QualibrationNode[Parameters, Quam](
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     # You can get type hinting in your IDE by typing node.parameters.
     # node.parameters.qubits = ["q1", "q3"]
-
+    node.parameters.simulate = True
+    node.parameters.use_waveform_report = True
     pass
 
 
@@ -118,7 +119,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                             # Update the qubit frequency
                             qubit.xy.update_frequency(df + qubit.xy.intermediate_frequency)
                             # Wait for the qubits to decay to the ground state
-                            qubit.reset_qubit_thermal()
+                            #qubit.reset_qubit_thermal()
                             # Flux sweeping for a qubit
                             duration = (
                                 operation_len * u.ns
@@ -169,7 +170,6 @@ def simulate_qua_program(node: QualibrationNode[Parameters, Quam]):
     config = node.machine.generate_config()
     # Simulate the QUA program, generate the waveform report and plot the simulated samples
     samples, fig, wf_report = simulate_and_plot(qmm, config, node.namespace["qua_program"], node.parameters)
-    # Store the figure, waveform report and simulated samples
     node.results["simulation"] = {"figure": fig, "wf_report": wf_report, "samples": samples}
 
 
@@ -208,7 +208,7 @@ def load_data(node: QualibrationNode[Parameters, Quam]):
     node.load_from_id(node.parameters.load_data_id)
     node.parameters.load_data_id = load_data_id
     # Get the active qubits from the loaded node parameters
-    # node.namespace["qubits"] = get_qubits(node)
+    node.namespace["qubits"] = get_qubits(node)
     # ds_processed = process_raw_dataset(node.results["ds_raw"], node)
     # ds_processed.IQ_abs.plot()
 
@@ -234,6 +234,7 @@ def analyse_data(node: QualibrationNode[Parameters, Quam]):
 def plot_data(node: QualibrationNode[Parameters, Quam]):
     """Plot the raw and fitted data in specific figures whose shape is given by qubit.grid_location."""
     fig_raw_fit = plot_raw_data_with_fit(node.results["ds_raw"], node.namespace["qubits"], node.results["ds_fit"])
+    #node.add_node_info_subtitle(fig_raw_fit)
     plt.show()
     # Store the generated figures
     node.results["figures"] = {

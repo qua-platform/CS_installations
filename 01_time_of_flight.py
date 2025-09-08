@@ -19,6 +19,10 @@ u = unit(coerce_to_integer=True)
 # User parameters
 n_avg = 100               # averages
 
+# loopback simulated experimental parameters
+lb_latency = 80     # cable+fridge delay
+lb_noise_power = 1e-4   # V^2 (≈22 mVrms)
+
 # Choice of element for time of flight calibration (rr1, rr2, rr3)
 RR_ELEM = "rr1"
 
@@ -39,32 +43,101 @@ with program() as raw_trace_prog:
         adc_st.input1().save("adc1_single_run")
         adc_st.input2().save("adc2_single_run")
 
-        
-#####################################
-#  Open Communication with the QOP  #
-#####################################
-qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
 
 # Toggle between simulate and run-on-hardware
-simulate = True
+simulate = False
 
 if simulate:
-
-    job = qmm.simulate(
-        config,
-        raw_trace_prog,
-        SimulationConfig(duration=10000),
+        # --- SaaS login ---
+    client = QmSaas(
+    host="qm-saas.dev.quantum-machines.co",
+    email="benjamin.safvati@quantum-machines.co",
+    password="ubq@yvm3RXP1bwb5abv"
     )
 
-    # (optional) still see the DAC activity
-    samples = job.get_simulated_samples()
-    samples.con1.plot()
-    wr = job.get_simulated_waveform_report()
-    wr.create_plot(samples, plot=True, save_path=str(Path(__file__).resolve()))
+    with client.simulator(QOPVersion(os.environ.get("QM_QOP_VERSION", "v2_5_0"))) as inst:
+        inst.spawn()
+        qmm = QuantumMachinesManager(
+            host=inst.host,
+            port=inst.port,
+            connection_headers=inst.default_connection_headers,
+        )
+        # Duration in QUA clock cycles (1 cc = 4 ns)
+        sim_dur_cc = 40_000
 
+        # AO1->AI1 and AO2->AI2 loopback with latency & noise
+        sim_if = LoopbackInterface(
+            [("con1", 1, "con1", 1), ("con1", 2, "con1", 2)],
+            latency=lb_latency,
+            noisePower=lb_noise_power,
+        )
+
+        job = qmm.simulate(
+            config,
+            raw_trace_prog,
+            SimulationConfig(duration=sim_dur_cc, simulation_interface=sim_if),
+        )
+
+        # (optional) still see the DAC activity
+        samples = job.get_simulated_samples()
+        samples.con1.plot()
+        wr = job.get_simulated_waveform_report()
+        wr.create_plot(samples, plot=True, save_path=str(Path(__file__).resolve()))
+
+        # fetch the same result streams as on hardware
+        res = job.result_handles
+        res.wait_for_all_values()
+        adc1 = u.raw2volts(res.get("adc1").fetch_all())
+        adc2 = u.raw2volts(res.get("adc2").fetch_all())
+        adc1_single_run = u.raw2volts(res.get("adc1_single_run").fetch_all())
+        adc2_single_run = u.raw2volts(res.get("adc2_single_run").fetch_all())
+
+        adc1_mean = np.mean(adc1)
+        adc2_mean = np.mean(adc2)
+        adc1_unbiased = adc1 - adc1_mean
+        adc2_unbiased = adc2 - adc2_mean
+        signal = savgol_filter(np.abs(adc1_unbiased + 1j * adc2_unbiased), 11, 3)
+        th = (np.mean(signal[:100]) + np.mean(signal[:-100])) / 2
+        delay = np.where(signal > th)[0][0]
+        delay = np.round(delay / 4) * 4  # closest multiple of 4 ns
+
+        fig = plt.figure()
+        plt.subplot(121)
+        plt.title("Single run (simulate)")
+        plt.plot(adc1_single_run, "b", label="Input 1")
+        plt.plot(adc2_single_run, "r", label="Input 2")
+        xl = plt.xlim()
+        yl = plt.ylim()
+        plt.axhline(y=0.5)
+        plt.axhline(y=-0.5)
+        plt.plot(xl, adc1_mean * np.ones(2), "k--")
+        plt.plot(xl, adc2_mean * np.ones(2), "k--")
+        plt.plot(delay * np.ones(2), yl, "k--")
+        plt.xlabel("Time [ns]")
+        plt.ylabel("Signal amplitude [V]")
+        plt.legend()
+
+        plt.subplot(122)
+        plt.title("Averaged run (simulate)")
+        plt.plot(adc1, "b", label="Input 1")
+        plt.plot(adc2, "r", label="Input 2")
+        xl = plt.xlim()
+        yl = plt.ylim()
+        plt.plot(xl, adc1_mean * np.ones(2), "k--")
+        plt.plot(xl, adc2_mean * np.ones(2), "k--")
+        plt.plot(delay * np.ones(2), yl, "k--")
+        plt.xlabel("Time [ns]")
+        plt.legend()
+        plt.grid("both")
+        plt.tight_layout()
+        plt.show()
+
+        print(f"[SIM] DC offset to add to I in the config: {-adc1_mean:.6f} V")
+        print(f"[SIM] DC offset to add to Q in the config: {-adc2_mean:.6f} V")
+        print(f"[SIM] Time Of Flight to add in the config: {delay} ns")
 else:
     qmm = QuantumMachinesManager(
-    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave_calibration_db_path=os.getcwd()
 )
     qm = qmm.open_qm(config)
     job = qm.execute(raw_trace_prog)

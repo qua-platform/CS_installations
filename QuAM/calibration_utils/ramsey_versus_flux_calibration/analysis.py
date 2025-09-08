@@ -60,8 +60,8 @@ def fit_raw_data(ds: xr.Dataset, node: QualibrationNode) -> Tuple[xr.Dataset, di
         Dataset containing the fit results.
     """
     # # TODO: explain the data analysis
-    fit_data = fit_oscillation_decay_exp(ds.state, "idle_times")
-    fit_data.attrs = {"long_name": "time", "units": "µs"}
+    fit_data = fit_oscillation_decay_exp(ds.state, "idle_times") 
+    fit_data.attrs = {"long_name": "time", "units": "µs"} 
     fitted = oscillation_decay_exp(
         ds.state.idle_times,
         fit_data.sel(fit_vals="a"),

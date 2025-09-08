@@ -1,0 +1,164 @@
+{
+    "created_at": "2025-08-26T15:44:36-07:00",
+    "metadata": {
+        "description": "\n        1D RESONATOR SPECTROSCOPY\nThis sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to extract the\n'I' and 'Q' quadratures across varying readout intermediate frequencies for all the active qubits.\nThe data is then post-processed to determine the resonator resonance frequency.\nThis frequency is used to update the readout frequency in the state.\n\nPrerequisites:\n    - Having calibrated the IQ mixer/Octave connected to the readout line (node 01a_mixer_calibration.py).\n    - Having calibrated the time of flight, offsets, and gains (node 01a_time_of_flight.py).\n    - Having initialized the QUAM state parameters for the readout pulse amplitude and duration, and the resonators depletion time.\n    - Having specified the desired flux point if relevant (qubit.z.flux_point).\n\nState update:\n    - The readout frequency: qubit.resonator.f_01 & qubit.resonator.RF_frequency\n",
+        "run_start": "2025-08-26T15:44:24.368-07:00",
+        "run_end": "2025-08-26T15:44:36.033-07:00",
+        "name": "02a_resonator_spectroscopy",
+        "data_path": "2025-08-26/#52_02a_resonator_spectroscopy_154436"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": null,
+                "multiplexed": false,
+                "use_state_discrimination": false,
+                "reset_type": "thermal",
+                "num_shots": 100,
+                "frequency_span_in_mhz": 30.0,
+                "frequency_step_in_mhz": 0.1,
+                "simulate": false,
+                "simulation_duration_ns": 50000,
+                "use_waveform_report": true,
+                "timeout": 120,
+                "load_data_id": null
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "A list of qubit names which should participate in the execution of the node. Default is None.",
+                        "title": "Qubits"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "description": "Whether to play control pulses, readout pulses and active/thermal reset at the same time for all qubits (True)\nor to play the experiment sequentially for each qubit (False). Default is False.",
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    },
+                    "use_state_discrimination": {
+                        "default": false,
+                        "description": "Whether to use on-the-fly state discrimination and return the qubit 'state', or simply return the demodulated\nquadratures 'I' and 'Q'. Default is False.",
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "description": "The qubit reset method to use. Must be implemented as a method of Quam.qubit. Can be \"thermal\", \"active\", or\n\"active_gef\". Default is \"thermal\".",
+                        "enum": [
+                            "thermal",
+                            "active",
+                            "active_gef"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "num_shots": {
+                        "default": 100,
+                        "description": "Number of averages to perform. Default is 100.",
+                        "title": "Num Shots",
+                        "type": "integer"
+                    },
+                    "frequency_span_in_mhz": {
+                        "default": 30.0,
+                        "description": "Span of frequencies to sweep in MHz. Default is 30 MHz.",
+                        "title": "Frequency Span In Mhz",
+                        "type": "number"
+                    },
+                    "frequency_step_in_mhz": {
+                        "default": 0.1,
+                        "description": "Step size for frequency sweep in MHz. Default is 0.1 MHz.",
+                        "title": "Frequency Step In Mhz",
+                        "type": "number"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "description": "Simulate the waveforms on the OPX instead of executing the program. Default is False.",
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 50000,
+                        "description": "Duration over which the simulation will collect samples (in nanoseconds). Default is 50_000 ns.",
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "use_waveform_report": {
+                        "default": true,
+                        "description": "Whether to use the interactive waveform report in simulation. Default is True.",
+                        "title": "Use Waveform Report",
+                        "type": "boolean"
+                    },
+                    "timeout": {
+                        "default": 120,
+                        "description": "Waiting time for the OPX resources to become available before giving up (in seconds). Default is 120 s.",
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "Optional QUAlibrate node run index for loading historical data. Default is None.",
+                        "title": "Load Data Id"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "qC1": "successful",
+            "qC2": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 52,
+    "parents": [
+        51
+    ],
+    "patches": [
+        {
+            "op": "replace",
+            "path": "/quam/qubits/qC1/resonator/f_01",
+            "value": 7098563826.0,
+            "old": 7098563826.0
+        },
+        {
+            "op": "replace",
+            "path": "/quam/qubits/qC1/resonator/RF_frequency",
+            "value": 7098563826.0,
+            "old": 7098563826.0
+        },
+        {
+            "op": "replace",
+            "path": "/quam/qubits/qC2/resonator/f_01",
+            "value": 7361855338.0,
+            "old": 7361955338.0
+        },
+        {
+            "op": "replace",
+            "path": "/quam/qubits/qC2/resonator/RF_frequency",
+            "value": 7361855338.0,
+            "old": 7361955338.0
+        }
+    ]
+}

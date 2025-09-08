@@ -67,8 +67,8 @@ def get_octave_gain_and_amplitude(desired_power: float, max_amplitude: float = 0
 # Please refer to https://docs.quantum-machines.co/latest/docs/Guides/octave/ for more details
 
 # Resonator frequencies
-rr_freq = np.array([4.395, 4.422, 4.541, 4.728]) * u.GHz
-rr_LO = 4.5 * u.GHz
+rr_freq = np.array([7.6, 4.422, 4.541, 4.728]) * u.GHz
+rr_LO = 8 * u.GHz
 rr_if = rr_freq - rr_LO  # The intermediate frequency is inferred from the LO and readout frequencies
 assert np.all(np.abs(rr_if) < 400 * u.MHz), "The resonator intermediate frequency must be within [-400; 400] MHz."
 

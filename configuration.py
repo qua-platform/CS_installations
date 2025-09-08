@@ -16,7 +16,7 @@ u = unit(coerce_to_integer=True)
 # Network parameters #
 ######################
 qop_ip = "172.16.33.101"  # QM router IP address
-cluster_name = "CS_2"  # Write cluster_name if version >= QOP220
+cluster_name = "CS_1"  # Write cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 # Path to save data
@@ -28,45 +28,27 @@ default_additional_files = {
     "optimal_weights.npz": "optimal_weights.npz",
 }
 
-############################
-# Set octave configuration #
-############################
+### qubit parameters ###
 
-# The Octave port is 11xxx, where xxx are the last three digits of the Octave internal IP that can be accessed from
-# the OPX admin panel if your QOP version is >= QOP220. Otherwise, it is 50 for Octave1, then 51, 52 and so on.
-octave_1 = OctaveUnit("oct1", qop_ip, port=11232, con="con1")
-
-# If the control PC or local network is connected to the internal network of the QM router (port 2 onwards)
-# or directly to the Octave (without the QM router), use the local octave IP and port 80.
-#octave_ip = "192.168.88.X"
-#octave_1 = OctaveUnit("octave1", octave_ip, port=80, con=con)
-
-# Add the octave
-octaves = [octave_1]
-# Configure the octave config
-octave_config = octave_declaration(octaves)
-
-### TLS parameters ###
-
-# TLS drives: 1 LO+IF pair for each TLS.
-LO_TLS1 = 3.5 * u.GHz    
-IF_TLS1 = 2.0 * u.MHz    
-LO_TLS2 = 4.5 * u.GHz         
-IF_TLS2 = 4.0 * u.MHz     
-LO_TLS3 = 5.5 * u.GHz            
-IF_TLS3 = 6.0 * u.MHz            
-# Initial guess on TLS relaxation/thermalization values.
-# More precise value will be calculated in TLS_T1.py.
-T1_TLS = int(1 * u.us)
-thermalization_time = 5 * T1_TLS
+# qubit drives: 1 LO+IF pair for each qubit.
+LO_qubit1 = 5.5 * u.GHz    
+IF_qubit1 = 100.0 * u.MHz    
+LO_qubit2 = LO_qubit1  # Oct outputs 2 and 3 share an LO        
+IF_qubit2 = -200 * u.MHz     
+LO_qubit3 = 6.5 * u.GHz # Oct output 4           
+IF_qubit3 = 300.0 * u.MHz            
+# Initial guess on qubit relaxation/thermalization values.
+# More precise value will be calculated in qubit_T1.py.
+T1_qubit = int(1 * u.us)
+thermalization_time = 5 * T1_qubit
 
 ### Resonator Parameters ###
 
 # Readout drives: shared LO + 3 IFs for multiplexing.
-LO_RR   = 4e9            
-IF_RR1  = 3e6            
-IF_RR2  = 4e6            
-IF_RR3  = 5e6            
+LO_RR   = 8 * u.GHz            
+IF_RR1  = -200 * u.MHz            
+IF_RR2  = 100 * u.MHz            
+IF_RR3  = 400 * u.MHz            
 # Readout pulse parameters.
 READOUT_LEN = 1000      
 READOUT_AMP = 0.2     
@@ -95,11 +77,11 @@ else:
 
 ### Flux Line Parameters ###
 
-# Flux bias that maximizes TLS resonant frequency.
+# Flux bias that maximizes qubit resonant frequency.
 # Calculated in resonator_spec_vs_flux.py
-MAX_FREQ_POINT_TLS1 = 0.0
-MAX_FREQ_POINT_TLS2 = 0.0
-MAX_FREQ_POINT_TLS3 = 0.0
+MAX_FREQ_POINT_qubit1 = 0.0
+MAX_FREQ_POINT_qubit2 = 0.0
+MAX_FREQ_POINT_qubit3 = 0.0
 # Flux line settle time.
 FLUX_SETTLE_TIME = 100 * u.ns
 # Resonator frequency versus flux fit parameters according to resonator_spec_vs_flux.py.
@@ -117,7 +99,7 @@ ge_threshold = 0.0
 
 # Continuous wave
 CONST_LEN = 1000
-CONST_AMP   = 0.4
+CONST_AMP   = 0.25
 # Saturation pulse
 SAT_LEN = 10 *u.us
 SAT_AMP = 0.5
@@ -206,12 +188,12 @@ minus_y90_Q_wf = minus_y90_wf
 ### Octave parameters ###
 
 # Octave LO source (likely internal)
-LO_SOURCE_TLS = "internal" 
+LO_SOURCE_qubit = "internal" 
 LO_SOURCE_RR  = "internal" 
 # Per-port Octave digital gain/attenuation (dB). Tune later.
-OCT_TLS1_GAIN_DB = -12      
-OCT_TLS2_GAIN_DB = -12      
-OCT_TLS3_GAIN_DB = -12     
+OCT_qubit1_GAIN_DB = -12      
+OCT_qubit2_GAIN_DB = -12      
+OCT_qubit3_GAIN_DB = -12     
 OCT_RO_GAIN_DB   = -12    
 
 ### CONFIG ###
@@ -224,13 +206,13 @@ config = {
             "analog_outputs": {
                 # Readout I/Q IF to Octave OUT1
                 1: {"offset": 0.0}, 2: {"offset": 0.0},
-                # TLS I/Q IF to Octave RF OUTs
-                3: {"offset": 0.0}, 4: {"offset": 0.0},   # TLS1 IF to Octave OUT2
-                5: {"offset": 0.0}, 6: {"offset": 0.0},   # TLS2 IF to Octave OUT3
-                7: {"offset": 0.0}, 8: {"offset": 0.0},   # TLS3 IF to Octave OUT4
+                # qubit I/Q IF to Octave RF OUTs
+                3: {"offset": 0.0}, 4: {"offset": 0.0},   # qubit1 IF to Octave OUT2
+                5: {"offset": 0.0}, 6: {"offset": 0.0},   # qubit2 IF to Octave OUT3
+                7: {"offset": 0.0}, 8: {"offset": 0.0},   # qubit3 IF to Octave OUT4
                 # Flux line (baseband, not through Octave)
-                9: {"offset": 0.0},                       # Flux to shared TLS2 and TLS3
-                10: {"offset": 0.0},                      # Flux to TLS1
+                9: {"offset": 0.0},                       # Flux to shared qubit2 and qubit3
+                10: {"offset": 0.0},                      # Flux to qubit1
             },
             "analog_inputs": {
                 1: {"offset": 0.0},   # Octave IN1 to Readout return I
@@ -248,12 +230,12 @@ config = {
 
     "octaves": {
         "oct1": {
-            # RF Outputs 1,2,3,4 = RR, TLS1, TLS2, TLS3
+            # RF Outputs 1,2,3,4 = RR, qubit1, qubit2, qubit3
             "RF_outputs": {
-                1: {"LO_frequency": LO_RR,   "LO_source": LO_SOURCE_RR,  "gain": OCT_RO_GAIN_DB, "output_mode": "always_on"},
-                2: {"LO_frequency": LO_TLS1, "LO_source": LO_SOURCE_TLS, "gain": OCT_TLS1_GAIN_DB},
-                3: {"LO_frequency": LO_TLS2, "LO_source": LO_SOURCE_TLS, "gain": OCT_TLS2_GAIN_DB},
-                4: {"LO_frequency": LO_TLS3, "LO_source": LO_SOURCE_TLS, "gain": OCT_TLS3_GAIN_DB},
+                1: {"LO_frequency": LO_RR,   "LO_source": LO_SOURCE_RR,  "gain": OCT_RO_GAIN_DB, "output_mode": "triggered"},
+                2: {"LO_frequency": LO_qubit1, "LO_source": LO_SOURCE_qubit, "gain": OCT_qubit1_GAIN_DB, "output_mode": "triggered"},
+                3: {"LO_frequency": LO_qubit2, "LO_source": LO_SOURCE_qubit, "gain": OCT_qubit2_GAIN_DB, "output_mode": "triggered"},
+                4: {"LO_frequency": LO_qubit3, "LO_source": LO_SOURCE_qubit, "gain": OCT_qubit3_GAIN_DB, "output_mode": "triggered"},
             },
             # RF Input 1 = Readout downconversion
             "RF_inputs": {
@@ -264,11 +246,11 @@ config = {
     },
 
     "elements": {
-        # TLS drives
-        "tls1": {
+        # qubit drives
+        "qubit1": {
             "RF_inputs": {
                 "port": ("oct1", 2)},
-            "intermediate_frequency": IF_TLS1,
+            "intermediate_frequency": IF_qubit1,
             "operations": {"const": "const_pulse",
                             "gauss": "gauss_IQ",
                             "saturation": "saturation_pulse",
@@ -289,10 +271,10 @@ config = {
                 },
             },
         },
-        "tls2": {
+        "qubit2": {
             "RF_inputs": {
                 "port": ("oct1", 3)},
-            "intermediate_frequency": IF_TLS2,
+            "intermediate_frequency": IF_qubit2,
             "operations": {"const": "const_pulse",
                             "gauss": "gauss_IQ",
                             "saturation": "saturation_pulse",
@@ -304,7 +286,8 @@ config = {
                             "-x90": "-x90_pulse",
                             "y90": "y90_pulse",
                             "y180": "y180_pulse",
-                            "-y90": "-y90_pulse",},
+                            "-y90": "-y90_pulse",
+                            "zero": "zero_pulse"},
             "digitalInputs": {
                 "switch": {
                     "port": ("con1", 5),
@@ -313,10 +296,10 @@ config = {
                 },
             },
         },
-        "tls3": {
+        "qubit3": {
             "RF_inputs": {
                 "port": ("oct1", 4)},
-            "intermediate_frequency": IF_TLS3,
+            "intermediate_frequency": IF_qubit3,
             "operations": {"const": "const_pulse",
                             "gauss": "gauss_IQ",
                             "saturation": "saturation_pulse",
@@ -339,11 +322,11 @@ config = {
         },
 
         # Flux lines (baseband)
-        "flux_tls1": {
+        "flux_qubit1": {
             "singleInput": {"port": ("con1", 10)},
             "operations": {"const": "const_flux"},
         },
-        "flux_tls23": {
+        "flux_qubit23": {
             "singleInput": {"port": ("con1", 9)},
             "operations": {"const": "const_flux"},
         },
@@ -397,6 +380,13 @@ config = {
     },
 
     "pulses": {
+        "zero_pulse": {
+            "operation": "control",
+            "length": CONST_LEN,  
+            "waveforms": {
+                "I": "zero_wf",
+                "Q": "zero_wf"}
+        },
         "const_pulse": {
             "operation": "control",
             "length": CONST_LEN,  
@@ -525,6 +515,7 @@ config = {
     },
 
     "waveforms": {
+        "zero_wf": {"type": "constant", "sample":0.05},
         "const_wf": {"type": "constant", "sample": CONST_AMP},
         "saturation_drive_wf": {"type": "constant", "sample": SAT_AMP},
         "gauss_drive":  {"type": "arbitrary", "samples": _gauss_samples},  

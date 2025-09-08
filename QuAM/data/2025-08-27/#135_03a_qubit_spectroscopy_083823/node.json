@@ -1,0 +1,163 @@
+{
+    "created_at": "2025-08-27T08:38:23-07:00",
+    "metadata": {
+        "description": "\n        QUBIT SPECTROSCOPY\nThis sequence involves sending a saturation pulse to the qubit, placing it in a mixed state,\nand then measuring the state of the resonator across various qubit drive frequencies.\nIn order to facilitate the qubit search, the qubit pulse duration and amplitude can be changed manually\nfrom the node parameters.\n\nThe data is post-processed to determine the qubit resonance frequency and the width of the peak.\n\nNote that it can happen that the qubit is excited by the image sideband or LO leakage instead of the desired sideband.\nThis is why calibrating the qubit mixer is highly recommended when using external mixers or the Octave.\n\nPrerequisites:\n    - Having calibrated the mixer or the Octave (nodes 01a or 01b).\n    - Having calibrated the readout parameters (nodes 02a, 02b and/or 02c).\n    - Having specified the desired flux point if relevant (qubit.z.flux_point).\n\nState update:\n    - The qubit 0->1 frequency: qubit.f_01 & qubit.xy.RF_frequency\n    - The integration weight angle to get the state discrimination along the 'I' quadrature: qubit.resonator.operations[\"readout\"].integration_weights_angle.\n    - (optional) The saturation pulse amplitude to get the targeted fwhm: qubit.xy.operations[\"saturation\"].amplitude.\n    - (optional) The guessed x180/x90 pulse amplitude: qubit.xy.operations[\"x180\"/\"x90\"].amplitude.\n",
+        "run_start": "2025-08-27T08:38:04.247-07:00",
+        "run_end": "2025-08-27T08:38:23.501-07:00",
+        "name": "03a_qubit_spectroscopy",
+        "data_path": "2025-08-27/#135_03a_qubit_spectroscopy_083823"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": null,
+                "multiplexed": false,
+                "use_state_discrimination": false,
+                "reset_type": "thermal",
+                "num_shots": 100,
+                "frequency_span_in_mhz": 100.0,
+                "frequency_step_in_mhz": 0.25,
+                "operation": "saturation",
+                "operation_amplitude_factor": 0.1,
+                "operation_len_in_ns": null,
+                "target_peak_width": 3000000.0,
+                "update_pulses_amplitude": false,
+                "simulate": false,
+                "simulation_duration_ns": 50000,
+                "use_waveform_report": true,
+                "timeout": 120,
+                "load_data_id": null
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Qubits"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    },
+                    "use_state_discrimination": {
+                        "default": false,
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "enum": [
+                            "thermal",
+                            "active",
+                            "active_gef"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "num_shots": {
+                        "default": 100,
+                        "title": "Num Shots",
+                        "type": "integer"
+                    },
+                    "frequency_span_in_mhz": {
+                        "default": 100,
+                        "title": "Frequency Span In Mhz",
+                        "type": "number"
+                    },
+                    "frequency_step_in_mhz": {
+                        "default": 0.25,
+                        "title": "Frequency Step In Mhz",
+                        "type": "number"
+                    },
+                    "operation": {
+                        "default": "saturation",
+                        "title": "Operation",
+                        "type": "string"
+                    },
+                    "operation_amplitude_factor": {
+                        "default": 0.1,
+                        "title": "Operation Amplitude Factor",
+                        "type": "number"
+                    },
+                    "operation_len_in_ns": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Operation Len In Ns"
+                    },
+                    "target_peak_width": {
+                        "default": 3000000.0,
+                        "title": "Target Peak Width",
+                        "type": "number"
+                    },
+                    "update_pulses_amplitude": {
+                        "default": false,
+                        "title": "Update Pulses Amplitude",
+                        "type": "boolean"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 50000,
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "use_waveform_report": {
+                        "default": true,
+                        "title": "Use Waveform Report",
+                        "type": "boolean"
+                    },
+                    "timeout": {
+                        "default": 120,
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Load Data Id"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "qC1": "successful",
+            "qC2": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 135,
+    "parents": [
+        134
+    ]
+}

@@ -1,0 +1,21 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "qC1": {
+            "success": true,
+            "resonator_frequency": 7098563826.0,
+            "frequency_shift": 0.0,
+            "optimal_power": -30.545454545454543
+        },
+        "qC2": {
+            "success": true,
+            "resonator_frequency": 7362155338.0,
+            "frequency_shift": 200000.0,
+            "optimal_power": -51.0
+        }
+    },
+    "figures": {
+        "amplitude": "./figures.amplitude.png"
+    }
+}

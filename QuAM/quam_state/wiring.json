@@ -66,6 +66,6 @@
     "network": {
         "host": "172.16.33.101",
         "port": null,
-        "cluster_name": "CS_2"
+        "cluster_name": "CS_1"
     }
 }

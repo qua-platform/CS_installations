@@ -1,0 +1,194 @@
+{
+    "created_at": "2025-08-26T16:03:39-07:00",
+    "metadata": {
+        "description": "\n        RESONATOR SPECTROSCOPY VERSUS READOUT POWER\nThis sequence involves measuring the resonator by sending a readout pulse and\ndemodulating the signals to extract the 'I' and 'Q' quadratures for all resonators\nsimultaneously. This is done across various readout frequencies and amplitudes.\nBased on the results, one can determine if a qubit is coupled to the resonator by\nnoting the resonator frequency splitting. This information can then be used to adjust\nthe readout amplitude, choosing a readout amplitude value just before the observed\nfrequency splitting.\n\nPrerequisites:\n    - Having calibrated the resonator frequency (node 02a_resonator_spectroscopy.py).\n    - Having specified the desired flux point if relevant (qubit.z.flux_point).\n\nState update:\n    - The readout frequency at the optimal readout power: qubit.resonator.f_01 & qubit.resonator.RF_frequency\n    - The readout power: qubit.resonator.set_output_power()\n    - The readout frequency for the optimal readout power. \n",
+        "run_start": "2025-08-26T16:02:30.004-07:00",
+        "run_end": "2025-08-26T16:03:39.740-07:00",
+        "name": "02b_resonator_spectroscopy_vs_power",
+        "data_path": "2025-08-26/#56_02b_resonator_spectroscopy_vs_power_160339"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": null,
+                "multiplexed": false,
+                "use_state_discrimination": false,
+                "reset_type": "thermal",
+                "num_shots": 100,
+                "frequency_span_in_mhz": 15.0,
+                "frequency_step_in_mhz": 0.1,
+                "max_power_dbm": -25,
+                "min_power_dbm": -50,
+                "num_power_points": 100,
+                "max_amp": 0.1,
+                "derivative_crossing_threshold_in_hz_per_dbm": -50000,
+                "derivative_smoothing_window_num_points": 10,
+                "moving_average_filter_window_num_points": 10,
+                "buffer_from_crossing_threshold_in_dbm": 1,
+                "simulate": false,
+                "simulation_duration_ns": 50000,
+                "use_waveform_report": true,
+                "timeout": 1200,
+                "load_data_id": null
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "A list of qubit names which should participate in the execution of the node. Default is None.",
+                        "title": "Qubits"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "description": "Whether to play control pulses, readout pulses and active/thermal reset at the same time for all qubits (True)\nor to play the experiment sequentially for each qubit (False). Default is False.",
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    },
+                    "use_state_discrimination": {
+                        "default": false,
+                        "description": "Whether to use on-the-fly state discrimination and return the qubit 'state', or simply return the demodulated\nquadratures 'I' and 'Q'. Default is False.",
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "description": "The qubit reset method to use. Must be implemented as a method of Quam.qubit. Can be \"thermal\", \"active\", or\n\"active_gef\". Default is \"thermal\".",
+                        "enum": [
+                            "thermal",
+                            "active",
+                            "active_gef"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "num_shots": {
+                        "default": 100,
+                        "description": "Number of averages to perform. Default is 100.",
+                        "title": "Num Shots",
+                        "type": "integer"
+                    },
+                    "frequency_span_in_mhz": {
+                        "default": 15,
+                        "description": "Span of frequencies to sweep in MHz. Default is 15 MHz.",
+                        "title": "Frequency Span In Mhz",
+                        "type": "number"
+                    },
+                    "frequency_step_in_mhz": {
+                        "default": 0.1,
+                        "description": "Step size for frequency sweep in MHz. Default is 0.1 MHz.",
+                        "title": "Frequency Step In Mhz",
+                        "type": "number"
+                    },
+                    "max_power_dbm": {
+                        "default": -25,
+                        "description": "Maximum power level in dBm. Default is -25 dBm.",
+                        "title": "Max Power Dbm",
+                        "type": "integer"
+                    },
+                    "min_power_dbm": {
+                        "default": -50,
+                        "description": "Minimum power level in dBm. Default is -50 dBm.",
+                        "title": "Min Power Dbm",
+                        "type": "integer"
+                    },
+                    "num_power_points": {
+                        "default": 100,
+                        "description": "Number of points of the readout power axis. Default is 100.",
+                        "title": "Num Power Points",
+                        "type": "integer"
+                    },
+                    "max_amp": {
+                        "default": 0.1,
+                        "description": "Maximum readout amplitude for the experiment. Default is 0.1.",
+                        "title": "Max Amp",
+                        "type": "number"
+                    },
+                    "derivative_crossing_threshold_in_hz_per_dbm": {
+                        "default": -50000,
+                        "description": "Threshold for derivative crossing in Hz/dBm. Default is -50000 Hz/dBm.",
+                        "title": "Derivative Crossing Threshold In Hz Per Dbm",
+                        "type": "integer"
+                    },
+                    "derivative_smoothing_window_num_points": {
+                        "default": 10,
+                        "description": "Size of the window in number of points corresponding to the rolling average (number of points). Default is 10.",
+                        "title": "Derivative Smoothing Window Num Points",
+                        "type": "integer"
+                    },
+                    "moving_average_filter_window_num_points": {
+                        "default": 10,
+                        "description": "Size of the moving average filter window (number of points). Default is 5.",
+                        "title": "Moving Average Filter Window Num Points",
+                        "type": "integer"
+                    },
+                    "buffer_from_crossing_threshold_in_dbm": {
+                        "default": 1,
+                        "description": "Buffer from the crossing threshold in dBm - the optimal readout power will be set to be this number in Db below\nthe threshold. Default is 1 dBm.",
+                        "title": "Buffer From Crossing Threshold In Dbm",
+                        "type": "integer"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "description": "Simulate the waveforms on the OPX instead of executing the program. Default is False.",
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 50000,
+                        "description": "Duration over which the simulation will collect samples (in nanoseconds). Default is 50_000 ns.",
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "use_waveform_report": {
+                        "default": true,
+                        "description": "Whether to use the interactive waveform report in simulation. Default is True.",
+                        "title": "Use Waveform Report",
+                        "type": "boolean"
+                    },
+                    "timeout": {
+                        "default": 120,
+                        "description": "Waiting time for the OPX resources to become available before giving up (in seconds). Default is 120 s.",
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "Optional QUAlibrate node run index for loading historical data. Default is None.",
+                        "title": "Load Data Id"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "qC1": "successful",
+            "qC2": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 56,
+    "parents": [
+        55
+    ]
+}

@@ -1,0 +1,17 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "qC1": {
+            "success": true,
+            "tls_flux_biases": [],
+            "tls_frequencies_mhz": [],
+            "tls_tau_us": [],
+            "tls_fwhm_mhz": []
+        }
+    },
+    "figures": {
+        "raw_data": "./figures.raw_data.png",
+        "tls_envelopes": "./figures.tls_envelopes.png"
+    }
+}

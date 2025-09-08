@@ -1,0 +1,162 @@
+{
+    "created_at": "2025-08-26T22:48:51-07:00",
+    "metadata": {
+        "description": "\n        RESONATOR SPECTROSCOPY VERSUS FLUX\nThis sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to\nextract the 'I' and 'Q' quadratures. This is done across various readout frequencies and flux biases.\nThe resonator frequency as a function of flux bias is then extracted and fitted in order to extract the relevant \nflux biases and corresponding readout frequency.\n\nThis information can then be used to adjust the readout frequency for the maximum and minimum frequency points.\nThe flux point parameter (qubit.z.flux_point) is used in order to decide to update the independent or joint offset.\n\nPrerequisites:\n    - Having calibrated the resonator frequency (nodes 02a, 02b and/or 02c).\n    - Having specified the desired flux point (qubit.z.flux_point).\n\n\nState update:\n    - The readout frequency for the chosen flux bias: qubit.resonator.f_01 & qubit.resonator.RF_frequency\n    - The joint or independent offset depending on the chosen flux point: qubit.z.\n    - The min offset: qubit.z.min_offset\n    - The relevant flux offset: qubit.z.independent_offset or qubit.z.joint_offset \n    - The min offset: qubit.z.min_offset\n    - phi0: qubit.z.phi0_voltage and qubit.z.phi0_current\n",
+        "run_start": "2025-08-26T22:47:55.233-07:00",
+        "run_end": "2025-08-26T22:48:51.847-07:00",
+        "name": "02c_resonator_spectroscopy_vs_flux",
+        "data_path": "2025-08-26/#119_02c_resonator_spectroscopy_vs_flux_224851"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": null,
+                "multiplexed": false,
+                "use_state_discrimination": false,
+                "reset_type": "thermal",
+                "num_shots": 100,
+                "min_flux_offset_in_v": -0.5,
+                "max_flux_offset_in_v": 0.5,
+                "num_flux_points": 101,
+                "frequency_span_in_mhz": 15.0,
+                "frequency_step_in_mhz": 0.1,
+                "input_line_impedance_in_ohm": 50.0,
+                "line_attenuation_in_db": 0.0,
+                "update_flux_min": false,
+                "simulate": false,
+                "simulation_duration_ns": 50000,
+                "use_waveform_report": true,
+                "timeout": 120,
+                "load_data_id": null
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Qubits"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    },
+                    "use_state_discrimination": {
+                        "default": false,
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "enum": [
+                            "thermal",
+                            "active",
+                            "active_gef"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "num_shots": {
+                        "default": 100,
+                        "title": "Num Shots",
+                        "type": "integer"
+                    },
+                    "min_flux_offset_in_v": {
+                        "default": -0.5,
+                        "title": "Min Flux Offset In V",
+                        "type": "number"
+                    },
+                    "max_flux_offset_in_v": {
+                        "default": 0.5,
+                        "title": "Max Flux Offset In V",
+                        "type": "number"
+                    },
+                    "num_flux_points": {
+                        "default": 101,
+                        "title": "Num Flux Points",
+                        "type": "integer"
+                    },
+                    "frequency_span_in_mhz": {
+                        "default": 15,
+                        "title": "Frequency Span In Mhz",
+                        "type": "number"
+                    },
+                    "frequency_step_in_mhz": {
+                        "default": 0.1,
+                        "title": "Frequency Step In Mhz",
+                        "type": "number"
+                    },
+                    "input_line_impedance_in_ohm": {
+                        "default": 50,
+                        "title": "Input Line Impedance In Ohm",
+                        "type": "number"
+                    },
+                    "line_attenuation_in_db": {
+                        "default": 0,
+                        "title": "Line Attenuation In Db",
+                        "type": "number"
+                    },
+                    "update_flux_min": {
+                        "default": false,
+                        "title": "Update Flux Min",
+                        "type": "boolean"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 50000,
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "use_waveform_report": {
+                        "default": true,
+                        "title": "Use Waveform Report",
+                        "type": "boolean"
+                    },
+                    "timeout": {
+                        "default": 120,
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Load Data Id"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "qC1": "successful",
+            "qC2": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 119,
+    "parents": [
+        118
+    ]
+}

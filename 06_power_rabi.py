@@ -43,9 +43,9 @@ with program() as power_rabi:
 
     with for_(n, 0, n < n_avg, n+1):
         with for_(*from_array(a, amplitudes)):
-            # play TLS drive pulse with variable amplitude
-            play("gauss"*amp(a), "tls1")
-            align("tls1", "rr1")
+            # play qubit drive pulse with variable amplitude
+            play("gauss"*amp(a), "qubit1")
+            align("qubit1", "rr1")
             # measure readout from resonator with calibrated integration weights.
             measure("readout", "rr1", 
                     dual_demod.full("cos", "sin", I),
@@ -60,18 +60,28 @@ with program() as power_rabi:
         Q_st.buffer(len(amplitudes)).average().save("Q")
         n_st.save("iteration")
 
-#####################################
-#  Open Communication with the QOP  #
-#####################################
-qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster_name)
-
 ###########################
 # Run or Simulate Program #
 ###########################
 simulate = True
 
 if simulate:
-    simulation_config = SimulationConfig(duration=20_000)  # In clock cycles = 4ns
+   # --- SaaS login ---
+    # client = QmSaas(
+    # host="qm-saas.dev.quantum-machines.co",
+    # email="benjamin.safvati@quantum-machines.co",
+    # password="ubq@yvm3RXP1bwb5abv"
+    # )
+
+    # with client.simulator(QOPVersion(os.environ.get("QM_QOP_VERSION", "v2_5_0"))) as inst:
+        # inst.spawn()
+        # qmm = QuantumMachinesManager(
+        #     host=inst.host,
+        #     port=inst.port,
+        #     connection_headers=inst.default_connection_headers,
+        # )    # Simulates the QUA program for the specified duration
+    qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
+    simulation_config = SimulationConfig(duration=50_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, power_rabi, simulation_config)
     # Get the simulated samples
@@ -85,6 +95,7 @@ if simulate:
     # Visualize and save the waveform report
     waveform_report.create_plot(samples, plot=True, save_path=str(Path(__file__).resolve()))
 else:
+    qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave_calibration_db_path=os.getcwd())
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it

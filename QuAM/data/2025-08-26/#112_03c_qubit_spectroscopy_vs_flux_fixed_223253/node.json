@@ -1,0 +1,216 @@
+{
+    "created_at": "2025-08-26T22:32:53-07:00",
+    "metadata": {
+        "description": "\n        QUBIT SPECTROSCOPY VERSUS FLUX\nThis sequence involves doing a qubit spectroscopy for several flux biases in order to exhibit the qubit frequency\nversus flux response.\n\nPrerequisites:\n    - Having calibrated the mixer or the Octave (nodes 01a or 01b).\n    - Having calibrated the readout parameters (nodes 02a, 02b and/or 02c).\n    - Having calibrated the qubit frequency (node 03a_qubit_spectroscopy.py).\n    - Having specified the desired flux point (qubit.z.flux_point).\n\nState update:\n    - The qubit 0->1 frequency at the set flux point: qubit.f_01 & qubit.xy.RF_frequency\n    - The flux bias corresponding to the set flux point: q.z.independent_offset or q.z.joint_offset.\n",
+        "run_start": "2025-08-26T22:32:10.005-07:00",
+        "run_end": "2025-08-26T22:32:53.796-07:00",
+        "name": "03c_qubit_spectroscopy_vs_flux_fixed",
+        "data_path": "2025-08-26/#112_03c_qubit_spectroscopy_vs_flux_fixed_223253"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": [
+                    "qC1"
+                ],
+                "multiplexed": false,
+                "use_state_discrimination": false,
+                "reset_type": "thermal",
+                "num_shots": 50,
+                "operation": "saturation",
+                "operation_amplitude_factor": 0.1,
+                "operation_len_in_ns": null,
+                "frequency_span_in_mhz": 400.0,
+                "frequency_center_in_mhz": -600.0,
+                "frequency_step_in_mhz": 2.0,
+                "flux_offset_span_in_v": 0.05,
+                "flux_center_in_v": 0.07,
+                "num_flux_points": 21,
+                "input_line_impedance_in_ohm": 50,
+                "line_attenuation_in_db": 0,
+                "simulate": false,
+                "simulation_duration_ns": 50000,
+                "use_waveform_report": true,
+                "timeout": 120,
+                "load_data_id": null
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Qubits"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    },
+                    "use_state_discrimination": {
+                        "default": false,
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "enum": [
+                            "thermal",
+                            "active",
+                            "active_gef"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "num_shots": {
+                        "default": 50,
+                        "title": "Num Shots",
+                        "type": "integer"
+                    },
+                    "operation": {
+                        "default": "saturation",
+                        "title": "Operation",
+                        "type": "string"
+                    },
+                    "operation_amplitude_factor": {
+                        "default": 0.1,
+                        "title": "Operation Amplitude Factor",
+                        "type": "number"
+                    },
+                    "operation_len_in_ns": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Operation Len In Ns"
+                    },
+                    "frequency_span_in_mhz": {
+                        "default": 100.0,
+                        "title": "Frequency Span In Mhz",
+                        "type": "number"
+                    },
+                    "frequency_center_in_mhz": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Frequency Center In Mhz"
+                    },
+                    "frequency_step_in_mhz": {
+                        "default": 1.0,
+                        "title": "Frequency Step In Mhz",
+                        "type": "number"
+                    },
+                    "flux_offset_span_in_v": {
+                        "default": 0.05,
+                        "title": "Flux Offset Span In V",
+                        "type": "number"
+                    },
+                    "flux_center_in_v": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Flux Center In V"
+                    },
+                    "num_flux_points": {
+                        "default": 21,
+                        "title": "Num Flux Points",
+                        "type": "integer"
+                    },
+                    "input_line_impedance_in_ohm": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": 50,
+                        "title": "Input Line Impedance In Ohm"
+                    },
+                    "line_attenuation_in_db": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": 0,
+                        "title": "Line Attenuation In Db"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 50000,
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "use_waveform_report": {
+                        "default": true,
+                        "title": "Use Waveform Report",
+                        "type": "boolean"
+                    },
+                    "timeout": {
+                        "default": 120,
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Load Data Id"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "qC1": "failed"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 112,
+    "parents": [
+        111
+    ]
+}

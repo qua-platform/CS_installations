@@ -1,0 +1,18 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "qC2": {
+            "success": false,
+            "qubit_frequency": NaN,
+            "frequency_shift": NaN,
+            "idle_offset": -0.0011544419769011658,
+            "dv_phi0": 0.009920763453734794,
+            "phi0_current": 0.49603817268673966,
+            "m_pH": "./arrays.npz#fit_results.qC2.m_pH"
+        }
+    },
+    "figures": {
+        "amplitude": "./figures.amplitude.png"
+    }
+}

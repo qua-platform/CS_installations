@@ -1,0 +1,27 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "qC1": {
+            "success": true,
+            "qubit_frequency": 4949104183.223303,
+            "frequency_shift": -500000.0,
+            "idle_offset": 0.0007630199352049486,
+            "dv_phi0": 0.05552012844262071,
+            "phi0_current": 2.7760064221310357,
+            "m_pH": "./arrays.npz#fit_results.qC1.m_pH"
+        },
+        "qC2": {
+            "success": false,
+            "qubit_frequency": NaN,
+            "frequency_shift": NaN,
+            "idle_offset": -0.0008780032104631037,
+            "dv_phi0": 0.09191644129677659,
+            "phi0_current": 4.5958220648388295,
+            "m_pH": "./arrays.npz#fit_results.qC2.m_pH"
+        }
+    },
+    "figures": {
+        "amplitude": "./figures.amplitude.png"
+    }
+}

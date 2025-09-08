@@ -34,7 +34,7 @@ from quam_builder.builder.superconducting import build_quam
 host_ip = "http://172.16.33.101/"  # QOP IP address
 port = None  # QOP Port
 cluster_name = "CS_1"  # Name of the cluster
-calibration_db_path = None  # "/path/to/some/config/folder"
+calibration_db_path = "C:/Users/BenjaminSafvati/Customers/yMo_Chen"  
 
 ########################################################################################################################
 # %%                                      Define the available instrument setup
@@ -66,7 +66,7 @@ connectivity.add_qubit_drive_lines(qubits=qubits, triggered=True)
 # The flux lines for the individual qubits
 connectivity.add_qubit_flux_lines(qubits=[1], constraints=opx_spec(con=1, out_port=10, in_port=None))  # AO10 to TLS1
 
-### ISSUE ###
+### NEED TO MANUALLY EDIT AFTER RUNNING CODE ###
 connectivity.add_qubit_flux_lines(qubits=[2], constraints=opx_spec(con=1, out_port=9,  in_port=None))  # Q2 & Q3 share AO9
 
 # Allocate the wiring
@@ -74,7 +74,7 @@ allocate_wiring(connectivity, instruments)
 
 # View wiring schematic
 visualize(connectivity.elements, available_channels=instruments.available_channels)
-#plt.show(block=True)
+plt.show(block=True)
 
 ########################################################################################################################
 # %%                                   Build the wiring and QUAM

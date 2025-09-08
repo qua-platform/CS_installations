@@ -1,0 +1,25 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "qC1": {
+            "frequency": 4947350006.127098,
+            "fwhm": 19908790.866972174,
+            "iw_angle": 6.2333023908390714,
+            "saturation_amp": 0.019848040319391445,
+            "x180_amp": 0.6495256005786892,
+            "success": true
+        },
+        "qC2": {
+            "frequency": 5757410251.971221,
+            "fwhm": 12393770.929566728,
+            "iw_angle": 4.113730333750958,
+            "saturation_amp": 0.02252968536026121,
+            "x180_amp": 0.7372822293279805,
+            "success": true
+        }
+    },
+    "figures": {
+        "amplitude": "./figures.amplitude.png"
+    }
+}

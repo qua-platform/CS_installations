@@ -1,0 +1,157 @@
+{
+    "created_at": "2025-08-26T23:09:01-07:00",
+    "metadata": {
+        "description": "\n        QUBIT-TLS SWAP SPECTROSCOPY\nThis program consists of exciting the qubit with an xy pi pulse and then tuning the resonant frequency\nwith a Z pulse of varying amplitude and duration. Lastly, the qubit population is read out upon the Z\npulse ending. The resulting chevron patterns correspond to vacuum Rabi oscilations between the qubit and\nstrongly coupled TLSs in its vicinity.\n\nPrerequisites:\n    - Having found the resonance frequency of the resonator coupled to the qubit under\n      study (resonator_spectroscopy).\n    - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy,\n      rabi_chevron, power_rabi and updated the state.\n    - (optional) Having calibrated the readout (readout_frequency, amplitude,\n      duration_optimization IQ_blobs) for better SNR.\n",
+        "run_start": "2025-08-26T23:08:49.315-07:00",
+        "run_end": "2025-08-26T23:09:01.796-07:00",
+        "name": "12_qubit_TLS_swap_spectroscopy",
+        "data_path": "2025-08-26/#127_12_qubit_TLS_swap_spectroscopy_230901"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": [
+                    "qC2"
+                ],
+                "multiplexed": false,
+                "use_state_discrimination": false,
+                "reset_type": "thermal",
+                "num_shots": 100,
+                "frequency_detuning_in_mhz": 1.0,
+                "min_z_duration_in_ns": 16,
+                "max_z_duration_in_ns": 2000,
+                "z_duration_step_in_ns": 60,
+                "flux_span": 0.3,
+                "flux_num": 51,
+                "min_tls_amp": 0.02,
+                "simulate": false,
+                "simulation_duration_ns": 50000,
+                "use_waveform_report": true,
+                "timeout": 120,
+                "load_data_id": null
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Qubits"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    },
+                    "use_state_discrimination": {
+                        "default": false,
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "enum": [
+                            "thermal",
+                            "active",
+                            "active_gef"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "num_shots": {
+                        "default": 100,
+                        "title": "Num Shots",
+                        "type": "integer"
+                    },
+                    "frequency_detuning_in_mhz": {
+                        "default": 1.0,
+                        "title": "Frequency Detuning In Mhz",
+                        "type": "number"
+                    },
+                    "min_z_duration_in_ns": {
+                        "default": 16,
+                        "title": "Min Z Duration In Ns",
+                        "type": "integer"
+                    },
+                    "max_z_duration_in_ns": {
+                        "default": 5000,
+                        "title": "Max Z Duration In Ns",
+                        "type": "integer"
+                    },
+                    "z_duration_step_in_ns": {
+                        "default": 60,
+                        "title": "Z Duration Step In Ns",
+                        "type": "integer"
+                    },
+                    "flux_span": {
+                        "default": 0.01,
+                        "title": "Flux Span",
+                        "type": "number"
+                    },
+                    "flux_num": {
+                        "default": 21,
+                        "title": "Flux Num",
+                        "type": "integer"
+                    },
+                    "min_tls_amp": {
+                        "default": 0.02,
+                        "title": "Min Tls Amp",
+                        "type": "number"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 50000,
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "use_waveform_report": {
+                        "default": true,
+                        "title": "Use Waveform Report",
+                        "type": "boolean"
+                    },
+                    "timeout": {
+                        "default": 120,
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Load Data Id"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "qC2": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 127,
+    "parents": [
+        126
+    ]
+}
