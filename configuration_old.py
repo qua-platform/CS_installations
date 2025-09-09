@@ -35,9 +35,6 @@ def choose_band(LO_frequency):
 qop_ip = "192.168.88.254"  # Write the QM router IP address
 cluster_name = "Cluster_nakamura"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
-# qop_ip = "172.27.99.118"  # Write the QM router IP address
-# cluster_name = "Cluster_nakamura"  # Write your cluster_name if version >= QOP220
-# qop_port = None  # Write the QOP port if version < QOP220
 
 #############
 # Save Path #
@@ -56,8 +53,8 @@ default_additional_files = {
 #####################
 
 con = "con1"
-fem = 5
-# qubit_port = 7
+fem = 2
+qubit_port = 7
 resonator_port = 1
 # Set octave_config to None if no octave are present
 octave_config = None
@@ -66,11 +63,11 @@ octave_config = None
 #                  Qubits                   #
 #############################################
 
-qubit_LO = 3.4 * u.GHz
-qubit_IF = 200 * u.MHz
+qubit_LO = 4.9 * u.GHz
+qubit_IF = 45 * u.MHz + 86 * u.kHz
 qubit_power = 10  # power in dBm at waveform amp = 1 (steps of 3 dB)
 
-qubit_T1 = int(100 * u.us)  # int(36 * u.us)
+qubit_T1 = int(36 * u.us)
 thermalization_time = 5 * qubit_T1
 
 # Note: amplitudes can be -1..1 and are scaled up to `qubit_power` at amp=1
@@ -88,9 +85,9 @@ drag_coef = 0.96
 anharmonicity = -200 * u.MHz
 AC_stark_detuning = -0.517 * u.MHz
 
-x180_len = 40
+x180_len = 52
 x180_sigma = x180_len / 5
-x180_amp = 0.57  # 0.0935
+x180_amp = 0.0935
 x180_wf, x180_der_wf = np.array(
     drag_gaussian_pulse_waveforms(
         x180_amp, x180_len, x180_sigma, drag_coef, anharmonicity, AC_stark_detuning
@@ -173,21 +170,17 @@ minus_y90_Q_wf = minus_y90_wf
 #############################################
 #                Resonators                 #
 #############################################
-resonator_LO = 6.25 * u.GHz
-# resonator_IF = 10 * u.MHz
-# resonator_IF = -76.675257 * u.MHz
-resonator_IF = (-70 + 2.5) * u.MHz
-
+resonator_LO = 7.4 * u.GHz
+resonator_IF = -302 * u.MHz
 resonator_power = -2  # power in dBm at waveform amp = 1 (steps of 3 dB)
 
 # Note: amplitudes can be -1..1 and are scaled up to `resonator_power` at amp=1
-readout_len = 1088
-readout_amp = 4e-2
+readout_len = 2320
+readout_amp = 0.07
 # readout_amp = 1 # use 1 before amplitude scan
 
-# time_of_flight = 28  # min is 28
-time_of_flight = 352  # min is 28
-depletion_time = 180 * u.ns * 4
+time_of_flight = 356  # min is 28
+depletion_time = 180 * u.ns
 
 opt_weights = False
 if opt_weights:
@@ -211,11 +204,43 @@ else:
     opt_weights_minus_real = [(-1.0, readout_len)]
 
 # IQ Plane
-# rotation_angle = (64.2 / 180) * np.pi
-rotation_angle = (179.1 / 360) * 2 * np.pi
-ge_threshold = -2.283e-06
-# ge_threshold = 0
+rotation_angle = (64.2 / 180) * np.pi
+ge_threshold = -8.720e-05
 
+#############################################
+#                   Flux                    #
+#############################################
+qubit_flux_map = {
+    "qB1": ("con1", 5, 1, -0.06600390269981624),
+    "qB2": ("con1", 5, 2, 0.44634205079699796),
+    "qB3": ("con1", 5, 3, 0.049262869748781746),
+    "qB4": ("con1", 5, 4, -0.11500393560177126),
+    "qB5": ("con1", 5, 5, -0.08819246314495716),
+    "qC1": ("con1", 5, 6, 0.045121323857095955),
+    "qC2": ("con1", 5, 7, 0.11902848429321082),
+    "qC3": ("con1", 5, 8, -0.12075252364823641),
+    "qC4": ("con1", 6, 1, 0.14215751519648723),
+    "qC5": ("con1", 6, 2, 0.02241909812516478),
+}
+
+flux_fem = {
+    fem: {
+        "type": "LF",
+        "analog_outputs": {
+            port: {
+                "delay": 0,
+                "shareable": False,
+                "sampling_rate": 1e9,
+                "upsampling_mode": "pulse",
+                "output_mode": "direct",
+                "offset": offset,
+            }
+            for qb, (con, fem_id, port, offset) in qubit_flux_map.items()
+            if fem_id == fem
+        },
+    }
+    for fem in {fem_id for _, (con, fem_id, _, _) in qubit_flux_map.items()}
+}
 
 #############################################
 #                  Config                   #
@@ -223,7 +248,7 @@ ge_threshold = -2.283e-06
 config = {
     "version": 1,
     "controllers": {
-        "con1": {
+        con: {
             "type": "opx1000",
             "fems": {
                 fem: {
@@ -242,47 +267,33 @@ config = {
                     # Its range is -41dBm to +10dBm with 3dBm steps.
                     "type": "MW",
                     "analog_outputs": {
-                        i: {
+                        resonator_port: {
+                            "band": choose_band(resonator_LO),
+                            "full_scale_power_dbm": resonator_power,
+                            "upconverters": {1: {"frequency": resonator_LO}},
+                        },  # resonator
+                        qubit_port: {
                             "band": choose_band(qubit_LO),
                             "full_scale_power_dbm": qubit_power,
                             "upconverters": {1: {"frequency": qubit_LO}},
-                        }
-                        for i in range(5, 8 + 1)
+                        },  # qubit
                     },
                     "digital_outputs": {},
-                },
-            },
-        },
-        # readout
-        "con2": dict(
-            type="opx1000",
-            fems={
-                1: dict(
-                    type="MW",
-                    analog_outputs={
-                        resonator_port:
-                        # 8
-                        {
-                            "band": choose_band(resonator_LO),
-                            "full_scale_power_dbm": resonator_power,
-                            "upconverter_frequency": resonator_LO,
-                        },  # resonator
-                    },
-                    analog_inputs={
+                    "analog_inputs": {
                         resonator_port: {
                             "band": choose_band(resonator_LO),
                             "downconverter_frequency": resonator_LO,
                         },  # for down-conversion
                     },
-                )
+                },
+                **flux_fem,
             },
-        ),
+        },
     },
     "elements": {
-        # TODO: rework for multiple resonators & qubits
         "resonator": {
             "MWInput": {
-                "port": ("con2", 1, resonator_port),
+                "port": (con, fem, resonator_port),
                 "upconverter": 1,
             },
             "intermediate_frequency": resonator_IF,
@@ -291,14 +302,14 @@ config = {
                 "readout": "readout_pulse",
             },
             "MWOutput": {
-                "port": ("con2", 1, resonator_port),
+                "port": (con, fem, resonator_port),
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
         "qubit": {
             "MWInput": {
-                "port": (con, fem, 6),
+                "port": (con, fem, qubit_port),
                 "upconverter": 1,
             },
             "intermediate_frequency": qubit_IF,

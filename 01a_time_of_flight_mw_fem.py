@@ -60,13 +60,11 @@ with program() as raw_trace_prog:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-# qmm = QuantumMachinesManager(
-#     host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-# )
-qmm = None
-from iqcc_cloud_client import IQCC_Cloud
-
-qc = IQCC_Cloud(quantum_computer_backend="gilboa")
+qmm = QuantumMachinesManager(
+    host=qop_ip,
+    port=qop_port,
+    cluster_name=cluster_name,
+)
 
 #######################
 # Simulate or execute #
@@ -91,26 +89,17 @@ if simulate:
     )
 
 else:
-    res_handles = qc.execute(raw_trace_prog, config, False, options={"timeout": 3 + 0})[
-        "result"
-    ]
-    raw_adc = np.array(res_handles.get("adcI")) + 1j * np.array(res_handles.get("adcQ"))
-    raw_adc_single_run = np.array(res_handles.get("adc_single_runI")) + 1j * np.array(
-        res_handles.get("adc_single_runQ")
-    )
-    adc = u.raw2volts(raw_adc)
-    adc_single_run = u.raw2volts(raw_adc_single_run)
-    # # Open the quantum machine
-    # qm = qmm.open_qm(config)
-    # # Send the QUA program to the OPX, which compiles and executes it
-    # job = qm.execute(raw_trace_prog)
-    # # Creates a result handle to fetch data from the OPX
-    # res_handles = job.result_handles
-    # # Waits (blocks the Python console) until all results have been acquired
-    # res_handles.wait_for_all_values()
-    # # Fetch the raw ADC traces and convert them into Volts
-    # adc = u.raw2volts(res_handles.get("adc").fetch_all())
-    # adc_single_run = u.raw2volts(res_handles.get("adc_single_run").fetch_all())
+    # Open the quantum machine
+    qm = qmm.open_qm(config)
+    # Send the QUA program to the OPX, which compiles and executes it
+    job = qm.execute(raw_trace_prog)
+    # Creates a result handle to fetch data from the OPX
+    res_handles = job.result_handles
+    # Waits (blocks the Python console) until all results have been acquired
+    res_handles.wait_for_all_values()
+    # Fetch the raw ADC traces and convert them into Volts
+    adc = u.raw2volts(res_handles.get("adc").fetch_all())
+    adc_single_run = u.raw2volts(res_handles.get("adc_single_run").fetch_all())
     # Filter the data to get the pulse arrival time
     signal = savgol_filter(np.abs(adc), 11, 3)
     # Detect the arrival of the readout signal

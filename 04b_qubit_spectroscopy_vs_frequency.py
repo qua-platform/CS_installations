@@ -44,7 +44,7 @@ IFs = np.arange(
 resontor_f_min = 120 * u.MHz
 resontor_f_max = 140 * u.MHz
 resontor_df = 50 * u.kHz
-resontor_frequencies = np.arange(
+resonator_frequencies = np.arange(
     resontor_f_min, resontor_f_max + 0.1, resontor_df
 )  # The frequency vector (+ 0.1 to add f_max to frequencies)
 
@@ -52,7 +52,7 @@ resontor_frequencies = np.arange(
 save_data_dict = {
     "n_avg": n_avg,
     "IF_frequencies": IFs,
-    "resontor_frequencies": resontor_frequencies,
+    "resonator_frequencies": resonator_frequencies,
     "config": config,
 }
 
@@ -74,11 +74,11 @@ with program() as qubit_spec:
         with for_(*from_array(f, IFs)):
             # Update the frequency of the digital oscillator linked to the qubit element
             update_frequency("qubit", f)
-            with for_each_(resonator_f, resontor_frequencies):
+            with for_each_(resonator_f, resonator_frequencies):
                 update_frequency("resonator", resonator_f)
                 # Play the saturation pulse to put the qubit in a mixed state - Can adjust the amplitude on the fly [-2; 2)
                 play(
-                    "saturation" * amp(a),
+                    "saturation",
                     "qubit",
                     duration=saturation_len * u.ns,
                 )
@@ -104,10 +104,10 @@ with program() as qubit_spec:
     with stream_processing():
         # Cast the data into a 2D matrix, average the matrix along its second dimension (of size 'n_avg') and store the results
         # (1D vector) on the OPX processor
-        I_st.buffer(len(resontor_frequencies)).buffer(len(IFs)).buffer(n_avg).map(
+        I_st.buffer(len(resonator_frequencies)).buffer(len(IFs)).buffer(n_avg).map(
             FUNCTIONS.average()
         ).save_all("I")
-        Q_st.buffer(len(resontor_frequencies)).buffer(len(IFs)).buffer(n_avg).map(
+        Q_st.buffer(len(resonator_frequencies)).buffer(len(IFs)).buffer(n_avg).map(
             FUNCTIONS.average()
         ).save_all("Q")
         n_st.save_all("iteration")
