@@ -40,7 +40,7 @@ resonator_IF = resonator_IF_q1
 n_avg = 1000  # The number of averages
 
 save_data_dict = {
-    "resonator": resonator,
+    resonator: resonator,
     "resonator_LO": resonator_LO,
     "n_avg": n_avg,
     "config": config,

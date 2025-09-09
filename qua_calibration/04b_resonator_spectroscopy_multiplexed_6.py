@@ -1,35 +1,3 @@
-"""
-    RESONATOR SPECTROSCOPY — FLEXIBLE N-RESONATOR VERSION (QM/QUA)
-
-This script generalizes your two-resonator spectroscopy to **any** number of
-resonators with customizable labels and plotting markers. Edit the
-`RESONATORS` list below to add/remove resonators and to set their labels,
-intermediate frequencies, and readout amplitudes.
-
-Key features
-------------
-- Arbitrary number of resonators: just add entries to `RESONATORS`.
-- Per-resonator config: name, label (for plots), IF, readout amplitude.
-- Optional simultaneous (multiplexed) or sequential measurement.
-- Stream names are auto-generated: `I_<name>`, `Q_<name>`.
-- Live plotting combines all resonators in two panels (|S| and phase) with a legend.
-- Results saved with all traces and metadata.
-
-Prerequisites
--------------
-- Valid QM configuration in `configuration_mw_fem.py` (imports `config`, `u`,
-  `readout_len`, `depletion_time`, `resonator_LO`, `save_dir`, `default_additional_files`, etc.).
-- Proper time-of-flight, offsets, gains calibration.
-- IQ mixer calibration on the readout line (external or Octave).
-- Reasonable initial guesses for each resonator IF.
-
-Usage
------
-- Edit the `RESONATORS` list and run.
-- Toggle `measure_simultaneously` to True for fully multiplexed acquisition.
-- Toggle `simulate` for simulation vs execution on hardware.
-
-"""
 from __future__ import annotations
 from typing import List, Dict, Any
 
@@ -63,17 +31,17 @@ RESONATORS: List[Dict[str, Any]] = [
     {"name": "rr1", "IF": resonator_IF_q1, "label": "Q1"},
     {"name": "rr2", "IF": resonator_IF_q2, "label": "Q2"},
     {"name": "rr3", "IF": resonator_IF_q3, "label": "Q3"},
-    {"name": "rr4", "IF": resonator_IF_q3, "label": "Q4"},
-    {"name": "rr5", "IF": resonator_IF_q3, "label": "Q5"},
-    {"name": "rr6", "IF": resonator_IF_q3, "label": "Q6"},
+    {"name": "rr4", "IF": resonator_IF_q4, "label": "Q4"},
+    {"name": "rr5", "IF": resonator_IF_q5, "label": "Q5"},
+    {"name": "rr6", "IF": resonator_IF_q6, "label": "Q6"},
 ]
 
 # Averaging
-n_avg = 100
+n_avg = 1000
 
 # Frequency sweep (shared for all resonators; each is swept around its own IF)
 span = 30.0 * u.MHz
-step = 100 * u.kHz
+step = 50 * u.kHz
 # Sweep detunings: e.g., -30 MHz .. +30 MHz in steps of 100 kHz
 dfs = np.arange(-span, span, step, dtype=int)
 
@@ -87,7 +55,7 @@ save_data_dict = {
 
 # Measurement mode: set True to start all measures at the same time (full multiplexing)
 # Set False to measure one-by-one in sequence
-measure_simultaneously = False
+measure_simultaneously = True
 
 ###################
 #   Sanity checks  #
@@ -117,8 +85,7 @@ with program() as PROGRAM:
 
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
-            # Drain the resonators before the next readout
-            wait(depletion_time * u.ns, *RES_NAMES)
+            
 
             if measure_simultaneously:
                 # Align all elements so the measure() calls start together
@@ -143,6 +110,8 @@ with program() as PROGRAM:
                 )
                 save(I[i], I_st[i])
                 save(Q[i], Q_st[i])
+
+            wait(depletion_time * u.ns, *RES_NAMES)
 
         save(n, n_st)
 
@@ -185,9 +154,7 @@ else:
 
         fig = plt.figure()
         interrupt_on_close(fig, job)
-
-        # Assign simple distinct markers/linestyles for clarity
-        MARKERS = ["o", "s", "^", "D", "x", "*", "+", "v", "<", ">", "1", "2", "3", "4"]
+        fig_fit = plt.figure() 
 
         while results.is_processing():
             fetched = results.fetch_all()
@@ -234,22 +201,28 @@ else:
             plt.pause(0.5)
 
             # Optional: Fit each resonance (if qualang_tools.plot.fitting is available)
+
+            plt.figure(fig_fit.number)
+            plt.clf()
+            fig_grid_fit, axs_fit =  plt.subplots(1, ncols, num=fig_fit.number, constrained_layout=True)
+            if ncols == 1:
+                axs_fit = [axs_fit]
+            plt.subplots_adjust(wspace=0.35)
+            plt.gcf().set_size_inches(max(4 * ncols, 8), 4, forward=True)
+            plt.suptitle("Multiplexed resonator spectroscopy (Fits)")
             try:
                 from qualang_tools.plot.fitting import Fit
+                fit = Fit()
                 for i, lab in enumerate(RES_LABS):
                     freqs_MHz = (RES_IFS[i] + dfs) / u.MHz
-                    # Create a NEW figure every time
-                    fig_fit = plt.figure()
-                    fit = Fit()
-                    res_fit = fit.reflection_resonator_spectroscopy(freqs_MHz, RR_abs[i], plot=True)
-                    plt.title(f"Resonator {RES_NAMES[i]} - LO: {resonator_LO / u.GHz} GHz")
-                    plt.xlabel("Intermediate frequency [MHz]")
-                    plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
-                    plt.tight_layout()
 
-                    # Save every fit figure to disk with a unique name
-                    data_handler = DataHandler(root_data_folder=save_dir)
-                    save_data_dict.update({f"fig_fit_{lab}": fig_fit})
+                    ax_fit = axs_fit[i]          
+                    plt.sca(ax_fit)              
+
+                    _ = fit.reflection_resonator_spectroscopy(freqs_MHz, RR_abs[i], plot=True)
+
+                    ax_fit.set_title(f"Resonator {RES_NAMES[i]}")
+
             except Exception:
                 pass
 
@@ -260,6 +233,7 @@ else:
                 save_data_dict[f"I_{rr}_data"] = I_list[i]
                 save_data_dict[f"Q_{rr}_data"] = Q_list[i]
             save_data_dict.update({"fig_live": fig})
+            save_data_dict.update({"fig_live_fit": fig_fit})
             data_handler.additional_files = {script_name: script_name, **default_additional_files}
             data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
 

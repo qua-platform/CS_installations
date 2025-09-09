@@ -43,15 +43,15 @@ matplotlib.use('TkAgg')
 #   Parameters   #
 ##################
 # Choose parameters of target rr/qb
-Q1_xy = "q3_xy"
+Q1_xy = "q4_xy"
 Q2_xy = "q2_xy"
-qubit_IF_Q1 = qubit_IF_q3
+qubit_IF_Q1 = qubit_IF_q4
 qubit_IF_Q2 = qubit_IF_q2
-qubit_LO_Q1 = qubit_LO_q3
+qubit_LO_Q1 = qubit_LO_q4
 qubit_LO_Q2 = qubit_LO_q2
-rr1 = "rr3"
+rr1 = "rr4"
 rr2 = "rr2"
-rrs = [3, 2]
+rrs = [4, 2]
 
 # # Parameters Definition
 # n_avg = 400  # The number of averages

@@ -5,7 +5,7 @@ Octave configuration working for QOP222 and qm-qua==1.1.5 and newer.
 
 from pathlib import Path
 import numpy as np
-from qualang_tools.config.waveform_tools import drag_gaussian_pulse_waveforms
+from qualang_tools.config.waveform_tools import drag_gaussian_pulse_waveforms, drag_cosine_pulse_waveforms
 from qualang_tools.units import unit
 import plotly.io as pio
 
@@ -19,7 +19,7 @@ u = unit(coerce_to_integer=True)
 ######################
 # Network parameters #
 ######################
-qop_ip = "172.16.33.115"  # Write the QM router IP address
+qop_ip = "172.16.33.116"  # Write the QM router IP address
 cluster_name = "CS_DGX"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 octave_config = None
@@ -44,12 +44,12 @@ MW_FEM = 1
 #                  Qubits                   #
 #############################################
 # Qubits full scale power #set between -11 and 16 dBm with a 3 dB granularity
-qubit_full_scale_power_dbm_q1 = 1
-qubit_full_scale_power_dbm_q2 = 1
-qubit_full_scale_power_dbm_q3 = 1
-qubit_full_scale_power_dbm_q4 = 1
-qubit_full_scale_power_dbm_q5 = 1
-qubit_full_scale_power_dbm_q6 = 1
+qubit_full_scale_power_dbm_q1 = -11 #Lo
+qubit_full_scale_power_dbm_q2 = -11 #Lo
+qubit_full_scale_power_dbm_q3 = -11 #Lo
+qubit_full_scale_power_dbm_q4 = -11 #Lo
+qubit_full_scale_power_dbm_q5 = -11 #Lo
+qubit_full_scale_power_dbm_q6 = -11 #Lo
 # Qubits bands
 # The keyword "band" refers to the following frequency bands:
 #   1: (50 MHz - 5.5 GHz)
@@ -62,13 +62,13 @@ qubit_band_q4 = 1
 qubit_band_q5 = 1
 qubit_band_q6 = 1
 # Qubits LO
-qubit_LO_q1 = 5.10 * u.GHz
+qubit_LO_q1 = 5.10 * u.GHz # = 5.1e9
 qubit_LO_q2 = 5.00 * u.GHz
 qubit_LO_q3 = 4.50 * u.GHz
 qubit_LO_q4 = 4.90 * u.GHz
 qubit_LO_q5 = 4.90 * u.GHz
 qubit_LO_q6 = 5.05 * u.GHz
-# Qubits IF
+# Qubits IF 
 qubit_IF_q1 = 100* u.MHz
 qubit_IF_q2 = 100 * u.MHz
 qubit_IF_q3 = 100 * u.MHz
@@ -93,14 +93,14 @@ qubit6_T1 = int(30 * u.us)
 thermalization_time = 5 * max(qubit1_T1, qubit2_T1, qubit3_T1, qubit4_T1, qubit5_T1, qubit6_T1)
 
 # CW pulse parameter
-const_len = 1000
+const_len = 1000 #ns
 const_amp = 0.5
 
 # Pi pulse parameters
 pi_len = 40
 pi_sigma = pi_len / 5
 
-pi_amp_q1 = 0.1183
+pi_amp_q1 = 0.1183 #max = 0.5 V_pk, V_pp = 1
 pi_amp_q2 = 0.04953
 pi_amp_q3 = 0.02313
 pi_amp_q4 = 0.22
@@ -108,12 +108,12 @@ pi_amp_q5 = 0.22
 pi_amp_q6 = 0.22
 
 # DRAG coefficients
-drag_coef_q1 = 0.28
-drag_coef_q2 = 0.61
-drag_coef_q3 = 0.14
-drag_coef_q4 = 1.0
-drag_coef_q5 = 1.0
-drag_coef_q6 = 1.0
+drag_coef_q1 = 0
+drag_coef_q2 = 0
+drag_coef_q3 = 0
+drag_coef_q4 = 0
+drag_coef_q5 = 0
+drag_coef_q6 = 0
 
 anharmonicity_q1 = -258 * u.MHz
 anharmonicity_q2 = -268 * u.MHz
@@ -140,27 +140,27 @@ resonator_full_scale_power_dbm = -11
 #   1: (50 MHz - 5.5 GHz)
 #   2: (4.5 GHz - 7.5 GHz)
 #   3: (6.5 GHz - 10.5 GHz)
-resonator_band = 3
+resonator_band = 2
 # Resonators LO
-resonator_LO = 6.95 * u.GHz
+resonator_LO = 5.6 * u.GHz
 # Resonators IF
-resonator_IF_q1 = int( 57.28 * u.MHz)
-resonator_IF_q2 = int(106.1 * u.MHz)
-resonator_IF_q3 = int(156.1 * u.MHz)
-resonator_IF_q4 = int(200.0 * u.MHz)
-resonator_IF_q5 = int(260.0 * u.MHz)
-resonator_IF_q6 = int(314.3 * u.MHz)
+resonator_IF_q1 = int(-250 * u.MHz)
+resonator_IF_q2 = int(-100 * u.MHz)
+resonator_IF_q3 = int(70 * u.MHz)
+resonator_IF_q4 = int(195.0 * u.MHz)
+resonator_IF_q5 = int(320 * u.MHz)
+resonator_IF_q6 = int(450* u.MHz)
 # resontor_delay
 resonator_delay = 0
 
 # Readout pulse parameters
-readout_len = 900
-readout_amp_q1 = 0.032 # our q1 as their q3
+readout_len = 1000
+readout_amp_q1 = 0.3 # our q1 as their q3
 readout_amp_q2 = 0.03
-readout_amp_q3 = 0.025
-readout_amp_q4 = 1.0
-readout_amp_q5 = 1.0 # 0.05
-readout_amp_q6 = 1.0
+readout_amp_q3 = 0.03
+readout_amp_q4 = 0.03
+readout_amp_q5 = 0.03# 0.05
+readout_amp_q6 = 0.03
 
 # TOF and depletion time
 time_of_flight = 32 + 332  # must be a multiple of 4
@@ -535,8 +535,8 @@ config = {
         "con1": {
             "type": "opx1000",
             "fems": {
-                MW_FEM: {
-                    # The keyword "band" refers to the following frequency bands:
+                MW_FEM: { #FEM position
+                    # The keyword "band" refers to the following frequency bands: (If+LO)
                     #   1: (50 MHz - 5.5 GHz)
                     #   2: (4.5 GHz - 7.5 GHz)
                     #   3: (6.5 GHz - 10.5 GHz)
@@ -549,7 +549,7 @@ config = {
                     "type": "MW",
                     "analog_outputs": {
                         1: {
-                            "sampling_rate": 1e9,
+                            "sampling_rate": 1e9, #or 2e9
                             "full_scale_power_dbm": resonator_full_scale_power_dbm,
                             "band": resonator_band,
                             "delay": resonator_delay,
@@ -621,7 +621,7 @@ config = {
                         1: {
                             "sampling_rate": 1e9,
                             "band": resonator_band,
-                            "gain_db": 0,
+                            "gain_db": 0, # 0 ~ 32
                             "downconverter_frequency": resonator_LO,
                         },  # RL1, gain_db resolution is 1
                         2: {
@@ -641,7 +641,7 @@ config = {
                 "port": ("con1", MW_FEM, 1),
                 "upconverter": 1,
             },
-            "intermediate_frequency": resonator_IF_q1,  # in Hz [-350e6, +350e6]
+            "intermediate_frequency": resonator_IF_q1,  # in Hz [-350e6, +350e6] over, the power will decay
             "MWOutput": {
                 "port": ("con1", MW_FEM, 2),
             },

@@ -40,24 +40,24 @@ matplotlib.use('TkAgg')
 #   Parameters   #
 ##################
 # Choose parameters of target rr/qb
-rr1 = "rr3"
+rr1 = "rr1"
 rr2 = "rr2"
-resonator_IF_Q1 = resonator_IF_q3
+resonator_IF_Q1 = resonator_IF_q1
 resonator_IF_Q2 = resonator_IF_q2
-readout_amp_Q1 = readout_amp_q3
+readout_amp_Q1 = readout_amp_q1
 readout_amp_Q2 = readout_amp_q2
 
 # Parameters Definition
 n_avg = 100  # The number of averages
 # The frequency sweep around the resonators' frequency
-span = 8.0 * u.MHz  # the span around the resonant frequencies
-step = 100 * u.kHz
+span = 600 * u.MHz  # the span around the resonant frequencies
+step = 2 * u.MHz
 dfs = np.arange(-span, span, step)
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
-a_min = 0.001
+a_min = 0.01
 a_max = 1.00
 # da = 0.003
-amplitudes = np.geomspace(a_min, a_max, 100)  # The amplitude vector +da/2 to add a_max to the scan
+amplitudes = np.geomspace(a_min, a_max, 20)  # The amplitude vector +da/2 to add a_max to the scan
 
 # Data to save
 save_data_dict = {
@@ -135,7 +135,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 #######################
 # Simulate or execute #
 #######################
-simulate = False
+simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration

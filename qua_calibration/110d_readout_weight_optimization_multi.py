@@ -71,7 +71,7 @@ print("The readout has been sliced in the following number of divisions", number
 # Data to save
 save_data_dict = {
     "qubit": qubit,
-    "resonator": resonator,
+    resonator: resonator,
     "n_avg": n_avg,
     "division_length": division_length,
     "number_of_divisions": number_of_divisions,

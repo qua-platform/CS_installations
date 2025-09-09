@@ -36,12 +36,12 @@ print("The readout has been sliced in the following number of divisions", number
 # Data to save
 save_data_dict = {
     "n_avg": n_avg,
-    "resonator": resonator,
+    resonator: resonator,
     "division_length": division_length,
     "number_of_divisions": number_of_divisions,
     "pulse_duration": pulse_duration,
     "config": config,
-    "resonator": resonator
+    resonator: resonator
 }
 
 ###################

@@ -39,18 +39,18 @@ resonator = "rr1"
 # Parameters Definition
 n_avg = 200  # The number of averages
 frequencies = {
-    "rr1": np.arange(10e6, +450e6, 20e3),
+    "rr1": np.arange(-600e6, 600e6, 200e3),
     "rr2": np.arange(80e6, +130e6, 100e3),
 }
 
 # Data to save
 save_data_dict = {
-    "resonator": resonator,
+    resonator: resonator,
     "resonator_LO": resonator_LO,
     "frequencies": frequencies,
     "n_avg": n_avg,
     "config": config,
-    "resonator": resonator,
+    resonator: resonator,
 }
 
 ###################
