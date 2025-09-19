@@ -67,8 +67,9 @@ def get_octave_gain_and_amplitude(desired_power: float, max_amplitude: float = 0
 # Please refer to https://docs.quantum-machines.co/latest/docs/Guides/octave/ for more details
 
 # Resonator frequencies
-rr_freq = np.array([4.395, 4.422, 4.541, 4.728]) * u.GHz
-rr_LO = 4.5 * u.GHz
+# rr_freq = np.array([6.4262, 6.7206, 5.0046]) * u.GHz
+rr_freq = np.array([6.4262, 6.7206]) * u.GHz
+rr_LO = 6.55 * u.GHz
 rr_if = rr_freq - rr_LO  # The intermediate frequency is inferred from the LO and readout frequencies
 assert np.all(np.abs(rr_if) < 400 * u.MHz), "The resonator intermediate frequency must be within [-400; 400] MHz."
 
@@ -98,12 +99,12 @@ for k, qubit in enumerate(machine.qubits.values()):
 # Please refer to https://docs.quantum-machines.co/latest/docs/Guides/octave/ for more details
 
 # Qubit drive frequencies
-xy_freq = np.array([6.012, 6.421, 6.785, 7.001]) * u.GHz
-xy_LO = np.array([6.25, 6.25, 6.75, 6.75]) * u.GHz
+xy_freq = np.array([3.881, 4.023]) * u.GHz
+xy_LO = np.array([4.0, 4.2]) * u.GHz
 xy_if = xy_freq - xy_LO  # The intermediate frequency is inferred from the LO and qubit frequencies
 assert np.all(np.abs(xy_if) < 400 * u.MHz), "The xy intermediate frequency must be within [-400; 400] MHz."
 # Transmon anharmonicity
-anharmonicity = np.array([150, 200, 175, 310]) * u.MHz
+anharmonicity = np.array([200, 200]) * u.MHz
 
 # Desired output power in dBm
 drive_power = -10
@@ -154,6 +155,9 @@ for k, q in enumerate(machine.qubits):
     # Single Gaussian flux pulse
     # if hasattr(machine.qubits[q], "z"):
     #     machine.qubits[q].z.operations["gauss"] = GaussianPulse(amplitude=0.1, length=200, sigma=40)
+
+    # Set z line offset mode:
+    machine.qubits[q].z.flux_point = "joint"
 
 ########################################################################################################################
 # %%                                         Save the updated QUAM
