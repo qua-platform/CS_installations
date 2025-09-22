@@ -30,14 +30,14 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 100  # The number of averages
+n_avg = 1000  # The number of averages
 # The frequency sweep parameters
 span = 5 * u.MHz
 df = 100 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)  # The frequency vector
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
 a_min = 0
-a_max = 1.0
+a_max = 1.99
 n_a = 51
 amplitudes = np.linspace(a_min, a_max, n_a)
 
@@ -62,14 +62,14 @@ with program() as rabi_amp_freq:
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
     reset_global_phase()
+    set_dc_offset("flux_line", "single", max_frequency_point)
+    wait(flux_settle_time * u.ns)
+    align()
 
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(a, amplitudes)):  # QUA for_ loop for sweeping the pulse amplitude pre-factor
             with for_(*from_array(f, dfs)):  # QUA for_ loop for sweeping the frequency
-                set_dc_offset("flux_line", "single", max_frequency_point)
-                wait(flux_settle_time * u.ns)
-                align()
                 # Update the frequency of the digital oscillator linked to the qubit element
                 update_frequency("qubit", f + qubit_IF)
                 # Adjust the qubit pulse amplitude

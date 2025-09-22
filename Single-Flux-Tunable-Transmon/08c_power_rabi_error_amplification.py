@@ -31,14 +31,14 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 100  # The number of averages
+n_avg = 5000  # The number of averages
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-a_min = 0.9
-a_max = 1.1
-n_a = 51
+a_min = 0.1
+a_max = 1.99
+n_a = 101
 amplitudes = np.linspace(a_min, a_max, n_a)
 # Number of applied Rabi pulses sweep
-max_nb_of_pulses = 80  # Maximum number of qubit pulses
+max_nb_of_pulses = 20  # Maximum number of qubit pulses
 nb_of_pulses = np.arange(0, max_nb_of_pulses, 2)  # Always play an odd/even number of pulses to end up in the same state
 
 # Data to save
@@ -63,14 +63,14 @@ with program() as power_rabi_err:
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
     reset_global_phase()
+    set_dc_offset("flux_line", "single", max_frequency_point)
+    wait(flux_settle_time * u.ns)
+    align()
 
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(n_rabi, nb_of_pulses)):  # QUA for_ loop for sweeping the number of pulses
             with for_(*from_array(a, amplitudes)):  # QUA for_ loop for sweeping the pulse amplitude
-                set_dc_offset("flux_line", "single", max_frequency_point)
-                wait(flux_settle_time * u.ns)
-                align()
                 # Loop for error amplification (perform many qubit pulses with varying amplitudes)
                 with for_(n2, 0, n2 < n_rabi, n2 + 1):
                     play("x180" * amp(a), "qubit")
@@ -172,3 +172,5 @@ else:
     save_data_dict.update({"fig_live": fig})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+
+    plt.show(block=True)

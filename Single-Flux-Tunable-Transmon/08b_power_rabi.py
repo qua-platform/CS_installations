@@ -29,10 +29,10 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 100  # The number of averages
+n_avg = 5000  # The number of averages
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
 a_min = 0
-a_max = 1.0
+a_max = 1.99
 n_a = 101
 amplitudes = np.linspace(a_min, a_max, n_a)
 
@@ -55,13 +55,13 @@ with program() as power_rabi:
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
     reset_global_phase()
+    set_dc_offset("flux_line", "single", max_frequency_point)
+    wait(flux_settle_time * u.ns)
+    align()
 
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(a, amplitudes)):  # QUA for_ loop for sweeping the pulse amplitude pre-factor
-            set_dc_offset("flux_line", "single", max_frequency_point)
-            wait(flux_settle_time * u.ns)
-            align()
             # Play the qubit pulse with a variable amplitude (pre-factor to the pulse amplitude defined in the config)
             play("x180" * amp(a), "qubit")
             # Align the two elements to measure after playing the qubit pulse.
@@ -154,3 +154,5 @@ else:
     save_data_dict.update({"fig_live": fig})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+
+    plt.show(block=True)

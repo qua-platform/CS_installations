@@ -28,11 +28,11 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 1e4
+n_avg = 50000
 # Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
 tau_min = 4
-tau_max = 20_000 // 4
-d_tau = 40 // 4
+tau_max = 500 // 4
+d_tau = 4 // 4
 taus = np.arange(tau_min, tau_max + 0.1, d_tau)  # Linear sweep
 # taus = np.logspace(np.log10(tau_min), np.log10(tau_max), 21)  # Log sweep
 
@@ -55,6 +55,9 @@ with program() as echo:
     Q_st = declare_stream()
     tau = declare(int)
     reset_global_phase()
+    set_dc_offset("flux_line", "single", max_frequency_point)
+    wait(flux_settle_time * u.ns)
+    align()
 
 
     with for_(n, 0, n < n_avg, n + 1):
@@ -164,7 +167,7 @@ else:
         from qualang_tools.plot.fitting import Fit
 
         fit = Fit()
-        plt.figure()
+        fig_fit = plt.figure()
         T2_fit = fit.T1(8 * taus, I, plot=True)
         qubit_T2 = np.abs(T2_fit["T1"][0])
         plt.xlabel("Delay [ns]")
@@ -180,5 +183,8 @@ else:
     save_data_dict.update({"I_data": I})
     save_data_dict.update({"Q_data": Q})
     save_data_dict.update({"fig_live": fig})
+    save_data_dict.update({"fig_live": fig_fit})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+
+    plt.show(block=True)

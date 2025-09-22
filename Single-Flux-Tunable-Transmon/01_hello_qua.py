@@ -15,8 +15,9 @@ with program() as hello_qua:
     a = declare(fixed)
     with infinite_loop_():
         with for_(a, 0, a < 1.1, a + 0.05):
-            play("pi" * amp(a), "qubit")
-        wait(25, "qubit")
+            play("pi" * amp(a), "qubit") #amp [-2. 2)
+            wait(25, "qubit", "resonator")
+            align()
 
 #####################################
 #  Open Communication with the QOP  #

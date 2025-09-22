@@ -14,19 +14,20 @@ pio.renderers.default = "browser"
 # AUXILIARY FUNCTIONS #
 #######################
 u = unit(coerce_to_integer=True)
+# default: ns, Hz
 
 ######################
 # Network parameters #
 ######################
-qop_ip = "172.16.33.115"  # Write the QM router IP address
-cluster_name = "CS_3"  # Write your cluster_name if version >= QOP220
+qop_ip = "192.168.50.234"  # Write the QM router IP address
+cluster_name = "Cluster_1"  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 
 #############
 # Save Path #
 #############
 # Path to save data
-save_dir = Path(__file__).parent.resolve() / "Data"
+save_dir = Path(__file__).parent.resolve() / "Data" /"q3"
 save_dir.mkdir(exist_ok=True)
 
 default_additional_files = {
@@ -38,7 +39,7 @@ default_additional_files = {
 # OPX configuration #
 #####################
 con = "con1"
-lf_fem = 5
+lf_fem = 3
 mw_fem = 1
 # Set octave_config to None if no octave are present
 octave_config = None
@@ -46,21 +47,21 @@ octave_config = None
 #############################################
 #                Resonators                 #
 #############################################
-resonator_LO = 5.5 * u.GHz
-resonator_IF = 60 * u.MHz
-resonator_power = 1  # power in dBm at waveform amp = 1
+resonator_LO = 6.6* u.GHz
+resonator_IF = 131.7 * u.MHz #recomand:5-400MHz, 
+resonator_power = -11  # power in dBm at waveform amp = 1
 
 # Note: amplitudes can be -1..1 and are scaled up to `resonator_power` at amp=1
-readout_len = 5000
-readout_amp = 0.6
+readout_len = 800
+readout_amp = 0.055 #Volt
 
-time_of_flight = 28
-depletion_time = 2 * u.us
+time_of_flight = 28+348
+depletion_time = 2 * u.us #ring down
 
 # IQ Plane Angle
-rotation_angle = (0 / 180) * np.pi
+rotation_angle = (261.3 / 180) * np.pi
 # Threshold for single shot g-e discrimination
-ge_threshold = 0.0
+ge_threshold = -1.424e-03
 
 
 opt_weights = False
@@ -81,31 +82,31 @@ else:
 #############################################
 sampling_rate = int(1e9)  # or, int(2e9)
 
-qubit_LO = 7.4 * u.GHz
-qubit_IF = 110 * u.MHz
-qubit_power = 1  # power in dBm at waveform amp = 1 (steps of 3 dB)
+qubit_LO = 5.1* u.GHz
+qubit_IF = (-146 + 0.62) * u.MHz
+qubit_power = -11  # power in dBm at waveform amp = 1 (steps of 3 dB)
 
-qubit_T1 = int(10 * u.us)
+qubit_T1 = int(2 * u.us)
 thermalization_time = 5 * qubit_T1
 
 # Note: amplitudes can be -1..1 and are scaled up to `qubit_power` at amp=1
 # Continuous wave
 const_len = 100
-const_amp = 0.03
+const_amp = 0.03 #Volt
 # Saturation_pulse
 saturation_len = 10 * u.us
-saturation_amp = 0.03
+saturation_amp = 0.03 #Volt
 # Square pi pulse
 square_pi_len = 100
-square_pi_amp = 0.03
+square_pi_amp = 0.03 #Volt
 # Drag pulses
 drag_coef = 0
-anharmonicity = -200 * u.MHz
+anharmonicity = -250 * u.MHz
 AC_stark_detuning = 0 * u.MHz
 
 x180_len = 40
 x180_sigma = x180_len / 5
-x180_amp = 1
+x180_amp = 0.2
 
 x180_wf, x180_der_wf = np.array(
     drag_gaussian_pulse_waveforms(x180_amp, x180_len, x180_sigma, drag_coef, anharmonicity, AC_stark_detuning)
@@ -181,7 +182,7 @@ minus_y90_Q_wf = minus_y90_wf
 ##########################################
 #               Flux line                #
 ##########################################
-max_frequency_point = 0.1
+max_frequency_point = 0.105 #sweet spot flux
 flux_settle_time = 100 * u.ns
 
 # Resonator frequency versus flux fit parameters according to resonator_spec_vs_flux
@@ -189,8 +190,8 @@ flux_settle_time = 100 * u.ns
 amplitude_fit, frequency_fit, phase_fit, offset_fit = [0, 0, 0, 0]
 
 # FLux pulse parameters
-const_flux_len = 200
-const_flux_amp = 0.45
+const_flux_len = 200 #ns
+const_flux_amp = 0.2 #Volt
 
 #############################################
 #                  Config                   #
@@ -218,33 +219,39 @@ config = {
                     # Its range is -11dBm to +16dBm with 3dBm steps.
                     "type": "MW",
                     "analog_outputs": {
-                        1: {
-                            "band": 2,
-                            "full_scale_power_dbm": resonator_power,
-                            "upconverters": {1: {"frequency": resonator_LO}},
-                        },  # resonator
                         2: {
                             "band": 2,
+                            "full_scale_power_dbm": resonator_power,
+                            "upconverters": {
+                                1: {"frequency": resonator_LO}, 
+                                #2 : {"frequency": resonator2_LO}. # can set 2 upconverter
+                            },
+                        },  # resonator
+                        4: {
+                            "band": 1,
                             "full_scale_power_dbm": qubit_power,
                             "upconverters": {1: {"frequency": qubit_LO}},
                         },  # qubit
                     },
                     "digital_outputs": {},
                     "analog_inputs": {
-                        1: {"band": 2, "downconverter_frequency": resonator_LO},  # for down-conversion
+                        2: {"band": 2, 
+                            "downconverter_frequency": resonator_LO,
+                            #"gian_dB":2
+                        },  # for down-conversion #can only set 1 downconverter
                     },
                 },
                 lf_fem: {
                     "type": "LF",
                     "analog_outputs": {
                         # Flux line
-                        1: {
+                        2: {
                             # Note, 'offset' takes absolute values, e.g., if in amplified mode and want to output 2.0 V, then set "offset": 2.0
                             "offset": max_frequency_point,
                             # The "output_mode" can be used to tailor the max voltage and frequency bandwidth, i.e.,
                             #   "direct":    1Vpp (-0.5V to 0.5V), 750MHz bandwidth (default)
                             #   "amplified": 5Vpp (-2.5V to 2.5V), 330MHz bandwidth
-                            "output_mode": "amplified",
+                            "output_mode": "direct",
                             # The "sampling_rate" can be adjusted by using more FEM cores, i.e.,
                             #   1 GS/s: uses one core per output (default)
                             #   2 GS/s: uses two cores per output
@@ -256,7 +263,7 @@ config = {
                             #   unmodulated pulses (optimized for clean step response): "pulse"
                             "upsampling_mode": "pulse",
                             # Synchronization of the LF-FEM outputs with the MW-FEM outputs
-                            # 141ns delay (band 1 and 3) or 161ns delay (band 2)
+                            # 141ns delay (band 1 and 3) or 161ns delay (band 2) #qubit band
                             "delay": 141 * u.ns,
                         },
                     },
@@ -271,7 +278,7 @@ config = {
         "qubit": {
             # MWInput corresponds to an OPX physical output port
             "MWInput": {
-                "port": (con, mw_fem, 2),
+                "port": (con, mw_fem, 4),
                 "upconverter": 1,
             },
             "intermediate_frequency": qubit_IF,
@@ -291,7 +298,7 @@ config = {
         "resonator": {
             # MWInput corresponds to an OPX physical output port
             "MWInput": {
-                "port": (con, mw_fem, 1),
+                "port": (con, mw_fem, 2),
                 "upconverter": 1,
             },
             "intermediate_frequency": resonator_IF,
@@ -301,14 +308,14 @@ config = {
             },
             # MWOutput corresponds to an OPX physical input port
             "MWOutput": {
-                "port": (con, mw_fem, 1),
+                "port": (con, mw_fem, 2),
             },
             "time_of_flight": time_of_flight,
             "smearing": 0,
         },
         "flux_line": {
             "singleInput": {
-                "port": (con, lf_fem, 1),
+                "port": (con, lf_fem, 2),
             },
             "operations": {
                 "const": "const_flux_pulse",
@@ -316,7 +323,7 @@ config = {
         },
         "flux_line_sticky": {
             "singleInput": {
-                "port": (con, lf_fem, 1),
+                "port": (con, lf_fem, 2),
             },
             "sticky": {"analog": True, "duration": 20},
             "operations": {

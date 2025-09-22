@@ -36,9 +36,9 @@ from qualang_tools.results.data_handler import DataHandler
 ##################
 # Parameters Definition
 num_of_sequences = 50  # Number of random sequences
-n_avg = 20  # Number of averaging loops for each random sequence
-max_circuit_depth = 1000  # Maximum circuit depth
-delta_clifford = 10  # Play each sequence with a depth step equals to 'delta_clifford - Must be > 0
+n_avg = 200  # Number of averaging loops for each random sequence
+max_circuit_depth = 300  # Maximum circuit depth
+delta_clifford = 3  # Play each sequence with a depth step equals to 'delta_clifford - Must be > 0
 assert (max_circuit_depth / delta_clifford).is_integer(), "max_circuit_depth / delta_clifford must be an integer."
 seed = 345324  # Pseudo-random number generator seed
 # Flag to enable state discrimination if the readout has been calibrated (rotated blobs and threshold)
@@ -171,6 +171,9 @@ with program() as rb:
     # The relevant streams
     m_st = declare_stream()
     reset_global_phase()
+    set_dc_offset("flux_line", "single", max_frequency_point)
+    wait(flux_settle_time * u.ns)
+    align()
 
     if state_discrimination:
         state_st = declare_stream()
@@ -351,7 +354,7 @@ else:
     plt.plot(x, power_law(x, *pars), linestyle="--", linewidth=2)
     plt.xlabel("Number of Clifford gates")
     plt.ylabel("Sequence Fidelity")
-    plt.title("Single qubit RB")
+    plt.title(f"Single qubit RB Gate fidelity:{((1-r_g)*100):.2f}%")
 
     # np.savez("rb_values", value)
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
@@ -367,3 +370,5 @@ else:
     save_data_dict.update({"fig_live": fig})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+
+    plt.show(block=True)

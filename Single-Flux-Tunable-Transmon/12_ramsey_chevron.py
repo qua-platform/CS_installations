@@ -29,7 +29,7 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 100  # Number of averaging loops
+n_avg = 1000  # Number of averaging loops
 
 # Frequency sweep in Hz
 freq_span = 10 * u.MHz
@@ -37,8 +37,8 @@ df = 100 * u.kHz
 dfs = np.arange(-freq_span, freq_span, df)
 
 # Idle time sweep (Needs to be a list of integers) - in clock cycles (4ns)
-tau_max = 2000 // 4
-d_tau = 40 // 4
+tau_max = 500 // 4
+d_tau = 16 // 4
 taus = np.arange(0, tau_max, d_tau)
 if len(np.where((taus > 0) & (taus < 4))[0]) > 0:
     raise Exception("Delay must be either 0 or an integer larger than 4.")
@@ -64,6 +64,9 @@ with program() as ramsey_freq_duration:
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
     reset_global_phase()
+    set_dc_offset("flux_line", "single", max_frequency_point)
+    wait(flux_settle_time * u.ns)
+    align()
 
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
@@ -171,3 +174,6 @@ else:
     save_data_dict.update({"fig_live": fig})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+
+    plt.show(block=True)
+

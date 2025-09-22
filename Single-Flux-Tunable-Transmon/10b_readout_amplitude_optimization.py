@@ -29,10 +29,10 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_runs = 1000
+n_runs = 10000
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
-a_min = 0.5
-a_max = 1.5
+a_min = 0.1
+a_max = 1.9
 da = 0.01
 amplitudes = np.arange(a_min, a_max + da / 2, da)  # The amplitude vector +da/2 to add a_max to the scan
 
@@ -60,6 +60,10 @@ with program() as ro_amp_opt:
     Q_e_st = declare_stream()
     n_st = declare_stream()
     reset_global_phase()
+    set_dc_offset("flux_line", "single", max_frequency_point)
+    wait(flux_settle_time * u.ns)
+    align()
+
 
 
     with for_(*from_array(a, amplitudes)):
@@ -158,7 +162,7 @@ else:
             I_g[i], Q_g[i], I_e[i], Q_e[i], b_print=False, b_plot=False
         )
         fidelity_vec.append(fidelity)
-        ground_fidelity_vec.append(gg)
+        ground_fidelity_vec.append(gg*100)
 
     # Plot the data
     fig = plt.figure()
@@ -192,3 +196,6 @@ else:
     save_data_dict.update({"fig_live": fig})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+
+    plt.show(block=True)
+

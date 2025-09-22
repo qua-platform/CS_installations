@@ -52,9 +52,9 @@ with program() as raw_trace_prog:
 
     with stream_processing():
         # Will save average:
-        adc_st.input1().average().save("adc")
+        adc_st.input2().average().save("adc")
         # Will save only last run:
-        adc_st.input1().save("adc_single_run")
+        adc_st.input2().save("adc_single_run")
 
 
 #####################################

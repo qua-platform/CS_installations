@@ -96,6 +96,10 @@ with program() as ro_duration_opt:
     Qe_st = declare_stream()
 
     reset_global_phase()
+    set_dc_offset("flux_line", "single", max_frequency_point)
+    wait(flux_settle_time * u.ns)
+    align()
+
 
 
     with for_(n, 0, n < n_avg, n + 1):
@@ -266,3 +270,6 @@ else:
     save_data_dict.update({"fig_live": fig})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+
+    plt.show(block=True)
+

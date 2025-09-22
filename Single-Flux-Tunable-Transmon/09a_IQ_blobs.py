@@ -24,6 +24,7 @@ from qm import QuantumMachinesManager
 from configuration import *
 from qualang_tools.analysis.discriminator import two_state_discriminator
 from qualang_tools.results.data_handler import DataHandler
+import matplotlib.pyplot as plt
 
 ##################
 #   Parameters   #
@@ -50,8 +51,11 @@ with program() as IQ_blobs:
     Q_e = declare(fixed)
     I_e_st = declare_stream()
     Q_e_st = declare_stream()
-    reset_global_phase()
 
+    reset_global_phase()
+    set_dc_offset("flux_line", "single", max_frequency_point)
+    wait(flux_settle_time * u.ns)
+    align()
 
     with for_(n, 0, n < n_runs, n + 1):
         # Measure the state of the resonator
@@ -136,6 +140,7 @@ else:
     # Plot the IQ blobs, rotate them to get the separation along the 'I' quadrature, estimate a threshold between them
     # for state discrimination and derive the fidelity matrix
     angle, threshold, fidelity, gg, ge, eg, ee = two_state_discriminator(Ig, Qg, Ie, Qe, b_print=True, b_plot=True)
+    fig = plt.gcf()
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
@@ -188,6 +193,9 @@ else:
     save_data_dict.update({"Qg_data": Qg})
     save_data_dict.update({"Ie_data": Ie})
     save_data_dict.update({"Qe_data": Qe})
+    save_data_dict.update({"fig":fig})
     save_data_dict.update({"two_state_discriminator": [angle, threshold, fidelity, gg, ge, eg, ee]})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+
+    plt.show(block=True)
