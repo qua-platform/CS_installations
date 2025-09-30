@@ -28,18 +28,18 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 500  # Number of averaging loops
+n_avg = 2000  # Number of averaging loops
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
-saturation_len = 10 * u.us  # In ns
+saturation_len = 360  # In ns
 saturation_amp = 0.5  # pre-factor to the value defined in the config - restricted to [-2; 2)
 # Frequency sweep in Hz
-span = 20 * u.MHz
-df = 100 * u.kHz
-frequencies = np.arange(-span, +span + 0.1, df)
+span = 250 * u.MHz
+df = 250 * u.kHz
+frequencies = np.arange(-span, 50 * u.MHz, df)
 # Flux amplitude sweep (as a pre-factor of the flux amplitude)
-dc_min = 0.085
-dc_max = 0.125
-step = 0.001
+dc_min = -0.1
+dc_max = 0.05
+step = 0.005
 flux = np.arange(dc_min, dc_max + step / 2, step)  # +da/2 to add a_max to the scan
 
 
@@ -91,14 +91,12 @@ with program() as qubit_spec_2D:
                 # Update the resonator frequency to always measure on resonance
                 # update_frequency("resonator", resonator_freq[index] + resonator_IF)
                 # Flux sweeping
-                set_dc_offset("flux_line", "single", dc)
-                wait(flux_settle_time * u.ns, "resonator", "qubit")
-                align()
+                play("const"*amp((dc/const_flux_amp)),'flux_line',duration = (saturation_len*u.ns))
                 # Play a qubit pulse on the qubit
-                play("saturation" * amp(saturation_amp), "qubit", duration=saturation_len * u.ns)
+                play("saturation" * amp(saturation_amp), "qubit", duration = saturation_len * u.ns)
                 # Align the two elements to measure after playing the qubit pulse.
                 # One can also measure the resonator while driving the qubit by commenting the 'align'
-                align("qubit", "resonator")
+                align("qubit", "resonator","flux_line")
                 # Measure the state of the resonator
                 measure(
                     "readout",
@@ -133,10 +131,9 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 # Simulate or execute #
 #######################
 simulate = False
-
 if simulate:
     # Simulates the QUA program for the specified duration
-    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=50000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
     job = qmm.simulate(config, qubit_spec_2D, simulation_config)
     # Get the simulated samples
@@ -173,13 +170,13 @@ else:
         plt.suptitle(r"Qubit spectroscopy")
         plt.cla()
         plt.title(r"$R=\sqrt{I^2 + Q^2}$")
-        plt.pcolor(flux, frequencies / u.MHz, R)
+        plt.pcolor(flux+max_frequency_point, frequencies / u.MHz, R)
         plt.ylabel("Qubit frequency [MHz]")
         plt.xlabel("Flux level [V]")
         plt.subplot(212)
         plt.cla()
         plt.title("Phase")
-        plt.pcolor(flux, frequencies / u.MHz, np.unwrap(phase))
+        plt.pcolor(flux+max_frequency_point, frequencies / u.MHz, np.unwrap(phase))
         plt.ylabel("Qubit frequency [MHz]")
         plt.xlabel("Flux level [V]")
         plt.pause(0.1)

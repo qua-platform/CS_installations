@@ -29,7 +29,7 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 5000  # The number of averages
+n_avg = 10000  # The number of averages
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
 a_min = 0
 a_max = 1.99

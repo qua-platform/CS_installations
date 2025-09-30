@@ -16,7 +16,7 @@ Prerequisites:
 Next steps before going to the next node:
     - Update the qubit pulse amplitude (x180_amp) in the configuration.
 """
-
+#%%
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
@@ -26,19 +26,19 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
-
+#%%
 ##################
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 5000  # The number of averages
+n_avg = 10000  # The number of averages
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-a_min = 0.1
-a_max = 1.99
-n_a = 101
+a_min = 0.6
+a_max = 1.5
+n_a = 201
 amplitudes = np.linspace(a_min, a_max, n_a)
 # Number of applied Rabi pulses sweep
-max_nb_of_pulses = 20  # Maximum number of qubit pulses
+max_nb_of_pulses = 30  # Maximum number of qubit pulses
 nb_of_pulses = np.arange(0, max_nb_of_pulses, 2)  # Always play an odd/even number of pulses to end up in the same state
 
 # Data to save
@@ -174,3 +174,4 @@ else:
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
 
     plt.show(block=True)
+#%%

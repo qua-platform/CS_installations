@@ -35,13 +35,13 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 600  # Number of averaging loops
+n_avg = 1000  # Number of averaging loops
 # The frequency sweep around the resonator frequency "resonator_IF"
 span = 3 * u.MHz
-df = 100 * u.kHz
+df = 50 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)
 # Flux bias sweep in V
-flux_min = -0.2
+flux_min = -0.4
 flux_max = 0.4
 step = 0.01
 flux = np.arange(flux_min, flux_max + step / 2, step)

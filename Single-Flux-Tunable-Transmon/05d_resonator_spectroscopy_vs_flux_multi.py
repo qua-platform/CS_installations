@@ -172,7 +172,7 @@ else:
     interrupt_on_close(fig, job)  #  Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch results
-        I1, Q2, I2, Q2,I3, Q3,iteration = results.fetch_all()
+        I1, Q1, I2, Q2,I3, Q3,iteration = results.fetch_all()
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Convert results into Volts and normalize
@@ -204,6 +204,8 @@ else:
         plt.xlabel("Flux bias [V]")
         plt.ylabel("Readout IF [MHz]")
         plt.gca().set_box_aspect(1)
+        plt.pause(0.1)
+        plt.tight_layout()
 
         plt.subplot(2, 3, 2)
         plt.cla()
@@ -218,6 +220,8 @@ else:
         plt.xlabel("Flux bias [V]")
         plt.ylabel("Readout IF [MHz]")
         plt.gca().set_box_aspect(1)
+        plt.pause(0.1)
+        plt.tight_layout()
 
         plt.subplot(2, 3, 3)
         plt.cla()
@@ -232,6 +236,8 @@ else:
         plt.xlabel("Flux bias [V]")
         plt.ylabel("Readout IF [MHz]")
         plt.gca().set_box_aspect(1)
+        plt.pause(0.1)
+        plt.tight_layout()
 
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up

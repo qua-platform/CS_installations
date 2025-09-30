@@ -30,10 +30,10 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 100  # The number of averages
+n_avg = 5000  # The number of averages
 # The frequency sweep parameters
-f_min = 120 * u.MHz
-f_max = 220 * u.MHz
+f_min = 100 * u.MHz
+f_max = 210 * u.MHz
 df = 100 * u.kHz
 frequencies = np.arange(f_min, f_max + 0.1, df)  # The frequency vector (+ 0.1 to add f_max to frequencies)
 

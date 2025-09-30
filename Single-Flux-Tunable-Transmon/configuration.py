@@ -48,20 +48,20 @@ octave_config = None
 #                Resonators                 #
 #############################################
 resonator_LO = 6.6* u.GHz
-resonator_IF = 131.7 * u.MHz #recomand:5-400MHz, 
+resonator_IF = 132.6 * u.MHz #recomand:5-400MHz, 
 resonator_power = -11  # power in dBm at waveform amp = 1
 
 # Note: amplitudes can be -1..1 and are scaled up to `resonator_power` at amp=1
-readout_len = 800
-readout_amp = 0.055 #Volt
+readout_len = 640
+readout_amp = 0.05375 #Volt
 
 time_of_flight = 28+348
 depletion_time = 2 * u.us #ring down
 
 # IQ Plane Angle
-rotation_angle = (261.3 / 180) * np.pi
+rotation_angle = (85.4 / 180) * np.pi
 # Threshold for single shot g-e discrimination
-ge_threshold = -1.424e-03
+ge_threshold = 5.638e-04
 
 
 opt_weights = False
@@ -95,18 +95,18 @@ const_len = 100
 const_amp = 0.03 #Volt
 # Saturation_pulse
 saturation_len = 10 * u.us
-saturation_amp = 0.03 #Volt
+saturation_amp = 0.1 #Volt
 # Square pi pulse
 square_pi_len = 100
 square_pi_amp = 0.03 #Volt
 # Drag pulses
-drag_coef = 0
-anharmonicity = -250 * u.MHz
-AC_stark_detuning = 0 * u.MHz
+drag_coef = 1.94
+anharmonicity = -244 * u.MHz
+AC_stark_detuning = -1000000 
 
 x180_len = 40
 x180_sigma = x180_len / 5
-x180_amp = 0.2
+x180_amp = 0.2058
 
 x180_wf, x180_der_wf = np.array(
     drag_gaussian_pulse_waveforms(x180_amp, x180_len, x180_sigma, drag_coef, anharmonicity, AC_stark_detuning)
@@ -182,7 +182,7 @@ minus_y90_Q_wf = minus_y90_wf
 ##########################################
 #               Flux line                #
 ##########################################
-max_frequency_point = 0.105 #sweet spot flux
+max_frequency_point = 0.2529 #0.274 #sweet spot flux
 flux_settle_time = 100 * u.ns
 
 # Resonator frequency versus flux fit parameters according to resonator_spec_vs_flux

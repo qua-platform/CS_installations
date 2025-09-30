@@ -30,7 +30,7 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 1000  # The number of averages
+n_avg = 500  # The number of averages
 # The frequency sweep parameters
 span = 10 * u.MHz
 df = 200 * u.kHz

@@ -29,19 +29,19 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 1000  # Number of averaging loops
+n_avg = 5000  # Number of averaging loops
 
 # Frequency sweep in Hz
-freq_span = 10 * u.MHz
+freq_span = 25 * u.MHz
 df = 100 * u.kHz
 dfs = np.arange(-freq_span, freq_span, df)
 
 # Idle time sweep (Needs to be a list of integers) - in clock cycles (4ns)
-tau_max = 500 // 4
-d_tau = 16 // 4
-taus = np.arange(0, tau_max, d_tau)
-if len(np.where((taus > 0) & (taus < 4))[0]) > 0:
-    raise Exception("Delay must be either 0 or an integer larger than 4.")
+tau_max = 100 // 4
+d_tau = 4 // 4
+taus = np.arange(2, tau_max, d_tau)
+if len(np.where((taus > 0) & (taus < 2))[0]) > 0:
+    raise Exception("Delay must be either 0 or an integer larger than 2.") #previous is 4
 
 # Data to save
 save_data_dict = {
@@ -75,7 +75,7 @@ with program() as ramsey_freq_duration:
                 # Update the frequency of the digital oscillator linked to the qubit element
                 update_frequency("qubit", df + qubit_IF)
                 # Adjust the idle time
-                with if_(delay >= 4):
+                with if_(delay >= 2):
                     play("x90", "qubit")
                     wait(delay, "qubit")
                     play("x90", "qubit")

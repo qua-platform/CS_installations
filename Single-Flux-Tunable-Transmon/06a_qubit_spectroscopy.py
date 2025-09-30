@@ -39,16 +39,18 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 2000  # The number of averages
+n_avg = 5000  # The number of averages
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
 saturation_len = 10 * u.us  # In ns
-saturation_amp = 0.5 # pre-factor to the value defined in the config - restricted to [-2; 2)
+saturation_amp = 0.5# pre-factor to the value defined in the config - restricted to [-2; 2)
 # Qubit detuning sweep
 # center = 0 * u.MHz
 center = qubit_IF
-span = 20 * u.MHz
-df = 100 * u.kHz
-dfs = np.arange(-span, +span + 0.1, df)
+span = 200* u.MHz
+df = 1000 * u.kHz
+dfs = np.arange(-span, span, df)
+# dfs = np.arange(-span, span, df)
+overlap = False
 
 # Data to save
 save_data_dict = {
@@ -71,22 +73,26 @@ with program() as qubit_spec:
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
     reset_global_phase()
-
+    set_dc_offset("flux_line", "single", max_frequency_point)
+    wait(flux_settle_time * u.ns)
+    align()
 
     # Adjust the flux line if needed
     # set_dc_offset("flux_line", "single", 0.0)
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
-            set_dc_offset("flux_line", "single", max_frequency_point)
-            wait(flux_settle_time * u.ns)
-            align()
             # Update the frequency of the digital oscillator linked to the qubit element
             update_frequency("qubit", df + center)
-            # Play the saturation pulse to put the qubit in a mixed state - Can adjust the amplitude on the fly [-2; 2)
-            play("saturation" * amp(saturation_amp), "qubit", duration=saturation_len * u.ns)
-            # Align the two elements to measure after playing the qubit pulse.
+
+            if overlap:
+                play("saturation" * amp(saturation_amp), "qubit", duration=readout_len*u.ns)
+            else: 
+                # Play the saturation pulse to put the qubit in a mixed state - Can adjust the amplitude on the fly [-2; 2)
+                play("saturation" * amp(saturation_amp), "qubit", duration=saturation_len*u.ns)
+                 # Align the two elements to measure after playing the qubit pulse.
+                align("qubit", "resonator")
             # One can also measure the resonator while driving the qubit by commenting the 'align'
-            align("qubit", "resonator")
+            # align("qubit", "resonator")
             # Measure the state of the resonator
             measure(
                 "readout",

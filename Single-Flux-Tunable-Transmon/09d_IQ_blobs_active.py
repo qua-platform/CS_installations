@@ -25,6 +25,7 @@ from configuration import *
 from qualang_tools.analysis.discriminator import two_state_discriminator
 from qualang_tools.results.data_handler import DataHandler
 import matplotlib.pyplot as plt
+from macros import *
 
 ##################
 #   Parameters   #
@@ -59,6 +60,8 @@ with program() as IQ_blobs:
 
     with for_(n, 0, n < n_runs, n + 1):
         # Measure the state of the resonator
+        active_reset(ge_threshold, "qubit","resonator",max_tries =1)
+        align()
         measure(
             "readout",
             "resonator",

@@ -26,7 +26,7 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 100  # Number of averaging loops
+n_avg = 1000  # Number of averaging loops
 
 save_data_dict = {
     "resonator_LO": resonator_LO,

@@ -22,23 +22,24 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array, get_equivalent_log_array
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
-
+from macros import *
 ##################
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 5000
+n_avg = 3000
 # The wait time sweep (in clock cycles = 4ns) - must be larger than 4 clock cycles
-tau_min = 16 // 4
-tau_max = 2000 // 4
+tau_min = 4 // 4
+tau_max = 3000 // 4
 d_tau = 4 // 4
 taus = np.arange(tau_min, tau_max + 0.1, d_tau)  # Linear sweep
 # taus = np.logspace(np.log10(tau_min), np.log10(tau_max), 29)  # Log sweep
-
+reset = False
 # Data to save
 save_data_dict = {
     "n_avg": n_avg,
     "taus": taus,
+    "reset":reset,
     "config": config,
 }
 
@@ -62,6 +63,8 @@ with program() as T1:
 
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(t, taus)):
+            if reset:
+                active_reset(ge_threshold, "qubit","resonator",max_tries =5)
             # Play the x180 gate to put the qubit in the excited state
             play("x180", "qubit")
             # Wait a varying time after putting the qubit in the excited state

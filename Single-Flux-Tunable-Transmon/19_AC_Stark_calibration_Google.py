@@ -35,12 +35,12 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 100
+n_avg = 10000
 # Detuning to compensate for the AC STark-shift
-detunings = np.arange(-10e6, 10e6, 1e6)
+detunings = np.arange(-10e6, 10e6, 5e5)
 # Scan the number of pulses
 iter_min = 0
-iter_max = 25
+iter_max = 20
 d = 1
 iters = np.arange(iter_min, iter_max + 0.1, d)
 
@@ -66,6 +66,9 @@ with program() as ac_stark_shift:
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
     state_st = declare_stream()  # Stream for the qubit state
     reset_global_phase()
+    set_dc_offset("flux_line", "single", max_frequency_point)
+    wait(flux_settle_time * u.ns)
+    align()
 
 
     with for_(n, 0, n < n_avg, n + 1):
@@ -190,3 +193,6 @@ else:
     save_data_dict.update({"fig_live": fig})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+
+    plt.show(block=True)
+

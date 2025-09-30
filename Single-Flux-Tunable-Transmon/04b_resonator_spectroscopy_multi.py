@@ -32,8 +32,8 @@ from qualang_tools.results.data_handler import DataHandler
 # Parameters Definition
 n_avg = 100  # The number of averages
 # The frequency sweep parameters
-span = 5 * u.MHz
-df = 200 * u.kHz
+span = 30* u.MHz
+df = 100 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df) # The frequency vector (+ 0.1 to add f_max to frequencies)
 
 # Data to save
@@ -48,7 +48,7 @@ save_data_dict = {
 ###################
 with program() as resonator_spec:
     n = declare(int)  # QUA variable for the averaging loop
-    f = declare(int)  # QUA variable for the readout frequency
+    df = declare(int)  # QUA variable for the readout frequency
     I1 = declare(fixed)  # QUA variable for the measured 'I' quadrature
     Q1 = declare(fixed)  # QUA variable for the measured 'Q' quadrature
     I2 = declare(fixed)  # QUA variable for the measured 'I' quadrature
@@ -151,7 +151,7 @@ else:
     interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch results
-        I1, Q2, I2, Q2,I3, Q3,iteration = results.fetch_all()
+        I1, Q1, I2, Q2, I3, Q3,iteration = results.fetch_all()
         # Convert results into Volts
         S1 = u.demod2volts(I1 + 1j * Q1, readout_len)
         R1 = np.abs(S1)  # Amplitude
@@ -172,6 +172,7 @@ else:
         
         plt.suptitle(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
         plt.subplot(2, 3, 1)
+        plt.suptitle("Q3")
         plt.cla()
         plt.plot((dfs + resonator_IF) / u.MHz, R1, ".")
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
@@ -181,9 +182,11 @@ else:
         plt.xlabel("Readout IF [MHz]")
         plt.ylabel("Phase [rad]")
         plt.gca().set_box_aspect(1)
+        plt.tight_layout()
 
 
         plt.subplot(2, 3, 2)
+        plt.suptitle("Q1")
         plt.cla()
         plt.plot((dfs + resonator_IF_2) / u.MHz, R2, ".")
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
@@ -193,9 +196,11 @@ else:
         plt.xlabel("Readout IF [MHz]")
         plt.ylabel("Phase [rad]")
         plt.gca().set_box_aspect(1)
+        plt.tight_layout()
 
 
         plt.subplot(2, 3, 3)
+        plt.suptitle("Q2")
         plt.cla()
         plt.plot((dfs + resonator_IF_3) / u.MHz, R3, ".")
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
@@ -205,6 +210,8 @@ else:
         plt.xlabel("Readout IF [MHz]")
         plt.ylabel("Phase [rad]")
         plt.gca().set_box_aspect(1)
+        plt.pause(0.1)
+        plt.tight_layout()
 
 
 

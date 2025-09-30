@@ -35,15 +35,15 @@ from qualang_tools.results.data_handler import DataHandler
 ##################
 # Parameters Definition
 n_avg = 5000  # The number of averages
-# The frequency sweep around the resonator frequency "resonator_IF"
-span = 4 * u.MHz
-df = 50 * u.kHz
-dfs = np.arange(-span, +span + 0.1, df)
+# The frequency sweep around the qubit frequency "qubit_IF"
+span = 450 * u.MHz
+df = 1000 * u.kHz
+dfs = np.arange(-span, span, df)
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
 a_min = 0.001
-a_max = 1.99
-amplitudes = np.geomspace(a_min, a_max, 60)
-# amplitudes = np.linspace(a_min, a_max, 60)
+a_max = 1.9
+amplitudes = np.geomspace(a_min, a_max, 30)
+overlap = False
 
 # Data to save
 save_data_dict = {
@@ -74,12 +74,17 @@ with program() as resonator_spec_2D:
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the frequency
             # Update the frequency of the digital oscillator linked to the resonator element
-            update_frequency("resonator", df + resonator_IF)
+            update_frequency("qubit", df + qubit_IF)
             with for_each_(a, amplitudes):  # QUA for_ loop for sweeping the readout amplitude
                 # Measure the resonator (send a readout pulse whose amplitude is rescaled by the pre-factor 'a' [-2, 2)
-                # and demodulate the signals to get the 'I' & 'Q' quadratures)
+                if overlap:
+                    play("saturation" * amp(a), "qubit", duration=readout_len)
+                else:
+                    play("saturation" * amp(a), "qubit")
+                    # and demodulate the signals to get the 'I' & 'Q' quadratures)
+                    align()
                 measure(
-                    "readout" * amp(a),
+                    "readout",
                     "resonator",
                     None,
                     dual_demod.full("cos", "sin", I),
@@ -150,21 +155,21 @@ else:
         R /= row_sums[np.newaxis, :]
         # 2D spectroscopy plot
         plt.subplot(211)
-        plt.suptitle(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz & IF = {resonator_IF / u.MHz} MHz")
+        plt.suptitle(f"Qubit spectroscopy - LO = {qubit_LO / u.GHz} GHz & IF = {qubit_IF / u.MHz} MHz")
         plt.cla()
         plt.title(r"$R=\sqrt{I^2 + Q^2}$ (normalized)")
-        plt.pcolor(amplitudes * readout_amp, dfs / u.MHz, R, cmap= 'RdBu')
+        plt.pcolor(amplitudes * saturation_amp, (qubit_LO+qubit_IF+dfs) / u.GHz, R)
         plt.xscale("log")
-        plt.xlim(amplitudes[0] * readout_amp, amplitudes[-1] * readout_amp)
-        plt.ylabel("Readout detuning [MHz]")
+        plt.xlim(amplitudes[0] * saturation_amp, amplitudes[-1] * saturation_amp)
+        plt.ylabel("qubit freq [GHz]")
         plt.subplot(212)
         plt.cla()
         plt.title("Phase")
-        plt.pcolor(amplitudes * readout_amp, dfs / u.MHz, signal.detrend(np.unwrap(phase)), cmap= 'RdBu')
-        plt.ylabel("Readout detuning [MHz]")
+        plt.pcolor(amplitudes * saturation_amp, (qubit_LO+qubit_IF+dfs) / u.GHz, signal.detrend(np.unwrap(phase)))
+        plt.ylabel("qubit freq [GHz]")
         plt.xlabel("Readout amplitude [V]")
         plt.xscale("log")
-        plt.xlim(amplitudes[0] * readout_amp, amplitudes[-1] * readout_amp)
+        plt.xlim(amplitudes[0] * saturation_amp, amplitudes[-1] * saturation_amp)
         plt.pause(0.1)
         plt.tight_layout()
 

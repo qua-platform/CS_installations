@@ -32,17 +32,17 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 100
+n_avg = 10000
 
 # Scan the DRAG coefficient pre-factor
-a_min = 0.0
-a_max = 1.0
-da = 0.1
+a_min = -1.99
+a_max = 1.99
+da = 0.01
 amps = np.arange(a_min, a_max + da / 2, da)  # + da/2 to add a_max to amplitudes
 
 # Scan the number of pulses
 iter_min = 0
-iter_max = 25
+iter_max = 20
 d = 1
 iters = np.arange(iter_min, iter_max + 0.1, d)
 
@@ -73,6 +73,9 @@ with program() as drag:
     state_st = declare_stream()  # Stream for the qubit state
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
     reset_global_phase()
+    set_dc_offset("flux_line", "single", max_frequency_point)
+    wait(flux_settle_time * u.ns)
+    align()
 
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
@@ -184,3 +187,6 @@ else:
     save_data_dict.update({"fig_live": fig})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+
+    plt.show(block=True)
+

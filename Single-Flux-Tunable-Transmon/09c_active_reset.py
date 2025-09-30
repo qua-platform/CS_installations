@@ -33,7 +33,7 @@ from qualang_tools.results.data_handler import DataHandler
 # Parameters Definition
 initialization_method = "active_reset_one_threshold"  # "thermalization", "active_reset_one_threshold", "active_reset_two_thresholds", "active_reset_fast"
 
-n_shot = 10000  # Number of acquired shots
+n_shot = 10  # Number of acquired shots
 # The thresholds ar calibrated with the IQ_blobs.py script:
 # If I > threshold_e, then the qubit is assumed to be in |e> and a pi pulse is played to reset it.
 # If I < threshold_g, then the qubit is assumed to be in |g>.
@@ -88,6 +88,7 @@ def active_reset_one_threshold(threshold_g: float, max_tries: int):
     I_reset = declare(fixed)
     counter = declare(int)
     assign(counter, 0)
+    measure("readout", "resonator", None, dual_demod.full("rotated_cos", "rotated_sin", I_reset))
     align("resonator", "qubit")
     with while_((I_reset > threshold_g) & (counter < max_tries)):
         # Measure the state of the resonator
@@ -177,6 +178,9 @@ with program() as active_reset_prog:
     tries_st = declare_stream()
 
     reset_global_phase()
+    set_dc_offset("flux_line", "single", max_frequency_point)
+    wait(flux_settle_time * u.ns)
+    align()
 
     with for_(n, 0, n < n_shot, n + 1):
         # Active reset
@@ -265,6 +269,7 @@ else:
     # Plot the IQ blobs, rotate them to get the separation along the 'I' quadrature, estimate a threshold between them
     # for state discrimination and derive the fidelity matrix
     angle, threshold, fidelity, gg, ge, eg, ee = two_state_discriminator(Ig, Qg, Ie, Qe, b_print=True, b_plot=True)
+    fig = plt.gcf()
     plt.suptitle(f"{average_tries=}")
     print(f"{average_tries=}")
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
@@ -276,6 +281,9 @@ else:
     save_data_dict.update({"Qg_data": Qg})
     save_data_dict.update({"Ie_data": Ie})
     save_data_dict.update({"Qe_data": Qe})
+    save_data_dict.update({"fig": fig})
     save_data_dict.update({"two_state_discriminator": [angle, threshold, fidelity, gg, ge, eg, ee]})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+    plt.show(block=True)
+

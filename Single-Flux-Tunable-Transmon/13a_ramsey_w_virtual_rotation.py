@@ -31,14 +31,14 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 10000
+n_avg = 1000
 # Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
 tau_min = 4 //4
-tau_max = 500 // 4
+tau_max = 200 // 4
 d_tau = 4 // 4
 taus = np.arange(tau_min, tau_max + 0.1, d_tau)  # + 0.1 to add tau_max to taus
 # Detuning converted into virtual Z-rotations to observe Ramsey oscillation and get the qubit frequency
-detuning = 10 * u.MHz  # in Hz
+detuning = -10 * u.MHz  # in Hz
 
 # Data to save
 save_data_dict = {

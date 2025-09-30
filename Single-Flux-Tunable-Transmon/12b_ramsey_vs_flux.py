@@ -29,22 +29,22 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 1000  # Number of averaging loops
+n_avg = 100  # Number of averaging loops
 
 # Frequency sweep in Hz
-detuning = 10 * u.MHz  # in Hz
+detuning = 6 * u.MHz  # in Hz
 
-flux_min = -0.1
-flux_max = 0.1
-dflux = 0.01
+flux_min = -0.2
+flux_max = 0.2
+dflux = 0.005
 fluxes = np.arange(flux_min,flux_max+0.00001,dflux)
 
 # Idle time sweep (Needs to be a list of integers) - in clock cycles (4ns)
-tau_max = 500 // 4
-d_tau = 16 // 4
+tau_max = 400 // 4
+d_tau = 8 // 4
 taus = np.arange(0, tau_max+0.1, d_tau)
-if len(np.where((taus > 0) & (taus < 4))[0]) > 0:
-    raise Exception("Delay must be either 0 or an integer larger than 4.")
+if len(np.where((taus > 0) & (taus < 2))[0]) > 0:
+    raise Exception("Delay must be either 0 or an integer larger than 2.")
 
 # Data to save
 save_data_dict = {
@@ -59,7 +59,7 @@ save_data_dict = {
 ###################
 with program() as ramsey_freq_duration:
     n = declare(int)  # QUA variable for the averaging loop
-    flux = declare(int)  # QUA variable for the qubit detuning
+    flux = declare(fixed)  # QUA variable for the qubit detuning
     phase = declare(fixed)
     tau = declare(int)  # QUA variable for the idle time
     I = declare(fixed)  # QUA variable for the measured 'I' quadrature
@@ -84,7 +84,7 @@ with program() as ramsey_freq_duration:
                     wait(tau, "qubit")
                     frame_rotation_2pi(phase, "qubit")
                     wait(x180_len, 'flux_line')
-                    play("const"*amp((flux/const_flux_amp)),duration=tau)
+                    play("const"*amp((flux/const_flux_amp)),'flux_line',duration=tau)
                     play("x90", "qubit")
                 align("qubit", "resonator")
                 # Measure the state of the resonator.
@@ -157,15 +157,15 @@ else:
         plt.subplot(211)
         plt.cla()
         plt.title("I quadrature [V]")
-        plt.pcolor(fluxes+max_frequency_point, taus * 4, I)
-        plt.xlabel("Flux [V]")
-        plt.ylabel("Idle time [ns]")
+        plt.pcolor(taus * 4, fluxes+max_frequency_point, I)
+        plt.ylabel("Flux [V]")
+        plt.xlabel("Idle time [ns]")
         plt.subplot(212)
         plt.cla()
         plt.title("Q quadrature [V]")
-        plt.pcolor(fluxes+max_frequency_point, taus * 4, Q)
-        plt.xlabel("Flux [V]")
-        plt.ylabel("Idle time [ns]")
+        plt.pcolor(taus * 4, fluxes+max_frequency_point, Q)
+        plt.ylabel("Flux [V]")
+        plt.xlabel("Idle time [ns]")
         plt.tight_layout()
         plt.pause(0.01)
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up

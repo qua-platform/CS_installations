@@ -183,6 +183,8 @@ else:
     print(
         f"The optimal readout amplitude is {readout_amp * amplitudes[np.argmax(ground_fidelity_vec)] / u.mV:.3f} mV (Ground fidelity={max(ground_fidelity_vec):.1f}%)"
     )
+    plt.pause(0.1)
+
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()

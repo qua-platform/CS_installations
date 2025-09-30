@@ -349,7 +349,7 @@ else:
     )
 
     # Plots
-    plt.figure()
+    fig_fit = plt.figure()
     plt.errorbar(x, value_avg, yerr=error_avg, marker=".")
     plt.plot(x, power_law(x, *pars), linestyle="--", linewidth=2)
     plt.xlabel("Number of Clifford gates")
@@ -368,6 +368,7 @@ else:
         save_data_dict.update({"I_data": I})
         save_data_dict.update({"Q_data": Q})
     save_data_dict.update({"fig_live": fig})
+    save_data_dict.update({"fig_fit": fig_fit})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
 

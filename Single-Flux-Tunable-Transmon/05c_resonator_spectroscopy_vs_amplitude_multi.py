@@ -34,15 +34,15 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 1000  # The number of averages
+n_avg = 5000  # The number of averages
 # The frequency sweep around the resonator frequency "resonator_IF"
-span = 5 * u.MHz
-df = 200 * u.kHz
+span = 3 * u.MHz
+df = 50 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
 a_min = 0.001
-a_max = 1
-amplitudes = np.geomspace(a_min, a_max, 40)
+a_max = 1.99
+amplitudes = np.geomspace(a_min, a_max, 100)
 
 # Data to save
 save_data_dict = {
@@ -169,7 +169,7 @@ else:
     interrupt_on_close(fig, job)  #  Interrupts the job when closing the figure
     while results.is_processing():
         # Fetch results
-        I1, Q2, I2, Q2,I3, Q3,iteration = results.fetch_all()
+        I1, Q1, I2, Q2,I3, Q3, iteration = results.fetch_all()
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Convert results into Volts and normalize
@@ -201,7 +201,7 @@ else:
         plt.subplot(2, 3, 1)
         plt.suptitle(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz & IF = {resonator_IF / u.MHz} MHz")
         plt.cla()
-        plt.title(r"$R=\sqrt{I^2 + Q^2}$ (normalized)")
+        # plt.title(r"$R=\sqrt{I^2 + Q^2}$ (normalized)")
         plt.pcolor(amplitudes * readout_amp, dfs / u.MHz, R1)
         plt.xscale("log")
         plt.xlim(amplitudes[0] * readout_amp, amplitudes[-1] * readout_amp)
@@ -215,11 +215,13 @@ else:
         plt.xscale("log")
         plt.xlim(amplitudes[0] * readout_amp, amplitudes[-1] * readout_amp)
         plt.gca().set_box_aspect(1)
+        plt.pause(0.1)
+        plt.tight_layout()
 
         plt.subplot(2, 3, 2)
         plt.suptitle(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz & IF = {resonator_IF_2 / u.MHz} MHz")
         plt.cla()
-        plt.title(r"$R=\sqrt{I^2 + Q^2}$ (normalized)")
+        # plt.title(r"$R=\sqrt{I^2 + Q^2}$ (normalized)")
         plt.pcolor(amplitudes * readout_amp_2, dfs / u.MHz, R2)
         plt.xscale("log")
         plt.xlim(amplitudes[0] * readout_amp_2, amplitudes[-1] * readout_amp_2)
@@ -233,11 +235,13 @@ else:
         plt.xscale("log")
         plt.xlim(amplitudes[0] * readout_amp_2, amplitudes[-1] * readout_amp_2)
         plt.gca().set_box_aspect(1)
+        plt.pause(0.1)
+        plt.tight_layout()
 
         plt.subplot(2, 3, 3)
         plt.suptitle(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz & IF = {resonator_IF_3 / u.MHz} MHz")
         plt.cla()
-        plt.title(r"$R=\sqrt{I^2 + Q^2}$ (normalized)")
+        # plt.title(r"$R=\sqrt{I^2 + Q^2}$ (normalized)")
         plt.pcolor(amplitudes * readout_amp_3, dfs / u.MHz, R3)
         plt.xscale("log")
         plt.xlim(amplitudes[0] * readout_amp_3, amplitudes[-1] * readout_amp_3)
@@ -251,6 +255,8 @@ else:
         plt.xscale("log")
         plt.xlim(amplitudes[0] * readout_amp_3, amplitudes[-1] * readout_amp_3)
         plt.gca().set_box_aspect(1)
+        plt.pause(0.1)
+        plt.tight_layout()
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()

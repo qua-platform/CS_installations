@@ -94,3 +94,43 @@ def ge_averaged_measurement(cooldown_time, n_avg):
         save(Q, Qe_st)
 
         return Ig_st, Qg_st, Ie_st, Qe_st
+
+def active_reset(threshold: float, qubit: str, resonator: str, max_tries=1000, Ig=None):
+    """Macro for performing active reset until successful for a given number of tries.
+
+    :param threshold: threshold for the 'I' quadrature discriminating between ground and excited state.
+    :param qubit: The qubit element. Must be defined in the config.
+    :param resonator: The resonator element. Must be defined in the config.
+    :param max_tries: python integer for the maximum number of tries used to perform active reset. Must >= 1.
+    :param Ig: A QUA variable for the information in the `I` quadrature. Should be of type `Fixed`. If not given, a new
+        variable will be created
+    :return: A QUA variable for the information in the `I` quadrature and the number of tries after success.
+    """
+    if Ig is None:
+        Ig = declare(fixed)
+    if (max_tries < 1) or (not float(max_tries).is_integer()):
+        raise Exception("max_count must be an integer >= 1.")
+    # Initialize Ig to be > threshold
+    assign(Ig, threshold + 2**-28)
+    # Number of tries for active reset
+    counter = declare(int)
+    # Reset the number of tries
+    assign(counter, 0)
+
+    # Perform active feedback
+    align(qubit, resonator)
+    # Use a while loop and counter for other protocols and tests
+    with while_((Ig > threshold) & (counter < max_tries)):
+        # Measure the resonator
+        measure(
+            "readout",
+            resonator,
+            None,
+            dual_demod.full("rotated_cos", "rotated_sin", Ig),
+        )
+        # Play a pi pulse to get back to the ground state
+        play("x180", qubit, condition=(Ig > threshold))
+        # Increment the number of tries
+        assign(counter, counter + 1)
+
+    return Ig, counter

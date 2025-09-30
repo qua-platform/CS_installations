@@ -29,7 +29,7 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 5000  # The number of averages
+n_avg = 10000  # The number of averages
 # Pulse duration sweep (in clock cycles = 4ns)
 # must be larger than 4 clock cycles and larger than the pi_len defined in the config
 t_min = 4 // 4 

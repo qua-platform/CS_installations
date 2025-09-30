@@ -30,6 +30,7 @@ from configuration import *
 from qualang_tools.results import progress_counter, fetching_tool
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
+from qualang_tools.plot import interrupt_on_close
 
 
 ####################
@@ -100,9 +101,9 @@ def update_readout_length(new_readout_length, ringdown_length):
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 100  # number of averages
+n_avg = 1 # number of averages
 # Set maximum readout duration for this scan and update the configuration accordingly
-readout_len = 5 * u.us  # Readout pulse duration
+readout_len = 1 * u.us  # Readout pulse duration
 ringdown_len = 0 * u.us  # integration time after readout pulse to observe the ringdown of the resonator
 update_readout_length(readout_len, ringdown_len)
 # Set the sliced demod parameters
@@ -229,6 +230,10 @@ else:
     job = qm.execute(opt_weights)
     # Get results from QUA program
     results = fetching_tool(job, data_list=["iteration"], mode="live")
+    fig = plt.figure()
+    interrupt_on_close(fig, job)  # Interrupts the job when closing the figure
+
+    # interrupt_on_close(fig, job)
     # Live plotting
     while results.is_processing():
         # Fetch results
@@ -259,6 +264,10 @@ else:
     weights_minus_imag = -norm_subtracted_trace.imag
     weights_imag = norm_subtracted_trace.imag
     weights_minus_real = -norm_subtracted_trace.real
+
+    plt.gcf()
+    plt.show()
+    plt.pause(0.1)
     # Save the weights for later use in the config
     np.savez(
         "optimal_weights",
@@ -315,6 +324,7 @@ else:
     save_data_dict.update({"Qg_data": Qg})
     save_data_dict.update({"Ie_data": Ie})
     save_data_dict.update({"Qe_data": Qe})
+    save_data_dict.update({"fig": fig})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
 

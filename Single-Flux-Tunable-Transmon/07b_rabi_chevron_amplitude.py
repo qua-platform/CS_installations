@@ -32,8 +32,8 @@ from qualang_tools.results.data_handler import DataHandler
 # Parameters Definition
 n_avg = 1000  # The number of averages
 # The frequency sweep parameters
-span = 5 * u.MHz
-df = 100 * u.kHz
+span = 100 * u.MHz
+df = 500 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)  # The frequency vector
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
 a_min = 0
