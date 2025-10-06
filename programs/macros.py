@@ -1,25 +1,26 @@
 from qm.qua import *
 import numpy as np
 
-def multiplexed_parser(qubit_keys, multiplexed_parameters):
-    qubit_key_subset = []
-    qubit_frequencies = []
-    resonator_key_subset = []
-    resonator_frequencies = []
-    readout_lengths = []
-    ge_thresholds = []
-    drag_coef_subset = []
-    for key in qubit_keys:
-        if key in list(multiplexed_parameters.keys()):
-            qubit_dict = multiplexed_parameters[key].copy()
-            qubit_key_subset.append(key)
-            qubit_frequencies.append(qubit_dict["qubit_freq"])
-            resonator_key_subset.append(qubit_dict["res_key"])
-            resonator_frequencies.append(qubit_dict["res_freq"])
-            readout_lengths.append(qubit_dict["readout_len"])
-            ge_thresholds.append(qubit_dict["ge_threshold"])
-            drag_coef_subset.append(qubit_dict["drag_coef"])  # Default to 0.0 if not present
-    return qubit_key_subset, np.array(qubit_frequencies), resonator_key_subset, np.array(resonator_frequencies), np.array(readout_lengths), np.array(ge_thresholds), np.array(drag_coef_subset)
+def multiplexed_parser(qubit_keys, multiplexed_parameters, call_list=None):
+    '''
+    Parse multiplexed parameters for the given qubit keys. Returns Tuple of arrays of the parameters in order of the qubit keys given.
+    If call_list is given, returns only the parameters in the call_list in the order they are given.
+    :param qubit_keys: List of qubit keys to parse the parameters for.
+    :param multiplexed_parameters: Dictionary of the multiplexed parameters for all qubits (taken from configuration file).
+    :param call_list: List of parameter names to return. If None, returns large subset of parameters (in order specified below). Keys available: ["qubit_key", "qubit_frequency", "resonator_key", "resonator_frequency", "readout_len", "readout_amp", "qubit_relaxation", "resonator_relaxation", "ge_threshold", "drag_coef", "anharmonicity", "x180_len", "x180_amp", "x90_len", "x90_amp"]
+    :return: Tuple of lists/arrays of the parameters in order of the qubit keys given, or in the order specified in call_list. (default order is: "qubit_key", "qubit_frequency", "resonator_key", "resonator_frequency", "readout_len", "qubit_relaxation", "resonator_relaxation", "ge_threshold", "drag_coef", "anharmonicity")
+    '''
+    if call_list is None:
+        call_list = ["qubit_key", "qubit_frequency", "resonator_key", "resonator_frequency", "readout_len", "qubit_relaxation", "resonator_relaxation", "ge_threshold", "drag_coef", "anharmonicity"]
+    list_to_return = []
+    for item in call_list:
+        item_list = []
+        for key in qubit_keys:
+            if key in list(multiplexed_parameters.keys()):
+                item_list.append(multiplexed_parameters[key][item])
+        list_to_return.append(np.array(item_list))
+    return tuple(list_to_return)
+
 
 def simple_two_state_discriminator(I, threshold, state=None):
     '''

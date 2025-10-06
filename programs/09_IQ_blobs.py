@@ -24,12 +24,13 @@ else:
 # ---- Multiplexed program parameters ----
 n_avg = 1000
 multiplexed = True
-qub_relaxation = qubit_relaxation//4 # From ns to clock cycles
-res_relaxation = resonator_relaxation//4 # From ns to clock cycles
+qubit_keys = ["q0", "q1", "q2", "q3"]
+required_parameters = ["qubit_key", "qubit_frequency", "qubit_relaxation", "resonator_key", "readout_len", "resonator_relaxation"]
+qub_key_subset, qub_frequency, qubit_relaxation, res_key_subset, readout_len, resonator_relaxation = multiplexed_parser(qubit_keys, multiplexed_parameters.copy(), required_parameters)
 
 # ---- IQ blobs ---- #
-qubit_keys = ["q0", "q1", "q2", "q3"]
-qub_key_subset, qub_freq_subset, res_key_subset, res_freq_subset, readout_lens, ge_thresholds, drag_coef_subset,  = multiplexed_parser(qubit_keys, multiplexed_parameters)
+qub_relaxation = qubit_relaxation//4 # From ns to clock cycles
+res_relaxation = resonator_relaxation//4 # From ns to clock cycles
 
 with program() as IQ_blobs:
     pd = declare(int)
@@ -56,8 +57,8 @@ with program() as IQ_blobs:
             save(I_g[j], I_g_st[j])
             save(Q_g[j], Q_g_st[j])
             align(res_key_subset[j], qub_key_subset[j]) 
-            wait(qub_relaxation, qub_key_subset[j]) # ensure qubit is in ground state after readout, just in case
-            wait(res_relaxation, res_key_subset[j])
+            wait(qub_relaxation[j], qub_key_subset[j]) # ensure qubit is in ground state after readout, just in case
+            wait(res_relaxation[j], res_key_subset[j])
             align(res_key_subset[j], qub_key_subset[j]) 
             play(
                 "x180", 
@@ -74,13 +75,13 @@ with program() as IQ_blobs:
             save(I_e[j], I_e_st[j])
             save(Q_e[j], Q_e_st[j])
             if multiplexed:
-                wait(res_relaxation, res_key_subset[j])
-                wait(qub_relaxation, qub_key_subset[j]) 
+                wait(res_relaxation[j], res_key_subset[j])
+                wait(qub_relaxation[j], qub_key_subset[j]) 
             else:
                 align() # When python unravels, this makes sure the readouts are sequential
                 if j == len(res_key_subset)-1:
-                    wait(res_relaxation, *res_key_subset) # after last resonator, we wait for relaxation
-                    wait(qub_relaxation, *qub_key_subset)
+                    wait(np.max(res_relaxation), *res_key_subset) 
+                    wait(np.max(qub_relaxation), *qub_key_subset)
         save(n, n_st)
     with stream_processing():
         n_st.save("iteration")

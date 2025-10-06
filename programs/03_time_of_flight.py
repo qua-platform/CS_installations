@@ -9,6 +9,7 @@ from pathlib import Path
 from scipy.signal import savgol_filter
 from qualang_tools.units import unit
 u = unit(coerce_to_integer=True)
+from macros import multiplexed_parser
 
 if True:
     from configurations.OPX1000config_DA_5Q import *
@@ -17,10 +18,14 @@ else:
 
 # ---- Program parameters ---- #
 n_avg = 200
-res_relaxation = resonator_relaxation//4 # From ns to clock cycles
+resonator_qubit_keys = ["q0"]
+required_parameters = ["resonator_key", "resonator_relaxation"]
+res_key_subset, resonator_relaxation = multiplexed_parser(resonator_qubit_keys, multiplexed_parameters.copy(), required_parameters)
 
 # ---- Time of Flight ---- #
-reskey = resonator_keys[0]
+reskey = res_key_subset[0]
+res_relaxation = resonator_relaxation[0]//4 # From ns to clock cycles
+
 with program() as time_of_flight_prog:
     n = declare(int)
     adc_st = declare_stream(adc_trace=True)
@@ -36,7 +41,7 @@ prog = time_of_flight_prog
 from warsh_credentials import host_ip, cluster
 qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
 
-simulate = True
+simulate = False
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=2_000)  # In clock cycles = 4ns

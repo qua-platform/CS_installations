@@ -22,18 +22,18 @@ else:
 # ---- Multiplexed program parameters ----
 n_avg = 1000
 multiplexed = True
-res_relaxation = resonator_relaxation//4 # From ns to clock cycles
+resonator_qubit_keys = ["q0", "q1", "q2", "q3"]
+required_parameters = ["resonator_key", "resonator_frequency", "readout_len", "resonator_relaxation"]
+res_key_subset, res_frequency, readout_len, resonator_relaxation = multiplexed_parser(resonator_qubit_keys, multiplexed_parameters.copy(), required_parameters)
 
 # ---- Resonator Spectroscopy ---- #
-qubit_resonator_keys = ["q0", "q1", "q2", "q3"]
+res_relaxation = resonator_relaxation//4 # From ns to clock cycles
 
-qub_key_subset, qub_frequencies, res_key_subset, res_frequencies, readout_lens, ge_thresholds, drag_coef_subset,  = multiplexed_parser(qubit_resonator_keys, multiplexed_parameters.copy())
-
-res_IF_guesses = res_frequencies - resonator_LO
+res_IF_guesses = res_frequency - resonator_LO
 res_spec_span = 80 * u.MHz
 res_spec_df = 5 * u.MHz
 res_spec_sweep_dfs = np.arange(-res_spec_span, res_spec_span + res_spec_df, res_spec_df)
-res_spec_frequencies = np.array([res_spec_sweep_dfs + guess for guess in res_frequencies])
+res_spec_frequencies = np.array([res_spec_sweep_dfs + guess for guess in res_frequency])
 
 
 with program() as res_spec_multiplexed:
@@ -59,11 +59,11 @@ with program() as res_spec_multiplexed:
                 save(I[j], I_st[j])
                 save(Q[j], Q_st[j])
                 if multiplexed:
-                    wait(res_relaxation, res_key_subset[j])
+                    wait(res_relaxation[j], res_key_subset[j])
                 else:
-                    align() # When python unravels, this makes sure the readouts are sequential (switch to global)
+                    align() # When python unravels, this makes sure the readouts are sequential
                     if j == len(res_key_subset)-1:
-                        wait(res_relaxation) # Wait for the last resonator to relax before starting the next avg
+                        wait(np.max(res_relaxation))
         save(n, n_st)
     with stream_processing():
         n_st.save("iteration")
@@ -109,9 +109,9 @@ else:
         I = np.array([IQ_data[j] for j in range(len(res_key_subset))])
         Q = np.array([IQ_data[j + len(res_key_subset)] for j in range(len(res_key_subset))])
         # Convert results into Volts
-        for j in range(len(qub_key_subset)):
-            I[j] = u.demod2volts(I[j], readout_lens[j])
-            Q[j] = u.demod2volts(Q[j], readout_lens[j])
+        for j in range(len(res_key_subset)):
+            I[j] = u.demod2volts(I[j], readout_len[j])
+            Q[j] = u.demod2volts(Q[j], readout_len[j])
         S = I + 1j * Q
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
@@ -122,12 +122,12 @@ else:
         ax1 = plt.subplot(211)
         plt.cla()
         for j in range(len(res_key_subset)):
-            plt.plot((res_spec_frequencies[j] - resonator_LO) / u.MHz, R[j], label=f"Resonator {res_key_subset[j]} at {res_frequencies[j]/u.GHz:.3f} GHz")
+            plt.plot((res_spec_frequencies[j] - resonator_LO) / u.MHz, R[j], label=f"Resonator {res_key_subset[j]} at {res_frequency[j]/u.GHz:.3f} GHz")
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ (V)")
         plt.subplot(212, sharex=ax1)
         plt.cla()
         for j in range(len(res_key_subset)):
-            plt.plot((res_spec_frequencies[j] - resonator_LO) / u.MHz, signal.detrend(np.unwrap(phase[j])), label=f"Resonator {res_key_subset[j]} at {res_frequencies[j]/u.GHz:.3f} GHz")
+            plt.plot((res_spec_frequencies[j] - resonator_LO) / u.MHz, signal.detrend(np.unwrap(phase[j])), label=f"Resonator {res_key_subset[j]} at {res_frequency[j]/u.GHz:.3f} GHz")
         plt.xlabel("Intermediate frequency (MHz)")
         plt.ylabel("Phase (rad)")
         plt.pause(0.1)
@@ -141,6 +141,7 @@ else:
             fit = Fit()
             plt.figure()
             res_spec_fit = fit.transmission_resonator_spectroscopy( (res_spec_frequencies[j] - resonator_LO) / u.MHz, R[j], plot=True)
+            #res_spec_fit = fit.reflection_resonator_spectroscopy( (res_spec_frequencies[j] - resonator_LO) / u.MHz, R[j], plot=True)
             plt.title(f"Resonator spectroscopy - LO = {resonator_LO / u.GHz} GHz")
             plt.xlabel("Intermediate frequency (MHz)")
             plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ (V))")

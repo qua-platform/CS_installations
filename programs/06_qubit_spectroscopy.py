@@ -14,26 +14,27 @@ u = unit(coerce_to_integer=True)
 from scipy import signal
 from macros import multiplexed_parser
 
-if False:
+if True:
     from configurations.OPX1000config_DA_5Q import *
 else:
     from configurations.OPX1000config_DB_6Q import *
 
-# ---- Multiplexed program parameters ----
+# ---- Multiplexed program parameters ---- #
 n_avg = 1000
 multiplexed = True
-qub_relaxation = qubit_relaxation//4 # From ns to clock cycles
-res_relaxation = resonator_relaxation//4 # From ns to clock cycles
+qubit_keys = ["q0", "q1", "q2", "q3"]
+required_parameters = ["qubit_key", "qubit_frequency", "qubit_relaxation", "resonator_key", "readout_len", "resonator_relaxation"]
+qub_key_subset, qub_frequency, qubit_relaxation, res_key_subset, readout_len, resonator_relaxation = multiplexed_parser(qubit_keys, multiplexed_parameters.copy(), required_parameters)
 
 # ---- Qubit Spectroscopy ---- #
-qubit_keys = ["q0", "q1", "q2", "q3"]
-qub_key_subset, qub_frequencies, res_key_subset, res_frequencies, readout_lens, ge_thresholds, drag_coef_subset,  = multiplexed_parser(qubit_keys, multiplexed_parameters)
+res_relaxation = resonator_relaxation//4 # From ns to clock cycles
+qub_relaxation = qubit_relaxation//4 # From ns to clock cycles
 
-qub_IF_guesses = qub_frequencies - qubit_LO
+qub_IF_guesses = qub_frequency - qubit_LO
 qub_spec_span = 80 * u.MHz
 qub_spec_df = 5 * u.MHz
 qub_spec_sweep_dfs = np.arange(-qub_spec_span, qub_spec_span + qub_spec_df, qub_spec_df)
-qub_spec_frequencies = np.array([qub_spec_sweep_dfs + guess for guess in qub_frequencies])
+qub_spec_frequencies = np.array([qub_spec_sweep_dfs + guess for guess in qub_frequency])
 
 
 with program() as qubit_spec_multiplexed:
@@ -61,13 +62,13 @@ with program() as qubit_spec_multiplexed:
                 save(I[j], I_st[j])
                 save(Q[j], Q_st[j])
                 if multiplexed:
-                    wait(res_relaxation, res_key_subset[j])
-                    wait(qub_relaxation, qub_key_subset[j]) 
+                    wait(res_relaxation[j], res_key_subset[j])
+                    wait(qub_relaxation[j], qub_key_subset[j]) 
                 else:
                     align() # When python unravels, this makes sure the readouts are sequential
                     if j == len(res_key_subset)-1:
-                        wait(res_relaxation, *res_key_subset) # Wait for the last resonator to relax before starting the next avg
-                        wait(qub_relaxation, *qub_key_subset)
+                        wait(np.max(res_relaxation), *res_key_subset) 
+                        wait(np.max(qub_relaxation), *qub_key_subset)
         save(n, n_st)
     with stream_processing():
         n_st.save("iteration")
@@ -114,8 +115,8 @@ else:
         Q = np.array([IQ_data[j + len(qub_key_subset)] for j in range(len(qub_key_subset))])
         # Convert results into Volts
         for j in range(len(qub_key_subset)):
-            I[j] = u.demod2volts(I[j], readout_lens[j])
-            Q[j] = u.demod2volts(Q[j], readout_lens[j])
+            I[j] = u.demod2volts(I[j], readout_len[j])
+            Q[j] = u.demod2volts(Q[j], readout_len[j])
         S = I + 1j * Q
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase
@@ -126,12 +127,12 @@ else:
         ax1 = plt.subplot(211)
         plt.cla()
         for j in range(len(qub_key_subset)):
-            plt.plot((qub_spec_frequencies[j] - qubit_LO) / u.MHz, R[j], label=f"Qubit {qub_key_subset[j]} at {qub_frequencies[j]/u.GHz:.3f} GHz")
+            plt.plot((qub_spec_frequencies[j] - qubit_LO) / u.MHz, R[j], label=f"Qubit {qub_key_subset[j]} at {qub_frequency[j]/u.GHz:.3f} GHz")
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ (V)")
         plt.subplot(212, sharex=ax1)
         plt.cla()
         for j in range(len(qub_key_subset)):
-            plt.plot((qub_spec_frequencies[j] - qubit_LO) / u.MHz, signal.detrend(np.unwrap(phase[j])), label=f"Qubit {qub_key_subset[j]} at {qub_frequencies[j]/u.GHz:.3f} GHz")
+            plt.plot((qub_spec_frequencies[j] - qubit_LO) / u.MHz, signal.detrend(np.unwrap(phase[j])), label=f"Qubit {qub_key_subset[j]} at {qub_frequency[j]/u.GHz:.3f} GHz")
         plt.xlabel("Intermediate frequency (MHz)")
         plt.ylabel("Phase (rad)")
         plt.pause(0.1)

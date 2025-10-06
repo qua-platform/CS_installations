@@ -36,14 +36,15 @@ else:
 ##################
 # ---- Multiplexed program parameters ---- #
 n_avg = 100 # number of averages for each sequence
-
 multiplexed = True
-qub_relaxation = qubit_relaxation//4 # From ns to clock cycles
-res_relaxation = resonator_relaxation//4 # From ns to clock cycles
+qubit_keys = ["q0", "q1", "q2", "q3"]
+required_parameters = ["qubit_key", "qubit_frequency", "qubit_relaxation", "resonator_key", "readout_len", "resonator_relaxation", "ge_threshold", "drag_coef"]
+qub_key_subset, qub_frequency, qubit_relaxation, res_key_subset, readout_len, resonator_relaxation, ge_threshold, drag_coef_subset = multiplexed_parser(qubit_keys, multiplexed_parameters.copy(), required_parameters)
+
 
 # ---- RB program parameters ---- #
-qubit_keys = ["q0", "q1", "q2", "q3"]
-qub_key_subset, qub_freq_subset, res_key_subset, res_freq_subset, readout_lens, ge_thresholds, drag_coef_subset, = multiplexed_parser(qubit_keys, multiplexed_parameters)
+qub_relaxation = qubit_relaxation//4 # From ns to clock cycles
+res_relaxation = resonator_relaxation//4 # From ns to clock cycles
 
 
 # Scan the DRAG coefficient pre-factor
@@ -69,7 +70,7 @@ save_data_dict = {
 ###################
 # The QUA program #
 ###################
-with program() as drag:
+with program() as drag_calibration:
     n = declare(int)  # QUA variable for the averaging loop
     a = declare(fixed)  # QUA variable for the DRAG coefficient pre-factor
     it = declare(int)  # QUA variable for the number of qubit pulses
@@ -92,19 +93,19 @@ with program() as drag:
                     # Align the two elements to measure after playing the qubit pulses.
                     align(res_key_subset[j], qub_key_subset[j])
                     # Measure the resonator and extract the qubit state
-                    state[j], I[j], Q[j] = readout_macro(res_key_subset[j], I[j], Q[j], state[j], threshold=ge_thresholds[j])
+                    state[j], I[j], Q[j] = readout_macro(res_key_subset[j], I[j], Q[j], state[j], threshold=ge_threshold[j])
                     # Save the 'I' & 'Q' quadratures to their respective streams
                     save(I[j], I_st[j])
                     save(Q[j], Q_st[j])
                     save(state[j], state_st[j])
                     if multiplexed:
-                        wait(res_relaxation, res_key_subset[j])
-                        wait(qub_relaxation, qub_key_subset[j]) 
+                        wait(res_relaxation[j], res_key_subset[j])
+                        wait(qub_relaxation[j], qub_key_subset[j]) 
                     else:
                         align() # When python unravels, this makes sure the readouts are sequential
                         if j == len(res_key_subset)-1:
-                            wait(res_relaxation, *res_key_subset) # after last resonator, we wait for relaxation
-                            wait(qub_relaxation, *qub_key_subset)
+                            wait(np.max(res_relaxation), *res_key_subset) 
+                            wait(np.max(qub_relaxation), *qub_key_subset)
         # Save the averaging iteration to get the progress bar
         save(n, n_st)
 
@@ -117,7 +118,7 @@ with program() as drag:
             state_st[j].buffer(len(iters)).buffer(len(amps)).average().save("state_"+str(j))
 
 
-prog = drag
+prog = drag_calibration
 # ---- Open communication with the OPX ---- #
 from warsh_credentials import host_ip, cluster
 qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
@@ -157,8 +158,8 @@ else:
         state = np.array([IQ_state_data[j + 2 * len(qub_key_subset)] for j in range(len(qub_key_subset))])
         # Convert the results into Volts
         for j in range(len(qub_key_subset)):
-            I[j] = u.demod2volts(I[j], readout_lens[j])
-            Q[j] = u.demod2volts(Q[j], readout_lens[j])
+            I[j] = u.demod2volts(I[j], readout_len[j])
+            Q[j] = u.demod2volts(Q[j], readout_len[j])
         # Progress bar
         progress_counter(iteration, n_avg, start_time=res_handles.get_start_time())
         # Plot results

@@ -22,18 +22,19 @@ else:
 # ---- Multiplexed program parameters ----
 n_avg = 1000
 multiplexed = True
+qubit_keys = ["q0", "q1", "q2", "q3"]
+required_parameters = ["qubit_key", "qubit_frequency", "qubit_relaxation", "resonator_key", "readout_len", "resonator_relaxation"]
+qub_key_subset, qub_frequency, qubit_relaxation, res_key_subset, readout_len, resonator_relaxation = multiplexed_parser(qubit_keys, multiplexed_parameters.copy(), required_parameters)
+
+# ---- Time Rabi Chevron Multiplexed ---- #
 qub_relaxation = qubit_relaxation//4 # From ns to clock cycles
 res_relaxation = resonator_relaxation//4 # From ns to clock cycles
 
-# ---- Time Rabi Chevron Multiplexed ---- #
-qubit_keys = ["q0", "q1", "q2", "q3"]
-qub_key_subset, qub_freq_subset, res_key_subset, res_freq_subset, readout_lens, ge_thresholds, drag_coef_subset,  = multiplexed_parser(qubit_keys, multiplexed_parameters)
-
-qub_IFs = qub_freq_subset - qubit_LO
+qub_IFs = qub_frequency - qubit_LO
 qub_spec_span = 20 * u.MHz
 qub_spec_df = 2 * u.MHz
 qub_spec_sweep_dfs = np.arange(-qub_spec_span, qub_spec_span + qub_spec_df, qub_spec_df)
-qub_spec_frequencies = np.array([qub_spec_sweep_dfs + guess for guess in qub_freq_subset])
+qub_spec_frequencies = np.array([qub_spec_sweep_dfs + guess for guess in qub_frequency])
 
 pulse_duration_min = 20 # ns 
 pulse_duration_max = 800 # ns 
@@ -72,13 +73,13 @@ with program() as time_rabi_chevron_multiplexed:
                     save(I[j], I_st[j])
                     save(Q[j], Q_st[j])
                     if multiplexed:
-                        wait(res_relaxation, res_key_subset[j])
-                        wait(qub_relaxation, qub_key_subset[j]) 
+                        wait(res_relaxation[j], res_key_subset[j])
+                        wait(qub_relaxation[j], qub_key_subset[j]) 
                     else:
                         align() # When python unravels, this makes sure the readouts are sequential
                         if j == len(res_key_subset)-1:
-                            wait(res_relaxation, *res_key_subset) # after last resonator, we wait for relaxation
-                            wait(qub_relaxation, *qub_key_subset)
+                            wait(np.max(res_relaxation), *res_key_subset) 
+                            wait(np.max(qub_relaxation), *qub_key_subset)
         save(n, n_st)
     with stream_processing():
         n_st.save("iteration")
@@ -124,8 +125,8 @@ else:
         I = np.array([IQ_data[j] for j in range(len(qub_key_subset))])
         Q = np.array([IQ_data[j + len(qub_key_subset)] for j in range(len(qub_key_subset))])
         for j in range(len(qub_key_subset)):
-            I[j] = u.demod2volts(I[j], readout_lens[j])
-            Q[j] = u.demod2volts(Q[j], readout_lens[j])
+            I[j] = u.demod2volts(I[j], readout_len[j])
+            Q[j] = u.demod2volts(Q[j], readout_len[j])
         S = I + 1j * Q
         R = np.abs(S)  # Amplitude
         phase = np.angle(S)  # Phase

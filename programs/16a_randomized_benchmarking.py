@@ -15,7 +15,7 @@ from scipy import signal
 from qualang_tools.bakery.randomized_benchmark_c1 import c1_table
 from scipy.optimize import curve_fit
 
-from macros import multiplexed_parser, simple_two_state_discriminator
+from macros import multiplexed_parser, simple_two_state_discriminator, readout_macro
 
 
 if False:
@@ -26,7 +26,7 @@ else:
 inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
 seed = 42
 
-def play_RB_sequence_V1(sequence_indices, sequence_length, qub_key):
+def play_RB_sequence_V1(sequence_indices, sequence_length, qub_key, x180_len):
     with for_(m, 0, m < sequence_length, m + 1): # playing out the sequency of cliffords
         assign(i, sequence_indices[m])
         with if_(i == 0):
@@ -99,9 +99,9 @@ def play_RB_sequence_V1(sequence_indices, sequence_length, qub_key):
             play("y90", qub_key)
             play("-x90", qub_key)
 
-def play_RB_sequence(sequence_indices, sequence_length, qub_key):
-    with for_(m, 0, m < sequence_length, m + 1): # playing out the sequency of cliffords
-        with switch_(sequence_indices[m], unsafe = True):
+def play_RB_sequence(sequence_indices, sequence_length, qub_key, x180_len):
+    with for_(i, 0, i < sequence_length, i + 1): # playing out the sequency of cliffords
+        with switch_(sequence_indices[i], unsafe = True):
             with case_(0):
                 wait(x180_len//4, qub_key)
             with case_(1):
@@ -175,10 +175,10 @@ def play_RB_sequence(sequence_indices, sequence_length, qub_key):
 def power_law(power, a, b, p):
     return a * (p**power) + b
 
-def generate_RB_sequence(depth):
+def generate_RB_sequence(max_depth):
     '''
     Lets do some thinking here huh.
-    Current version is entirely ripped from the library
+    This version is pretty much ripped straight from qua-libs to ensure everything else is working (strict timing was a learning curve).
     '''
     cayley = declare(int, value=c1_table.flatten().tolist())
     inv_list = declare(int, value=inv_gates)
@@ -200,12 +200,14 @@ def generate_RB_sequence(depth):
 
 # ---- Multiplexed program parameters ---- #
 multiplexed = True
-qub_relaxation = qubit_relaxation//4 # From ns to clock cycles
-res_relaxation = resonator_relaxation//4 # From ns to clock cycles
+qubit_keys = ["q0", "q1", "q2", "q3"]
+required_parameters = ["qubit_key", "qubit_frequency", "qubit_relaxation", "resonator_key", "readout_len", "resonator_relaxation", "ge_threshold", "x180_len"]
+qub_key_subset, qub_frequency, qubit_relaxation, res_key_subset, readout_len, resonator_relaxation, ge_threshold, x180_len = multiplexed_parser(qubit_keys, multiplexed_parameters.copy(), required_parameters)
+
 
 # ---- RB program parameters ---- #
-qubit_keys = ["q0", "q1", "q2", "q3"]
-qub_key_subset, qub_freq_subset, res_key_subset, res_freq_subset, readout_lens, ge_thresholds, drag_coef_subset, = multiplexed_parser(qubit_keys, multiplexed_parameters)
+qub_relaxation = qubit_relaxation//4 # From ns to clock cycles
+res_relaxation = resonator_relaxation//4 # From ns to clock cycles
 max_depth = 10
 m_avg = 8 # number of sequences at each depth
 n_avg = 100 # number of averages for each sequence
@@ -226,11 +228,11 @@ with program() as randomized_benchmarking:
 
     with for_(n, 0, n < n_avg, n + 1): # looping over number of sequences at each depth
         with for_(d, 1, d <= max_depth, d + 1): # looping over the different sequence depths
-                sequence_indices, invert_gate_index = generate_RB_sequence(d)
+                sequence_indices, invert_gate_index = generate_RB_sequence(max_depth)
                 with for_(m, 0, m < m_avg, m + 1):
                     for j in range(len(qub_key_subset)): 
                         with strict_timing_():
-                            play_RB_sequence(sequence_indices, d, qub_key_subset[j])
+                            play_RB_sequence(sequence_indices, d, qub_key_subset[j], x180_len[j])
                         align(res_key_subset[j], qub_key_subset[j])
                         measure(
                             "readout",
@@ -239,18 +241,18 @@ with program() as randomized_benchmarking:
                             dual_demod.full("opt_cos", "opt_sin", I[j]),
                             dual_demod.full("opt_minus_sin", "opt_cos", Q[j])
                         )
-                        state[j] = simple_two_state_discriminator(I[j], threshold = ge_thresholds[j], state = state[j])
+                        state[j], I[j], Q[j] = readout_macro(res_key_subset[j], I[j], Q[j], state[j], threshold=ge_threshold[j])
                         #save(I[j], I_st[j])
                         #save(Q[j], Q_st[j])
                         save(state[j], state_st[j])
                         if multiplexed:
-                            wait(res_relaxation, res_key_subset[j])
-                            wait(qub_relaxation, qub_key_subset[j])
+                            wait(res_relaxation[j], res_key_subset[j])
+                            wait(qub_relaxation[j], qub_key_subset[j]) 
                         else:
-                            align() 
-                            if j == len(qub_key_subset)-1:
-                                wait(res_relaxation) 
-                                wait(qub_relaxation)
+                            align() # When python unravels, this makes sure the readouts are sequential
+                            if j == len(res_key_subset)-1:
+                                wait(np.max(res_relaxation), *res_key_subset) 
+                                wait(np.max(qub_relaxation), *qub_key_subset)
         save(n, n_st)
     with stream_processing():
         n_st.save("iteration")
@@ -309,6 +311,7 @@ else:
         plt.title("Single qubit RB")
         plt.pause(0.1)
     
+    
     result_names = [f"state_{j}" for j in range(len(qub_key_subset))]
     res_handles = fetching_tool(job, data_list = result_names)
     state_data = res_handles.fetch_all()
@@ -354,6 +357,6 @@ else:
         plt.plot(xPlot, power_law(xPlot, *pars), linestyle="--", linewidth=2)
         plt.xlabel("Number of Clifford gates")
         plt.ylabel("Sequence Fidelity")
-        plt.title("Single qubit RB")
+        plt.title(f"Qubit {qub_key_subset[j]}, Single qubit RB")
 
     qm.close()
