@@ -18,13 +18,13 @@ Functional, multiplexed:
 - 12_ramsey_chevron_inner_avg.py
 - 12_ramset_chevron.py
 
-Not yet functional:
+Not yet where I want it:
 - 16a_randomized_benchmarking.py
 
 Functional, multiplexed, modified from qua-libs:
 - 17_drag_calibration.py
 
-To add:
+To add (depending on time, will likely just modify from qua-libs):
 - 09b_resonator_depletion_time.py (maybe)
 - 09c_active_reset.py (maybe)
 - 10a_readout_frequency_optimization.py
