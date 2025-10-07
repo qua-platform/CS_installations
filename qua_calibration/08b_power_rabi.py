@@ -84,8 +84,8 @@ with program() as power_rabi:
                 dual_demod.full("rotated_minus_sin", "rotated_cos", Q),
             )
             # Wait for the qubit to decay to the ground state
-            # wait(thermalization_time * u.ns, resonator)
-            wait(30)
+            wait(thermalization_time * u.ns, resonator)
+            # wait(30)
             # Save the 'I' & 'Q' quadratures to their respective streams
             save(I, I_st)
             save(Q, Q_st)

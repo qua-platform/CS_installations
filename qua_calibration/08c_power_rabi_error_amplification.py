@@ -45,7 +45,7 @@ qubit = "q4_xy"
 resonator = "rr4"
 x180_amp = pi_amp_q4
 threshold = ge_threshold_q4
-active = True
+active = False
 
 # Data to save
 save_data_dict = {

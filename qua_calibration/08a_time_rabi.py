@@ -42,7 +42,7 @@ resonator = "rr4"
 qubit_LO = qubit_LO_q4
 x180_amp = pi_amp_q4
 threshold = ge_threshold_q4
-active = True
+active = False
 
 # Data to save
 save_data_dict = {
@@ -59,7 +59,6 @@ save_data_dict = {
 with program() as time_rabi:
     n = declare(int)  # QUA variable for the averaging loop
     t = declare(int)  # QUA variable for the qubit pulse duration
-    # t = declare(fixed) 
     I = declare(fixed)  # QUA variable for the measured 'I' quadrature
     Q = declare(fixed)  # QUA variable for the measured 'Q' quadrature
     I_st = declare_stream()  # Stream for the 'I' quadrature
@@ -71,9 +70,9 @@ with program() as time_rabi:
         with for_(*from_array(t, durations)):  # QUA for_ loop for sweeping the pulse duration
             if active:
                 active_reset(threshold, qubit, resonator, max_tries=5, Ig=None)
+                align()
             # Play the qubit pulse with a variable duration (in clock cycles = 4ns)
             play("x180", qubit, duration = t)
-            # play("x180"*amp(t), qubit,duration=10)
             # Align the two elements to measure after playing the qubit pulse.
             align(qubit, resonator)
             # Measure the state of the resonator
