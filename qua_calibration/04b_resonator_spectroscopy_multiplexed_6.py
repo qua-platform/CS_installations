@@ -40,8 +40,8 @@ RESONATORS: List[Dict[str, Any]] = [
 n_avg = 1000
 
 # Frequency sweep (shared for all resonators; each is swept around its own IF)
-span = 30.0 * u.MHz
-step = 50 * u.kHz
+span = 10.0 * u.MHz
+step = 20 * u.kHz
 # Sweep detunings: e.g., -30 MHz .. +30 MHz in steps of 100 kHz
 dfs = np.arange(-span, span, step, dtype=int)
 
@@ -82,6 +82,7 @@ with program() as PROGRAM:
     Q = [declare(fixed) for _ in RESONATORS]
     I_st = [declare_stream() for _ in RESONATORS]
     Q_st = [declare_stream() for _ in RESONATORS]
+    reset_global_phase()
 
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
@@ -129,7 +130,9 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 #######################
 # Simulate or execute #
 #######################
+
 simulate = False
+# simulate = True
 
 if simulate:
     simulation_config = SimulationConfig(duration=10_000)

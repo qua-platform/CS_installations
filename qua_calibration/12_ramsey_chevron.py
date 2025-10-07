@@ -23,20 +23,24 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
+from macros import *
 
 ##################
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 100  # Number of averaging loops
+n_avg = 5000  # Number of averaging loops
 
 # Frequency sweep in Hz
-freq_span = 10 * u.MHz
-df = 100 * u.kHz
+freq_span = 5 * u.MHz
+df = 200 * u.kHz
 dfs = np.arange(-freq_span, freq_span, df)
 
 qubit = "q4_xy"
 resonator = "rr4"
+qubit_IF = qubit_IF_q4
+threshold = ge_threshold_q4
+active = True
 
 # Idle time sweep (Needs to be a list of integers) - in clock cycles (4ns)
 tau_max = 2000 // 4
@@ -49,6 +53,7 @@ if len(np.where((taus > 0) & (taus < 4))[0]) > 0:
 save_data_dict = {
     "n_avg": n_avg,
     "IF_frequencies": dfs,
+    "active_reset": active,
     "taus": taus,
     "qubit": qubit,
     "config": config,
@@ -66,12 +71,17 @@ with program() as ramsey_freq_duration:
     I_st = declare_stream()  # Stream for the 'I' quadrature
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
+    reset_global_phase()
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(delay, taus)):  # QUA for_ loop for sweeping the idle time
             with for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the qubit frequency
                 # Update the frequency of the digital oscillator linked to the qubit element
+                reset_global_phase()
                 update_frequency(qubit, df + qubit_IF)
+                # reset_global_phase()
+                if active:
+                    active_reset(threshold, qubit, resonator, max_tries=5, Ig=None)
                 # Adjust the idle time
                 with if_(delay >= 4):
                     play("x90", qubit)

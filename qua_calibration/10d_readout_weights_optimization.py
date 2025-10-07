@@ -101,9 +101,9 @@ def update_readout_length(new_readout_length, ringdown_length):
 # Parameters Definition
 n_avg = 100  # number of averages
 # Set maximum readout duration for this scan and update the configuration accordingly
-readout_len = 5 * u.us  # Readout pulse duration
+# readout_len = 5 * u.us  # Readout pulse duration
 ringdown_len = 0 * u.us  # integration time after readout pulse to observe the ringdown of the resonator
-update_readout_length(readout_len, ringdown_len)
+# update_readout_length(readout_len, ringdown_len)
 # Set the sliced demod parameters
 division_length = 10  # Size of each demodulation slice in clock cycles
 number_of_divisions = int((readout_len + ringdown_len) / (4 * division_length))  # Number of slices
@@ -142,6 +142,7 @@ with program() as opt_weights:
     IQ_st = declare_stream()
     QI_st = declare_stream()
     QQ_st = declare_stream()
+    reset_global_phase()
 
     with for_(n, 0, n < n_avg, n + 1):
         # Measure the ground state

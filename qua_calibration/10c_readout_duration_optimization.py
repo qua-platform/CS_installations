@@ -26,6 +26,7 @@ from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
+from macros import *
 
 
 ####################
@@ -55,7 +56,7 @@ n_avg = 1e4  # number of averages
 # Set maximum readout duration for this scan and update the configuration accordingly
 readout_len = 5 * u.us  # Readout pulse duration
 ringdown_len = 0 * u.us  # integration time after readout pulse to observe the ringdown of the resonator
-update_readout_length(readout_len, ringdown_len)
+# update_readout_length(readout_len, ringdown_len)
 # Set the accumulated demod parameters
 division_length = 10  # Size of each demodulation slice in clock cycles
 number_of_divisions = int((readout_len + ringdown_len) / (4 * division_length))
@@ -64,6 +65,8 @@ print("The readout has been sliced in the following number of divisions", number
 
 qubit = "q4_xy"
 resonator = "rr4"
+threshold = ge_threshold_q4
+active = False
 
 # Time axis for the plots at the end
 x_plot = np.arange(division_length * 4, readout_len + ringdown_len + 1, division_length * 4)
@@ -97,10 +100,14 @@ with program() as ro_duration_opt:
     Qg_st = declare_stream()
     Ie_st = declare_stream()
     Qe_st = declare_stream()
+    reset_global_phase()
 
     with for_(n, 0, n < n_avg, n + 1):
         # Measure the ground state.
         # With demod.accumulated, the results are QUA vectors with 1 point for each accumulated chunk
+        if active:
+            active_reset(threshold, qubit, resonator, max_tries=5, Ig=None)
+            align()
         measure(
             "readout",
             resonator,
@@ -120,7 +127,9 @@ with program() as ro_duration_opt:
         wait(thermalization_time * u.ns, resonator)
 
         align()
-
+        if active:
+            active_reset(threshold, qubit, resonator, max_tries=5, Ig=None)
+            align()
         # Measure the excited state.
         # With demod.accumulated, the results are QUA vectors with 1 point for each accumulated chunk
         play("x180", qubit)
@@ -263,3 +272,5 @@ else:
     save_data_dict.update({"fig_live": fig})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+
+    plt.show(block=True)

@@ -186,7 +186,7 @@ with program() as PROGRAM:
                     align()
                     # The strict_timing ensures that the sequence will be played without gaps
                     # Play the random sequence of desired depth
-                    play_sequence(sequence_list, depth, "q1_xy")
+                    play_sequence(sequence_list, depth, "q4_xy")
                     play_sequence(sequence_list, depth, "q2_xy")
                     # Align the two elements to measure after playing the circuit.
                     align()
@@ -273,6 +273,7 @@ else:
                 plt.xlabel("Number of Clifford gates")
                 plt.ylabel("Sequence Fidelity")
                 plt.title(f"Qb - {ind}")
+                
 
             plt.tight_layout()
             plt.pause(2)

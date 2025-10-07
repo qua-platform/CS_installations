@@ -8,7 +8,7 @@ The data undergoes post-processing to calibrate three distinct parameters:
     Its value can be adjusted in the configuration under "time_of_flight".
     This value is utilized to offset the acquisition window relative to when the readout pulse is dispatched.
 
-    - Analog Inputs Offset: Due to minor impedance mismatches, the signals captured by the OPX might exhibit slight offsets.
+    - Analog Inputs OffsetOffset: Due to minor impedance mismatches, the signals captured by the OPX might exhibit slight offsets.
     These can be rectified in the configuration at: config/controllers/"con1"/analog_inputs, enhancing the demodulation process.
 
     - Analog Inputs Gain: If a signal is constrained by digitization or if it saturates the ADC,
@@ -32,7 +32,7 @@ matplotlib.use('TkAgg')
 ##################
 #   Parameters   #
 ##################
-# Choose parameters of target rr/qb
+# Choose parameters of target rr
 resonator = "rr1"
 resonator_IF = resonator_IF_q1
 
@@ -40,7 +40,7 @@ resonator_IF = resonator_IF_q1
 n_avg = 1000  # The number of averages
 
 save_data_dict = {
-    resonator: resonator,
+    "resonator": resonator,
     "resonator_LO": resonator_LO,
     "n_avg": n_avg,
     "config": config,
@@ -56,18 +56,23 @@ with program() as PROGRAM:
 
     # # OPTIONAL to check time-of-flight at arbitrary frequency
     # update_frequency('q1_rr', 100e6)
+    # LO unable to update here 
+    reset_global_phase()
+    
 
     with for_(n, 0, n < n_avg, n + 1):
         # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
-        update_frequency(resonator, resonator_IF - 10 * u.MHz)  # change intermediate freq
+        # change intermediate freq
+        # LO + IF. IF is single side-band.
+        update_frequency(resonator, resonator_IF - 10 * u.MHz)  
         reset_if_phase(resonator)
         # reset_if_phase(rr2)
         # Sends the readout pulse and stores the raw ADC traces in the stream called "adc_st"
-        measure("readout", resonator, adc_st)
+        measure("readout", resonator, adc_st) 
         # measure("readout", rr2, None)
         # Wait for the resonators to empty
         wait(depletion_time * u.ns)
-        # wait(depletion_time * u.ns, rr2)
+        # wait(depletion_time * u.ns, rr2) # (time, select element) is no element selected, all element wait.
 
     with stream_processing():
         # Will save average:
@@ -79,13 +84,14 @@ with program() as PROGRAM:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
 
 ###########################
 # Run or Simulate Program #
 ###########################
 
 simulate = False
+# simulate = True
 
 if simulate:
     # Simulates the QUA program for the specified duration

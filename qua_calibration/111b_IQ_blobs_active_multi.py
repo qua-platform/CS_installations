@@ -34,9 +34,9 @@ matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
-qubits = ["q1_xy", "q2_xy"]
-resonators = ["rr1", "rr2"]
-Qubit1 = 1
+qubits = ["q4_xy", "q2_xy"]
+resonators = ["rr4", "rr2"]
+Qubit1 = 4
 Qubit2 = 2
 idx = 0
 ##################

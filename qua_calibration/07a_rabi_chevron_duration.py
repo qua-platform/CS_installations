@@ -29,15 +29,15 @@ from qualang_tools.results.data_handler import DataHandler
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 50  # The number of averages
+n_avg = 200  # The number of averages
 # The frequency sweep parameters
-span = 20 * u.MHz
-df = 200 * u.kHz
+span = 10 * u.MHz
+df = 500 * u.kHz
 dfs = np.arange(-span, span + 0.1, df)
 # Pulse duration sweep (in clock cycles = 4ns) - must be larger than 4 clock cycles
 t_min = 4
-t_max = 1000
-dt = 10
+t_max = 200
+dt = 1
 durations = np.arange(t_min, t_max, dt)
 
 qubit ="q4_xy"
@@ -66,6 +66,7 @@ with program() as rabi_amp_freq:
     I_st = declare_stream()  # Stream for the 'I' quadrature
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
+    reset_global_phase()
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(t, durations)):  # QUA for_ loop for sweeping the pulse duration

@@ -40,7 +40,6 @@ default_additional_files = {
 # OPX configuration #
 #####################
 MW_FEM = 1
-LF_FEM = 8
 #############################################
 #                  Qubits                   #
 #############################################
@@ -73,7 +72,7 @@ qubit_LO_q6 = 5.05 * u.GHz
 qubit_IF_q1 = 97.9* u.MHz
 qubit_IF_q2 = 100 * u.MHz
 qubit_IF_q3 = 100 * u.MHz
-qubit_IF_q4 = (378.3+2.8+4.43+2) * u.MHz
+qubit_IF_q4 = (-150) * u.MHz
 qubit_IF_q5 = 200 * u.MHz
 qubit_IF_q6 = 150 * u.MHz
 # Qubits_delay
@@ -88,23 +87,23 @@ qubit_delay_q6 = 0
 qubit1_T1 = int(6 * u.us)
 qubit2_T1 = int(6 * u.us)
 qubit3_T1 = int(6 * u.us)
-qubit4_T1 = int(30 * u.us)
+qubit4_T1 = int(6 * u.us)
 qubit5_T1 = int(6 * u.us)
 qubit6_T1 = int(6 * u.us)
 thermalization_time = 5 * max(qubit1_T1, qubit2_T1, qubit3_T1, qubit4_T1, qubit5_T1, qubit6_T1)
 
 # CW pulse parameter
 const_len = 1000 #ns
-const_amp = 0.2 #0.5
+const_amp = 1 #0.5
 
 # Pi pulse parameters
-pi_len = 60
+pi_len = 40
 pi_sigma = pi_len / 5
 
 pi_amp_q1 = 0.1183 #MW_FEM　max = 1 V_pk, V_pp = 2 　　#LF_FEM max = 0.5 V_pk, V_pp = 1
 pi_amp_q2 = 0.04953
 pi_amp_q3 = 0.02313
-pi_amp_q4 = 0.1115
+pi_amp_q4 = 0.5
 pi_amp_q5 = 0.22
 pi_amp_q6 = 0.22
 
@@ -155,7 +154,7 @@ resonator_IF_q6 = int(449* u.MHz)
 resonator_delay = 0
 
 # Readout pulse parameters
-readout_len = 30000 #1920
+readout_len = 5000 #1920
 demod_len = 3000
 readout_amp_q1 = 0.03 # our q1 as their q3
 readout_amp_q2 = 0.03
@@ -179,7 +178,7 @@ rotation_angle_q6 = (0.0 / 180) * np.pi
 ge_threshold_q1 = 0.0
 ge_threshold_q2 = 0.0
 ge_threshold_q3 = 0.0
-ge_threshold_q4 = -5.9e-05 # 2.479e-04
+ge_threshold_q4 = -6.3e-05 # 2.479e-04
 ge_threshold_q5 = 0.0
 ge_threshold_q6 = 0.0
 
@@ -636,17 +635,6 @@ config = {
                         },  # RL1, gain_db resolution is 1, 
                     },
                 },
-            LF_FEM: { #FEM position
-                    "type": "LF",
-                    "analog_outputs": {
-                        1: {
-                            'offset': 0.0,
-                            'sampling_rate': 1e9, # Default sampling rate is 1e9
-                            'output_mode': 'direct', # Default output_mode is 'direct', 'amplified'
-                            'upsampling_mode': 'mw', # Default is 'mw'
-                        },
-                    },
-                }, 
             },
         },
     },
@@ -800,12 +788,13 @@ config = {
             },
         },
         "q4_xy": {
-            "singleInput": {
-                "port": ("con1", LF_FEM, 1),
+            "MWInput": {
+                "port": ("con1", MW_FEM, 5),
+                "upconverter": 1,
             },
             "intermediate_frequency": qubit_IF_q4,  # in Hz
             "operations": {
-                "cw": "const_pulse_q4",
+                "cw": "const_pulse",
                 "x180": "x180_pulse_q4",
                 "x90": "x90_pulse_q4",
                 "-x90": "-x90_pulse_q4",
@@ -1065,60 +1054,52 @@ config = {
             "digital_marker": "ON",
         },
         #------------------
-        "const_pulse_q4": {
-            "operation": "control",
-            "length": pi_len,
-            "waveforms": {
-                "single": "const_wf",
-                # "Q": "x90_Q_wf_q4",
-            },
-        },
         "x90_pulse_q4": {
             "operation": "control",
             "length": pi_len,
             "waveforms": {
-                "single": "x90_I_wf_q4",
-                # "Q": "x90_Q_wf_q4",
+                "I": "x90_I_wf_q4",
+                "Q": "x90_Q_wf_q4",
             },
         },
         "x180_pulse_q4": {
             "operation": "control",
             "length": pi_len,
             "waveforms": {
-                "single": "x180_I_wf_q4",
-                # "Q": "x180_Q_wf_q4",
+                "I": "x180_I_wf_q4",
+                "Q": "x180_Q_wf_q4",
             },
         },
         "-x90_pulse_q4": {
             "operation": "control",
             "length": pi_len,
             "waveforms": {
-                "single": "minus_x90_I_wf_q4",
-                # "Q": "minus_x90_Q_wf_q4",
+                "I": "minus_x90_I_wf_q4",
+                "Q": "minus_x90_Q_wf_q4",
             },
         },
         "y90_pulse_q4": {
             "operation": "control",
             "length": pi_len,
             "waveforms": {
-                "single": "y90_I_wf_q4",
-                # "Q": "y90_Q_wf_q4",
+                "I": "y90_I_wf_q4",
+                "Q": "y90_Q_wf_q4",
             },
         },
         "y180_pulse_q4": {
             "operation": "control",
             "length": pi_len,
             "waveforms": {
-                "single": "y180_I_wf_q4",
-                # "Q": "y180_Q_wf_q4",
+                "I": "y180_I_wf_q4",
+                "Q": "y180_Q_wf_q4",
             },
         },
         "-y90_pulse_q4": {
             "operation": "control",
             "length": pi_len,
             "waveforms": {
-                "single": "minus_y90_I_wf_q4",
-                # "Q": "minus_y90_Q_wf_q4",
+                "I": "minus_y90_I_wf_q4",
+                "Q": "minus_y90_Q_wf_q4",
             },
         },
         "readout_pulse_q4": {

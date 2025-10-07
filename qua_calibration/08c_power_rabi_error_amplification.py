@@ -25,30 +25,34 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
+from macros import *
 
 ##################
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 100  # The number of averages
+n_avg = 200  # The number of averages
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-a_min = 0.9
-a_max = 1.1
+a_min = 0.6
+a_max = 1.4
 n_a = 51
 amplitudes = np.linspace(a_min, a_max, n_a)
 # Number of applied Rabi pulses sweep
-max_nb_of_pulses = 80  # Maximum number of qubit pulses
+max_nb_of_pulses = 60  # Maximum number of qubit pulses
 nb_of_pulses = np.arange(0, max_nb_of_pulses, 2)  # Always play an odd/even number of pulses to end up in the same state
 
 qubit = "q4_xy"
 resonator = "rr4"
 x180_amp = pi_amp_q4
+threshold = ge_threshold_q4
+active = True
 
 # Data to save
 save_data_dict = {
     "n_avg": n_avg,
     "amplitudes": amplitudes,
     "max_nb_of_pulses": max_nb_of_pulses,
+    "active_reset": active,
     "qubit": qubit,
     "config": config,
 }
@@ -66,11 +70,15 @@ with program() as power_rabi_err:
     I_st = declare_stream()  # Stream for the 'I' quadrature
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
+    reset_global_phase()
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(n_rabi, nb_of_pulses)):  # QUA for_ loop for sweeping the number of pulses
             with for_(*from_array(a, amplitudes)):  # QUA for_ loop for sweeping the pulse amplitude
                 # Loop for error amplification (perform many qubit pulses with varying amplitudes)
+                if active:
+                    active_reset(threshold, qubit, resonator, max_tries=5, Ig=None)
+                    align()
                 with for_(n2, 0, n2 < n_rabi, n2 + 1):
                     play("x180" * amp(a), qubit)
                 # Align the two elements to measure after playing the qubit pulses.
@@ -86,6 +94,7 @@ with program() as power_rabi_err:
                 )
                 # Wait for the qubit to decay to the ground state
                 wait(thermalization_time * u.ns, resonator)
+                # wait(100)
                 # Save the 'I' & 'Q' quadratures to their respective streams
                 save(I, I_st)
                 save(Q, Q_st)
@@ -169,3 +178,5 @@ else:
     save_data_dict.update({"fig_live": fig})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+
+    plt.show(block=True)

@@ -37,18 +37,20 @@ n_shot = 10000  # Number of acquired shots
 # If I < threshold_g, then the qubit is assumed to be in |g>.
 # else, the qubit state is not determined accurately enough, so we just measure again.
 # Maximum number of tries for active reset
-max_tries = 2
+max_tries = 30
 
 qubit = "q4_xy"
 resonator = "rr4"
 
-ge_threshold_g = ge_threshold_q4 * 0.5
-ge_threshold_e = ge_threshold_q4
+ge_threshold = ge_threshold_q4 
+ge_threshold_g = -2e-4 
+ge_threshold_e = 8.4e-5
 
 # Data to save
 save_data_dict = {
     "n_shot": n_shot,
     "qubit": qubit,
+    "initialization_method":initialization_method,
     "config": config,
 }
 
@@ -67,9 +69,9 @@ def qubit_initialization(method: str = "thermalization"):
         wait(thermalization_time * u.ns)
         return 1
     elif method == "active_reset_fast":
-        return active_reset_fast(ge_threshold_e)
+        return active_reset_fast(ge_threshold)
     elif method == "active_reset_one_threshold":
-        return active_reset_one_threshold(ge_threshold_e, max_tries)
+        return active_reset_one_threshold(ge_threshold, max_tries)
     elif method == "active_reset_two_thresholds":
         return active_reset_two_thresholds(ge_threshold_g, ge_threshold_e, max_tries)
     else:
@@ -91,6 +93,7 @@ def active_reset_one_threshold(threshold_g: float, max_tries: int):
     I_reset = declare(fixed)
     counter = declare(int)
     assign(counter, 0)
+    measure("readout", resonator, None, dual_demod.full("rotated_cos", "rotated_sin", I_reset))
     align(resonator, qubit)
     with while_((I_reset > threshold_g) & (counter < max_tries)):
         # Measure the state of the resonator
@@ -102,8 +105,9 @@ def active_reset_one_threshold(threshold_g: float, max_tries: int):
         play("x180", qubit, condition=(I_reset > threshold_g))
         # Update the counter for benchmarking purposes
         assign(counter, counter + 1)
+    # align(resonator, qubit)
+    # play("x180", qubit)
     return counter
-
 
 def active_reset_two_thresholds(threshold_g: float, threshold_e: float, max_tries: int):
     """
@@ -119,10 +123,12 @@ def active_reset_two_thresholds(threshold_g: float, threshold_e: float, max_trie
     :param max_tries: maximum number of iterations needed to reset the qubit before exiting the loop anyway.
     :return: the number of tries to reset the qubit.
     """
+
     I_reset = declare(fixed)
     counter = declare(int)
     assign(counter, 0)
-    align(resonator, qubit)
+    measure("readout", resonator, None, dual_demod.full("rotated_cos", "rotated_sin", I_reset))
+    align(resonator, qubit)    
     with while_((I_reset > threshold_g) & (counter < max_tries)):
         # Measure the state of the resonator
         measure("readout", resonator, None, dual_demod.full("rotated_cos", "rotated_sin", I_reset))
@@ -133,7 +139,11 @@ def active_reset_two_thresholds(threshold_g: float, threshold_e: float, max_trie
         play("x180", qubit, condition=(I_reset > threshold_e))
         # Update the counter for benchmarking purposes
         assign(counter, counter + 1)
+    # align(resonator, qubit)
+    # play("x180", qubit)
+    
     return counter
+
 
 
 def active_reset_fast(threshold_g: float):
@@ -178,7 +188,8 @@ with program() as active_reset_prog:
 
     cont_condition = declare(bool)
     tries_st = declare_stream()
-
+    
+    reset_global_phase()
     with for_(n, 0, n < n_shot, n + 1):
         # Active reset
         count = qubit_initialization(method=initialization_method)

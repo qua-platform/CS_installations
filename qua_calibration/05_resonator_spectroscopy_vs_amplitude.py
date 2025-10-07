@@ -77,6 +77,7 @@ with program() as PROGRAM:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=2)
     df = declare(int)  # QUA variable for sweeping the readout frequency detuning around the resonance
     a = declare(fixed)  # QUA variable for sweeping the readout amplitude pre-factor
+    reset_global_phase()
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the frequency

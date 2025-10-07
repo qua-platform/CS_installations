@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 #   Parameters   #
 ##################
 # Parameters Definition
-n_runs = 10  # Number of runs
+n_runs = 10000  # Number of runs
 
 qubit = "q4_xy"
 resonator = "rr4"
@@ -45,7 +45,7 @@ save_data_dict = {
 # The QUA program #
 ###################
 
-n_runs = 10000  # Number of runs
+
 
 # Data to save
 save_data_dict = {
@@ -63,6 +63,8 @@ with program() as IQ_blobs:
     Q_e = declare(fixed)
     I_e_st = declare_stream()
     Q_e_st = declare_stream()
+
+    reset_global_phase()
 
     with for_(n, 0, n < n_runs, n + 1):
         # Measure the state of the resonator
@@ -149,6 +151,15 @@ else:
     angle, threshold, fidelity, gg, ge, eg, ee = two_state_discriminator(Ig, Qg, Ie, Qe, b_print=True, b_plot=True)
 
     fig = plt.gcf()
+
+    # fig= plt.plot(Ig, Qg, ".", alpha=0.1, label="Ground", markersize=2)
+    # # ax1.plot(Ie, Qe, ".", alpha=0.1, label="Excited", markersize=2)
+    # plt.axis("equal")
+    # # ax1.legend(["Ground", "Excited"])
+    # plt.xlabel("I")
+    # plt.ylabel("Q")
+    # plt.title("Original Data")
+    # plt.show()
 
     #########################################
     # The two_state_discriminator gives us the rotation angle which makes it such that all of the information will be in

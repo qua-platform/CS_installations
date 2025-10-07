@@ -1,3 +1,4 @@
+#%%
 """
         POWER RABI
 The sequence consists in playing the qubit pulse (x180 or square_pi or else) and measuring the state of the resonator
@@ -23,27 +24,32 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
+from macros import *
 
 ##################
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 1000  # The number of averages
+n_avg = 5000  # The number of averages
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
 a_min = 0
-a_max = 1.0
+a_max = 1.99
 n_a = 101
 amplitudes = np.linspace(a_min, a_max, n_a)
+
 
 qubit = "q4_xy"
 resonator = "rr4"
 x180_amp = pi_amp_q4
+threshold = ge_threshold_q4
+active = False
 
 # Data to save
 save_data_dict = {
     "n_avg": n_avg,
     "amplitudes": amplitudes,
     "qubit": qubit,
+    "active_reset": active,
     "config": config,
 }
 
@@ -58,9 +64,12 @@ with program() as power_rabi:
     I_st = declare_stream()  # Stream for the 'I' quadrature
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
-
+    reset_global_phase()
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(a, amplitudes)):  # QUA for_ loop for sweeping the pulse amplitude pre-factor
+            if active:
+                active_reset(threshold, qubit, resonator, max_tries=5, Ig=None)
+                align()
             # Play the qubit pulse with a variable amplitude (pre-factor to the pulse amplitude defined in the config)
             play("x180" * amp(a), qubit)
             # Align the two elements to measure after playing the qubit pulse.
@@ -75,7 +84,8 @@ with program() as power_rabi:
                 dual_demod.full("rotated_minus_sin", "rotated_cos", Q),
             )
             # Wait for the qubit to decay to the ground state
-            wait(thermalization_time * u.ns, resonator)
+            # wait(thermalization_time * u.ns, resonator)
+            wait(30)
             # Save the 'I' & 'Q' quadratures to their respective streams
             save(I, I_st)
             save(Q, Q_st)
@@ -91,7 +101,7 @@ with program() as power_rabi:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
 
 ###########################
 # Run or Simulate Program #
@@ -128,19 +138,22 @@ else:
         I, Q, iteration = results.fetch_all()
         # Convert the results into Volts
         I, Q = u.demod2volts(I, readout_len), u.demod2volts(Q, readout_len)
+        S = u.demod2volts(I + 1j * Q, readout_len)
+        R = np.abs(S)  # Amplitude
+        phase = np.angle(S) 
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle(f"{qubit} Power Rabi")
         plt.subplot(211)
         plt.cla()
-        plt.plot(amplitudes * x180_amp, I, ".")
-        plt.ylabel("I quadrature [V]")
+        plt.plot(amplitudes * x180_amp, R, ".-")
+        plt.ylabel("Amp[V]")
         plt.subplot(212)
         plt.cla()
-        plt.plot(amplitudes * x180_amp, Q, ".")
+        plt.plot(amplitudes * x180_amp, phase, ".-")
         plt.xlabel("Rabi pulse amplitude [V]")
-        plt.ylabel("Q quadrature [V]")
+        plt.ylabel("phase [rad]")
         plt.pause(0.1)
         plt.tight_layout()
     # Save results

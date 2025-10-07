@@ -40,11 +40,11 @@ from qualang_tools.results.data_handler import DataHandler
 # Parameters Definition
 n_avg = 10000  # The number of averages
 # Adjust the pulse duration and amplitude to drive the qubit into a mixed state
-saturation_len = 10 * u.us  # In ns
-saturation_amp = 0.5  # pre-factor to the value defined in the config - restricted to [-2; 2)
+saturation_len = 5 * u.us  # In ns
+saturation_amp = 0.5 # pre-factor to the value defined in the config - restricted to [-2; 2)
 # Qubit detuning sweep
-center = 0 * u.MHz
-span = 10 * u.MHz
+center = 380 * u.MHz
+span = 30 * u.MHz
 df = 100 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)
 
@@ -79,7 +79,7 @@ with program() as qubit_spec:
             # Update the frequency of the digital oscillator linked to the qubit element
             update_frequency(qubit, df + center)
             # Play the saturation pulse to put the qubit in a mixed state - Can adjust the amplitude on the fly [-2; 2)
-            play("cw" * amp(saturation_amp), qubit, duration=saturation_len * u.ns)
+            play("x180" * amp(saturation_amp), qubit, duration=saturation_len * u.ns)
             # Align the two elements to measure after playing the qubit pulse.
             # One can also measure the resonator while driving the qubit by commenting the 'align'
             align(qubit, resonator)
@@ -147,29 +147,46 @@ else:
         # Convert results into Volts
         S = u.demod2volts(I + 1j * Q, readout_len)
         R = np.abs(S)  # Amplitude
-        phase = np.angle(S)  # Phase
+        phase = np.unwrap(np.angle(S))  # Phase
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
+
+
+
         # Plot results
         plt.suptitle(f"Qubit {qubit} spectroscopy - LO = {qubit_LO / u.GHz} GHz")
         plt.subplot(211)
         plt.cla()
-        plt.plot((dfs + center) / u.MHz, R, ".")
+        plt.plot((dfs + center ) / u.MHz, R, ".-")
         plt.xlabel(f"Qubit intermediate frequency [MHz]")
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
         plt.subplot(212)
         plt.cla()
-        plt.plot((dfs + center) / u.MHz, phase, ".")
+        plt.plot((dfs + center) / u.MHz, phase, ".-")
         plt.xlabel(f"Qubit intermediate frequency [MHz]")
         plt.ylabel("Phase [rad]")
         plt.pause(0.1)
         plt.tight_layout()
+
+    try:
+        from qualang_tools.plot.fitting import Fit
+        fit = Fit()
+        fig_fit = plt.figure()
+        res_spec_fit = fit.reflection_resonator_spectroscopy((dfs + center  + qubit_LO )  / u.MHz, R, plot=True)
+        plt.title(f"Qubit spectroscopy - LO = {qubit_LO / u.GHz} GHz")
+        plt.xlabel("Intermediate frequency [GHz]")
+        plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
+        print(f"Qubit frequency to update in the config: Drive_IF = {res_spec_fit['f'][0]:.6f} GHz")
+    except (Exception,):
+        pass
+    
     # Save results
     script_name = Path(__file__).name
     data_handler = DataHandler(root_data_folder=save_dir)
     save_data_dict.update({"I_data": I})
     save_data_dict.update({"Q_data": Q})
     save_data_dict.update({"fig_live": fig})
+    save_data_dict.update({"fig_fit": fig_fit})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
 

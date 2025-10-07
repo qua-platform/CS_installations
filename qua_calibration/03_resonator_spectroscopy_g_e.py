@@ -35,9 +35,10 @@ matplotlib.use('TkAgg')
 ##################
 # Choose parameters of target rr/qb
 resonator = "rr4"
+qubit = "q4_xy"
 
 # Parameters Definition
-n_avg = 200  # The number of averages
+n_avg = 500  # The number of averages
 frequencies = {
     "rr1": np.arange(-600e6, 600e6, 200e3),
     "rr4": np.arange(180e6, 210e6, 100e3),
@@ -62,6 +63,10 @@ with program() as PROGRAM:
     Q = declare(fixed)  # QUA variable for the measured 'Q' quadrature --> signed 4.28 [-8, 8)
     I_st = declare_stream()  # Stream for the 'I' quadrature
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
+    I_e = declare(fixed)  # QUA variable for the measured 'I' quadrature --> signed 4.28 [-8, 8)
+    Q_e = declare(fixed)  # QUA variable for the measured 'Q' quadrature --> signed 4.28 [-8, 8)
+    I_st_e = declare_stream()  # Stream for the 'I' quadrature
+    Q_st_e = declare_stream()  # Stream for the 'Q' quadrature
     # n_st = declare_stream()  # Stream for the averaging iteration 'n'
     reset_global_phase()
 
@@ -69,7 +74,7 @@ with program() as PROGRAM:
         with for_(*from_array(f, frequencies[resonator])):  # QUA for_ loop for sweeping the frequency
             # Update the frequency of the digital oscillator linked to the resonator element
             update_frequency(resonator, f) # change intermediate freq
-            # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
+            # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' &play("x180" * amp(saturation_amp), qubit, duration=saturation_len * u.ns)
             measure(
                 "readout",
                 resonator,
@@ -83,10 +88,32 @@ with program() as PROGRAM:
             save(I, I_st)
             save(Q, Q_st)
 
+            # Update the frequency of the digital oscillator linked to the resonator element
+            # update_frequency(resonator, f) # change intermediate freq
+            # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
+            
+            # align()
+            # play("x180", qubit)
+            # align()
+            # measure(
+            #     "readout",
+            #     resonator,
+            #     None,
+            #     dual_demod.full("cos", "sin", I_e),
+            #     dual_demod.full("minus_sin", "cos", Q_e),
+            # )
+            # Wait for the resonator to deplete
+            # wait(depletion_time * u.ns, resonator)
+            # # Save the 'I' & 'Q' quadratures to their respective streams
+            # save(I_e, I_st_e)
+            # save(Q_e, Q_st_e)
+
     with stream_processing():
         # Cast the data into a 1D vector, average the 1D vectors together and store the results on the OPX processor
         I_st.buffer(len(frequencies[resonator])).average().save("I")
         Q_st.buffer(len(frequencies[resonator])).average().save("Q")
+        # I_st_e.buffer(len(frequencies[resonator])).average().save("I_e")
+        # Q_st_e.buffer(len(frequencies[resonator])).average().save("Q_e")
 
 #####################################
 #  Open Communication with the QOP  #
@@ -120,20 +147,29 @@ else:
         # Send the QUA program to the OPX, which compiles and executes it
         job = qm.execute(PROGRAM)
         # Get results from QUA program
-        results = fetching_tool(job, data_list=["I", "Q"])  # this one already waits for all values
+        results = fetching_tool(job, data_list=[
+            "I", "Q", 
+            # "I_e", "Q_e"
+            ])  # this one already waits for all values
         # plotting
         fig = plt.figure()
+        # I, Q, I_e, Q_e = results.fetch_all()
         I, Q = results.fetch_all()
         # Convert results into Volts
         S = I + 1j * Q
+        # S_e = I_e + 1j * Q_e
         R = np.abs(S)  # Amplitude
+        # R_e = np.abs(S_e)
         phase = np.angle(S)  # Phase
+        # phase_e = np.angle(S_e)
         plt.suptitle(f"Resonator spectroscopy for {resonator} - LO = {resonator_LO / u.GHz} GHz")
         ax1 = plt.subplot(211)
         plt.plot((frequencies[resonator]) / u.MHz, R, ".")
+        # plt.plot((frequencies[resonator]) / u.MHz, R_e, ".")
         plt.ylabel(r"$R=\sqrt{I^2 + Q^2}$ [V]")
         plt.subplot(212, sharex=ax1)
         plt.plot((frequencies[resonator]) / u.MHz, signal.detrend(np.unwrap(phase)), ".")
+        # plt.plot((frequencies[resonator]) / u.MHz, signal.detrend(np.unwrap(phase_e)), ".")
         plt.xlabel("Intermediate frequency [MHz]")
         plt.ylabel("Phase [rad]")
         plt.tight_layout()

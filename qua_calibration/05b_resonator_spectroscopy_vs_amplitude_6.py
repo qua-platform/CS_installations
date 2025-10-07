@@ -42,16 +42,16 @@ matplotlib.use('TkAgg')
 # Choose parameters of target rr/qb
 
 # Parameters Definition
-n_avg = 100  # The number of averages
+n_avg = 500  # The number of averages
 # The frequency sweep around the resonators' frequency
-span = 600 * u.MHz  # the span around the resonant frequencies
-step = 2 * u.MHz
+span = 3 * u.MHz  # the span around the resonant frequencies
+step = 0.01 * u.MHz
 dfs = np.arange(-span, span, step)
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
 a_min = 0.01
-a_max = 1.00
+a_max = 1.99
 # da = 0.003
-amplitudes = np.geomspace(a_min, a_max, 20)  # The amplitude vector +da/2 to add a_max to the scan
+amplitudes = np.linspace(a_min, a_max, 101)  # The amplitude vector +da/2 to add a_max to the scan
 
 # Data to save
 save_data_dict = {
@@ -59,7 +59,7 @@ save_data_dict = {
     "dfs": dfs,
     "amplitudes": amplitudes,
     "config": config,
-    resonator: ["rr1","rr2","rr3","rr4","rr5","rr6"],
+    'resonator': ["rr1","rr2","rr3","rr4","rr5","rr6"],
 }
 
 ###################
@@ -70,6 +70,7 @@ with program() as PROGRAM:
     I, I_st, Q, Q_st, n, n_st = qua_declaration(nb_of_qubits=6)
     df = declare(int)  # QUA variable for sweeping the readout frequency detuning around the resonance
     a = declare(fixed)  # QUA variable for sweeping the readout amplitude pre-factor
+    reset_global_phase()
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the frequency
@@ -104,7 +105,7 @@ qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_na
 #######################
 # Simulate or execute #
 #######################
-simulate = True
+simulate = False
 
 if simulate:
     # Simulates the QUA program for the specified duration
@@ -141,10 +142,10 @@ else:
             # Data analysis
             S1 = u.demod2volts(I1 + 1j * Q1, readout_len)
             S2 = u.demod2volts(I2 + 1j * Q2, readout_len)
-            S3 = u.demod2volts(I1 + 1j * Q1, readout_len)
-            S4 = u.demod2volts(I2 + 1j * Q2, readout_len)
-            S5 = u.demod2volts(I1 + 1j * Q1, readout_len)
-            S6 = u.demod2volts(I2 + 1j * Q2, readout_len)
+            S3 = u.demod2volts(I3 + 1j * Q3, readout_len)
+            S4 = u.demod2volts(I4 + 1j * Q4, readout_len)
+            S5 = u.demod2volts(I5 + 1j * Q5, readout_len)
+            S6 = u.demod2volts(I6 + 1j * Q6, readout_len)
 
             R1 = np.abs(S1)
             phase1 = np.angle(S1)
@@ -184,7 +185,7 @@ else:
         plt.title(f"Resonator 1 - LO: {resonator_LO/u.GHz} GHz")
         plt.ylabel("Readout IF [MHz]")
         plt.pcolor(amplitudes*readout_amp_q1, (dfs+resonator_IF_q1)/u.MHz, R1)
-        plt.xscale("log")
+        # plt.xscale("log")
         plt.xlim(amplitudes[0]*readout_amp_q1, amplitudes[-1]*readout_amp_q1)
         plt.gca().set_box_aspect(1) 
 
@@ -192,7 +193,7 @@ else:
         plt.cla()
         plt.title("Phase 1")
         plt.pcolor(amplitudes*readout_amp_q1, (dfs+resonator_IF_q1)/u.MHz, signal.detrend(np.unwrap(phase1)))
-        plt.xscale("log")
+        # plt.xscale("log")
         plt.xlim(amplitudes[0]*readout_amp_q1, amplitudes[-1]*readout_amp_q1)
         plt.gca().set_box_aspect(1)
 
@@ -202,7 +203,7 @@ else:
         plt.title(f"Resonator 2 - LO: {resonator_LO/u.GHz} GHz")
         plt.ylabel("Readout IF [MHz]")
         plt.pcolor(amplitudes*readout_amp_q2, (dfs+resonator_IF_q2)/u.MHz, R2)
-        plt.xscale("log")
+        # plt.xscale("log")
         plt.xlim(amplitudes[0]*readout_amp_q2, amplitudes[-1]*readout_amp_q2)
         plt.gca().set_box_aspect(1)
 
@@ -210,7 +211,7 @@ else:
         plt.cla()
         plt.title("Phase 2")
         plt.pcolor(amplitudes*readout_amp_q2, (dfs+resonator_IF_q2)/u.MHz, signal.detrend(np.unwrap(phase2)))
-        plt.xscale("log")
+        # plt.xscale("log")
         plt.xlim(amplitudes[0]*readout_amp_q2, amplitudes[-1]*readout_amp_q2)
         plt.gca().set_box_aspect(1)
 
@@ -220,7 +221,7 @@ else:
         plt.title(f"Resonator 3 - LO: {resonator_LO/u.GHz} GHz")
         plt.ylabel("Readout IF [MHz]")
         plt.pcolor(amplitudes*readout_amp_q3, (dfs+resonator_IF_q3)/u.MHz, R3)
-        plt.xscale("log")
+        # plt.xscale("log")
         plt.xlim(amplitudes[0]*readout_amp_q3, amplitudes[-1]*readout_amp_q3)
         plt.gca().set_box_aspect(1)
 
@@ -228,7 +229,7 @@ else:
         plt.cla()
         plt.title("Phase 3")
         plt.pcolor(amplitudes*readout_amp_q3, (dfs+resonator_IF_q3)/u.MHz, signal.detrend(np.unwrap(phase3)))
-        plt.xscale("log")
+        # plt.xscale("log")
         plt.xlim(amplitudes[0]*readout_amp_q3, amplitudes[-1]*readout_amp_q3)
         plt.gca().set_box_aspect(1)
 
@@ -238,7 +239,7 @@ else:
         plt.title(f"Resonator 4 - LO: {resonator_LO/u.GHz} GHz")
         plt.ylabel("Readout IF [MHz]")
         plt.pcolor(amplitudes*readout_amp_q4, (dfs+resonator_IF_q4)/u.MHz, R4)
-        plt.xscale("log")
+        # plt.xscale("log")
         plt.xlim(amplitudes[0]*readout_amp_q4, amplitudes[-1]*readout_amp_q4)
         plt.gca().set_box_aspect(1)
 
@@ -246,7 +247,7 @@ else:
         plt.cla()
         plt.title("Phase 4")
         plt.pcolor(amplitudes*readout_amp_q4, (dfs+resonator_IF_q4)/u.MHz, signal.detrend(np.unwrap(phase4)))
-        plt.xscale("log")
+        # plt.xscale("log")
         plt.xlim(amplitudes[0]*readout_amp_q4, amplitudes[-1]*readout_amp_q4)
         plt.gca().set_box_aspect(1)
 
@@ -256,7 +257,7 @@ else:
         plt.title(f"Resonator 5 - LO: {resonator_LO/u.GHz} GHz")
         plt.ylabel("Readout IF [MHz]")
         plt.pcolor(amplitudes*readout_amp_q5, (dfs+resonator_IF_q5)/u.MHz, R5)
-        plt.xscale("log")
+        # plt.xscale("log")
         plt.xlim(amplitudes[0]*readout_amp_q5, amplitudes[-1]*readout_amp_q5)
         plt.gca().set_box_aspect(1)
 
@@ -264,7 +265,7 @@ else:
         plt.cla()
         plt.title("Phase 5")
         plt.pcolor(amplitudes*readout_amp_q5, (dfs+resonator_IF_q5)/u.MHz, signal.detrend(np.unwrap(phase5)))
-        plt.xscale("log")
+        # plt.xscale("log")
         plt.xlim(amplitudes[0]*readout_amp_q5, amplitudes[-1]*readout_amp_q5)
         plt.gca().set_box_aspect(1)
 
@@ -274,7 +275,7 @@ else:
         plt.title(f"Resonator 6 - LO: {resonator_LO/u.GHz} GHz")
         plt.ylabel("Readout IF [MHz]")
         plt.pcolor(amplitudes*readout_amp_q6, (dfs+resonator_IF_q6)/u.MHz, R6)
-        plt.xscale("log")
+        # plt.xscale("log")
         plt.xlim(amplitudes[0]*readout_amp_q6, amplitudes[-1]*readout_amp_q6)
         plt.gca().set_box_aspect(1)
 
@@ -283,11 +284,11 @@ else:
         plt.title("Phase 6")
         plt.xlabel("Readout amplitude [V]")
         plt.pcolor(amplitudes*readout_amp_q6, (dfs+resonator_IF_q6)/u.MHz, signal.detrend(np.unwrap(phase6)))
-        plt.xscale("log")
+        # plt.xscale("log")
         plt.xlim(amplitudes[0]*readout_amp_q6, amplitudes[-1]*readout_amp_q6)
         plt.gca().set_box_aspect(1)
 
-        plt.tight_layout(rect=[0, 0, 1, 0.96])  # 預留上邊給 suptitle
+        plt.tight_layout(rect=[0, 0, 1, 0.96])  
         plt.pause(0.1)
 
         # Save results

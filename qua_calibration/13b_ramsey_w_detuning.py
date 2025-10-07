@@ -23,28 +23,33 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
+from macros import *
 
 ##################
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 1000
+n_avg = 5000
 # Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
 tau_min = 4
-tau_max = 2000 // 4
+tau_max = 3000 // 4
 d_tau = 40 // 4
 taus = np.arange(tau_min, tau_max + 0.1, d_tau)  # + 0.1 to add tau_max to taus
 # Detuning converted into virtual Z-rotations to observe Ramsey oscillation and get the qubit frequency
-detuning = 1 * u.MHz  # in Hz
+detuning = 0 * u.MHz  # in Hz
 
 qubit = "q4_xy"
 resonator = "rr4"
+qubit_IF = qubit_IF_q4
+threshold = ge_threshold_q4
+active = True
 
 # Data to save
 save_data_dict = {
     "n_avg": n_avg,
     "taus": taus,
     "detuning": detuning,
+    "active_reset": active,
     "config": config,
 }
 
@@ -59,12 +64,15 @@ with program() as ramsey:
     I_st = declare_stream()  # Stream for the 'I' quadrature
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
+    reset_global_phase()
 
     # Shift the qubit drive frequency to observe Ramsey oscillations
     update_frequency(qubit, qubit_IF + detuning)
 
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(tau, taus)):
+            if active:
+                active_reset(threshold, qubit, resonator, max_tries=5, Ig=None)
             # 1st x90 gate
             play("x90", qubit)
             # Wait a varying idle time
@@ -156,7 +164,7 @@ else:
         from qualang_tools.plot.fitting import Fit
 
         fit = Fit()
-        plt.figure()
+        fig_fit = plt.figure()
         ramsey_fit = fit.ramsey(4 * taus, I, plot=True)
         qubit_T2 = np.abs(ramsey_fit["T2"][0])
         qubit_detuning = ramsey_fit["f"][0] * u.GHz - detuning
@@ -175,6 +183,7 @@ else:
     save_data_dict.update({"I_data": I})
     save_data_dict.update({"Q_data": Q})
     save_data_dict.update({"fig_live": fig})
+    save_data_dict.update({"fig_fit": fig_fit})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
 

@@ -1,3 +1,4 @@
+#%%
 """
         T1 MEASUREMENT
 The sequence consists in putting the qubit in the excited stated by playing the x180 pulse and measuring the resonator
@@ -21,27 +22,31 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array, get_equivalent_log_array
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
+from macros import *
 
 ##################
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 1000
+n_avg = 5000
 # The wait time sweep (in clock cycles = 4ns) - must be larger than 4 clock cycles
 tau_min = 16 // 4
-tau_max = 40_000 // 4
-d_tau = 100 // 4
+tau_max = 80_000 // 4
+d_tau = 500 // 4
 taus = np.arange(tau_min, tau_max + 0.1, d_tau)  # Linear sweep
-# taus = np.logspace(np.log10(tau_min), np.log10(tau_max), 29)  # Log sweep
+# taus = np.logspace(np.log10(tau_min), np.log10(tau_max), 51)  # Log sweep
 
 qubit = "q4_xy"
 resonator = "rr4"
+threshold = ge_threshold_q4
+active = True
 
 # Data to save
 save_data_dict = {
     "n_avg": n_avg,
     "taus": taus,
     "qubit": qubit,
+    "active_reset": active,
     "config": config,
 }
 
@@ -56,10 +61,13 @@ with program() as T1:
     I_st = declare_stream()  # Stream for the 'I' quadrature
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
+    reset_global_phase()
 
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(t, taus)):
             # Play the x180 gate to put the qubit in the excited state
+            if active:
+                active_reset(threshold, qubit, resonator, max_tries=5, Ig=None)
             play("x180", qubit)
             # Wait a varying time after putting the qubit in the excited state
             wait(t, qubit)
@@ -141,26 +149,36 @@ else:
         plt.suptitle(f"{qubit} T1 measurement")
         plt.subplot(211)
         plt.cla()
-        plt.plot(4 * taus, I, ".")
-        plt.ylabel("I quadrature [V]")
+        # plt.plot(4 * taus, np.abs(I+1j*Q), "o-", alpha=0.6)
+        plt.plot(4 * taus, I, "o-", alpha=0.6)
+        # plt.ylabel("amp [V]")
+        plt.ylabel("I [V]")
+        # plt.xscale('log')
+        # plt.yscale('log')
         plt.subplot(212)
         plt.cla()
-        plt.plot(4 * taus, Q, ".")
+        # plt.plot(4 * taus, np.angle(I+1j*Q), "o-", alpha=0.6)
+        plt.plot(4 * taus, Q, "o-", alpha=0.6)
         plt.xlabel("Qubit decay time [ns]")
-        plt.ylabel("Q quadrature [V]")
+        # plt.ylabel("phase [rad]")
+        plt.ylabel("Q [V]")
+        # plt.xscale('log')
+        # plt.yscale('log')
         plt.pause(0.1)
         plt.tight_layout()
-
+#%%
     # Fit the results to extract the qubit decay time T1
     try:
         from qualang_tools.plot.fitting import Fit
 
         fit = Fit()
-        plt.figure()
+        fig_fit = plt.figure()
+        # decay_fit = fit.T1(4 * taus, np.abs(I+1j*Q), plot=True)
         decay_fit = fit.T1(4 * taus, I, plot=True)
         qubit_T1 = np.round(np.abs(decay_fit["T1"][0]) / 4) * 4
         plt.xlabel("Delay [ns]")
-        plt.ylabel("I quadrature [V]")
+        # plt.ylabel("amp [V]")
+        plt.ylabel("I [V]")
         print(f"Qubit decay time to update in the config: qubit_T1 = {qubit_T1:.0f} ns")
         plt.legend((f"Relaxation time T1 = {qubit_T1:.0f} ns",))
         plt.title("T1 measurement")
@@ -172,6 +190,7 @@ else:
     save_data_dict.update({"I_data": I})
     save_data_dict.update({"Q_data": Q})
     save_data_dict.update({"fig_live": fig})
+    save_data_dict.update({"fig_fit": fig_fit})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
 

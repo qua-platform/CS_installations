@@ -24,19 +24,24 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
+from macros import *
 
 ##################
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 100  # The number of averages
+n_avg = 1000  # The number of averages
 # The frequency sweep parameters
-span = 10 * u.MHz
+span = 20 * u.MHz
 df = 200 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)
 
+
 qubit = "q4_xy"
 resonator = "rr4"
+resonator_IF = resonator_IF_q4
+threshold = ge_threshold_q4
+active = True
 
 # Data to save
 save_data_dict = {
@@ -60,11 +65,16 @@ with program() as ro_freq_opt:
     Ie_st = declare_stream()
     Qe_st = declare_stream()
     n_st = declare_stream()
+    reset_global_phase()
 
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
             # Update the frequency of the digital oscillator linked to the resonator element
             update_frequency(resonator, df + resonator_IF)
+
+            if active:
+                active_reset(threshold, qubit, resonator, max_tries=5, Ig=None)
+                align()
             # Measure the state of the resonator
             measure(
                 "readout",
@@ -81,10 +91,14 @@ with program() as ro_freq_opt:
 
             align()  # global align
             # Play the x180 gate to put the qubit in the excited state
+            if active:
+                active_reset(threshold, qubit, resonator, max_tries=5, Ig=None)
+            align()
             play("x180", qubit)
             # Align the two elements to measure after playing the qubit pulse.
             align(qubit, resonator)
             # Measure the state of the resonator
+
             measure(
                 "readout",
                 resonator,
@@ -196,3 +210,5 @@ else:
     save_data_dict.update({"fig_live": fig})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+
+    plt.show(block=True)

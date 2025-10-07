@@ -30,20 +30,20 @@ from qualang_tools.results.data_handler import DataHandler
 # Parameters Definition
 n_avg = 100  # The number of averages
 # The frequency sweep parameters
-span = 5 * u.MHz
-df = 100 * u.kHz
+span = 10 * u.MHz
+df = 500 * u.kHz
 dfs = np.arange(-span, +span + 0.1, df)  # The frequency vector
 # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
 a_min = 0
-a_max = 1.0
-n_a = 51
+a_max = 1.99
+n_a = 101
 amplitudes = np.linspace(a_min, a_max, n_a)
 
 qubit = "q4_xy"
 resonator = "rr4"
 qubit_IF = qubit_IF_q4
 qubit_LO = qubit_LO_q4
-x180_amp = pi_amp_q1
+x180_amp = pi_amp_q4
 
 # Data to save
 save_data_dict = {
@@ -66,7 +66,7 @@ with program() as rabi_amp_freq:
     I_st = declare_stream()  # Stream for the 'I' quadrature
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
-
+    reset_global_phase()
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(a, amplitudes)):  # QUA for_ loop for sweeping the pulse amplitude pre-factor
             with for_(*from_array(f, dfs)):  # QUA for_ loop for sweeping the frequency
@@ -86,7 +86,7 @@ with program() as rabi_amp_freq:
                     dual_demod.full("rotated_minus_sin", "rotated_cos", Q),
                 )
                 # Wait for the qubit to decay to the ground state
-                wait(thermalization_time * u.ns, resonator)
+                # wait(thermalization_time * u.ns, resonator)
                 # Save the 'I' & 'Q' quadratures to their respective streams
                 save(I, I_st)
                 save(Q, Q_st)

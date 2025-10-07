@@ -29,6 +29,8 @@ from macros import readout_macro
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
+from macros import *
+
 
 ##################
 #   Parameters   #
@@ -36,21 +38,25 @@ from qualang_tools.results.data_handler import DataHandler
 # Parameters Definition
 num_of_sequences = 50  # Number of random sequences
 n_avg = 20  # Number of averaging loops for each random sequence
-max_circuit_depth = 1000  # Maximum circuit depth
-delta_clifford = 10  #  Play each sequence with a depth step equals to 'delta_clifford - Must be > 0
+max_circuit_depth = 500  # Maximum circuit depth
+delta_clifford = 5  #  Play each sequence with a depth step equals to 'delta_clifford - Must be > 0
 assert (max_circuit_depth / delta_clifford).is_integer(), "max_circuit_depth / delta_clifford must be an integer."
-seed = 345324  # Pseudo-random number generator seed
+seed = 123  # Pseudo-random number generator seed
 # Flag to enable state discrimination if the readout has been calibrated (rotated blobs and threshold)
-state_discrimination = False
+state_discrimination = True #False
 # List of recovery gates from the lookup table
 inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
 
 qubit = "q4_xy"
 resonator = "rr4"
+x180_len = pi_len
+threshold = ge_threshold_q4
+active = True
 
 # Data to save
 save_data_dict = {
     "n_avg": n_avg,
+    "active_reset": active,
     "config": config,
 }
 
@@ -184,6 +190,7 @@ with program() as rb:
         I_st = declare_stream()
         Q_st = declare_stream()
 
+    reset_global_phase()
     with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
         sequence_list, inv_gate_list = generate_sequence()  # Generate the random sequence of length max_circuit_depth
 
@@ -201,13 +208,15 @@ with program() as rb:
                     # Align the two elements to play the sequence after qubit initialization
                     align(resonator, qubit)
                     # The strict_timing ensures that the sequence will be played without gaps
+                    if active:
+                        active_reset(threshold, qubit, resonator, max_tries=5, Ig=None)
                     with strict_timing_():
                         # Play the random sequence of desired depth
                         play_sequence(sequence_list, depth)
                     # Align the two elements to measure after playing the circuit.
                     align(qubit, resonator)
                     # Make sure you updated the ge_threshold and angle if you want to use state discrimination
-                    state, I, Q = readout_macro(threshold=ge_threshold, state=state, I=I, Q=Q)
+                    state, I, Q = readout_macro(resonator,threshold=threshold, state=state, I=I, Q=Q)
                     # Save the results to their respective streams
                     if state_discrimination:
                         save(state, state_st)
@@ -352,12 +361,14 @@ else:
     )
 
     # Plots
-    plt.figure()
+    fig_fit = plt.figure()
     plt.errorbar(x, value_avg, yerr=error_avg, marker=".")
     plt.plot(x, power_law(x, *pars), linestyle="--", linewidth=2)
     plt.xlabel("Number of Clifford gates")
     plt.ylabel("Sequence Fidelity")
     plt.title("Single qubit RB")
+    plt.legend((f"Qubit Gate fidelity = {100*(1-r_g):2.2f}%",))
+
 
     # Save results
     script_name = Path(__file__).name
@@ -368,6 +379,7 @@ else:
         save_data_dict.update({"I_data": I})
         save_data_dict.update({"Q_data": Q})
     save_data_dict.update({"fig_live": fig})
+    save_data_dict.update({"fig_fit": fig_fit})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
 

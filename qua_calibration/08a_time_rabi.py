@@ -23,22 +23,26 @@ from qualang_tools.plot import interrupt_on_close
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
+from macros import *
 
 ##################
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 100  # The number of averages
+n_avg = 5000  # The number of averages
 # Pulse duration sweep (in clock cycles = 4ns) - must be larger than 4 clock cycles
-t_min = 16 // 4
-t_max = 2000 // 4
+t_min = 16 // 4 # 16 ns ==> 16//4
+t_max = 500 // 4
 dt = 4 // 4
 durations = np.arange(t_min, t_max, dt)
+# durations = np.arange(0, 1, 0.01)
 
 qubit = "q4_xy"
 resonator = "rr4"
 qubit_LO = qubit_LO_q4
 x180_amp = pi_amp_q4
+threshold = ge_threshold_q4
+active = True
 
 # Data to save
 save_data_dict = {
@@ -55,16 +59,21 @@ save_data_dict = {
 with program() as time_rabi:
     n = declare(int)  # QUA variable for the averaging loop
     t = declare(int)  # QUA variable for the qubit pulse duration
+    # t = declare(fixed) 
     I = declare(fixed)  # QUA variable for the measured 'I' quadrature
     Q = declare(fixed)  # QUA variable for the measured 'Q' quadrature
     I_st = declare_stream()  # Stream for the 'I' quadrature
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
+    reset_global_phase()
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(t, durations)):  # QUA for_ loop for sweeping the pulse duration
+            if active:
+                active_reset(threshold, qubit, resonator, max_tries=5, Ig=None)
             # Play the qubit pulse with a variable duration (in clock cycles = 4ns)
-            play("x180", qubit, duration=t)
+            play("x180", qubit, duration = t)
+            # play("x180"*amp(t), qubit,duration=10)
             # Align the two elements to measure after playing the qubit pulse.
             align(qubit, resonator)
             # Measure the state of the resonator
@@ -78,6 +87,7 @@ with program() as time_rabi:
             )
             # Wait for the qubit to decay to the ground state
             wait(thermalization_time * u.ns, resonator)
+            # wait(100)
             # Save the 'I' & 'Q' quadratures to their respective streams
             save(I, I_st)
             save(Q, Q_st)
@@ -131,19 +141,22 @@ else:
         I, Q, iteration = results.fetch_all()
         # Convert the results into Volts
         I, Q = u.demod2volts(I, readout_len), u.demod2volts(Q, readout_len)
+        S = u.demod2volts(I + 1j * Q, readout_len)
+        R = np.abs(S)  # Amplitude
+        phase = np.angle(S)  # Phase
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.suptitle("Time Rabi")
         plt.subplot(211)
         plt.cla()
-        plt.plot(4 * durations, I, ".")
-        plt.ylabel("I quadrature [V]")
+        plt.plot(4 * durations, R, ".-")
+        plt.ylabel("Amp [V]")
         plt.subplot(212)
         plt.cla()
-        plt.plot(4 * durations, Q, ".")
+        plt.plot(4 * durations, phase, ".-")
         plt.xlabel("Rabi pulse duration [ns]")
-        plt.ylabel("Q quadrature [V]")
+        plt.ylabel("phase")
         plt.pause(0.1)
         plt.tight_layout()
     # Fit the results to extract the x180 length
@@ -151,7 +164,8 @@ else:
         from qualang_tools.plot.fitting import Fit
 
         fit = Fit()
-        plt.figure()
+
+        fig_fit = plt.figure()
         rabi_fit = fit.rabi(4 * durations, I, plot=True)
         plt.title(f"{qubit} Time Rabi")
         plt.xlabel("Rabi pulse duration [ns]")
@@ -165,6 +179,7 @@ else:
     save_data_dict.update({"I_data": I})
     save_data_dict.update({"Q_data": Q})
     save_data_dict.update({"fig_live": fig})
+    save_data_dict.update({"fig_fit": fig_fit})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
 

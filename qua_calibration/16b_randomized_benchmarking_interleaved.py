@@ -54,6 +54,8 @@ interleaved_gate_index = 2
 
 qubit = "q4_xy"
 resonator = "rr4"
+x180_len = pi_len
+ge_threshold = ge_threshold_q4
 
 # Data to save
 save_data_dict = {
@@ -212,6 +214,7 @@ with program() as rb:
     else:
         I_st = declare_stream()
         Q_st = declare_stream()
+    reset_global_phase()
 
     with for_(m, 0, m < num_of_sequences, m + 1):  # QUA for_ loop over the random sequences
         # Generates the RB sequence with a gate interleaved after each Clifford
@@ -237,7 +240,7 @@ with program() as rb:
                     # Align the two elements to measure after playing the circuit.
                     align(qubit, resonator)
                     # Make sure you updated the ge_threshold and angle if you want to use state discrimination
-                    state, I, Q = readout_macro(threshold=ge_threshold, state=state, I=I, Q=Q)
+                    state, I, Q = readout_macro(resonator, threshold=ge_threshold, state=state, I=I, Q=Q)
                     # Save the results to their respective streams
                     if state_discrimination:
                         save(state, state_st)
@@ -384,12 +387,13 @@ else:
     )
 
     # Plots
-    plt.figure()
+    fig_fit = plt.figure()
     plt.errorbar(x, value_avg, yerr=error_avg, marker=".")
     plt.plot(x, power_law(x, *pars), linestyle="--", linewidth=2)
     plt.xlabel("Number of Clifford gates")
     plt.ylabel("Sequence Fidelity")
     plt.title(f"Single qubit interleaved RB {get_interleaved_gate(interleaved_gate_index)}")
+    plt.legend((f"Qubit Gate fidelity = {100*(1-r_g):2.2f}%",))
 
     # Save results
     script_name = Path(__file__).name
@@ -400,5 +404,8 @@ else:
         save_data_dict.update({"I_data": I})
         save_data_dict.update({"Q_data": Q})
     save_data_dict.update({"fig_live": fig})
+    save_data_dict.update({"fig_fit": fig_fit})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+
+    plt.show(block=True)

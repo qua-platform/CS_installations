@@ -34,12 +34,12 @@ matplotlib.use('TkAgg')
 
 ##################
 #   Parameters   #
-qubits = ["q3_xy", "q2_xy"]
-Qubit1 = "3"
+qubits = ["q4_xy", "q2_xy"]
+Qubit1 = "4"
 Qubit2 = "2"
-rr1 = "rr3"
+rr1 = "rr4"
 rr2 = "rr2"
-rrs = [3, 2]
+rrs = [4, 2]
 
 ##################
 # Parameters Definition

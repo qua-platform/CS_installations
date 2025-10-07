@@ -174,6 +174,8 @@ with program() as state_tomography:
     c = declare(int)  # QUA variable for switching between projections
     state_st = declare_stream()  # Stream for the qubit state
     n_st = declare_stream()  # Stream for the averaging iteration 'n'
+    reset_global_phase()
+
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(c, 0, c <= 2, c + 1):  # QUA for_ loop for switching between projections
             # Add here whatever state you want to characterize

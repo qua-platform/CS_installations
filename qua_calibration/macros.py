@@ -14,7 +14,7 @@ import numpy as np
 
 
 # Single shot readout macro
-def readout_macro(resonator="rr1", threshold=None, state=None, I=None, Q=None):
+def readout_macro(resonator=None, threshold=None, state=None, I=None, Q=None):
     """
     A macro for performing the readout, with the ability to perform state discrimination.
     If `threshold` is given, the information in the `I` quadrature will be compared against the threshold and `state`

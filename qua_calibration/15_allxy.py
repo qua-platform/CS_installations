@@ -22,19 +22,25 @@ from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
+from macros import *
 
 ##################
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 1e4
+n_avg = 500000
 
 qubit = "q4_xy"
 resonator = "rr4"
+x180_len = pi_len
+threshold = ge_threshold_q4
+active = True
 
 # Data to save
 save_data_dict = {
     "n_avg": n_avg,
+    "qubit":qubit,
+    "active_reset": active,
     "config": config,
 }
 
@@ -113,8 +119,9 @@ with program() as ALL_XY:
     I_st = [declare_stream() for _ in range(len(sequence))]
     Q_st = [declare_stream() for _ in range(len(sequence))]
     n_st = declare_stream()
-
+    reset_global_phase()
     with for_(n, 0, n < n_avg, n + 1):
+
         # Get a value from the pseudo-random number generator on the OPX FPGA
         assign(r_, r.rand_int(len(sequence)))
         # Wait for the qubit to decay to the ground state - Can be replaced by active reset
@@ -123,6 +130,9 @@ with program() as ALL_XY:
         # The switch/case method allows to map a python index (here "i") to a QUA number (here "r_") in order to switch
         # between elements in a python list (here "sequence") that cannot be converted into a QUA array (here because it
         # contains strings).
+        if active:
+            active_reset(threshold, qubit, resonator, max_tries=5, Ig=None)
+            align()
         with switch_(r_):
             for i in range(len(sequence)):
                 with case_(i):
@@ -191,14 +201,14 @@ else:
         plt.plot(I, "bx", label="Experimental data")
         plt.plot([np.max(I)] * 5 + [np.mean(I)] * 12 + [np.min(I)] * 4, "r-", label="Expected value")
         plt.ylabel("I quadrature [a.u.]")
-        plt.xticks(ticks=range(len(sequence)), labels=["" for _ in sequence], rotation=45)
+        plt.xticks(ticks=range(len(sequence)), labels=["" for _ in sequence], rotation=90)
         plt.legend()
         plt.subplot(212)
         plt.cla()
         plt.plot(Q, "bx", label="Experimental data")
         plt.plot([np.max(Q)] * 5 + [np.mean(Q)] * 12 + [np.min(Q)] * 4, "r-", label="Expected value")
         plt.ylabel("Q quadrature [a.u.]")
-        plt.xticks(ticks=range(len(sequence)), labels=[str(el) for el in sequence], rotation=45)
+        plt.xticks(ticks=range(len(sequence)), labels=[str(el) for el in sequence], rotation=90)
         plt.legend()
         plt.tight_layout()
         plt.pause(0.1)

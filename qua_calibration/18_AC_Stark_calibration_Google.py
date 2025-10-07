@@ -45,6 +45,7 @@ iters = np.arange(iter_min, iter_max + 0.1, d)
 
 qubit = "q4_xy"
 resonator = "rr4"
+ge_threshold = ge_threshold_q4
 
 # Data to save
 save_data_dict = {
@@ -67,6 +68,7 @@ with program() as ac_stark_shift:
     I_st = declare_stream()  # Stream for the 'I' quadrature
     Q_st = declare_stream()  # Stream for the 'Q' quadrature
     state_st = declare_stream()  # Stream for the qubit state
+    reset_global_phase()
 
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(it, iters)):  # QUA for_ loop for sweeping the number of pulses

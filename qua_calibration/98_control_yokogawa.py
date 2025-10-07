@@ -8,14 +8,14 @@ gs = YokogawaGS200(
 )
 #%%
 # gs.output('off')
-gs.source_mode('CURR')
-gs.voltage_limit(1)     
+# gs.source_mode('CURR')
+gs.voltage_limit(10)     
 gs.auto_range(True)
 #%%
-gs.output('on')
-gs.ramp_current(0.0002, 0.00001, 1)  
+# gs.output('on')
+gs.ramp_current(0e-3, 1e-5, 0.01)  
 
 #%%
-gs.current()
-gs.output('off')
+# gs.current()
+# gs.output('off')
 # %%

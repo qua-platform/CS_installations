@@ -79,6 +79,7 @@ with program() as resonator_spec_1D:
     I_st = declare_stream()
     Q_st = declare_stream()
     n_st = declare_stream()
+    reset_global_phase()
 
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(f, frequencies[resonator])):

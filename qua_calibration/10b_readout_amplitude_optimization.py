@@ -23,6 +23,7 @@ from qualang_tools.analysis import two_state_discriminator
 from qualang_tools.loops import from_array
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
+from macros import *
 
 ##################
 #   Parameters   #
@@ -30,13 +31,17 @@ from qualang_tools.results.data_handler import DataHandler
 # Parameters Definition
 n_runs = 1000
 # The readout amplitude sweep (as a pre-factor of the readout amplitude) - must be within [-2; 2)
-a_min = 0.5
-a_max = 1.5
+a_min = 0.01
+a_max = 1.99
 da = 0.01
 amplitudes = np.arange(a_min, a_max + da / 2, da)  # The amplitude vector +da/2 to add a_max to the scan
 
 qubit = "q4_xy"
 resonator = "rr4"
+readout_amp = readout_amp_q4
+
+threshold = ge_threshold_q4
+active = False
 
 # Data to save
 save_data_dict = {
@@ -61,10 +66,14 @@ with program() as ro_amp_opt:
     I_e_st = declare_stream()
     Q_e_st = declare_stream()
     n_st = declare_stream()
+    reset_global_phase()
 
     with for_(*from_array(a, amplitudes)):
         save(counter, n_st)
         with for_(n, 0, n < n_runs, n + 1):
+            if active:
+                active_reset(threshold, qubit, resonator, max_tries=5, Ig=None)
+                align()
             measure(
                 "readout" * amp(a),
                 resonator,
@@ -80,10 +89,15 @@ with program() as ro_amp_opt:
 
             align()  # global align
             # Play the x180 gate to put the qubit in the excited state
+            if active:
+                active_reset(threshold, qubit, resonator, max_tries=5, Ig=None)
+                align()
+
             play("x180", qubit)
             # Align the two elements to measure after playing the qubit pulse.
             align(qubit, resonator)
             # Measure the state of the resonator
+            
             measure(
                 "readout" * amp(a),
                 resonator,
@@ -158,7 +172,7 @@ else:
             I_g[i], Q_g[i], I_e[i], Q_e[i], b_print=False, b_plot=False
         )
         fidelity_vec.append(fidelity)
-        ground_fidelity_vec.append(gg)
+        ground_fidelity_vec.append(gg*100)
 
     # Plot the data
     fig = plt.figure()
@@ -189,3 +203,5 @@ else:
     save_data_dict.update({"fig_live": fig})
     data_handler.additional_files = {script_name: script_name, **default_additional_files}
     data_handler.save_data(data=save_data_dict, name="_".join(script_name.split("_")[1:]).split(".")[0])
+
+    plt.show(block=True)

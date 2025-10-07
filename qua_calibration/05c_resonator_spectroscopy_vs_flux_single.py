@@ -34,27 +34,26 @@ from qcodes.instrument_drivers.yokogawa import YokogawaGS200
 #   Parameters   #
 ##################
 # Averaging
-n_avg = 6000
+n_avg = 100
 
 
 # Current sweep (A) provided by GS200 in CURR mode
-i_min = -0.010
-i_max = +0.010
-i_step = 0.0005
-currents = np.arange(i_min, i_max + i_step / 2, i_step)
+i_start = 10e-3
+i_end = 20e-3
+i_step = 0.1e-3
+currents = np.arange(i_start, i_end + i_step / 2, i_step)
 
-resonator = "rr1"
+resonator = "rr4"
 
 # Parameters Definition
-n_avg = 200  # The number of averages
 frequencies = {
-    "rr1": np.arange(10e6, +450e6, 20e3),
-    "rr2": np.arange(80e6, +130e6, 100e3),
+    "rr1": np.arange(-260e6, -240e6, 50e3),
+    "rr4": np.arange(190e6, +215e6, 50e3),
 }
 
 # GS200 settings
-gs_address = "USB::0xB21::0x39::YOUR_SERIAL::INSTR"  # <-- set your VISA address
-voltage_limit = 1.0          # compliance voltage (V) in CURR mode
+gs_address = 'USB0::0x0B21::0x0039::901B35283::0::INSTR'  # <-- set your VISA address
+voltage_limit = 1         # compliance voltage (V) in CURR mode
 auto_range = True            # if False, set current_range below
 current_range = 0.01         # A, used only when auto_range == False
 settle_time_s = 0.02         # wait after setting current
@@ -79,6 +78,7 @@ with program() as resonator_spec_1D:
     I_st = declare_stream()
     Q_st = declare_stream()
     n_st = declare_stream()
+    reset_global_phase()
 
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(f, frequencies[resonator])):
@@ -132,11 +132,12 @@ else:
 
     # Open GS200 (current mode)
     gs = YokogawaGS200("gs200", address=gs_address, terminator="\n")
-    gs.source_mode("CURR")
+    # gs.source_mode("CURR")
     gs.voltage_limit(voltage_limit)
     gs.auto_range(auto_range)
+    # gs.output("on")
     # if not auto_range:
-    #     gs.current_range(current_range)
+    # gs.current_range(current_range)
     # gs.current(0.0)
     # gs.output("on")
 
@@ -153,8 +154,7 @@ else:
     try:
         for j, i_set in enumerate(currents):
             # Set current and wait for settling
-            gs.ramp_current(i_set, 0.00001, 1)  
-            # gs.current(float(i_set))
+            gs.ramp_current(i_set, 1e-5, 0.01)  
             # time.sleep(settle_time_s)
 
             # Run QUA for this current point

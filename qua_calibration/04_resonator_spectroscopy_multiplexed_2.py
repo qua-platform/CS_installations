@@ -72,6 +72,7 @@ with program() as PROGRAM:
     Q = [declare(fixed) for _ in range(2)]
     I_st = [declare_stream() for _ in range(2)]
     Q_st = [declare_stream() for _ in range(2)]
+    reset_global_phase()
 
     with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
         with for_(*from_array(df, dfs)):  # QUA for_ loop for sweeping the frequency
