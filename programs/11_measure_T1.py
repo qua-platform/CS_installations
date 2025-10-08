@@ -63,7 +63,6 @@ with program() as measure_T1:
                 measure(
                     "readout",
                     res_key_subset[j],
-                    None, # Warning vs Error depending on version, I'm keeping it
                     dual_demod.full("rotated_cos", "rotated_sin", I[j]),
                     dual_demod.full("rotated_minus_sin", "rotated_cos", Q[j])
                 )

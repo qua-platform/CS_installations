@@ -23,8 +23,8 @@ else:
 n_avg = 1000
 multiplexed = True
 resonator_qubit_keys = ["q0", "q1", "q2", "q3"]
-required_parameters = ["resonator_key", "resonator_frequency", "readout_len", "resonator_relaxation"]
-res_key_subset, res_frequency, readout_len, resonator_relaxation = multiplexed_parser(resonator_qubit_keys, multiplexed_parameters.copy(), required_parameters)
+required_parameters = ["resonator_key", "resonator_frequency", "readout_len", "resonator_relaxation", "resonator_LO"]
+res_key_subset, res_frequency, readout_len, resonator_relaxation, resonator_LO = multiplexed_parser(resonator_qubit_keys, multiplexed_parameters.copy(), required_parameters)
 
 # ---- Resonator Spectroscopy ---- #
 res_relaxation = resonator_relaxation//4 # From ns to clock cycles
@@ -52,7 +52,6 @@ with program() as res_spec_multiplexed:
                 measure(
                     "readout",
                     res_key_subset[j],
-                    None,
                     dual_demod.full("cos", "sin", I[j]),
                     dual_demod.full("minus_sin", "cos", Q[j])
                 )

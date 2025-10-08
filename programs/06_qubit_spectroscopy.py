@@ -23,8 +23,8 @@ else:
 n_avg = 1000
 multiplexed = True
 qubit_keys = ["q0", "q1", "q2", "q3"]
-required_parameters = ["qubit_key", "qubit_frequency", "qubit_relaxation", "resonator_key", "readout_len", "resonator_relaxation"]
-qub_key_subset, qub_frequency, qubit_relaxation, res_key_subset, readout_len, resonator_relaxation = multiplexed_parser(qubit_keys, multiplexed_parameters.copy(), required_parameters)
+required_parameters = ["qubit_key", "qubit_frequency", "qubit_relaxation", "qubit_LO", "resonator_key", "readout_len", "resonator_relaxation"]
+qub_key_subset, qub_frequency, qubit_relaxation, qubit_LO, res_key_subset, readout_len, resonator_relaxation = multiplexed_parser(qubit_keys, multiplexed_parameters.copy(), required_parameters)
 
 # ---- Qubit Spectroscopy ---- #
 res_relaxation = resonator_relaxation//4 # From ns to clock cycles
@@ -55,7 +55,6 @@ with program() as qubit_spec_multiplexed:
                 measure(
                     "readout",
                     res_key_subset[j],
-                    None,
                     dual_demod.full("cos", "sin", I[j]),
                     dual_demod.full("minus_sin", "cos", Q[j])
                 )
@@ -146,7 +145,7 @@ else:
             fit = Fit()
             plt.figure()
             spec_fit = fit.reflection_resonator_spectroscopy( (qub_spec_frequencies[j] - qubit_LO) / u.MHz, R[j], plot=True) # I am using the opposite of what I used for resonator fit as a rough estimate for the qubit spectroscopy
-            plt.title(f"Qubit spectroscopy - LO = {qubit_LO / u.GHz} GHz")
+            plt.title(f"Qubit {qub_key_subset[j]}, Qubit spectroscopy - LO = {qubit_LO / u.GHz} GHz")
             plt.xlabel("Intermediate frequency (MHz)")
             plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ (V)")
             print(f"Update qubit {qub_key_subset[j]} IF to {spec_fit['f'][0]:.6f} MHz")
@@ -154,7 +153,7 @@ else:
             print("Unable to fit qubit " + str(qub_key_subset[j]))
             plt.figure()
             plt.plot((qub_spec_frequencies[j] - qubit_LO) / u.MHz, R[j])
-            plt.title(f"Qubit spectroscopy - LO = {qubit_LO / u.GHz} GHz")
+            plt.title(f"Qubit {qub_key_subset[j]}, Qubit spectroscopy - LO = {qubit_LO / u.GHz} GHz")
             plt.xlabel("Intermediate frequency (MHz)")
             plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ (V)")
 

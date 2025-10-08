@@ -50,7 +50,6 @@ with program() as IQ_blobs:
             measure(
                 "readout",
                 res_key_subset[j],
-                None, # Warning vs Error depending on version, I'm keeping it
                 dual_demod.full("cos", "sin", I_g[j]),
                 dual_demod.full("minus_sin", "cos", Q_g[j])
             )
@@ -68,7 +67,6 @@ with program() as IQ_blobs:
             measure(
                 "readout",
                 res_key_subset[j],
-                None, # Warning vs Error depending on version, I'm keeping it
                 dual_demod.full("cos", "sin", I_e[j]),
                 dual_demod.full("minus_sin", "cos", Q_e[j])
             )

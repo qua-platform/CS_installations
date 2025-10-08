@@ -44,9 +44,9 @@ _rotation_angles = (np.array([0.0, 0.0, 0.0, 0.0, 0.0]) / 180) * np.pi
 _ge_thresholds = np.array([0.0, 0.0, 0.0, 0.0, 0.0]) # Ge thresholds for each qubit
 
 resonator_power = amp_in_volt_to_dbm(0.45) # dBm
-resonator_LO = 6.35 * u.GHz
-resonator_IFs = _resonator_absfreq - resonator_LO
-resonator_LO_band = mw_LO_band(resonator_LO)
+_resonator_LO = 6.35 * u.GHz
+_resonator_IF = _resonator_absfreq - _resonator_LO
+resonator_LO_band = mw_LO_band(_resonator_LO)
 resonator_analogOutput = (con, mw_fem, 1) # Controller, FEM, channel
 resonator_analogInput = (con, mw_fem, 1) # Controller, FEM, channel
 time_of_flight = 308 # ns
@@ -80,7 +80,7 @@ for i, key in enumerate(_resonator_keys):
             "port":resonator_analogOutput,
             "upconverter": 1, # which upconverter to use (if shared)
         },
-        "intermediate_frequency": resonator_IFs[i],
+        "intermediate_frequency": _resonator_IF[i],
         "MWOutput":{
             "port":resonator_analogInput,
         },
@@ -177,9 +177,9 @@ _qubit_absfreq = np.array([4.2, 4.3, 4.4, 4.57, 4.6]) * u.GHz
 _qubit_relaxation_times = np.array([30_000, 30_000, 30_000, 30_000, 30_000], dtype = int) # ns
 
 qubit_power = amp_in_volt_to_dbm(0.45) # dBm
-qubit_LO = 4.5 * u.GHz
-qubit_IFs = _qubit_absfreq - qubit_LO
-qubit_LO_band = mw_LO_band(qubit_LO)
+_qubit_LO = 4.5 * u.GHz
+_qubit_IF = _qubit_absfreq - _qubit_LO
+qubit_LO_band = mw_LO_band(_qubit_LO)
 qubit_analogOutput = (con, mw_fem, 2) # Controller, FEM, channel
 
 # ---- Qubit operation parameters ---- #
@@ -287,7 +287,7 @@ for i, key in enumerate(_qubit_keys):
             "port":qubit_analogOutput,
             "upconverter": 1, # which upconverter to use (if shared)
         },
-        "intermediate_frequency": qubit_IFs[i],
+        "intermediate_frequency": _qubit_IF[i],
         "operations":{
             "cw": "const_pulse",
             "saturation": "saturation_pulse",
@@ -385,7 +385,9 @@ for i, key in enumerate(_qubit_keys):
         "rotation_angle": _rotation_angles[i],
         "ge_threshold": _ge_thresholds[i],
         "resonator_frequency": _resonator_absfreq[i],
+        "resonator_IF": _resonator_IF[i],
         "qubit_frequency": _qubit_absfreq[i],
+        "qubit_IF": _qubit_IF[i],
         "qubit_relaxation": _qubit_relaxation_times[i],
         "drag_coef": _drag_coefficients[i],
         "anharmonicity": _anharmonicities[i],
@@ -424,21 +426,21 @@ config = {
                             "band":resonator_LO_band,
                             "full_scale_power_dbm":resonator_power,
                             "upconverters":{
-                                1:{"frequency":resonator_LO},
+                                1:{"frequency":_resonator_LO},
                             },
                         },  # Resonators
                         2:{
                             "band":qubit_LO_band,
                             "full_scale_power_dbm":qubit_power,
                             "upconverters":{
-                                1:{"frequency":qubit_LO},
+                                1:{"frequency":_qubit_LO},
                             },
                         },  # Qubits
                     },
                     "analog_inputs":{
                         1:{
                             "band":resonator_LO_band, 
-                            "downconverter_frequency":resonator_LO,
+                            "downconverter_frequency":_resonator_LO,
                         }, # resonator in
                     },
                     "digital_outputs":{ 

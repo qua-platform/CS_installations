@@ -23,8 +23,8 @@ else:
 n_avg = 1000
 multiplexed = True
 qubit_keys = ["q0", "q1", "q2", "q3"]
-required_parameters = ["qubit_key", "qubit_frequency", "qubit_relaxation", "resonator_key", "readout_len", "resonator_relaxation"]
-qub_key_subset, qub_frequency, qubit_relaxation, res_key_subset, readout_len, resonator_relaxation = multiplexed_parser(qubit_keys, multiplexed_parameters.copy(), required_parameters)
+required_parameters = ["qubit_key", "qubit_frequency", "qubit_relaxation", "qubit_LO", "resonator_key", "readout_len", "resonator_relaxation"]
+qub_key_subset, qub_frequency, qubit_relaxation, qubit_LO, res_key_subset, readout_len, resonator_relaxation = multiplexed_parser(qubit_keys, multiplexed_parameters.copy(), required_parameters)
 
 
 # ---- Time Rabi Chevron Multiplexed ---- #
@@ -74,7 +74,6 @@ with program() as ramsey_chevron_inner_avg:
                     measure(
                         "readout",
                         res_key_subset[j],
-                        None, # Warning vs Error depending on version, I'm keeping it
                         dual_demod.full("rotated_cos", "rotated_sin", I[j]),
                         dual_demod.full("rotated_minus_sin", "rotated_cos", Q[j])
                     )

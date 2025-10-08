@@ -192,6 +192,6 @@ else:
         plt.tight_layout()
         plt.pause(0.1)
     for j in range(len(qub_key_subset)):
-        print(f"Qubit q{j}Optimal drag_coef = {drag_coef_subset[j] * amps[np.argmin(np.sum(I[j], axis=1))]:.3f}")
+        print(f"Qubit {qub_key_subset[j]}, Optimal drag_coef = {drag_coef_subset[j] * amps[np.argmin(np.sum(I[j], axis=1))]:.3f}")
 
     qm.close()

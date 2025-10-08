@@ -58,7 +58,6 @@ with program() as time_rabi_multiplexed:
                 measure(
                     "readout",
                     res_key_subset[j],
-                    None, # Warning vs Error depending on version, I'm keeping it
                     dual_demod.full("cos", "sin", I[j]),
                     dual_demod.full("minus_sin", "cos", Q[j])
                 )

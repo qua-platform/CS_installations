@@ -23,8 +23,8 @@ else:
 n_avg = 1000
 multiplexed = True
 qubit_keys = ["q0", "q1", "q2", "q3"]
-required_parameters = ["qubit_key", "qubit_frequency", "qubit_relaxation", "resonator_key", "readout_len", "resonator_relaxation"]
-qub_key_subset, qub_frequency, qubit_relaxation, res_key_subset, readout_len, resonator_relaxation = multiplexed_parser(qubit_keys, multiplexed_parameters.copy(), required_parameters)
+required_parameters = ["qubit_key", "qubit_frequency", "qubit_relaxation", "qubit_LO", "resonator_key", "readout_len", "resonator_relaxation"]
+qub_key_subset, qub_frequency, qubit_relaxation, qubit_LO, res_key_subset, readout_len, resonator_relaxation = multiplexed_parser(qubit_keys, multiplexed_parameters.copy(), required_parameters)
 
 # ---- Time Rabi Chevron Multiplexed ---- #
 qub_relaxation = qubit_relaxation//4 # From ns to clock cycles
@@ -66,7 +66,6 @@ with program() as time_rabi_chevron_multiplexed:
                     measure(
                         "readout",
                         res_key_subset[j],
-                        None, # Warning vs Error depending on version, I'm keeping it
                         dual_demod.full("cos", "sin", I[j]),
                         dual_demod.full("minus_sin", "cos", Q[j])
                     )
