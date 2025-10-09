@@ -1,0 +1,33 @@
+{
+    "qubits": {
+        "q1": {
+            "id": "Qubit1",
+            "xy": {
+                "opx_output_I": [
+                    "con1",
+                    5,
+                    1
+                ],
+                "opx_output_Q": [
+                    "con1",
+                    5,
+                    2
+                ],
+                "frequency_converter_up": {
+                    "__class__": "quam.components.hardware.FrequencyConverter"
+                },
+                "__class__": "quam.components.channels.IQChannel"
+            },
+            "z": {
+                "opx_output": [
+                    "con1",
+                    5,
+                    3
+                ],
+                "__class__": "quam.components.channels.SingleChannel"
+            },
+            "__class__": "quam.examples.superconducting_qubits.components.Transmon"
+        }
+    },
+    "__class__": "quam.examples.superconducting_qubits.components.Quam"
+}
