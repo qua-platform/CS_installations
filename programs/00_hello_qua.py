@@ -11,17 +11,17 @@ from qualang_tools.units import unit
 u = unit(coerce_to_integer=True)
 from macros import multiplexed_parser
 
-if True:
-    from configurations.OPX1000config_DA_5Q import *
+if False:
+    from configurations.DA_5Q.OPX1000config import *
 else:
-    from configurations.OPX1000config_DB_6Q import *
+    from configurations.DB_6Q.OPX1000config import *
 
 # ---- Multiplex parameters ---- #
 
-qubit_keys = ["q0"]
+qubit_keys = ["q0", "q1", "q2"]
 required_parameters = ["qubit_key", "qubit_relaxation", "resonator_key", "resonator_relaxation"]
 qub_key_subset, qubit_relaxation, res_key_subset, resonator_relaxation = multiplexed_parser(qubit_keys, multiplexed_parameters.copy(), required_parameters)
-
+funnyWaits = [20, 40, 80]
 # ---- Program parameters ---- #
 n_avg = 200
 qub_relaxation = qubit_relaxation//4 # From ns to clock cycles
@@ -30,15 +30,14 @@ res_relaxation = resonator_relaxation//4 # From ns to clock cycles
 with program() as hello_qua:
     n = declare(int)
     chirp_rate = declare(int, value = [1_000_000, -1_000_000, 500_000, 500_000])
+    #ind = [declare(int) for _ in range(len(qub_key_subset))]
+    ind=declare(int)
+
     with for_(n, 0, n < n_avg, n + 1): 
         for j in range(len(qub_key_subset)):
-            play("cw", qub_key_subset[j])
-            play("cw", qub_key_subset[j], duration=50)
-            play("cw", qub_key_subset[j], duration=75)
-            align()
-            wait(25)
-            play("cw", qub_key_subset[j], duration = 200, chirp = (chirp_rate, "Hz/nsec"))
-            wait(25)
+            with for_(ind, 16, ind < 1024, ind + 32):
+                wait(ind, qub_key_subset[j])
+                play("x180", qub_key_subset[j])
 
 prog = hello_qua
 # ---- Open communication with the OPX ---- #
