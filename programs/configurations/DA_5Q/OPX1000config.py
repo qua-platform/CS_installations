@@ -59,16 +59,28 @@ rotation_angle_default = (0.0 / 180) * np.pi
 
 default_additional_files = {
     Path(__file__).name: Path(__file__).name,
-    "optimal_weights.npz": "optimal_weights.npz",
 }
-opt_weights = False
+# Piecing together optimal weights if available
+opt_weights_real = []
+opt_weights_minus_imag = []
+opt_weights_imag = []
+opt_weights_minus_real = []
+for i, _res_key in enumerate(_resonator_keys):
+    try:
+        weights = np.load(f"optimal_weights_{_res_key}.npz")
+        opt_weights_real.append([(int(x), int(weights["division_length"] * 4)) for x in weights["weights_real"]])
+        opt_weights_minus_imag.append([(int(x), int(weights["division_length"] * 4)) for x in weights["weights_minus_imag"]])
+        opt_weights_imag.append([(int(x), int(weights["division_length"] * 4)) for x in weights["weights_imag"]])
+        opt_weights_minus_real.append([(int(x), int(weights["division_length"] * 4)) for x in weights["weights_minus_real"]])
+        default_additional_files[f"optimal_weights_{_res_key}.npz"] = f"optimal_weights_{_res_key}.npz"
+        print(f"Loaded optimal weights for resonator {i} ({_res_key}).")
+    except Exception as e:
+        print(f"Could not load optimal weights for resonator {i} ({_res_key}). Using default rotated weights. Error: {e}")
+        opt_weights_real.append([(np.cos(_rotation_angles[i]), _readout_lens[i])])
+        opt_weights_minus_imag.append([(np.sin(_rotation_angles[i]), _readout_lens[i])])
+        opt_weights_imag.append([(-np.sin(_rotation_angles[i]), _readout_lens[i])])
+        opt_weights_minus_real.append([(-np.cos(_rotation_angles[i]), _readout_lens[i])])
 
-if opt_weights:
-    weights = np.load("optimal_weights.npz")
-    opt_weights_real = [(x, weights["division_length"] * 4) for x in weights["weights_real"]]
-    opt_weights_minus_imag = [(x, weights["division_length"] * 4) for x in weights["weights_minus_imag"]]
-    opt_weights_imag = [(x, weights["division_length"] * 4) for x in weights["weights_imag"]]
-    opt_weights_minus_real = [(x, weights["division_length"] * 4) for x in weights["weights_minus_real"]]
 
 # ---- Populate the resonator elements ---- #
 resonator_elements = {}
@@ -137,38 +149,20 @@ for i, key in enumerate(_resonator_keys):
             "cosine": [(np.sin(_rotation_angles[i]), _readout_lens[i])],
             "sine": [(-np.cos(_rotation_angles[i]), _readout_lens[i])],
         },
+        f"opt_cosine_weights_{i}": {
+            "cosine": opt_weights_real[i],
+            "sine": opt_weights_minus_imag[i],
+        },
+        f"opt_sine_weights_{i}": {
+            "cosine": opt_weights_imag[i],
+            "sine": opt_weights_real[i],
+        },
+        f"opt_minus_sine_weights_{i}": {
+            "cosine": opt_weights_minus_imag[i],
+            "sine": opt_weights_minus_real[i],
+        },
     }
-    if opt_weights:
-        opt_readout_integration_weights_i = {
-            f"opt_cosine_weights_{i}": {
-                "cosine": opt_weights_real[i],
-                "sine": opt_weights_minus_imag[i],
-            },
-            f"opt_sine_weights_{i}": {
-                "cosine": opt_weights_imag[i],
-                "sine": opt_weights_real[i],
-            },
-            f"opt_minus_sine_weights_{i}": {
-                "cosine": opt_weights_minus_imag[i],
-                "sine": opt_weights_minus_real[i],
-            },
-        }
-    else:
-        opt_readout_integration_weights_i = {
-            f"opt_cosine_weights_{i}": {
-                "cosine": [(np.cos(_rotation_angles[i]), _readout_lens[i])],
-                "sine": [(np.sin(_rotation_angles[i]), _readout_lens[i])],
-            },
-            f"opt_sine_weights_{i}": {
-                "cosine": [(-np.sin(_rotation_angles[i]), _readout_lens[i])],
-                "sine": [(np.cos(_rotation_angles[i]), _readout_lens[i])],
-            },
-            f"opt_minus_sine_weights_{i}": {
-                "cosine": [(np.sin(_rotation_angles[i]), _readout_lens[i])],
-                "sine": [(-np.cos(_rotation_angles[i]), _readout_lens[i])],
-            },
-        }
-    readout_integration_weights = {**readout_integration_weights, **readout_integration_weights_i, **opt_readout_integration_weights_i}
+    readout_integration_weights = {**readout_integration_weights, **readout_integration_weights_i}
 
 #################################
 # %% ---- Qubit parameters ---- #

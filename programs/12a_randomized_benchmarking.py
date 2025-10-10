@@ -247,7 +247,6 @@ with program() as randomized_benchmarking:
                         measure(
                             "readout",
                             res_key_subset[j],
-                            None, # Warning vs Error depending on version, I'm keeping it
                             dual_demod.full("opt_cos", "opt_sin", I[j]),
                             dual_demod.full("opt_minus_sin", "opt_cos", Q[j])
                         )
@@ -299,7 +298,7 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(prog)
     # Creates a result handle to fetch data from the OPX
-    result_names = mp_result_names(qub_key_subset, single_tags = ["iteration"], mp_tags = ["state_avg"])
+    result_names = mp_result_names(qub_key_subset, single_tags = ["iteration"], mp_tags = ["state_avg", "state"])
     res_handles = fetching_tool(job, data_list = result_names, mode = "live")
     # Waits (blocks the Python console) until all results have been acquired
     fig = plt.figure()
@@ -308,7 +307,7 @@ else:
     # Stolen from the library, I was getting stuck on strict timing stuff:
     while res_handles.is_processing():
         # Fetch results
-        iteration, state_avg = mp_fetch_all(res_handles, qub_key_subset, num_single_tags=1)
+        iteration, state_avg, state_data = mp_fetch_all(res_handles, qub_key_subset, num_single_tags=1)
         # Progress bar
         progress_counter(iteration, n_avg, start_time=res_handles.get_start_time())
         # Plot results
@@ -320,10 +319,6 @@ else:
         plt.title("Single qubit RB")
         plt.pause(0.1)
     
-    
-    result_names = [f"state_{j}" for j in range(len(qub_key_subset))]
-    res_handles = fetching_tool(job, data_list = result_names)
-    state_data = res_handles.fetch_all()
     state_avg = np.mean(state_data, axis = 1)
     error_avg = np.std(state_data, axis = 1)/np.sqrt(n_avg)
 

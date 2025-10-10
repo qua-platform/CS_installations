@@ -66,7 +66,7 @@ def simple_two_state_discriminator(I, threshold, state=None):
         assign(state, 0)
     return state
     
-def readout_macro(resonator, I, Q, state, threshold):
+def readout_macro(resonator, I, Q, state, threshold, state_boolean=False):
     '''
     Perform a readout on the given resonator, demodulate the signal, and apply a simple two-state discrimination based on the provided threshold.
 
@@ -83,9 +83,52 @@ def readout_macro(resonator, I, Q, state, threshold):
         dual_demod.full("opt_cos", "opt_sin", I),
         dual_demod.full("opt_minus_sin", "opt_cos", Q),
     )
-    
-    with if_(I > threshold):
-        assign(state, 1)
-    with else_():
-        assign(state, 0)
+    if state_boolean:
+        assign(state, I > threshold)
+    else:
+        with if_(I > threshold):
+            assign(state, 1)
+        with else_():
+            assign(state, 0)
     return I, Q, state
+
+from pathlib import Path
+from collections.abc import Mapping, Sequence
+from typing import Iterable, Tuple, Any, Union
+def numpyint32_finder(root: Any) -> Iterable[Path]:
+    """
+    paths_to_numpy_int32_including_arrays: Generator of paths to all np.int32 values in a nested structure.
+    Like `paths_to_numpy_int32`, but also drills into numpy arrays.
+    Array indices are appended to the path as integers.
+    """
+    def _walk(obj: Any, path: Path):
+        if isinstance(obj, np.int32):
+            yield path
+            return
+
+        if isinstance(obj, Mapping):
+            for k, v in obj.items():
+                yield from _walk(v, path + (k,))
+            return
+
+        if isinstance(obj, Sequence) and not isinstance(obj, (str, bytes, bytearray)):
+            # Handle python lists/tuples
+            for i, v in enumerate(obj):
+                yield from _walk(v, path + (i,))
+            return
+
+        # Handle numpy arrays element-wise if dtype is int32
+        if isinstance(obj, np.ndarray):
+            if obj.dtype == np.int32:
+                # iterate with ndenumerate to get multi-dimensional indices
+                for idx, val in np.ndenumerate(obj):
+                    # idx is a tuple of ints; append as a single step if you prefer
+                    # but flattening them keeps path navigation straightforward:
+                    yield path + idx
+            else:
+                # if not int32 dtype, still dive into object arrays cautiously
+                if obj.dtype == object:
+                    for idx, val in np.ndenumerate(obj):
+                        yield from _walk(val, path + idx)
+
+    return _walk(root, ())

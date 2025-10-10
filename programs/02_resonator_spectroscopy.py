@@ -13,7 +13,7 @@ from qualang_tools.units import unit
 u = unit(coerce_to_integer=True)
 from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
-from macros import multiplexed_parser, mp_result_names, mp_fetch_all
+from macros import multiplexed_parser, mp_result_names, mp_fetch_all, numpyint32_finder
 
 if False:
     from configurations.DA_5Q.OPX1000config import *
@@ -87,7 +87,7 @@ prog = res_spec_multiplexed
 from warsh_credentials import host_ip, cluster
 qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
 
-simulate = True
+simulate = False
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=2_000)  # In clock cycles = 4ns
