@@ -21,7 +21,7 @@ seq = VoltageGateSequence(config, ["P1_sticky", "P2_sticky"])
 # seq.add_points("idle", level_manip, duration_manip)
 # seq.add_points("readout", level_readout, duration_readout)
 on_peak_coords = [0.1, 0]
-off_peak_coords = [0, 0]
+off_peak_coords = [-0.1, 0]
 seq.add_points("on_peak", on_peak_coords, 16)
 seq.add_points("off_peak", off_peak_coords, 16)
 ###################
@@ -43,10 +43,10 @@ with program() as simple_feedback:
         save(random_state, state_str)
 
         with if_(random_state == 1):  # On peak
-            seq.add_step(voltage_point_name="off_peak")
+            seq.add_step(voltage_point_name="on_peak")
             save(1, on_off_st)
         with elif_(random_state == 0):  # Off peak
-            seq.add_step(voltage_point_name="on_peak")
+            seq.add_step(voltage_point_name="off_peak")
             save(0, on_off_st)
         # save(Q, Q_st)
         # Wait at each iteration in order to ensure that the data will not be transferred faster than 1 sample
@@ -63,39 +63,17 @@ with program() as simple_feedback:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-# qmm = QuantumMachinesManager(
-#     host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
-# )
+qmm = QuantumMachinesManager(
+    host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config
+)
 
 #######################
 # Simulate or execute #
 #######################
 simulate = True
-
+# from pprint import pprint
+# pprint(config)
 if simulate:
-    from test_tools.cloud_simulator import client
-
-    with client.simulator(client.latest_version()) as instance:
-        # Use the instance object to simulate QUA programs
-        qmm = QuantumMachinesManager(
-            host=instance.host,
-            port=instance.port,
-            connection_headers=instance.default_connection_headers,
-        )
-
-        job = qmm.simulate(
-            config,
-            simple_feedback,
-            SimulationConfig(
-                duration=int(1e4 // 4),  # duration of simulation in units of 4ns
-            ),
-        )
-        samples = job.get_simulated_samples()
-
-        waveform_report = job.get_simulated_waveform_report()
-        waveform_report.create_plot(samples, plot=True)
-
-    """
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
     # Simulate blocks python until the simulation is done
@@ -112,7 +90,7 @@ if simulate:
     waveform_report.create_plot(
         samples, plot=True, save_path=str(Path(__file__).resolve())
     )
-    """
+
 else:
 
     # Open the quantum machine
