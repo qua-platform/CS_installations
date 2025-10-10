@@ -18,7 +18,7 @@ class FitParameters:
     tls_flux_biases: List[float]
     tls_frequencies_mhz: List[float]
     tls_tau_us: List[float]
-    tls_fwhm_mhz: List[float]   # ~ 1/(pi T2) for exp. envelope
+    tls_fwhm_mhz: List[float]   
 
 def log_fitted_results(fit_results: Dict, log_callable=None):
     """
@@ -57,11 +57,10 @@ def process_raw_dataset(ds: xr.Dataset, node) -> xr.Dataset:
     if ("I" not in ds.data_vars) or ("Q" not in ds.data_vars):
         raise ValueError("Expected 'state' or both 'I' and 'Q' in dataset.")
 
-    amp = np.hypot(ds["I"], ds["Q"])  # |IQ| = sqrt(I^2 + Q^2)
+    amp = np.hypot(ds["I"], ds["Q"])  # IQ = sqrt(I^2 + Q^2)
     amp.name = "state"
     amp.attrs.update({"long_name": "|IQ|", "units": "V"})
 
-    # Add a single qubit dim if missing and we have exactly one qubit in the namespace
     if "qubit" not in amp.dims and len(node.namespace["qubits"]) == 1:
         qname = node.namespace["qubits"][0]["qubit"]
         amp = amp.expand_dims({"qubit": [qname]})

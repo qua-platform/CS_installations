@@ -9,9 +9,9 @@ from qualang_tools.loops import from_array
 from qualang_tools.multi_user import qm_session
 from qualang_tools.results import progress_counter
 from qualang_tools.units import unit
-from qualibrate import QualibrationNode
+from iqcc_calibration_tools.qualibrate_config.qualibrate.node import QualibrationNode
 from qualibration_libs.data import XarrayDataFetcher
-from quam_config import Quam
+from iqcc_calibration_tools.quam_config.components.quam_root import Quam
 from calibration_utils.qubit_TLS_SWAP_spectroscopy import (
     Parameters,
     fit_raw_data,
@@ -55,8 +55,8 @@ node = QualibrationNode[Parameters, Quam](
 @node.run_action(skip_if=node.modes.external)
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     # You can get type hinting in your IDE by typing node.parameters.
-    # node.parameters.qubits = ["q1", "q3"]
-    # node.parameters.simulate = True
+    node.parameters.qubits = ["qD4"]
+    node.parameters.simulate = True
     pass
 
 
@@ -86,15 +86,15 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
 
     # Z SWAP flux amplitude sweep (in volts)
     fluxes = np.linspace(
-        -node.parameters.flux_span / 2,
-        node.parameters.flux_span / 2,
+        -node.parameters.flux_span / 2 + node.parameters.flux_center,
+        node.parameters.flux_span / 2 + node.parameters.flux_center,
         node.parameters.flux_num,
     )
     # Register the sweep axes to be added to the dataset when fetching data
     node.namespace["sweep_axes"] = {
         "qubit": xr.DataArray(qubits.get_names()),
         "flux_bias": xr.DataArray(fluxes, attrs={"long_name": "flux bias", "units": "V"}),
-        "z_duration": xr.DataArray(4 * z_duration, attrs={"long_name": "flux duration", "units": "ns"}),
+        "z_duration": xr.DataArray(4*z_duration, attrs={"long_name": "flux duration", "units": "ns"}),
     }
     with program() as node.namespace["qua_program"]:
         I, I_st, Q, Q_st, n, n_st = node.machine.declare_qua_variables()
@@ -115,7 +115,9 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                     with for_(*from_array(t, z_duration)):
                         # Qubit manipulation
                         for i, qubit in multiplexed_qubits.items():
+                            qubit.reset_qubit_thermal()
                             qubit.xy.play("x180")
+                            #qubit.z.wait(duration=qubit.xy.operations["x180"].length) 
                             qubit.align()
                             qubit.z.play("const", amplitude_scale=flux/qubit.z.operations["const"].amplitude, duration=t)
                         align()
@@ -124,10 +126,15 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                             if state_discrimination:
                                 qubit.readout_state(state[i])
                                 save(state[i], state_st[i])
+                                reset_frame(qubit.xy.name)
+
                             else:
                                 qubit.resonator.measure("readout", qua_vars=(I[i], Q[i]))
                                 save(I[i], I_st[i])
                                 save(Q[i], Q_st[i])
+                                reset_frame(qubit.xy.name)
+
+
         with stream_processing():
             n_st.save("n")
             for i in range(num_qubits):
