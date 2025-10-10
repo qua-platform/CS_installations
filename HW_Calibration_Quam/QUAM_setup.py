@@ -18,7 +18,7 @@ from quam.components.ports import (
 )
 from quam.components.pulses import SquarePulse, SquareReadoutPulse
 
-from qm import QuantumMachinesManager, QuantumMachine
+from qm import QuantumMachinesManager, QuantumMachine, SimulationConfig
 from qualang_tools.config.helper_tools import get_band
 
 
@@ -341,7 +341,24 @@ class BaseQuam(QuamRoot):
                 job = self.qm.get_job(job_object.id)
                 job.cancel()
 
+    def open_new_QM_and_simulate(
+        self, 
+        duration: int = 10000, 
+        plot: bool = True,
+    ):
 
+        simulation_config = SimulationConfig(duration=duration//4)  # In clock cycles = 4ns
+
+        job = self.qmm.simulate(self.generate_config(), self.qua_program, simulation_config)
+
+        samples = job.get_simulated_samples()
+        if plot:
+            samples.con1.plot()
+        waveform_report = job.get_simulated_waveform_report()
+        waveform_dict = waveform_report.to_dict()
+        if plot: 
+            waveform_report.create_plot(samples, plot=True)
+        return waveform_report
 
 # machine = BaseQuam()
 # machine.add_dc_channel(1)
