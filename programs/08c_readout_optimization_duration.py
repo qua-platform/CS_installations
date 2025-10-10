@@ -67,8 +67,8 @@ def update_readout_length(res_key_subset, new_readout_length, ringdown_length):
 # Parameters Definition
 # ---- Multiplexed program parameters ---- #
 n_avg = 1000
-multiplexed = True
-qubit_keys = ["q0", "q1"] # Almost certainly will run into resource issues if you try to do more than 2 at once.
+multiplexed = False
+qubit_keys = ["q0", "q1", "q2"] # Almost certainly will run into resource issues if you try to do more than 2 at once.
 required_parameters = ["qubit_key", "qubit_relaxation", "resonator_key", "resonator_relaxation", "resonator_IF", "readout_amp"]
 qub_key_subset, qubit_relaxation, res_key_subset, resonator_relaxation, resonator_IF, readout_amp = multiplexed_parser(qubit_keys, multiplexed_parameters.copy(), required_parameters)
 
@@ -211,7 +211,7 @@ qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = False
+simulate = True
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=30_000)  # In clock cycles = 4ns
