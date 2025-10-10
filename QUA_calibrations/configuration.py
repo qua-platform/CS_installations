@@ -175,7 +175,7 @@ config = {
                 "port": (con, lf_fem, 1),
             },
             "operations": {
-                "const": "const_pulse",
+                "const": "const_flux_pulse",
             },
         },
         "LF_resonator": {

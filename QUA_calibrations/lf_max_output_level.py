@@ -1,5 +1,5 @@
 from qm import QuantumMachinesManager
-from configuration import *
+from CS_installations.QUA_calibrations.configuration import *
 from qm.qua import *
 
 # Choose AMPLIFIED or DIRECT
