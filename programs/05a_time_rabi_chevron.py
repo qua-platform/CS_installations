@@ -1,3 +1,19 @@
+"""
+        RABI CHEVRON (DURATION VS FREQUENCY)
+This sequence involves executing the qubit pulse (be it x180, square_pi, or another type) and measuring the state of
+the resonator across various qubit intermediate frequencies and pulse durations.
+Analyzing the results allows for determining the qubit and estimating the x180 pulse duration for a specific amplitude.
+
+Prerequisites:
+    - Determination of the resonator's resonance frequency when coupled to the qubit of interest (referred to as "resonator_spectroscopy").
+    - Calibration of the IQ mixer connected to the qubit drive line (whether external mixer or an Octave port).
+    - Identification of the approximate qubit frequency ("qubit_spectroscopy").
+    - Configuration of the qubit frequency and the desired pi pulse amplitude (labeled as "x180_amp").
+
+Before proceeding to the next node:
+    - Adjust the qubit frequency setting, labeled as "qubit_IF", in the configuration.
+    - Modify the qubit pulse duration setting, labeled as "x180_len", in the configuration.
+"""
 import numpy as np
 from qm.qua import *
 from qm import QuantumMachinesManager
@@ -15,6 +31,7 @@ from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
 from macros import multiplexed_parser, mp_result_names, mp_fetch_all
 
+# ---- Choose which device configuration ---- #
 if False:
     from configurations.DA_5Q.OPX1000config import *
 else:
@@ -57,39 +74,39 @@ save_dir = Path(__file__).resolve().parent / "data"
 
 # ---- Time Rabi Chevron Multiplexed QUA program ---- #
 with program() as time_rabi_chevron_multiplexed:
-    n = declare(int)
-    n_st = declare_stream()
-    pd = declare(int)
-    df = declare(int)
-    I = [declare(fixed) for _ in range(len(qub_key_subset))]
-    Q = [declare(fixed) for _ in range(len(qub_key_subset))]
-    I_st = [declare_stream() for _ in range(len(qub_key_subset))]
-    Q_st = [declare_stream() for _ in range(len(qub_key_subset))]
+    n = declare(int) # QUA variable for the averaging loop
+    n_st = declare_stream() # Stream for the averaging iteration 'n'
+    pd = declare(int) # QUA variable for the pulse duration
+    df = declare(int) # QUA variable for the sweep of the qubit IF frequency
+    I = [declare(fixed) for _ in range(len(qub_key_subset))] # QUA variables for the in-phase components
+    Q = [declare(fixed) for _ in range(len(qub_key_subset))] # QUA variables for the quadrature components
+    I_st = [declare_stream() for _ in range(len(qub_key_subset))] # Streams for the in-phase components
+    Q_st = [declare_stream() for _ in range(len(qub_key_subset))] # Streams for the quadrature components
 
-    with for_(n, 0, n < n_avg, n + 1):
-        with for_(*from_array(pd, pulse_durations_cycles)):
-            with for_(*from_array(df, qub_spec_sweep_dfs)):
+    with for_(n, 0, n < n_avg, n + 1): # Averaging loop
+        with for_(*from_array(pd, pulse_durations_cycles)): # Loop over the pulse durations
+            with for_(*from_array(df, qub_spec_sweep_dfs)): # Loop over the frequency detunings
                 for j in range(len(qub_key_subset)): # a real Python for loop so it unravels and executes in parallel, not sequentially
-                    update_frequency(qub_key_subset[j], df + qub_IFs[j])
+                    update_frequency(qub_key_subset[j], df + qub_IFs[j]) # Update the qubit IF frequency
                     play(
                         "x180", 
                         qub_key_subset[j], 
                         duration=pd
-                    )
+                    ) # Play the x180 pulse with the specified duration
                     align(qub_key_subset[j], res_key_subset[j]) # Make sure the readout occurs after the pulse to qubit
                     measure(
                         "readout",
                         res_key_subset[j],
                         dual_demod.full("cos", "sin", I[j]),
                         dual_demod.full("minus_sin", "cos", Q[j])
-                    )
+                    ) # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
                     save(I[j], I_st[j])
                     save(Q[j], Q_st[j])
                     if multiplexed:
                         wait(res_relaxation[j], res_key_subset[j])
                         wait(qub_relaxation[j], qub_key_subset[j]) 
                     else:
-                        align() # When python unravels, this makes sure the readouts are sequential
+                        align() # When python unravels, this makes sure the readouts are sequential if not multiplexed
                         if j == len(res_key_subset)-1:
                             wait(np.max(res_relaxation), *res_key_subset) 
                             wait(np.max(qub_relaxation), *qub_key_subset)
@@ -97,13 +114,14 @@ with program() as time_rabi_chevron_multiplexed:
     with stream_processing():
         n_st.save("iteration")
         for j in range(len(qub_key_subset)):
+            # Save 2D buffer over frequency sweep and pulse durations, averaged over the iteration.
             I_st[j].buffer(len(qub_spec_sweep_dfs)).buffer(len(pulse_durations_cycles)).average().save("I_"+str(j))
             Q_st[j].buffer(len(qub_spec_sweep_dfs)).buffer(len(pulse_durations_cycles)).average().save("Q_"+str(j))
 
 prog = time_rabi_chevron_multiplexed
 # ---- Open communication with the OPX ---- #
-from warsh_credentials import host_ip, cluster
-qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
+from opx_credentials import qop_ip, cluster
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster)
 
 simulate = False
 if simulate:

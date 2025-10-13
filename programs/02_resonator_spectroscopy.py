@@ -1,3 +1,19 @@
+"""
+        RESONATOR SPECTROSCOPY
+This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to extract the
+'I' and 'Q' quadratures across varying readout intermediate frequencies.
+The data is then post-processed to determine the resonator resonance frequency.
+This frequency can be used to update the readout intermediate frequency in the configuration under "resonator_IF".
+
+Prerequisites:
+    - Ensure calibration of the time of flight, offsets, and gains (referenced as "time_of_flight").
+    - Calibrate the IQ mixer connected to the readout line (whether it's an external mixer or an Octave port).
+    - Define the readout pulse amplitude and duration in the configuration.
+    - Specify the expected resonator depletion time in the configuration.
+
+Before proceeding to the next node:
+    - Update the readout frequency, labeled as "resonator_IF", in the configuration.
+"""
 import numpy as np
 from qm.qua import *
 from qm import QuantumMachinesManager
@@ -15,6 +31,7 @@ from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
 from macros import multiplexed_parser, mp_result_names, mp_fetch_all, numpyint32_finder
 
+# ---- Choose which device configuration ---- #
 if False:
     from configurations.DA_5Q.OPX1000config import *
 else:
@@ -31,8 +48,8 @@ res_key_subset, res_frequency, readout_len, resonator_relaxation, resonator_LO =
 res_relaxation = resonator_relaxation//4 # From ns to clock cycles
 
 res_IF_guesses = res_frequency - resonator_LO
-res_spec_span = 80 * u.MHz
-res_spec_df = 5 * u.MHz
+res_spec_span = 20 * u.MHz
+res_spec_df = 100 * u.kHz
 res_spec_sweep_dfs = np.arange(-res_spec_span, res_spec_span + res_spec_df, res_spec_df)
 res_spec_IF_frequencies = np.array([res_spec_sweep_dfs + guess for guess in res_IF_guesses])
 res_spec_frequencies = np.array([res_spec_sweep_dfs + guess for guess in res_frequency])
@@ -49,26 +66,29 @@ save_dir = Path(__file__).resolve().parent / "data"
 
 # ---- Resonator spectroscopy QUA program ---- #
 with program() as res_spec_multiplexed:
-    n = declare(int)
-    n_st = declare_stream()
-    df = declare(int)
-    I = [declare(fixed) for _ in range(len(res_key_subset))]
-    Q = [declare(fixed) for _ in range(len(res_key_subset))]
-    I_st = [declare_stream() for _ in range(len(res_key_subset))]
-    Q_st = [declare_stream() for _ in range(len(res_key_subset))]
+    n = declare(int) # QUA variable for the averaging loop
+    n_st = declare_stream() # Stream for the averaging iteration 'n'
+    df = declare(int) # QUA variable for the sweep of the readout IF frequency
+    # Using a list of QUA variables, each corresponding to a resonator - allows for parallel execution without overwriting shared variables.
+    I = [declare(fixed) for _ in range(len(res_key_subset))] # QUA variable for the measured 'I' quadrature
+    Q = [declare(fixed) for _ in range(len(res_key_subset))] # QUA variable for the measured 'Q' quadrature
+    I_st = [declare_stream() for _ in range(len(res_key_subset))] # Stream for the 'I' quadrature
+    Q_st = [declare_stream() for _ in range(len(res_key_subset))] # Stream for the 'Q' quadrature
 
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, res_spec_sweep_dfs)):
-            for j in range(len(res_key_subset)): # A Python for loop so it unravels and executes in parallel, not sequentially
-                update_frequency(res_key_subset[j], df + res_IF_guesses[j])
+            for j in range(len(res_key_subset)): # A Python for loop will fully unravel, so it executes in parallel, not sequentially
+                update_frequency(res_key_subset[j], df + res_IF_guesses[j]) # Update the frequency of the digital oscillator linked to the resonator element
                 measure(
                     "readout",
                     res_key_subset[j],
                     dual_demod.full("cos", "sin", I[j]),
                     dual_demod.full("minus_sin", "cos", Q[j])
-                )
+                ) # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
+                # Save the 'I' & 'Q' quadratures to their respective streams
                 save(I[j], I_st[j])
                 save(Q[j], Q_st[j])
+                # Wait for the resonator to deplete
                 if multiplexed:
                     wait(res_relaxation[j], res_key_subset[j])
                 else:
@@ -84,8 +104,8 @@ with program() as res_spec_multiplexed:
 
 prog = res_spec_multiplexed
 # ---- Open communication with the OPX ---- #
-from warsh_credentials import host_ip, cluster
-qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
+from opx_credentials import qop_ip, cluster
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster)
 
 simulate = False
 if simulate:
@@ -109,17 +129,14 @@ else:
     # Send the QUA program to the OPX, which compiles and executes it
     job = qm.execute(prog)
     # Creates a result handle to fetch data from the OPX
-    result_names = mp_result_names(res_key_subset, single_tags = ["iteration"], mp_tags = ["I", "Q"])
+    result_names = mp_result_names(res_key_subset, single_tags = ["iteration"], mp_tags = ["I", "Q"]) # Macro function to create the full list of result names
     res_handles = fetching_tool(job, data_list = result_names, mode = "live")
     # Waits (blocks the Python console) until all results have been acquired
     fig = plt.figure()
     interrupt_on_close(fig, job)  #  Interrupts the job when closing the figure
     while res_handles.is_processing():
         # Fetch results
-        #iteration, *IQ_data = res_handles.fetch_all()
-        #I = np.array([IQ_data[j] for j in range(len(res_key_subset))])
-        #Q = np.array([IQ_data[j + len(res_key_subset)] for j in range(len(res_key_subset))])
-        iteration, I, Q = mp_fetch_all(res_handles, res_key_subset, num_single_tags=1)
+        iteration, I, Q = mp_fetch_all(res_handles, res_key_subset, num_single_tags=1) # Macro to fetch all results and sort them in to appropriate arrays.
         # Convert results into Volts
         for j in range(len(res_key_subset)):
             I[j] = u.demod2volts(I[j], readout_len[j])

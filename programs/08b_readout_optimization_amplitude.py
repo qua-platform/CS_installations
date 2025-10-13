@@ -14,7 +14,6 @@ Prerequisites:
 Next steps before going to the next node:
     - Update the readout frequency (resonator_IF) in the configuration.
 """
-
 import numpy as np
 from qm.qua import *
 from qm import QuantumMachinesManager
@@ -33,6 +32,7 @@ from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
 from macros import multiplexed_parser, mp_result_names, mp_fetch_all
 
+# ---- Choose which device configuration ---- #
 if False:
     from configurations.DA_5Q.OPX1000config import *
 else:
@@ -139,11 +139,9 @@ with program() as ro_amp_opt:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-#qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 prog = ro_amp_opt
-# ---- Open communication with the OPX ---- #
-from warsh_credentials import host_ip, cluster
-qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
+from opx_credentials import qop_ip, cluster
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster)
 
 
 ###########################

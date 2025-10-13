@@ -1,3 +1,6 @@
+'''
+Macros for multiplexed experiments
+'''
 from qm.qua import *
 import numpy as np
 

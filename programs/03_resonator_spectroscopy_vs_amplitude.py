@@ -1,3 +1,23 @@
+"""
+        RESONATOR SPECTROSCOPY VERSUS READOUT AMPLITUDE
+This sequence involves measuring the resonator by sending a readout pulse and demodulating the signals to
+extract the 'I' and 'Q' quadratures.
+This is done across various readout intermediate dfs and amplitudes.
+Based on the results, one can determine if a qubit is coupled to the resonator by noting the resonator frequency
+splitting. This information can then be used to adjust the readout amplitude, choosing a readout amplitude value
+just before the observed frequency splitting.
+
+Prerequisites:
+    - Calibration of the time of flight, offsets, and gains (referenced as "time_of_flight").
+    - Calibration of the IQ mixer connected to the readout line (be it an external mixer or an Octave port).
+    - Identification of the resonator's resonance frequency (referred to as "resonator_spectroscopy").
+    - Configuration of the readout pulse amplitude (the pulse processor will sweep up to twice this value) and duration.
+    - Specification of the expected resonator depletion time in the configuration.
+
+Before proceeding to the next node:
+    - Update the readout frequency, labeled as "resonator_IF", in the configuration.
+    - Adjust the readout amplitude, labeled as "readout_amp", in the configuration.
+"""
 import numpy as np
 from qm.qua import *
 from qm import QuantumMachinesManager
@@ -15,6 +35,7 @@ from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
 from macros import multiplexed_parser, mp_result_names, mp_fetch_all
 
+# ---- Choose which device configuration ---- #
 if False:
     from configurations.DA_5Q.OPX1000config import *
 else:
@@ -31,8 +52,8 @@ res_key_subset, res_frequency, readout_len, resonator_relaxation, resonator_LO =
 res_relaxation = resonator_relaxation//4 # From ns to clock cycles
 
 res_IF_guesses = res_frequency - resonator_LO
-res_spec_span = 80 * u.MHz
-res_spec_df = 1 * u.MHz
+res_spec_span = 20 * u.MHz
+res_spec_df = 100 * u.kHz
 res_spec_sweep_dfs = np.arange(-res_spec_span, res_spec_span + res_spec_df, res_spec_df)
 res_spec_IF_frequencies = np.array([res_spec_sweep_dfs + guess for guess in res_IF_guesses])
 res_spec_frequencies = np.array([res_spec_sweep_dfs + guess for guess in res_frequency])
@@ -53,45 +74,46 @@ save_data_dict = {
 save_dir = Path(__file__).resolve().parent / "data"
 
 with program() as res_spec_multiplexed:
-    n = declare(int)
-    n_st = declare_stream()
-    df = declare(int)
-    a = declare(fixed)
-    I = [declare(fixed) for _ in range(len(res_key_subset))]
-    Q = [declare(fixed) for _ in range(len(res_key_subset))]
-    I_st = [declare_stream() for _ in range(len(res_key_subset))]
-    Q_st = [declare_stream() for _ in range(len(res_key_subset))]
+    n = declare(int) # QUA variable for the averaging loop
+    n_st = declare_stream() # Stream for the averaging iteration 'n'
+    df = declare(int) # QUA variable for the sweep of the readout IF frequency
+    a = declare(fixed) # QUA variable for the pulse amplitude
+    I = [declare(fixed) for _ in range(len(res_key_subset))] # QUA variables for the in-phase components
+    Q = [declare(fixed) for _ in range(len(res_key_subset))] # QUA variables for the quadrature components
+    I_st = [declare_stream() for _ in range(len(res_key_subset))] # Streams for the in-phase components
+    Q_st = [declare_stream() for _ in range(len(res_key_subset))] # Streams for the quadrature components
 
-    with for_(n, 0, n < n_avg, n + 1):
-        with for_(*from_array(df, res_spec_sweep_dfs)):
-            with for_(*from_array(a, pulse_amps)):
-                for j in range(len(res_key_subset)): # A Python for loop so it unravels and executes in parallel, not sequentially
-                    update_frequency(res_key_subset[j], df + res_IF_guesses[j])
+    with for_(n, 0, n < n_avg, n + 1): # Averaging loop
+        with for_(*from_array(df, res_spec_sweep_dfs)): # Loop over the frequency detunings
+            with for_(*from_array(a, pulse_amps)): # Loop over the pulse amplitudes
+                for j in range(len(res_key_subset)): # A Python for loop will fully unravel, so it executes in parallel, not sequentially
+                    update_frequency(res_key_subset[j], df + res_IF_guesses[j]) # Update the frequency of the digital oscillator linked to the resonator element
                     measure(
                         "readout" * amp(a),
                         res_key_subset[j],
                         dual_demod.full("cos", "sin", I[j]),
                         dual_demod.full("minus_sin", "cos", Q[j])
-                    )
+                    ) # Measure the resonator (send a readout pulse and demodulate the signals to get the 'I' & 'Q' quadratures)
                     save(I[j], I_st[j])
                     save(Q[j], Q_st[j])
                     if multiplexed:
                         wait(res_relaxation[j], res_key_subset[j])
                     else:
-                        align() # When python unravels, this makes sure the readouts are sequential (switch to global)
+                        align() # When python unravels, this makes sure the readouts are sequential if desired.
                         if j == len(res_key_subset)-1:
                             wait(np.max(res_relaxation))
         save(n, n_st)
     with stream_processing():
         n_st.save("iteration")
         for j in range(len(res_key_subset)):
-            I_st[j].buffer(len(pulse_amps)).buffer(len(res_spec_sweep_dfs)).average().save("I_"+str(j))
+            # Saving streams: first buffer over the pulse amplitudes, then over the frequency detunings, then average over the iterations
+            I_st[j].buffer(len(pulse_amps)).buffer(len(res_spec_sweep_dfs)).average().save("I_"+str(j)) 
             Q_st[j].buffer(len(pulse_amps)).buffer(len(res_spec_sweep_dfs)).average().save("Q_"+str(j))
 
 prog = res_spec_multiplexed
 # ---- Open communication with the OPX ---- #
-from warsh_credentials import host_ip, cluster
-qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
+from opx_credentials import qop_ip, cluster
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster)
 
 simulate = False
 if simulate:

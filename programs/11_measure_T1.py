@@ -1,3 +1,16 @@
+"""
+        T1 MEASUREMENT
+The sequence consists in putting the qubit in the excited stated by playing the x180 pulse and measuring the resonator
+after a varying time. The qubit T1 is extracted by fitting the exponential decay of the measured quadratures.
+
+Prerequisites:
+    - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
+    - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy, rabi_chevron, power_rabi and updated the config.
+    - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
+
+Next steps before going to the next node:
+    - Update the qubit T1 (qubit_T1) in the configuration.
+"""
 import numpy as np
 from qm.qua import *
 from qm import QuantumMachinesManager
@@ -15,6 +28,7 @@ from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
 from macros import multiplexed_parser, mp_result_names, mp_fetch_all
 
+# ---- Choose which device configuration ---- #
 if False:
     from configurations.DA_5Q.OPX1000config import *
 else:
@@ -50,7 +64,7 @@ save_dir = Path(__file__).resolve().parent / "data"
 with program() as measure_T1:
     n = declare(int)
     n_st = declare_stream()
-    tau = declare(int)
+    tau = declare(int) # QUA variable for the idle time
     I = [declare(fixed) for _ in range(len(qub_key_subset))]
     Q = [declare(fixed) for _ in range(len(qub_key_subset))]
     I_st = [declare_stream() for _ in range(len(qub_key_subset))]
@@ -59,24 +73,24 @@ with program() as measure_T1:
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(tau, taus_cycles)):
             for j in range(len(qub_key_subset)): # a real Python for loop so it unravels and executes in parallel, not sequentially
-                with if_(tau >= 4):
+                with if_(tau >= 4): # minimum wait time is 4 cycles
                     play(
                         "x180", 
                         qub_key_subset[j], 
-                    )
+                    ) # x180 pulse to excite the qubit
                     wait(tau, qub_key_subset[j])
-                with else_():
+                with else_(): # if tau < 4 cycles, do not wait
                     play(
                         "x180", 
                         qub_key_subset[j], 
-                    )
+                    ) # x180 pulse to excite the qubit
                 align(qub_key_subset[j], res_key_subset[j]) 
                 measure(
                     "readout",
                     res_key_subset[j],
-                    dual_demod.full("rotated_cos", "rotated_sin", I[j]),
-                    dual_demod.full("rotated_minus_sin", "rotated_cos", Q[j])
-                )
+                    dual_demod.full("opt_cos", "opt_sin", I[j]),
+                    dual_demod.full("opt_minus_sin", "opt_cos", Q[j])
+                ) # Measures the resonator coupled to the qubit
                 save(I[j], I_st[j])
                 save(Q[j], Q_st[j])
                 if multiplexed:
@@ -96,8 +110,8 @@ with program() as measure_T1:
 
 prog = measure_T1
 # ---- Open communication with the OPX ---- #
-from warsh_credentials import host_ip, cluster
-qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
+from opx_credentials import qop_ip, cluster
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster)
 
 simulate = False
 if simulate:

@@ -1,3 +1,18 @@
+"""
+        RABI CHEVRON (AMPLITUDE VS FREQUENCY)
+This sequence involves executing the qubit pulse (such as x180, square_pi, or other types) and measuring the state
+of the resonator across various qubit intermediate frequencies and pulse amplitudes.
+By analyzing the results, one can determine the qubit and estimate the x180 pulse amplitude for a specified duration.
+
+Prerequisites:
+    - Determination of the resonator's resonance frequency when coupled to the qubit of interest (referred to as "resonator_spectroscopy").
+    - Calibration of the IQ mixer connected to the qubit drive line (be it an external mixer or an Octave port).
+    - Identification of the approximate qubit frequency (referred to as "qubit_spectroscopy").
+    - Configuration of the qubit frequency and the desired pi pulse duration (labeled as "x180_len").
+Before proceeding to the next node:
+    - Adjust the qubit frequency setting, labeled as "qubit_IF", in the configuration.
+    - Modify the qubit pulse amplitude setting, labeled as "x180_amp", in the configuration.
+"""
 import numpy as np
 from qm.qua import *
 from qm import QuantumMachinesManager
@@ -15,15 +30,16 @@ from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
 from macros import multiplexed_parser, mp_result_names, mp_fetch_all
 
+# ---- Choose which device configuration ---- #
 if False:
     from configurations.DA_5Q.OPX1000config import *
 else:
     from configurations.DB_6Q.OPX1000config import *
 
-# ---- Multiplexed program parameters ----
-n_avg = 1000
+# ---- Multiplexed program parameters ---- #
+n_avg = 1000 # Number of averages
 multiplexed = True
-qubit_keys = ["q0", "q1", "q2", "q3"]
+qubit_keys = ["q0", "q1", "q2", "q3"] # List of qubits to perform the experiment on
 required_parameters = ["qubit_key", "qubit_frequency", "qubit_relaxation", "qubit_LO", "resonator_key", "readout_len", "resonator_relaxation"]
 qub_key_subset, qub_frequency, qubit_relaxation, qubit_LO, res_key_subset, readout_len, resonator_relaxation = multiplexed_parser(qubit_keys, multiplexed_parameters.copy(), required_parameters)
 
@@ -57,31 +73,31 @@ save_dir = Path(__file__).resolve().parent / "data"
 
 # ---- Amplitude Rabi Chevron Multiplexed QUA program ---- #
 with program() as amplitude_rabi_chevron_multiplexed:
-    n = declare(int)
-    n_st = declare_stream()
-    a = declare(fixed)
-    df = declare(int)
-    I = [declare(fixed) for _ in range(len(qub_key_subset))]
-    Q = [declare(fixed) for _ in range(len(qub_key_subset))]
-    I_st = [declare_stream() for _ in range(len(qub_key_subset))]
-    Q_st = [declare_stream() for _ in range(len(qub_key_subset))]
+    n = declare(int) # Averaging index
+    n_st = declare_stream() # Stream for averaging index
+    a = declare(fixed) # Pulse amplitude
+    df = declare(int) # Frequency detuning from the qubit IF
+    I = [declare(fixed) for _ in range(len(qub_key_subset))] # I component
+    Q = [declare(fixed) for _ in range(len(qub_key_subset))] # Q component
+    I_st = [declare_stream() for _ in range(len(qub_key_subset))] # I stream
+    Q_st = [declare_stream() for _ in range(len(qub_key_subset))] # Q stream
 
-    with for_(n, 0, n < n_avg, n + 1):
-        with for_(*from_array(a, pulse_amps)):
-            with for_(*from_array(df, qub_spec_sweep_dfs)):
+    with for_(n, 0, n < n_avg, n + 1): # Averaging loop
+        with for_(*from_array(a, pulse_amps)): # Pulse amplitude loop
+            with for_(*from_array(df, qub_spec_sweep_dfs)): # Frequency detuning loop
                 for j in range(len(qub_key_subset)): # a real Python for loop so it unravels and executes in parallel, not sequentially
-                    update_frequency(qub_key_subset[j], df + qub_IFs[j])
+                    update_frequency(qub_key_subset[j], df + qub_IFs[j]) # Update qubit frequency
                     play(
                         "x180" * amp(a), 
                         qub_key_subset[j], 
-                    )
+                    ) # Play the pulse on the qubit
                     align(qub_key_subset[j], res_key_subset[j]) # Make sure the readout occurs after the pulse to qubit
                     measure(
                         "readout",
                         res_key_subset[j],
                         dual_demod.full("cos", "sin", I[j]),
                         dual_demod.full("minus_sin", "cos", Q[j])
-                    )
+                    ) # Measure the resonator
                     save(I[j], I_st[j])
                     save(Q[j], Q_st[j])
                     if multiplexed:
@@ -101,8 +117,8 @@ with program() as amplitude_rabi_chevron_multiplexed:
 
 prog = amplitude_rabi_chevron_multiplexed
 # ---- Open communication with the OPX ---- #
-from warsh_credentials import host_ip, cluster
-qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
+from opx_credentials import qop_ip, cluster
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster)
 
 simulate = False
 if simulate:

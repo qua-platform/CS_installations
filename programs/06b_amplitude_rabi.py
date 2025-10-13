@@ -1,3 +1,18 @@
+"""
+        POWER RABI
+The sequence consists in playing the qubit pulse (x180 or square_pi or else) and measuring the state of the resonator
+for different qubit pulse amplitudes.
+The experimental results are then analyzed to find the qubit pulse amplitude for the chosen duration.
+
+Prerequisites:
+    - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
+    - Having calibrated the IQ mixer connected to the qubit drive line (external mixer or Octave port)
+    - Having found the rough qubit frequency and pi pulse duration (rabi_chevron_duration or time_rabi).
+    - Set the qubit frequency and desired pi pulse duration (x180_len) in the configuration.
+
+Next steps before going to the next node:
+    - Update the qubit pulse amplitude (x180_amp) in the configuration.
+"""
 import numpy as np
 from qm.qua import *
 from qm import QuantumMachinesManager
@@ -15,6 +30,7 @@ from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
 from macros import multiplexed_parser, mp_result_names, mp_fetch_all
 
+# ---- Choose which device configuration ---- #
 if False:
     from configurations.DA_5Q.OPX1000config import *
 else:
@@ -23,7 +39,7 @@ else:
 # ---- Multiplexed program parameters ---- #
 n_avg = 1000
 multiplexed = True
-qubit_keys = ["q0", "q1", "q2", "q3"]
+qubit_keys = ["q0", "q1", "q2", "q3"] # List of qubits to perform the experiment on
 required_parameters = ["qubit_key", "qubit_frequency", "qubit_relaxation", "resonator_key", "readout_len", "resonator_relaxation", "x180_amp"]
 qub_key_subset, qub_frequency, qubit_relaxation, res_key_subset, readout_len, resonator_relaxation, x180_amp = multiplexed_parser(qubit_keys, multiplexed_parameters.copy(), required_parameters)
 
@@ -47,29 +63,29 @@ save_dir = Path(__file__).resolve().parent / "data"
 
 # ---- Amplitude Rabi Multiplexed QUA program ---- #
 with program() as amplitude_rabi_multiplexed:
-    n = declare(int)
-    n_st = declare_stream()
-    a = declare(fixed)
-    df = declare(int)
+    n = declare(int) # QUA variable for the averaging loop
+    n_st = declare_stream() # Stream for the averaging iteration 'n'
+    a = declare(fixed) # QUA variable for the pulse amplitude
+    df = declare(int) # QUA variable for the sweep of the qubit IF frequency
     I = [declare(fixed) for _ in range(len(qub_key_subset))]
     Q = [declare(fixed) for _ in range(len(qub_key_subset))]
     I_st = [declare_stream() for _ in range(len(qub_key_subset))]
     Q_st = [declare_stream() for _ in range(len(qub_key_subset))]
 
-    with for_(n, 0, n < n_avg, n + 1):
-        with for_(*from_array(a, pulse_amps)):
+    with for_(n, 0, n < n_avg, n + 1): # Averaging loop
+        with for_(*from_array(a, pulse_amps)): # Loop over pulse amplitudes
             for j in range(len(qub_key_subset)): # a real Python for loop so it unravels and executes in parallel, not sequentially
                 play(
                     "x180" * amp(a), 
                     qub_key_subset[j], 
-                )
+                ) # Play the pulse on the qubit
                 align(qub_key_subset[j], res_key_subset[j]) # Make sure the readout occurs after the pulse to qubit
                 measure(
                     "readout",
                     res_key_subset[j],
                     dual_demod.full("cos", "sin", I[j]),
                     dual_demod.full("minus_sin", "cos", Q[j])
-                )
+                ) # Measure the resonator
                 save(I[j], I_st[j])
                 save(Q[j], Q_st[j])
                 if multiplexed:
@@ -89,10 +105,10 @@ with program() as amplitude_rabi_multiplexed:
 
 prog = amplitude_rabi_multiplexed
 # ---- Open communication with the OPX ---- #
-from warsh_credentials import host_ip, cluster
-qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
+from opx_credentials import qop_ip, cluster
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster)
 
-simulate = True
+simulate = False
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=2_000)  # In clock cycles = 4ns

@@ -21,7 +21,6 @@ Prerequisites:
 Next steps before going to the next node:
     - Update the integration weights in the configuration by following the steps at the end of the script.
 """
-
 import numpy as np
 from qm.qua import *
 from qm import QuantumMachinesManager
@@ -40,6 +39,7 @@ from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
 from macros import multiplexed_parser, mp_result_names, mp_fetch_all
 
+# ---- Choose which device configuration ---- #
 if False:
     from configurations.DA_5Q.OPX1000config import *
 else:
@@ -54,7 +54,6 @@ def divide_array_in_half(arr):
     arr2 = arr[split_index:]
     return arr1, arr2
 
-
 def normalize_complex_array(arr):
     # Calculate the simple norm of the complex array
     norm = np.sqrt(np.sum(np.abs(arr) ** 2))
@@ -67,7 +66,6 @@ def normalize_complex_array(arr):
     rescaled_arr = normalized_arr / max_val
 
     return rescaled_arr
-
 
 def plot_three_complex_arrays(x, arr1, arr2, arr3):
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
@@ -92,7 +90,6 @@ def plot_three_complex_arrays(x, arr1, arr2, arr3):
     plt.tight_layout()
     plt.show()
 
-
 def update_readout_length(res_key_subset, new_readout_length, ringdown_length):
     for rk in res_key_subset:
         ri = int(rk.strip("r"))
@@ -110,11 +107,9 @@ def update_readout_length(res_key_subset, new_readout_length, ringdown_length):
             "sine": [(-1.0, new_readout_length + ringdown_length)],
         }
 
-
 ##################
 #   Parameters   #
 ##################
-# Parameters Definition
 # ---- Multiplexed program parameters ---- #
 n_avg = 1000
 multiplexed = True
@@ -156,7 +151,7 @@ save_dir = Path(__file__).resolve().parent / "data"
 ###################
 with program() as opt_weights:
     n = declare(int)
-    ind = [declare(int) for _ in range(len(qub_key_subset))]
+    ind = [declare(int) for _ in range(len(qub_key_subset))] # For parallel execution of loops, the index of the QUA loop must be a QUA variable specific to that loop - the QUA index will then be a python loop of QUA variables.
     II = [declare(fixed, size=number_of_divisions) for _ in range(len(qub_key_subset))]
     IQ = [declare(fixed, size=number_of_divisions) for _ in range(len(qub_key_subset))]
     QI = [declare(fixed, size=number_of_divisions) for _ in range(len(qub_key_subset))]
@@ -236,11 +231,9 @@ with program() as opt_weights:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-#qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 prog = opt_weights
-# ---- Open communication with the OPX ---- #
-from warsh_credentials import host_ip, cluster
-qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
+from opx_credentials import qop_ip, cluster
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster)
 
 ###########################
 # Run or Simulate Program #

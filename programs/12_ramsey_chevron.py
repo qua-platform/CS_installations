@@ -1,3 +1,18 @@
+"""
+        RAMSEY CHEVRON (IDLE TIME VS FREQUENCY)
+The program consists in playing a Ramsey sequence (x90 - idle_time - x90 - measurement) for different qubit intermediate
+frequencies and idle times.
+From the results, one can estimate the qubit frequency more precisely than by doing Rabi and also gets a rough estimate
+of the qubit coherence time.
+
+Prerequisites:
+    - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
+    - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy, rabi_chevron, power_rabi and updated the config.
+    - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
+
+Next steps before going to the next node:
+    - Update the qubit frequency (qubit_IF) in the configuration.
+"""
 import numpy as np
 from qm.qua import *
 from qm import QuantumMachinesManager
@@ -15,12 +30,13 @@ from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
 from macros import multiplexed_parser, mp_result_names, mp_fetch_all
 
+# ---- Choose which device configuration ---- #
 if False:
     from configurations.DA_5Q.OPX1000config import *
 else:
     from configurations.DB_6Q.OPX1000config import *
 
-# ---- Multiplexed program parameters ----
+# ---- Multiplexed program parameters ---- #
 n_avg = 1000
 multiplexed = True
 qubit_keys = ["q0", "q1", "q2", "q3"]
@@ -58,6 +74,9 @@ save_data_dict = {
 save_dir = Path(__file__).resolve().parent / "data"
 
 def ramsey_sequence(tau, qub_key):
+    '''
+    Plays a Ramsey sequence with idle time tau on qubit qub_key
+    '''
     with if_(tau >= 4):
         play("x90", qub_key)
         wait(tau, qub_key)
@@ -68,10 +87,10 @@ def ramsey_sequence(tau, qub_key):
 
 # ---- Ramsey Chevron Multiplexed QUA program ---- #
 with program() as ramsey_chevron_multiplexed:
-    n = declare(int)
-    n_st = declare_stream()
-    tau = declare(int)
-    df = declare(int)
+    n = declare(int) # Averaging loop
+    n_st = declare_stream() # Stream for the averaging iteration 'n'
+    tau = declare(int) # QUA variable for the idle time
+    df = declare(int) # QUA variable for the detuning
     I = [declare(fixed) for _ in range(len(qub_key_subset))]
     Q = [declare(fixed) for _ in range(len(qub_key_subset))]
     I_st = [declare_stream() for _ in range(len(qub_key_subset))]
@@ -81,15 +100,15 @@ with program() as ramsey_chevron_multiplexed:
         with for_(*from_array(tau, taus_cycles)):
             with for_(*from_array(df, qub_detune_sweep_dfs)):
                 for j in range(len(qub_key_subset)): # a real Python for loop so it unravels and executes in parallel, not sequentially
-                    update_frequency(qub_key_subset[j], df + qub_IFs[j])
-                    ramsey_sequence(tau, qub_key_subset[j])
+                    update_frequency(qub_key_subset[j], df + qub_IFs[j]) # Updates the frequency of the qubit
+                    ramsey_sequence(tau, qub_key_subset[j]) # Plays a Ramsey sequence with idle time tau on qubit qub_key
                     align(qub_key_subset[j], res_key_subset[j]) # Make sure the readout occurs after the pulse to qubit
                     measure(
                         "readout",
                         res_key_subset[j],
                         dual_demod.full("rotated_cos", "rotated_sin", I[j]),
                         dual_demod.full("rotated_minus_sin", "rotated_cos", Q[j])
-                    )
+                    ) # Measures the resonator coupled to the qubit
                     save(I[j], I_st[j])
                     save(Q[j], Q_st[j])
                     if multiplexed:
@@ -109,8 +128,8 @@ with program() as ramsey_chevron_multiplexed:
 
 prog = ramsey_chevron_multiplexed
 # ---- Open communication with the OPX ---- #
-from warsh_credentials import host_ip, cluster
-qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
+from opx_credentials import qop_ip, cluster
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster)
 
 simulate = False
 if simulate:

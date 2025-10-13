@@ -1,3 +1,22 @@
+"""
+        SINGLE QUBIT RANDOMIZED BENCHMARKING (for gates >= 40ns)
+The program consists in playing random sequences of Clifford gates and measuring the state of the resonator afterwards.
+Each random sequence is derived on the FPGA for the maximum depth (specified as an input) and played for each depth
+asked by the user (the sequence is truncated to the desired depth). Each truncated sequence ends with the recovery gate,
+found at each step thanks to a preloaded lookup table (Cayley table), that will bring the qubit back to its ground state.
+
+If the readout has been calibrated and is good enough, then state discrimination can be applied to only return the state
+of the qubit. Otherwise, the 'I' and 'Q' quadratures are returned.
+Each sequence is played n_avg times for averaging. A second averaging is performed by playing different random sequences.
+
+The data is then post-processed to extract the single-qubit gate fidelity and error per gate
+.
+Prerequisites:
+    - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
+    - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy, rabi_chevron, power_rabi and updated the config.
+    - Having the qubit frequency perfectly calibrated (ramsey).
+    - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
+"""
 import numpy as np
 from qm.qua import *
 from qm import QuantumMachinesManager
@@ -17,6 +36,7 @@ from scipy.optimize import curve_fit
 from qualang_tools.results.data_handler import DataHandler
 from macros import multiplexed_parser, mp_result_names, mp_fetch_all, readout_macro
 
+# ---- Choose which device configuration ---- #
 if False:
     from configurations.DA_5Q.OPX1000config import *
 else:
@@ -24,79 +44,6 @@ else:
 
 inv_gates = [int(np.where(c1_table[i, :] == 0)[0][0]) for i in range(24)]
 seed = 42
-
-def play_RB_sequence_V1(sequence_indices, sequence_length, qub_key, x180_len):
-    with for_(m, 0, m < sequence_length, m + 1): # playing out the sequency of cliffords
-        assign(i, sequence_indices[m])
-        with if_(i == 0):
-            wait(x180_len//4, qub_key)
-        with elif_(i == 1):
-            play("x180", qub_key)
-        with elif_(i == 2):
-            play("y180", qub_key)
-        with elif_(i == 3):
-            play("y180", qub_key)
-            play("x180", qub_key)
-        with elif_(i == 4):
-            play("x90", qub_key)
-            play("y90", qub_key)
-        with elif_(i == 5):
-            play("x90", qub_key)
-            play("-y90", qub_key)
-        with elif_(i == 6):
-            play("-x90", qub_key)
-            play("y90", qub_key)
-        with elif_(i == 7):
-            play("-x90", qub_key)
-            play("-y90", qub_key)
-        with elif_(i == 8):
-            play("y90", qub_key)
-            play("x90", qub_key)
-        with elif_(i == 9):
-            play("y90", qub_key)
-            play("-x90", qub_key)
-        with elif_(i == 10):
-            play("-y90", qub_key)
-            play("x90", qub_key)
-        with elif_(i == 11):
-            play("-y90", qub_key)
-            play("-x90", qub_key)
-        with elif_(i == 12):
-            play("x90", qub_key)
-        with elif_(i == 13):
-            play("-x90", qub_key)
-        with elif_(i == 14):
-            play("y90", qub_key)
-        with elif_(i == 15):
-            play("-y90", qub_key)
-        with elif_(i == 16):
-            play("-x90", qub_key)
-            play("y90", qub_key)
-            play("x90", qub_key)
-        with elif_(i == 17):
-            play("-x90", qub_key)
-            play("-y90", qub_key)
-            play("x90", qub_key)
-        with elif_(i == 18):
-            play("x180", qub_key)
-            play("y90", qub_key)
-        with elif_(i == 19):
-            play("x180", qub_key)
-            play("-y90", qub_key)
-        with elif_(i == 20):
-            play("y180", qub_key)
-            play("x90", qub_key)
-        with elif_(i == 21):
-            play("y180", qub_key)
-            play("-x90", qub_key)
-        with elif_(i == 22):
-            play("x90", qub_key)
-            play("y90", qub_key)
-            play("x90", qub_key)
-        with elif_(i == 23):
-            play("-x90", qub_key)
-            play("y90", qub_key)
-            play("-x90", qub_key)
 
 def play_RB_sequence(sequence_indices, sequence_length, qub_key, x180_len):
     with for_(i, 0, i < sequence_length, i + 1): # playing out the sequency of cliffords
@@ -175,10 +122,6 @@ def power_law(power, a, b, p):
     return a * (p**power) + b
 
 def generate_RB_sequence(max_depth):
-    '''
-    Lets do some thinking here huh.
-    This version is pretty much ripped straight from qua-libs to ensure everything else is working (strict timing was a learning curve).
-    '''
     cayley = declare(int, value=c1_table.flatten().tolist())
     inv_list = declare(int, value=inv_gates)
     current_state = declare(int)
@@ -273,8 +216,8 @@ with program() as randomized_benchmarking:
 
 prog = randomized_benchmarking
 # ---- Open communication with the OPX ---- #
-from warsh_credentials import host_ip, cluster
-qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
+from opx_credentials import qop_ip, cluster
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster)
 
 simulate = False
 if simulate:

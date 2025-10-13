@@ -1,3 +1,18 @@
+"""
+        TIME OF FLIGHT
+This sequence involves sending a readout pulse and capturing the raw ADC traces.
+The data undergoes post-processing to calibrate three distinct parameters:
+    - Time of Flight: This represents the internal processing time and the propagation delay of the readout pulse.
+    Its value can be adjusted in the configuration under "time_of_flight".
+    This value is utilized to offset the acquisition window relative to when the readout pulse is dispatched.
+
+    - Analog Inputs Offset: Due to minor impedance mismatches, the signals captured by the OPX might exhibit slight offsets.
+    These can be rectified in the configuration at: config/controllers/"con1"/analog_inputs, enhancing the demodulation process.
+
+    - Analog Inputs Gain: If a signal is constrained by digitization or if it saturates the ADC,
+    the variable gain of the OPX analog input can be modified to fit the signal within the ADC range of +/-0.5V.
+    This gain, ranging from -12 dB to 20 dB, can also be adjusted in the configuration at: config/controllers/"con1"/analog_inputs.
+"""
 import numpy as np
 from qm.qua import *
 from qm import QuantumMachinesManager
@@ -11,6 +26,7 @@ from qualang_tools.units import unit
 u = unit(coerce_to_integer=True)
 from macros import multiplexed_parser
 
+# ---- Determine which device to run from ---- #
 if False:
     from configurations.DA_5Q.OPX1000config import *
 else:
@@ -18,30 +34,32 @@ else:
 
 # ---- Program parameters ---- #
 n_avg = 200
-resonator_qubit_keys = ["q0"]
+resonator_qubit_keys = ["q0"] # Which qubit's resonator to use for the program, for this, best to run over just one.
 required_parameters = ["resonator_key", "resonator_relaxation"]
 res_key_subset, resonator_relaxation = multiplexed_parser(resonator_qubit_keys, multiplexed_parameters.copy(), required_parameters)
 
 # ---- Time of Flight ---- #
-reskey = res_key_subset[0]
+reskey = res_key_subset[0] # Use the first resonator key in the subset
 res_relaxation = resonator_relaxation[0]//4 # From ns to clock cycles
 
 with program() as time_of_flight_prog:
-    n = declare(int)
-    adc_st = declare_stream(adc_trace=True)
+    n = declare(int) # QUA variable for the averaging loop
+    adc_st = declare_stream(adc_trace=True) # The stream to store the raw ADC trace
+
     with for_(n, 0, n < n_avg, n + 1): 
-        reset_phase(reskey)  
-        measure("readout", reskey, adc_st)  
-        wait(res_relaxation, reskey)
+        reset_phase(reskey) # Reset the phase of the digital oscillator associated to the resonator element. Needed to average the cosine signal.
+        measure("readout", reskey, adc_st) # Sends the readout pulse and stores the raw ADC traces in the stream called "adc_st"
+        wait(res_relaxation, reskey) # Wait for the resonator to deplete
     with stream_processing():
+        # Will save average:
         adc_st.input1().average().save("adc")
 
 prog = time_of_flight_prog
 # ---- Open communication with the OPX ---- #
-from warsh_credentials import host_ip, cluster
-qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
+from opx_credentials import qop_ip, cluster
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster)
 
-simulate = False
+simulate = True
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=2_000)  # In clock cycles = 4ns

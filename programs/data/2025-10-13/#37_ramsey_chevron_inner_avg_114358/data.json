@@ -1,6 +1,7 @@
 {
-    "resonator_keys": "./arrays.npz#resonator_keys",
+    "qubit_keys": "./arrays.npz#qubit_keys",
     "n_avg": 1000,
+    "delay": "./arrays.npz#delay",
     "IF_frequencies": "./arrays.npz#IF_frequencies",
     "absolute_frequencies": "./arrays.npz#absolute_frequencies",
     "config": {
@@ -336,22 +337,6 @@
                 "length": 10000,
                 "waveforms": {
                     "I": "saturation_wf",
-                    "Q": "zero_wf"
-                }
-            },
-            "pi_pulse": {
-                "operation": "control",
-                "length": 100,
-                "waveforms": {
-                    "I": "pi_wf",
-                    "Q": "zero_wf"
-                }
-            },
-            "pi_half_pulse": {
-                "operation": "control",
-                "length": 100,
-                "waveforms": {
-                    "I": "pi_half_wf",
                     "Q": "zero_wf"
                 }
             },
@@ -762,6 +747,22 @@
                     "I": "-y90_I_wf_5",
                     "Q": "-y90_Q_wf_5"
                 }
+            },
+            "pi_pulse": {
+                "operation": "control",
+                "length": 100,
+                "waveforms": {
+                    "I": "pi_wf",
+                    "Q": "zero_wf"
+                }
+            },
+            "pi_half_pulse": {
+                "operation": "control",
+                "length": 100,
+                "waveforms": {
+                    "I": "pi_half_wf",
+                    "Q": "zero_wf"
+                }
             }
         },
         "waveforms": {
@@ -772,14 +773,6 @@
             "saturation_wf": {
                 "type": "constant",
                 "sample": 0.03
-            },
-            "pi_wf": {
-                "type": "constant",
-                "sample": 0.03
-            },
-            "pi_half_wf": {
-                "type": "constant",
-                "sample": 0.015
             },
             "const_flux_wf": {
                 "type": "constant",
@@ -4052,6 +4045,14 @@
                     -0.0026580563319872482,
                     0.0
                 ]
+            },
+            "pi_wf": {
+                "type": "constant",
+                "sample": 0.03
+            },
+            "pi_half_wf": {
+                "type": "constant",
+                "sample": 0.015
             }
         },
         "digital_waveforms": {

@@ -1,3 +1,21 @@
+"""
+        IQ BLOBS
+This sequence involves measuring the state of the resonator 'N' times, first after thermalization (with the qubit
+in the |g> state) and then after applying a pi pulse to the qubit (bringing the qubit to the |e> state) successively.
+The resulting IQ blobs are displayed, and the data is processed to determine:
+    - The rotation angle required for the integration weights, ensuring that the separation between |g> and |e> states
+      aligns with the 'I' quadrature.
+    - The threshold along the 'I' quadrature for effective qubit state discrimination.
+    - The readout fidelity matrix, which is also influenced by the pi pulse fidelity.
+
+Prerequisites:
+    - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
+    - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy, rabi_chevron, power_rabi and updated the config.
+
+Next steps before going to the next node:
+    - Update the rotation angle (rotation_angle) in the configuration.
+    - Update the g -> e threshold (ge_threshold) in the configuration.
+"""
 import numpy as np
 from qm.qua import *
 from qm import QuantumMachinesManager
@@ -16,7 +34,7 @@ from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
 from macros import multiplexed_parser, mp_result_names, mp_fetch_all
 
-
+# ---- Choose which device configuration ---- #
 if False:
     from configurations.DA_5Q.OPX1000config import *
 else:
@@ -43,15 +61,17 @@ save_dir = Path(__file__).resolve().parent / "data"
 
 # ---- IQ blobs QUA program ---- #
 with program() as IQ_blobs:
-    pd = declare(int)
-    n = declare(int)
-    n_st = declare_stream()
-    I_g = [declare(fixed) for _ in range(len(qub_key_subset))]
-    Q_g = [declare(fixed) for _ in range(len(qub_key_subset))]
+    pd = declare(int) # QUA variable for the pulse duration
+    n = declare(int) # QUA variable for the averaging loop
+    n_st = declare_stream() # Stream for the averaging iteration 'n'
+    # Ground state measurements
+    I_g = [declare(fixed) for _ in range(len(qub_key_subset))] # I_g QUA variable for each qubit
+    Q_g = [declare(fixed) for _ in range(len(qub_key_subset))] # Q_g QUA variable for each qubit
     I_g_st = [declare_stream() for _ in range(len(qub_key_subset))]
     Q_g_st = [declare_stream() for _ in range(len(qub_key_subset))]
-    I_e = [declare(fixed) for _ in range(len(qub_key_subset))]
-    Q_e = [declare(fixed) for _ in range(len(qub_key_subset))]
+    # Excited state measurements
+    I_e = [declare(fixed) for _ in range(len(qub_key_subset))] # I_e QUA variable for each qubit
+    Q_e = [declare(fixed) for _ in range(len(qub_key_subset))] # Q_e QUA variable for each qubit
     I_e_st = [declare_stream() for _ in range(len(qub_key_subset))]
     Q_e_st = [declare_stream() for _ in range(len(qub_key_subset))]
 
@@ -62,24 +82,24 @@ with program() as IQ_blobs:
                 res_key_subset[j],
                 dual_demod.full("cos", "sin", I_g[j]),
                 dual_demod.full("minus_sin", "cos", Q_g[j])
-            )
+            ) # Measure the resonator with the qubit in ground state
             save(I_g[j], I_g_st[j])
             save(Q_g[j], Q_g_st[j])
             align(res_key_subset[j], qub_key_subset[j]) 
-            wait(qub_relaxation[j], qub_key_subset[j]) # ensure qubit is in ground state after readout, just in case
+            wait(qub_relaxation[j], qub_key_subset[j]) # Ensure qubit is in ground state after readout pulse
             wait(res_relaxation[j], res_key_subset[j])
             align(res_key_subset[j], qub_key_subset[j]) 
             play(
                 "x180", 
                 qub_key_subset[j],
-            )
+            ) # Bring the qubit to the excited state
             align(qub_key_subset[j], res_key_subset[j]) # Make sure the readout occurs after the pulse to qubit
             measure(
                 "readout",
                 res_key_subset[j],
                 dual_demod.full("cos", "sin", I_e[j]),
                 dual_demod.full("minus_sin", "cos", Q_e[j])
-            )
+            ) # Measure the resonator with the qubit in excited state
             save(I_e[j], I_e_st[j])
             save(Q_e[j], Q_e_st[j])
             if multiplexed:
@@ -101,10 +121,10 @@ with program() as IQ_blobs:
 
 prog = IQ_blobs
 # ---- Open communication with the OPX ---- #
-from warsh_credentials import host_ip, cluster
-qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
+from opx_credentials import qop_ip, cluster
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster)
 
-simulate = True
+simulate = False
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=2_000)  # In clock cycles = 4ns

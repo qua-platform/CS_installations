@@ -14,7 +14,6 @@ Prerequisites:
 Next steps before going to the next node:
     - Update the readout frequency (resonator_IF) in the configuration.
 """
-
 import numpy as np
 from qm.qua import *
 from qm import QuantumMachinesManager
@@ -32,6 +31,7 @@ from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
 from macros import multiplexed_parser, mp_result_names, mp_fetch_all
 
+# ---- Choose which device configuration ---- #
 if False:
     from configurations.DA_5Q.OPX1000config import *
 else:
@@ -70,18 +70,19 @@ save_dir = Path(__file__).resolve().parent / "data"
 # The QUA program #
 ###################
 with program() as ro_freq_opt:
-    n = declare(int)
-    n_st = declare_stream()
-    df = declare(int)
+    n = declare(int) # QUA variable for the averaging loop
+    n_st = declare_stream() # Stream for the averaging iteration 'n'
+    df = declare(int) # QUA variable for the sweep of the resonator IF frequency
+    # Ground state measurements
     I_g = [declare(fixed) for _ in range(len(qub_key_subset))]
     Q_g = [declare(fixed) for _ in range(len(qub_key_subset))]
     I_g_st = [declare_stream() for _ in range(len(res_key_subset))]
     Q_g_st = [declare_stream() for _ in range(len(res_key_subset))]
+    # Excited state measurements
     I_e = [declare(fixed) for _ in range(len(qub_key_subset))]
     Q_e = [declare(fixed) for _ in range(len(qub_key_subset))]
     I_e_st = [declare_stream() for _ in range(len(res_key_subset))]
     Q_e_st = [declare_stream() for _ in range(len(res_key_subset))]
-    n_st = declare_stream()
 
     with for_(n, 0, n < n_avg, n + 1):
         with for_(*from_array(df, dfs)):
@@ -158,11 +159,9 @@ with program() as ro_freq_opt:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-#qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 prog = ro_freq_opt
-# ---- Open communication with the OPX ---- #
-from warsh_credentials import host_ip, cluster
-qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
+from opx_credentials import qop_ip, cluster
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster)
 
 
 ###########################

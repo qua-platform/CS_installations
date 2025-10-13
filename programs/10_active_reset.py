@@ -1,4 +1,3 @@
-# Taken from github but still being editted for multiplex
 """
         ACTIVE RESET
 This script is used to benchmark different types of qubit initialization including active reset protocols.
@@ -18,7 +17,6 @@ Prerequisites:
     - (optional) Having calibrated the readout (readout_frequency_, _amplitude_, _duration_optimization).
     - Having updated the rotation angle (rotation_angle) and g -> e threshold (ge_threshold) in the configuration (IQ_blobs.py).
 """
-
 import numpy as np
 from qm.qua import *
 from qm import QuantumMachinesManager
@@ -37,6 +35,7 @@ u = unit(coerce_to_integer=True)
 from scipy import signal
 from macros import multiplexed_parser, mp_result_names, mp_fetch_all
 
+# ---- Choose which device configuration ---- #
 if False:
     from configurations.DA_5Q.OPX1000config import *
 else:
@@ -275,11 +274,9 @@ with program() as active_reset_prog:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-#qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 prog = active_reset_prog
-# ---- Open communication with the OPX ---- #
-from warsh_credentials import host_ip, cluster
-qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
+from opx_credentials import qop_ip, cluster
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster)
 
 simulate = True
 if simulate:

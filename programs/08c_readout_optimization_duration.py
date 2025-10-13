@@ -35,6 +35,7 @@ from scipy import signal
 from qualang_tools.results.data_handler import DataHandler
 from macros import multiplexed_parser, mp_result_names, mp_fetch_all
 
+# ---- Choose which device configuration ---- #
 if False:
     from configurations.DA_5Q.OPX1000config import *
 else:
@@ -68,7 +69,7 @@ def update_readout_length(res_key_subset, new_readout_length, ringdown_length):
 # ---- Multiplexed program parameters ---- #
 n_avg = 1000
 multiplexed = False
-qubit_keys = ["q0", "q1", "q2"] # Almost certainly will run into resource issues if you try to do more than 2 at once.
+qubit_keys = ["q0", "q1"] # Almost certainly will run into resource issues if you try to do more than 2 at once.
 required_parameters = ["qubit_key", "qubit_relaxation", "resonator_key", "resonator_relaxation", "resonator_IF", "readout_amp"]
 qub_key_subset, qubit_relaxation, res_key_subset, resonator_relaxation, resonator_IF, readout_amp = multiplexed_parser(qubit_keys, multiplexed_parameters.copy(), required_parameters)
 
@@ -106,13 +107,14 @@ save_dir = Path(__file__).resolve().parent / "data"
 ###################
 with program() as ro_duration_opt:
     n = declare(int)
+    # For the accumulated demodulation, we will use a QUA vector for the accumulated chunks. These are contained in a python list to be able to address each qubit/resonator
     II = [declare(fixed, size=number_of_divisions) for _ in range(len(qub_key_subset))]
     IQ = [declare(fixed, size=number_of_divisions) for _ in range(len(qub_key_subset))]
     QI = [declare(fixed, size=number_of_divisions) for _ in range(len(qub_key_subset))]
     QQ = [declare(fixed, size=number_of_divisions) for _ in range(len(qub_key_subset))]
     I = [declare(fixed, size=number_of_divisions) for _ in range(len(qub_key_subset))]
     Q = [declare(fixed, size=number_of_divisions) for _ in range(len(qub_key_subset))]
-    ind = [declare(int) for _ in range(len(qub_key_subset))]
+    ind = [declare(int) for _ in range(len(qub_key_subset))] # For parallel execution of loops, the index of the QUA loop must be a QUA variable specific to that loop - the QUA index will then be a python loop of QUA variables.
 
     n_st = declare_stream()
     I_g_st = [declare_stream() for _ in range(len(res_key_subset))]
@@ -133,8 +135,11 @@ with program() as ro_duration_opt:
                 demod.accumulated("cos", QQ[j], division_length, "out2"),
             )
             # Save the QUA vectors to their corresponding streams
+            # Looping over a specific index of the list of indexes.
             with for_(ind[j], 0, ind[j] < number_of_divisions, ind[j] + 1):
-                assign(I[j][ind[j]], II[j][ind[j]] + IQ[j][ind[j]])
+                # j is a python value, unraveled in the compiler
+                # ind[j] is a QUA variable assigned only to loops over the jth qubit/resonator
+                assign(I[j][ind[j]], II[j][ind[j]] + IQ[j][ind[j]]) 
                 save(I[j][ind[j]], I_g_st[j])
                 assign(Q[j][ind[j]], QQ[j][ind[j]] + QI[j][ind[j]])
                 save(Q[j][ind[j]], Q_g_st[j])
@@ -202,16 +207,14 @@ with program() as ro_duration_opt:
 #####################################
 #  Open Communication with the QOP  #
 #####################################
-#qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
 prog = ro_duration_opt
-# ---- Open communication with the OPX ---- #
-from warsh_credentials import host_ip, cluster
-qmm = QuantumMachinesManager(host = host_ip, cluster_name = cluster)
+from opx_credentials import qop_ip, cluster
+qmm = QuantumMachinesManager(host=qop_ip, cluster_name=cluster)
 
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = True
+simulate = False
 if simulate:
     # Simulates the QUA program for the specified duration
     simulation_config = SimulationConfig(duration=30_000)  # In clock cycles = 4ns
