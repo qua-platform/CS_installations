@@ -12,7 +12,8 @@ The workflow is as follows:
     - Populate the generated quam with initial values by modifying and running populate_quam_xxx.py
 """
 
+import sys
+sys.path.append("/Users/kalidu_laptop/QUA/CS_installations/quam_config")
 
-
-
+from my_quam import Quam
 

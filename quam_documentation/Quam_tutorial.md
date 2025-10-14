@@ -4,8 +4,6 @@ Quam represents a higher-level abstraction on QUA, making it easier for experime
 
 Below is the general workflow of how one uses Quam and its specifics, so that you know how you might integrate this into your SW. Later on, there are more automated examples. 
 
-## General workflow: 
-
 ### Create your machine
 
 Your machine represents the top-level container for your quantum setup. The 'machine' at the start of your code is an empty container, which will be populated as we go on. 
