@@ -9,6 +9,8 @@ from qualang_tools.units import unit
 
 u = unit(coerce_to_integer=True)
 
+QM_OUTPUT = 1
+OUTPUT_MODE = "direct"
 
 def QM_lf_rise_time(
     QM_machine: BaseQuam,
@@ -49,7 +51,7 @@ machine = BaseQuam()
 machine.connect(host="172.16.33.115", cluster_name="CS_4")
 machine.lf_fem = 5
 
-QM_lf_rise_time(QM_machine=machine, QM_output=1, output_mode="amplified")
+QM_lf_rise_time(QM_machine=machine, QM_output=QM_OUTPUT, output_mode=OUTPUT_MODE)
 
 # results = machine.open_new_QM_and_execute(fetch_results = False)
 waveform_report = machine.open_new_QM_and_simulate(duration=1000)

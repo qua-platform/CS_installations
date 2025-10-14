@@ -10,6 +10,11 @@ from qualang_tools.units import unit
 
 u = unit(coerce_to_integer=True)
 
+QM_OUTPUT = 1
+IF = 1e6
+DURATION = 5000
+OUTPUT_MODE = "direct"
+
 
 def QM_lf_max_output_setup(
     QM_machine: BaseQuam,
@@ -57,10 +62,10 @@ machine.lf_fem = 5
 
 QM_lf_max_output_setup(
     QM_machine = machine, 
-    QM_output = 1, 
-    intermediate_frequency = 1e6, 
-    duration = 5000,
-    output_mode = "direct"
+    QM_output = QM_OUTPUT, 
+    intermediate_frequency = IF, 
+    duration = DURATION,
+    output_mode = OUTPUT_MODE
 )
 
 # results = machine.open_new_QM_and_execute(fetch_results = False)

@@ -9,6 +9,13 @@ from qualang_tools.units import unit
 
 u = unit(coerce_to_integer=True)
 
+test_frequencies = [31.25e6, 62.25e6, 125e6, 250e6]
+
+FREQUENCY = test_frequencies[0]
+QM_OUTPUT = 1
+OUTPUT_MODE = "direct"
+
+
 
 def QM_lf_freq_power_setup(
     QM_machine: BaseQuam,
@@ -46,11 +53,11 @@ machine = BaseQuam()
 machine.connect(host="172.16.33.115", cluster_name="CS_4")
 machine.lf_fem = 5
 
-test_frequencies = [31.25e6, 62.25e6, 125e6, 250e6]
+
 frequency = test_frequencies[0]
 
 QM_lf_freq_power_setup(
-    QM_machine=machine, QM_output=1, output_mode="direct", frequency=frequency
+    QM_machine=machine, QM_output=QM_OUTPUT, output_mode=OUTPUT_MODE, frequency=FREQUENCY
 )
 
 # results = machine.open_new_QM_and_execute(fetch_results = False)

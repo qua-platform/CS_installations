@@ -12,6 +12,13 @@ from qualang_tools.units import unit
 
 u = unit(coerce_to_integer=True)
 
+QM_OUTPUT = 1
+QM_INPUT = 1
+IF = 10e6
+DURATION = 10000
+RF_FREQUENCY = 2e9
+READOUT_POWER = 1
+
 
 def QM_readout_noise_floor_setup(
     QM_machine: BaseQuam,
@@ -63,12 +70,12 @@ machine.mw_fem = 1
 
 QM_readout_noise_floor_setup(
     QM_machine=machine,
-    QM_readout_output=1,
-    QM_readout_input=1,
-    intermediate_frequency=10e6,
-    readout_duration=10000,
-    rf_frequency=2e9,
-    readout_power=1,
+    QM_readout_output=QM_OUTPUT,
+    QM_readout_input=QM_INPUT,
+    intermediate_frequency=IF,
+    readout_duration=DURATION,
+    rf_frequency=RF_FREQUENCY,
+    readout_power=READOUT_POWER,
 )
 results = machine.open_new_QM_and_execute(fetch_results=True)
 

@@ -7,18 +7,16 @@ from qm.qua import *
 import numpy as np
 from qualang_tools.units import unit
 
-
 u = unit(coerce_to_integer=True)
 
 QM_OUTPUT = 1
-QM_INPUT = 1
 IF = 10e6
-DURATION = 10000
+DURATION = 100
 RF_FREQUENCY = 2e9
 FULL_SCALE_POWER = 16
 
 
-def QM_mw_max_output_setup(
+def QM_digital_risetime(
     QM_machine: BaseQuam,
     QM_output: int,
     intermediate_frequency: float,
@@ -48,12 +46,14 @@ def QM_mw_max_output_setup(
     with program() as QM_machine.qua_program:
         with infinite_loop_():
             mw_ch.play("drive_pulse")
+            wait(100)
+
 
 
 machine = BaseQuam()
 machine.connect(host="172.16.33.115", cluster_name="CS_4")
 machine.mw_fem = 1
-QM_mw_max_output_setup(
+QM_digital_risetime(
     QM_machine=machine,
     QM_output=QM_OUTPUT,
     intermediate_frequency=IF,
