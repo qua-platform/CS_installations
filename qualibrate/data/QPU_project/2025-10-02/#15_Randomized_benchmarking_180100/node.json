@@ -1,0 +1,167 @@
+{
+    "created_at": "2025-10-02T18:01:00-05:00",
+    "metadata": {
+        "description": "\n        SINGLE QUBIT RANDOMIZED BENCHMARKING\nThe program consists in playing random sequences of Clifford gates and measuring the\nstate of the resonator afterward. Each random sequence is derived on the FPGA for the\nmaximum depth (specified as an input) and played for each depth asked by the user\n(the sequence is truncated to the desired depth). Each truncated sequence ends with the\nrecovery gate, found at each step thanks to a preloaded lookup table (Cayley table),\nthat will bring the qubit back to its ground state.\n\nIf the readout has been calibrated and is good enough, then state discrimination can be\napplied to only return the state of the qubit. Otherwise, the 'I' and 'Q' quadratures\nare returned. Each sequence is played n_avg times for averaging. A second averaging is\nperformed by playing different random sequences.\n\nThe data is then post-processed to extract the single-qubit gate fidelity and error per\ngate.\n\nPrerequisites:\n    - Having calibrated the mixer or the Octave (nodes 01a or 01b).\n    - Having calibrated the qubit parameters precisely (nodes 04b_power_rabi.py and 06a_ramsey.py).\n    - (optional) Having optimized the readout parameters (nodes 08a, 08b and 08c).\n    - (optional) Having calibrated the DRAG parameters (nodes 10a and 10b or 10c).\n    - Having specified the desired flux point if relevant (qubit.z.flux_point).\n\nState update:\n    - The averaged single qubit gate fidelity: qubit.gate_fidelity[\"averaged\"].\n",
+        "run_start": "2025-10-02T18:00:41.311-05:00",
+        "run_end": "2025-10-02T18:01:00.216-05:00",
+        "name": "Randomized_benchmarking",
+        "data_path": "2025-10-02/#15_Randomized_benchmarking_180100"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": [
+                    "q1"
+                ],
+                "multiplexed": false,
+                "use_state_discrimination": true,
+                "reset_type": "thermal",
+                "use_strict_timing": false,
+                "num_random_sequences": 100,
+                "num_shots": 20,
+                "max_circuit_depth": 1000,
+                "delta_clifford": 20,
+                "seed": null,
+                "simulate": false,
+                "simulation_duration_ns": 50000,
+                "use_waveform_report": true,
+                "timeout": 120,
+                "load_data_id": null
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "A list of qubit names which should participate in the execution of the node. Default is None.",
+                        "title": "Qubits"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "description": "Whether to play control pulses, readout pulses and active/thermal reset at the same time for all qubits (True)\nor to play the experiment sequentially for each qubit (False). Default is False.",
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    },
+                    "use_state_discrimination": {
+                        "default": true,
+                        "description": "Perform qubit state discrimination. Default is True.",
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "description": "The qubit reset method to use. Must be implemented as a method of Quam.qubit. Can be \"thermal\", \"active\", or\n\"active_gef\". Default is \"thermal\".",
+                        "enum": [
+                            "thermal",
+                            "active",
+                            "active_gef"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "use_strict_timing": {
+                        "default": false,
+                        "description": "Use strict timing in the QUA program. Default is False.",
+                        "title": "Use Strict Timing",
+                        "type": "boolean"
+                    },
+                    "num_random_sequences": {
+                        "default": 100,
+                        "description": "Number of random RB sequences. Default is 100.",
+                        "title": "Num Random Sequences",
+                        "type": "integer"
+                    },
+                    "num_shots": {
+                        "default": 20,
+                        "description": "Number of averages. Default is 20.",
+                        "title": "Num Shots",
+                        "type": "integer"
+                    },
+                    "max_circuit_depth": {
+                        "default": 1000,
+                        "description": "Maximum circuit depth (number of Clifford gates). Default is 1000.",
+                        "title": "Max Circuit Depth",
+                        "type": "integer"
+                    },
+                    "delta_clifford": {
+                        "default": 20,
+                        "description": "Delta clifford (number of Clifford gates between the RB sequences). Default is 20.",
+                        "title": "Delta Clifford",
+                        "type": "integer"
+                    },
+                    "seed": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "Seed for the random number generator. Default is None.",
+                        "title": "Seed"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "description": "Simulate the waveforms on the OPX instead of executing the program. Default is False.",
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 50000,
+                        "description": "Duration over which the simulation will collect samples (in nanoseconds). Default is 50_000 ns.",
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "use_waveform_report": {
+                        "default": true,
+                        "description": "Whether to use the interactive waveform report in simulation. Default is True.",
+                        "title": "Use Waveform Report",
+                        "type": "boolean"
+                    },
+                    "timeout": {
+                        "default": 120,
+                        "description": "Waiting time for the OPX resources to become available before giving up (in seconds). Default is 120 s.",
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "Optional QUAlibrate node run index for loading historical data. Default is None.",
+                        "title": "Load Data Id"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "q1": "failed"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 15,
+    "parents": [
+        14
+    ]
+}

@@ -1,0 +1,167 @@
+{
+    "created_at": "2025-10-02T18:00:41-05:00",
+    "metadata": {
+        "description": "\n        DRAG PULSE CALIBRATION (GOOGLE METHOD)\nThe sequence consists in applying an increasing number of x180 and -x180 pulses\nsuccessively while varying the DRAG coefficient alpha. After such a sequence, the\nqubit is expected to always be in the ground state if the DRAG coefficient has the\ncorrect value. Note that the idea is very similar to what is done in node\n04b_power_rabi.\n\nThis protocol is described in more details in\nhttps://journals.aps.org/prl/abstract/10.1103/PhysRevLett.117.190503\n\nPrerequisites:\n    - Having calibrated the mixer or the Octave (nodes 01a or 01b).\n    - Having calibrated the qubit parameters precisely (nodes 04b_power_rabi.py and 06a_ramsey.py).\n    - (optional) Having optimized the readout parameters (nodes 08a, 08b and 08c).\n    - Having specified the desired flux point if relevant (qubit.z.flux_point).\n    \nNext steps before going to the next node:\n    - Update the DRAG coefficient (alpha): qubit.xy.operations[operation].alpha.\n",
+        "run_start": "2025-10-02T18:00:28.660-05:00",
+        "run_end": "2025-10-02T18:00:41.212-05:00",
+        "name": "DRAG_calibration",
+        "data_path": "2025-10-02/#14_DRAG_calibration_180041"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": [
+                    "q1"
+                ],
+                "multiplexed": false,
+                "use_state_discrimination": true,
+                "reset_type": "thermal",
+                "num_shots": 10,
+                "operation": "x180",
+                "min_amp_factor": -1.0,
+                "max_amp_factor": 2.0,
+                "amp_factor_step": 0.02,
+                "max_number_pulses_per_sweep": 40,
+                "alpha_setpoint": null,
+                "simulate": false,
+                "simulation_duration_ns": 50000,
+                "use_waveform_report": true,
+                "timeout": 120,
+                "load_data_id": null
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "A list of qubit names which should participate in the execution of the node. Default is None.",
+                        "title": "Qubits"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "description": "Whether to play control pulses, readout pulses and active/thermal reset at the same time for all qubits (True)\nor to play the experiment sequentially for each qubit (False). Default is False.",
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    },
+                    "use_state_discrimination": {
+                        "default": true,
+                        "description": "Whether to use on-the-fly state discrimination and return the qubit 'state', or simply return the demodulated\nquadratures 'I' and 'Q'. Default is False.",
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "description": "The qubit reset method to use. Must be implemented as a method of Quam.qubit. Can be \"thermal\", \"active\", or\n\"active_gef\". Default is \"thermal\".",
+                        "enum": [
+                            "thermal",
+                            "active",
+                            "active_gef"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "num_shots": {
+                        "default": 10,
+                        "title": "Num Shots",
+                        "type": "integer"
+                    },
+                    "operation": {
+                        "default": "x180",
+                        "title": "Operation",
+                        "type": "string"
+                    },
+                    "min_amp_factor": {
+                        "default": -1,
+                        "title": "Min Amp Factor",
+                        "type": "number"
+                    },
+                    "max_amp_factor": {
+                        "default": 2.0,
+                        "title": "Max Amp Factor",
+                        "type": "number"
+                    },
+                    "amp_factor_step": {
+                        "default": 0.02,
+                        "title": "Amp Factor Step",
+                        "type": "number"
+                    },
+                    "max_number_pulses_per_sweep": {
+                        "default": 40,
+                        "title": "Max Number Pulses Per Sweep",
+                        "type": "integer"
+                    },
+                    "alpha_setpoint": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "title": "Alpha Setpoint"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "description": "Simulate the waveforms on the OPX instead of executing the program. Default is False.",
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 50000,
+                        "description": "Duration over which the simulation will collect samples (in nanoseconds). Default is 50_000 ns.",
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "use_waveform_report": {
+                        "default": true,
+                        "description": "Whether to use the interactive waveform report in simulation. Default is True.",
+                        "title": "Use Waveform Report",
+                        "type": "boolean"
+                    },
+                    "timeout": {
+                        "default": 120,
+                        "description": "Waiting time for the OPX resources to become available before giving up (in seconds). Default is 120 s.",
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "Optional QUAlibrate node run index for loading historical data. Default is None.",
+                        "title": "Load Data Id"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "q1": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 14,
+    "parents": [
+        13
+    ]
+}

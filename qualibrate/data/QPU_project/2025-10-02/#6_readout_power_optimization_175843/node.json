@@ -1,0 +1,160 @@
+{
+    "created_at": "2025-10-02T17:58:43-05:00",
+    "metadata": {
+        "description": "\n        READOUT POWER OPTIMIZATION\nThe sequence consists in measuring the state of the resonator after thermalization (qubit in |g>) and after\nplaying a pi pulse to the qubit (qubit in |e>) successively while sweeping the readout amplitude.\nThe 'I' & 'Q' quadratures when the qubit is in |g> and |e> are extracted to derive the readout fidelity.\nThe optimal readout amplitude is chosen as to maximize the readout fidelity.\n\nPrerequisites:\n    - Having calibrated the readout parameters (nodes 02a, 02b and/or 02c).\n    - Having calibrated the qubit x180 pulse parameters (nodes 03a_qubit_spectroscopy.py and 04b_power_rabi.py).\n\nState update:\n    - The readout amplitude: qubit.resonator.operations[\"readout\"].amplitude\n    - The integration weight angle: qubit.resonator.operations[\"readout\"].integration_weights_angle\n    - the ge discrimination threshold: qubit.resonator.operations[\"readout\"].threshold\n    - the Repeat Until Success threshold: qubit.resonator.operations[\"readout\"].rus_exit_threshold\n    - The confusion matrix: qubit.resonator.operations[\"readout\"].confusion_matrix\n",
+        "run_start": "2025-10-02T17:58:12.681-05:00",
+        "run_end": "2025-10-02T17:58:43.393-05:00",
+        "name": "readout_power_optimization",
+        "data_path": "2025-10-02/#6_readout_power_optimization_175843"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": [
+                    "q1"
+                ],
+                "multiplexed": false,
+                "use_state_discrimination": false,
+                "reset_type": "thermal",
+                "num_shots": 2000,
+                "start_amp": 0.5,
+                "end_amp": 1.99,
+                "num_amps": 10,
+                "outliers_threshold": 0.98,
+                "plot_raw": false,
+                "simulate": false,
+                "simulation_duration_ns": 50000,
+                "use_waveform_report": true,
+                "timeout": 120,
+                "load_data_id": null
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "A list of qubit names which should participate in the execution of the node. Default is None.",
+                        "title": "Qubits"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "description": "Whether to play control pulses, readout pulses and active/thermal reset at the same time for all qubits (True)\nor to play the experiment sequentially for each qubit (False). Default is False.",
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    },
+                    "use_state_discrimination": {
+                        "default": false,
+                        "description": "Whether to use on-the-fly state discrimination and return the qubit 'state', or simply return the demodulated\nquadratures 'I' and 'Q'. Default is False.",
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "description": "The qubit reset method to use. Must be implemented as a method of Quam.qubit. Can be \"thermal\", \"active\", or\n\"active_gef\". Default is \"thermal\".",
+                        "enum": [
+                            "thermal",
+                            "active",
+                            "active_gef"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "num_shots": {
+                        "default": 2000,
+                        "description": "Number of shots to perform. Default is 2000.",
+                        "title": "Num Shots",
+                        "type": "integer"
+                    },
+                    "start_amp": {
+                        "default": 0.5,
+                        "description": "Start amplitude. Default is 0.5.",
+                        "title": "Start Amp",
+                        "type": "number"
+                    },
+                    "end_amp": {
+                        "default": 1.99,
+                        "description": "End amplitude. Default is 1.99.",
+                        "title": "End Amp",
+                        "type": "number"
+                    },
+                    "num_amps": {
+                        "default": 10,
+                        "description": "Number of amplitudes to sweep. Default is 10.",
+                        "title": "Num Amps",
+                        "type": "integer"
+                    },
+                    "outliers_threshold": {
+                        "default": 0.98,
+                        "description": "Outliers threshold. Default is 0.98.",
+                        "title": "Outliers Threshold",
+                        "type": "number"
+                    },
+                    "plot_raw": {
+                        "default": false,
+                        "description": "Plot raw data. Default is False.",
+                        "title": "Plot Raw",
+                        "type": "boolean"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "description": "Simulate the waveforms on the OPX instead of executing the program. Default is False.",
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 50000,
+                        "description": "Duration over which the simulation will collect samples (in nanoseconds). Default is 50_000 ns.",
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "use_waveform_report": {
+                        "default": true,
+                        "description": "Whether to use the interactive waveform report in simulation. Default is True.",
+                        "title": "Use Waveform Report",
+                        "type": "boolean"
+                    },
+                    "timeout": {
+                        "default": 120,
+                        "description": "Waiting time for the OPX resources to become available before giving up (in seconds). Default is 120 s.",
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "Optional QUAlibrate node run index for loading historical data. Default is None.",
+                        "title": "Load Data Id"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "q1": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 6,
+    "parents": [
+        5
+    ]
+}

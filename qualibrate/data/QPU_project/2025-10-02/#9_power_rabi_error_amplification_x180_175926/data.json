@@ -1,0 +1,15 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "q1": {
+            "opt_amp_prefactor": 0.9200000000000002,
+            "opt_amp": 0.5050667365403342,
+            "operation": "x180",
+            "success": true
+        }
+    },
+    "figures": {
+        "amplitude": "./figures.amplitude.png"
+    }
+}

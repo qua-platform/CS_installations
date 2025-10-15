@@ -1,0 +1,15 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "q1": {
+            "frequency": 5909700000.0,
+            "fwhm": 269280.70971938496,
+            "success": true
+        }
+    },
+    "figures": {
+        "phase": "./figures.phase.png",
+        "amplitude": "./figures.amplitude.png"
+    }
+}

@@ -1,0 +1,39 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "q1": {
+            "success": true,
+            "resonator_frequency": 5900000000.0,
+            "frequency_shift": 0.0,
+            "optimal_power": -51.0
+        },
+        "q2": {
+            "success": true,
+            "resonator_frequency": 6048900000.0,
+            "frequency_shift": -1100000.0,
+            "optimal_power": -51.0
+        },
+        "q3": {
+            "success": false,
+            "resonator_frequency": NaN,
+            "frequency_shift": NaN,
+            "optimal_power": -51.0
+        },
+        "q4": {
+            "success": true,
+            "resonator_frequency": 6344500000.0,
+            "frequency_shift": -5500000.0,
+            "optimal_power": -51.0
+        },
+        "q5": {
+            "success": true,
+            "resonator_frequency": 6495900000.0,
+            "frequency_shift": -4100000.0,
+            "optimal_power": -51.0
+        }
+    },
+    "figures": {
+        "amplitude": "./figures.amplitude.png"
+    }
+}

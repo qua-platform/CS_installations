@@ -1,0 +1,17 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "q1": {
+            "frequency": 4353000000.0,
+            "fwhm": 409967.50238344324,
+            "iw_angle": 0.277363444057254,
+            "saturation_amp": 0.2913210204996788,
+            "x180_amp": 7.626766481983935,
+            "success": true
+        }
+    },
+    "figures": {
+        "amplitude": "./figures.amplitude.png"
+    }
+}

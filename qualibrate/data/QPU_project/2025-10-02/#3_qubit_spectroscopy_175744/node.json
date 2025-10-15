@@ -1,0 +1,181 @@
+{
+    "created_at": "2025-10-02T17:57:44-05:00",
+    "metadata": {
+        "description": "\n        QUBIT SPECTROSCOPY\nThis sequence involves sending a saturation pulse to the qubit, placing it in a mixed state,\nand then measuring the state of the resonator across various qubit drive frequencies.\nIn order to facilitate the qubit search, the qubit pulse duration and amplitude can be changed manually\nfrom the node parameters.\n\nThe data is post-processed to determine the qubit resonance frequency and the width of the peak.\n\nNote that it can happen that the qubit is excited by the image sideband or LO leakage instead of the desired sideband.\nThis is why calibrating the qubit mixer is highly recommended when using external mixers or the Octave.\n\nPrerequisites:\n    - Having calibrated the mixer or the Octave (nodes 01a or 01b).\n    - Having calibrated the readout parameters (nodes 02a, 02b and/or 02c).\n    - Having specified the desired flux point if relevant (qubit.z.flux_point).\n\nState update:\n    - The qubit 0->1 frequency: qubit.f_01 & qubit.xy.RF_frequency\n    - The integration weight angle to get the state discrimination along the 'I' quadrature: qubit.resonator.operations[\"readout\"].integration_weights_angle.\n    - (optional) The saturation pulse amplitude to get the targeted fwhm: qubit.xy.operations[\"saturation\"].amplitude.\n    - (optional) The guessed x180/x90 pulse amplitude: qubit.xy.operations[\"x180\"/\"x90\"].amplitude.\n",
+        "run_start": "2025-10-02T17:57:32.319-05:00",
+        "run_end": "2025-10-02T17:57:44.691-05:00",
+        "name": "qubit_spectroscopy",
+        "data_path": "2025-10-02/#3_qubit_spectroscopy_175744"
+    },
+    "data": {
+        "parameters": {
+            "model": {
+                "qubits": [
+                    "q1"
+                ],
+                "multiplexed": false,
+                "use_state_discrimination": false,
+                "reset_type": "thermal",
+                "num_shots": 100,
+                "frequency_span_in_mhz": 100.0,
+                "frequency_step_in_mhz": 0.25,
+                "operation": "saturation",
+                "operation_amplitude_factor": 1.0,
+                "operation_len_in_ns": null,
+                "target_peak_width": 3000000.0,
+                "update_pulses_amplitude": false,
+                "simulate": false,
+                "simulation_duration_ns": 50000,
+                "use_waveform_report": true,
+                "timeout": 120,
+                "load_data_id": null
+            },
+            "schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "qubits": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "A list of qubit names which should participate in the execution of the node. Default is None.",
+                        "title": "Qubits"
+                    },
+                    "multiplexed": {
+                        "default": false,
+                        "description": "Whether to play control pulses, readout pulses and active/thermal reset at the same time for all qubits (True)\nor to play the experiment sequentially for each qubit (False). Default is False.",
+                        "title": "Multiplexed",
+                        "type": "boolean"
+                    },
+                    "use_state_discrimination": {
+                        "default": false,
+                        "description": "Whether to use on-the-fly state discrimination and return the qubit 'state', or simply return the demodulated\nquadratures 'I' and 'Q'. Default is False.",
+                        "title": "Use State Discrimination",
+                        "type": "boolean"
+                    },
+                    "reset_type": {
+                        "default": "thermal",
+                        "description": "The qubit reset method to use. Must be implemented as a method of Quam.qubit. Can be \"thermal\", \"active\", or\n\"active_gef\". Default is \"thermal\".",
+                        "enum": [
+                            "thermal",
+                            "active",
+                            "active_gef"
+                        ],
+                        "title": "Reset Type",
+                        "type": "string"
+                    },
+                    "num_shots": {
+                        "default": 100,
+                        "description": "Number of averages to perform. Default is 100.",
+                        "title": "Num Shots",
+                        "type": "integer"
+                    },
+                    "frequency_span_in_mhz": {
+                        "default": 100,
+                        "description": "Span of frequencies to sweep in MHz. Default is 100 MHz.",
+                        "title": "Frequency Span In Mhz",
+                        "type": "number"
+                    },
+                    "frequency_step_in_mhz": {
+                        "default": 0.25,
+                        "description": "Step size for frequency sweep in MHz. Default is 0.25 MHz.",
+                        "title": "Frequency Step In Mhz",
+                        "type": "number"
+                    },
+                    "operation": {
+                        "default": "saturation",
+                        "description": "Type of operation to perform. Default is \"saturation\".",
+                        "title": "Operation",
+                        "type": "string"
+                    },
+                    "operation_amplitude_factor": {
+                        "default": 1.0,
+                        "description": "Amplitude pre-factor for the operation. Default is 1.0.",
+                        "title": "Operation Amplitude Factor",
+                        "type": "number"
+                    },
+                    "operation_len_in_ns": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "Length of the operation in nanoseconds. Default is the predefined pulse length.",
+                        "title": "Operation Len In Ns"
+                    },
+                    "target_peak_width": {
+                        "default": 3000000.0,
+                        "description": "Target peak width in Hz. Default is 3e6 Hz.",
+                        "title": "Target Peak Width",
+                        "type": "number"
+                    },
+                    "update_pulses_amplitude": {
+                        "default": false,
+                        "description": "Whether to update the saturation pulse and x180/x90 pulse amplitudes based on the peak width. Default is False",
+                        "title": "Update Pulses Amplitude",
+                        "type": "boolean"
+                    },
+                    "simulate": {
+                        "default": false,
+                        "description": "Simulate the waveforms on the OPX instead of executing the program. Default is False.",
+                        "title": "Simulate",
+                        "type": "boolean"
+                    },
+                    "simulation_duration_ns": {
+                        "default": 50000,
+                        "description": "Duration over which the simulation will collect samples (in nanoseconds). Default is 50_000 ns.",
+                        "title": "Simulation Duration Ns",
+                        "type": "integer"
+                    },
+                    "use_waveform_report": {
+                        "default": true,
+                        "description": "Whether to use the interactive waveform report in simulation. Default is True.",
+                        "title": "Use Waveform Report",
+                        "type": "boolean"
+                    },
+                    "timeout": {
+                        "default": 120,
+                        "description": "Waiting time for the OPX resources to become available before giving up (in seconds). Default is 120 s.",
+                        "title": "Timeout",
+                        "type": "integer"
+                    },
+                    "load_data_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "default": null,
+                        "description": "Optional QUAlibrate node run index for loading historical data. Default is None.",
+                        "title": "Load Data Id"
+                    }
+                },
+                "title": "Parameters",
+                "type": "object"
+            }
+        },
+        "outcomes": {
+            "q1": "successful"
+        },
+        "quam": "./quam_state"
+    },
+    "id": 3,
+    "parents": [
+        2
+    ]
+}

@@ -1,0 +1,14 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "q1": {
+            "t1": 98598961.63195601,
+            "t1_error": 18986968600322.766,
+            "success": false
+        }
+    },
+    "figures": {
+        "raw_fit": "./figures.raw_fit.png"
+    }
+}

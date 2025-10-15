@@ -1,0 +1,15 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "q1": {
+            "freq_offset": 151814.57962173104,
+            "decay": -1.5025212523525099e-05,
+            "decay_error": 8.70023651509576e-06,
+            "success": true
+        }
+    },
+    "figures": {
+        "amplitude": "./figures.amplitude.png"
+    }
+}

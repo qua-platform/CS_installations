@@ -1,0 +1,14 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "q1": {
+            "T2_echo": 2.020843152895064e-06,
+            "T2_echo_error": 2.381888943012645e-06,
+            "success": true
+        }
+    },
+    "figures": {
+        "raw_fit": "./figures.raw_fit.png"
+    }
+}

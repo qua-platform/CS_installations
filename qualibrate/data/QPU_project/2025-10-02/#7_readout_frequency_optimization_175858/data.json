@@ -1,0 +1,16 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "q1": {
+            "optimal_frequency": 5907000000.0,
+            "optimal_detuning": -2700000.0,
+            "chi": -50000.0,
+            "success": true
+        }
+    },
+    "figures": {
+        "distances": "./figures.distances.png",
+        "iq_abs": "./figures.iq_abs.png"
+    }
+}

@@ -1,0 +1,35 @@
+{
+    "ds_raw": "./ds_raw.h5",
+    "ds_fit": "./ds_fit.h5",
+    "fit_results": {
+        "q1": {
+            "frequency": NaN,
+            "fwhm": NaN,
+            "success": false
+        },
+        "q2": {
+            "frequency": NaN,
+            "fwhm": NaN,
+            "success": false
+        },
+        "q3": {
+            "frequency": 6187500000.0,
+            "fwhm": 114842.6948761312,
+            "success": true
+        },
+        "q4": {
+            "frequency": 6347400000.0,
+            "fwhm": 275586.399281255,
+            "success": true
+        },
+        "q5": {
+            "frequency": 6500000000.0,
+            "fwhm": 131047.98866078511,
+            "success": true
+        }
+    },
+    "figures": {
+        "phase": "./figures.phase.png",
+        "amplitude": "./figures.amplitude.png"
+    }
+}
