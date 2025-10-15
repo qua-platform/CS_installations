@@ -30,13 +30,15 @@ fem_2 = 2
 fem_3 = 3 
 fem_4 = 4 
 
-res_out_fem = fem_1
-res_in_fem = fem_1
+fem = fem_1
+
+res_out_fem = fem
+res_in_fem = fem
 res_out_port = 4
 res_in_port = 1
 res_in_gain_db = 0 
 
-q1_out_fem = fem_1
+q1_out_fem = fem
 q1_out_port = 2
 
 #############################################
@@ -147,7 +149,7 @@ config = {
         con: {
             "type": "opx1000",
             "fems": {                
-                fem_2: {
+                fem: {
                     "type": "MW",
                     "analog_outputs": {
                         1: {
