@@ -54,17 +54,19 @@ fem_2 = 2
 fem_3 = 3 
 fem_4 = 4 
 
-res1_out_fem = fem_1
-res1_in_fem = fem_1
+fem = fem_1
+
+res1_out_fem = fem
+res1_in_fem = fem
 res1_out_port, res1_in_port = 1, 1
 res1_in_gain_db = 0 
 
-res2_out_fem = fem_1
-res2_in_fem = fem_1
+res2_out_fem = fem
+res2_in_fem = fem
 res2_out_port, res2_in_port = 8, 2
 res2_in_gain_db = 0 
 
-q1_out_fem = fem_1
+q1_out_fem = fem
 q1_out_port = 2
 
 save_dir = Path(__file__).parent.resolve() / "Data"
@@ -184,7 +186,7 @@ config = {
         con: {
             "type": "opx1000",
             "fems": {                
-                fem_1: {
+                fem: {
                     "type": "MW",
                     "analog_outputs": {
                         1: {
