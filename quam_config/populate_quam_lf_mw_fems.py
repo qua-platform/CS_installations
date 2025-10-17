@@ -102,8 +102,8 @@ def get_full_scale_power_dBm_and_amplitude(desired_power: float, max_amplitude: 
 # Note that the "coupled" ports O1 & I1, O2 & O3, O4 & O5, O6 & O7, and O8 & I2 must be in the same band.
 
 # Resonator frequencies
-rr_freq = np.array([4.395, 4.412, 4.521, 4.728, 4.915, 5.000, 5.050, 5.100]) * u.GHz
-rr_LO = 4.75 * u.GHz
+rr_freq = np.array([6.73, 6.77, 6.56, 6.45]) * u.GHz
+rr_LO = 6.6 * u.GHz
 rr_if = rr_freq - rr_LO  # The intermediate frequency is inferred from the LO and readout frequencies
 assert np.all(np.abs(rr_if) < 400 * u.MHz), (
     "The resonator intermediate frequency must be within [-400; 400] MHz. \n"
@@ -139,8 +139,8 @@ for k, qubit in enumerate(machine.qubits.values()):
 # Note that the "coupled" ports O1 & I1, O2 & O3, O4 & O5, O6 & O7, and O8 & I2 must be in the same band.
 
 # Qubit drive frequencies
-xy_freq = np.array([6.012, 6.421, 6.785, 7.001, 7.083, 7.121, 7.184, 7.254]) * u.GHz
-xy_LO = np.array([6.0, 6.1, 6.5, 6.8, 7.1, 7.1, 7.1, 7.1]) * u.GHz
+xy_freq = np.array([5.99, 5.97, 5.67, 4.92]) * u.GHz
+xy_LO = np.array([6.1, 6.1, 5.8, 5.1]) * u.GHz
 xy_if = xy_freq - xy_LO  # The intermediate frequency is inferred from the LO and qubit frequencies
 assert np.all(np.abs(xy_if) < 400 * u.MHz), (
     "The xy intermediate frequency must be within [-400; 400] MHz. \n"
@@ -149,7 +149,7 @@ assert np.all(np.abs(xy_if) < 400 * u.MHz), (
     f"Qubit drive IF frequencies: {xy_if} \n"
 )
 # Transmon anharmonicity
-anharmonicity = np.array([150, 200, 175, 310, 214, 198, 179, 235]) * u.MHz
+anharmonicity = np.array([196, 411, 202, 208]) * u.MHz
 
 # Desired output power in dBm
 drive_power = -10
@@ -218,8 +218,8 @@ for k, q in enumerate(machine.qubits):
     # If the qubit xy drive and readout are on the same MW-FEM and they don't need to play simultaneously they can share
     # the same core to save resources. Lines are left commented for precaution so the user can decide on their implementation.
 
-    # machine.qubits[q].resonator.core = q
-    # machine.qubits[q].xy.core = q
+    machine.qubits[q].resonator.core = q
+    machine.qubits[q].xy.core = q
     # Single Gaussian flux pulse
     if hasattr(machine.qubits[q], "z"):
         machine.qubits[q].z.flux_point = "joint"
@@ -232,7 +232,7 @@ for k, q in enumerate(machine.qubits):
 # This is the case when tunable couplers have been defined in generate_quam.py.
 
 # If pairs are not defined:
-qubit_pairs = [("1", "2"), ("2", "3"), ("3", "4"), ("4", "5"), ("5", "6"), ("6", "7"), ("7", "8")]
+qubit_pairs = [("1", "3"), ("2", "3"), ("5", "3")]
 
 # If pairs are already defined, comment the previous line and uncomment the following one:
 # qubit_pairs = machine.qubit_pairs
