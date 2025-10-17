@@ -1,0 +1,562 @@
+{
+    "wiring": {
+        "qubits": {
+            "q1": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/1",
+                    "opx_output": "#/ports/mw_outputs/con1/3/1"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/3/2"
+                }
+            },
+            "q2": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/1",
+                    "opx_output": "#/ports/mw_outputs/con1/3/1"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/3/2"
+                }
+            },
+            "q5": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/1",
+                    "opx_output": "#/ports/mw_outputs/con1/3/1"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/4/1"
+                }
+            },
+            "q6": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/1",
+                    "opx_output": "#/ports/mw_outputs/con1/3/1"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/4/1"
+                }
+            },
+            "q7": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/1",
+                    "opx_output": "#/ports/mw_outputs/con1/3/1"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/5/1"
+                }
+            },
+            "q9": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/1",
+                    "opx_output": "#/ports/mw_outputs/con1/3/1"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/5/1"
+                }
+            },
+            "q10": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/1",
+                    "opx_output": "#/ports/mw_outputs/con1/3/1"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/4/2"
+                }
+            },
+            "q11": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/1",
+                    "opx_output": "#/ports/mw_outputs/con1/3/1"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/3/5"
+                }
+            },
+            "q13": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/1",
+                    "opx_output": "#/ports/mw_outputs/con1/3/1"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/3/4"
+                }
+            },
+            "q14": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/1",
+                    "opx_output": "#/ports/mw_outputs/con1/3/1"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/4/3"
+                }
+            },
+            "q15": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/1",
+                    "opx_output": "#/ports/mw_outputs/con1/3/1"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/3/7"
+                }
+            },
+            "q17": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/1",
+                    "opx_output": "#/ports/mw_outputs/con1/3/1"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/3/5"
+                }
+            },
+            "q18": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/1",
+                    "opx_output": "#/ports/mw_outputs/con1/3/1"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/3/6"
+                }
+            },
+            "q19": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/1",
+                    "opx_output": "#/ports/mw_outputs/con1/3/1"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/4/2"
+                }
+            },
+            "q3": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/2",
+                    "opx_output": "#/ports/mw_outputs/con1/3/8"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/3/2"
+                }
+            },
+            "q4": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/2",
+                    "opx_output": "#/ports/mw_outputs/con1/3/8"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/4/1"
+                }
+            },
+            "q8": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/2",
+                    "opx_output": "#/ports/mw_outputs/con1/3/8"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/3/4"
+                }
+            },
+            "q12": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/2",
+                    "opx_output": "#/ports/mw_outputs/con1/3/8"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/3/6"
+                }
+            },
+            "q16": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/2",
+                    "opx_output": "#/ports/mw_outputs/con1/3/8"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/3/3"
+                }
+            },
+            "q20": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/2",
+                    "opx_output": "#/ports/mw_outputs/con1/3/8"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/4/3"
+                }
+            },
+            "q21": {
+                "rr": {
+                    "opx_input": "#/ports/mw_inputs/con1/3/2",
+                    "opx_output": "#/ports/mw_outputs/con1/3/8"
+                },
+                "xy": {
+                    "opx_output": "#/ports/mw_outputs/con1/4/2"
+                }
+            }
+        },
+        "qubit_pairs": {
+            "q1-2": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q1",
+                    "target_qubit": "#/qubits/q2",
+                    "opx_output": "#/ports/analog_outputs/con1/1/1"
+                }
+            },
+            "q1-5": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q1",
+                    "target_qubit": "#/qubits/q5",
+                    "opx_output": "#/ports/analog_outputs/con1/1/1"
+                }
+            },
+            "q1-6": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q1",
+                    "target_qubit": "#/qubits/q6",
+                    "opx_output": "#/ports/analog_outputs/con1/1/1"
+                }
+            },
+            "q2-5": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q2",
+                    "target_qubit": "#/qubits/q5",
+                    "opx_output": "#/ports/analog_outputs/con1/1/1"
+                }
+            },
+            "q2-6": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q2",
+                    "target_qubit": "#/qubits/q6",
+                    "opx_output": "#/ports/analog_outputs/con1/1/1",
+                    "opx_output_alt": "#/ports/analog_outputs/con1/1/3"
+                }
+            },
+            "q5-6": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q5",
+                    "target_qubit": "#/qubits/q6",
+                    "opx_output": "#/ports/analog_outputs/con1/1/1",
+                    "opx_output_alt": "#/ports/analog_outputs/con1/1/2"
+                }
+            },
+            "q2-3": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q2",
+                    "target_qubit": "#/qubits/q3",
+                    "opx_output": "#/ports/analog_outputs/con1/1/3"
+                }
+            },
+            "q2-7": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q2",
+                    "target_qubit": "#/qubits/q7",
+                    "opx_output": "#/ports/analog_outputs/con1/1/3"
+                }
+            },
+            "q3-6": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q3",
+                    "target_qubit": "#/qubits/q6",
+                    "opx_output": "#/ports/analog_outputs/con1/1/3"
+                }
+            },
+            "q3-7": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q3",
+                    "target_qubit": "#/qubits/q7",
+                    "opx_output": "#/ports/analog_outputs/con1/1/3",
+                    "opx_output_alt": "#/ports/analog_outputs/con1/1/4"
+                }
+            },
+            "q6-7": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q6",
+                    "target_qubit": "#/qubits/q7",
+                    "opx_output": "#/ports/analog_outputs/con1/1/3"
+                }
+            },
+            "q3-4": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q3",
+                    "target_qubit": "#/qubits/q4",
+                    "opx_output": "#/ports/analog_outputs/con1/1/4"
+                }
+            },
+            "q3-8": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q3",
+                    "target_qubit": "#/qubits/q8",
+                    "opx_output": "#/ports/analog_outputs/con1/1/4"
+                }
+            },
+            "q4-7": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q4",
+                    "target_qubit": "#/qubits/q7",
+                    "opx_output": "#/ports/analog_outputs/con1/1/4"
+                }
+            },
+            "q4-8": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q4",
+                    "target_qubit": "#/qubits/q8",
+                    "opx_output": "#/ports/analog_outputs/con1/1/4"
+                }
+            },
+            "q7-8": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q7",
+                    "target_qubit": "#/qubits/q8",
+                    "opx_output_alt": "#/ports/analog_outputs/con1/1/4",
+                    "opx_output": "#/ports/analog_outputs/con1/1/2"
+                }
+            },
+            "q5-9": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q5",
+                    "target_qubit": "#/qubits/q9",
+                    "opx_output": "#/ports/analog_outputs/con1/1/2"
+                }
+            },
+            "q5-10": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q5",
+                    "target_qubit": "#/qubits/q10",
+                    "opx_output": "#/ports/analog_outputs/con1/1/2"
+                }
+            },
+            "q6-9": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q6",
+                    "target_qubit": "#/qubits/q9",
+                    "opx_output": "#/ports/analog_outputs/con1/1/2"
+                }
+            },
+            "q6-10": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q6",
+                    "target_qubit": "#/qubits/q10",
+                    "opx_output": "#/ports/analog_outputs/con1/1/2"
+                }
+            },
+            "q9-10": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q9",
+                    "target_qubit": "#/qubits/q10",
+                    "opx_output_alt": "#/ports/analog_outputs/con1/1/2",
+                    "opx_output": "#/ports/analog_outputs/con1/2/1"
+                }
+            },
+            "q7-11": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q7",
+                    "target_qubit": "#/qubits/q11",
+                    "opx_output": "#/ports/analog_outputs/con1/1/2"
+                }
+            },
+            "q7-12": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q7",
+                    "target_qubit": "#/qubits/q12",
+                    "opx_output": "#/ports/analog_outputs/con1/1/2"
+                }
+            },
+            "q8-11": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q8",
+                    "target_qubit": "#/qubits/q11",
+                    "opx_output": "#/ports/analog_outputs/con1/1/2"
+                }
+            },
+            "q8-12": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q8",
+                    "target_qubit": "#/qubits/q12",
+                    "opx_output": "#/ports/analog_outputs/con1/1/2"
+                }
+            },
+            "q11-12": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q11",
+                    "target_qubit": "#/qubits/q12",
+                    "opx_output_alt": "#/ports/analog_outputs/con1/1/2",
+                    "opx_output": "#/ports/analog_outputs/con1/2/1"
+                }
+            },
+            "q9-13": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q9",
+                    "target_qubit": "#/qubits/q13",
+                    "opx_output": "#/ports/analog_outputs/con1/2/1"
+                }
+            },
+            "q9-14": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q9",
+                    "target_qubit": "#/qubits/q14",
+                    "opx_output": "#/ports/analog_outputs/con1/2/1"
+                }
+            },
+            "q10-13": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q10",
+                    "target_qubit": "#/qubits/q13",
+                    "opx_output": "#/ports/analog_outputs/con1/2/1"
+                }
+            },
+            "q10-14": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q10",
+                    "target_qubit": "#/qubits/q14",
+                    "opx_output": "#/ports/analog_outputs/con1/2/1"
+                }
+            },
+            "q13-14": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q13",
+                    "target_qubit": "#/qubits/q14",
+                    "opx_output": "#/ports/analog_outputs/con1/2/1",
+                    "opx_output_alt": "#/ports/analog_outputs/con1/2/2"
+                }
+            },
+            "q11-15": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q11",
+                    "target_qubit": "#/qubits/q15",
+                    "opx_output": "#/ports/analog_outputs/con1/2/1"
+                }
+            },
+            "q11-16": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q11",
+                    "target_qubit": "#/qubits/q16",
+                    "opx_output": "#/ports/analog_outputs/con1/2/1"
+                }
+            },
+            "q12-15": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q12",
+                    "target_qubit": "#/qubits/q15",
+                    "opx_output": "#/ports/analog_outputs/con1/2/1"
+                }
+            },
+            "q12-16": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q12",
+                    "target_qubit": "#/qubits/q16",
+                    "opx_output": "#/ports/analog_outputs/con1/2/1"
+                }
+            },
+            "q15-16": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q15",
+                    "target_qubit": "#/qubits/q16",
+                    "opx_output": "#/ports/analog_outputs/con1/2/1",
+                    "opx_output_alt": "#/ports/analog_outputs/con1/2/2"
+                }
+            },
+            "q13-17": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q13",
+                    "target_qubit": "#/qubits/q17",
+                    "opx_output": "#/ports/analog_outputs/con1/2/2"
+                }
+            },
+            "q13-18": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q13",
+                    "target_qubit": "#/qubits/q18",
+                    "opx_output": "#/ports/analog_outputs/con1/2/2"
+                }
+            },
+            "q14-17": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q14",
+                    "target_qubit": "#/qubits/q17",
+                    "opx_output": "#/ports/analog_outputs/con1/2/2"
+                }
+            },
+            "q14-18": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q14",
+                    "target_qubit": "#/qubits/q18",
+                    "opx_output_alt": "#/ports/analog_outputs/con1/2/2",
+                    "opx_output": "#/ports/analog_outputs/con1/1/1"
+                }
+            },
+            "q17-18": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q17",
+                    "target_qubit": "#/qubits/q18",
+                    "opx_output": "#/ports/analog_outputs/con1/2/2"
+                }
+            },
+            "q14-15": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q14",
+                    "target_qubit": "#/qubits/q15",
+                    "opx_output": "#/ports/analog_outputs/con1/1/1"
+                }
+            },
+            "q14-19": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q14",
+                    "target_qubit": "#/qubits/q19",
+                    "opx_output": "#/ports/analog_outputs/con1/1/1"
+                }
+            },
+            "q15-18": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q15",
+                    "target_qubit": "#/qubits/q18",
+                    "opx_output": "#/ports/analog_outputs/con1/1/1"
+                }
+            },
+            "q15-19": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q15",
+                    "target_qubit": "#/qubits/q19",
+                    "opx_output": "#/ports/analog_outputs/con1/1/1",
+                    "opx_output_alt": "#/ports/analog_outputs/con1/2/2"
+                }
+            },
+            "q18-19": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q18",
+                    "target_qubit": "#/qubits/q19",
+                    "opx_output": "#/ports/analog_outputs/con1/1/1"
+                }
+            },
+            "q15-20": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q15",
+                    "target_qubit": "#/qubits/q20",
+                    "opx_output": "#/ports/analog_outputs/con1/2/2"
+                }
+            },
+            "q16-19": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q16",
+                    "target_qubit": "#/qubits/q19",
+                    "opx_output": "#/ports/analog_outputs/con1/2/2"
+                }
+            },
+            "q16-20": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q16",
+                    "target_qubit": "#/qubits/q20",
+                    "opx_output": "#/ports/analog_outputs/con1/2/2"
+                }
+            },
+            "q19-20": {
+                "parametric": {
+                    "control_qubit": "#/qubits/q19",
+                    "target_qubit": "#/qubits/q20",
+                    "opx_output": "#/ports/analog_outputs/con1/2/2"
+                }
+            }
+        }
+    },
+    "network": {
+        "host": "127.0.0.1",
+        "port": null,
+        "cluster_name": "Cluster_1"
+    }
+}
