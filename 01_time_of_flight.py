@@ -19,10 +19,6 @@ u = unit(coerce_to_integer=True)
 # User parameters
 n_avg = 100               # averages
 
-# loopback simulated experimental parameters
-lb_latency = 80     # cable+fridge delay
-lb_noise_power = 1e-4   # V^2 (≈22 mVrms)
-
 # Choice of element for time of flight calibration (rr1, rr2, rr3)
 RR_ELEM = "rr1"
 

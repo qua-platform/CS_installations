@@ -19,10 +19,10 @@ n_avg = 10000
 # Frequency sweep (full range)
 IF_min = 150 * u.MHz
 IF_max = 200 * u.MHz
-dIF    = 500 * u.kHz
+dIF    = 1000 * u.kHz
 frequencies = np.arange(IF_min, IF_max + 0.1, dIF)
 
-# Pull readout / depletion time from config.
+# Pull readout / depletion from config (ns).
 READOUT_LEN_NS = int(config["pulses"]["readout_pulse"]["length"])
 DEPL_CC = int(DEPLETION_TIME/4)
 

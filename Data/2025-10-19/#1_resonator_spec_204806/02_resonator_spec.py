@@ -19,10 +19,10 @@ n_avg = 10000
 # Frequency sweep (full range)
 IF_min = 150 * u.MHz
 IF_max = 200 * u.MHz
-dIF    = 500 * u.kHz
+dIF    = 1000 * u.kHz
 frequencies = np.arange(IF_min, IF_max + 0.1, dIF)
 
-# Pull readout / depletion time from config.
+# Pull readout / depletion from config (ns).
 READOUT_LEN_NS = int(config["pulses"]["readout_pulse"]["length"])
 DEPL_CC = int(DEPLETION_TIME/4)
 
@@ -128,24 +128,21 @@ else:
         plt.ylabel("Phase [rad]")
         plt.pause(0.1)
         plt.tight_layout()
-
 # Fit the results to extract the resonance frequency
+    try:
+        from qualang_tools.plot.fitting import Fit
 
-    for j in range(len(res_keys)):
-        try:
-            from qualang_tools.plot.fitting import Fit
+        fit = Fit()
+        plt.figure()
+        res_spec_fit = fit.reflection_resonator_spectroscopy(frequencies / u.MHz, R, plot=True)
+        plt.title(f"Resonator spectroscopy - LO = {LO_RR / u.GHz} GHz")
+        plt.xlabel("Intermediate frequency [MHz]")
+        plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
+        print(f"Resonator IF to update in the config: resonator_IF = {res_spec_fit['f'][0]:.6f} MHz")
+        print(f"Resonator resonance frequency to update in the config: resonator_freq = {(res_spec_fit['f'][0] + LO_RR/1e6):.6f} MHz")
 
-            fit = Fit()
-            plt.figure()
-            res_spec_fit = fit.reflection_resonator_spectroscopy(frequencies / u.MHz, R[j], plot=True)
-            plt.title(f"Resonator spectroscopy - LO = {LO_RR / u.GHz} GHz")
-            plt.xlabel("Intermediate frequency [MHz]")
-            plt.ylabel(r"R=$\sqrt{I^2 + Q^2}$ [V]")
-            print(f"Resonator IF to update in the config: resonator_IF = {res_spec_fit['f'][0]:.6f} MHz")
-            print(f"Resonator resonance frequency to update in the config: resonator_freq = {(res_spec_fit['f'][0] + LO_RR/1e6):.6f} MHz")
-
-        except (Exception,):
-            pass
+    except (Exception,):
+        pass
 
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()

@@ -5,7 +5,6 @@ from configuration import config, qop_ip, cluster_name
 #from qm_saas import QmSaas, QOPVersion
 import matplotlib.pyplot as plt
 import time 
-from qm.octave import QmOctaveConfig
 import os
 
 ###################

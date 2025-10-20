@@ -15,7 +15,7 @@ from pathlib import Path
 # %%                                 QUAM loading and auxiliary functions
 ########################################################################################################################
 # Loads the QUAM
-machine = Quam.load(Path("C:/Users/BenjaminSafvati/Customers/Mo_Chen/QuAM/quam_state"))
+machine = Quam.load(Path(".../QuAM/quam_state"))
 
 cfg = machine.generate_config()
 
