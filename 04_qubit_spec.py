@@ -49,7 +49,7 @@ save_data_dict = {
 }
 
 # Choice of element for qubit spectroscopy (qubit1, qubit2, qubit3)
-qubit_ELEM = "qubit1"
+qubit_ELEM = "q1"
 
 ###################
 # The QUA program #
@@ -102,34 +102,23 @@ with program() as qubit_spec:
 simulate = False
 
 if simulate:
-    # --- SaaS login ---
-    client = QmSaas(
-    host="qm-saas.dev.quantum-machines.co",
-    email="benjamin.safvati@quantum-machines.co",
-    password="ubq@yvm3RXP1bwb5abv"
-    )
+    qmm = QuantumMachinesManager(host=qop_ip, 
+                                    cluster_name=cluster_name)
 
-    with client.simulator(QOPVersion(os.environ.get("QM_QOP_VERSION", "v2_5_0"))) as inst:
-        inst.spawn()
-        # Simulates the QUA program for the specified duration
-        simulation_config = SimulationConfig(duration=40_000)  # In clock cycles = 4ns
-        qmm = QuantumMachinesManager(
-            host=inst.host,
-            port=inst.port,
-            connection_headers=inst.default_connection_headers,
-        )
-        # Simulate blocks python until the simulation is done
-        job = qmm.simulate(config, qubit_spec, simulation_config)
-        # Get the simulated samples
-        samples = job.get_simulated_samples()
-        # Plot the simulated samples
-        samples.con1.plot()
-        # Get the waveform report object
-        waveform_report = job.get_simulated_waveform_report()
-        # Cast the waveform report to a python dictionary
-        waveform_dict = waveform_report.to_dict()
-        # Visualize and save the waveform report
-        waveform_report.create_plot(samples, plot=True, save_path=str(Path(__file__).resolve()))
+    simulation_config = SimulationConfig(duration=1_000) # duration is in units of clock cycles, i.e., 4 nanoseconds
+
+    # Simulate blocks python until the simulation is done
+    job = qmm.simulate(config, qubit_spec, simulation_config)
+    # Get the simulated samples
+    samples = job.get_simulated_samples()
+    # Plot the simulated samples
+    samples.con1.plot()
+    # Get the waveform report object
+    waveform_report = job.get_simulated_waveform_report()
+    # Cast the waveform report to a python dictionary
+    waveform_dict = waveform_report.to_dict()
+    # Visualize and save the waveform report
+    waveform_report.create_plot(samples, plot=True, save_path=str(Path(__file__).resolve()))
 
 else:
     qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave_calibration_db_path=os.getcwd())
@@ -152,7 +141,7 @@ else:
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
-        plt.suptitle(f"qubit spectroscopy - LO = {LO_qubit1 / u.GHz} GHz")
+        plt.suptitle(f"qubit spectroscopy - LO = {LO_q1 / u.GHz} GHz")
         plt.subplot(211)
         plt.cla()
         plt.plot((dfs + center) / u.MHz, R, ".")
@@ -163,7 +152,7 @@ else:
         plt.plot((dfs + center) / u.MHz, phase, ".")
         plt.xlabel("qubit intermediate frequency [MHz]")
         plt.ylabel("Phase [rad]")
-        plt.pause(0.1)
+        plt.pause(1.0)
         plt.tight_layout()
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()

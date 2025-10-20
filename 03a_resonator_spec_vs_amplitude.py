@@ -24,7 +24,7 @@ dfs = np.arange(-span, +span + 0.1, df)
 a_min = 0.01
 a_max = 1.99
 amplitudes = np.geomspace(a_min, a_max, 30)
-readout_amp = AMP_READOUT
+readout_amp = READOUT_AMP
 # Data to save
 save_data_dict = {
     "n_avg": n_avg,
@@ -77,39 +77,29 @@ with program() as resonator_spec_2D:
 #######################
 # Simulate or execute #
 #######################
-simulate = True
+simulate = False
 
 if simulate:
-    # --- SaaS login ---
-    client = QmSaas(
-    host="qm-saas.dev.quantum-machines.co",
-    email="benjamin.safvati@quantum-machines.co",
-    password="ubq@yvm3RXP1bwb5abv"
-    )
+    qmm = QuantumMachinesManager(host=qop_ip, 
+                                    cluster_name=cluster_name)
 
-    with client.simulator(QOPVersion(os.environ.get("QM_QOP_VERSION", "v2_4_4"))) as inst:
-        inst.spawn()
-        qmm = QuantumMachinesManager(
-            host=inst.host,
-            port=inst.port,
-            connection_headers=inst.default_connection_headers,
-        )    # Simulates the QUA program for the specified duration
-        simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-        # Simulate blocks python until the simulation is done
-        job = qmm.simulate(config, resonator_spec_2D, simulation_config)
-        # Get the simulated samples
-        samples = job.get_simulated_samples()
-        # Plot the simulated samples
-        samples.con1.plot()
-        # Get the waveform report object
-        waveform_report = job.get_simulated_waveform_report()
-        # Cast the waveform report to a python dictionary
-        waveform_dict = waveform_report.to_dict()
-        # Visualize and save the waveform report
-        waveform_report.create_plot(samples, plot=True, save_path=str(Path(__file__).resolve()))
+    simulation_config = SimulationConfig(duration=1_000) # duration is in units of clock cycles, i.e., 4 nanoseconds
+
+    # Simulate blocks python until the simulation is done
+    job = qmm.simulate(config, resonator_spec_2D, simulation_config)
+    # Get the simulated samples
+    samples = job.get_simulated_samples()
+    # Plot the simulated samples
+    samples.con1.plot()
+    # Get the waveform report object
+    waveform_report = job.get_simulated_waveform_report()
+    # Cast the waveform report to a python dictionary
+    waveform_dict = waveform_report.to_dict()
+    # Visualize and save the waveform report
+    waveform_report.create_plot(samples, plot=True, save_path=str(Path(__file__).resolve()))
 
 else:
-    qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+    qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it

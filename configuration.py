@@ -31,12 +31,12 @@ default_additional_files = {
 ### qubit parameters ###
 
 # qubit drives: 1 LO+IF pair for each qubit.
-LO_qubit1 = 5.5 * u.GHz    
-IF_qubit1 = 100.0 * u.MHz    
-LO_qubit2 = LO_qubit1  # Oct outputs 2 and 3 share an LO        
-IF_qubit2 = -200 * u.MHz     
-LO_qubit3 = 6.5 * u.GHz # Oct output 4           
-IF_qubit3 = 300.0 * u.MHz            
+LO_q1 = 5.5 * u.GHz    
+IF_q1 = 100.0 * u.MHz    
+LO_q2 = LO_q1  # Oct outputs 2 and 3 share an LO        
+IF_q2 = -200 * u.MHz     
+LO_q3 = 6.5 * u.GHz # Oct output 4           
+IF_q3 = 300.0 * u.MHz            
 # Initial guess on qubit relaxation/thermalization values.
 # More precise value will be calculated in qubit_T1.py.
 T1_qubit = int(1 * u.us)
@@ -79,9 +79,9 @@ else:
 
 # Flux bias that maximizes qubit resonant frequency.
 # Calculated in resonator_spec_vs_flux.py
-MAX_FREQ_POINT_qubit1 = 0.0
-MAX_FREQ_POINT_qubit2 = 0.0
-MAX_FREQ_POINT_qubit3 = 0.0
+MAX_FREQ_POINT_q1 = 0.0
+MAX_FREQ_POINT_q2 = 0.0
+MAX_FREQ_POINT_q3 = 0.0
 # Flux line settle time.
 FLUX_SETTLE_TIME = 100 * u.ns
 # Resonator frequency versus flux fit parameters according to resonator_spec_vs_flux.py.
@@ -98,7 +98,7 @@ ge_threshold = 0.0
 ### Pulse Waveform Parameters ###
 
 # Continuous wave
-CONST_LEN = 1000
+CONST_LEN = 100
 CONST_AMP   = 0.25
 # Saturation pulse
 SAT_LEN = 10 *u.us
@@ -107,7 +107,7 @@ SAT_AMP = 0.5
 SQUARE_PI_LEN = 1000
 SQUARE_PI_AMP = 0.4
 # Gaussian pulse parameters
-GAUSS_LEN   = 1000  
+GAUSS_LEN   = 100
 GAUSS_SIGMA = 400   
 _t = np.arange(GAUSS_LEN)  
 _c = (GAUSS_LEN - 1) / 2.0  
@@ -117,7 +117,7 @@ drag_coef = 0
 anharmonicity = -200 * u.MHz
 AC_stark_detuning = 0 * u.MHz
 # pi pulse, x axis
-x180_len = 600
+x180_len = 100
 x180_sigma = x180_len / 5
 x180_amp = 0.35
 x180_wf, x180_der_wf = np.array(
@@ -191,28 +191,26 @@ minus_y90_Q_wf = minus_y90_wf
 LO_SOURCE_qubit = "internal" 
 LO_SOURCE_RR  = "internal" 
 # Per-port Octave digital gain/attenuation (dB). Tune later.
-OCT_qubit1_GAIN_DB = -12      
-OCT_qubit2_GAIN_DB = -12      
-OCT_qubit3_GAIN_DB = -12     
+OCT_q1_GAIN_DB = -12      
+OCT_q2_GAIN_DB = -4     
+OCT_q3_GAIN_DB = -12     
 OCT_RO_GAIN_DB   = -12    
 
 ### CONFIG ###
 
 config = {
-    "version": 1,
-
     "controllers": {
         "con1": {
             "analog_outputs": {
                 # Readout I/Q IF to Octave OUT1
                 1: {"offset": 0.0}, 2: {"offset": 0.0},
                 # qubit I/Q IF to Octave RF OUTs
-                3: {"offset": 0.0}, 4: {"offset": 0.0},   # qubit1 IF to Octave OUT2
-                5: {"offset": 0.0}, 6: {"offset": 0.0},   # qubit2 IF to Octave OUT3
-                7: {"offset": 0.0}, 8: {"offset": 0.0},   # qubit3 IF to Octave OUT4
+                3: {"offset": 0.0}, 4: {"offset": 0.0},   # q1 IF to Octave OUT2
+                5: {"offset": 0.0}, 6: {"offset": 0.0},   # q2 IF to Octave OUT3
+                7: {"offset": 0.0}, 8: {"offset": 0.0},   # q3 IF to Octave OUT4
                 # Flux line (baseband, not through Octave)
-                9: {"offset": 0.0},                       # Flux to shared qubit2 and qubit3
-                10: {"offset": 0.0},                      # Flux to qubit1
+                9: {"offset": 0.0},                       # Flux to shared q2 and q3
+                10: {"offset": 0.0},                      # Flux to q1
             },
             "analog_inputs": {
                 1: {"offset": 0.0},   # Octave IN1 to Readout return I
@@ -230,12 +228,12 @@ config = {
 
     "octaves": {
         "oct1": {
-            # RF Outputs 1,2,3,4 = RR, qubit1, qubit2, qubit3
+            # RF Outputs 1,2,3,4 = RR, q1, q2, q3
             "RF_outputs": {
                 1: {"LO_frequency": LO_RR,   "LO_source": LO_SOURCE_RR,  "gain": OCT_RO_GAIN_DB, "output_mode": "triggered"},
-                2: {"LO_frequency": LO_qubit1, "LO_source": LO_SOURCE_qubit, "gain": OCT_qubit1_GAIN_DB, "output_mode": "triggered"},
-                3: {"LO_frequency": LO_qubit2, "LO_source": LO_SOURCE_qubit, "gain": OCT_qubit2_GAIN_DB, "output_mode": "triggered"},
-                4: {"LO_frequency": LO_qubit3, "LO_source": LO_SOURCE_qubit, "gain": OCT_qubit3_GAIN_DB, "output_mode": "triggered"},
+                2: {"LO_frequency": LO_q1, "LO_source": LO_SOURCE_qubit, "gain": OCT_q1_GAIN_DB, "output_mode": "triggered"},
+                3: {"LO_frequency": LO_q2, "LO_source": LO_SOURCE_qubit, "gain": OCT_q2_GAIN_DB, "output_mode": "triggered"},
+                4: {"LO_frequency": LO_q3, "LO_source": LO_SOURCE_qubit, "gain": OCT_q3_GAIN_DB, "output_mode": "triggered"},
             },
             # RF Input 1 = Readout downconversion
             "RF_inputs": {
@@ -247,10 +245,10 @@ config = {
 
     "elements": {
         # qubit drives
-        "qubit1": {
+        "q1": {
             "RF_inputs": {
                 "port": ("oct1", 2)},
-            "intermediate_frequency": IF_qubit1,
+            "intermediate_frequency": IF_q1,
             "operations": {"const": "const_pulse",
                             "gauss": "gauss_IQ",
                             "saturation": "saturation_pulse",
@@ -271,10 +269,10 @@ config = {
                 },
             },
         },
-        "qubit2": {
+        "q2": {
             "RF_inputs": {
                 "port": ("oct1", 3)},
-            "intermediate_frequency": IF_qubit2,
+            "intermediate_frequency": IF_q2,
             "operations": {"const": "const_pulse",
                             "gauss": "gauss_IQ",
                             "saturation": "saturation_pulse",
@@ -296,10 +294,10 @@ config = {
                 },
             },
         },
-        "qubit3": {
+        "q3": {
             "RF_inputs": {
                 "port": ("oct1", 4)},
-            "intermediate_frequency": IF_qubit3,
+            "intermediate_frequency": IF_q3,
             "operations": {"const": "const_pulse",
                             "gauss": "gauss_IQ",
                             "saturation": "saturation_pulse",
@@ -322,11 +320,11 @@ config = {
         },
 
         # Flux lines (baseband)
-        "flux_qubit1": {
+        "flux_q1": {
             "singleInput": {"port": ("con1", 10)},
             "operations": {"const": "const_flux"},
         },
-        "flux_qubit23": {
+        "flux_q23": {
             "singleInput": {"port": ("con1", 9)},
             "operations": {"const": "const_flux"},
         },

@@ -14,7 +14,7 @@ import os
 
 with qua.program() as cw_output:  
     with qua.infinite_loop_():
-        qua.play("const", "qubit2")
+        qua.play("const", "q2")
 
 
 #####################################
@@ -22,29 +22,15 @@ with qua.program() as cw_output:
 #####################################
 
 simulate = False
-simulation_in_cloud = False
 
 if simulate: 
 
-    if simulation_in_cloud:
-        client = QmSaas(
-        host="qm-saas.dev.quantum-machines.co",
-        email="benjamin.safvati@quantum-machines.co",
-        password="ubq@yvm3RXP1bwb5abv")        
-        instance = client.simulator(QOPVersion.v2_5_0)
-        instance.spawn()
-        qmm = QuantumMachinesManager(host=instance.host,
-                                    port=instance.port,
-                                    connection_headers=instance.default_connection_headers)
-    else:
-        qmm = QuantumMachinesManager(host=qop_ip, 
+    qmm = QuantumMachinesManager(host=qop_ip, 
                                     cluster_name=cluster_name)
 
     simulation_config = SimulationConfig(duration=1_000) # duration is in units of clock cycles, i.e., 4 nanoseconds
     job = qmm.simulate(config, cw_output, simulation_config)
     job.get_simulated_samples().con1.plot()
-    if simulation_in_cloud:
-        instance.close()
     plt.show()
 
 else:

@@ -1,79 +1,87 @@
 """
-        TIME RABI
-The sequence consists in playing the qubit pulse (x180 or square_pi or else) and measuring the state of the resonator
-for different qubit pulse durations.
-The results are then post-processed to find the qubit pulse duration for the chosen amplitude.
+        ECHO MEASUREMENT
+The program consists in playing a Ramsey sequence with an echo pulse in the middle to compensate for dephasing and
+enhance the coherence time (x90 - idle_time - x180 - idle_time - x90 - measurement) for different idle times.
+Here the gates are on resonance so no oscillation is expected.
+
+From the results, one can fit the exponential decay and extract T2.
 
 Prerequisites:
     - Having found the resonance frequency of the resonator coupled to the qubit under study (resonator_spectroscopy).
-    - Having calibrated the IQ mixer connected to the qubit drive line (external mixer or Octave port)
-    - Having found the rough qubit frequency and pi pulse amplitude (rabi_chevron_amplitude or power_rabi).
-    - Set the qubit frequency and desired pi pulse amplitude (x180_amp) in the configuration.
-    - Set the desired flux bias
-
-Next steps before going to the next node:
-    - Update the qubit pulse duration (x180_len) in the configuration.
+    - Having calibrated qubit pi pulse (x180) by running qubit, spectroscopy, rabi_chevron, power_rabi and updated the config.
+    - Having the qubit frequency perfectly calibrated (ramsey).
+    - (optional) Having calibrated the readout (readout_frequency, amplitude, duration_optimization IQ_blobs) for better SNR.
+    - Set the desired flux bias.
 """
-import os
+
 from qm.qua import *
 from qm import QuantumMachinesManager
 from qm import SimulationConfig
 from configuration import *
 from qualang_tools.results import progress_counter, fetching_tool
 from qualang_tools.plot import interrupt_on_close
-from qualang_tools.loops import from_array
+from qualang_tools.loops import from_array, get_equivalent_log_array
 import matplotlib.pyplot as plt
 from qualang_tools.results.data_handler import DataHandler
-from qm_saas import QmSaas, QOPVersion
-
 
 ##################
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 100  # The number of averages
-# Pulse duration sweep (in clock cycles = 4ns)
-# must be larger than 4 clock cycles and larger than the pi_len defined in the config
-t_min = 80 // 4
-t_max = 2000 // 4
-dt = 4 // 4
-durations = np.arange(t_min, t_max, dt)
+n_avg = 100
+# Dephasing time sweep (in clock cycles = 4ns) - minimum is 4 clock cycles
+tau_min = 4
+tau_max = 20_000 // 4
+d_tau = 40 // 4
+taus = np.arange(tau_min, tau_max + 0.1, d_tau)  # Linear sweep
+# taus = np.logspace(np.log10(tau_min), np.log10(tau_max), 21)  # Log sweep
 
 # Data to save
 save_data_dict = {
     "n_avg": n_avg,
-    "durations": durations,
+    "taus": taus,
     "config": config,
 }
+
+qubit_key = "q1"
+res_key = "rr1"
 
 ###################
 # The QUA program #
 ###################
-with program() as time_rabi:
-    n = declare(int)  # QUA variable for the averaging loop
-    t = declare(int)  # QUA variable for the qubit pulse duration
-    I = declare(fixed)  # QUA variable for the measured 'I' quadrature
-    Q = declare(fixed)  # QUA variable for the measured 'Q' quadrature
-    I_st = declare_stream()  # Stream for the 'I' quadrature
-    Q_st = declare_stream()  # Stream for the 'Q' quadrature
-    n_st = declare_stream()  # Stream for the averaging iteration 'n'
+with program() as echo:
+    n = declare(int)
+    n_st = declare_stream()
+    I = declare(fixed)
+    I_st = declare_stream()
+    Q = declare(fixed)
+    Q_st = declare_stream()
+    tau = declare(int)
 
-    with for_(n, 0, n < n_avg, n + 1):  # QUA for_ loop for averaging
-        with for_(*from_array(t, durations)):  # QUA for_ loop for sweeping the pulse duration
-            # Play the qubit pulse with a variable duration (in clock cycles = 4ns)
-            play("x180", "q1", duration=t)
+    with for_(n, 0, n < n_avg, n + 1):
+        with for_(*from_array(tau, taus)):
+            # 1st x90 pulse
+            play("x90", qubit_key)
+            # Wait the varying idle time
+            wait(tau, qubit_key)
+            # Echo pulse
+            play("x180", qubit_key)
+            # Wait the varying idle time
+            wait(tau, qubit_key)
+            # 2nd x90 pulse
+            play("x90", qubit_key)
             # Align the two elements to measure after playing the qubit pulse.
-            align("q1", "rr1")
+            align(qubit_key, res_key)
             # Measure the state of the resonator
-            # The integration weights have changed to maximize the SNR after having calibrated the IQ blobs.
             measure(
                 "readout",
-                "rr1",
+                res_key,
+                None,
                 dual_demod.full("rotated_cos", "rotated_sin", I),
                 dual_demod.full("rotated_minus_sin", "rotated_cos", Q),
             )
             # Wait for the qubit to decay to the ground state
-            wait(thermalization_time * u.ns, "rr1")
+            wait(thermalization_time * u.ns, res_key)
             # Save the 'I' & 'Q' quadratures to their respective streams
             save(I, I_st)
             save(Q, Q_st)
@@ -82,10 +90,21 @@ with program() as time_rabi:
 
     with stream_processing():
         # Cast the data into a 1D vector, average the 1D vectors together and store the results on the OPX processor
-        I_st.buffer(len(durations)).average().save("I")
-        Q_st.buffer(len(durations)).average().save("Q")
+        # If log sweep, then the swept values will be slightly different from np.logspace because of integer rounding in QUA.
+        # get_equivalent_log_array() is used to get the exact values used in the QUA program.
+        if np.isclose(np.std(taus[1:] / taus[:-1]), 0, atol=1e-3):
+            taus = get_equivalent_log_array(taus)
+            I_st.buffer(len(taus)).average().save("I")
+            Q_st.buffer(len(taus)).average().save("Q")
+        else:
+            I_st.buffer(len(taus)).average().save("I")
+            Q_st.buffer(len(taus)).average().save("Q")
         n_st.save("iteration")
 
+######################################
+#  Open Communication with the QOP  #
+######################################
+qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
 
 ###########################
 # Run or Simulate Program #
@@ -93,10 +112,10 @@ with program() as time_rabi:
 simulate = False
 
 if simulate:
-    qmm = QuantumMachinesManager(host=qop_ip, 
-                                    cluster_name=cluster_name)
-    simulation_config = SimulationConfig(duration=1_000)
-    job = qmm.simulate(config, time_rabi, simulation_config)
+    # Simulates the QUA program for the specified duration
+    simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    # Simulate blocks python until the simulation is done
+    job = qmm.simulate(config, echo, simulation_config)
     # Get the simulated samples
     samples = job.get_simulated_samples()
     # Plot the simulated samples
@@ -108,12 +127,10 @@ if simulate:
     # Visualize and save the waveform report
     waveform_report.create_plot(samples, plot=True, save_path=str(Path(__file__).resolve()))
 else:
-    qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave_calibration_db_path=os.getcwd())
-
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
-    job = qm.execute(time_rabi)
+    job = qm.execute(echo)
     # Get results from QUA program
     results = fetching_tool(job, data_list=["I", "Q", "iteration"], mode="live")
     # Live plotting
@@ -127,15 +144,15 @@ else:
         # Progress bar
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
-        plt.suptitle("Time Rabi")
+        plt.suptitle(f"Echo measurement")
         plt.subplot(211)
         plt.cla()
-        plt.plot(4 * durations, I, ".")
+        plt.plot(8 * taus, I, ".")
         plt.ylabel("I quadrature [V]")
         plt.subplot(212)
         plt.cla()
-        plt.plot(4 * durations, Q, ".")
-        plt.xlabel("Rabi pulse duration [ns]")
+        plt.plot(8 * taus, Q, ".")
+        plt.xlabel("Idle time [ns]")
         plt.ylabel("Q quadrature [V]")
         plt.pause(0.1)
         plt.tight_layout()
@@ -143,17 +160,19 @@ else:
     # Close the quantum machines at the end in order to put all flux biases to 0 so that the fridge doesn't heat-up
     qm.close()
 
-    # Fit the results to extract the x180 length
+    # Fit the results to extract the qubit coherence time T2
     try:
         from qualang_tools.plot.fitting import Fit
 
         fit = Fit()
         plt.figure()
-        rabi_fit = fit.rabi(4 * durations, I, plot=True)
-        plt.title(f"Time Rabi")
-        plt.xlabel("Rabi pulse duration [ns]")
+        T2_fit = fit.T1(8 * taus, I, plot=True)
+        qubit_T2 = np.abs(T2_fit["T1"][0])
+        plt.xlabel("Delay [ns]")
         plt.ylabel("I quadrature [V]")
-        print(f"Optimal x180_len = {round(1 / rabi_fit['f'][0] / 2 / 4) * 4} ns for {x180_amp:} V")
+        print(f"Qubit coherence time T2 = {qubit_T2:.0f} ns")
+        plt.legend((f"Coherence time T2 = {qubit_T2:.0f} ns",))
+        plt.title("Echo measurement")
     except (Exception,):
         pass
     # Save results

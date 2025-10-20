@@ -16,7 +16,7 @@ from qm_saas import QmSaas, QOPVersion
 #   Parameters   #
 ##################
 # Parameters Definition
-n_avg = 1000  # The number of averages
+n_avg = 10  # The number of averages
 # The frequency sweep around the resonator frequency "resonator_IF"
 span = 10 * u.MHz
 df = 100 * u.kHz
@@ -56,8 +56,8 @@ with program() as resonator_spec_flux_2D:
             # Update the frequency of the digital oscillator linked to the resonator element
             update_frequency(RR_ELEM, df + IF_RR1)
             with for_each_(dc, flux_array):
-                set_dc_offset("flux_tls1", "single", dc)
-                wait(FLUX_SETTLE_TIME * u.ns, RR_ELEM, "tls1")
+                set_dc_offset("flux_q1", "single", dc)
+                wait(FLUX_SETTLE_TIME * u.ns, RR_ELEM, "q1")
                 measure(
                     "readout",
                     RR_ELEM,
@@ -82,39 +82,28 @@ with program() as resonator_spec_flux_2D:
 #######################
 # Simulate or execute #
 #######################
-simulate = True
+simulate = False
 
 if simulate:
-    # --- SaaS login ---
-    client = QmSaas(
-    host="qm-saas.dev.quantum-machines.co",
-    email="benjamin.safvati@quantum-machines.co",
-    password="ubq@yvm3RXP1bwb5abv"
-    )
+    qmm = QuantumMachinesManager(host=qop_ip, 
+                                    cluster_name=cluster_name)
 
-    with client.simulator(QOPVersion(os.environ.get("QM_QOP_VERSION", "v2_4_4"))) as inst:
-        inst.spawn()
-        qmm = QuantumMachinesManager(
-            host=inst.host,
-            port=inst.port,
-            connection_headers=inst.default_connection_headers,
-        )    # Simulates the QUA program for the specified duration
-        simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
-        # Simulate blocks python until the simulation is done
-        job = qmm.simulate(config, resonator_spec_flux_2D, simulation_config)
-        # Get the simulated samples
-        samples = job.get_simulated_samples()
-        # Plot the simulated samples
-        samples.con1.plot()
-        # Get the waveform report object
-        waveform_report = job.get_simulated_waveform_report()
-        # Cast the waveform report to a python dictionary
-        waveform_dict = waveform_report.to_dict()
-        # Visualize and save the waveform report
-        waveform_report.create_plot(samples, plot=True, save_path=str(Path(__file__).resolve()))
+    simulation_config = SimulationConfig(duration=1_000) # duration is in units of clock cycles, i.e., 4 nanoseconds
+
+    job = qmm.simulate(config, resonator_spec_flux_2D, simulation_config)
+    # Get the simulated samples
+    samples = job.get_simulated_samples()
+    # Plot the simulated samples
+    samples.con1.plot()
+    # Get the waveform report object
+    waveform_report = job.get_simulated_waveform_report()
+    # Cast the waveform report to a python dictionary
+    waveform_dict = waveform_report.to_dict()
+    # Visualize and save the waveform report
+    waveform_report.create_plot(samples, plot=True, save_path=str(Path(__file__).resolve()))
 
 else:
-    qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave=octave_config)
+    qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name)
     # Open the quantum machine
     qm = qmm.open_qm(config)
     # Send the QUA program to the OPX, which compiles and executes it
@@ -169,11 +158,13 @@ else:
 
     plt.figure()
     plt.suptitle(f"Resonator spectroscopy - LO = {LO_RR / u.GHz} GHz")
-    plt.pcolor(flux_array, (dfs + IF_RR1) / u.MHz, R)
+    im = plt.pcolor(flux_array, (dfs + IF_RR1) / u.MHz, R)
     plt.plot(flux_array, minima / u.MHz, "x-", color="red", label="Flux minima")
     plt.plot(flux_array, fitted_curve / u.MHz, label="Fitted Cosine", color="orange")
     plt.xlabel("Flux bias [V]")
     plt.ylabel("Readout IF [MHz]")
+    cbar = plt.colorbar(im)
+    cbar.ax.set_title("R")
     plt.legend()
 
     print("DC flux value corresponding to the maximum frequency point", flux_array[np.argmax(fitted_curve)])

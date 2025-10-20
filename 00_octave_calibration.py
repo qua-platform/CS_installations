@@ -21,8 +21,7 @@ def main():
     calibration = True
 
     if calibration:
-        elements = ["qubit1", "qubit2", "qubit3", "rr1", "rr2", "rr3"]
-       # elements = ["qubit1", "qubit2", "qubit3"]
+        elements = ["q1", "q2", "q3", "rr1", "rr2", "rr3"]
         for element in elements:
             try:
                 qm.calibrate_element(element)  # uses LO/IF from your config

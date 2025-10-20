@@ -67,18 +67,18 @@ with program() as rabi_amp_freq:
         with for_(*from_array(t, durations)):  # QUA for_ loop for sweeping the pulse duration
             with for_(*from_array(f, dfs)):  # QUA for_ loop for sweeping the frequency
                 # Update the frequency of the digital oscillator linked to the qubit element
-                update_frequency("qubit1", f + IF_qubit1)
+                update_frequency("q1", f + IF_q1)
                 # Play the qubit pulse with a variable duration (in clock cycles = 4ns)
-                play("x180", "qubit1", duration=t)
+                play("x180", "q1", duration=t)
                 # Align the two elements to measure after playing the qubit pulse.
-                align("qubit1", "rr1")
+                align("q1", "rr1")
                 # Measure the state of the resonator.
                 # The integration weights have changed to maximize the SNR after having calibrated the IQ blobs.
                 measure(
                     "readout",
                     "rr1",
-                    dual_demod.full("rotated_cos", "rotated_sin", I),
-                    dual_demod.full("rotated_minus_sin", "rotated_cos", Q),
+                    dual_demod.full("cos", "sin", I),
+                    dual_demod.full("minus_sin", "cos", Q),
                 )
                 # Wait for the qubit to decay to the ground state
                 wait(thermalization_time * u.ns, "rr1")
@@ -98,36 +98,26 @@ with program() as rabi_amp_freq:
 ###########################
 # Run or Simulate Program #
 ###########################
-simulate = True
+simulate = False
 
 if simulate:
-    # --- SaaS login ---
-    client = QmSaas(
-    host="qm-saas.dev.quantum-machines.co",
-    email="benjamin.safvati@quantum-machines.co",
-    password="ubq@yvm3RXP1bwb5abv"
-    )
+    qmm = QuantumMachinesManager(host=qop_ip, 
+                                    cluster_name=cluster_name)
 
-    with client.simulator(QOPVersion(os.environ.get("QM_QOP_VERSION", "v2_4_4"))) as inst:
-        inst.spawn()
-        qmm = QuantumMachinesManager(
-            host=inst.host,
-            port=inst.port,
-            connection_headers=inst.default_connection_headers,
-        )
-        simulation_config = SimulationConfig(duration=10_000)  # In clock cycles = 4ns
+    simulation_config = SimulationConfig(duration=1_000) # duration is in units of clock cycles, i.e., 4 nanoseconds
 
-        job = qmm.simulate(config, rabi_amp_freq, simulation_config)
-        # Get the simulated samples
-        samples = job.get_simulated_samples()
-        # Plot the simulated samples
-        samples.con1.plot()
-        # Get the waveform report object
-        waveform_report = job.get_simulated_waveform_report()
-        # Cast the waveform report to a python dictionary
-        waveform_dict = waveform_report.to_dict()
-        # Visualize and save the waveform report
-        waveform_report.create_plot(samples, plot=True, save_path=str(Path(__file__).resolve()))
+# Simulate blocks python until the simulation is done
+    job = qmm.simulate(config, rabi_amp_freq, simulation_config)
+    # Get the simulated samples
+    samples = job.get_simulated_samples()
+    # Plot the simulated samples
+    samples.con1.plot()
+    # Get the waveform report object
+    waveform_report = job.get_simulated_waveform_report()
+    # Cast the waveform report to a python dictionary
+    waveform_dict = waveform_report.to_dict()
+    # Visualize and save the waveform report
+    waveform_report.create_plot(samples, plot=True, save_path=str(Path(__file__).resolve()))
 else:
     qmm = QuantumMachinesManager(host=qop_ip, port=qop_port, cluster_name=cluster_name, octave_calibration_db_path=os.getcwd())
     # Open the quantum machine
@@ -150,7 +140,7 @@ else:
         progress_counter(iteration, n_avg, start_time=results.get_start_time())
         # Plot results
         plt.subplot(211)
-        plt.suptitle(f"Rabi chevron with LO={LO_qubit1 / u.GHz}GHz and IF={IF_qubit1 / u.MHz}MHz")
+        plt.suptitle(f"Rabi chevron with LO={LO_q1 / u.GHz}GHz and IF={IF_q1 / u.MHz}MHz")
         plt.cla()
         plt.title(r"$R=\sqrt{I^2 + Q^2}$")
         plt.pcolor(dfs / u.MHz, durations * 4, R)

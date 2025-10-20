@@ -34,7 +34,7 @@ from quam_builder.builder.superconducting import build_quam
 host_ip = "http://172.16.33.101/"  # QOP IP address
 port = None  # QOP Port
 cluster_name = "CS_1"  # Name of the cluster
-calibration_db_path = "C:/Users/BenjaminSafvati/Customers/yMo_Chen"  
+calibration_db_path = "C:/Users/BenjaminSafvati/Customers/Mo_Chen"  
 
 ########################################################################################################################
 # %%                                      Define the available instrument setup
