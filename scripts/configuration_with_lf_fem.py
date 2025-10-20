@@ -38,7 +38,7 @@ default_additional_files = {
 # OPX configuration #
 #####################
 con = "con1"
-fem = 1  # Should be the LF-FEM index, e.g., 1
+fem = 3  # Should be the LF-FEM index, e.g., 1
 # Set octave_config to None if no octave are present
 octave_config = None
 
@@ -170,8 +170,16 @@ config = {
                         2: {},  # TTL for QDAC
                     },
                     "analog_inputs": {
-                        1: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},  # RF reflectometry input
-                        2: {"offset": 0.0, "gain_db": 0, "sampling_rate": sampling_rate},  # DC readout input
+                        1: {
+                            "offset": 0.0,
+                            "gain_db": 0,
+                            "sampling_rate": sampling_rate,
+                        },  # RF reflectometry input
+                        2: {
+                            "offset": 0.0,
+                            "gain_db": 0,
+                            "sampling_rate": sampling_rate,
+                        },  # DC readout input
                     },
                 }
             },
@@ -384,9 +392,15 @@ config = {
     },
     "waveforms": {
         "P1_pi_wf": {"type": "constant", "sample": pi_amps[0] - level_manip[0]},
-        "P1_pi_half_wf": {"type": "constant", "sample": pi_half_amps[0] - level_manip[0]},
+        "P1_pi_half_wf": {
+            "type": "constant",
+            "sample": pi_half_amps[0] - level_manip[0],
+        },
         "P2_pi_wf": {"type": "constant", "sample": pi_amps[1] - level_manip[1]},
-        "P2_pi_half_wf": {"type": "constant", "sample": pi_half_amps[1] - level_manip[1]},
+        "P2_pi_half_wf": {
+            "type": "constant",
+            "sample": pi_half_amps[1] - level_manip[1],
+        },
         "P1_step_wf": {"type": "constant", "sample": P1_step_amp},
         "P2_step_wf": {"type": "constant", "sample": P2_step_amp},
         "charge_sensor_step_wf": {"type": "constant", "sample": charge_sensor_amp},
