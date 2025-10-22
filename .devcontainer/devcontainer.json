@@ -1,0 +1,17 @@
+{
+	"name": "Python 3",
+	"image": "mcr.microsoft.com/devcontainers/python:0-3.11",
+	"remoteUser": "root",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces,type=bind,consistency=cached",
+	"containerEnv": {
+        "QUAM_STATE_PATH": "/workspaces/quam_state"
+    },
+    "postCreateCommand": "apt-get update && apt-get install -y python3-tk tk && cd /workspaces && pip install -U pip && pip install ipykernel",
+    "workspaceFolder": "/workspaces",
+    "forwardPorts": [8003,8004],
+    "mounts": [
+        "source=/mnt/c/Users/hiroyukii/OneDrive - QM Machines LTD/Documents/Codes/qua-platform/qualibration-libs,target=/workspaces/qualibration-libs,type=bind",
+        "source=/mnt/c/Users/hiroyukii/OneDrive - QM Machines LTD/Documents/Codes/qua-platform/quam-builder,target=/workspaces/quam-builder,type=bind",
+        "source=/mnt/c/Users/hiroyukii/OneDrive - QM Machines LTD/Documents/Codes/qua-platform/py-qua-tools,target=/workspaces/py-qua-tools,type=bind",
+    ]
+}
