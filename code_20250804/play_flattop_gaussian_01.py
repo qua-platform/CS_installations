@@ -40,7 +40,7 @@ save_data_dict = {
 ###################
 
 use_twin = True
-a = 0.5
+a_py = 0.5
 
 with program() as PROGRAM:
     n = declare(int)  # QUA variable for the averaging loop

@@ -16,7 +16,7 @@ u = unit(coerce_to_integer=True)
 ######################
 # Network parameters #
 ######################
-qop_ip = "172.16.33.115"  # Write the QM router IP address
+qop_ip = "172.16.33.114"  # Write the QM router IP address
 cluster_name = 'CS_4'  # Write your cluster_name if version >= QOP220
 qop_port = None  # Write the QOP port if version < QOP220
 octave_config = None
@@ -65,6 +65,11 @@ default_additional_files = {
     "optimal_weights.npz": "optimal_weights.npz",
 }
 
+# These should be changed to your credentials.
+QOP_VER = "v3_3_0"
+EMAIL = "fabio@quantum-machines.co"
+PWD = "97kL6z3Yn6hq"
+HOST = "qm-saas.dev.quantum-machines.co"
 
 #####################
 # OPX configuration #
@@ -77,8 +82,8 @@ mwfem_slot = 1
 #                  Qubits                   #
 #############################################
 # CW pulse parameter
-CONST_LEN = 16
-CONST_AMP = 0.12 # 125 * u.mV
+CONST_LEN = 100
+CONST_AMP = 0.5 # 125 * u.mV
 
 # Saturation_pulse
 SATURATION_LEN = 100 * u.us
