@@ -2,6 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+
 from dataclasses import asdict
 
 from qm.qua import *
@@ -13,7 +14,7 @@ from qualang_tools.units import unit
 
 from qualibrate import QualibrationNode
 from quam_config import Quam
-from calibration_utils.cr_time_rabi import (
+from calibration_utils.baked_cr_time_rabi import (
     Parameters,
     process_raw_dataset,
     fit_raw_data,
@@ -21,6 +22,7 @@ from calibration_utils.cr_time_rabi import (
     plot_raw_data_with_fit,
 )
 from calibration_utils.cr_utils import *
+from calibration_utils.cr_utils.baking_tools import bake_waveforms
 from calibration_utils.data_process_utils import *
 from qualibration_libs.parameters import get_qubit_pairs, get_qubits
 from qualibration_libs.runtime import simulate_and_plot
@@ -30,27 +32,15 @@ from qualibration_libs.core import tracked_updates
 
 # %% {Description}
 description = """
-        Cross-Resonance Time Rabi with Quantum State Tomography (QST)
-This experiment measures the target qubit response under a variable-length cross-resonance (CR) drive, 
-with quantum state tomography for both control states. The sequence has two parts, separated by qubit relaxation:
-1. Control qubit prepared in |g>, apply a CR pulse of variable duration to the target.  
-2. Control qubit prepared in |e>, apply the same CR pulse to the target, then a corrective x180 on the control.  
-   (Ensures the target effectively starts in |g> at zero CR length in both cases.)
-QST is performed by projecting the target onto X, Y, and Z bases before measurement. We can then calculate the
-interaction strengths of ["IX", "IY", "IZ", "ZX", "ZY", "ZZ"] from the evolution.
-
-Prerequisites:
-    - Resonator spectroscopy (to locate resonator frequency).
-    - Qubit spectroscopy, Rabi chevron, and power Rabi (to calibrate the qubit π pulse and update the config).
-    - (Optional) Readout calibration (frequency, amplitude, duration optimization, IQ blobs) for improved SNR.
-
-Reference: A. D. Córcoles et al., Phys. Rev. A 87, 030301(R) (2013).
+        Stark-induced ZZ
 """
 
 
 # Be sure to include [Parameters, Quam] so the node has proper type hinting
-node = QualibrationNode[Parameters, Quam](
-    name="30_CR_time_rabi_QST",  # Name should be unique
+node = QualibrationNode[
+    Parameters, Quam
+](
+    name="40_baked_CR_time_rabi_QST",  # Name should be unique
     description=description,  # Describe what the node is doing, which is also reflected in the QUAlibrate GUI
     parameters=Parameters(),  # Node parameters defined under quam_experiment/experiments/node_name
 )
@@ -60,31 +50,39 @@ node = QualibrationNode[Parameters, Quam](
 # These parameters are ignored when run through the GUI or as part of a graph
 @node.run_action(skip_if=node.modes.external)
 def custom_param(node: QualibrationNode[Parameters, Quam]):
-    # """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
-    # # You can get type hinting in your IDE by typing node.parameters.
-    # node.parameters.num_shots = 3
+    """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
+    # You can get type hinting in your IDE by typing node.parameters.
+    # node.parameters.qubit_pairs = ["q1-2"]
+    node.parameters.simulate = True
+    node.parameters.simulation_duration_ns = 2_200
+    
+    node.parameters.num_shots = 3
     # node.parameters.max_wait_time_in_ns = 100
-    # node.parameters.qubit_pairs = ["q40-41", "q42-43"]
-    # node.parameters.use_state_discrimination = False
-    # node.parameters.wf_type = "square"
-    # node.parameters.cr_type = "direct+cancel+echo"
-    # node.parameters.cr_drive_amp_scaling = [
-    #     0.89,
-    #     0.89,
-    # ]  # None : setting None to use the amp from the config
-    # node.parameters.cr_drive_phase = [
-    #     0.12,
-    #     0.12,
-    # ]  # None : setting None to use the amp from the config
-    # node.parameters.cr_cancel_amp_scaling = [
-    #     0.34,
-    #     0.34,
-    # ]  # None : setting None to use the amp from the config
-    # node.parameters.cr_cancel_phase = [
-    #     0.23,
-    #     0.23,
-    # ]  # None : setting None to use the amp from the config
-    pass
+    node.parameters.qubit_pairs = ["q40-41", "q42-43"]
+    node.parameters.use_state_discrimination = False
+    node.parameters.cr_type = "direct+cancel+echo"
+
+    node.parameters.rise_fall_duration_in_ns = 20
+    node.parameters.min_flattop_duration_in_ns = 80
+    node.parameters.max_flattop_duration_in_ns = 200
+    node.parameters.step_flattop_duration_in_ns = 20
+
+    node.parameters.cr_drive_amp_scaling = [
+        0.89,
+        0.89,
+    ]  # None : setting None to use the amp from the config
+    node.parameters.cr_drive_phase = [
+        0.0, # 0.12,
+        0.0, # 0.12,
+    ]  # None : setting None to use the amp from the config
+    node.parameters.cr_cancel_amp_scaling = [
+        0.34,
+        0.34,
+    ]  # None : setting None to use the amp from the config
+    node.parameters.cr_cancel_phase = [
+        0.0, # 0.23,
+        0.0, # 0.23,
+    ]  # None : setting None to use the amp from the config
 
 
 # Instantiate the QUAM class from the state file
@@ -98,10 +96,10 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
     # Class containing tools to help handle units and conversions.
     u = unit(coerce_to_integer=True)
 
-    qubit_pairs = get_qubit_pairs(node)
-    qubit_pairs = pick_disjoint_qubit_pairs(qubit_pairs)
-    
-    node.namespace["qubit_pairs"] = qubit_pairs
+    # Get the config from the machine
+    node.namespace["config"] = node.machine.generate_config()
+
+    node.namespace["qubit_pairs"] = qubit_pairs = get_qubit_pairs(node)
     num_qubit_pairs = len(qubit_pairs)
 
     # Update the readout power to match the desired range, this change will be reverted at the end of the node.
@@ -120,14 +118,75 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
     cr_cancel_amp_scaling = broadcast_param_to_list(node.parameters.cr_cancel_amp_scaling, num_qubit_pairs)
     cr_cancel_phase = broadcast_param_to_list(node.parameters.cr_cancel_phase, num_qubit_pairs)
 
-    # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
-    pulse_durations = np.arange(
-        node.parameters.min_wait_time_in_ns // 4,
-        node.parameters.max_wait_time_in_ns // 4,
-        node.parameters.time_step_in_ns // 4,
+    for qp in qubit_pairs:
+        assert (
+            node.parameters.min_wait_time_in_ns
+            <= qp.cross_resonance.operations[wf_type].length  # 2 * 40 ns
+        ), (
+            f"zz drive pulse ({qp.cross_resonance.operations[wf_type].length} ns) must be longer than the minimum idle time ({node.parameters.min_wait_time_in_ns} ns)"
+        )
+
+    # To make it simple for this time:
+    rise_fall_len_ns = node.parameters.rise_fall_duration_in_ns
+    min_flattop_len_ns = node.parameters.min_flattop_duration_in_ns
+    max_flattop_len_ns = node.parameters.max_flattop_duration_in_ns
+    step_flattop_len_ns = node.parameters.step_flattop_duration_in_ns
+
+    # assert rise_fall_len_ns >= 160
+    assert rise_fall_len_ns % 4 == 0
+    assert min_flattop_len_ns % 4 == 0
+    assert max_flattop_len_ns % 4 == 0
+    assert step_flattop_len_ns % 4 == 0
+
+    flattop_durations_ns = np.arange(
+        min_flattop_len_ns,
+        max_flattop_len_ns + 1,
+        step_flattop_len_ns,
     )
+    pulse_durations = flattop_durations_ns + 2 * rise_fall_len_ns
+
+    from qualang_tools.bakery import baking
+    from qualang_tools.bakery.bakery import Baking
+    from qualang_tools.config.waveform_tools import flattop_gaussian_waveform, drag_gaussian_pulse_waveforms
+
+    cr_flattop_pulses = {}
+    for i, qp in enumerate(qubit_pairs):
+        qc, qt, cr, cr_elems = get_cr_elements(qp)
+        cr_flattop_pulses[qp.name] = []
+
+        a1 = cr_drive_amp_scaling[i]
+        p1 = cr_drive_phase[i]
+        c1 = float(np.cos(2 * np.pi * p1))
+        s1 = float(np.sin(2 * np.pi * p1))
+        amp_mat1 = (a1 * c1, a1 * s1, -a1 * s1, a1 * c1)
+
+        a2 = cr_cancel_amp_scaling[i]
+        p2 = cr_cancel_phase[i]
+        c2 = float(np.cos(2 * np.pi * p2))
+        s2 = float(np.sin(2 * np.pi * p2))
+        amp_mat2 = (a2 * c2, a2 * s2, -a2 * s2, a2 * c2)
+        minus_amp_mat2 = tuple([-a for a in amp_mat2])
+
+        for dur in flattop_durations_ns:
+            suffix = f"{qp.name}_{dur:d}"
+            flattop_wf = flattop_gaussian_waveform(1.0, dur, rise_fall_len_ns)
+            zero_wf = [0] * (rise_fall_len_ns + dur + rise_fall_len_ns)
+
+            with baking(node.namespace["config"]) as b:
+                # Add operations
+                b.add_op(f"BakedOp_cr_{suffix}", cr.name, [flattop_wf, zero_wf])
+                b.add_op(f"BakedOp_qt_{suffix}", qt.xy.name, [flattop_wf, zero_wf])
+                # Bake pulses
+                b.play(f"BakedOp_cr_{suffix}", cr.name, amp=amp_mat1)
+                b.play(f"BakedOp_qt_{suffix}", qt.xy.name, amp=amp_mat2)
+
+            # Append the baking object in the list to call it from the QUA program
+            cr_flattop_pulses[qp.name].append(b)
+
+
     # QST basis corresponding to projection to X, Y, Z
     qst_basis = np.array([0, 1, 2])
+
     # control qubit state: 0 -> |g>, 1 -> |e>
     control_state = np.array([0, 1])
 
@@ -140,16 +199,22 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
     }
 
     with program() as node.namespace["qua_program"]:
-        I_c, I_c_st, Q_c, Q_c_st, n, n_st = node.machine.declare_qua_variables(num_IQ_pairs=num_qubit_pairs)
-        I_t, I_t_st, Q_t, Q_t_st, _, _ = node.machine.declare_qua_variables(num_IQ_pairs=num_qubit_pairs)
+        I_c, I_c_st, Q_c, Q_c_st, n, n_st = node.machine.declare_qua_variables(
+            num_IQ_pairs=num_qubit_pairs
+        )
+        I_t, I_t_st, Q_t, Q_t_st, _, _ = node.machine.declare_qua_variables(
+            num_IQ_pairs=num_qubit_pairs
+        )
         if state_discrimination:
             state_c = [declare(int) for _ in range(num_qubit_pairs)]
             state_t = [declare(int) for _ in range(num_qubit_pairs)]
             state_c_st = [declare_stream() for _ in range(num_qubit_pairs)]
             state_t_st = [declare_stream() for _ in range(num_qubit_pairs)]
-        t = declare(int)
         s = declare(int)  # QUA variable for the control state
         c = declare(int)  # QUA variable for the projection index in QST
+
+        # Reset explicitly
+        reset_global_phase()
 
         for multiplexed_qubit_pairs in qubit_pairs.batch():
             # Initialize the QPU in terms of flux points (flux tunable transmons and/or tunable couplers)
@@ -161,9 +226,12 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
             with for_(n, 0, n < n_avg, n + 1):
                 save(n, n_st)
 
-                with for_(*from_array(t, pulse_durations)):
+                for pulse_idx, pulse_duration_ns in enumerate(pulse_durations):
+
                     with for_(c, 0, c < 3, c + 1):  # bases
+
                         with for_(s, 0, s < 2, s + 1):  # states
+
                             # Reset the qubits to the ground state
                             for i, qp in multiplexed_qubit_pairs.items():
                                 qc, qt, cr, cr_elems = get_cr_elements(qp)
@@ -181,47 +249,65 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                                 )
                                 align(*cr_elems)
 
-                                # Prepare Qc at 0/1
+                                # update_frequency(cr.name, 0)
+                                # update_frequency(qc.xy.name, 0)
+                                # update_frequency(qt.xy.name, 0)
+
+                                # flip
                                 with if_(s == 1):
                                     qc.xy.play("x180")
-                                    align(*cr_elems)
+                                    qt.xy.wait(qc.xy.operations["x180"].length // 4)
+                                align(*cr_elems)
 
                                 # Play CR
-                                qp.apply(
-                                    "cr",
-                                    cr_type=cr_type,
-                                    wf_type=wf_type,
-                                    cr_drive_amp_scaling=cr_drive_amp_scaling[i],
-                                    cr_drive_phase=cr_drive_phase[i],
-                                    cr_cancel_amp_scaling=cr_cancel_amp_scaling[i],
-                                    cr_cancel_phase=cr_cancel_phase[i],
-                                    cr_duration_clock_cycles=t,
-                                )
+                                cr_flattop_pulses[qp.name][pulse_idx].run()
+                                align(*cr_elems)
+                                
+                                qc.xy.play("x180")
+                                align(*cr_elems)
+                                
+                                cr_flattop_pulses[qp.name][pulse_idx].run(amp_array=[(cr.name, -1), (qt.xy.name, -1)])
+                                align(*cr_elems)
+                                
+                                qc.xy.play("x180")
+                                align(*cr_elems)
+
+                                # # QST on Qt
+                                # with switch_(c):
+                                #     with case_(0):  # projection along X
+                                #         qc.xy.play("-y90")
+                                #         qt.xy.play("-y90")
+                                #     with case_(1):  # projection along Y
+                                #         qc.xy.play("x90")
+                                #         qt.xy.play("x90")
+                                #     with case_(2):  # projection along Z
+                                #         qc.xy.wait(qc.xy.operations["x180"].length * u.ns)
+                                #         qt.xy.wait(qt.xy.operations["x180"].length * u.ns)
+
 
                                 # QST on Qt
-                                align(*cr_elems)
-                                with switch_(c):
-                                    with case_(0):  # projection along X
-                                        qc.xy.play("-y90")
-                                        qt.xy.play("-y90")
-                                    with case_(1):  # projection along Y
-                                        qc.xy.play("x90")
-                                        qt.xy.play("x90")
-                                    with case_(2):  # projection along Z
-                                        qc.xy.wait(qc.xy.operations["x180"].length * u.ns)
-                                        qt.xy.wait(qt.xy.operations["x180"].length * u.ns)
+                                with if_(c==0):
+                                    qc.xy.play("-y90")
+                                    qt.xy.play("-y90")
+                                with elif_(c==1):
+                                    qc.xy.play("x90")
+                                    qt.xy.play("x90")
 
                                 align(*cr_elems, qc.resonator.name, qt.resonator.name)
 
                                 # Measure the state of the resonators
-                                if node.parameters.use_state_discrimination:
+                                if state_discrimination:
                                     qc.readout_state(state_c[i])
                                     qt.readout_state(state_t[i])
                                     save(state_c[i], state_c_st[i])
                                     save(state_t[i], state_t_st[i])
                                 else:
-                                    qc.resonator.measure("readout", qua_vars=(I_c[i], Q_c[i]))
-                                    qt.resonator.measure("readout", qua_vars=(I_t[i], Q_t[i]))
+                                    qc.resonator.measure(
+                                        "readout", qua_vars=(I_c[i], Q_c[i])
+                                    )
+                                    qt.resonator.measure(
+                                        "readout", qua_vars=(I_t[i], Q_t[i])
+                                    )
                                     # save data
                                     save(I_c[i], I_c_st[i])
                                     save(Q_c[i], Q_c_st[i])
@@ -229,8 +315,8 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                                     save(Q_t[i], Q_t_st[i])
 
                                 # Wait for the qubit to decay to the ground state - Can be replaced by active reset
-                                qc.resonator.wait(qc.resonator.depletion_time * u.ns)
-                                qt.resonator.wait(qt.resonator.depletion_time * u.ns)
+                                qc.resonator.wait(qc.resonator.depletion_time // 4)
+                                qt.resonator.wait(qt.resonator.depletion_time // 4)
 
         with stream_processing():
             n_st.save("n")
@@ -264,7 +350,7 @@ def simulate_qua_program(node: QualibrationNode[Parameters, Quam]):
     # Connect to the QOP
     qmm = node.machine.connect()
     # Get the config from the machine
-    config = node.machine.generate_config()
+    config = node.namespace["config"]
 
     # Simulate the QUA program, generate the waveform report and plot the simulated samples
     samples, fig, wf_report = simulate_and_plot(qmm, config, node.namespace["qua_program"], node.parameters)
@@ -276,10 +362,15 @@ def simulate_qua_program(node: QualibrationNode[Parameters, Quam]):
 @node.run_action(skip_if=node.parameters.load_data_id is not None or node.parameters.simulate)
 def execute_qua_program(node: QualibrationNode[Parameters, Quam]):
     """Connect to the QOP, execute the QUA program and fetch the raw data and store it in a xarray dataset called "ds_raw"."""
+    from qm import generate_qua_script
+    sourceFile = open('debug.py', 'w')
+    print(generate_qua_script(node.namespace["qua_program"], node.namespace["config"]), file=sourceFile) 
+    sourceFile.close()
+
     # Connect to the QOP
     qmm = node.machine.connect()
     # Get the config from the machine
-    config = node.machine.generate_config()
+    config = node.namespace["config"]
 
     # Execute the QUA program only if the quantum machine is available (this is to avoid interrupting running jobs).
     with qm_session(qmm, config, timeout=node.parameters.timeout) as qm:

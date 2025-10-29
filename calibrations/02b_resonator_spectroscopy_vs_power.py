@@ -120,6 +120,9 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
         a = declare(fixed)  # QUA variable for the readout amplitude pre-factor
         df = declare(int)  # QUA variable for the readout frequency
 
+        # Reset explicitly
+        reset_global_phase()
+
         for multiplexed_qubits in qubits.batch():
             # Initialize the QPU in terms of flux points (flux tunable transmons and/or tunable couplers)
             for qubit in multiplexed_qubits.values():

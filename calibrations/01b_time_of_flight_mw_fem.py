@@ -99,6 +99,9 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
         n_st = declare_stream()
         adc_st = [declare_stream(adc_trace=True) for _ in range(num_qubits)]  # The stream to store the raw ADC trace
 
+        # Reset explicitly
+        reset_global_phase()
+
         for multiplexed_qubits in qubits.batch():
             with for_(n, 0, n < node.parameters.num_shots, n + 1):
                 save(n, n_st)

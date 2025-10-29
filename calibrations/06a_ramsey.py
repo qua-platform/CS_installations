@@ -90,6 +90,9 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
         detuning_sign = declare(int)
         virtual_detuning_phases = [declare(fixed) for _ in range(num_qubits)]
 
+        # Reset explicitly
+        reset_global_phase()
+
         if node.parameters.use_state_discrimination:
             state = [declare(int) for _ in range(num_qubits)]
             state_st = [declare_stream() for _ in range(num_qubits)]

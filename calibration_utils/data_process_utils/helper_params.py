@@ -28,13 +28,15 @@ def pick_disjoint_qubit_pairs(pairs):
 
     edges = []
     seen = set()
+    name_qp_map = {}
     for s in pairs:
-        m = _pat.match(s.strip())
+        m = _pat.match(s.name)
         if not m:
             raise ValueError(f"Bad pair: {s!r}")
         a, b = map(int, m.groups())
         if a == b:
             continue  # skip self-pairs
+        name_qp_map[(a, b)] = s
         a, b = (a, b) if a < b else (b, a)  # normalize
         if (a, b) not in seen:              # dedupe q2-1 vs q1-2
             seen.add((a, b))
@@ -47,11 +49,11 @@ def pick_disjoint_qubit_pairs(pairs):
     out = []
     for a, b in edges:
         if a not in used and b not in used:
-            out.append(f"q{a}-{b}")  # always sorted form
+            out.append(name_qp_map[(a, b)])  # always sorted form
             used.update((a, b))
     
     if len(pairs) != len(out):
-        print(f"qubit_pairs passed: {pairs}")
-        print(f"qubit_pairs chosen: {out}")
+        print(f"qubit_pairs passed: {[p.name for p in pairs]}")
+        print(f"qubit_pairs chosen: {[p.name for p in out]}")
 
     return out

@@ -184,15 +184,12 @@ for k, qubit in enumerate(machine.qubits.values()):
     # qubit.xy.opx_output.upconverter_frequency = None # xy_LO.tolist()[k]  # Qubit drive up-converter frequency
     qubit.xy.opx_output.upconverters = {
         1: {"frequency": xy_LO.tolist()[k]},
-        2: {"frequency": 5.4 * u.GHz},
+        2: {"frequency": xy_LO.tolist()[k] - 100 * u.MHz},
     }
     qubit.xy.opx_output.band = get_band(xy_LO.tolist()[k])  # Qubit drive band for the up-conversion
     # qubit.xy.LO_frequency = xy_LO.tolist()[k] # f"#/qubits/{qubit.name}/xy/upconverter_frequency"
     print(f"{qubit.name} - .xy UCF: {qubit.xy.upconverter_frequency}")
     print(f"{qubit.name} - .xy LO: {qubit.xy.LO_frequency}")
-
-    qubit.xy_detuned.RF_frequency = f"#/qubits/{qubit.name}/xy/RF_frequency"
-    qubit.xy_detuned.upconverter = qubit.xy.upconverter
 
 
 # Assign shared cores
@@ -205,11 +202,6 @@ for k, qubit in enumerate(machine.qubits.values()):
 for k, qp in enumerate(machine.qubit_pairs.values()):
     qc = qp.qubit_control
     qp.cross_resonance.core = f"{qc.name}_{qc.xy.opx_output.controller_id}_slot{qc.xy.opx_output.fem_id}"
-
-for k, qp in enumerate(machine.qubit_pairs.values()):
-    qc = qp.qubit_control
-    qp.zz_drive.core = f"{qc.name}_{qc.xy.opx_output.controller_id}_slot{qc.xy.opx_output.fem_id}"
-
 
 ########################################################################################################################
 # %%                                        Pulse parameters
@@ -285,24 +277,6 @@ for k, qp in enumerate(machine.qubit_pairs):
     print(f"{qp_name} - CR target_qubit_IF_frequency: {qb_pair.cross_resonance.target_qubit_IF_frequency}")
     print(f"{qp_name} - CR LO_frequency: {qb_pair.cross_resonance.LO_frequency}")
 
-    qb_pair.zz_drive.target_qubit_LO_frequency = f"#/qubits/{qt.name}/xy/LO_frequency"
-    qb_pair.zz_drive.target_qubit_IF_frequency = f"#/qubits/{qt.name}/xy/intermediate_frequency"
-    qb_pair.zz_drive.LO_frequency = f"#/qubits/{qt.name}/xy/LO_frequency"
-    qb_pair.zz_drive.detuning = -30 * u.MHz
-    # qt.xy_detuned.RF_frequency = None
-    qt.xy_detuned.RF_frequency = f"#./inferred_RF_frequency"
-    qt.xy_detuned.intermediate_frequency = f"#./inferred_intermediate_frequency"
-    qt.xy_detuned.detuning = -30 * u.MHz
-    qb_pair.zz_drive.intermediate_frequency = f"#./inferred_intermediate_frequency"
-    qb_pair.zz_drive.opx_output.upconverter_frequency = None
-    qb_pair.zz_drive.upconverter = 2
-
-    print(f"{qp_name} - ZZ LO: {qb_pair.zz_drive.opx_output.upconverters[2]['frequency']}")
-    print(f"{qp_name} - ZZ IF: {qb_pair.zz_drive.intermediate_frequency}")
-    print(f"{qp_name} - ZZ target_qubit_LO_frequency: {qb_pair.zz_drive.target_qubit_LO_frequency}")
-    print(f"{qp_name} - ZZ target_qubit_IF_frequency: {qb_pair.zz_drive.target_qubit_IF_frequency}")
-    print(f"{qp_name} - ZZ LO_frequency: {qb_pair.zz_drive.LO_frequency}")
-
     # Cross Resonance
     qb_pair.macros["cr"] = CRGate()
     # square
@@ -363,80 +337,12 @@ for k, qp in enumerate(machine.qubit_pairs):
         flat_length=flattop_len,
         axis_angle=0.0, 
     )
-    qb_pair.qubit_target.xy.operations[f"cr_flattop{qb_pair.name}"] = pulses.FlatTopGaussianPulse(
+    qb_pair.qubit_target.xy.operations[f"cr_flattop_{qb_pair.name}"] = pulses.FlatTopGaussianPulse(
         amplitude=1.0,
         length=rise_fall_len + flattop_len + rise_fall_len,
         flat_length=flattop_len,
         axis_angle=0.0, 
     )
-
-    # Stark-induced ZZ
-    qb_pair.macros["stark_cz"] = StarkInducedCZGate()
-    # square
-    qb_pair.zz_drive.operations["square"] = pulses.SquarePulse(
-        length=100,
-        amplitude=1.0,
-        axis_angle=0.0,
-    )
-    qb_pair.qubit_target.xy_detuned.operations[f"zz_square_{qb_pair.name}"] = pulses.SquarePulse(
-        length=100,
-        amplitude=1.0,
-        axis_angle=0.0,
-    )
-    # cosine
-    qb_pair.zz_drive.operations["cosine"] = pulses.DragCosinePulse(
-        length=100,
-        amplitude=1.0,
-        axis_angle=0.0,
-        anharmonicity=260 * u.MHz,
-        alpha=0.0,
-        detuning=0,
-        # correction_phase=0.0,
-    )
-    qb_pair.qubit_target.xy_detuned.operations[f"zz_cosine_{qb_pair.name}"] = pulses.DragCosinePulse(
-        length=100,
-        amplitude=1.0,
-        axis_angle=0.0,
-        anharmonicity=260 * u.MHz,
-        alpha=0.0,
-        detuning=0,
-    )
-    # gauss
-    qb_pair.zz_drive.operations["gauss"] = pulses.DragGaussianPulse(
-        length=100,
-        sigma=100 / 5,
-        amplitude=1.0,
-        axis_angle=0.0,
-        anharmonicity=260 * u.MHz,
-        alpha=0.0,
-        detuning=0,
-        # correction_phase=0.0,
-    )
-    qb_pair.qubit_target.xy_detuned.operations[f"zz_gauss_{qb_pair.name}"] = pulses.DragGaussianPulse(
-        length=100,
-        sigma=100 / 5,
-        amplitude=1.0,
-        axis_angle=0.0,
-        anharmonicity=260 * u.MHz,
-        alpha=0.0,
-        detuning=0,
-    )
-    # flattop
-    rise_fall_len = 8
-    flattop_len = 84  # must be python list (not numpy array)
-    qb_pair.zz_drive.operations["flattop"] = pulses.FlatTopGaussianPulse(
-        amplitude=1.0,
-        length=rise_fall_len + flattop_len + rise_fall_len,
-        flat_length=flattop_len,
-        axis_angle=0.0,
-    )
-    qb_pair.qubit_target.xy_detuned.operations[f"zz_flattop_{qb_pair.name}"] = pulses.FlatTopGaussianPulse(
-        amplitude=1.0,
-        length=rise_fall_len + flattop_len + rise_fall_len,
-        flat_length=flattop_len,
-        axis_angle=0.0,
-    )
-
 
 
 ########################################################################################################################

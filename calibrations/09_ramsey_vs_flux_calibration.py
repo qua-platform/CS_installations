@@ -110,6 +110,9 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
         phi = declare(fixed)  # QUA variable for dephasing the second pi/2 pulse (virtual Z-rotation)
         flux = declare(fixed)  # QUA variable for the flux dc level
 
+        # Reset explicitly
+        reset_global_phase()
+
         for multiplexed_qubits in qubits.batch():
             # Initialize the QPU in terms of flux points (flux tunable transmons and/or tunable couplers)
             for qubit in multiplexed_qubits.values():

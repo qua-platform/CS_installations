@@ -90,6 +90,9 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
         Ie, Ie_st, Qe, Qe_st, _, _ = node.machine.declare_qua_variables()
         a = declare(fixed)
 
+        # Reset explicitly
+        reset_global_phase()
+
         for multiplexed_qubits in qubits.batch():
             # Initialize the QPU in terms of flux points (flux tunable transmons and/or tunable couplers)
             for qubit in multiplexed_qubits.values():

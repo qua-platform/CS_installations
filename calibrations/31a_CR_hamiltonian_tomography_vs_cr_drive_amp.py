@@ -13,7 +13,7 @@ from qualang_tools.units import unit
 
 from qualibrate import QualibrationNode
 from quam_config import Quam
-from calibration_utils.cr_ham_tomo_cr_cancel_amp_scaling import (
+from calibration_utils.cr_ham_tomo_cr_drive_amp_scaling import (
     Parameters,
     process_raw_dataset,
     fit_raw_data,
@@ -30,7 +30,7 @@ from qualibration_libs.core import tracked_updates
 
 # %% {Description}
 description = """
-        Cross-Resonance Time Rabi with Quantum State Tomography (QST) + cancel amplitude optimization
+        Cross-Resonance Time Rabi with Quantum State Tomography (QST) + amplitude scanning
 This experiment measures the target qubit response under a variable-length cross-resonance (CR) drive, 
 with quantum state tomography for both control states. The sequence has two parts, separated by qubit relaxation:
 1. Control qubit prepared in |g>, apply a CR pulse of variable duration to the target.  
@@ -45,7 +45,6 @@ Prerequisites:
     - Resonator spectroscopy (to locate resonator frequency).
     - Qubit spectroscopy, Rabi chevron, and power Rabi (to calibrate the qubit π pulse and update the config).
     - State discrimination
-    - Optimized cancellation pulse phase
     - (Optional) Readout calibration (frequency, amplitude, duration optimization, IQ blobs) for improved SNR.
 
 Reference: A. D. Córcoles et al., Phys. Rev. A 87, 030301(R) (2013).
@@ -55,7 +54,7 @@ Reference: A. D. Córcoles et al., Phys. Rev. A 87, 030301(R) (2013).
 
 # Be sure to include [Parameters, Quam] so the node has proper type hinting
 node = QualibrationNode[Parameters, Quam](
-    name="31d_CR_hamiltonian_tomography_vs_cr_cancel_amp_scaling",  # Name should be unique
+    name="31a_CR_hamiltonian_tomography_vs_cr_drive_amp_scaling",  # Name should be unique
     description=description,  # Describe what the node is doing, which is also reflected in the QUAlibrate GUI
     parameters=Parameters(),  # Node parameters defined under quam_experiment/experiments/node_name
 )
@@ -66,16 +65,17 @@ node = QualibrationNode[Parameters, Quam](
 @node.run_action(skip_if=node.modes.external)
 def custom_param(node: QualibrationNode[Parameters, Quam]):
     """Allow the user to locally set the node parameters for debugging purposes, or execution in the Python IDE."""
-    # # You can get type hinting in your IDE by typing node.parameters.
-    # node.parameters.qubit_pairs = ["q1-2", "q3-4"]
+    # You can get type hinting in your IDE by typing node.parameters.
+    node.parameters.simulate = True
+    node.parameters.qubit_pairs = ["q40-41", "q42-43"]
     # node.parameters.use_state_discrimination = True
-    # node.parameters.wf_type = "square"
-    # node.parameters.cr_type = "direct+cancel+echo"
-    # node.parameters.cr_drive_amp_scaling = [0.89, 0.89]  # None : setting None to use the amp from the config
-    # node.parameters.cr_drive_phase = [0.12, 0.12]  # None : setting None to use the amp from the config
-    # node.parameters.cr_cancel_amp_scaling = [0.34, 0.34]  # None : setting None to use the amp from the config
-    # node.parameters.cr_cancel_phase = [0.23, 0.23]  # None : setting None to use the amp from the config
-    pass
+    node.parameters.wf_type = "flattop"
+    node.parameters.cr_type = "direct+cancel+echo"
+    node.parameters.cr_drive_amp_scaling = [1.0, 1.0]  # None : setting None to use the amp from the config
+    node.parameters.cr_drive_phase = [0.0, 0.0]  # None : setting None to use the amp from the config
+    node.parameters.cr_cancel_amp_scaling = [0.1, 0.1]  # None : setting None to use the amp from the config
+    node.parameters.cr_cancel_phase = [0.0, 0.0]  # None : setting None to use the amp from the config
+    # pass
 
 
 # Instantiate the QUAM class from the state file
@@ -103,8 +103,8 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
     state_discrimination = node.parameters.use_state_discrimination
     wf_type = node.parameters.wf_type
     cr_type = node.parameters.cr_type
-    cr_drive_amp_scaling = broadcast_param_to_list(node.parameters.cr_drive_amp_scaling, num_qubit_pairs)
     cr_drive_phase = broadcast_param_to_list(node.parameters.cr_drive_phase, num_qubit_pairs)
+    cr_cancel_amp_scaling = broadcast_param_to_list(node.parameters.cr_cancel_amp_scaling, num_qubit_pairs)
     cr_cancel_phase = broadcast_param_to_list(node.parameters.cr_cancel_phase, num_qubit_pairs)
 
     # Pulse amplitude sweep (as a pre-factor of the qubit pulse amplitude) - must be within [-2; 2)
@@ -146,6 +146,9 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
         c = declare(int)  # QUA variable for the projection index in QST
         amp_scaling_qua = declare(fixed)
 
+        # Reset explicitly
+        reset_global_phase()
+
         for multiplexed_qubit_pairs in qubit_pairs.batch():
             # Initialize the QPU in terms of flux points (flux tunable transmons and/or tunable couplers)
             for qp in multiplexed_qubit_pairs.values():
@@ -160,6 +163,7 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                     with for_(*from_array(t, pulse_durations)):
                         with for_(c, 0, c < 3, c + 1):  # bases
                             with for_(s, 0, s < 2, s + 1):  # states
+                                # Reset the qubits to the ground state
                                 for i, qp in multiplexed_qubit_pairs.items():
                                     qc, qt, cr, cr_elems = get_cr_elements(qp)
 
@@ -186,9 +190,9 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
                                         "cr",
                                         cr_type=cr_type,
                                         wf_type=wf_type,
-                                        cr_drive_amp_scaling=cr_drive_amp_scaling[i],
+                                        cr_drive_amp_scaling=amp_scaling_qua,
                                         cr_drive_phase=cr_drive_phase[i],
-                                        cr_cancel_amp_scaling=amp_scaling_qua,
+                                        cr_cancel_amp_scaling=cr_cancel_amp_scaling[i],
                                         cr_cancel_phase=cr_cancel_phase[i],
                                         cr_duration_clock_cycles=t,
                                     )
@@ -222,10 +226,10 @@ def create_qua_program(node: QualibrationNode[Parameters, Quam]):
             for i, qp in enumerate(qubit_pairs):
                 state_c_st[i].buffer(len(control_state)).buffer(len(qst_basis)).buffer(len(pulse_durations)).buffer(
                     len(amp_scalings)
-                ).average().save(f"state_c{i}")
+                ).average().save(f"state_c{i + 1}")
                 state_t_st[i].buffer(len(control_state)).buffer(len(qst_basis)).buffer(len(pulse_durations)).buffer(
                     len(amp_scalings)
-                ).average().save(f"state_t{i}")
+                ).average().save(f"state_t{i + 1}")
 
 
 # %% {Simulate}
@@ -326,9 +330,14 @@ def update_state(node: QualibrationNode[Parameters, Quam]):
                 if node.outcomes[qp.name] == "failed":
                     continue
 
+                # # cr drive
+                # operation_c = qp.cross_resonance.operations[node.parameters.wf_type]
+                # operation_c.amplitude = node.parameters.cr_drive_amp_scaling[i] * operation_c.amplitude
+                # operation_c.axis_angle = node.parameters.cr_drive_phase[i] * 2 * np.pi
                 # # cr cancel
                 # operation_t = qp.qubit_target.xy.operations[f"cr_{node.parameters.wf_type}_{qp.name}"]
                 # operation_t.amplitude = node.parameters.cr_cancel_amp_scaling[i] * operation_t.amplitude
+                # operation_t.axis_angle = node.parameters.cr_cancel_phase[i] * 2 * np.pi
                 pass
 
 

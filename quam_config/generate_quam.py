@@ -30,11 +30,12 @@ qubits = [
 ]
 qubit_idxes = {q: i for i, q in enumerate(qubits)}
 qubit_pairs = [
-    (40, 41), (41, 40),
-    (41, 42), (42, 41),
-    (42, 43), (43, 42),
-    (43, 40), (40, 43),
+    (40, 41),
+    (40, 42),
+    (42, 43),
+    (41, 43),
 ]
+qubit_pairs = qubit_pairs + [(p, q) for q, p in qubit_pairs]
 
 # Flatten the pairs
 flattened_qubits = {q for pair in qubit_pairs for q in pair}
@@ -48,7 +49,6 @@ assert flattened_qubits.issubset(set(qubits))
 ########################################################################################################################
 con = 1 # 2
 rr_slots = [
-    # 2, 2, 2, 2,
     1, 1, 1, 1,
 ]
 rr_out_ports = [
@@ -63,8 +63,7 @@ assert len(rr_out_ports) == len(qubits)
 assert len(rr_in_ports) == len(qubits)
 
 xy_slots = [
-    # 2, 2, 2, 2,
-    1, 1, 1, 1,
+    2, 2, 2, 2,
 ]
 xy_ports = [
     2, 3, 4, 5,
@@ -105,22 +104,6 @@ for (qc, qt) in qubit_pairs:
         constraints=mw_fem_spec(con=con, slot=xy_slots[idc], out_port=xy_ports[idc]),
     )
     allocate_wiring(connectivity, instruments, block_used_channels=False)
-
-    # Add ZZ lines
-    connectivity.add_qubit_pair_zz_drive_lines(
-        qubit_pairs=(qc, qt),
-        constraints=mw_fem_spec(con=con, slot=xy_slots[idc], out_port=xy_ports[idc]),
-    )
-    allocate_wiring(connectivity, instruments, block_used_channels=False)
-
-    # Add XY detuned for ZZ lines
-    connectivity.add_qubit_detuned_drive_lines(
-        qubits=qt,
-        constraints=mw_fem_spec(con=con, slot=xy_slots[idt], out_port=xy_ports[idt]),
-    )
-    # Don't block the xy channels to connect the CR and ZZ drives to the same ports
-    allocate_wiring(connectivity, instruments, block_used_channels=False)
-
 
 # View wiring schematic
 visualize(connectivity.elements, available_channels=instruments.available_channels)
